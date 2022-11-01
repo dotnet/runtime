@@ -388,10 +388,10 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
-size_t MyICJI::printObjectDescription(void*  handle,              /* IN  */
-                                      char*  buffer,              /* OUT */
-                                      size_t bufferSize,          /* IN  */
-                                      size_t* pRequiredBufferSize /* OUT */
+size_t MyICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                      char*                 buffer,             /* OUT */
+                                      size_t                bufferSize,         /* IN  */
+                                      size_t*               pRequiredBufferSize /* OUT */
                                      )
 {
     jitInstance->mc->cr->AddCall("printObjectDescription");
@@ -673,21 +673,21 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+CORINFO_OBJECT_HANDLE MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
-    void* result = jitInstance->mc->repGetRuntimeTypePointer(cls);
+    CORINFO_OBJECT_HANDLE result = jitInstance->mc->repGetRuntimeTypePointer(cls);
     return result;
 }
 
-bool MyICJI::isObjectImmutable(void* objPtr)
+bool MyICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 {
     jitInstance->mc->cr->AddCall("isObjectImmutable");
     bool result = jitInstance->mc->repIsObjectImmutable(objPtr);
     return result;
 }
 
-CORINFO_CLASS_HANDLE MyICJI::getObjectType(void* objPtr)
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     jitInstance->mc->cr->AddCall("getObjectType");
     CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(objPtr);
@@ -946,6 +946,12 @@ bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
     jitInstance->mc->cr->AddCall("isFieldStatic");
     return jitInstance->mc->repIsFieldStatic(fldHnd);
+}
+
+int MyICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    jitInstance->mc->cr->AddCall("getArrayOrStringLength");
+    return jitInstance->mc->repGetArrayOrStringLength(objHnd);
 }
 
 /*********************************************************************************/
@@ -1520,10 +1526,10 @@ void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
     return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
 }
 
-bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
 {
     jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
-    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize);
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
 }
 
 // return the class handle for the current value of a static field

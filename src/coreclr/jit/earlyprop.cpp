@@ -291,6 +291,9 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
         // actualValClone has small tree node size, it is safe to use CopyFrom here.
         tree->ReplaceWith(actualValClone, this);
 
+        // update SSA accounting
+        optRecordSsaUses(tree, compCurBB);
+
         // Propagating a constant may create an opportunity to use a division by constant optimization
         //
         if ((tree->gtNext != nullptr) && tree->gtNext->OperIsBinary())
@@ -468,6 +471,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         // Re-morph the statement.
         Statement* curStmt = compCurStmt;
         fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
+        optRecordSsaUses(nullCheckStmt->GetRootNode(), compCurBB);
         compCurStmt = curStmt;
 
         folded = true;

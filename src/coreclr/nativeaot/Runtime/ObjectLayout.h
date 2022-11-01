@@ -136,5 +136,5 @@ static uintptr_t const MAX_STRING_LENGTH = 0x3FFFFFDF;
 class WeakReference : public Object
 {
 public:
-    uintptr_t    m_HandleAndKind;
+    uintptr_t    m_taggedHandle;
 };
