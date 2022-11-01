@@ -1461,7 +1461,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_ShiftRightArithmetic:
                 case NI_VectorT256_ShiftRightArithmetic:
                 {
-                    genTreeOps op = varTypeIsSigned(simdBaseType) ? GT_RSH : GT_RSZ;
+                    genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
                     return gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
@@ -1688,7 +1688,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_op_RightShift:
                 case NI_VectorT128_ShiftRightArithmetic:
                 {
-                    genTreeOps op = varTypeIsSigned(simdBaseType) ? GT_RSH : GT_RSZ;
+                    genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
                     return gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }

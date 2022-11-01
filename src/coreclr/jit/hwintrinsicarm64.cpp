@@ -1560,7 +1560,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ShiftRightArithmetic:
         {
             assert(sig->numArgs == 2);
-            genTreeOps op = varTypeIsSigned(simdBaseType) ? GT_RSH : GT_RSZ;
+            genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(retType);

@@ -2055,7 +2055,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
-                genTreeOps op = varTypeIsSigned(simdBaseType) ? GT_RSH : GT_RSZ;
+                genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
 
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack(retType);
