@@ -83,7 +83,7 @@
       <TieredCompilation>0</TieredCompilation>
       <DbgEnableMiniDump Condition="'$(TargetsWindows)' != 'true'">1</DbgEnableMiniDump> <!-- Enable minidumps for all scenarios -->
       <DbgMiniDumpName Condition="'$(TargetsWindows)' != 'true'">$HELIX_DUMP_FOLDER/coredump.%d.dmp</DbgMiniDumpName>
-      <EnableCrashReport Condition="'$(TargetsWindows)' != 'true'">1</DbgMiniDumpName>
+      <EnableCrashReport Condition="'$(TargetsWindows)' != 'true'">1</EnableCrashReport>
     </TestEnvironment>
   </ItemDefinitionGroup>
 
