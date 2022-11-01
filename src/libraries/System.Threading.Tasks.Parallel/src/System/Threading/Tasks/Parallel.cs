@@ -125,6 +125,185 @@ namespace System.Threading.Tasks
         }
     }  // class ParallelOptions
 
+     internal static class ParallelHelpers
+    {
+        // static counter for generating unique Fork/Join Context IDs to be used in ETW events
+        internal static int s_forkJoinContextId;
+
+        public static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
+            ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
+        {
+            Box<OperationCanceledException> oce = new() { Value = null };
+
+            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
+            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
+                ? default
+                : parallelOptions.CancellationToken.UnsafeRegister((_) =>
+                {
+                    // Record our cancellation before stopping processing
+                    oce.Value = new OperationCanceledException(parallelOptions.CancellationToken);
+                    // Cause processing to stop
+                    sharedPStateFlags.Cancel();
+                }, state: null);
+            return oce;
+        }
+
+        public static bool CheckTimeoutReached(int timeoutOccursAt)
+        {
+            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
+            int currentMillis = Environment.TickCount;
+
+            if (currentMillis < timeoutOccursAt)
+                return false;
+
+            if (0 > timeoutOccursAt && 0 < currentMillis)
+                return false;
+
+            return true;
+        }
+
+        public static int ComputeTimeoutPoint(int timeoutLength)
+        {
+            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
+            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
+            // in CheckTimeoutReached(..):
+            unchecked
+            {
+                return Environment.TickCount + timeoutLength;
+            }
+        }
+
+        /// <summary>
+        /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
+        /// then get one such exception (the first one). Otherwise, return null.
+        /// </summary>
+        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection exceptions,
+            CancellationToken cancelToken)
+        {
+            // If collection is empty - no match:
+            if (exceptions == null || exceptions.Count == 0)
+                return null;
+
+            // If token is not cancelled, it can not be part of an exception:
+            if (!cancelToken.IsCancellationRequested)
+                return null;
+
+            // Check all exceptions:
+            Exception? first = null;
+            foreach (object? exObj in exceptions)
+            {
+                Debug.Assert(exObj is Exception);
+                Exception ex = (Exception)exObj;
+
+                first ??= ex;
+
+                // If mismatch found, fail-fast:
+                OperationCanceledException? ocEx = ex as OperationCanceledException;
+                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
+                    return null;
+            }
+
+            // All exceptions are OCEs with this token, let's just pick the first:
+            Debug.Assert(first is OperationCanceledException);
+            return (OperationCanceledException)first;
+        }
+
+        /// <summary>
+        /// IF exceptions are all OperationCanceledExceptions with the specified cancelToken,
+        /// THEN throw that unique OperationCanceledException (pick any);
+        /// OTHERWISE throw the specified otherException.
+        /// </summary>
+        public static void ThrowSingleCancellationExceptionOrOtherException(ICollection exceptions,
+            CancellationToken cancelToken,
+            Exception otherException)
+        {
+            OperationCanceledException? reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
+            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
+        }
+
+        public static int LogEtwEventInvokeBegin(Action[] actions)
+        {
+            int forkJoinContextId = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextId;
+
+            forkJoinContextId = Interlocked.Increment(ref s_forkJoinContextId);
+            ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextId, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
+                actions.Length);
+
+            return forkJoinContextId;
+        }
+
+        public static int LogEtwEventParallelLoopBegin<TIndex>(
+            ParallelEtwProvider.ForkJoinOperationType operationType, TIndex fromInclusive, TIndex toExclusive)
+            where TIndex: INumber<TIndex>
+        {
+            // ETW event for Parallel For begin
+            int forkJoinContextId = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextId;
+
+            forkJoinContextId = Interlocked.Increment(ref s_forkJoinContextId);
+            ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextId, operationType,
+                fromInclusive, toExclusive);
+
+            return forkJoinContextId;
+        }
+
+        public static void LogEtwEventParallelFork(int forkJoinContextId)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
+        }
+
+        public static void LogEtwEventParallelJoin(int forkJoinContextId)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
+        }
+
+        public static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextId, TIndex nTotalIterations)
+            where TIndex: INumber<TIndex>
+        {
+            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId, nTotalIterations);
+        }
+
+        public static void LogEtwEventForParallelInvokeEnd(int forkJoinContextId)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
+        }
+
+        public static Action[] CopyActionArray(Action[] actions)
+        {
+            Action[] actionsCopy = new Action[actions.Length];
+            for (int i = 0; i < actionsCopy.Length; i++)
+            {
+                if (actions[i] == null)
+                {
+                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
+                }
+
+                actionsCopy[i] = actions[i];
+            }
+
+            return actionsCopy;
+        }
+
+        public static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
+        {
+            int sbStatus = sharedPStateFlags.LoopStateFlags;
+            result._completed = (sbStatus == ParallelLoopStateFlags.ParallelLoopStateNone);
+            if ((sbStatus & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
+            {
+                result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+            }
+        }
+    }
+
     #region Worker Bodies
 
     internal interface IWorkerBody<in TValue>
@@ -354,6 +533,274 @@ namespace System.Threading.Tasks
 
     #endregion
 
+    #region Workers
+
+    internal interface IWorkerFactory<in TSource, TInput, TValue, out TIndex> where TIndex: INumber<TIndex>
+    {
+        static abstract TIndex GetStartIndex(TSource source);
+        static abstract TIndex GetEndIndex(TSource source);
+        static abstract Worker<TInput, TValue> CreateWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, TSource source, IWorkerBodyFactory<TValue> workerBodyFactory);
+        static abstract TIndex GetTotalIterations(TSource source, ParallelLoopStateFlags sharedPStateFlags);
+    }
+
+    internal abstract class Worker<TInput, TValue>
+    {
+        private readonly int _forkJoinContextId;
+        private readonly IWorkerBodyFactory<TValue> _workerBodyFactory;
+        protected readonly ParallelLoopStateFlags SharedPStateFlags;
+
+        protected Worker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+            IWorkerBodyFactory<TValue> workerBodyFactory)
+        {
+            _forkJoinContextId = forkJoinContextId;
+            SharedPStateFlags = sharedPStateFlags;
+            _workerBodyFactory = workerBodyFactory;
+        }
+
+        internal void Work(ref TInput input, int timeout, out bool replicationDelegateYieldedBeforeCompletion)
+        {
+            IWorkerBody<TValue> workerBody = _workerBodyFactory.CreateWorkerBody(SharedPStateFlags);
+            // We will need to reset this to true if we exit due to a timeout:
+            replicationDelegateYieldedBeforeCompletion = false;
+
+            ParallelHelpers.LogEtwEventParallelFork(_forkJoinContextId);
+
+            try
+            {
+                // initialize a loop timer which will help us decide whether we should exit early
+                int loopTimeout = ParallelHelpers.ComputeTimeoutPoint(timeout);
+
+                LoopBody(workerBody, loopTimeout, ref input, ref replicationDelegateYieldedBeforeCompletion);
+            }
+            catch (Exception ex)
+            {
+                // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
+                SharedPStateFlags.SetExceptional();
+                ExceptionDispatchInfo.Throw(ex);
+            }
+            finally
+            {
+                Finally(workerBody, ref input, replicationDelegateYieldedBeforeCompletion);
+
+                ParallelHelpers.LogEtwEventParallelJoin(_forkJoinContextId);
+            }
+        }
+
+        protected abstract void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout, ref TInput input,
+            ref bool replicationDelegateYieldedBeforeCompletion);
+
+        protected virtual void Finally(IWorkerBody<TValue> workerBody, ref TInput input, in bool replicationDelegateYieldedBeforeCompletion)
+        {
+            workerBody.Finally();
+        }
+    }
+
+    internal sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex>, IWorkerFactory<RangeManager, RangeWorker, TIndex, TIndex> where TIndex: INumber<TIndex>
+    {
+        private readonly RangeManager _rangeManager;
+
+
+        private ForWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+            RangeManager rangeManager, IWorkerBodyFactory<TIndex> workerBodyFactory)
+            : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
+        {
+            _rangeManager = rangeManager;
+        }
+
+        protected override void LoopBody(IWorkerBody<TIndex> workerBody, int loopTimeout,
+            ref RangeWorker currentWorker,
+            ref bool replicationDelegateYieldedBeforeCompletion)
+        {
+            // First thing we do upon entering the task is to register as a new "RangeWorker" with the
+            // shared RangeManager instance.
+            if (!currentWorker.IsInitialized)
+                currentWorker = _rangeManager.RegisterNewWorker();
+
+            // We need to call FindNewWork() on it to see whether there's a chunk available.
+            // These are the local index values to be used in the sequential loop.
+            // Their values filled in by FindNewWork
+            if (currentWorker.FindNewWork(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) == false ||
+                SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
+            {
+                return; // no need to run
+            }
+
+            // Now perform the loop itself.
+            do
+            {
+                for (TIndex j = nFromInclusiveLocal;
+                     j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
+                                               || !SharedPStateFlags.ShouldExitLoop(j));
+                     j += TIndex.One)
+                {
+                    if (workerBody is IWorkerBodyWithIndex<TIndex, TIndex> workerBodyWithIndex)
+                    {
+                        workerBodyWithIndex.SetIteration(j);
+                    }
+
+                    workerBody.Body(j);
+                }
+
+                // Cooperative multitasking:
+                // Check if allowed loop time is exceeded, if so save current state and return.
+                // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
+                if (ParallelHelpers.CheckTimeoutReached(loopTimeout))
+                {
+                    replicationDelegateYieldedBeforeCompletion = true;
+                    break;
+                }
+                // Exit DO-loop if we can't find new work, or if the loop was stopped:
+            } while (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) &&
+                     ((SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
+                      !SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
+        }
+
+        public static Worker<RangeWorker, TIndex> CreateWorker(
+            int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source, IWorkerBodyFactory<TIndex> workerBodyFactory)
+            => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
+
+        public static TIndex GetStartIndex(RangeManager manager) => TIndex.CreateChecked(manager.FromInclusive);
+
+        public static TIndex GetEndIndex(RangeManager manager)  => TIndex.CreateChecked(manager.ToExclusive);
+
+        public static TIndex GetTotalIterations(RangeManager manager, ParallelLoopStateFlags sharedPStateFlags)
+        {
+            //TODO: finish writing this function
+            TIndex nTotalIterations;
+            int sbStatus = sharedPStateFlags.LoopStateFlags;
+            TIndex fromInclusive = TIndex.CreateChecked(manager.FromInclusive);
+            TIndex toExclusive = TIndex.CreateChecked(manager.ToExclusive);
+
+            // calculate how many iterations we ran in total
+            if (sbStatus == ParallelLoopStateFlags.ParallelLoopStateNone)
+                nTotalIterations = toExclusive - fromInclusive;
+            else if ((sbStatus & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
+                nTotalIterations = TIndex.CreateChecked(sharedPStateFlags.LowestBreakIteration) - fromInclusive;
+            else
+                nTotalIterations = TIndex.CreateChecked(-1); //ParallelLoopStateStopped! We can't determine this if we were stopped..
+            return nTotalIterations;
+        }
+    }
+
+    internal abstract class ForeachWorker<TSource, TValue>: Worker<IEnumerator, TValue>
+    {
+        private readonly IEnumerable<TSource>? _partitionSource;
+
+        protected ForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TSource>? partitionSource, IWorkerBodyFactory<TValue> workerBodyFactory)
+            : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
+        {
+            _partitionSource = partitionSource;
+        }
+
+        protected override void Finally(IWorkerBody<TValue> workerBody, ref IEnumerator partitionState, in bool replicationDelegateYieldedBeforeCompletion)
+        {
+            if (replicationDelegateYieldedBeforeCompletion) return;
+
+            if (partitionState is IDisposable partitionToDispose)
+                partitionToDispose.Dispose();
+            base.Finally(workerBody, ref partitionState, replicationDelegateYieldedBeforeCompletion);
+        }
+
+        protected sealed override void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout,
+            ref IEnumerator partitionState, ref bool replicationDelegateYieldedBeforeCompletion)
+        {
+            // first check if there's saved state from a previous replica that we might be replacing.
+            // the only state to be passed down in such a transition is the enumerator
+            if (partitionState is not IEnumerator<TSource> myPartition)
+            {
+                myPartition = _partitionSource!.GetEnumerator();
+                partitionState = myPartition;
+            }
+
+            if (myPartition == null)
+                throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
+
+            while (myPartition.MoveNext())
+            {
+                TSource value = myPartition.Current;
+
+                Body(workerBody, value);
+
+                if (ShouldBreak(value)) break;
+
+                // Cooperative multitasking:
+                // Check if allowed loop time is exceeded, if so save current state and return.
+                // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
+                if (ParallelHelpers.CheckTimeoutReached(loopTimeout))
+                {
+                    replicationDelegateYieldedBeforeCompletion = true;
+                    break;
+                }
+            }
+        }
+
+        protected abstract void Body(IWorkerBody<TValue> workerBody, TSource value);
+
+        protected abstract bool ShouldBreak(TSource value);
+    }
+
+    internal sealed class OrderablePartitionerForeachWorker<TValue>
+        : ForeachWorker<KeyValuePair<long, TValue>, TValue>, IWorkerFactory<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, long>
+    {
+        private OrderablePartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+            IEnumerable<KeyValuePair<long, TValue>>? partitionSource,
+            IWorkerBodyFactory<TValue> workerBodyFactory)
+            : base(forkJoinContextId, sharedPStateFlags, partitionSource, workerBodyFactory)
+        {
+        }
+
+        protected override bool ShouldBreak(KeyValuePair<long, TValue> value) => SharedPStateFlags.ShouldExitLoop(value.Key);
+
+        protected override void Body(IWorkerBody<TValue> workerBody, KeyValuePair<long, TValue> value)
+        {
+            if (workerBody is IWorkerBodyWithIndex<TValue, long> workerBodyWithIndex)
+            {
+                workerBodyWithIndex.SetIteration(value.Key);
+            }
+            workerBody.Body(value.Value);
+        }
+
+        public static Worker<IEnumerator, TValue> CreateWorker(
+            int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+            IEnumerable<KeyValuePair<long, TValue>> source,
+            IWorkerBodyFactory<TValue> workerBodyFactory) =>
+            new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
+
+        public static long GetStartIndex(IEnumerable<KeyValuePair<long, TValue>> source) => 0;
+
+        public static long GetEndIndex(IEnumerable<KeyValuePair<long, TValue>> source)  => 0;
+
+        public static long GetTotalIterations(IEnumerable<KeyValuePair<long, TValue>> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
+    }
+
+    internal sealed class PartitionerForeachWorker<TValue>
+        : ForeachWorker<TValue, TValue>, IWorkerFactory<IEnumerable<TValue>, IEnumerator, TValue, long>
+    {
+        private PartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
+            IEnumerable<TValue>? partitionerSource, IWorkerBodyFactory<TValue> workerBodyFactory)
+            : base(forkJoinContextId, sharedPStateFlags, partitionerSource, workerBodyFactory)
+        {
+        }
+
+        protected override void Body(IWorkerBody<TValue> workerBody, TValue value) => workerBody.Body(value);
+
+        protected override bool ShouldBreak(TValue value) =>
+            SharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone;
+
+        public static Worker<IEnumerator, TValue> CreateWorker(
+            int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TValue> source,
+            IWorkerBodyFactory<TValue> workerBodyFactory) =>
+            new PartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
+
+        public static long GetStartIndex(IEnumerable<TValue> source) => 0;
+
+        public static long GetEndIndex(IEnumerable<TValue> source)  => 0;
+
+        public static long GetTotalIterations(IEnumerable<TValue> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
+    }
+
+    #endregion
+
     /// <summary>
     /// Provides support for parallel loops and regions.
     /// </summary>
@@ -363,11 +810,8 @@ namespace System.Threading.Tasks
     /// </remarks>
     public static partial class Parallel
     {
-        // static counter for generating unique Fork/Join Context IDs to be used in ETW events
-        internal static int s_forkJoinContextID;
-
         // We use a stride for loops to amortize the frequency of interlocked operations.
-        internal const int DEFAULT_LOOP_STRIDE = 16;
+        internal const int DefaultLoopStride = 16;
 
         // Static variable to hold default parallel options
         internal static readonly ParallelOptions s_defaultParallelOptions = new ParallelOptions();
@@ -437,10 +881,10 @@ namespace System.Threading.Tasks
 
             // We must validate that the actions array contains no null elements, and also
             // make a defensive copy of the actions array.
-            Action[] actionsCopy = CopyActionArray(actions);
+            Action[] actionsCopy = ParallelHelpers.CopyActionArray(actions);
 
             // ETW event for Parallel Invoke Begin
-            int forkJoinContextID = LogEtwEventInvokeBegin(actionsCopy);
+            int forkJoinContextId = ParallelHelpers.LogEtwEventInvokeBegin(actionsCopy);
 
 #if DEBUG
             actions = null!; // Ensure we don't accidentally use this below.
@@ -451,7 +895,7 @@ namespace System.Threading.Tasks
 
             // In the algorithm below, if the number of actions is greater than this, we automatically
             // use Parallel.For() to handle the actions, rather than the Task-per-Action strategy.
-            const int SMALL_ACTIONCOUNT_LIMIT = 10;
+            const int SmallActioncountLimit = 10;
 
             try
             {
@@ -460,7 +904,7 @@ namespace System.Threading.Tasks
                 // Web browsers need special treatment that is implemented in TaskReplicator
                 if (OperatingSystem.IsBrowser() ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
-                    (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
+                    (actionsCopy.Length > SmallActioncountLimit) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
                    )
                 {
@@ -537,7 +981,7 @@ namespace System.Threading.Tasks
                     // If we have encountered any exceptions, then throw.
                     if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
                     {
-                        ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken, new AggregateException(exceptionQ));
+                        ParallelHelpers.ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken, new AggregateException(exceptionQ));
                     }
                 }
                 else // This is more efficient for a small number of actions and no DOP support:
@@ -569,14 +1013,14 @@ namespace System.Threading.Tasks
                     catch (AggregateException aggExp)
                     {
                         // see if we can combine it into a single OCE. If not propagate the original exception
-                        ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
+                        ParallelHelpers.ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
                     }
                 }
             }
             finally
             {
                 // ETW event for Parallel Invoke End
-                LogEtwEventForParallelInvokeEnd(forkJoinContextID);
+                ParallelHelpers.LogEtwEventForParallelInvokeEnd(forkJoinContextId);
             }
         }
 
@@ -598,16 +1042,17 @@ namespace System.Threading.Tasks
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            Box<OperationCanceledException> oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
+            Box<OperationCanceledException> oce = ParallelHelpers.RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
-            int forkJoinContextID = LogEtwEventParallelLoopBegin(operationType, 0, 0);
+            int forkJoinContextId = ParallelHelpers.LogEtwEventParallelLoopBegin(
+                operationType, TWorker.GetStartIndex(source), TWorker.GetEndIndex(source));
 
             try
             {
                 try
                 {
                     TaskReplicator.ReplicatableUserAction<TInput> worker =
-                        TWorker.CreateWorker(forkJoinContextID, sharedPStateFlags, source, workerBodyFactory).Work;
+                        TWorker.CreateWorker(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory).Work;
                     TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
                 }
                 finally
@@ -624,16 +1069,16 @@ namespace System.Threading.Tasks
             catch (AggregateException aggExp)
             {
                 // If we have many cancellation exceptions all caused by the specified user cancel control, then throw only one OCE:
-                ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
+                ParallelHelpers.ThrowSingleCancellationExceptionOrOtherException(aggExp.InnerExceptions, parallelOptions.CancellationToken, aggExp);
             }
             finally
             {
-                SetLoopResultEndState(sharedPStateFlags, ref result);
+                ParallelHelpers.SetLoopResultEndState(sharedPStateFlags, ref result);
 
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())
                 {
-                    LogEtwEventParallelLoopEnd(forkJoinContextID, TWorker.GetTotalIterations(source, sharedPStateFlags));
+                    ParallelHelpers.LogEtwEventParallelLoopEnd(forkJoinContextId, TWorker.GetTotalIterations(source, sharedPStateFlags));
                 }
 
                 IDisposable? d = source as IDisposable;
@@ -643,6 +1088,89 @@ namespace System.Threading.Tasks
             return result;
         }
 
+        /// <summary>
+        /// Performs the major work of the parallel for loop. It assumes that argument validation has already
+        /// been performed by the caller. This function's whole purpose in life is to enable as much reuse of
+        /// common implementation details for the various For overloads we offer. Without it, we'd end up
+        /// with lots of duplicate code. It handles: (1) simple for loops, (2) for loops that depend on
+        /// ParallelState, and (3) for loops with thread local data.
+        ///
+        /// </summary>
+        /// <typeparam name="TIndex">The type of the index size used (int/long).</typeparam>
+        /// <param name="fromInclusive">The loop's start index, inclusive.</param>
+        /// <param name="toExclusive">The loop's end index, exclusive.</param>
+        /// <param name="parallelOptions">A ParallelOptions instance.</param>
+        /// <param name="workerBodyFactory">Factory for creating thread workers</param>
+        /// <remarks>Only one of the body arguments may be supplied (i.e. they are exclusive).</remarks>
+        /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult"/> structure.</returns>
+        private static ParallelLoopResult ForCore<TIndex>(
+            TIndex fromInclusive, TIndex toExclusive,
+            ParallelOptions parallelOptions,
+            IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex: INumber<TIndex>
+        {
+            Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long), "only long and int index types supported in TIndex");
+
+            // We just return immediately if 'to' is smaller (or equal to) 'from'.
+            if (toExclusive <= fromInclusive)
+            {
+                ParallelLoopResult result = default;
+                result._completed = true;
+                return result;
+            }
+
+            // initialize ranges with passed in loop arguments and expected number of workers
+            int numExpectedWorkers = (parallelOptions.EffectiveMaxConcurrencyLevel == -1)
+                ? Environment.ProcessorCount
+                : parallelOptions.EffectiveMaxConcurrencyLevel;
+            RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive),
+                long.CreateChecked(toExclusive), 1, numExpectedWorkers);
+
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
+
+            return LoopCore<RangeManager, RangeWorker, TIndex, ForWorker<TIndex>, TIndex>(
+                rangeManager, parallelOptions, workerBodyFactory, OperationType);
+        }
+
+        private static ParallelLoopResult ForEachCore<TValue>(Partitioner<TValue> source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
+        {
+            if (source is OrderablePartitioner<TValue> orderedSource)
+            {
+                return ForEachCore(orderedSource, parallelOptions, workerBodyFactory);
+            }
+
+            if (!source.SupportsDynamicPartitions)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
+            }
+
+            IEnumerable<TValue>? partitionerSource = source.GetDynamicPartitions();
+            if (partitionerSource == null)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
+            }
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
+
+            return LoopCore<IEnumerable<TValue>, IEnumerator, TValue, PartitionerForeachWorker<TValue>, long>(
+                partitionerSource, parallelOptions, workerBodyFactory, OperationType);
+        }
+
+        private static ParallelLoopResult ForEachCore<TValue>(OrderablePartitioner<TValue> orderedSource, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
+        {
+            if (!orderedSource.SupportsDynamicPartitions)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
+            }
+
+            IEnumerable<KeyValuePair<long, TValue>>? orderablePartitionerSource = orderedSource.GetOrderableDynamicPartitions();
+            if (orderablePartitionerSource == null)
+            {
+                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
+            }
+
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
+            return LoopCore<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, OrderablePartitionerForeachWorker<TValue>, long>(
+                orderablePartitionerSource, parallelOptions, workerBodyFactory, OperationType);
+        }
 
         #region For Entry Points
 
@@ -759,7 +1287,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithSimpleBodyFactory<TIndex>(body);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
+            return ForCore(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -905,7 +1433,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithStateFactory<TIndex, TIndex>(body);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
+            return ForCore(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1131,320 +1659,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(localFinally);
 
             IWorkerBodyFactory<TIndex> workerBodyFactory = new WorkerWithLocalFactory<TIndex, TIndex, TLocal>(body, localInit, localFinally);
-            return ForWorkerOrchestrator(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Performs the major work of the parallel for loop. It assumes that argument validation has already
-        /// been performed by the caller. This function's whole purpose in life is to enable as much reuse of
-        /// common implementation details for the various For overloads we offer. Without it, we'd end up
-        /// with lots of duplicate code. It handles: (1) simple for loops, (2) for loops that depend on
-        /// ParallelState, and (3) for loops with thread local data.
-        ///
-        /// </summary>
-        /// <typeparam name="TIndex">The type of the index size used (int/long).</typeparam>
-        /// <param name="fromInclusive">The loop's start index, inclusive.</param>
-        /// <param name="toExclusive">The loop's end index, exclusive.</param>
-        /// <param name="parallelOptions">A ParallelOptions instance.</param>
-        /// <param name="workerBodyFactory">Factory for creating thread workers</param>
-        /// <remarks>Only one of the body arguments may be supplied (i.e. they are exclusive).</remarks>
-        /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult"/> structure.</returns>
-        private static ParallelLoopResult ForWorkerOrchestrator<TIndex>(
-            TIndex fromInclusive, TIndex toExclusive,
-            ParallelOptions parallelOptions,
-            IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex: INumber<TIndex>
-        {
-            Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long), "only long and int index types supported in TIndex");
-
-            // We just return immediately if 'to' is smaller (or equal to) 'from'.
-            if (toExclusive <= fromInclusive)
-            {
-                ParallelLoopResult result = default;
-                result._completed = true;
-                return result;
-            }
-
-            // initialize ranges with passed in loop arguments and expected number of workers
-            int numExpectedWorkers = (parallelOptions.EffectiveMaxConcurrencyLevel == -1)
-                ? Environment.ProcessorCount
-                : parallelOptions.EffectiveMaxConcurrencyLevel;
-            RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive),
-                long.CreateChecked(toExclusive), 1, numExpectedWorkers);
-
-            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
-
-            return LoopCore<RangeManager, RangeWorker, TIndex, ForWorker<TIndex>, TIndex>(
-                rangeManager, parallelOptions, workerBodyFactory, OperationType);
-        }
-
-        #region Workers
-
-        private abstract class Worker<TInput, TValue>
-        {
-            private readonly int _forkJoinContextId;
-            private readonly IWorkerBodyFactory<TValue> _workerBodyFactory;
-            protected readonly ParallelLoopStateFlags SharedPStateFlags;
-
-            protected Worker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IWorkerBodyFactory<TValue> workerBodyFactory)
-            {
-                _forkJoinContextId = forkJoinContextId;
-                SharedPStateFlags = sharedPStateFlags;
-                _workerBodyFactory = workerBodyFactory;
-            }
-
-            internal void Work(ref TInput input, int timeout, out bool replicationDelegateYieldedBeforeCompletion)
-            {
-                IWorkerBody<TValue> workerBody = _workerBodyFactory.CreateWorkerBody(SharedPStateFlags);
-                // We will need to reset this to true if we exit due to a timeout:
-                replicationDelegateYieldedBeforeCompletion = false;
-
-                LogEtwEventParallelFork(_forkJoinContextId);
-
-                try
-                {
-                    // initialize a loop timer which will help us decide whether we should exit early
-                    int loopTimeout = ComputeTimeoutPoint(timeout);
-
-                    LoopBody(workerBody, loopTimeout, ref input, ref replicationDelegateYieldedBeforeCompletion);
-                }
-                catch (Exception ex)
-                {
-                    // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
-                    SharedPStateFlags.SetExceptional();
-                    ExceptionDispatchInfo.Throw(ex);
-                }
-                finally
-                {
-                    Finally(workerBody, ref input, replicationDelegateYieldedBeforeCompletion);
-
-                    LogEtwEventParallelJoin(_forkJoinContextId);
-                }
-            }
-
-            protected abstract void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout, ref TInput input,
-                ref bool replicationDelegateYieldedBeforeCompletion);
-
-            protected virtual void Finally(IWorkerBody<TValue> workerBody, ref TInput input, in bool replicationDelegateYieldedBeforeCompletion)
-            {
-                workerBody.Finally();
-            }
-        }
-
-        private interface IWorkerFactory<in TSource, TInput, TValue, out TIndex> where TIndex: INumber<TIndex>
-        {
-            static abstract TIndex GetStartIndex(TSource source);
-            static abstract TIndex GetEndIndex(TSource source);
-            static abstract Worker<TInput, TValue> CreateWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, TSource source, IWorkerBodyFactory<TValue> workerBodyFactory);
-            static abstract TIndex GetTotalIterations(TSource source, ParallelLoopStateFlags sharedPStateFlags);
-        }
-
-        private sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex>, IWorkerFactory<RangeManager, RangeWorker, TIndex, TIndex> where TIndex: INumber<TIndex>
-        {
-            private readonly RangeManager _rangeManager;
-
-
-            private ForWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                RangeManager rangeManager, IWorkerBodyFactory<TIndex> workerBodyFactory)
-                : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
-            {
-                _rangeManager = rangeManager;
-            }
-
-            protected override void LoopBody(IWorkerBody<TIndex> workerBody, int loopTimeout,
-                ref RangeWorker currentWorker,
-                ref bool replicationDelegateYieldedBeforeCompletion)
-            {
-                // First thing we do upon entering the task is to register as a new "RangeWorker" with the
-                // shared RangeManager instance.
-                if (!currentWorker.IsInitialized)
-                    currentWorker = _rangeManager.RegisterNewWorker();
-
-                // We need to call FindNewWork() on it to see whether there's a chunk available.
-                // These are the local index values to be used in the sequential loop.
-                // Their values filled in by FindNewWork
-                if (currentWorker.FindNewWork(out TIndex nFromInclusiveLocal, out TIndex nToExclusiveLocal) == false ||
-                    SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
-                {
-                    return; // no need to run
-                }
-
-                // Now perform the loop itself.
-                do
-                {
-                    for (TIndex j = nFromInclusiveLocal;
-                         j < nToExclusiveLocal && (SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone // fast path check as SEL() doesn't inline
-                                                   || !SharedPStateFlags.ShouldExitLoop(j));
-                         j += TIndex.One)
-                    {
-                        if (workerBody is IWorkerBodyWithIndex<TIndex, TIndex> workerBodyWithIndex)
-                        {
-                            workerBodyWithIndex.SetIteration(j);
-                        }
-
-                        workerBody.Body(j);
-                    }
-
-                    // Cooperative multitasking:
-                    // Check if allowed loop time is exceeded, if so save current state and return.
-                    // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
-                    if (CheckTimeoutReached(loopTimeout))
-                    {
-                        replicationDelegateYieldedBeforeCompletion = true;
-                        break;
-                    }
-                    // Exit DO-loop if we can't find new work, or if the loop was stopped:
-                } while (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) &&
-                         ((SharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
-                          !SharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
-            }
-
-            public static Worker<RangeWorker, TIndex> CreateWorker(
-                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source, IWorkerBodyFactory<TIndex> workerBodyFactory)
-                => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
-
-            public static TIndex GetStartIndex(RangeManager manager) => TIndex.CreateChecked(manager.FromInclusive);
-
-            public static TIndex GetEndIndex(RangeManager manager)  => TIndex.CreateChecked(manager.ToExclusive);
-
-            public static TIndex GetTotalIterations(RangeManager manager, ParallelLoopStateFlags sharedPStateFlags)
-            {
-                //TODO: finish writing this function
-                TIndex nTotalIterations;
-                int sbStatus = sharedPStateFlags.LoopStateFlags;
-                TIndex fromInclusive = TIndex.CreateChecked(manager.FromInclusive);
-                TIndex toExclusive = TIndex.CreateChecked(manager.ToExclusive);
-
-                // calculate how many iterations we ran in total
-                if (sbStatus == ParallelLoopStateFlags.ParallelLoopStateNone)
-                    nTotalIterations = toExclusive - fromInclusive;
-                else if ((sbStatus & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
-                    nTotalIterations = TIndex.CreateChecked(sharedPStateFlags.LowestBreakIteration) - fromInclusive;
-                else
-                    nTotalIterations = TIndex.CreateChecked(-1); //ParallelLoopStateStopped! We can't determine this if we were stopped..
-                return nTotalIterations;
-            }
-        }
-
-        private abstract class ForeachWorker<TSource, TValue>: Worker<IEnumerator, TValue>
-        {
-            private readonly IEnumerable<TSource>? _partitionSource;
-
-            protected ForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TSource>? partitionSource, IWorkerBodyFactory<TValue> workerBodyFactory)
-                : base(forkJoinContextId, sharedPStateFlags, workerBodyFactory)
-            {
-                _partitionSource = partitionSource;
-            }
-
-            protected override void Finally(IWorkerBody<TValue> workerBody, ref IEnumerator partitionState, in bool replicationDelegateYieldedBeforeCompletion)
-            {
-                if (replicationDelegateYieldedBeforeCompletion) return;
-
-                if (partitionState is IDisposable partitionToDispose)
-                    partitionToDispose.Dispose();
-                base.Finally(workerBody, ref partitionState, replicationDelegateYieldedBeforeCompletion);
-            }
-
-            protected sealed override void LoopBody(IWorkerBody<TValue> workerBody, int loopTimeout,
-                ref IEnumerator partitionState, ref bool replicationDelegateYieldedBeforeCompletion)
-            {
-                // first check if there's saved state from a previous replica that we might be replacing.
-                // the only state to be passed down in such a transition is the enumerator
-                if (partitionState is not IEnumerator<TSource> myPartition)
-                {
-                    myPartition = _partitionSource!.GetEnumerator();
-                    partitionState = myPartition;
-                }
-
-                if (myPartition == null)
-                    throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
-
-                while (myPartition.MoveNext())
-                {
-                    TSource value = myPartition.Current;
-
-                    Body(workerBody, value);
-
-                    if (ShouldBreak(value)) break;
-
-                    // Cooperative multitasking:
-                    // Check if allowed loop time is exceeded, if so save current state and return.
-                    // The task replicator will queue up a replacement task. Note that we don't do this on the root task.
-                    if (CheckTimeoutReached(loopTimeout))
-                    {
-                        replicationDelegateYieldedBeforeCompletion = true;
-                        break;
-                    }
-                }
-            }
-
-            protected abstract void Body(IWorkerBody<TValue> workerBody, TSource value);
-
-            protected abstract bool ShouldBreak(TSource value);
-        }
-
-        private sealed class OrderablePartitionerForeachWorker<TValue>
-            : ForeachWorker<KeyValuePair<long, TValue>, TValue>,
-                IWorkerFactory<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, long>
-        {
-            private OrderablePartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IEnumerable<KeyValuePair<long, TValue>>? partitionSource,
-                IWorkerBodyFactory<TValue> workerBodyFactory)
-                : base(forkJoinContextId, sharedPStateFlags, partitionSource, workerBodyFactory)
-            {
-            }
-
-            protected override bool ShouldBreak(KeyValuePair<long, TValue> value) => SharedPStateFlags.ShouldExitLoop(value.Key);
-
-            protected override void Body(IWorkerBody<TValue> workerBody, KeyValuePair<long, TValue> value)
-            {
-                if (workerBody is IWorkerBodyWithIndex<TValue, long> workerBodyWithIndex)
-                {
-                    workerBodyWithIndex.SetIteration(value.Key);
-                }
-                workerBody.Body(value.Value);
-            }
-
-            public static Worker<IEnumerator, TValue> CreateWorker(
-                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IEnumerable<KeyValuePair<long, TValue>> source,
-                IWorkerBodyFactory<TValue> workerBodyFactory) =>
-                new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
-
-            public static long GetStartIndex(IEnumerable<KeyValuePair<long, TValue>> source) => 0;
-
-            public static long GetEndIndex(IEnumerable<KeyValuePair<long, TValue>> source)  => 0;
-
-            public static long GetTotalIterations(IEnumerable<KeyValuePair<long, TValue>> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
-        }
-
-        private sealed class PartitionerForeachWorker<TValue>
-            : ForeachWorker<TValue, TValue>,
-                IWorkerFactory<IEnumerable<TValue>, IEnumerator, TValue, long>
-        {
-            private PartitionerForeachWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags,
-                IEnumerable<TValue>? partitionerSource, IWorkerBodyFactory<TValue> workerBodyFactory)
-                : base(forkJoinContextId, sharedPStateFlags, partitionerSource, workerBodyFactory)
-            {
-            }
-
-            protected override void Body(IWorkerBody<TValue> workerBody, TValue value) => workerBody.Body(value);
-
-            protected override bool ShouldBreak(TValue value) =>
-                SharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone;
-
-            public static Worker<IEnumerator, TValue> CreateWorker(
-                int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TValue> source,
-                IWorkerBodyFactory<TValue> workerBodyFactory) =>
-                new PartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
-
-            public static long GetStartIndex(IEnumerable<TValue> source) => 0;
-
-            public static long GetEndIndex(IEnumerable<TValue> source)  => 0;
-
-            public static long GetTotalIterations(IEnumerable<TValue> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
+            return ForCore(fromInclusive, toExclusive, parallelOptions, workerBodyFactory);
         }
 
         #endregion
@@ -1524,7 +1739,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
-            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
+            return ForEachCore(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1604,7 +1819,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
-            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
+            return ForEachCore(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1684,7 +1899,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateAndIndexFactory<TSource, long>(body);
-            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
+            return ForEachCore(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1809,7 +2024,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
+            return ForEachCore(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -1933,7 +2148,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithEveryThingFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            return PartitionerForEachWorker(Partitioner.Create(source), parallelOptions, workerBodyFactory);
+            return ForEachCore(Partitioner.Create(source), parallelOptions, workerBodyFactory);
         }
 
 
@@ -2278,7 +2493,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithSimpleBodyFactory<TSource>(body);
-            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
+            return ForEachCore(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2342,7 +2557,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(body);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateFactory<TSource, long>(body);
-            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
+            return ForEachCore(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2414,7 +2629,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithStateAndIndexFactory<TSource, long>(body);
-            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
+            return ForEachCore(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2503,7 +2718,7 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(localFinally);
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithLocalFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
+            return ForEachCore(source, parallelOptions, workerBodyFactory);
         }
 
         /// <summary>
@@ -2600,230 +2815,7 @@ namespace System.Threading.Tasks
             }
 
             IWorkerBodyFactory<TSource> workerBodyFactory = new WorkerWithEveryThingFactory<TSource, long, TLocal>(body, localInit, localFinally);
-            return PartitionerForEachWorker(source, parallelOptions, workerBodyFactory);
-        }
-
-        #endregion
-
-        // Main worker method for Parallel.ForEach() calls w/ Partitioners.
-        private static ParallelLoopResult PartitionerForEachWorker<TValue>(Partitioner<TValue> source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
-        {
-            if (source is OrderablePartitioner<TValue> orderedSource)
-            {
-                return PartitionerForEachWorker(orderedSource, parallelOptions, workerBodyFactory);
-            }
-
-            if (!source.SupportsDynamicPartitions)
-            {
-                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
-            }
-
-            IEnumerable<TValue>? partitionerSource = source.GetDynamicPartitions();
-            if (partitionerSource == null)
-            {
-                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
-            }
-            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
-
-            return LoopCore<IEnumerable<TValue>, IEnumerator, TValue, PartitionerForeachWorker<TValue>, long>(
-                partitionerSource, parallelOptions, workerBodyFactory, OperationType);
-        }
-
-        // Main worker method for Parallel.ForEach() calls w/ Partitioners.
-        private static ParallelLoopResult PartitionerForEachWorker<TValue>(OrderablePartitioner<TValue> orderedSource, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
-        {
-            if (!orderedSource.SupportsDynamicPartitions)
-            {
-                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerNotDynamic);
-            }
-
-            IEnumerable<KeyValuePair<long, TValue>>? orderablePartitionerSource = orderedSource.GetOrderableDynamicPartitions();
-            if (orderablePartitionerSource == null)
-            {
-                throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
-            }
-
-            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
-            return LoopCore<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, OrderablePartitionerForeachWorker<TValue>, long>(
-                orderablePartitionerSource, parallelOptions, workerBodyFactory, OperationType);
-        }
-
-        #region Helpers
-
-        private static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
-            ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
-        {
-            Box<OperationCanceledException> oce = new() { Value = null };
-
-            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
-            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
-                ? default
-                : parallelOptions.CancellationToken.UnsafeRegister((o) =>
-                {
-                    // Record our cancellation before stopping processing
-                    oce.Value = new OperationCanceledException(parallelOptions.CancellationToken);
-                    // Cause processing to stop
-                    sharedPStateFlags.Cancel();
-                }, state: null);
-            return oce;
-        }
-
-        private static bool CheckTimeoutReached(int timeoutOccursAt)
-        {
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < timeoutOccursAt)
-                return false;
-
-            if (0 > timeoutOccursAt && 0 < currentMillis)
-                return false;
-
-            return true;
-        }
-
-
-        private static int ComputeTimeoutPoint(int timeoutLength)
-        {
-            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
-            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
-            // in CheckTimeoutReached(..):
-            unchecked
-            {
-                return Environment.TickCount + timeoutLength;
-            }
-        }
-
-        /// <summary>
-        /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
-        /// then get one such exception (the first one). Otherwise, return null.
-        /// </summary>
-        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection exceptions,
-                                                                                      CancellationToken cancelToken)
-        {
-            // If collection is empty - no match:
-            if (exceptions == null || exceptions.Count == 0)
-                return null;
-
-            // If token is not cancelled, it can not be part of an exception:
-            if (!cancelToken.IsCancellationRequested)
-                return null;
-
-            // Check all exceptions:
-            Exception? first = null;
-            foreach (object? exObj in exceptions)
-            {
-                Debug.Assert(exObj is Exception);
-                Exception ex = (Exception)exObj;
-
-                first ??= ex;
-
-                // If mismatch found, fail-fast:
-                OperationCanceledException? ocEx = ex as OperationCanceledException;
-                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
-                    return null;
-            }
-
-            // All exceptions are OCEs with this token, let's just pick the first:
-            Debug.Assert(first is OperationCanceledException);
-            return (OperationCanceledException)first;
-        }
-
-
-        /// <summary>
-        /// IF exceptions are all OperationCanceledExceptions with the specified cancelToken,
-        /// THEN throw that unique OperationCanceledException (pick any);
-        /// OTHERWISE throw the specified otherException.
-        /// </summary>
-        private static void ThrowSingleCancellationExceptionOrOtherException(ICollection exceptions,
-                                                                             CancellationToken cancelToken,
-                                                                             Exception otherException)
-        {
-            OperationCanceledException? reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
-            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
-        }
-
-        private static int LogEtwEventInvokeBegin(Action[] actions)
-        {
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
-
-            forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-            ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
-                actions.Length);
-
-            return forkJoinContextID;
-        }
-
-        private static int LogEtwEventParallelLoopBegin<TIndex>(
-            ParallelEtwProvider.ForkJoinOperationType operationType, TIndex fromInclusive, TIndex toExclusive)
-            where TIndex: INumber<TIndex>
-        {
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
-
-            forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
-            ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, operationType,
-                fromInclusive, toExclusive);
-
-            return forkJoinContextID;
-        }
-
-        private static void LogEtwEventParallelFork(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        private static void LogEtwEventParallelJoin(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        private static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
-            where TIndex: INumber<TIndex>
-        {
-            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
-        }
-
-
-        private static void LogEtwEventForParallelInvokeEnd(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        private static Action[] CopyActionArray(Action[] actions)
-        {
-            Action[] actionsCopy = new Action[actions.Length];
-            for (int i = 0; i < actionsCopy.Length; i++)
-            {
-                if (actions[i] == null)
-                {
-                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
-                }
-
-                actionsCopy[i] = actions[i];
-            }
-
-            return actionsCopy;
-        }
-
-        private static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
-        {
-            int sb_status = sharedPStateFlags.LoopStateFlags;
-            result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
-            if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
-            {
-                result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
-            }
+            return ForEachCore(source, parallelOptions, workerBodyFactory);
         }
 
         #endregion
