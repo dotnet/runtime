@@ -253,8 +253,6 @@ namespace ILCompiler
 
             if (elems.Count > 0)
             {
-                // TODO: JIT should be able to handle PGO data that only contains histograms.
-                elems.Insert(0, new PgoSchemaElem { InstrumentationKind = PgoInstrumentationKind.BasicBlockIntCount, ILOffset = 0, Count = 1, DataLong = 5 });
                 return elems.ToArray();
             }
             else
