@@ -18,7 +18,7 @@ typedef struct MonoComponentMarshalILgen {
 	      MonoType **conv_arg_type, MarshalAction action,  MonoMarshalLightweightCallbacks* lightweigth_cb);
 	void (*install_callbacks_mono) (IlgenCallbacksToMono *callbacks);
 #ifndef ENABLE_ILGEN
-	void noilgen_init_heavyweight (void);
+	void (*noilgen_init_heavyweight) (void);
 #endif
 } MonoComponentMarshalILgen;
 
