@@ -1950,6 +1950,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
+    fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -4803,6 +4804,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doBranchOpt)
             {
+                // Optimize redundant branches
+                //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
@@ -4811,6 +4814,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Remove common sub-expressions
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            }
+
+            // Assertion prop can do arbitrary statement remorphing, which
+            // can clone code and disrupt our simpleminded SSA accounting.
+            //
+            // So, disable the ssa checks.
+            //
+            if (fgSsaChecksEnabled)
+            {
+                JITDUMP("Disabling SSA checking before assertion prop\n");
+                fgSsaChecksEnabled = false;
             }
 
             if (doAssertionProp)
@@ -5346,6 +5360,7 @@ void Compiler::ResetOptAnnotations()
     m_blockToEHPreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
+    fgSsaChecksEnabled   = false;
 
     for (BasicBlock* const block : Blocks())
     {
