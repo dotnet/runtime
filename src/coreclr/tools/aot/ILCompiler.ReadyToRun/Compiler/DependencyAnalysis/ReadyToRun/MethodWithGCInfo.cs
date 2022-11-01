@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Internal.JitInterface;
+using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -29,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
+        private List<PgoSchemaElem[]> _synthesizedPgoDataDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -85,6 +87,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_methodCode == null);
             _methodCode = data;
+        }
+
+        public void AddSynthesizedPgoDataDependency(PgoSchemaElem[] schema)
+        {
+            if (_synthesizedPgoDataDependencies == null)
+                _synthesizedPgoDataDependencies = new List<PgoSchemaElem[]>();
+
+            _synthesizedPgoDataDependencies.Add(schema);
         }
 
         public MethodDesc Method => _method;
@@ -270,6 +280,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+            }
+
+            if (_synthesizedPgoDataDependencies != null)
+            {
+                // We should not add anything to this list unless we are embedding synthesized PGO data.
+                Debug.Assert(factory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to exist with synthesized PGO data dependency");
+
+                foreach (ISymbolNode node in factory.InstrumentationDataTable.ComputeSchemaDependencies(_synthesizedPgoDataDependencies))
+                {
+                    dependencyList.Add(node, "Part of synthesized PGO data");
+                }
             }
 
             return dependencyList;

@@ -21,7 +21,7 @@ namespace ILCompiler
         public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
         {
             _module = module;
-            _profileData = profileDataManager.GetMethodsForModuleDesc(module);
+            _profileData = profileDataManager.GetInputProfileDataMethodsForModule(module);
             _profileDrivenPartialNGen = profileDrivenPartialNGen;
         }
 

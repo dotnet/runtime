@@ -94,9 +94,20 @@ namespace ILCompiler
             }
         }
 
-        public IEnumerable<MethodDesc> GetMethodsForModuleDesc(ModuleDesc moduleDesc)
+        public IEnumerable<MethodDesc> GetInputProfileDataMethodsForModule(ModuleDesc moduleDesc)
         {
             return _inputProfileData.GetPlacedMethodsForModuleDesc(moduleDesc);
+        }
+
+        public IEnumerable<MethodDesc> GetSynthesizedProfileDataMethodsForModule(ModuleDesc moduleDesc)
+        {
+            if (_synthesizedProfileData == null)
+                return Array.Empty<MethodDesc>();
+
+            lock (_synthesizedProfileData)
+            {
+                return _synthesizedProfileData.GetPlacedMethodsForModuleDesc(moduleDesc).ToArray();
+            }
         }
 
         public bool IsMethodInInputProfileData(MethodDesc method)
@@ -122,10 +133,12 @@ namespace ILCompiler
         }
 
         public bool EmbedPgoDataInR2RImage { get; }
+        public bool SynthesizeRandomPgoData => _synthesizedProfileData != null;
         public CallChainProfile CallChainProfile => _callChainProfile;
 
-        public MethodProfileData GetAllowSynthesis(Compilation comp, MethodDesc method)
+        public MethodProfileData GetAllowSynthesis(Compilation comp, MethodDesc method, out bool isSynthesized)
         {
+            isSynthesized = false;
             MethodProfileData existingProfileData = this[method];
             if (_synthesizedProfileData == null || existingProfileData != null)
             {
@@ -137,6 +150,7 @@ namespace ILCompiler
             if (method is EcmaMethod or MethodForInstantiatedType or InstantiatedMethod)
             {
                 profileData = new MethodProfileData(method, MethodProfilingDataFlags.ReadMethodCode, 0, null, 0, SynthesizeSchema(comp, method));
+                isSynthesized = true;
 
                 lock (_synthesizedProfileData)
                 {
@@ -351,7 +365,7 @@ namespace ILCompiler
             public IEnumerable<MethodDesc> GetPlacedMethodsForModuleDesc(ModuleDesc moduleDesc)
             {
                 if (_placedProfileMethods.TryGetValue(moduleDesc, out var precomputedProfileData))
-                    return precomputedProfileData.ToArray();
+                    return precomputedProfileData;
 
                 return Array.Empty<MethodDesc>();
             }

@@ -3997,7 +3997,12 @@ namespace Internal.JitInterface
             if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
             {
 #if READYTORUN
-                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc)?.SchemaData;
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+
+                if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
+                {
+                    _methodCodeNode.AddSynthesizedPgoDataDependency(pgoResultsSchemas);
+                }
 #else
                 PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;
 #endif

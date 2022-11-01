@@ -22,14 +22,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly NodeFactory _factory;
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
-        private readonly MethodDesc[] _instrumentationDataMethods;
         private readonly ProfileDataManager _profileDataManager;
 
-        public InstrumentationDataTableNode(NodeFactory factory, MethodDesc[] instrumentationDataMethods, ProfileDataManager profileDataManager)
+        public InstrumentationDataTableNode(NodeFactory factory, ProfileDataManager profileDataManager)
             : base(factory.Target)
         {
             _factory = factory;
-            _instrumentationDataMethods = instrumentationDataMethods;
             _profileDataManager = profileDataManager;
         }
 
@@ -184,12 +182,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstrumentationDataTable");
         }
 
+        public IEnumerable<ISymbolNode> ComputeSchemaDependencies(IEnumerable<PgoSchemaElem[]> schemas)
+        {
+            PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
+            foreach (PgoSchemaElem[] schema in schemas)
+            {
+                PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
+            }
+
+            return pgoEmitter.ReferencedImports;
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
-            foreach (MethodDesc method in _instrumentationDataMethods)
+            foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)
             {
-                PgoProcessor.EncodePgoData(_profileDataManager[method].SchemaData, pgoEmitter, false);
+                foreach (MethodDesc method in _profileDataManager.GetInputProfileDataMethodsForModule(inputModule))
+                {
+                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
+                    if (schema != null)
+                    {
+                        PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
+                    }
+                }
             }
             DependencyListEntry[] symbols = new DependencyListEntry[pgoEmitter.ReferencedImports.Count];
             for (int i = 0; i < symbols.Length; i++)
@@ -199,7 +215,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return new DependencyList(symbols);
         }
-
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -217,7 +232,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Dictionary<byte[], BlobVertex> uniqueInstrumentationData = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodDesc method in _instrumentationDataMethods)
+            HashSet<MethodDesc> methodsToInsert = new();
+            foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)
+            {
+                foreach (MethodDesc method in _profileDataManager.GetInputProfileDataMethodsForModule(inputModule))
+                {
+                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
+                    if (schema != null)
+                    {
+                        methodsToInsert.Add(method);
+                    }
+                }
+
+                foreach (MethodDesc method in _profileDataManager.GetSynthesizedProfileDataMethodsForModule(inputModule))
+                {
+                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
+                    if (schema != null)
+                    {
+                        bool added = methodsToInsert.Add(method);
+                        Debug.Assert(added, "Only expected to see synthesized profile data for methods without input profile data");
+                    }
+                }
+            }
+
+            MethodDesc[] methods = methodsToInsert.ToArray();
+            methods.MergeSort(TypeSystemComparer.Instance.Compare);
+
+            foreach (MethodDesc method in methods)
             {
                 pgoEmitter.Clear();
                 PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
