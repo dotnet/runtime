@@ -20,12 +20,17 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- The middleware doesn't need to be built for browser-wasm, so remove the relevant properties.
+         Also, due to https://github.com/dotnet/runtime/issues/77707 RunAOTCompilation needs to be removed
+         as a workaround. -->
     <ProjectReference
               Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj"
+              GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
               AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness);NewtonsoftJsonVersion=$(NewtonsoftJsonVersion)"
               ReferenceOutputAssembly="false"/>
     <ProjectReference
               Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj"
+              GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
               AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness)"
               ReferenceOutputAssembly="false"/>
     <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
