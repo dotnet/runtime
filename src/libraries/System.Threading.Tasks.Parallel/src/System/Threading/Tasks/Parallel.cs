@@ -125,182 +125,6 @@ namespace System.Threading.Tasks
         }
     }  // class ParallelOptions
 
-     internal static class ParallelHelpers
-    {
-        public static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
-            ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
-        {
-            Box<OperationCanceledException> oce = new() { Value = null };
-
-            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
-            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
-                ? default
-                : parallelOptions.CancellationToken.UnsafeRegister((_) =>
-                {
-                    // Record our cancellation before stopping processing
-                    oce.Value = new OperationCanceledException(parallelOptions.CancellationToken);
-                    // Cause processing to stop
-                    sharedPStateFlags.Cancel();
-                }, state: null);
-            return oce;
-        }
-
-        public static bool CheckTimeoutReached(int timeoutOccursAt)
-        {
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < timeoutOccursAt)
-                return false;
-
-            if (0 > timeoutOccursAt && 0 < currentMillis)
-                return false;
-
-            return true;
-        }
-
-        public static int ComputeTimeoutPoint(int timeoutLength)
-        {
-            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
-            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
-            // in CheckTimeoutReached(..):
-            unchecked
-            {
-                return Environment.TickCount + timeoutLength;
-            }
-        }
-
-        /// <summary>
-        /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
-        /// then get one such exception (the first one). Otherwise, return null.
-        /// </summary>
-        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection exceptions,
-            CancellationToken cancelToken)
-        {
-            // If collection is empty - no match:
-            if (exceptions == null || exceptions.Count == 0)
-                return null;
-
-            // If token is not cancelled, it can not be part of an exception:
-            if (!cancelToken.IsCancellationRequested)
-                return null;
-
-            // Check all exceptions:
-            Exception? first = null;
-            foreach (object? exObj in exceptions)
-            {
-                Debug.Assert(exObj is Exception);
-                Exception ex = (Exception)exObj;
-
-                first ??= ex;
-
-                // If mismatch found, fail-fast:
-                OperationCanceledException? ocEx = ex as OperationCanceledException;
-                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
-                    return null;
-            }
-
-            // All exceptions are OCEs with this token, let's just pick the first:
-            Debug.Assert(first is OperationCanceledException);
-            return (OperationCanceledException)first;
-        }
-
-        /// <summary>
-        /// IF exceptions are all OperationCanceledExceptions with the specified cancelToken,
-        /// THEN throw that unique OperationCanceledException (pick any);
-        /// OTHERWISE throw the specified otherException.
-        /// </summary>
-        public static void ThrowSingleCancellationExceptionOrOtherException(ICollection exceptions,
-            CancellationToken cancelToken,
-            Exception otherException)
-        {
-            OperationCanceledException? reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
-            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
-        }
-
-        public static int LogEtwEventInvokeBegin(Action[] actions)
-        {
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
-
-            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
-            ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
-                actions.Length);
-
-            return forkJoinContextID;
-        }
-
-        public static int LogEtwEventParallelLoopBegin<TIndex>(
-            ParallelEtwProvider.ForkJoinOperationType operationType, TIndex fromInclusive, TIndex toExclusive)
-            where TIndex: INumber<TIndex>
-        {
-            // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
-
-            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
-            ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, operationType,
-                fromInclusive, toExclusive);
-
-            return forkJoinContextID;
-        }
-
-        public static void LogEtwEventParallelFork(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        public static void LogEtwEventParallelJoin(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        public static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
-            where TIndex: INumber<TIndex>
-        {
-            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
-        }
-
-        public static void LogEtwEventForParallelInvokeEnd(int forkJoinContextID)
-        {
-            if (!ParallelEtwProvider.Log.IsEnabled()) return;
-
-            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
-        }
-
-        public static Action[] CopyActionArray(Action[] actions)
-        {
-            Action[] actionsCopy = new Action[actions.Length];
-            for (int i = 0; i < actionsCopy.Length; i++)
-            {
-                if (actions[i] == null)
-                {
-                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
-                }
-
-                actionsCopy[i] = actions[i];
-            }
-
-            return actionsCopy;
-        }
-
-        public static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
-        {
-            int sb_status = sharedPStateFlags.LoopStateFlags;
-            result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
-            if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
-            {
-                result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
-            }
-        }
-    }
-
     #region Worker Bodies
 
     internal interface IWorkerBody<in TValue>
@@ -2819,5 +2643,181 @@ namespace System.Threading.Tasks
         }
 
         #endregion
+    }
+
+    internal static class ParallelHelpers
+    {
+        public static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
+            ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
+        {
+            Box<OperationCanceledException> oce = new() { Value = null };
+
+            // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
+            ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
+                ? default
+                : parallelOptions.CancellationToken.UnsafeRegister((_) =>
+                {
+                    // Record our cancellation before stopping processing
+                    oce.Value = new OperationCanceledException(parallelOptions.CancellationToken);
+                    // Cause processing to stop
+                    sharedPStateFlags.Cancel();
+                }, state: null);
+            return oce;
+        }
+
+        public static bool CheckTimeoutReached(int timeoutOccursAt)
+        {
+            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
+            int currentMillis = Environment.TickCount;
+
+            if (currentMillis < timeoutOccursAt)
+                return false;
+
+            if (0 > timeoutOccursAt && 0 < currentMillis)
+                return false;
+
+            return true;
+        }
+
+        public static int ComputeTimeoutPoint(int timeoutLength)
+        {
+            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
+            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
+            // in CheckTimeoutReached(..):
+            unchecked
+            {
+                return Environment.TickCount + timeoutLength;
+            }
+        }
+
+        /// <summary>
+        /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
+        /// then get one such exception (the first one). Otherwise, return null.
+        /// </summary>
+        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection exceptions,
+            CancellationToken cancelToken)
+        {
+            // If collection is empty - no match:
+            if (exceptions == null || exceptions.Count == 0)
+                return null;
+
+            // If token is not cancelled, it can not be part of an exception:
+            if (!cancelToken.IsCancellationRequested)
+                return null;
+
+            // Check all exceptions:
+            Exception? first = null;
+            foreach (object? exObj in exceptions)
+            {
+                Debug.Assert(exObj is Exception);
+                Exception ex = (Exception)exObj;
+
+                first ??= ex;
+
+                // If mismatch found, fail-fast:
+                OperationCanceledException? ocEx = ex as OperationCanceledException;
+                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
+                    return null;
+            }
+
+            // All exceptions are OCEs with this token, let's just pick the first:
+            Debug.Assert(first is OperationCanceledException);
+            return (OperationCanceledException)first;
+        }
+
+        /// <summary>
+        /// IF exceptions are all OperationCanceledExceptions with the specified cancelToken,
+        /// THEN throw that unique OperationCanceledException (pick any);
+        /// OTHERWISE throw the specified otherException.
+        /// </summary>
+        public static void ThrowSingleCancellationExceptionOrOtherException(ICollection exceptions,
+            CancellationToken cancelToken,
+            Exception otherException)
+        {
+            OperationCanceledException? reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
+            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
+        }
+
+        public static int LogEtwEventInvokeBegin(Action[] actions)
+        {
+            int forkJoinContextID = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+
+            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
+                actions.Length);
+
+            return forkJoinContextID;
+        }
+
+        public static int LogEtwEventParallelLoopBegin<TIndex>(
+            ParallelEtwProvider.ForkJoinOperationType operationType, TIndex fromInclusive, TIndex toExclusive)
+            where TIndex: INumber<TIndex>
+        {
+            // ETW event for Parallel For begin
+            int forkJoinContextID = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+
+            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
+                forkJoinContextID, operationType,
+                fromInclusive, toExclusive);
+
+            return forkJoinContextID;
+        }
+
+        public static void LogEtwEventParallelFork(int forkJoinContextID)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+        }
+
+        public static void LogEtwEventParallelJoin(int forkJoinContextID)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+        }
+
+        public static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
+            where TIndex: INumber<TIndex>
+        {
+            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
+        }
+
+        public static void LogEtwEventForParallelInvokeEnd(int forkJoinContextID)
+        {
+            if (!ParallelEtwProvider.Log.IsEnabled()) return;
+
+            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+        }
+
+        public static Action[] CopyActionArray(Action[] actions)
+        {
+            Action[] actionsCopy = new Action[actions.Length];
+            for (int i = 0; i < actionsCopy.Length; i++)
+            {
+                if (actions[i] == null)
+                {
+                    throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
+                }
+
+                actionsCopy[i] = actions[i];
+            }
+
+            return actionsCopy;
+        }
+
+        public static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
+        {
+            int sb_status = sharedPStateFlags.LoopStateFlags;
+            result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
+            if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
+            {
+                result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+            }
+        }
     }
 }
