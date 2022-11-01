@@ -57,7 +57,7 @@ The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it m
 #### Ninja
 
 * Install Ninja in one of the three following ways
-    * Ninja is included with Visual Studio. ARM64 Windows should use this method as other options are currently not available for ARM64.
+  * Ninja is included with Visual Studio. ARM64 Windows should use this method as other options are currently not available for ARM64.
   * [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
   * [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
 
