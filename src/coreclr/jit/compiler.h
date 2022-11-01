@@ -5767,7 +5767,6 @@ private:
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
-    GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);

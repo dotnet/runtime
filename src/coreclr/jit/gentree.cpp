@@ -15403,26 +15403,15 @@ GenTree* Compiler::gtNewTempAssign(
     if (genActualType(valTyp) != genActualType(dstTyp))
     {
         // Plus some other exceptions that are apparently legal:
-        // 1) TYP_REF or BYREF = TYP_I_IMPL
+        // - TYP_REF or BYREF = TYP_I_IMPL
         bool ok = false;
         if (varTypeIsGC(dstTyp) && (valTyp == TYP_I_IMPL))
         {
             ok = true;
         }
-        // 2) TYP_DOUBLE = TYP_FLOAT or TYP_FLOAT = TYP_DOUBLE
-        else if (varTypeIsFloating(dstTyp) && varTypeIsFloating(valTyp))
-        {
-            ok = true;
-        }
-        // 3) TYP_BYREF = TYP_REF when object stack allocation is enabled
+        // - TYP_BYREF = TYP_REF when object stack allocation is enabled
         else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
-            ok = true;
-        }
-        else if (!varTypeIsGC(dstTyp) && (genTypeSize(valTyp) == genTypeSize(dstTyp)))
-        {
-            // We can have assignments that require a change of register file, e.g. for arguments
-            // and call returns. Lowering and Codegen will handle these.
             ok = true;
         }
         else if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_INT))
@@ -15430,11 +15419,6 @@ GenTree* Compiler::gtNewTempAssign(
             // It could come from `ASG(struct, 0)` that was propagated to `RETURN struct(0)`,
             // and now it is merging to a struct again.
             assert(tmp == genReturnLocal);
-            ok = true;
-        }
-        else if (varTypeIsSIMD(dstTyp) && (valTyp == TYP_STRUCT))
-        {
-            assert(val->IsCall());
             ok = true;
         }
 
@@ -15466,7 +15450,6 @@ GenTree* Compiler::gtNewTempAssign(
 
     GenTree* asg;
     GenTree* dest = gtNewLclvNode(tmp, dstTyp);
-    dest->gtFlags |= GTF_VAR_DEF;
 
     // With first-class structs, we should be propagating the class handle on all non-primitive
     // struct types. We don't have a convenient way to do that for all SIMD temps, since some
@@ -15502,18 +15485,13 @@ GenTree* Compiler::gtNewTempAssign(
         {
             assert(valx->gtOper != GT_OBJ);
         }
-        dest->gtFlags |= GTF_DONT_CSE;
+
         valx->gtFlags |= GTF_DONT_CSE;
         asg = impAssignStruct(dest, val, valStructHnd, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
     {
-        // We may have a scalar type variable assigned a struct value, e.g. a 'genReturnLocal'
-        // when the ABI calls for returning a struct as a primitive type.
-        // TODO-1stClassStructs: When we stop "lying" about the types for ABI purposes, the
-        // 'genReturnLocal' should be the original struct type.
-        assert(!varTypeIsStruct(valTyp) || ((valStructHnd != NO_CLASS_HANDLE) &&
-                                            (typGetObjLayout(valStructHnd)->GetSize() == genTypeSize(varDsc))));
+        assert(!varTypeIsStruct(valTyp));
         asg = gtNewAssignNode(dest, val);
     }
 
