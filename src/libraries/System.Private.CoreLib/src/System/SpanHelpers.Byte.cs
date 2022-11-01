@@ -989,13 +989,21 @@ namespace System
                 {
                     ref byte currentFirst = ref Unsafe.Add(ref first, i);
                     ref byte currentSecond = ref Unsafe.Add(ref second, i);
-                    if (currentFirst != currentSecond) return i + 0;
-                    if (Unsafe.Add(ref currentFirst, 1) != Unsafe.Add(ref currentSecond, 1)) return i + 1;
-                    if (Unsafe.Add(ref currentFirst, 2) != Unsafe.Add(ref currentSecond, 2)) return i + 2;
-                    if (Unsafe.Add(ref currentFirst, 3) != Unsafe.Add(ref currentSecond, 3)) return i + 3;
+                    if (currentFirst != currentSecond) goto Found0;
+                    if (Unsafe.Add(ref currentFirst, 1) != Unsafe.Add(ref currentSecond, 1)) goto Found1;
+                    if (Unsafe.Add(ref currentFirst, 2) != Unsafe.Add(ref currentSecond, 2)) goto Found2;
+                    if (Unsafe.Add(ref currentFirst, 3) != Unsafe.Add(ref currentSecond, 3)) goto Found3;
                 }
 
                 return length;
+            Found0:
+                return i;
+            Found1:
+                return i + 1;
+            Found2:
+                return i + 2;
+            Found3:
+                return i + 3;
             }
 
             Debug.Assert(length >= (uint)Vector128<byte>.Count);
