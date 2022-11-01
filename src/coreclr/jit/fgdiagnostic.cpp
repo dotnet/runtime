@@ -831,7 +831,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         fprintf(fgxFile, "\n    bytesOfIL=\"%d\"", info.compILCodeSize);
         fprintf(fgxFile, "\n    localVarCount=\"%d\"", lvaCount);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
