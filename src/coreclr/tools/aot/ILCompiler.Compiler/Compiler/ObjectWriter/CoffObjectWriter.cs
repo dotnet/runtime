@@ -575,20 +575,33 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode)
         {
             DebugEHClauseInfo[] clauses = null;
+            CodeViewSymbolsBuilder debugSymbolsBuilder;
 
             if (debugNode is INodeWithCodeInfo nodeWithCodeInfo)
             {
                 clauses = nodeWithCodeInfo.DebugEHClauseInfos;
             }
 
-            _debugSymbolsBuilder.EmitSubprogramInfo(
+            if (ShouldShareSymbol((ObjectNode)debugNode))
+            {
+                // If the method is emitted in COMDAT section then we need to create an
+                // associated COMDAT section for the debugging symbols.
+                var sectionWriter = GetOrCreateSection(GetSharedSection(DebugSymbolSection, methodName));
+                debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
+            }
+            else
+            {
+                debugSymbolsBuilder = _debugSymbolsBuilder;
+            }
+
+            debugSymbolsBuilder.EmitSubprogramInfo(
                 methodName,
                 methodSymbol.Size,
                 methodTypeIndex,
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-            _debugSymbolsBuilder.EmitLineInfo(
+            debugSymbolsBuilder.EmitLineInfo(
                 _debugFileTableBuilder,
                 methodName,
                 methodSymbol.Size,
