@@ -5677,19 +5677,11 @@ void emitter::emitIns_R_R_I(
             return;
         }
 
-        if (emitComp->opts.OptimizationEnabled() && IsOptimisableLdrStr(ins, reg1, reg2, imm, size, fmt))
+        // If we have replaced an LDR or STR instruction with
+        // an LDP or STP then we do not want to carry on to
+        // emit the second instruction.
+        if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
         {
-            regNumber oldReg1 = emitLastIns->idReg1();
-            ssize_t   oldImm =
-                emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
-            instruction optIns       = (ins == INS_ldr) ? INS_ldp : INS_stp;
-            ssize_t     scaledOldImm = oldImm * size;
-
-            // Overwrite the "sub-optimal" instruction with the *optimised* instruction, directly
-            // into the output buffer.
-            emitIns_R_R_R_I(optIns, attr, oldReg1, reg1, reg2, scaledOldImm, INS_OPTS_NONE, EA_UNKNOWN, emitLastIns);
-
-            // And now stop here, as the second instruction descriptor is no longer emitted.
             return;
         }
     }
@@ -7740,19 +7732,12 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     assert(fmt != IF_NONE);
 
     // This handles LDR duplicate instructions
-    if (emitComp->opts.OptimizationEnabled() && IsOptimisableLdrStr(ins, reg1, reg2, imm, size, fmt))
+
+    // If we have replaced an LDR or STR instruction with
+    // an LDP or STP then we do not want to carry on to
+    // emit the second instruction.
+    if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
-        regNumber oldReg1 = emitLastIns->idReg1();
-        ssize_t   oldImm =
-            emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
-        instruction optIns       = (ins == INS_ldr) ? INS_ldp : INS_stp;
-        ssize_t     scaledOldImm = oldImm * size;
-
-        // Overwrite the "sub-optimal" instruction  with the *optimised* instruction, directly
-        // into the output buffer.
-        emitIns_R_R_R_I(optIns, attr, oldReg1, reg1, reg2, scaledOldImm, INS_OPTS_NONE, EA_UNKNOWN, emitLastIns);
-
-        // And now stop here, as the second instruction descriptor is no longer emitted.
         return;
     }
 
@@ -7989,19 +7974,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     assert(fmt != IF_NONE);
 
-    if (emitComp->opts.OptimizationEnabled() && IsOptimisableLdrStr(ins, reg1, reg2, imm, size, fmt))
+    // If we have replaced an LDR or STR instruction with
+    // an LDP or STP then we do not want to carry on to
+    // emit the second instruction.
+    if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
-        regNumber oldReg1 = emitLastIns->idReg1();
-        ssize_t   oldImm =
-            emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
-        instruction optIns       = (ins == INS_ldr) ? INS_ldp : INS_stp;
-        ssize_t     scaledOldImm = oldImm * size;
-
-        // Overwrite the "sub-optimal" instruction with the *optimised* instruction, directly
-        // into the output buffer.
-        emitIns_R_R_R_I(optIns, attr, oldReg1, reg1, reg2, scaledOldImm, INS_OPTS_NONE, EA_UNKNOWN, emitLastIns);
-
-        // And now stop here, as the second instruction descriptor is no longer emitted.
         return;
     }
 
@@ -16231,6 +16208,61 @@ bool emitter::IsRedundantLdStr(
 }
 
 //-----------------------------------------------------------------------------------
+// ReplacedLdrStr: Potentially, overwrite a previously-emitted
+//                 "ldr" or "str" instruction with an "ldp" or
+//                 "stp" instruction.
+//
+// Arguments:
+//     ins  - The instruction code
+//     attr - The emit attribute for the next instruction
+//     reg1 - Register 1 number
+//     reg2 - Register 2 number
+//     imm  - Immediate offset, prior to scaling by operand size
+//     size - Operand size
+//     fmt  - Instruction format
+//
+// Return Value:
+//    "true" if the previous instruction HAS been overwritten.
+
+bool emitter::ReplacedLdrStr(
+    instruction ins, emitAttr reg2Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    if (emitComp->opts.OptimizationEnabled() && IsOptimisableLdrStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        regNumber oldReg1 = emitLastIns->idReg1();
+        ssize_t   oldImm =
+            emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
+        instruction optIns       = (ins == INS_ldr) ? INS_ldp : INS_stp;
+        ssize_t     scaledOldImm = oldImm * size;
+
+        emitAttr reg1Attr;
+        switch (emitLastIns->idGCref())
+        {
+            case GCT_GCREF:
+                reg1Attr = EA_GCREF;
+                break;
+            case GCT_BYREF:
+                reg1Attr = EA_BYREF;
+                break;
+            default:
+                reg1Attr = emitLastIns->idOpSize();
+                break;
+        }
+
+        // Overwrite the "sub-optimal" instruction with the *optimised* instruction, directly
+        // into the output buffer.
+        emitIns_R_R_R_I(optIns, reg1Attr, oldReg1, reg1, reg2, scaledOldImm, INS_OPTS_NONE, reg2Attr, emitLastIns);
+
+        // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+//-----------------------------------------------------------------------------------
 // IsOptimisableLdrStr: Check if it is possible to optimise two "ldr" or "str"
 //                      instructions into a single "ldp" or "stp" instruction.
 //
@@ -16253,34 +16285,36 @@ bool emitter::IsOptimisableLdrStr(
         return false;
     }
 
+    if (ins != emitLastIns->idIns())
+    {
+        // Not successive ldr or str instructions
+        return false;
+    }
+
+    if (emitSizeOfInsDsc(emitLastIns) != sizeof(instrDesc))
+    {
+        // Not instruction descriptors of the same, standard size.
+        return false;
+    }
+
     regNumber prevReg1   = emitLastIns->idReg1();
     regNumber prevReg2   = emitLastIns->idReg2();
     insFormat lastInsFmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
 
-    // Signed, *raw* immediate value fits in 7 bits, so
-    // for LDP/ STP the raw value is from -64 to +63.
-    // For LDR/ STR, there are 9 bits, so we need to
-    // limit the range explicitly in software.
+    // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
+    // For LDR/ STR, there are 9 bits, so we need to limit the range explicitly in software.
     if ((imm < -64) || (imm > 63) || (prevImm < -64) || (prevImm > 63))
     {
-        // Then one or more of the immediate values is
-        // out of range, so we cannot optimise.
+        // Then one or more of the immediate values is out of range, so we cannot optimise.
         return false;
     }
 
     if ((!isGeneralRegisterOrZR(reg1)) || (!isGeneralRegisterOrZR(prevReg1)))
     {
-        // Either register 1 is not a general register
-        // or previous register 1 is not a general register
+        // Either register 1 is not a general register or previous register 1 is not a general register
         // or the zero register, so we cannot optimise.
-        return false;
-    }
-
-    if (!((ins == emitLastIns->idIns()) && (ins == INS_ldr || ins == INS_str)))
-    {
-        // Not successive ldr or str instructions
         return false;
     }
 
@@ -16308,18 +16342,10 @@ bool emitter::IsOptimisableLdrStr(
         return false;
     }
 
-    if (emitSizeOfInsDsc(emitLastIns) != sizeof(instrDesc))
+    if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
     {
-        // Not instruction descriptors of the
-        // same, standard size.
-        return false;
-    }
-
-    if (!((reg2 == prevReg2) && isGeneralRegisterOrSP(reg2)))
-    {
-        // The "register 2" numbers need to be
-        // the same AND general registers or
-        // the stack pointer.
+        // The "register 2" should be same as previous instruction and should either be a general register or stack
+        // pointer.
         return false;
     }
     return true;

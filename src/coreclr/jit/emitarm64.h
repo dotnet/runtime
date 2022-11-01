@@ -112,6 +112,8 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplacedLdrStr(
+    instruction ins, emitAttr reg2Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 bool IsOptimisableLdrStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 /************************************************************************
 *
