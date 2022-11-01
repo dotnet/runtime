@@ -138,9 +138,21 @@ namespace ILCompiler
 
         public MethodProfileData GetAllowSynthesis(Compilation comp, MethodDesc method, out bool isSynthesized)
         {
-            isSynthesized = false;
-            MethodProfileData existingProfileData = this[method];
-            if (_synthesizedProfileData == null || existingProfileData != null)
+            MethodProfileData existingProfileData = _inputProfileData[method];
+            if (existingProfileData != null || _synthesizedProfileData == null)
+            {
+                isSynthesized = false;
+                return existingProfileData;
+            }
+
+            isSynthesized = true;
+
+            lock (_synthesizedProfileData)
+            {
+                existingProfileData = _synthesizedProfileData[method];
+            }
+
+            if (existingProfileData != null)
             {
                 return existingProfileData;
             }
@@ -150,7 +162,6 @@ namespace ILCompiler
             if (method is EcmaMethod or MethodForInstantiatedType or InstantiatedMethod)
             {
                 profileData = new MethodProfileData(method, MethodProfilingDataFlags.ReadMethodCode, 0, null, 0, SynthesizeSchema(comp, method));
-                isSynthesized = true;
 
                 lock (_synthesizedProfileData)
                 {
