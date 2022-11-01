@@ -84,6 +84,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release", true)]
         [InlineData("Release", false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
         {
             string id = $"blz_deploy_on_build_{config}_{nativeRelink}";
@@ -164,6 +165,7 @@ namespace Wasm.Build.Tests
         [InlineData("Debug")]
         [InlineData("Release")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void WithNativeReference_AOTOnCommandLine(string config)
         {
             string id = $"blz_nativeref_aot_{config}";
