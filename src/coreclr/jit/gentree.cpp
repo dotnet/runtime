@@ -19334,9 +19334,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
         case GT_RSH:
         case GT_RSZ:
         {
-            assert(!varTypeIsByte(simdBaseType));
-            assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
-
             // float and double don't have actual instructions for shifting
             // so we'll just use the equivalent integer instruction instead.
 
@@ -19350,6 +19347,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 simdBaseJitType = CORINFO_TYPE_LONG;
                 simdBaseType    = TYP_LONG;
             }
+
+            assert(!varTypeIsByte(simdBaseType));
+            assert((op != GT_RSH) || (!varTypeIsUnsigned(simdBaseType) && !varTypeIsLong(simdBaseType)));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
             // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
