@@ -79,7 +79,7 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
-        if (HasAttribute(type, new string[] {"System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"}))
+        if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
         {
             var method = type.GetMethod("Invoke");
 
@@ -167,15 +167,20 @@ internal sealed class PInvokeTableGenerator
         }
     }
 
-    private static bool HasAttribute(Type type, string[] attributeNames)
+    private static bool HasAttribute(MemberInfo element, params string[] attributeNames)
     {
-        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
+        foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(element))
         {
             try
             {
                 for (int i = 0; i < attributeNames.Length; ++i)
-                    if (cattr.AttributeType.FullName == attributeNames [i])
+                {
+                    if (cattr.AttributeType.FullName == attributeNames [i] ||
+                        cattr.AttributeType.Name == attributeNames[i])
+                    {
                         return true;
+                    }
+                }
             }
             catch
             {
