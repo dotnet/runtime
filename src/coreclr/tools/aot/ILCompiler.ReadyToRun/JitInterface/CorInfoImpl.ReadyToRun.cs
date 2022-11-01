@@ -1589,12 +1589,15 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        pResult->helper = field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE :
-                            CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
-                        helperId = field.HasGCStaticBase ?
-                            ReadyToRunHelperId.GetGCStaticBase :
-                            ReadyToRunHelperId.GetNonGCStaticBase;
+                        if (field.HasGCStaticBase)
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
+                        } else
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
