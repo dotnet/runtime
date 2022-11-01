@@ -57,7 +57,7 @@
     <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
   </PropertyGroup>
 
-  <Import Project="$(TestArchiveTestsDir)*.helix.targets" />
+  <Import Project="$(TestArchiveRoot)**\*.helix.targets" />
 
   <PropertyGroup>
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk-node</_HelixLocalNodePath>

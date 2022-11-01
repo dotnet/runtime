@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <_TargetFrameworkForXHarness>$(AspNetCoreAppCurrent)</_TargetFrameworkForXHarness>
-    <HelixExtensionTargets>LocalEchoServer.helix.targets</HelixExtensionTargets>
+    <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
 
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
