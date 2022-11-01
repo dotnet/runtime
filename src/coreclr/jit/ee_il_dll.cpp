@@ -693,7 +693,7 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
-    if (0 == eeVarsCount && eeVars != nullptr)
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
     {
         // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
         // We also need to free the nonused memory.
