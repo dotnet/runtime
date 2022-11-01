@@ -77,7 +77,7 @@ namespace System.Threading.Tasks
 
             _nIncrementValue = nStep;
 
-            _nMaxIncrementValue = Parallel.DefaultLoopStride * nStep;
+            _nMaxIncrementValue = Parallel.DEFAULT_LOOP_STRIDE * nStep;
         }
 
         /// <summary>
