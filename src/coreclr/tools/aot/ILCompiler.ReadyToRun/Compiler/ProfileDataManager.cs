@@ -223,7 +223,12 @@ namespace ILCompiler
                     }
                     else
                     {
-                        entities = new List<TypeSystemEntityOrUnknown>(0);
+                        if (!targetMeth.IsTypicalMethodDefinition)
+                        {
+                            continue;
+                        }
+
+                        entities = SampleImplementers(targetMeth.OwningType, rand);
                         kind = PgoInstrumentationKind.HandleHistogramTypes;
                     }
 
@@ -264,26 +269,53 @@ namespace ILCompiler
         private List<TypeSystemEntityOrUnknown> SampleMethodsCompatibleWithDelegateInvocation(MethodSignature delegateSignature, Random rand)
         {
             Debug.Assert(_gdvEntityFinder != null);
+            IList<MethodDesc> compatible = _gdvEntityFinder.GetCompatibleWithDelegateInvoke(delegateSignature);
 
+            return PickSample(compatible, rand);
+        }
+
+        private List<TypeSystemEntityOrUnknown> SampleImplementers(TypeDesc type, Random rand)
+        {
+            Debug.Assert(_gdvEntityFinder != null);
+            IList<TypeDesc> implementers = _gdvEntityFinder.GetImplementers(type);
+
+            return PickSample(implementers, rand);
+        }
+
+        private List<TypeSystemEntityOrUnknown> PickSample<T>(IList<T> list, Random rand) where T : TypeSystemEntity
+        {
             const int sampleSize = 3;
             List<TypeSystemEntityOrUnknown> result = new(sampleSize);
 
-            IList<MethodDesc> compatible = _gdvEntityFinder.GetCompatibleWithDelegateInvoke(delegateSignature);
-            if (compatible.Count <= sampleSize)
+            static TypeSystemEntityOrUnknown Create(T value)
             {
-                foreach (MethodDesc md in compatible)
-                    result.Add(new TypeSystemEntityOrUnknown(md));
+                Debug.Assert(value is MethodDesc or TypeDesc);
+                if (value is MethodDesc md)
+                    return new TypeSystemEntityOrUnknown(md);
+                if (value is TypeDesc type)
+                    return new TypeSystemEntityOrUnknown(type);
+
+                throw new UnreachableException();
+            }
+
+            if (list.Count <= sampleSize)
+            {
+                foreach (T value in list)
+                {
+                    result.Add(Create(value));
+                }
             }
             else
             {
                 while (result.Count < sampleSize)
                 {
-                    int index = rand.Next(compatible.Count);
-                    MethodDesc md = compatible[index];
+                    int index = rand.Next(list.Count);
+                    T value = list[index];
+                    TypeSystemEntityOrUnknown schemaValue = Create(value);
                     bool contains = false;
                     foreach (TypeSystemEntityOrUnknown existing in result)
                     {
-                        if (existing.AsMethod == md)
+                        if (schemaValue.Equals(existing))
                         {
                             contains = true;
                             break;
@@ -291,7 +323,47 @@ namespace ILCompiler
                     }
 
                     if (!contains)
-                        result.Add(new TypeSystemEntityOrUnknown(md));
+                    {
+                        result.Add(schemaValue);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private List<TypeSystemEntityOrUnknown> PickSample(IList<TypeDesc> list, Random rand)
+        {
+            const int sampleSize = 3;
+            List<TypeSystemEntityOrUnknown> result = new(sampleSize);
+
+            if (list.Count <= sampleSize)
+            {
+                foreach (TypeDesc type in list)
+                {
+                    result.Add(new TypeSystemEntityOrUnknown(type));
+                }
+            }
+            else
+            {
+                while (result.Count < sampleSize)
+                {
+                    int index = rand.Next(list.Count);
+                    TypeDesc type = list[index];
+                    bool contains = false;
+                    foreach (TypeSystemEntityOrUnknown existing in result)
+                    {
+                        if (existing.AsType == type)
+                        {
+                            contains = true;
+                            break;
+                        }
+                    }
+
+                    if (!contains)
+                    {
+                        result.Add(new TypeSystemEntityOrUnknown(type));
+                    }
                 }
             }
 
@@ -393,31 +465,76 @@ namespace ILCompiler
             // delegate's Invoke method and the target method. This does not
             // take covariance into account in addition to other more
             // restrictive MethodSignature checks.
-            private readonly Dictionary<MethodSignature, List<MethodDesc>> _delegateTargets = new();
+            private readonly Dictionary<MethodSignature, List<MethodDesc>> _delegateTargets;
+            private readonly Dictionary<TypeDesc, List<TypeDesc>> _implementers;
 
             public GdvEntityFinder(IEnumerable<ModuleDesc> modules)
             {
+                Dictionary<MethodSignature, HashSet<MethodDesc>> delegateTargets = new();
+                Dictionary<TypeDesc, HashSet<TypeDesc>> implementers = new();
                 foreach (ModuleDesc module in modules)
                 {
                     foreach (MetadataType type in module.GetAllTypes())
                     {
                         foreach (MethodDesc method in type.GetMethods())
                         {
-                            if (method.Signature.IsStatic)
+                            if (method.Signature.IsStatic || method.IsAbstract)
                                 continue;
 
-                            if (!_delegateTargets.TryGetValue(method.Signature, out List<MethodDesc> list))
-                                _delegateTargets.Add(method.Signature, list = new List<MethodDesc>());
+                            if (!delegateTargets.TryGetValue(method.Signature, out HashSet<MethodDesc> set))
+                                delegateTargets.Add(method.Signature, set = new HashSet<MethodDesc>());
 
-                            list.Add(method);
+                            set.Add(method);
+                        }
+
+                        if (!type.IsAbstract && !type.IsInterface)
+                        {
+                            void AddImplemented(TypeDesc implemented)
+                            {
+                                if (!implementers.TryGetValue(implemented, out HashSet<TypeDesc> set))
+                                    implementers.Add(implemented, set = new HashSet<TypeDesc>());
+
+                                set.Add(type);
+                            }
+
+                            TypeDesc implemented = type;
+                            do
+                            {
+                                AddImplemented(implemented);
+                                implemented = implemented.BaseType;
+                            } while (implemented != null);
+
+                            foreach (TypeDesc iface in type.RuntimeInterfaces)
+                            {
+                                AddImplemented(iface);
+                            }
                         }
                     }
                 }
+
+                _delegateTargets = delegateTargets.ToDictionary(kvp => kvp.Key, kvp =>
+                {
+                    List<MethodDesc> list = new(kvp.Value);
+                    list.MergeSort(TypeSystemComparer.Instance.Compare);
+                    return list;
+                });
+
+                _implementers = implementers.ToDictionary(kvp => kvp.Key, kvp =>
+                {
+                    List<TypeDesc> list = new(kvp.Value);
+                    list.MergeSort(TypeSystemComparer.Instance.Compare);
+                    return list;
+                });
             }
 
             public IList<MethodDesc> GetCompatibleWithDelegateInvoke(MethodSignature delegateInvokeSignature)
             {
                 return _delegateTargets.TryGetValue(delegateInvokeSignature, out List<MethodDesc> methods) ? methods : Array.Empty<MethodDesc>();
+            }
+
+            public IList<TypeDesc> GetImplementers(TypeDesc type)
+            {
+                return _implementers.TryGetValue(type, out List<TypeDesc> types) ? types : Array.Empty<TypeDesc>();
             }
         }
     }
