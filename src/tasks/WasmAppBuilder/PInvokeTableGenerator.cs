@@ -79,7 +79,8 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
-        if (HasAttribute(type, new string[] {"System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"})) {
+        if (HasAttribute(type, new string[] {"System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"}))
+        {
             var method = type.GetMethod("Invoke");
 
             if (method != null)
