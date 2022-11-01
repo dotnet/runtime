@@ -12,7 +12,6 @@ import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 
 const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
 
@@ -25,7 +24,6 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const js_function_name = conv_string_root(function_name_root)!;
-        const mark = startMeasure();
         const js_module_name = conv_string_root(module_name_root)!;
         if (runtimeHelpers.diagnosticTracing) {
             console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
@@ -57,7 +55,6 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const closure: BindingClosure = {
             fn,
-            fqn: js_module_name + ":" + js_function_name,
             args_count,
             arg_marshalers,
             res_converter,
@@ -85,7 +82,6 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
         setI32(function_js_handle, <any>fn_handle);
-        endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
         Module.printErr(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
@@ -97,18 +93,13 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
 function bind_fn_0V(closure: BindingClosure) {
     const fn = closure.fn;
-    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_0V(args: JSMarshalerArguments) {
-        const mark = startMeasure();
         try {
             // call user function
             fn();
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
-            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -116,19 +107,14 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
-    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1V(args: JSMarshalerArguments) {
-        const mark = startMeasure();
         try {
             const arg1 = marshaler1(args);
             // call user function
             fn(arg1);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
-            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -137,10 +123,8 @@ function bind_fn_1R(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1R(args: JSMarshalerArguments) {
-        const mark = startMeasure();
         try {
             const arg1 = marshaler1(args);
             // call user function
@@ -148,9 +132,6 @@ function bind_fn_1R(closure: BindingClosure) {
             res_converter(args, js_result);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
-            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -160,10 +141,8 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_2R(args: JSMarshalerArguments) {
-        const mark = startMeasure();
         try {
             const arg1 = marshaler1(args);
             const arg2 = marshaler2(args);
@@ -172,9 +151,6 @@ function bind_fn_2R(closure: BindingClosure) {
             res_converter(args, js_result);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
-            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -186,10 +162,8 @@ function bind_fn(closure: BindingClosure) {
     const arg_cleanup = closure.arg_cleanup;
     const has_cleanup = closure.has_cleanup;
     const fn = closure.fn;
-    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
-        const mark = startMeasure();
         try {
             const js_args = new Array(args_count);
             for (let index = 0; index < args_count; index++) {
@@ -216,15 +190,11 @@ function bind_fn(closure: BindingClosure) {
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
         }
-        finally {
-            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
-        }
     };
 }
 
 type BindingClosure = {
     fn: Function,
-    fqn: string,
     args_count: number,
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
