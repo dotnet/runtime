@@ -136,21 +136,21 @@ namespace ILCompiler.ObjectWriter
             {
                 if (classDescriptor.BaseClassId != 0)
                 {
-                    fieldListRecord.Write((ushort)LF_BCLASS);
+                    fieldListRecord.StartListEntry(LF_BCLASS);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.Write(classDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
-                    fieldListRecord.WritePadding();
+                    fieldListRecord.EndListEntry();
                     memberCount++;
                     offset += (uint)_targetPointerSize;
                 }
 
-                fieldListRecord.Write((ushort)LF_MEMBER);
+                fieldListRecord.StartListEntry(LF_MEMBER);
                 fieldListRecord.Write((ushort)0); // TODO: Attributes
                 fieldListRecord.Write(T_INT4);
                 fieldListRecord.WriteEncodedInteger(offset);
                 fieldListRecord.Write("count");
-                fieldListRecord.WritePadding();
+                fieldListRecord.EndListEntry();
                 memberCount++;
                 offset += (uint)_targetPointerSize;
 
@@ -158,35 +158,35 @@ namespace ILCompiler.ObjectWriter
                 {
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
-                        fieldListRecord.Write((ushort)LF_MEMBER);
+                        fieldListRecord.StartListEntry(LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
                         fieldListRecord.Write($"length{i}");
-                        fieldListRecord.WritePadding();
+                        fieldListRecord.EndListEntry();
                         memberCount++;
                         offset += 4;
                     }
 
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
-                        fieldListRecord.Write((ushort)LF_MEMBER);
+                        fieldListRecord.StartListEntry(LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
                         fieldListRecord.Write($"bounds{i}");
-                        fieldListRecord.WritePadding();
+                        fieldListRecord.EndListEntry();
                         memberCount++;
                         offset += 4;
                     }
                 }
 
-                fieldListRecord.Write((ushort)LF_MEMBER);
+                fieldListRecord.StartListEntry(LF_MEMBER);
                 fieldListRecord.Write((ushort)0); // TODO: Attributes
                 fieldListRecord.Write(arrayRecordTypeIndex);
                 fieldListRecord.WriteEncodedInteger(offset);
                 fieldListRecord.Write("values");
-                fieldListRecord.WritePadding();
+                fieldListRecord.EndListEntry();
                 memberCount++;
             }
 
@@ -218,11 +218,11 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (EnumRecordTypeDescriptor record in typeRecords)
                 {
-                    fieldListRecord.Write((ushort)LF_ENUMERATE);
+                    fieldListRecord.StartListEntry(LF_ENUMERATE);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.WriteEncodedInteger(record.Value);
                     fieldListRecord.Write(record.Name);
-                    fieldListRecord.WritePadding();
+                    fieldListRecord.EndListEntry();
                 }
             }
 
@@ -271,19 +271,19 @@ namespace ILCompiler.ObjectWriter
             {
                 if (classTypeDescriptor.BaseClassId != 0)
                 {
-                    fieldListRecord.Write((ushort)LF_BCLASS);
+                    fieldListRecord.StartListEntry(LF_BCLASS);
                     fieldListRecord.Write((ushort)0); // TODO: Attributes
                     fieldListRecord.Write(classTypeDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
-                    fieldListRecord.WritePadding();
+                    fieldListRecord.EndListEntry();
                     memberCount++;
                 }
                 else if (classTypeDescriptor.IsStruct == 0)
                 {
-                    fieldListRecord.Write((ushort)LF_VFUNCTAB);
+                    fieldListRecord.StartListEntry(LF_VFUNCTAB);
                     fieldListRecord.Write((ushort)0); // Padding
                     fieldListRecord.Write(_vfuncTabTypeIndex);
-                    fieldListRecord.WritePadding();
+                    fieldListRecord.EndListEntry();
                     memberCount++;
                 }
 
@@ -291,20 +291,21 @@ namespace ILCompiler.ObjectWriter
                 {
                     if (desc.Offset == 0xFFFFFFFF)
                     {
-                        fieldListRecord.Write((ushort)LF_STMEMBER);
+                        fieldListRecord.StartListEntry(LF_STMEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.Write(desc.Name);
+                        fieldListRecord.EndListEntry();
                     }
                     else
                     {
-                        fieldListRecord.Write((ushort)LF_MEMBER);
+                        fieldListRecord.StartListEntry(LF_MEMBER);
                         fieldListRecord.Write((ushort)0); // TODO: Attributes
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.WriteEncodedInteger(desc.Offset);
                         fieldListRecord.Write(desc.Name);
+                        fieldListRecord.EndListEntry();
                     }
-                    fieldListRecord.WritePadding();
                     memberCount++;
                 }
             }
@@ -375,20 +376,22 @@ namespace ILCompiler.ObjectWriter
 
         private LeafRecordWriter StartLeafRecord(LeafRecordType leafRecordType)
         {
-            LeafRecordWriter writer = new LeafRecordWriter(this);
-            writer.Write((ushort)leafRecordType);
-            return writer;
+            return new LeafRecordWriter(this, leafRecordType);
         }
 
         private ref struct LeafRecordWriter
         {
             private CodeViewTypesBuilder _debugTypesBuilder;
+            private LeafRecordType _leafRecordType;
             private ArrayBufferWriter<byte> _bufferWriter;
+            private int _lastListMemberStart;
 
-            public LeafRecordWriter(CodeViewTypesBuilder debugTypesBuilder)
+            public LeafRecordWriter(CodeViewTypesBuilder debugTypesBuilder, LeafRecordType leafRecordType)
             {
                 _debugTypesBuilder = debugTypesBuilder;
+                _leafRecordType = leafRecordType;
                 _bufferWriter = new();
+                Write((ushort)_leafRecordType);
             }
 
             public void Dispose()
@@ -401,8 +404,6 @@ namespace ILCompiler.ObjectWriter
                 _debugTypesBuilder._outputStream.Write(_bufferWriter.WrittenSpan);
                 _debugTypesBuilder._outputStream.Write(stackalloc byte[padding]);
                 _bufferWriter.Clear();
-
-                // TODO: LeafRecordType.Index for long records
             }
 
             public void Write(byte value)
@@ -459,7 +460,9 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            public void WritePadding()
+            public void Write(CodeViewType value) => Write((uint)value);
+
+            private void WritePadding()
             {
                 int paddingLength = ((_bufferWriter.WrittenCount - 2 + 3) & ~3) - (_bufferWriter.WrittenCount - 2);
                 Span<byte> padding = _bufferWriter.GetSpan(paddingLength);
@@ -470,7 +473,49 @@ namespace ILCompiler.ObjectWriter
                 _bufferWriter.Advance(paddingLength);
             }
 
-            public void Write(CodeViewType value) => Write((uint)value);
+            public void StartListEntry(LeafRecordType recordType)
+            {
+                Debug.Assert(_leafRecordType == LF_FIELDLIST || _leafRecordType == LF_METHODLIST);
+
+                _lastListMemberStart = _bufferWriter.WrittenCount;
+                Write((ushort)recordType);
+            }
+
+            public void EndListEntry()
+            {
+                Debug.Assert(_leafRecordType == LF_FIELDLIST || _leafRecordType == LF_METHODLIST);
+                Debug.Assert(_lastListMemberStart > 0);
+
+                WritePadding();
+
+                // If the current list record overflows the maximum list length then emit a
+                // LF_FIELDLIST/LF_METHODLIST leaf record now and start a new one. The new one
+                // has LF_INDEX as the first element to chain the lists together.
+                if (_bufferWriter.WrittenCount > short.MaxValue - sizeof(ushort))
+                {
+                    // At least one record was already written in the current list.
+                    Debug.Assert(_lastListMemberStart > sizeof(ushort));
+
+                    // Flush the current record up to _lastListMemberStart and write LF_INDEX to reference it.
+                    int length = sizeof(ushort) + _lastListMemberStart;
+                    int padding = ((length + 3) & ~3) - length;
+                    Span<byte> lengthBuffer = stackalloc byte[sizeof(ushort)];
+                    BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
+                    _debugTypesBuilder._outputStream.Write(lengthBuffer);
+                    _debugTypesBuilder._outputStream.Write(_bufferWriter.WrittenSpan.Slice(0, _lastListMemberStart));
+                    _debugTypesBuilder._outputStream.Write(stackalloc byte[padding]);
+                    byte[] overflow = _bufferWriter.WrittenSpan.Slice(_lastListMemberStart).ToArray();
+                    _bufferWriter.Clear();
+
+                    Write((ushort)_leafRecordType);
+                    Write((ushort)LF_INDEX);
+                    Write((ushort)0); // Padding
+                    Write((uint)_debugTypesBuilder._nextTypeIndex++);
+                    overflow.CopyTo(_bufferWriter.GetSpan(overflow.Length));
+                    _bufferWriter.Advance(overflow.Length);
+                    _lastListMemberStart = _bufferWriter.WrittenCount;
+                }
+            }
         }
     }
 }
