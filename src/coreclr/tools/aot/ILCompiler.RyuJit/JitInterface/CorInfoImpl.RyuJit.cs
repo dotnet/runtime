@@ -302,6 +302,33 @@ namespace Internal.JitInterface
             }
         }
 
+        private static ReadyToRunHelperId getRunHelperIdFromHelperFunc(CorInfoHelpFunc helper)
+        {
+            ReadyToRunHelperId res;
+            switch (helper)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE: // there is actually no ID to this because is the generic entry
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
+                    res = ReadyToRunHelperId.CctorTrigger;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetNonGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                    break;
+                default:
+                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
+            }
+            return res;
+        }
+
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
@@ -312,13 +339,17 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     return false;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
+                        var helperId = getRunHelperIdFromHelperFunc(id);
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
@@ -2131,13 +2162,20 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
+                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
                     else
                     {
-                        helperId = field.HasGCStaticBase ?
-                            ReadyToRunHelperId.GetGCStaticBase :
-                            ReadyToRunHelperId.GetNonGCStaticBase;
+                        if (field.HasGCStaticBase)
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
+                        } else
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
 
                         //
                         // Currently, we only do this optimization for regular statics, but it
