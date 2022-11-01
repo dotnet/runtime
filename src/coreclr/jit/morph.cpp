@@ -8181,11 +8181,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
         if ((hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
         {
-            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
-            if (ptr != nullptr)
+            CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
+            if (ptr != NULL)
             {
                 setMethodHasFrozenObjects();
-                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 retNode->gtType  = TYP_REF;
                 INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
                 return fgMorphTree(retNode);

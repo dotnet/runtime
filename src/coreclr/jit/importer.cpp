@@ -4344,7 +4344,7 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
         }
         case TYP_REF:
         {
-            void* ptr;
+            size_t ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
 
             if (ptr == 0)
@@ -4354,9 +4354,9 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
             else
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
             }
             break;
         }
