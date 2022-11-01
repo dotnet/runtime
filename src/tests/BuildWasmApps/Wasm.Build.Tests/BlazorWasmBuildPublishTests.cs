@@ -41,6 +41,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void DefaultTemplate_NoAOT_WithWorkload(string config)
         {
             string id = $"blz_no_aot_{config}";
@@ -179,6 +180,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void WithDllImportInMainAssembly(string config)
         {
             // Based on https://github.com/dotnet/runtime/issues/59255
@@ -231,6 +233,7 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void BugRegression_60479_WithRazorClassLib()
         {
             string id = "blz_razor_lib_top";
