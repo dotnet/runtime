@@ -9449,6 +9449,34 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode) && is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
+				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
+					gboolean negate = opcode == MINT_BRFALSE_I4;
+					int cond_sreg = ins->sregs [0];
+					InterpInst *def = td->locals [cond_sreg].def;
+					if (def != NULL) {
+						int replace_opcode = -1;
+						switch (def->opcode) {
+							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
+							case MINT_CEQ_I8: replace_opcode = negate ? MINT_BNE_UN_I8 : MINT_BEQ_I8; break;
+							// Add more opcodes
+							default:
+								break;
+						}
+						if (replace_opcode != -1) {
+							ins->opcode = replace_opcode;
+							ins->sregs [0] = def->sregs [0];
+							ins->sregs [1] = def->sregs [1];
+							interp_clear_ins (def);
+							if (td->verbose_level) {
+								g_print ("superins: ");
+								dump_interp_inst (ins);
+							}
+							// The newly added opcode could be part of further superinstructions. Retry
+							ins = ins->prev;
+							continue;
+						}
+					}
+				}
 				InterpInst *prev_ins = interp_prev_ins (ins);
 				if (prev_ins && prev_ins->opcode == MINT_SAFEPOINT) {
 					int condbr_op = get_unop_condbr_sp (opcode);
@@ -9460,7 +9488,6 @@ interp_super_instructions (TransformData *td)
 							dump_interp_inst (ins);
 						}
 					}
-
 				}
 			} else if (opcode == MINT_STOBJ_VT_NOREF) {
 				int sreg_src = ins->sregs [1];
