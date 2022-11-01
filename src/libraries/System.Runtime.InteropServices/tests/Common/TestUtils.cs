@@ -45,10 +45,6 @@ namespace Microsoft.Interop.UnitTests
         /// </summary>
         Net,
         /// <summary>
-        /// .NET version 5.0.
-        /// </summary>
-        Net5,
-        /// <summary>
         /// .NET version 6.0.
         /// </summary>
         Net6,
@@ -212,7 +208,6 @@ namespace Microsoft.Interop.UnitTests
                     TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
                     TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
                     TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                    TestTargetFramework.Net5 => ReferenceAssemblies.Net.Net50,
                     TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
                     _ => ReferenceAssemblies.Default
                 };

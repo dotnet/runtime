@@ -821,7 +821,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
 
     PAL_TRY(Param *, pParam, &param) {
         GUID guidLang={0},guidLangVendor={0},guidDoc={0};
-        CHAR zLang[64],zVendor[64],zDoc[64];
+        CHAR zLang[GUID_STR_BUFFER_LEN],zVendor[GUID_STR_BUFFER_LEN],zDoc[GUID_STR_BUFFER_LEN];
         ULONG32 k;
         if(pParam->pLCD->FileToken != ulWasFileToken)
         {

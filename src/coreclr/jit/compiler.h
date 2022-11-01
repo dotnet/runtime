@@ -211,17 +211,26 @@ class LclSsaVarDsc
     // TODO-Cleanup: In the case of uninitialized variables the block is set to nullptr by
     // SsaBuilder and changed to fgFirstBB during value numbering. It would be useful to
     // investigate and perhaps eliminate this rather unexpected behavior.
-    BasicBlock* m_block;
+    BasicBlock* m_block = nullptr;
     // The GT_ASG node that generates the definition, or nullptr for definitions
     // of uninitialized variables.
-    GenTreeOp* m_asg;
+    GenTreeOp* m_asg = nullptr;
+    // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
+    unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
+    // Number of uses of this SSA def (may be an over-estimate). Includes phi args uses.
+    unsigned short m_numUses = 0;
+    // True if there may be phi args uses of this def
+    // (false implies all uses are non-phi)
+    bool m_hasPhiUse = false;
+    // True if there may be uses of the def in a different block
+    bool m_hasGlobalUse = false;
 
 public:
-    LclSsaVarDsc() : m_block(nullptr), m_asg(nullptr)
+    LclSsaVarDsc()
     {
     }
 
-    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    LclSsaVarDsc(BasicBlock* block) : m_block(block)
     {
     }
 
@@ -249,6 +258,50 @@ public:
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
         m_asg = asg;
+    }
+
+    unsigned GetUseDefSsaNum() const
+    {
+        return m_useDefSsaNum;
+    }
+
+    void SetUseDefSsaNum(unsigned ssaNum)
+    {
+        m_useDefSsaNum = ssaNum;
+    }
+
+    unsigned GetNumUses() const
+    {
+        return m_numUses;
+    }
+
+    void AddUse(BasicBlock* block)
+    {
+        if (block != m_block)
+        {
+            m_hasGlobalUse = true;
+        }
+
+        if (m_numUses < USHRT_MAX)
+        {
+            m_numUses++;
+        }
+    }
+
+    void AddPhiUse(BasicBlock* block)
+    {
+        m_hasPhiUse = true;
+        AddUse(block);
+    }
+
+    bool HasPhiUse() const
+    {
+        return m_hasPhiUse;
+    }
+
+    bool HasGlobalUse() const
+    {
+        return m_hasGlobalUse;
     }
 
     ValueNumPair m_vnPair;
@@ -341,7 +394,7 @@ public:
     }
 
     // Get a pointer to the SSA definition at the specified index.
-    T* GetSsaDefByIndex(unsigned index)
+    T* GetSsaDefByIndex(unsigned index) const
     {
         assert(index < m_count);
         return &m_array[index];
@@ -354,14 +407,14 @@ public:
     }
 
     // Get a pointer to the SSA definition associated with the specified SSA number.
-    T* GetSsaDef(unsigned ssaNum)
+    T* GetSsaDef(unsigned ssaNum) const
     {
         assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
         return GetSsaDefByIndex(ssaNum - GetMinSsaNum());
     }
 
     // Get an SSA number associated with the specified SSA def (that must be in this array).
-    unsigned GetSsaNum(T* ssaDef)
+    unsigned GetSsaNum(T* ssaDef) const
     {
         assert((m_array <= ssaDef) && (ssaDef < &m_array[m_count]));
         return GetMinSsaNum() + static_cast<unsigned>(ssaDef - &m_array[0]);
@@ -1009,8 +1062,6 @@ public:
         return structHnd;
     }
 
-    CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
-
 private:
     ClassLayout* m_layout; // layout info for structs
 
@@ -1098,7 +1149,7 @@ public:
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
-    LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
+    LclSsaVarDsc* GetPerSsaData(unsigned ssaNum) const
     {
         return lvPerSsaData.GetSsaDef(ssaNum);
     }
@@ -1396,9 +1447,8 @@ enum Phases
     PHASE_NUMBER_OF
 };
 
-extern const char*   PhaseNames[];
-extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseEnumsW[];
+extern const char* PhaseNames[];
+extern const char* PhaseEnums[];
 
 // Specify which checks should be run after each phase
 //
@@ -2583,7 +2633,7 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
-    GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
+    GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
@@ -2758,6 +2808,9 @@ public:
     // the given "fldHnd", is such an object pointer.
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
+    bool gtStoreDefinesField(
+        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize);
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
@@ -2859,6 +2912,7 @@ public:
     char* gtGetLclVarName(unsigned lclNum);
     void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
     void gtDispLclVarStructType(unsigned lclNum);
+    void gtDispSsaName(unsigned lclNum, unsigned ssaNum, bool isDef);
     void gtDispClassLayout(ClassLayout* layout, var_types type);
     void gtDispILLocation(const ILLocation& loc);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
@@ -3359,10 +3413,6 @@ public:
             structPromotionInfo.typeHnd = NO_CLASS_HANDLE;
         }
 
-#ifdef DEBUG
-        void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
-#endif // DEBUG
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -3377,12 +3427,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef DEBUG
-        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
-                                 RetypedAsScalarFieldsMap;
-        RetypedAsScalarFieldsMap retypedFieldsMap;
-#endif // DEBUG
     };
 
     StructPromotionHelper* structPromotionHelper;
@@ -3427,10 +3471,9 @@ public:
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
-    bool lvaInSsa(unsigned lclNum)
+    bool lvaInSsa(unsigned lclNum) const
     {
-        assert(lclNum < lvaCount);
-        return lvaTable[lclNum].lvInSsa;
+        return lvaGetDesc(lclNum)->lvInSsa;
     }
 
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
@@ -3632,7 +3675,8 @@ protected:
 
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
-    GenTree* impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType);
+    GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
+    GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
@@ -4690,20 +4734,9 @@ public:
         return BasicBlockRangeList(startBlock, endBlock);
     }
 
-    // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
-    // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
-    // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
-    // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
-    NodeToUnsignedMap* m_opAsgnVarDefSsaNums;
-    NodeToUnsignedMap* GetOpAsgnVarDefSsaNums()
-    {
-        if (m_opAsgnVarDefSsaNums == nullptr)
-        {
-            m_opAsgnVarDefSsaNums = new (getAllocator()) NodeToUnsignedMap(getAllocator());
-        }
-        return m_opAsgnVarDefSsaNums;
-    }
+    // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
+    // See "SsaNumInfo::GetNum" for more details on when this is needed.
+    JitExpandArrayStack<unsigned>* m_outlinedCompositeSsaNums;
 
     // This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.
     // The map provides the entry block of the most closely enclosing loop that
@@ -4732,12 +4765,6 @@ public:
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
-    // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
-    // Except: assumes that lcl is a def, and if it is
-    // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
-    // rather than the "use" SSA number recorded in the tree "lcl".
-    inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
-
     inline bool PreciseRefCountsRequired();
 
     // Performs SSA conversion.
@@ -4747,6 +4774,11 @@ public:
     void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
+    bool     fgSsaChecksEnabled;   // True if SSA info can be cross-checked versus IR
+
+#ifdef DEBUG
+    void DumpSsaSummary();
+#endif
 
     // Returns "true" if this is a special variable that is never zero initialized in the prolog.
     inline bool fgVarIsNeverZeroInitializedInProlog(unsigned varNum);
@@ -5238,6 +5270,8 @@ public:
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
+    PhaseStatus fgTailMerge();
+
     enum FG_RELOCATE_TYPE
     {
         FG_RELOCATE_TRY,    // relocate the 'try' region
@@ -5329,7 +5363,7 @@ public:
     };
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
-    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type);
+    FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type);
     bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
 #endif // DUMP_FLOWGRAPHS
 
@@ -5358,6 +5392,7 @@ public:
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckNodesUniqueness();
     void fgDebugCheckLoopTable();
+    void fgDebugCheckSsa();
 
     void fgDebugCheckFlags(GenTree* tree);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
@@ -5757,7 +5792,6 @@ private:
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -5868,7 +5902,6 @@ private:
 #endif
 
     PhaseStatus fgPromoteStructs();
-    void fgMorphStructField(GenTree* tree, GenTree* parent);
     void fgMorphLocalField(GenTree* tree, GenTree* parent);
 
     // Reset the refCount for implicit byrefs.
@@ -5988,6 +6021,9 @@ protected:
 
     // Performs the hoisting 'tree' into the PreHeader for loop 'lnum'
     void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt);
+
+    // Note the new SSA uses in tree
+    void optRecordSsaUses(GenTree* tree, BasicBlock* block);
 
     // Returns true iff the ValueNum "vn" represents a value that is loop-invariant in "lnum".
     //   Constants and init values are always loop invariant.
@@ -6750,14 +6786,14 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
 
     // Copy propagation functions.
-    bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
+    bool optCopyProp(BasicBlock*          block,
+                     Statement*           stmt,
+                     GenTreeLclVarCommon* tree,
+                     unsigned             lclNum,
+                     LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTree*             defNode,
-                            GenTreeLclVarCommon* lclNode,
-                            unsigned             lclNum,
-                            LclNumToLiveDefsMap* curSsaName);
-    unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
+    void optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -7380,17 +7416,17 @@ public:
         Statement*        stmt;
         const unsigned    loopNum;
         const bool        cloneForArrayBounds;
-        const bool        cloneForTypeTests;
+        const bool        cloneForGDVTests;
         LoopCloneVisitorInfo(LoopCloneContext* context,
                              unsigned          loopNum,
                              Statement*        stmt,
                              bool              cloneForArrayBounds,
-                             bool              cloneForTypeTests)
+                             bool              cloneForGDVTests)
             : context(context)
             , stmt(nullptr)
             , loopNum(loopNum)
             , cloneForArrayBounds(cloneForArrayBounds)
-            , cloneForTypeTests(cloneForTypeTests)
+            , cloneForGDVTests(cloneForGDVTests)
         {
         }
     };
@@ -7404,6 +7440,8 @@ public:
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
     bool optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
+    bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     bool optLoopCloningEnabled();
 
@@ -8474,18 +8512,6 @@ private:
         return (intrinsicId == SIMDIntrinsicEqual);
     }
 
-    // Returns base JIT type of a TYP_SIMD local.
-    // Returns CORINFO_TYPE_UNDEF if the local is not TYP_SIMD.
-    CorInfoType getBaseJitTypeOfSIMDLocal(GenTree* tree)
-    {
-        if (isSIMDTypeLocal(tree))
-        {
-            return lvaGetDesc(tree->AsLclVarCommon())->GetSimdBaseJitType();
-        }
-
-        return CORINFO_TYPE_UNDEF;
-    }
-
     bool isNumericsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Numerics") == 0;
@@ -8952,6 +8978,39 @@ private:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // canUseEvexEncoding - Answer the question: Is Evex encoding supported on this target.
+    //
+    // Returns:
+    //    TRUE if Evex encoding is supported, FALSE if not.
+    bool canUseEvexEncoding() const
+    {
+#ifdef TARGET_XARCH
+        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+#else
+        return false;
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
+    //
+    // Returns:
+    //    TRUE if user requests EVEX encoding and it's safe, FALSE if not.
+    bool DoJitStressEvexEncoding() const
+    {
+#ifdef TARGET_XARCH
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support.
+        if (JitConfig.JitStressEVEXEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            return true;
+        }
+#endif
+        return false;
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -9184,6 +9243,16 @@ public:
             return false;
         }
 #endif
+
+        bool IsInstrumented() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
+        }
+
+        bool IsInstrumentedOptimized() const
+        {
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+        }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
         // PInvoke transitions inline. Normally used by R2R, but also used when generating a reverse pinvoke frame, as
@@ -9482,7 +9551,6 @@ public:
         STRESS_MODE(DO_WHILE_LOOPS)                                                             \
         STRESS_MODE(MIN_OPTS)                                                                   \
         STRESS_MODE(REVERSE_FLAG)     /* Will set GTF_REVERSE_OPS whenever we can */            \
-        STRESS_MODE(REVERSE_COMMA)    /* Will reverse commas created  with gtNewCommaNode */    \
         STRESS_MODE(TAILCALL)         /* Will make the call as a tailcall whenever legal */     \
         STRESS_MODE(CATCH_ARG)        /* Will spill catch arg */                                \
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
@@ -9495,6 +9563,7 @@ public:
         STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
         STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
         STRESS_MODE(VN_BUDGET)/* Randomize the VN budget */                                     \
+        STRESS_MODE(SSA_INFO) /* Select lower thresholds for "complex" SSA num encoding */      \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9507,7 +9576,6 @@ public:
         STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
-        STRESS_MODE(FLATFP)                                                                     \
         STRESS_MODE(GENERIC_CHECK)                                                              \
         STRESS_MODE(COUNT)
 
@@ -10464,7 +10532,7 @@ public:
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeq*> NodeToFieldSeqMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 

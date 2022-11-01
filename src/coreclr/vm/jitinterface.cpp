@@ -78,8 +78,6 @@
 #define JIT_TO_EE_TRANSITION_LEAF()
 #define EE_TO_JIT_TRANSITION_LEAF()
 
-
-
 #ifdef DACCESS_COMPILE
 
 // The real definitions are in jithelpers.cpp. However, those files are not included in the DAC build.
@@ -665,7 +663,8 @@ int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
         char16_t*                   buffer,
-        int                         bufferSize)
+        int                         bufferSize,
+        int                         startIndex)
 {
     CONTRACTL{
         THROWS;
@@ -676,6 +675,7 @@ int CEEInfo::getStringLiteral (
     Module* module = GetModule(moduleHnd);
 
     _ASSERTE(bufferSize >= 0);
+    _ASSERTE(startIndex >= 0);
 
     int result = -1;
 
@@ -688,10 +688,11 @@ int CEEInfo::getStringLiteral (
         if (strRef != NULL)
         {
             StringObject* strObj = STRINGREFToObject(strRef);
-            result = (int)strObj->GetStringLength();
-            if (buffer != NULL)
+            int length = (int)strObj->GetStringLength();
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, strObj->GetBuffer() + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -702,10 +703,11 @@ int CEEInfo::getStringLiteral (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-            result = (int)dwCharCount;
-            if (buffer != NULL)
+            int length = (int)dwCharCount;
+            result = (length >= startIndex) ? (length - startIndex) : 0;
+            if (buffer != NULL && result != 0)
             {
-                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+                memcpyNoGCRefs(buffer, pString + startIndex, min(bufferSize, result) * sizeof(char16_t));
             }
         }
     }
@@ -6299,11 +6301,23 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
     } CONTRACTL_END;
 
     const char* result = NULL;
-    const char* classResult = NULL;
-    const char* namespaceResult = NULL;
-    const char* enclosingResult = NULL;
 
     JIT_TO_EE_TRANSITION();
+
+    if (className != NULL)
+    {
+        *className = NULL;
+    }
+
+    if (namespaceName != NULL)
+    {
+        *namespaceName = NULL;
+    }
+
+    if (enclosingClassName != NULL)
+    {
+        *enclosingClassName = NULL;
+    }
 
     MethodDesc *ftn = GetMethod(ftnHnd);
     mdMethodDef token = ftn->GetMemberDef();
@@ -6314,28 +6328,16 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         IMDInternalImport* pMDImport = pMT->GetMDImport();
 
         IfFailThrow(pMDImport->GetNameOfMethodDef(token, &result));
-        IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), &classResult, &namespaceResult));
+        if (className != NULL || namespaceName != NULL)
+        {
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), className, namespaceName));
+        }
         // Query enclosingClassName when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if (pMT->GetClass()->IsNested())
+        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
         {
-            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), &enclosingResult, &namespaceResult));
+            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
         }
-    }
-
-    if (className != NULL)
-    {
-        *className = classResult;
-    }
-
-    if (namespaceName != NULL)
-    {
-        *namespaceName = namespaceResult;
-    }
-
-    if (enclosingClassName != NULL)
-    {
-        *enclosingClassName = enclosingResult;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12823,23 +12825,6 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
 
 #ifdef FEATURE_PGO
 
-    // Instrument, if
-    //
-    // * We're writing pgo data and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we are jitting an OSR method.
-    //
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
-        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
-    else if ((g_pConfig->TieredPGO())
-        && (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR)))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
@@ -14803,7 +14788,15 @@ UNWIND_INFO * EECodeInfo::GetUnwindInfoHelper(ULONG unwindInfoOffset)
 #if defined(DACCESS_COMPILE)
     return DacGetUnwindInfo(static_cast<TADDR>(this->GetModuleBase() + unwindInfoOffset));
 #else  // !DACCESS_COMPILE
-    return reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+    UNWIND_INFO * pUnwindInfo = reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+#if defined(TARGET_AMD64)
+    if (pUnwindInfo->Flags & UNW_FLAG_CHAININFO)
+    {
+        unwindInfoOffset = ((PTR_RUNTIME_FUNCTION)(&(pUnwindInfo->UnwindCode)))->UnwindData;
+        pUnwindInfo = reinterpret_cast<UNWIND_INFO *>(this->GetModuleBase() + unwindInfoOffset);
+    }
+#endif // TARGET_AMD64
+    return pUnwindInfo;
 #endif // !DACCESS_COMPILE
 }
 
@@ -14862,11 +14855,7 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     }
 
     UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    if (pInfo->Flags & UNW_FLAG_CHAININFO)
-    {
-        _ASSERTE(!"GetRbpOffset() - chained unwind info used, violating assumptions of the security stackwalk cache");
-        DebugBreak();
-    }
+    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
 
     // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
     if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )

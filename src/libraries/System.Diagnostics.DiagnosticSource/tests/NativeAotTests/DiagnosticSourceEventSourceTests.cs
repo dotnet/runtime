@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 /// <summary>
-/// Tests that using writing to a DiagnosticSource writes the correct payloads
+/// Tests that writing to a DiagnosticSource writes the correct payloads
 /// to the DiagnosticSourceEventSource.
 /// </summary>
 internal class Program

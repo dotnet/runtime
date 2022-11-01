@@ -73,6 +73,9 @@ INST4(adc,              "adc",              IUM_RW, 0x000010,     0x001080,     
 INST4(sbb,              "sbb",              IUM_RW, 0x000018,     0x001880,     0x00001A,     0x00001C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | Reads_CF   | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
 INST4(and,              "and",              IUM_RW, 0x000020,     0x002080,     0x000022,     0x000024,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
 INST4(sub,              "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+// Does not affect the stack tracking in the emitter
+INST4(sub_hide,         "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+
 INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     0x000032,     0x000034,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
 INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
 INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                                       | INS_FLAGS_Has_Wbit )
@@ -614,6 +617,8 @@ INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(FIRST_AVX512_INSTRUCTION, "FIRST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
 // Scalar instructions in SSE4.2
 INST3(crc32,            "crc32",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF2, 0x0F, 0x38, 0xF0),           INS_FLAGS_None)

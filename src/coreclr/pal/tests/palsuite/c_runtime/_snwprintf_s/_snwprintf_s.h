@@ -3,9 +3,9 @@
 
 /*============================================================================
 **
-** Source:  swprintf_s.h
+** Source:  _snwprintf_s.h
 **
-** Purpose: Contains common testing functions for swprintf_s
+** Purpose: Contains common testing functions for _snwprintf_s
 **
 **
 **==========================================================================*/
@@ -62,7 +62,7 @@ inline void DoCountTest_snwprintf_s(const WCHAR *formatstr, int param, const WCH
     WCHAR buf[512] = { 0 };
     int n = -1;
 
-    swprintf_s(buf, 512, formatstr, &n);
+    _snwprintf_s(buf, 512, _TRUNCATE, formatstr, &n);
 
     if (n != param)
     {

@@ -1947,9 +1947,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // DEBUG
 
     vnStore                    = nullptr;
-    m_opAsgnVarDefSsaNums      = nullptr;
+    m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
+    fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -2252,38 +2253,49 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                    = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
-
-    // The VM will set the ISA flags depending on actual hardware support
-    // and any specified config switches specified by the user. The exception
-    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
-    // don't actually exist. The JIT is in charge of adding those and ensuring
-    // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
+// The VM will set the ISA flags depending on actual hardware support
+// and any specified config switches specified by the user. The exception
+// here is for certain "artificial ISAs" such as Vector64/128/256 where they
+// don't actually exist. The JIT is in charge of adding those and ensuring
+// the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+    }
+#elif defined(TARGET_ARM64)
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
 #endif // TARGET_ARM64
 
-    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
     opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
+        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
@@ -3850,6 +3862,9 @@ _SetMinOpts:
     {
         opts.compFlags &= ~CLFLG_MAXOPT;
         opts.compFlags |= CLFLG_MINOPT;
+
+        lvaEnregEHVars &= compEnregLocals();
+        lvaEnregMultiRegVars &= compEnregLocals();
     }
 
     if (!compIsForInlining())
@@ -4095,13 +4110,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     }
     else if (tier1)
     {
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        if (opts.IsOSR())
         {
             return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
-            return "Tier1";
+            return instrumenting ? "Instrumented Tier1" : "Tier1";
         }
     }
     else if (opts.OptimizationEnabled())
@@ -4543,6 +4558,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     if (opts.OptimizationEnabled())
     {
+        // Tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+
         // Merge common throw blocks
         //
         DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
@@ -4643,6 +4662,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
+
+        // Second pass of tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
 
         // Compute reachability sets and dominators.
         //
@@ -4781,6 +4804,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doBranchOpt)
             {
+                // Optimize redundant branches
+                //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
@@ -4789,6 +4814,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Remove common sub-expressions
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            }
+
+            // Assertion prop can do arbitrary statement remorphing, which
+            // can clone code and disrupt our simpleminded SSA accounting.
+            //
+            // So, disable the ssa checks.
+            //
+            if (fgSsaChecksEnabled)
+            {
+                JITDUMP("Disabling SSA checking before assertion prop\n");
+                fgSsaChecksEnabled = false;
             }
 
             if (doAssertionProp)
@@ -5320,11 +5356,11 @@ void Compiler::ResetOptAnnotations()
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    m_blockToEHPreds      = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore              = nullptr;
+    m_blockToEHPreds     = nullptr;
+    fgSsaPassesCompleted = 0;
+    fgVNPassesCompleted  = 0;
+    fgSsaChecksEnabled   = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -7840,10 +7876,6 @@ const char* PhaseEnums[] = {
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseEnumsW[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
-#include "compphases.h"
-};
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF

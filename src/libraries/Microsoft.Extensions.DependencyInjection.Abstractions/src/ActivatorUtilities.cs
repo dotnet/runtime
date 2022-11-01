@@ -127,17 +127,47 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
-
-            ParameterExpression? provider = Expression.Parameter(typeof(IServiceProvider), "provider");
-            ParameterExpression? argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
-            Expression? factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
+            CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
                 factoryExpressionBody, provider, argumentArray);
 
             Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
             return result.Invoke;
+        }
+
+        /// <summary>
+        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// and/or from an <see cref="IServiceProvider"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to activate</typeparam>
+        /// <param name="argumentTypes">
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// </param>
+        /// <returns>
+        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// </returns>
+        public static ObjectFactory<T>
+            CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
+                Type[] argumentTypes)
+        {
+            CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
+
+            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+                factoryExpressionBody, provider, argumentArray);
+
+            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
+            return result.Invoke;
+        }
+
+        private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
+        {
+            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+
+            provider = Expression.Parameter(typeof(IServiceProvider), "provider");
+            argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
+            factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
         }
 
         /// <summary>

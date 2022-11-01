@@ -8,6 +8,7 @@ using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using System.Reflection;
 using System.Collections;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -108,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -137,12 +138,20 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
+            }
+
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                _handle.Dispose();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
