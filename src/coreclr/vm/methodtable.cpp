@@ -58,6 +58,7 @@
 #include "array.h"
 #include "castcache.h"
 #include "dynamicinterfacecastable.h"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3499,7 +3500,7 @@ void MethodTable::AllocateRegularStaticBoxes()
                 MethodTable* pFieldMT = th.GetMethodTable();
 
                 LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics());
+                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, !pFieldMT->ContainsPointersOrCollectible());
 
                 SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
             }
@@ -3511,7 +3512,7 @@ void MethodTable::AllocateRegularStaticBoxes()
 }
 
 //==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle)
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool neverCollected)
 {
     CONTRACTL
     {
@@ -3526,7 +3527,21 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     // Activate any dependent modules if necessary
     pFieldMT->EnsureInstanceActive();
 
-    OBJECTREF obj = AllocateObject(pFieldMT);
+    OBJECTREF obj = NULL;
+    if (neverCollected)
+    {
+        // In case if we don't plan to collect this handle we may try to allocate it on FOH
+        _ASSERT(!pFieldMT->ContainsPointersOrCollectible());
+        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+        obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
+        // obj can be null in case if struct is huge (>64kb)
+        if (obj != NULL)
+        {
+            return obj;
+        }
+    }
+
+    obj = AllocateObject(pFieldMT);
 
     // Pin the object if necessary
     if (fPinned)

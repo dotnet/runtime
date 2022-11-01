@@ -1514,7 +1514,22 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_FIELD_ACCESSOR intrinsicAccessor;
 
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-                fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+            {
+                bool frozenBoxedStatic = false;
+                if (pFieldMT->ContainsPointersOrCollectible())
+                {
+                    Object** handle = (Object**)pField->GetStaticAddressHandle(pField->GetBase());
+                    if (*handle == nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
+                    {
+                        frozenBoxedStatic = true;
+                    }
+                }
+
+                if (!frozenBoxedStatic)
+                {
+                    fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                }
+            }
 
             if (pFieldMT->IsSharedByGenericInstantiations())
             {
