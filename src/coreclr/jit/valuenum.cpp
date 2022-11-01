@@ -8530,6 +8530,45 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
     tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberSsaVarDef: Perform value numbering for a variable definition that has SSA
+//
+// Arguments:
+//    lcl - the variable definition.
+//
+void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
+{
+    unsigned   lclNum = lcl->GetLclNum();
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+    assert(lcl->HasSsaName());
+    assert(lvaInSsa(lclNum));
+
+    ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
+    assert(wholeLclVarVNP.BothDefined());
+
+    // Account for type mismatches.
+    if (genActualType(varDsc) != genActualType(lcl))
+    {
+        if (genTypeSize(varDsc) != genTypeSize(lcl))
+        {
+            assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+            lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
+        }
+        else
+        {
+            assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                   ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
+            lcl->gtVNPair = wholeLclVarVNP;
+        }
+    }
+    else
+    {
+        lcl->gtVNPair = wholeLclVarVNP;
+    }
+}
+
 void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
@@ -8566,31 +8605,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (lcl->HasSsaName())
                     {
-                        assert(lvaInSsa(lclNum));
-
-                        ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
-                        assert(wholeLclVarVNP.BothDefined());
-
-                        // Account for type mismatches.
-                        if (genActualType(varDsc) != genActualType(lcl))
-                        {
-                            if (genTypeSize(varDsc) != genTypeSize(lcl))
-                            {
-                                assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
-                                lcl->gtVNPair =
-                                    vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
-                            }
-                            else
-                            {
-                                assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
-                                       ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
-                                lcl->gtVNPair = wholeLclVarVNP;
-                            }
-                        }
-                        else
-                        {
-                            lcl->gtVNPair = wholeLclVarVNP;
-                        }
+                        fgValueNumberSsaVarDef(lcl);
                     }
                     else if (varDsc->IsAddressExposed())
                     {
@@ -9211,6 +9226,37 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(use.GetNode()->gtVNPair));
                 }
                 break;
+
+            case GT_SELECT:
+            {
+                GenTreeConditional* const conditional = tree->AsConditional();
+
+                ValueNumPair condvnp;
+                ValueNumPair condXvnp;
+                vnStore->VNPUnpackExc(conditional->gtCond->gtVNPair, &condvnp, &condXvnp);
+
+                ValueNumPair op1vnp;
+                ValueNumPair op1Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
+                ValueNumPair op2vnp;
+                ValueNumPair op2Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                // Collect the exception sets.
+                ValueNumPair vnpExcSet = vnStore->VNPExcSetUnion(condXvnp, op1Xvnp);
+                vnpExcSet              = vnStore->VNPExcSetUnion(vnpExcSet, op2Xvnp);
+
+                // Get the normal value using the VN func.
+                VNFunc vnf = GetVNFuncForNode(tree);
+                assert(ValueNumStore::VNFuncIsLegal(vnf));
+                ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), vnf, condvnp, op1vnp, op2vnp);
+
+                // Attach the combined exception set
+                tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+
+                break;
+            }
 
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");

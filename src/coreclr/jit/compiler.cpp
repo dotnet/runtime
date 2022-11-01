@@ -4741,6 +4741,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doCse           = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
+        bool doIfConversion  = true;
         int  iterations      = 1;
 
 #if defined(OPT_CONFIG)
@@ -4753,6 +4754,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doCse           = doValueNum;
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doIfConversion  = doIfConversion && (JitConfig.JitDoIfConversion() != 0);
 
         if (opts.optRepeat)
         {
@@ -4832,6 +4834,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
+            }
+
+            if (doIfConversion)
+            {
+                // If conversion
+                //
+                DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
             }
 
             if (doRangeAnalysis)

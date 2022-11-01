@@ -2392,6 +2392,9 @@ public:
     GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
     GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
 
+    GenTreeConditional* gtNewConditionalNode(
+        genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
+
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
         var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -2831,6 +2834,7 @@ public:
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
+    GenTree* gtFoldExprConditional(GenTree* tree);
     GenTree* gtCreateHandleCompare(genTreeOps             oper,
                                    GenTree*               op1,
                                    GenTree*               op2,
@@ -4869,6 +4873,9 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
+    // Does value-numbering for a variable definition that has SSA.
+    void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
+
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
@@ -6082,6 +6089,7 @@ public:
     void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
+    PhaseStatus optIfConversion(); // If conversion
 
 protected:
     // This enumeration describes what is killed by a call.
@@ -6470,6 +6478,7 @@ protected:
     OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
+    bool optIfConvert(BasicBlock* block);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
@@ -7378,6 +7387,7 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -9576,6 +9586,8 @@ public:
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(GENERIC_CHECK)                                                              \
+        STRESS_MODE(IF_CONVERSION_COST)                                                         \
+        STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
