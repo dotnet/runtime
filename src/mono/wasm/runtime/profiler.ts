@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "./imports";
-import { AOTProfilerOptions, BrowserProfilerOptions, CoverageProfilerOptions } from "./types";
+import { AOTProfilerOptions, BrowserProfilerOptions } from "./types";
 import cwraps from "./cwraps";
 import { MonoMethod } from "./types";
 
@@ -23,22 +23,6 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
         options.sendTo = "Interop/Runtime::DumpAotProfileData";
     const arg = "aot:write-at-method=" + options.writeAt + ",send-to-method=" + options.sendTo;
     cwraps.mono_wasm_profiler_init_aot(arg);
-}
-
-// options = { writeAt: "<METHODNAME>", sendTo: "<METHODNAME>" }
-// <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
-// writeAt defaults to 'WebAssembly.Runtime::StopProfile'.
-// sendTo defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
-// DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.
-export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions): void {
-    if (options == null)
-        options = {};
-    if (!("writeAt" in options))
-        options.writeAt = "WebAssembly.Runtime::StopProfile";
-    if (!("sendTo" in options))
-        options.sendTo = "WebAssembly.Runtime::DumpCoverageProfileData";
-    const arg = "coverage:write-at-method=" + options.writeAt + ",send-to-method=" + options.sendTo;
-    cwraps.mono_wasm_profiler_init_coverage(arg);
 }
 
 export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {

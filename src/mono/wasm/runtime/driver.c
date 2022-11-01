@@ -42,9 +42,6 @@
 void core_initialize_internals ();
 #endif
 
-extern void mono_wasm_profiler_enter ();
-extern void mono_wasm_profiler_leave (MonoMethod *method);
-
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
@@ -1408,18 +1405,6 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_profiler_init_aot (const char *desc)
 {
 	mono_profiler_init_aot (desc);
-}
-
-#endif
-
-#ifdef ENABLE_COVERAGE_PROFILER
-
-void mono_profiler_init_coverage (const char *desc);
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_profiler_init_coverage (const char *desc)
-{
-	mono_profiler_init_coverage (desc);
 }
 
 #endif

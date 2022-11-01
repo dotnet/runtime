@@ -120,7 +120,6 @@ export type MonoConfig = {
 export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
-    coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
@@ -236,11 +235,6 @@ export type GlobalizationMode =
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
-}
-
-export type CoverageProfilerOptions = {
-    writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
 export type BrowserProfilerOptions = {

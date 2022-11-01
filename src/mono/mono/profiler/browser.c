@@ -9,9 +9,6 @@
 
 #ifdef TARGET_WASM
 
-#include "browser.h"
-#include "helper.h"
-
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>
@@ -36,6 +33,12 @@ struct _MonoProfiler {
 static MonoProfiler browser_profiler;
 
 #ifdef HOST_WASM
+
+void
+mono_wasm_profiler_enter ();
+
+void
+mono_wasm_profiler_leave (MonoMethod *method);
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)

@@ -100,8 +100,8 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
-    (<any>closure) = null;
     const fqn = closure.fqn;
+    (<any>closure) = null;
     return function bound_fn_0V() {
         const mark = startMeasure();
         const sp = Module.stackSave();

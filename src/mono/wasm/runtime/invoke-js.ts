@@ -97,8 +97,8 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
 function bind_fn_0V(closure: BindingClosure) {
     const fn = closure.fn;
-    (<any>closure) = null;
     const fqn = closure.fqn;
+    (<any>closure) = null;
     return function bound_fn_0V(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {

@@ -9,7 +9,7 @@ import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init } from "./icu";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
+import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
 import { mono_on_abort, mono_exit } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
@@ -430,9 +430,6 @@ async function _apply_configuration_from_args() {
 
     if (config.aotProfilerOptions)
         mono_wasm_init_aot_profiler(config.aotProfilerOptions);
-
-    if (config.coverageProfilerOptions)
-        mono_wasm_init_coverage_profiler(config.coverageProfilerOptions);
 
     if (config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(config.browserProfilerOptions);
