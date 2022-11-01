@@ -1627,6 +1627,32 @@ dump_interp_inst (InterpInst *ins)
 	g_string_free (str, TRUE);
 }
 
+static GString*
+get_interp_bb_links (InterpBasicBlock *bb)
+{
+	GString *str = g_string_new ("");
+
+	if (bb->in_count) {
+		g_string_append_printf (str, "IN (%d", bb->in_bb [0]->index);
+		for (int i = 1; i < bb->in_count; i++)
+			g_string_append_printf (str, " %d", bb->in_bb [i]->index);
+		g_string_append_printf (str, "), ");
+	} else {
+		g_string_append_printf (str, "IN (nil), ");
+	}
+
+	if (bb->out_count) {
+		g_string_append_printf (str, "OUT (%d", bb->out_bb [0]->index);
+		for (int i = 1; i < bb->out_count; i++)
+			g_string_append_printf (str, " %d", bb->out_bb [i]->index);
+		g_string_append_printf (str, ")");
+	} else {
+		g_string_append_printf (str, "OUT (nil)");
+	}
+
+	return str;
+}
+
 static void
 dump_interp_bb (InterpBasicBlock *bb)
 {
@@ -8722,8 +8748,11 @@ retry:
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
 			foreach_local_var (td, ins, local_defs, clear_local_defs);
 
-		if (td->verbose_level)
-			g_print ("BB%d\n", bb->index);
+		if (td->verbose_level) {
+			GString* bb_info = get_interp_bb_links (bb);
+			g_print ("\nBB%d: %s\n", bb->index, bb_info->str);
+			g_string_free (bb_info, TRUE);
+		}
 
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
