@@ -818,21 +818,21 @@ extends:
               eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
               eq(variables['isRollingBuild'], true))
 
-    #
-    # Libraries debug build that only runs when coreclr is changed
-    # Only do this on PR builds since we use the Release builds for these test runs in CI
-    # and those are already built above
-    #
-    - ${{ if eq(variables['isRollingBuild'], false) }}:
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: Debug
-          platforms:
-          - windows_x86
-          jobParameters:
-            condition: >-
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
+    # #
+    # # Libraries debug build that only runs when coreclr is changed
+    # # Only do this on PR builds since we use the Release builds for these test runs in CI
+    # # and those are already built above
+    # #
+    # - ${{ if eq(variables['isRollingBuild'], false) }}:
+    #   - template: /eng/pipelines/common/platform-matrix.yml
+    #     parameters:
+    #       jobTemplate: /eng/pipelines/libraries/build-job.yml
+    #       buildConfig: Debug
+    #       platforms:
+    #       - windows_x86
+    #       jobParameters:
+    #         condition: >-
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
     #
     # Libraries release build that only runs when coreclr is changed in PRs
@@ -850,21 +850,21 @@ extends:
             condition: >-
               eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/build-job.yml
-        buildConfig: Release
-        platforms:
-        - windows_x86
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        jobParameters:
-          framework: net48
-          runTests: true
-          testScope: innerloop
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
+    # - template: /eng/pipelines/common/platform-matrix.yml
+    #   parameters:
+    #     jobTemplate: /eng/pipelines/libraries/build-job.yml
+    #     buildConfig: Release
+    #     platforms:
+    #     - windows_x86
+    #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    #     jobParameters:
+    #       framework: net48
+    #       runTests: true
+    #       testScope: innerloop
+    #       condition: >-
+    #         or(
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+    #           eq(variables['isRollingBuild'], true))
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -949,24 +949,24 @@ extends:
     # CoreCLR Test executions using live libraries
     # Only when CoreCLR is changed
     #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-        buildConfig: checked
-        platforms:
-        - Linux_arm
-        # - windows_x86
-        # - windows_arm64
-        helixQueueGroup: pr
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        jobParameters:
-          testGroup: innerloop
-          liveLibrariesBuildConfig: Release
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
+    # - template: /eng/pipelines/common/platform-matrix.yml
+    #   parameters:
+    #     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    #     buildConfig: checked
+    #     platforms:
+    #     - Linux_arm
+    #     - windows_x86
+    #     - windows_arm64
+    #     helixQueueGroup: pr
+    #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    #     jobParameters:
+    #       testGroup: innerloop
+    #       liveLibrariesBuildConfig: Release
+    #       condition: >-
+    #         or(
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+    #           eq(variables['isRollingBuild'], true))
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -975,7 +975,7 @@ extends:
         platforms:
         # - OSX_x64
         - Linux_x64
-        - Linux_arm64
+        # - Linux_arm64
         # - windows_x64
         helixQueueGroup: pr
         helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -1229,50 +1229,50 @@ extends:
     # | linux-x64        | Release | Release |
     # | windows-x64      | Release | Release |
 
-    #
-    # Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
-    # Only when the PR contains a coreclr change
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-        buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-        platforms:
-        - Linux_arm64
-        # - windows_x86
-        - Linux_musl_x64
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        helixQueueGroup: libraries
-        jobParameters:
-          testScope: innerloop
-          liveRuntimeBuildConfig: checked
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
+    # #
+    # # Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
+    # # Only when the PR contains a coreclr change
+    # #
+    # - template: /eng/pipelines/common/platform-matrix.yml
+    #   parameters:
+    #     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    #     platforms:
+    #     - Linux_arm64
+    #     # - windows_x86
+    #     - Linux_musl_x64
+    #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    #     helixQueueGroup: libraries
+    #     jobParameters:
+    #       testScope: innerloop
+    #       liveRuntimeBuildConfig: checked
+    #       condition: >-
+    #         or(
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+    #           eq(variables['isRollingBuild'], true))
 
-    #
-    # Release Libraries Test Execution against a checked runtime
-    # Only if CoreCLR or Libraries is changed
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-        buildConfig: Release
-        platforms:
-        - Linux_musl_arm
-        - Linux_musl_arm64
-        - Linux_x64
-        # - windows_x64
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        helixQueueGroup: libraries
-        jobParameters:
-          testScope: innerloop
-          liveRuntimeBuildConfig: checked
-          condition: >-
-            or(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-              eq(variables['isRollingBuild'], true))
+    # #
+    # # Release Libraries Test Execution against a checked runtime
+    # # Only if CoreCLR or Libraries is changed
+    # #
+    # - template: /eng/pipelines/common/platform-matrix.yml
+    #   parameters:
+    #     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    #     buildConfig: Release
+    #     platforms:
+    #     - Linux_musl_arm
+    #     - Linux_musl_arm64
+    #     - Linux_x64
+    #     # - windows_x64
+    #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    #     helixQueueGroup: libraries
+    #     jobParameters:
+    #       testScope: innerloop
+    #       liveRuntimeBuildConfig: checked
+    #       condition: >-
+    #         or(
+    #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+    #           eq(variables['isRollingBuild'], true))
 
     # - template: /eng/pipelines/common/platform-matrix.yml
     #   parameters:
