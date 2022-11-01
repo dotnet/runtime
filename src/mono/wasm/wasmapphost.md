@@ -1,46 +1,54 @@
 # Wasm App Host
 
-Wasm App Host allows to use `dotnet run` to start a wasm application.
+WasmAppHost is used when `dotnet run` executes for wasm targeting projects.
 
 ## Command line arguments
 
-- **--debug** | **-d**: Whether to start debug server
-- **--host** | **-h**: A host configuration name
-- **--runtime-config** | **-r**: A path for the runtimeconfig.json to use
+- **--debug** | **-d**: Whether to start debug server.
+- **--host** | **-h**: A host configuration name.
+- **--runtime-config** | **-r**: A path for the runtimeconfig.json to use.
 
 ## Runtime config
 
-- **defaultConfig**: A name of the default per-host configuration.
-- **firefoxProxyPort**: A port number where Mono debug proxy for Firefox is listening.
-- **firefoxDebuggingPort**: A port number where Firefox is listening for remote debugging.
-- **chromeProxyPort**: A port number where Mono debug proxy for Chrome is listening.
-- **chromeDebuggingPort**: A port number where Chrome is listening for remote debugging.
-- **webServerPort**: A port number to start HTTP server on, defaults to `9000`.
+The `runtimeconfig.template.json` is a template that used by the .NET runtime to run the application. The configuration for Wasm App Host is defined int the `wasmHostProperties`. Following properties can be applied.
+
+- `webServerPort`: A port number to start HTTP server on, defaults to `9000`.
+- `perHostConfig`: An array of configuration per host type.
+- `defaultConfig`: A name of the default per-host configuration.
+- `firefoxProxyPort`: A port number where Mono debug proxy for Firefox is listening.
+- `firefoxDebuggingPort`: A port number where Firefox is listening for remote debugging.
+- `chromeProxyPort`: A port number where Mono debug proxy for Chrome is listening.
+- `chromeDebuggingPort`: A port number where Chrome is listening for remote debugging.
 
 ## Per host configuration
 
-Wasm App Host supports starting the application on various engines, like browser, node js or v8. These engines has configuration in the `runtimeconfig.template.json` under `wasmHostProperties/perHostConfig`. Each of the configuration in this array has a name that can be passed as a command-line argument `--host` or `-h` when starting the application. If it's not specified, the `defaultConfig` in runtime config is used and if even that is not specified, a first one is used. 
+Wasm App Host supports running the application on various hosts, like browser, node js, v8, etc. These hosts has configuration in the `wasmHostProperties/perHostConfig`. Each of the configuration in this array has a name that can be passed as a command-line argument `--host` (`-h`) when starting the application, or as a `defaultConfig` in the `runtimeconfig.template.json`. If it's not specified, a first one declaration is used. 
 
-> To use JavaScript engines, the executable needs to be present in the `PATH`
+> To use JavaScript engines or node, the executable needs to be present in the `PATH`.
 
-Depending on the engine, various properties can be set. 
+Depending on the host type, various properties can be set. 
 
-### Browser (`host: browser`)
+### Browser
 
-- **html-path**: A relative path of an HTML file to open in the browser. Eg.: `index.html`
+- `host: browser`: A identify this configuration to run on the browser.
+- `html-path`: A relative path of an HTML file to open in the browser. Eg.: `index.html`
 
-### V8 (`host: v8`)
+### V8
 
-- **js-path**: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
+- `host: v8`: A identify this configuration to run on the V8.
+- `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
-### Node JS (`host: nodejs`)
+### Node JS
 
-- **js-path**: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
+- `host: v8`: A identify this configuration to run on the node.
+- `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
 ### SpiderMonkey
 
-- **js-path**: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
+- `host: spidermonkey`: A identify this configuration to run on the SpiderMonkey.
+- `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
 ### JavaScriptCore
 
-- **js-path**: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
+- `host: javascriptcore`: A identify this configuration to run on the JavaScriptCore.
+- `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
