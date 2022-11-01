@@ -744,6 +744,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
 
+        if (Profilers?.Length > 0)
+        {
+            foreach (var profiler in Profilers)
+            {
+                processArgs.Add($"\"--profile={profiler}\"");
+            }
+        }
+
+
         if (AotProfilePath?.Length > 0)
         {
             aotArgs.Add("profile-only");
