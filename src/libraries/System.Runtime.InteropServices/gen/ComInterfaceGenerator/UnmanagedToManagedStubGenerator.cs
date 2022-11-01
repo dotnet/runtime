@@ -68,7 +68,7 @@ namespace Microsoft.Interop
                 _context,
                 methodToInvoke);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -121,6 +121,11 @@ namespace Microsoft.Interop
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));
 
             return Block(allStatements);
+        }
+
+        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateAbiMethodSignatureData()
+        {
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

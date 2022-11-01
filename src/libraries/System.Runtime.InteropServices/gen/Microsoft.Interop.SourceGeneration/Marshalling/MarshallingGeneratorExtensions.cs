@@ -52,14 +52,14 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
         /// <param name="info">Object to marshal</param>
-        public static ParameterSyntax AsParameter(this IMarshallingGenerator generator, TypePositionInfo info)
+        public static ParameterSyntax AsParameter(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
         {
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
                 return GenerateForwardingParameter(info);
             }
-            return Parameter(Identifier(info.InstanceIdentifier))
+            return Parameter(Identifier(context.GetIdentifiers(info).native))
                 .WithType(behavior switch
                 {
                     SignatureBehavior.NativeType => generator.AsNativeType(info),
@@ -209,7 +209,7 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax)),
                 ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
-                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info).Type, IdentifierName(nativeIdentifier))),
+                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info, context).Type, IdentifierName(nativeIdentifier))),
                 _ => throw new InvalidOperationException()
             };
         }

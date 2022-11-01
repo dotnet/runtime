@@ -124,12 +124,12 @@ namespace Microsoft.Interop
         public ImmutableArray<BoundGenerator> AllMarshallers { get; }
 
         public ImmutableArray<BoundGenerator> NativeParameterMarshallers { get; }
-        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
+        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData(StubCodeContext context)
         {
             return (
                 ParameterList(
                     SeparatedList(
-                        NativeParameterMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
+                        NativeParameterMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo, context)))),
                 NativeReturnMarshaller.Generator.AsReturnType(NativeReturnMarshaller.TypeInfo),
                 NativeReturnMarshaller.Generator.GenerateAttributesForReturnType(NativeReturnMarshaller.TypeInfo)
             );

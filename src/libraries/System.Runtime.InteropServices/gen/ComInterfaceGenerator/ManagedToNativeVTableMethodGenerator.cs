@@ -160,7 +160,7 @@ namespace Microsoft.Interop
                             Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(index)))))),
                     callConv));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
 
             if (_setLastError)
@@ -248,7 +248,7 @@ namespace Microsoft.Interop
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv)
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
-            var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData();
+            var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
             functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 

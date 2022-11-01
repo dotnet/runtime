@@ -149,15 +149,13 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
-        private static MemberDeclarationSyntax PrintGeneratedSource(
+        private static MethodDeclarationSyntax PrintGeneratedSource(
             ContainingSyntax stubMethodSyntax,
-            ContainingSyntax originalInterfaceType,
             SignatureContext stub,
             BlockSyntax stubCode)
         {
             // Create stub function
             return MethodDeclaration(stub.StubReturnType, stubMethodSyntax.Identifier)
-                .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName(originalInterfaceType.Identifier)))
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(stubMethodSyntax.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
@@ -354,9 +352,9 @@ namespace Microsoft.Interop
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
                     PrintGeneratedSource(
                         methodStub.StubMethodSyntaxTemplate,
-                        methodStub.ContainingSyntaxContext.ContainingSyntax[0],
                         methodStub.SignatureContext,
-                        code)),
+                        code)
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName(methodStub.ContainingSyntaxContext.ContainingSyntax[0].Identifier)))),
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
@@ -386,7 +384,7 @@ namespace Microsoft.Interop
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 methodStub.GeneratorFactory.Key.TargetFramework,
                 methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
-                elements.ToImmutable(),
+                elements.MoveToImmutable(),
                 (elementInfo, ex) =>
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
@@ -400,10 +398,28 @@ namespace Microsoft.Interop
                     IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)),
                 catchClause: null);
 
-            var abiImplentationName = methodStub.StubMethodSyntaxTemplate with
+            (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
+
+            AttributeSyntax unmanagedCallersOnlyAttribute = Attribute(
+                ParseName(TypeNames.UnmanagedCallersOnlyAttribute));
+
+            if (methodStub.CallingConvention.Array.Length != 0)
             {
-                Identifier = Identifier($"ABI_{methodStub.StubMethodSyntaxTemplate.Identifier.Text}")
-            };
+                unmanagedCallersOnlyAttribute = unmanagedCallersOnlyAttribute.AddArgumentListArguments(
+                    AttributeArgument(
+                        ImplicitArrayCreationExpression(
+                            InitializerExpression(SyntaxKind.CollectionInitializerExpression,
+                                SeparatedList<ExpressionSyntax>(
+                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"CallConv{callConv.Name.ValueText}")))))))
+                    .WithNameEquals(NameEquals(IdentifierName("CallConvs"))));
+            }
+
+            MethodDeclarationSyntax unmanagedToManagedStub =
+                MethodDeclaration(returnType, $"ABI_{methodStub.StubMethodSyntaxTemplate.Identifier.Text}")
+                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
+                .WithParameterList(unmanagedParameterList)
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(unmanagedCallersOnlyAttribute)))
+                .WithBody(code);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -413,11 +429,7 @@ namespace Microsoft.Interop
                         Identifier("Native"),
                         null))
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
-                    PrintGeneratedSource(
-                        abiImplentationName,
-                        methodStub.ContainingSyntaxContext.ContainingSyntax[0],
-                        methodStub.SignatureContext,
-                        code)),
+                    unmanagedToManagedStub),
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 

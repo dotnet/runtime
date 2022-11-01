@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -18,9 +20,27 @@ namespace ComInterfaceGenerator.Tests
         {
             public readonly record struct NoCasting;
 
-            internal partial interface INativeObject : IUnmanagedInterfaceType<NoCasting>
+            internal partial interface INativeObject : IUnmanagedInterfaceType<INativeObject, NoCasting>
             {
-                static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
+                static NoCasting IUnmanagedInterfaceType<INativeObject, NoCasting>.TypeKey => default;
+
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 2);
+                static void* IUnmanagedInterfaceType<INativeObject, NoCasting>.VirtualMethodTableManagedImplementation
+                {
+                    get
+                    {
+                        if (s_vtable[0] == null)
+                        {
+                            s_vtable[0] = (delegate* unmanaged<nint, int>)&Native.ABI_GetData;
+                            s_vtable[1] = (delegate* unmanaged<nint, int, void>)&Native.ABI_SetData;
+                        }
+                        return s_vtable;
+                    }
+                }
+
+                static void* IUnmanagedInterfaceType<INativeObject, NoCasting>.GetUnmanagedWrapperForObject(INativeObject obj) => null;
+
+                static INativeObject IUnmanagedInterfaceType<INativeObject, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
 
                 [VirtualMethodIndex(0, ImplicitThisParameter = true)]
                 int GetData();

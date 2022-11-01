@@ -119,7 +119,7 @@ namespace Microsoft.Interop
         {
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
 
@@ -203,7 +203,7 @@ namespace Microsoft.Interop
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }
