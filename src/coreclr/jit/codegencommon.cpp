@@ -1841,9 +1841,9 @@ void CodeGen::genGenerateMachineCode()
             printf("; partially interruptible\n");
         }
 
-        if (compiler->fgHaveProfileData())
+        if (compiler->fgHaveProfileWeights())
         {
-            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+            printf("; with %s weights: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
                    compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
                    compiler->fgCalledCount);
         }

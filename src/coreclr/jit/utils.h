@@ -372,7 +372,7 @@ public:
     {
 #ifdef DEBUG
         assert(m_initialized);
-        (const_cast<PhasedVar*>(this))->m_writePhase = false;
+        m_writePhase = false;
 #endif // DEBUG
         return m_value;
     }
@@ -382,7 +382,7 @@ public:
     {
 #ifdef DEBUG
         assert(m_initialized);
-        (const_cast<PhasedVar*>(this))->m_writePhase = false;
+        m_writePhase = false;
 #endif // DEBUG
     }
 
@@ -391,7 +391,7 @@ public:
     bool HasFinalValue() const
     {
 #ifdef DEBUG
-        return (const_cast<PhasedVar*>(this))->m_writePhase == false;
+        return m_writePhase == false;
 #else
         return true;
 #endif // DEBUG
@@ -455,10 +455,11 @@ private:
 
     T m_value;
 #ifdef DEBUG
-    bool m_initialized; // true once the variable has been initialized, that is, written once.
-    bool m_writePhase;  // true if we are in the (initial) "write" phase. Once the value is read, this changes to false,
-                        // and can't be changed back.
-#endif                  // DEBUG
+    bool         m_initialized; // true once the variable has been initialized, that is, written once.
+    mutable bool m_writePhase; // true if we are in the (initial) "write" phase. Once the value is read, this changes to
+                               // false,
+                               // and can't be changed back.
+#endif                         // DEBUG
 };
 
 class HelperCallProperties
