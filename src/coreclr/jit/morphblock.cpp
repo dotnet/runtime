@@ -396,11 +396,7 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
     JITDUMP("MorphBlock for %s tree, before:\n", (isDest ? "dst" : "src"));
     DISPTREE(tree);
 
-    // Src can be a primitive type.
-    assert(!isDest || varTypeIsStruct(tree));
-
-    GenTree* handleTree = nullptr;
-    GenTree* addr       = nullptr;
+    assert(varTypeIsStruct(tree));
 
     if (tree->OperIs(GT_COMMA))
     {
@@ -413,16 +409,7 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
         }
     }
 
-    if (!tree->OperIsBlk())
-    {
-        JITDUMP("MorphBlock after:\n");
-        DISPTREE(tree);
-        return tree;
-    }
-
-    GenTree* blkAddr = tree->AsBlk()->Addr();
-    assert(blkAddr != nullptr);
-    assert(blkAddr->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    assert(!tree->OperIsIndir() || varTypeIsI(genActualType(tree->AsIndir()->Addr())));
 
     JITDUMP("MorphBlock after:\n");
     DISPTREE(tree);
