@@ -148,14 +148,15 @@ namespace System
                 nuint stopLoopAtOffset = numElements & ~(nuint)7;
                 do
                 {
-                    Unsafe.Add(ref refData, (nint)i + 0) = value;
-                    Unsafe.Add(ref refData, (nint)i + 1) = value;
-                    Unsafe.Add(ref refData, (nint)i + 2) = value;
-                    Unsafe.Add(ref refData, (nint)i + 3) = value;
-                    Unsafe.Add(ref refData, (nint)i + 4) = value;
-                    Unsafe.Add(ref refData, (nint)i + 5) = value;
-                    Unsafe.Add(ref refData, (nint)i + 6) = value;
-                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                    ref T current = ref Unsafe.Add (ref refData, (nint)i);
+                    current = value;
+                    Unsafe.Add(ref current, 1) = value;
+                    Unsafe.Add(ref current, 2) = value;
+                    Unsafe.Add(ref current, 3) = value;
+                    Unsafe.Add(ref current, 4) = value;
+                    Unsafe.Add(ref current, 5) = value;
+                    Unsafe.Add(ref current, 6) = value;
+                    Unsafe.Add(ref current, 7) = value;
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
@@ -163,10 +164,11 @@ namespace System
 
             if ((numElements & 4) != 0)
             {
-                Unsafe.Add(ref refData, (nint)i + 0) = value;
-                Unsafe.Add(ref refData, (nint)i + 1) = value;
-                Unsafe.Add(ref refData, (nint)i + 2) = value;
-                Unsafe.Add(ref refData, (nint)i + 3) = value;
+                ref T current = ref Unsafe.Add (ref refData, (nint)i);
+                current = value;
+                Unsafe.Add(ref current, 1) = value;
+                Unsafe.Add(ref current, 2) = value;
+                Unsafe.Add(ref current, 3) = value;
                 i += 4;
             }
 
@@ -174,8 +176,9 @@ namespace System
 
             if ((numElements & 2) != 0)
             {
-                Unsafe.Add(ref refData, (nint)i + 0) = value;
-                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                ref T current = ref Unsafe.Add (ref refData, (nint)i);
+                current = value;
+                Unsafe.Add(ref current, 1) = value;
                 i += 2;
             }
 
@@ -237,14 +240,15 @@ namespace System
                 {
                     length -= 8;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 3)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 4)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 5)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 6)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    if (value.Equals(current) ||
+                        value.Equals(Unsafe.Add(ref current, 1)) ||
+                        value.Equals(Unsafe.Add(ref current, 2)) ||
+                        value.Equals(Unsafe.Add(ref current, 3)) ||
+                        value.Equals(Unsafe.Add(ref current, 4)) ||
+                        value.Equals(Unsafe.Add(ref current, 5)) ||
+                        value.Equals(Unsafe.Add(ref current, 6)) ||
+                        value.Equals(Unsafe.Add(ref current, 7)))
                     {
                         goto Found;
                     }
@@ -256,10 +260,11 @@ namespace System
                 {
                     length -= 4;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
-                        value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    if (value.Equals(current) ||
+                        value.Equals(Unsafe.Add(ref current, 1)) ||
+                        value.Equals(Unsafe.Add(ref current, 2)) ||
+                        value.Equals(Unsafe.Add(ref current, 3)))
                     {
                         goto Found;
                     }
@@ -308,21 +313,22 @@ namespace System
                 {
                     length -= 8;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    if (value.Equals(current))
                         goto Found;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    if (value.Equals(Unsafe.Add(ref current, 1)))
                         goto Found1;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    if (value.Equals(Unsafe.Add(ref current, 2)))
                         goto Found2;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    if (value.Equals(Unsafe.Add(ref current, 3)))
                         goto Found3;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
+                    if (value.Equals(Unsafe.Add(ref current, 4)))
                         goto Found4;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
+                    if (value.Equals(Unsafe.Add(ref current, 5)))
                         goto Found5;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
+                    if (value.Equals(Unsafe.Add(ref current, 6)))
                         goto Found6;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    if (value.Equals(Unsafe.Add(ref current, 7)))
                         goto Found7;
 
                     index += 8;
@@ -332,13 +338,14 @@ namespace System
                 {
                     length -= 4;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    if (value.Equals(current))
                         goto Found;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    if (value.Equals(Unsafe.Add(ref current, 1)))
                         goto Found1;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    if (value.Equals(Unsafe.Add(ref current, 2)))
                         goto Found2;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    if (value.Equals(Unsafe.Add(ref current, 3)))
                         goto Found3;
 
                     index += 4;
@@ -396,28 +403,29 @@ namespace System
 
                 while ((length - index) >= 8)
                 {
-                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                    lookUp = Unsafe.Add(ref current, 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found4;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                    lookUp = Unsafe.Add(ref current, 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found5;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                    lookUp = Unsafe.Add(ref current, 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found6;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                    lookUp = Unsafe.Add(ref current, 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found7;
 
@@ -426,16 +434,17 @@ namespace System
 
                 if ((length - index) >= 4)
                 {
-                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found3;
 
@@ -502,28 +511,29 @@ namespace System
 
                 while ((length - index) >= 8)
                 {
-                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                    lookUp = Unsafe.Add(ref current, 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found4;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                    lookUp = Unsafe.Add(ref current, 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found5;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                    lookUp = Unsafe.Add(ref current, 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found6;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                    lookUp = Unsafe.Add(ref current, 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found7;
 
@@ -532,16 +542,17 @@ namespace System
 
                 if ((length - index) >= 4)
                 {
-                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    ref T current = ref Unsafe.Add (ref searchSpace, index);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found3;
 
@@ -718,21 +729,22 @@ namespace System
                 {
                     length -= 8;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 7)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    if (value.Equals(Unsafe.Add(ref current, 7)))
                         goto Found7;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 6)))
+                    if (value.Equals(Unsafe.Add(ref current, 6)))
                         goto Found6;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 5)))
+                    if (value.Equals(Unsafe.Add(ref current, 5)))
                         goto Found5;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 4)))
+                    if (value.Equals(Unsafe.Add(ref current, 4)))
                         goto Found4;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
+                    if (value.Equals(Unsafe.Add(ref current, 3)))
                         goto Found3;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
+                    if (value.Equals(Unsafe.Add(ref current, 2)))
                         goto Found2;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
+                    if (value.Equals(Unsafe.Add(ref current, 1)))
                         goto Found1;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length)))
+                    if (value.Equals(current))
                         goto Found;
                 }
 
@@ -740,13 +752,14 @@ namespace System
                 {
                     length -= 4;
 
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    if (value.Equals(Unsafe.Add(ref current, 3)))
                         goto Found3;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
+                    if (value.Equals(Unsafe.Add(ref current, 2)))
                         goto Found2;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
+                    if (value.Equals(Unsafe.Add(ref current, 1)))
                         goto Found1;
-                    if (value.Equals(Unsafe.Add(ref searchSpace, length)))
+                    if (value.Equals(current))
                         goto Found;
                 }
 
@@ -802,28 +815,29 @@ namespace System
                 {
                     length -= 8;
 
-                    lookUp = Unsafe.Add(ref searchSpace, length + 7);
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    lookUp = Unsafe.Add(ref current, 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found7;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 6);
+                    lookUp = Unsafe.Add(ref current, 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found6;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 5);
+                    lookUp = Unsafe.Add(ref current, 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found5;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 4);
+                    lookUp = Unsafe.Add(ref current, 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found4;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found;
                 }
@@ -832,16 +846,17 @@ namespace System
                 {
                     length -= 4;
 
-                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
                         goto Found;
                 }
@@ -907,28 +922,29 @@ namespace System
                 {
                     length -= 8;
 
-                    lookUp = Unsafe.Add(ref searchSpace, length + 7);
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    lookUp = Unsafe.Add(ref current, 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found7;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 6);
+                    lookUp = Unsafe.Add(ref current, 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found6;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 5);
+                    lookUp = Unsafe.Add(ref current, 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found5;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 4);
+                    lookUp = Unsafe.Add(ref current, 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found4;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found;
                 }
@@ -937,16 +953,17 @@ namespace System
                 {
                     length -= 4;
 
-                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    ref T current = ref Unsafe.Add (ref searchSpace, length);
+                    lookUp = Unsafe.Add(ref current, 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found3;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    lookUp = Unsafe.Add(ref current, 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found2;
-                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    lookUp = Unsafe.Add(ref current, 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found1;
-                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    lookUp = current;
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
                         goto Found;
                 }
@@ -1205,36 +1222,38 @@ namespace System
             {
                 length -= 8;
 
-                lookUp0 = Unsafe.Add(ref first, index);
-                lookUp1 = Unsafe.Add(ref second, index);
+                ref T currentFirst = ref Unsafe.Add(ref first, index);
+                ref T currentSecond = ref Unsafe.Add(ref second, index);
+                lookUp0 = currentFirst;
+                lookUp1 = currentSecond;
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 1);
-                lookUp1 = Unsafe.Add(ref second, index + 1);
+                lookUp0 = Unsafe.Add(ref currentFirst, 1);
+                lookUp1 = Unsafe.Add(ref currentSecond, 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 2);
-                lookUp1 = Unsafe.Add(ref second, index + 2);
+                lookUp0 = Unsafe.Add(ref currentFirst, 2);
+                lookUp1 = Unsafe.Add(ref currentSecond, 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 3);
-                lookUp1 = Unsafe.Add(ref second, index + 3);
+                lookUp0 = Unsafe.Add(ref currentFirst, 3);
+                lookUp1 = Unsafe.Add(ref currentSecond, 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 4);
-                lookUp1 = Unsafe.Add(ref second, index + 4);
+                lookUp0 = Unsafe.Add(ref currentFirst, 4);
+                lookUp1 = Unsafe.Add(ref currentSecond, 4);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 5);
-                lookUp1 = Unsafe.Add(ref second, index + 5);
+                lookUp0 = Unsafe.Add(ref currentFirst, 5);
+                lookUp1 = Unsafe.Add(ref currentSecond, 5);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 6);
-                lookUp1 = Unsafe.Add(ref second, index + 6);
+                lookUp0 = Unsafe.Add(ref currentFirst, 6);
+                lookUp1 = Unsafe.Add(ref currentSecond, 6);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 7);
-                lookUp1 = Unsafe.Add(ref second, index + 7);
+                lookUp0 = Unsafe.Add(ref currentFirst, 7);
+                lookUp1 = Unsafe.Add(ref currentSecond, 7);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
 
@@ -1245,20 +1264,22 @@ namespace System
             {
                 length -= 4;
 
-                lookUp0 = Unsafe.Add(ref first, index);
-                lookUp1 = Unsafe.Add(ref second, index);
+                ref T currentFirst = ref Unsafe.Add(ref first, index);
+                ref T currentSecond = ref Unsafe.Add(ref second, index);
+                lookUp0 = currentFirst;
+                lookUp1 = currentSecond;
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 1);
-                lookUp1 = Unsafe.Add(ref second, index + 1);
+                lookUp0 = Unsafe.Add(ref currentFirst, 1);
+                lookUp1 = Unsafe.Add(ref currentSecond, 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 2);
-                lookUp1 = Unsafe.Add(ref second, index + 2);
+                lookUp0 = Unsafe.Add(ref currentFirst, 2);
+                lookUp1 = Unsafe.Add(ref currentSecond, 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
-                lookUp0 = Unsafe.Add(ref first, index + 3);
-                lookUp1 = Unsafe.Add(ref second, index + 3);
+                lookUp0 = Unsafe.Add(ref currentFirst, 3);
+                lookUp1 = Unsafe.Add(ref currentSecond, 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                     goto NotEqual;
 
@@ -1341,14 +1362,15 @@ namespace System
                 {
                     length -= 8;
 
-                    if (Unsafe.Add(ref searchSpace, offset) == value
-                     || Unsafe.Add(ref searchSpace, offset + 1) == value
-                     || Unsafe.Add(ref searchSpace, offset + 2) == value
-                     || Unsafe.Add(ref searchSpace, offset + 3) == value
-                     || Unsafe.Add(ref searchSpace, offset + 4) == value
-                     || Unsafe.Add(ref searchSpace, offset + 5) == value
-                     || Unsafe.Add(ref searchSpace, offset + 6) == value
-                     || Unsafe.Add(ref searchSpace, offset + 7) == value)
+                    ref T current = ref Unsafe.Add (ref searchSpace, offset);
+                    if (current == value
+                     || Unsafe.Add(ref current, 1) == value
+                     || Unsafe.Add(ref current, 2) == value
+                     || Unsafe.Add(ref current, 3) == value
+                     || Unsafe.Add(ref current, 4) == value
+                     || Unsafe.Add(ref current, 5) == value
+                     || Unsafe.Add(ref current, 6) == value
+                     || Unsafe.Add(ref current, 7) == value)
                     {
                         return true;
                     }
@@ -1360,10 +1382,11 @@ namespace System
                 {
                     length -= 4;
 
-                    if (Unsafe.Add(ref searchSpace, offset) == value
-                     || Unsafe.Add(ref searchSpace, offset + 1) == value
-                     || Unsafe.Add(ref searchSpace, offset + 2) == value
-                     || Unsafe.Add(ref searchSpace, offset + 3) == value)
+                    ref T current = ref Unsafe.Add (ref searchSpace, offset);
+                    if (current == value
+                     || Unsafe.Add(ref current, 1) == value
+                     || Unsafe.Add(ref current, 2) == value
+                     || Unsafe.Add(ref current, 3) == value)
                     {
                         return true;
                     }
@@ -1472,14 +1495,15 @@ namespace System
                 {
                     length -= 8;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 4) == value)) return (int)offset + 4;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 5) == value)) return (int)offset + 5;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 6) == value)) return (int)offset + 6;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 7) == value)) return (int)offset + 7;
+                    ref TValue current = ref Unsafe.Add (ref searchSpace, offset);
+                    if (TNegator.NegateIfNeeded(current == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 1) == value)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 2) == value)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 3) == value)) return (int)offset + 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 4) == value)) return (int)offset + 4;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 5) == value)) return (int)offset + 5;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 6) == value)) return (int)offset + 6;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 7) == value)) return (int)offset + 7;
 
                     offset += 8;
                 }
@@ -1488,10 +1512,11 @@ namespace System
                 {
                     length -= 4;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)offset + 1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)offset + 2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)offset + 3;
+                    ref TValue current = ref Unsafe.Add (ref searchSpace, offset);
+                    if (TNegator.NegateIfNeeded(current == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 1) == value)) return (int)offset + 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 2) == value)) return (int)offset + 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, 3) == value)) return (int)offset + 3;
 
                     offset += 4;
                 }
@@ -2119,14 +2144,15 @@ namespace System
                 {
                     length -= 8;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 4) == value)) return (int)offset - 4;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 5) == value)) return (int)offset - 5;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 6) == value)) return (int)offset - 6;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 7) == value)) return (int)offset - 7;
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
+                    if (TNegator.NegateIfNeeded(current == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -1) == value)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -2) == value)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -3) == value)) return (int)offset - 3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -4) == value)) return (int)offset - 4;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -5) == value)) return (int)offset - 5;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -6) == value)) return (int)offset - 6;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -7) == value)) return (int)offset - 7;
 
                     offset -= 8;
                 }
@@ -2135,10 +2161,11 @@ namespace System
                 {
                     length -= 4;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)offset;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)offset - 1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)offset - 2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)offset - 3;
+                    ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
+                    if (TNegator.NegateIfNeeded(current == value)) return (int)offset;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -1) == value)) return (int)offset - 1;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -2) == value)) return (int)offset - 2;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref current, -3) == value)) return (int)offset - 3;
 
                     offset -= 4;
                 }

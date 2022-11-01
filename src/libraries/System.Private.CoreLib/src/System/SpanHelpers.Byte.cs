@@ -364,21 +364,22 @@ namespace System
             {
                 lengthToExamine -= 8;
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
+                ref byte current = ref Unsafe.AddByteOffset(ref searchSpace, offset);
+                if (uValue == current)
                     goto Found;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
+                if (uValue == Unsafe.AddByteOffset(ref current, 1))
                     goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
+                if (uValue == Unsafe.AddByteOffset(ref current, 2))
                     goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == Unsafe.AddByteOffset(ref current, 3))
                     goto Found3;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 4))
+                if (uValue == Unsafe.AddByteOffset(ref current, 4))
                     goto Found4;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 5))
+                if (uValue == Unsafe.AddByteOffset(ref current, 5))
                     goto Found5;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 6))
+                if (uValue == Unsafe.AddByteOffset(ref current, 6))
                     goto Found6;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 7))
+                if (uValue == Unsafe.AddByteOffset(ref current, 7))
                     goto Found7;
 
                 offset += 8;
@@ -388,13 +389,14 @@ namespace System
             {
                 lengthToExamine -= 4;
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
+                ref byte current = ref Unsafe.AddByteOffset(ref searchSpace, offset);
+                if (uValue == current)
                     goto Found;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
+                if (uValue == Unsafe.AddByteOffset(ref current, 1))
                     goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
+                if (uValue == Unsafe.AddByteOffset(ref current, 2))
                     goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == Unsafe.AddByteOffset(ref current, 3))
                     goto Found3;
 
                 offset += 4;
@@ -985,10 +987,12 @@ namespace System
 
                 for (; (nint)i <= (nint)length - 4; i += 4)
                 {
-                    if (Unsafe.Add(ref first, i + 0) != Unsafe.Add(ref second, i + 0)) return i + 0;
-                    if (Unsafe.Add(ref first, i + 1) != Unsafe.Add(ref second, i + 1)) return i + 1;
-                    if (Unsafe.Add(ref first, i + 2) != Unsafe.Add(ref second, i + 2)) return i + 2;
-                    if (Unsafe.Add(ref first, i + 3) != Unsafe.Add(ref second, i + 3)) return i + 3;
+                    ref byte currentFirst = ref Unsafe.Add(ref first, i);
+                    ref byte currentSecond = ref Unsafe.Add(ref second, i);
+                    if (currentFirst != currentSecond) return i + 0;
+                    if (Unsafe.Add(ref currentFirst, 1) != Unsafe.Add(ref currentSecond, 1)) return i + 1;
+                    if (Unsafe.Add(ref currentFirst, 2) != Unsafe.Add(ref currentSecond, 2)) return i + 2;
+                    if (Unsafe.Add(ref currentFirst, 3) != Unsafe.Add(ref currentSecond, 3)) return i + 3;
                 }
 
                 return length;
