@@ -37,6 +37,7 @@
                           ArchiveDirForHelix=$(TargetDir);
                           TestArchiveTestsDir=$(TestArchiveTestsDir);
                           ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
+                          DebuggerHost=$(DebuggerHost);
                           DotNetForTests=$([MSBuild]::NormalizePath($(DotNetRoot), $(DotNetTool)))" />
   </ItemGroup>
 
