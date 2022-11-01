@@ -229,11 +229,17 @@ namespace System.Threading.Tasks
         internal int _nCurrentIndexRangeToAssign;
         internal long _nStep;
 
+        internal long FromInclusive { get;  }
+        internal long ToExclusive { get;  }
+
         /// <summary>
         /// Initializes a RangeManager with the given loop parameters, and the desired number of outer ranges
         /// </summary>
         internal RangeManager(long nFromInclusive, long nToExclusive, long nStep, int nNumExpectedWorkers)
         {
+            FromInclusive = nFromInclusive;
+            ToExclusive = nToExclusive;
+
             _nCurrentIndexRangeToAssign = 0;
             _nStep = nStep;
 
