@@ -284,7 +284,7 @@ public: // IMetaDataImport
     STDMETHOD(EnumModuleRefs)(
         HCORENUM    *phEnum,
         mdModuleRef rModuleRefs[],
-        ULONG       cmax,
+        ULONG       cMax,
         ULONG       *pcModuleRefs);
 
     STDMETHOD(GetTypeSpecFromToken)(
@@ -321,19 +321,19 @@ public: // IMetaDataImport
     STDMETHOD(EnumSignatures)(
         HCORENUM    *phEnum,
         mdSignature rSignatures[],
-        ULONG       cmax,
+        ULONG       cMax,
         ULONG       *pcSignatures);
 
     STDMETHOD(EnumTypeSpecs)(
         HCORENUM    *phEnum,
         mdTypeSpec  rTypeSpecs[],
-        ULONG       cmax,
+        ULONG       cMax,
         ULONG       *pcTypeSpecs);
 
     STDMETHOD(EnumUserStrings)(
         HCORENUM    *phEnum,
         mdString    rStrings[],
-        ULONG       cmax,
+        ULONG       cMax,
         ULONG       *pcStrings);
 
     STDMETHOD(GetParamForMethodIndex)(

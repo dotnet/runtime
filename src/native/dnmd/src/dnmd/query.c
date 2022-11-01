@@ -16,6 +16,11 @@ static uint32_t CursorRow(mdcursor_t* c)
     return ExtractTokenIndex(c->_reserved2);
 }
 
+static bool CursorEnd(mdcursor_t* c)
+{
+    return (CursorTable(c)->row_count + 1) == CursorRow(c);
+}
+
 mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
 {
     assert(table != NULL && row != 0);
@@ -43,22 +48,15 @@ bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* curs
     if (!md_token_to_cursor(handle, (CreateTokenType(table_id) | 1), cursor))
         return false;
 
-    *count = CursorRow(cursor);
+    *count = CursorTable(cursor)->row_count;
     return true;
 }
 
-bool md_cursor_move(mdcursor_t* c, int32_t delta)
+static bool cursor_move_no_checks(mdcursor_t* c, int32_t delta)
 {
-    if (c == NULL)
-        return false;
+    assert(c != NULL && delta != 0);
 
     mdtable_t* table = CursorTable(c);
-    if (table == NULL)
-        return false;
-
-    if (delta == 0)
-        return true;
-
     uint32_t row = CursorRow(c);
     row += delta;
     // Indices into tables begin at 1 - see II.22.
@@ -69,6 +67,17 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta)
 
     *c = create_cursor(table, row);
     return true;
+}
+
+bool md_cursor_move(mdcursor_t* c, int32_t delta)
+{
+    if (c == NULL || CursorTable(c) == NULL)
+        return false;
+
+    if (delta == 0)
+        return true;
+
+    return cursor_move_no_checks(c, delta);
 }
 
 bool md_cursor_next(mdcursor_t* c)
@@ -454,4 +463,181 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     } while (next_row(&qcxt));
 
     return read_in;
+}
+
+typedef int32_t(*md_bcompare_t)(void const* key, void const* row, void*);
+
+// Since MSVC doesn't have a C11 compatible bsearch_s, defining one below.
+// Ideally we would use the one in the standard.
+static void const* md_bsearch(
+    void const* key,
+    void const* base,
+    rsize_t count,
+    rsize_t element_size,
+    md_bcompare_t cmp,
+    void* cxt)
+{
+    assert(key != NULL && base != NULL);
+    while (count > 0)
+    {
+        void const* row = (uint8_t const*)base + (element_size * (count / 2));
+        int32_t res = cmp(key, row, cxt);
+        if (res == 0)
+            return row;
+
+        if (count == 1)
+        {
+            break;
+        }
+        else if (res < 0)
+        {
+            count /= 2;
+        }
+        else
+        {
+            base = row;
+            count -= count / 2;
+        }
+    }
+    return NULL;
+}
+
+typedef struct _find_cxt_t
+{
+    uint32_t col_offset;
+    uint32_t data_len;
+} find_cxt_t;
+
+static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_t* fcxt)
+{
+    assert(table != NULL && fcxt != NULL);
+
+    uint32_t idx = (uint32_t)col_idx;
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    mdtable_id_t tgt_table_id = col_idx >> 8;
+    if (tgt_table_id != table->table_id)
+    {
+        assert(!"Unexpected table/column indexing");
+        return false;
+    }
+    idx = (col_idx & 0xff);
+#endif
+
+    assert(idx < MDTABLE_MAX_COLUMN_COUNT);
+    if (idx >= table->column_count)
+        return false;
+
+    mdtcol_t cd = table->column_details[idx];
+    fcxt->col_offset = ExtractOffset(cd);
+    fcxt->data_len = (cd & mdtc_b2) ? 2 : 4;
+    return true;
+}
+
+static int32_t bcompare(void const* key, void const* row, void* cxt)
+{
+    assert(key != NULL && row != NULL && cxt != NULL);
+
+    find_cxt_t* fcxt = (find_cxt_t*)cxt;
+    uint8_t const* col_data = (uint8_t const*)row + fcxt->col_offset;
+
+    uint32_t const lhs = *(uint32_t*)key;
+    uint32_t rhs = 0;
+    size_t col_len = fcxt->data_len;
+    bool success = (col_len == 2)
+        ? read_u16(&col_data, &col_len, (uint16_t*)&rhs)
+        : read_u32(&col_data, &col_len, &rhs);
+    assert(success && col_len == 0);
+
+    return (lhs == rhs) ? 0
+        : (lhs < rhs) ? -1
+        : 1;
+}
+
+static void const* cursor_to_row_bytes(mdcursor_t* c)
+{
+    assert(c != NULL);
+    // Indices into tables begin at 1 - see II.22.
+    return &CursorTable(c)->data.ptr[(CursorRow(c) - 1) * CursorTable(c)->row_size_bytes];
+}
+
+bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor)
+{
+    mdtable_t* table = CursorTable(&begin);
+    if (table == NULL || cursor == NULL)
+        return false;
+
+    if (!table->is_sorted)
+        return false;
+
+    uint32_t first_row = CursorRow(&begin);
+    // Indices into tables begin at 1 - see II.22.
+    if (first_row == 0 || first_row > table->row_count)
+        return false;
+
+    find_cxt_t fcxt;
+    if (!create_find_context(table, idx, &fcxt))
+        return false;
+
+    // Compute the starting row.
+    void const* starting_row = cursor_to_row_bytes(&begin);
+    // Rows are 1 based indexing, so +1 for finding count.
+    void const* row_maybe = md_bsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, bcompare, &fcxt);
+    if (row_maybe == NULL)
+        return false;
+
+    // Compute the found row.
+    // Indices into tables begin at 1 - see II.22.
+    assert(starting_row <= row_maybe);
+    uint32_t row = (uint32_t)(((intptr_t)row_maybe - (intptr_t)starting_row) / table->row_size_bytes) + 1;
+    if (row > table->row_count)
+        return false;
+
+    *cursor = create_cursor(table, row);
+    return true;
+}
+
+bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count)
+{
+    // Look for any instance of the value.
+    mdcursor_t found;
+    if (!md_find_row_from_cursor(begin, idx, value, &found))
+        return false;
+
+    int32_t res;
+    find_cxt_t fcxt;
+    // This was already created and validated when the row was found.
+    // We assume the data is still valid.
+    (void)create_find_context(CursorTable(&begin), idx, &fcxt);
+
+    // A valid value was found, so we are at least within the range.
+    // Now find the extrema.
+    *start = found;
+    while (cursor_move_no_checks(start, -1))
+    {
+        // Since we are moving backwards in a sorted column,
+        // the value should match or be greater.
+        res = bcompare(&value, cursor_to_row_bytes(start), &fcxt);
+        assert(res >= 0);
+        if (res > 0)
+        {
+            // Move forward to the start.
+            (void)cursor_move_no_checks(start, 1);
+            break;
+        }
+    }
+
+    mdcursor_t end = found;
+    while (cursor_move_no_checks(&end, 1) && !CursorEnd(&end))
+    {
+        // Since we are moving forwards in a sorted column,
+        // the value should match or be less.
+        res = bcompare(&value, cursor_to_row_bytes(&end), &fcxt);
+        assert(res <= 0);
+        if (res < 0)
+            break;
+    }
+
+    // Compute the row delta
+    *count = CursorRow(&end) - CursorRow(start);
+    return true;
 }

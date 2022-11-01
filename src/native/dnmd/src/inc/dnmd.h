@@ -325,6 +325,10 @@ int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
 int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
+// Find a row or range of rows where the supplied column has the expected value.
+bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
+bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count);
+
 #ifdef __cplusplus
 }
 #endif
