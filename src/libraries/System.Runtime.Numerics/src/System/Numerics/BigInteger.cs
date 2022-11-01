@@ -3508,8 +3508,6 @@ namespace System.Numerics
 
                     part = ~value._bits[i] + 1;
                     result += (sizeof(uint) * 8);
-
-                    i++;
                 }
 
                 result += uint.TrailingZeroCount(part);
