@@ -135,7 +135,7 @@ namespace System.Threading.Tasks
     }
 
     internal  interface IWorkerBodyWithIndex<in TValue, in TIndex> : IWorkerBody<TValue>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         void SetIteration(TIndex index);
     }
@@ -156,7 +156,7 @@ namespace System.Threading.Tasks
     }
 
     internal abstract class WorkerBodyWithIndex<TValue, TIndex> : IWorkerBodyWithIndex<TValue, TIndex>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         protected readonly ParallelLoopState State;
 
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks
     }
 
     internal sealed class WorkerWithState<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         private readonly Action<TValue, ParallelLoopState> _bodyWithState;
 
@@ -190,7 +190,7 @@ namespace System.Threading.Tasks
     }
 
     internal sealed class WorkerWithStateAndIndex<TValue, TIndex> : WorkerBodyWithIndex<TValue, TIndex>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         private readonly Action<TValue, ParallelLoopState, TIndex> _bodyWithStateAndIndex;
 
@@ -207,7 +207,7 @@ namespace System.Threading.Tasks
     }
 
     internal abstract class WorkerWithLocal<TValue, TIndex, TLocal> : WorkerBodyWithIndex<TValue, TIndex>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         private readonly Action<TLocal>? _localFinally;
         protected TLocal LocalValue;
@@ -230,7 +230,7 @@ namespace System.Threading.Tasks
     }
 
     internal sealed class WorkerWithStateAndLocal<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         private readonly Func<TValue, ParallelLoopState, TLocal, TLocal> _bodyWithLocal;
 
@@ -250,7 +250,7 @@ namespace System.Threading.Tasks
     }
 
     internal sealed class WorkerWithEverything<TValue, TIndex, TLocal> : WorkerWithLocal<TValue, TIndex, TLocal>
-        where TIndex : INumber<TIndex>
+        where TIndex: INumber<TIndex>
     {
         private readonly Func<TValue, ParallelLoopState, TIndex, TLocal, TLocal> _bodyWithEverything;
 
@@ -580,7 +580,9 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static ParallelLoopResult LoopCore<TSource, TInput, TValue, TWorker, TIndex>(TSource source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory)
+        private static ParallelLoopResult LoopCore<TSource, TInput, TValue, TWorker, TIndex>(
+            TSource source, ParallelOptions parallelOptions, IWorkerBodyFactory<TValue> workerBodyFactory,
+            ParallelEtwProvider.ForkJoinOperationType operationType)
             where TWorker: IWorkerFactory<TSource, TInput, TValue, TIndex>
             where TIndex: INumber<TIndex>
         {
@@ -598,9 +600,7 @@ namespace System.Threading.Tasks
             // Keep track of any cancellations
             Box<OperationCanceledException> oce = RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
-            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
-
-            int forkJoinContextID = LogEtwEventParallelLoopBegin(OperationType, 0, 0);
+            int forkJoinContextID = LogEtwEventParallelLoopBegin(operationType, 0, 0);
 
             try
             {
@@ -753,7 +753,7 @@ namespace System.Threading.Tasks
         }
 
         private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex> body)
-            where TIndex : INumber<TIndex>
+            where TIndex: INumber<TIndex>
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
@@ -899,7 +899,7 @@ namespace System.Threading.Tasks
         }
 
         private static ParallelLoopResult For<TIndex>(TIndex fromInclusive, TIndex toExclusive, ParallelOptions parallelOptions, Action<TIndex, ParallelLoopState> body)
-            where TIndex : INumber<TIndex>
+            where TIndex: INumber<TIndex>
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
@@ -1123,7 +1123,7 @@ namespace System.Threading.Tasks
             Func<TLocal> localInit,
             Func<TIndex, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
-            where TIndex : INumber<TIndex>
+            where TIndex: INumber<TIndex>
         {
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(localInit);
@@ -1154,7 +1154,7 @@ namespace System.Threading.Tasks
         private static ParallelLoopResult ForWorkerOrchestrator<TIndex>(
             TIndex fromInclusive, TIndex toExclusive,
             ParallelOptions parallelOptions,
-            IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex : INumber<TIndex>
+            IWorkerBodyFactory<TIndex> workerBodyFactory) where TIndex: INumber<TIndex>
         {
             Debug.Assert(typeof(TIndex) == typeof(int) || typeof(TIndex) == typeof(long), "only long and int index types supported in TIndex");
 
@@ -1173,8 +1173,10 @@ namespace System.Threading.Tasks
             RangeManager rangeManager = new RangeManager(long.CreateChecked(fromInclusive),
                 long.CreateChecked(toExclusive), 1, numExpectedWorkers);
 
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelFor;
+
             return LoopCore<RangeManager, RangeWorker, TIndex, ForWorker<TIndex>, TIndex>(
-                rangeManager, parallelOptions, workerBodyFactory);
+                rangeManager, parallelOptions, workerBodyFactory, OperationType);
         }
 
         #region Workers
@@ -1233,11 +1235,13 @@ namespace System.Threading.Tasks
 
         private interface IWorkerFactory<in TSource, TInput, TValue, out TIndex> where TIndex: INumber<TIndex>
         {
+            static abstract TIndex GetStartIndex(TSource source);
+            static abstract TIndex GetEndIndex(TSource source);
             static abstract Worker<TInput, TValue> CreateWorker(int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, TSource source, IWorkerBodyFactory<TValue> workerBodyFactory);
             static abstract TIndex GetTotalIterations(TSource source, ParallelLoopStateFlags sharedPStateFlags);
         }
 
-        private sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex>, IWorkerFactory<RangeManager, RangeWorker, TIndex, TIndex> where TIndex : INumber<TIndex>
+        private sealed class ForWorker<TIndex> : Worker<RangeWorker, TIndex>, IWorkerFactory<RangeManager, RangeWorker, TIndex, TIndex> where TIndex: INumber<TIndex>
         {
             private readonly RangeManager _rangeManager;
 
@@ -1300,6 +1304,10 @@ namespace System.Threading.Tasks
             public static Worker<RangeWorker, TIndex> CreateWorker(
                 int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, RangeManager source, IWorkerBodyFactory<TIndex> workerBodyFactory)
                 => new ForWorker<TIndex>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
+
+            public static TIndex GetStartIndex(RangeManager manager) => TIndex.CreateChecked(manager.FromInclusive);
+
+            public static TIndex GetEndIndex(RangeManager manager)  => TIndex.CreateChecked(manager.ToExclusive);
 
             public static TIndex GetTotalIterations(RangeManager manager, ParallelLoopStateFlags sharedPStateFlags)
             {
@@ -1405,6 +1413,10 @@ namespace System.Threading.Tasks
                 IWorkerBodyFactory<TValue> workerBodyFactory) =>
                 new OrderablePartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
 
+            public static long GetStartIndex(IEnumerable<KeyValuePair<long, TValue>> source) => 0;
+
+            public static long GetEndIndex(IEnumerable<KeyValuePair<long, TValue>> source)  => 0;
+
             public static long GetTotalIterations(IEnumerable<KeyValuePair<long, TValue>> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
         }
 
@@ -1427,6 +1439,10 @@ namespace System.Threading.Tasks
                 int forkJoinContextId, ParallelLoopStateFlags sharedPStateFlags, IEnumerable<TValue> source,
                 IWorkerBodyFactory<TValue> workerBodyFactory) =>
                 new PartitionerForeachWorker<TValue>(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory);
+
+            public static long GetStartIndex(IEnumerable<TValue> source) => 0;
+
+            public static long GetEndIndex(IEnumerable<TValue> source)  => 0;
 
             public static long GetTotalIterations(IEnumerable<TValue> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
         }
@@ -2607,9 +2623,10 @@ namespace System.Threading.Tasks
             {
                 throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
             }
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
 
             return LoopCore<IEnumerable<TValue>, IEnumerator, TValue, PartitionerForeachWorker<TValue>, long>(
-                partitionerSource, parallelOptions, workerBodyFactory);
+                partitionerSource, parallelOptions, workerBodyFactory, OperationType);
         }
 
         // Main worker method for Parallel.ForEach() calls w/ Partitioners.
@@ -2626,8 +2643,9 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
             }
 
+            const ParallelEtwProvider.ForkJoinOperationType OperationType = ParallelEtwProvider.ForkJoinOperationType.ParallelForEach;
             return LoopCore<IEnumerable<KeyValuePair<long, TValue>>, IEnumerator, TValue, OrderablePartitionerForeachWorker<TValue>, long>(
-                orderablePartitionerSource, parallelOptions, workerBodyFactory);
+                orderablePartitionerSource, parallelOptions, workerBodyFactory, OperationType);
         }
 
         #region Helpers
@@ -2738,8 +2756,9 @@ namespace System.Threading.Tasks
             return forkJoinContextID;
         }
 
-        private static int LogEtwEventParallelLoopBegin<TIndex>(ParallelEtwProvider.ForkJoinOperationType OperationType, TIndex fromInclusive,
-            TIndex toExclusive) where TIndex : INumber<TIndex>
+        private static int LogEtwEventParallelLoopBegin<TIndex>(
+            ParallelEtwProvider.ForkJoinOperationType operationType, TIndex fromInclusive, TIndex toExclusive)
+            where TIndex: INumber<TIndex>
         {
             // ETW event for Parallel For begin
             int forkJoinContextID = 0;
@@ -2747,7 +2766,7 @@ namespace System.Threading.Tasks
 
             forkJoinContextID = Interlocked.Increment(ref s_forkJoinContextID);
             ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, OperationType,
+                forkJoinContextID, operationType,
                 fromInclusive, toExclusive);
 
             return forkJoinContextID;
@@ -2768,7 +2787,7 @@ namespace System.Threading.Tasks
         }
 
         private static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
-            where TIndex : INumber<TIndex>
+            where TIndex: INumber<TIndex>
         {
             ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
         }
