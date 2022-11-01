@@ -5540,7 +5540,7 @@ public:
     unsigned                               fgPgoInlineePgo;
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
-    PhasedVar<bool>                        fgPgoHaveWeights;
+    bool                                   fgPgoHaveWeights;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, weight_t weight);
