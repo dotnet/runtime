@@ -28,6 +28,12 @@ namespace Microsoft.Extensions.Logging
 
         public FormattedLogValues(string? format, params object?[]? values)
         {
+            // corrects when a single non-object array value is cast to object[]
+            if (values != null && values.GetType() != typeof(object[]))
+            {
+                values = new object[] { values };
+            }
+
             if (values != null && values.Length != 0 && format != null)
             {
                 if (_count >= MaxCachedFormatters)

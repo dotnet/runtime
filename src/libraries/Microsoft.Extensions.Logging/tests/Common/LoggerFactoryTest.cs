@@ -397,11 +397,11 @@ namespace Microsoft.Extensions.Logging.Test
 
             Activity activity = new Activity("ScopeActivity");
             activity.Start();
-            logger.LogInformation("Message1");
+            logger.LogInformation("Hello {arg}", new[] { "a", "b", "c" });
             string traceIdActivityLogString = GetActivityLogString(ActivityTrackingOptions.TraceId);
             activity.Stop();
 
-            Assert.Equal("Message1", loggerProvider.LogText[0]);
+            Assert.Equal("Hello a, b, c", loggerProvider.LogText[0]);
             Assert.Equal(traceIdActivityLogString, loggerProvider.LogText[1]);
             Assert.Equal(2, loggerProvider.LogText.Count); // Ensure that the additional scopes for tags and baggage aren't added.
         }
