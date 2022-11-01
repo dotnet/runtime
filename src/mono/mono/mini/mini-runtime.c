@@ -4507,10 +4507,20 @@ mini_init (const char *filename)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
-	if (mono_marshal_should_init_ilgen_after_component_init())
-	{
-		mono_component_marshal_ilgen ()->ilgen_init_internal(); 
+#ifdef ENABLE_ILGEN
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+#else
+	if (mono_marshal_is_ilgen_requested ())
+  	{
+		mono_marshal_lightweight_init ();
+  		mono_component_marshal_ilgen()->ilgen_init_internal ();
+ 	}
+	else{
+		mono_marshal_noilgen_init_lightweight();
+		mono_component_marshal_ilgen()->noilgen_init_heavyweight ();
 	}
+#endif
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 

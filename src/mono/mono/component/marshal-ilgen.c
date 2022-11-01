@@ -47,7 +47,10 @@ static MonoComponentMarshalILgen component_func_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &marshal_ilgen_available },
 	&mono_marshal_ilgen_init_internal,
 	&mono_emit_marshal_ilgen,
-	&mono_marshal_ilgen_install_callbacks_mono
+	&mono_marshal_ilgen_install_callbacks_mono,
+#ifndef ENABLE_ILGEN
+	&mono_marshal_noilgen_init_heavyweight
+#endif
 }; 
 
 
@@ -57,17 +60,16 @@ mono_component_marshal_ilgen_init (void)
 	return &component_func_table;
 }
 
+static gboolean ilgen_cb_inited = FALSE;
+static MonoMarshalILgenCallbacks ilgen_marshal_cb;
+
 void
 mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb)
 {
-	MonoMarshalILgenCallbacks local_cb = *cb;
+	g_assert (!ilgen_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-
-	if (!mono_atomic_cas_ptr((void**)&ilgen_marshal_cb_ptr, &local_cb, NULL  ))
-	{
-		memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalILgenCallbacks));
-		ilgen_marshal_cb_ptr = &ilgen_marshal_cb;
-	}
+	memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalILgenCallbacks));
+	ilgen_cb_inited = TRUE;
 }
 
 void
@@ -2752,14 +2754,8 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static MonoMarshalILgenCallbacks *
 get_marshal_cb (void)
 {
-	if (G_UNLIKELY (!ilgen_marshal_cb_ptr)) {
-#ifdef ENABLE_ILGEN
-		mono_marshal_ilgen_init_internal ();
-#else
-		mono_marshal_noilgen_init_heavyweight ();
-#endif
-	}
-	return ilgen_marshal_cb_ptr;
+	g_assert(ilgen_cb_inited);
+	return &ilgen_marshal_cb;
 }
 
 int
@@ -2841,6 +2837,7 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 void
 mono_marshal_ilgen_init_internal (void)
 {
+
 	MonoMarshalILgenCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;
