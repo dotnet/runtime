@@ -11,7 +11,6 @@
   * [PowerShell](#powershell)
   * [.NET SDK](#net-sdk)
   * [Adding to the default PATH variable](#adding-to-the-default-path-variable)
-  * [ARM64 (Experimental)](#arm64-experimental)
 
 These instructions will lead you through the requirements to build _dotnet/runtime_ on Windows.
 
@@ -57,10 +56,10 @@ The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it m
 
 #### Ninja
 
-* Install Ninja in one of the two following ways
+* Install Ninja in one of the three following ways
+    * Ninja is included with Visual Studio. ARM64 Windows should use this method as other options are currently not available for ARM64.
   * [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
   * [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
-* Since there is no official Ninja support for ARM64, you can use MSBuild instead by passing `-msbuild` to `build.cmd`.
 
 #### Python
 
@@ -106,7 +105,3 @@ You can also temporarily add a directory to the PATH environment variable with t
 You can make your change to the PATH variable persistent by going to _Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables_, and select the `Path` variable under `System Variables` (if you want to change it for all users) or `User Variables` (if you only want to change it for the current user).
 
 Simply edit the PATH variable's value and add the directory (with a semicolon separator).
-
-### ARM64 (Experimental)
-
-* Use MSBuild instead of Ninja (no official support for ARM64 yet) by passing `-msbuild` to either `build.cmd` or `build.ps1`.
