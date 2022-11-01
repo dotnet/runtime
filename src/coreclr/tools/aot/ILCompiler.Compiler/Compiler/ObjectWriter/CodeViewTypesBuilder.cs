@@ -22,6 +22,20 @@ using static ILCompiler.ObjectWriter.CodeViewNative.LeafRecordType;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>Builder for the CodeView .debug$T section.<summary>
+    /// <remarks>
+    /// The .debug$T section in CodeView contains type (enum, struct, class)
+    /// descriptions. The section is composed of records that are prefixed
+    /// with their type and length. Each record is assigned a type index
+    /// representing its position in the stream. The type indexes start at
+    /// 0x1000 and increase by one for each record. Elementary types, such
+    /// as uint, short, or float, have preassigned indexes below 0x1000,
+    /// represented by the <see cref="CodeViewType" /> enumeration.
+    ///
+    /// The maximum record size is limited to sizeof(ushort) due to the
+    /// layout of the record header. List records (eg. field list) can
+    /// be split into multiple records that are chained together.
+    /// </remarks>
     internal sealed class CodeViewTypesBuilder : ITypesDebugInfoWriter
     {
         private NameMangler _nameMangler;
@@ -195,6 +209,8 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(classDescriptor.IsStruct == 0);
             using (LeafRecordWriter record = StartLeafRecord(LF_CLASS))
             {
+                Debug.Assert(memberCount <= ushort.MaxValue);
+                Debug.Assert(arrayDescriptor.Size <= ushort.MaxValue);
                 record.Write((ushort)memberCount); // Number of elements in class
                 record.Write((ushort)0); // TODO: Options
                 record.Write(fieldListTypeIndex); // Field descriptor index
@@ -230,6 +246,7 @@ namespace ILCompiler.ObjectWriter
 
             using (LeafRecordWriter record = StartLeafRecord(LF_ENUM))
             {
+                Debug.Assert(typeRecords.Length <= ushort.MaxValue);
                 record.Write((ushort)typeRecords.Length); // Number of elements in class
                 record.Write((ushort)0); // TODO: Attributes
                 record.Write(typeDescriptor.ElementType);
@@ -314,6 +331,8 @@ namespace ILCompiler.ObjectWriter
 
             using (LeafRecordWriter record = StartLeafRecord(classTypeDescriptor.IsStruct == 1 ? LF_STRUCTURE : LF_CLASS))
             {
+                Debug.Assert(memberCount <= ushort.MaxValue);
+                Debug.Assert(classFieldsTypeDescriptor.Size <= ushort.MaxValue);
                 record.Write((ushort)memberCount); // Number of elements in class
                 record.Write((ushort)0); // TODO: Options
                 record.Write(fieldListTypeIndex); // Field descriptor index
@@ -344,6 +363,7 @@ namespace ILCompiler.ObjectWriter
 
             using (LeafRecordWriter record = StartLeafRecord(LF_MFUNCTION))
             {
+                Debug.Assert(memberDescriptor.NumberOfArguments <= ushort.MaxValue);
                 record.Write(memberDescriptor.ReturnType);
                 record.Write(memberDescriptor.ContainingClass);
                 record.Write(memberDescriptor.TypeIndexOfThisPointer);
@@ -398,6 +418,7 @@ namespace ILCompiler.ObjectWriter
             {
                 int length = sizeof(ushort) + _bufferWriter.WrittenCount;
                 int padding = ((length + 3) & ~3) - length;
+                Debug.Assert(length <= ushort.MaxValue);
                 Span<byte> lengthBuffer = stackalloc byte[sizeof(ushort)];
                 BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
                 _debugTypesBuilder._outputStream.Write(lengthBuffer);
