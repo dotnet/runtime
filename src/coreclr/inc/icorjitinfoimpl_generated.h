@@ -177,7 +177,7 @@ int getStringLiteral(
           int startIndex) override;
 
 size_t printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize) override;
@@ -287,14 +287,14 @@ CorInfoHelpFunc getBoxHelper(
 CorInfoHelpFunc getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
-void* getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls) override;
 
 bool isObjectImmutable(
-          void* objPtr) override;
+          CORINFO_OBJECT_HANDLE objPtr) override;
 
 CORINFO_CLASS_HANDLE getObjectType(
-          void* objPtr) override;
+          CORINFO_OBJECT_HANDLE objPtr) override;
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -403,6 +403,9 @@ void getFieldInfo(
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
+
+int getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd) override;
 
 void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
@@ -616,7 +619,8 @@ void* getFieldAddress(
 bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
-          int bufferSize) override;
+          int bufferSize,
+          bool ignoreMovableObjects) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
