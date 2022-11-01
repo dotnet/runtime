@@ -466,9 +466,8 @@ typedef enum
      * underlying COM object as long as it has not been released by all of its strong
      * references.
      *
-     * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM.
-     *       Once clrgc.dll does not need to be compatible with .NET 7,
-     *       HNDTYPE_WEAK_NATIVE_COM and all remaining references to it can be deleted.
+     * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM starting .NET 8
+     *       but we are keeping it here for backward compatibility purposes"
      * 
      */
     HNDTYPE_WEAK_NATIVE_COM   = 9
