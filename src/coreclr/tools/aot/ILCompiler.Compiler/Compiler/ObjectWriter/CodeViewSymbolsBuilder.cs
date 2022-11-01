@@ -20,6 +20,24 @@ using static ILCompiler.ObjectWriter.CodeViewNative.CodeViewSymbolDefinition;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>Builder for the CodeView .debug$S section.<summary>
+    /// <remarks>
+    /// The .debug$S section in CodeView contains information about methods,
+    /// their parameters, stack layout, and line mapping.
+    ///
+    /// The section is divided into logical chunks known as subsections for
+    /// different kind of information (eg. Symbols, Lines). Unlike the type
+    /// section (<see cref="CodeViewTypesBuilder" />) this section does need
+    /// relocations.
+    ///
+    /// The builder emits the subsections linearly into the section writer as
+    /// the records are produced. Similarly to MSVC we output separate symbol
+    /// subsection and line subsection for each method.
+    ///
+    /// File table (and related string table) are constructed through <see
+    /// cref="CodeViewFileTableBuilder" /> and appended at the very end of
+    /// the section.
+    /// </remarks>
     internal sealed class CodeViewSymbolsBuilder
     {
         private TargetArchitecture _targetArchitecture;
