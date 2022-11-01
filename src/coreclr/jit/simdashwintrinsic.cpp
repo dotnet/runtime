@@ -1681,18 +1681,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_op_LeftShift:
                 case NI_VectorT128_ShiftLeft:
                 {
-                    // float and double don't have actual instructions for shifting
-                    // so we'll just use the equivalent integer instruction instead.
-
-                    if (simdBaseType == TYP_FLOAT)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_INT;
-                    }
-                    else if (simdBaseType == TYP_DOUBLE)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_LONG;
-                    }
-
                     return gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
@@ -1700,18 +1688,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_op_RightShift:
                 case NI_VectorT128_ShiftRightArithmetic:
                 {
-                    // float and double don't have actual instructions for shifting
-                    // so we'll just use the equivalent integer instruction instead.
-
-                    if (simdBaseType == TYP_FLOAT)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_INT;
-                    }
-                    else if (simdBaseType == TYP_DOUBLE)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_LONG;
-                    }
-
                     genTreeOps op = varTypeIsSigned(simdBaseType) ? GT_RSH : GT_RSZ;
                     return gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
@@ -1720,18 +1696,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_op_UnsignedRightShift:
                 case NI_VectorT128_ShiftRightLogical:
                 {
-                    // float and double don't have actual instructions for shifting
-                    // so we'll just use the equivalent integer instruction instead.
-
-                    if (simdBaseType == TYP_FLOAT)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_INT;
-                    }
-                    else if (simdBaseType == TYP_DOUBLE)
-                    {
-                        simdBaseJitType = CORINFO_TYPE_LONG;
-                    }
-
                     return gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
