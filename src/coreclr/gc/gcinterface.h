@@ -465,6 +465,11 @@ typedef enum
      * code holding onto a native weak reference can always access an RCW to the
      * underlying COM object as long as it has not been released by all of its strong
      * references.
+     *
+     * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM.
+     *       Once clrgc.dll does not need to be compatible with .NET 7,
+     *       HNDTYPE_WEAK_NATIVE_COM and all remaining references to it can be deleted.
+     * 
      */
     HNDTYPE_WEAK_NATIVE_COM   = 9
 } HandleType;
