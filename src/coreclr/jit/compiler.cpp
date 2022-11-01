@@ -5554,6 +5554,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #endif
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    m_preferredInitCctor = IsTargetAbi(CORINFO_NATIVEAOT_ABI) ? CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE
+                                                              : CORINFO_HELP_READYTORUN_CCTOR_TRIGGER;
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
