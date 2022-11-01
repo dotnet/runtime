@@ -686,7 +686,6 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 {
 	gboolean needs_cprop = FALSE;
 
-	g_assert (!bb->in_count);
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
 			td->locals [ins->sregs [0]].indirects--;
@@ -696,6 +695,8 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 			}
 		}
 	}
+	while (bb->in_count)
+		interp_unlink_bblocks (bb->in_bb [0], bb);
 	while (bb->out_count)
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
@@ -8248,6 +8249,42 @@ generate_compacted_code (TransformData *td)
 	g_ptr_array_free (td->relocs, TRUE);
 }
 
+static void
+interp_mark_reachable_bblocks (TransformData *td)
+{
+	InterpBasicBlock **queue = mono_mem_manager_alloc0 (td->mem_manager, td->bb_count * sizeof (InterpBasicBlock*));
+	InterpBasicBlock *current;
+	int cur_index = 0;
+	int next_position = 0;
+
+	// FIXME There is no need to force eh bblocks to remain alive
+	current = td->entry_bb;
+	while (current != NULL) {
+		if (current->eh_block) {
+			queue [next_position++] = current;
+			current->reachable = TRUE;
+		} else {
+			current->reachable = FALSE;
+		}
+		current = current->next_bb;
+	}
+
+	queue [next_position++] = td->entry_bb;
+	td->entry_bb->reachable = TRUE;
+
+	// We have the roots, traverse everything else
+	while (cur_index < next_position) {
+		current = queue [cur_index++];
+		for (int i = 0; i < current->out_count; i++) {
+			InterpBasicBlock *child = current->out_bb [i];
+			if (!child->reachable) {
+				queue [next_position++] = child;
+				child->reachable = TRUE;
+			}
+		}
+	}
+}
+
 // Traverse the list of basic blocks and merge adjacent blocks
 static gboolean
 interp_optimize_bblocks (TransformData *td)
@@ -8255,11 +8292,13 @@ interp_optimize_bblocks (TransformData *td)
 	InterpBasicBlock *bb = td->entry_bb;
 	gboolean needs_cprop = FALSE;
 
+	interp_mark_reachable_bblocks (td);
+
 	while (TRUE) {
 		InterpBasicBlock *next_bb = bb->next_bb;
 		if (!next_bb)
 			break;
-		if (next_bb->in_count == 0 && !next_bb->eh_block) {
+		if (!next_bb->reachable) {
 			if (td->verbose_level)
 				g_print ("Removed BB%d\n", next_bb->index);
 			needs_cprop |= interp_remove_bblock (td, next_bb, bb);
