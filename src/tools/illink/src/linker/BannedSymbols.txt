@@ -6,3 +6,7 @@ M:Mono.Cecil.MethodReference.Resolve();Use LinkContext.Resolve and LinkContext.T
 M:Mono.Cecil.ExportedType.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
 P:Mono.Collections.Generic.Collection`1{Mono.Cecil.ParameterDefinition}.Item(System.Int32); use x
 P:Mono.Cecil.ParameterDefinitionCollection.Item(System.Int32); use x
+P:Mono.Cecil.Cil.MethodBody.Instructions;Use LinkContext.MethodBodyInstructionProvider instead
+P:Mono.Cecil.Cil.MethodBody.ExceptionHandlers;Use LinkContext.MethodBodyInstructionProvider instead
+P:Mono.Cecil.Cil.MethodBody.Variables;Use LinkContext.MethodBodyInstructionProvider instead
+M:Mono.Linker.Steps.ILProvider/MethodIL.Create;Use ILProvider GetMethodIL instead

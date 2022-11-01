@@ -80,6 +80,7 @@ namespace Mono.Linker
 		readonly List<MessageContainer> _cachedWarningMessageContainers;
 		readonly ILogger _logger;
 		readonly Dictionary<AssemblyDefinition, bool> _isTrimmable;
+		readonly UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 
 		public Pipeline Pipeline {
 			get { return _pipeline; }
@@ -223,6 +224,7 @@ namespace Mono.Linker
 			GeneralSingleWarn = false;
 			SingleWarn = new Dictionary<string, bool> ();
 			AssembliesWithGeneratedSingleWarning = new HashSet<string> ();
+			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (this);
 
 			const CodeOptimizations defaultOptimizations =
 				CodeOptimizations.BeforeFieldInit |
@@ -937,6 +939,28 @@ namespace Mono.Linker
 			return _typeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
 				? TryResolve (typeReference)
 				: null;
+		}
+
+		readonly HashSet<MethodDefinition> _processed_bodies_for_method = new HashSet<MethodDefinition> (2048);
+
+		/// <summary>
+		/// Linker applies some optimization on method bodies. For example it can remove dead branches of code
+		/// based on constant propagation. To avoid overmarking, all code which processes the method's IL
+		/// should only view the IL after it's been optimized.
+		/// As such typically MethodDefinition.MethodBody should not be accessed directly on the Cecil object model
+		/// instead all accesses to method body should go through the ILProvider here
+		/// which will make sure the IL of the method is fully optimized before it's handed out.
+		/// </summary>
+		public MethodIL GetMethodIL (Cecil.Cil.MethodBody methodBody)
+			=> GetMethodIL (methodBody.Method);
+
+		public MethodIL GetMethodIL (MethodDefinition method)
+		{
+			if (_processed_bodies_for_method.Add (method)) {
+				_unreachableBlocksOptimizer.ProcessMethod (method);
+			}
+
+			return MethodIL.Create (method.Body);
 		}
 
 		readonly HashSet<MemberReference> unresolved_reported = new ();

@@ -26,12 +26,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			WithLocalFunction ();
 		}
 
+		// The compiler generated state will see the modified body,
+		// and will not associate the local function with the user method.
+		// Generic argument warnings from the local function will not be suppressed
+		// by RUC on the user method.
+
 		class Inner
 		{
-			// In this case the compiler generated state will see the modified body,
-			// and will not associate the local function with the user method.
-			// Generic argument warnings from the local function will not be suppressed
-			// by RUC on the user method.
 			[RequiresUnreferencedCode ("--" + nameof (Inner) + "." + nameof (WithLocalFunctionInner) + "--")]
 			public static void WithLocalFunctionInner ()
 			{
@@ -49,10 +50,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// In this case the compiler generated state will see the original body,
-		// and will associate the local function with the user method.
-		// Generic argument warnings from the local function will be suppressed
-		// by RUC on the user method.
 		[RequiresUnreferencedCode ("--" + nameof (WithLocalFunction) + "--")]
 		public static void WithLocalFunction ()
 		{
@@ -61,6 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2937
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 			void LocalWithWarning<T> ()
 			{
 				// No warning

@@ -418,7 +418,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 			FieldReference? foundReference = null;
 
-			foreach (Instruction instruction in body.Instructions) {
+			foreach (Instruction instruction in _context.GetMethodIL (body).Instructions) {
 				switch (instruction.OpCode.Code) {
 				case Code.Ldsfld when !write:
 				case Code.Ldfld when !write:

@@ -75,13 +75,6 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 
-		UnreachableBlocksOptimizer? _unreachableBlocksOptimizer;
-		UnreachableBlocksOptimizer UnreachableBlocksOptimizer {
-			get {
-				Debug.Assert (_unreachableBlocksOptimizer != null);
-				return _unreachableBlocksOptimizer;
-			}
-		}
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
 			get {
@@ -245,7 +238,6 @@ namespace Mono.Linker.Steps
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
-			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 			_markContext = new MarkStepContext ();
 			_scopeStack = new MarkScopeStack ();
 			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this);
@@ -2569,7 +2561,7 @@ namespace Mono.Linker.Steps
 			} while ((type = Context.TryResolve (type.BaseType)) != null);
 		}
 
-		static bool IsNonEmptyStaticConstructor (MethodDefinition method)
+		bool IsNonEmptyStaticConstructor (MethodDefinition method)
 		{
 			if (!method.IsStaticConstructor ())
 				return false;
@@ -2577,10 +2569,12 @@ namespace Mono.Linker.Steps
 			if (!method.HasBody || !method.IsIL)
 				return true;
 
-			if (method.Body.CodeSize != 1)
+			var body = Context.GetMethodIL (method);
+
+			if (body.Body.CodeSize != 1)
 				return true;
 
-			return method.Body.Instructions[0].OpCode.Code != Code.Ret;
+			return body.Instructions[0].OpCode.Code != Code.Ret;
 		}
 
 		static bool HasOnSerializeOrDeserializeAttribute (MethodDefinition method)
@@ -2856,14 +2850,14 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		static PropertyDefinition? SearchPropertiesForMatchingFieldDefinition (FieldDefinition field)
+		PropertyDefinition? SearchPropertiesForMatchingFieldDefinition (FieldDefinition field)
 		{
 			foreach (var property in field.DeclaringType.Properties) {
-				var instr = property.GetMethod?.Body?.Instructions;
-				if (instr == null)
+				var body = property.GetMethod?.Body;
+				if (body == null)
 					continue;
 
-				foreach (var ins in instr) {
+				foreach (var ins in Context.GetMethodIL (body).Instructions) {
 					if (ins?.Operand == field)
 						return property;
 				}
@@ -2955,7 +2949,7 @@ namespace Mono.Linker.Steps
 			// the reflection scanner. Checking this will also mark direct dependencies of the method body, if it
 			// hasn't been marked already. A cache ensures this only happens once for the method, whether or not
 			// it is accessed via reflection.
-			return CheckRequiresReflectionMethodBodyScanner (method.Body);
+			return CheckRequiresReflectionMethodBodyScanner (Context.GetMethodIL (method));
 		}
 
 		void ProcessAnalysisAnnotationsForMethod (MethodDefinition method, DependencyKind dependencyKind, in MessageOrigin origin)
@@ -3136,8 +3130,6 @@ namespace Mono.Linker.Steps
 
 			if (CheckProcessed (method))
 				return;
-
-			UnreachableBlocksOptimizer.ProcessMethod (method);
 
 			foreach (Action<MethodDefinition> handleMarkMethod in MarkContext.MarkMethodActions)
 				handleMarkMethod (method);
@@ -3488,7 +3480,9 @@ namespace Mono.Linker.Steps
 
 		protected virtual void MarkMethodBody (MethodBody body)
 		{
-			if (Context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies, body.Method) && IsUnreachableBody (body)) {
+			var processedMethodBody = Context.GetMethodIL (body);
+
+			if (Context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies, body.Method) && IsUnreachableBody (processedMethodBody)) {
 				MarkAndCacheConvertToThrowExceptionCtor (new DependencyInfo (DependencyKind.UnreachableBodyRequirement, body.Method));
 				_unreachableBodies.Add ((body, ScopeStack.CurrentScope));
 				return;
@@ -3499,24 +3493,24 @@ namespace Mono.Linker.Steps
 			// But for compiler-generated methods we only do dataflow analysis if they're used through their
 			// corresponding user method, so we will skip dataflow for compiler-generated methods which
 			// are only accessed via reflection.
-			bool requiresReflectionMethodBodyScanner = MarkAndCheckRequiresReflectionMethodBodyScanner (body);
+			bool requiresReflectionMethodBodyScanner = MarkAndCheckRequiresReflectionMethodBodyScanner (processedMethodBody);
 
 			// Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
 			// data-flow scan of the user-defined method which uses this compiler-generated method.
 			if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method))
 				return;
 
-			MarkReflectionLikeDependencies (body, requiresReflectionMethodBodyScanner);
+			MarkReflectionLikeDependencies (processedMethodBody, requiresReflectionMethodBodyScanner);
 		}
 
-		bool CheckRequiresReflectionMethodBodyScanner (MethodBody body)
+		bool CheckRequiresReflectionMethodBodyScanner (MethodIL methodIL)
 		{
 			// This method is only called on reflection access to compiler-generated methods.
 			// This should be uncommon, so don't cache the result.
-			if (ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, body.Method))
+			if (ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, methodIL.Method))
 				return true;
 
-			foreach (Instruction instruction in body.Instructions) {
+			foreach (Instruction instruction in methodIL.Instructions) {
 				switch (instruction.OpCode.OperandType) {
 				case OperandType.InlineField:
 					if (InstructionRequiresReflectionMethodBodyScannerForFieldAccess (instruction))
@@ -3536,64 +3530,64 @@ namespace Mono.Linker.Steps
 		// It computes the same value, while also marking as it goes, as an optimization.
 		// This should only be called behind a check to IsProcessed for the method or corresponding user method,
 		// to avoid recursion.
-		bool MarkAndCheckRequiresReflectionMethodBodyScanner (MethodBody body)
+		bool MarkAndCheckRequiresReflectionMethodBodyScanner (MethodIL methodIL)
 		{
 #if DEBUG
-			if (!Annotations.IsProcessed (body.Method)) {
-				Debug.Assert (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method));
-				MethodDefinition owningMethod = body.Method;
+			if (!Annotations.IsProcessed (methodIL.Method)) {
+				Debug.Assert (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (methodIL.Method));
+				MethodDefinition owningMethod = methodIL.Method;
 				while (Context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (owningMethod, out var owner))
 					owningMethod = owner;
-				Debug.Assert (owningMethod != body.Method);
+				Debug.Assert (owningMethod != methodIL.Method);
 				Debug.Assert (Annotations.IsProcessed (owningMethod));
 			}
 #endif
 			// This may get called multiple times for compiler-generated code: once for
 			// reflection access, and once as part of the interprocedural scan of the user method.
 			// This check ensures that we only do the work and produce warnings once.
-			if (_compilerGeneratedMethodRequiresScanner.TryGetValue (body, out bool requiresReflectionMethodBodyScanner))
+			if (_compilerGeneratedMethodRequiresScanner.TryGetValue (methodIL.Body, out bool requiresReflectionMethodBodyScanner))
 				return requiresReflectionMethodBodyScanner;
 
-			foreach (VariableDefinition var in body.Variables)
-				MarkType (var.VariableType, new DependencyInfo (DependencyKind.VariableType, body.Method));
+			foreach (VariableDefinition var in methodIL.Variables)
+				MarkType (var.VariableType, new DependencyInfo (DependencyKind.VariableType, methodIL.Method));
 
-			foreach (ExceptionHandler eh in body.ExceptionHandlers)
+			foreach (ExceptionHandler eh in methodIL.ExceptionHandlers)
 				if (eh.HandlerType == ExceptionHandlerType.Catch)
-					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method));
+					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, methodIL.Method));
 
 			requiresReflectionMethodBodyScanner =
-				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, body.Method);
-			using var _ = ScopeStack.PushScope (new MessageOrigin (body.Method));
-			foreach (Instruction instruction in body.Instructions)
-				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
+				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, methodIL.Method);
+			using var _ = ScopeStack.PushScope (new MessageOrigin (methodIL.Method));
+			foreach (Instruction instruction in methodIL.Instructions)
+				MarkInstruction (instruction, methodIL.Method, ref requiresReflectionMethodBodyScanner);
 
-			MarkInterfacesNeededByBodyStack (body);
+			MarkInterfacesNeededByBodyStack (methodIL);
 
-			if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method))
-				_compilerGeneratedMethodRequiresScanner.Add (body, requiresReflectionMethodBodyScanner);
+			if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (methodIL.Method))
+				_compilerGeneratedMethodRequiresScanner.Add (methodIL.Body, requiresReflectionMethodBodyScanner);
 
-			PostMarkMethodBody (body);
+			PostMarkMethodBody (methodIL.Body);
 
-			Debug.Assert (requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner (body));
+			Debug.Assert (requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner (methodIL));
 			return requiresReflectionMethodBodyScanner;
 		}
 
-		bool IsUnreachableBody (MethodBody body)
+		bool IsUnreachableBody (MethodIL methodIL)
 		{
-			return !body.Method.IsStatic
-				&& !Annotations.IsInstantiated (body.Method.DeclaringType)
-				&& MethodBodyScanner.IsWorthConvertingToThrow (body);
+			return !methodIL.Method.IsStatic
+				&& !Annotations.IsInstantiated (methodIL.Method.DeclaringType)
+				&& MethodBodyScanner.IsWorthConvertingToThrow (methodIL);
 		}
 
 
 		partial void PostMarkMethodBody (MethodBody body);
 
-		void MarkInterfacesNeededByBodyStack (MethodBody body)
+		void MarkInterfacesNeededByBodyStack (MethodIL methodIL)
 		{
 			// If a type could be on the stack in the body and an interface it implements could be on the stack on the body
 			// then we need to mark that interface implementation.  When this occurs it is not safe to remove the interface implementation from the type
 			// even if the type is never instantiated
-			var implementations = new InterfacesOnStackScanner (Context).GetReferencedInterfaces (body);
+			var implementations = new InterfacesOnStackScanner (Context).GetReferencedInterfaces (methodIL);
 			if (implementations == null)
 				return;
 
@@ -3726,24 +3720,24 @@ namespace Mono.Linker.Steps
 		//
 		// Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
 		//
-		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
+		protected virtual void MarkReflectionLikeDependencies (MethodIL methodIL, bool requiresReflectionMethodBodyScanner)
 		{
-			Debug.Assert (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method));
+			Debug.Assert (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (methodIL.Method));
 			// requiresReflectionMethodBodyScanner tells us whether the method body itself requires a dataflow scan.
 
 			// If the method body owns any compiler-generated code, we might still need to do a scan of it together with
 			// all of the compiler-generated code it owns, so first check any compiler-generated callees.
-			if (Context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (body.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
+			if (Context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (methodIL.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
 				foreach (var compilerGeneratedCallee in compilerGeneratedCallees) {
 					switch (compilerGeneratedCallee) {
 					case MethodDefinition nestedFunction:
 						if (nestedFunction.Body is MethodBody nestedBody)
-							requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (nestedBody);
+							requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (Context.GetMethodIL (nestedBody));
 						break;
 					case TypeDefinition stateMachineType:
 						foreach (var method in stateMachineType.Methods) {
 							if (method.Body is MethodBody stateMachineBody)
-								requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (stateMachineBody);
+								requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (Context.GetMethodIL (stateMachineBody));
 						}
 						break;
 					default:
@@ -3755,9 +3749,9 @@ namespace Mono.Linker.Steps
 			if (!requiresReflectionMethodBodyScanner)
 				return;
 
-			Debug.Assert (ScopeStack.CurrentScope.Origin.Provider == body.Method);
+			Debug.Assert (ScopeStack.CurrentScope.Origin.Provider == methodIL.Method);
 			var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
-			scanner.InterproceduralScan (body);
+			scanner.InterproceduralScan (methodIL);
 		}
 
 		protected class AttributeProviderPair

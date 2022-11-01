@@ -61,21 +61,21 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (MultiValueLattice, context);
 		}
 
-		public override void InterproceduralScan (MethodBody methodBody)
+		public override void InterproceduralScan (MethodIL methodIL)
 		{
-			base.InterproceduralScan (methodBody);
+			base.InterproceduralScan (methodIL);
 
 			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
 			TrimAnalysisPatterns.MarkAndProduceDiagnostics (reflectionMarker, _markStep);
 		}
 
-		protected override void Scan (MethodBody methodBody, ref InterproceduralState interproceduralState)
+		protected override void Scan (MethodIL methodIL, ref InterproceduralState interproceduralState)
 		{
-			_origin = new MessageOrigin (methodBody.Method);
-			base.Scan (methodBody, ref interproceduralState);
+			_origin = new MessageOrigin (methodIL.Method);
+			base.Scan (methodIL, ref interproceduralState);
 
-			if (!methodBody.Method.ReturnsVoid ()) {
-				var method = methodBody.Method;
+			if (!methodIL.Method.ReturnsVoid ()) {
+				var method = methodIL.Method;
 				var methodReturnValue = _annotations.GetMethodReturnValue (method);
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
 					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);

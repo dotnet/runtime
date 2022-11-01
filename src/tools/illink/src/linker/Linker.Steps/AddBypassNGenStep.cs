@@ -94,7 +94,9 @@ namespace Mono.Linker.Steps
 
 				const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
 				bypassNGenAttributeDefaultConstructor = new MethodDefinition (".ctor", ctorAttributes, coreLibAssembly.MainModule.TypeSystem.Void);
+#pragma warning disable RS0030 // Anything after MarkStep should use Cecil directly as all method bodies should be processed by this point
 				var instructions = bypassNGenAttributeDefaultConstructor.Body.Instructions;
+#pragma warning restore RS0030
 				instructions.Add (Instruction.Create (OpCodes.Ldarg_0));
 				instructions.Add (Instruction.Create (OpCodes.Call, systemAttributeDefaultConstructor));
 				instructions.Add (Instruction.Create (OpCodes.Ret));
