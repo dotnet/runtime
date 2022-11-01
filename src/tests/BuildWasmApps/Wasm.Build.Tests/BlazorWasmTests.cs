@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
         [Theory, TestCategory("no-workload")]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
         public void NativeRef_EmitsWarningBecauseItRequiresWorkload(string config)
         {
             CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
