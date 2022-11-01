@@ -590,7 +590,7 @@ namespace System.Threading.Tasks
             // For all loops we need a shared flag even though we don't have a body with state,
             // because the shared flag contains the exceptional bool, which triggers other workers
             // to exit their loops if one worker catches an exception
-            ParallelLoopStateFlags sharedPStateFlags = ParallelLoopStateFlags.Create<long>();
+            ParallelLoopStateFlags sharedPStateFlags = ParallelLoopStateFlags.Create<TIndex>();
 
             // Before getting started, do a quick peek to see if we have been canceled already
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
