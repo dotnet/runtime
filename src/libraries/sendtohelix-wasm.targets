@@ -44,7 +44,6 @@
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
-    <FirefoxForHelixPayload>$(FirefoxDir)</FirefoxForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
@@ -162,14 +161,14 @@
            Text="Could not find chrome at $(ChromeDir)" />
     <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
            Text="Could not find chromedriver at $(ChromeDriverDir)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxForHelixPayload))"
-           Text="Could not find firefox at $(FirefoxForHelixPayload)" />
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
+           Text="Could not find firefox at $(FirefoxDir)" />
 
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDir)" />
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
 
-      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxForHelixPayload)" />
+      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxDir)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
