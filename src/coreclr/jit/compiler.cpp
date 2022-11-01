@@ -1795,6 +1795,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+
+    assert(info.compMethodSuperPMIIndex != 7);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
