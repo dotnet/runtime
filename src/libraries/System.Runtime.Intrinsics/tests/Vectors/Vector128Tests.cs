@@ -4624,7 +4624,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Assert.Equal(Vector128<T>.One, Vector128.Create(T.One));
 
-            MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("get_One", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.Equal((Vector128<T>)methodInfo.Invoke(null, null), Vector128.Create(T.One));
         }
     }

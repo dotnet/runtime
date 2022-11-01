@@ -5649,7 +5649,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Assert.Equal(Vector256<T>.One, Vector256.Create(T.One));
 
-            MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("get_One", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.Equal((Vector256<T>)methodInfo.Invoke(null, null), Vector256.Create(T.One));
         }
     }
