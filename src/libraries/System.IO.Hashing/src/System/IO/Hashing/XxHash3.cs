@@ -572,13 +572,8 @@ namespace System.IO.Hashing
                 const int BlockLen = StripeLengthBytes * StripesPerBlock;
                 int blocksNum = (int)((length - 1) / BlockLen);
 
-                uint offset = 0;
-                for (int i = 0; i < blocksNum; i++)
-                {
-                    Accumulate(accumulators, source + offset, secret, StripesPerBlock);
-                    ScrambleAccumulators(accumulators, secret + (SecretLengthBytes - StripeLengthBytes));
-                    offset += BlockLen;
-                }
+                Accumulate(accumulators, source, secret, StripesPerBlock, true, blocksNum);
+                var offset = BlockLen * blocksNum;
 
                 int stripesNumber = (int)((length - 1 - offset) / StripeLengthBytes);
                 Accumulate(accumulators, source + offset, secret, stripesNumber);
@@ -724,13 +719,106 @@ namespace System.IO.Hashing
             }
         }
 
-        /// <summary>Loops over <see cref="Accumulate512"/>.</summary>
+        /// <summary>Optimized version of looping over <see cref="Accumulate512"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess)
+        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess, bool scramble = false, int blockCount = 1)
         {
-            for (int i = 0; i < stripesToProcess; i++)
+            var secretForAccumulate = secret;
+            var secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
+
+#if NET7_0_OR_GREATER
+            if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
-                Accumulate512Inlined(accumulators, source + (i * StripeLengthBytes), secret + (i * SecretConsumeRateBytes));
+                Vector256<ulong> acc1 = Vector256.Load(accumulators);
+                Vector256<ulong> acc2 = Vector256.Load(accumulators + Vector256<ulong>.Count);
+
+                for (int j = 0; j < blockCount; j++)
+                {
+                    secret = secretForAccumulate;
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Vector256<uint> secretVal = Vector256.Load((uint*)secret);
+                        acc1 = Accumulate256(acc1, source, secretVal);
+                        source += Vector256<byte>.Count;
+
+                        secretVal = Vector256.Load((uint*)secret + Vector256<uint>.Count);
+                        acc2 = Accumulate256(acc2, source, secretVal);
+                        source += Vector256<byte>.Count;
+
+                        secret += SecretConsumeRateBytes;
+                    }
+
+                    if (scramble)
+                    {
+                        acc1 = ScrambleAccumulator256(acc1, Vector256.Load((ulong*)secretForScramble));
+                        acc2 = ScrambleAccumulator256(acc2, Vector256.Load((ulong*)secretForScramble + Vector256<ulong>.Count));
+                    }
+                }
+
+                Vector256.Store(acc1, accumulators);
+                Vector256.Store(acc2, accumulators + Vector256<ulong>.Count);
+            }
+            else if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                Vector128<ulong> acc1 = Vector128.Load(accumulators);
+                Vector128<ulong> acc2 = Vector128.Load(accumulators + Vector128<ulong>.Count);
+                Vector128<ulong> acc3 = Vector128.Load(accumulators + Vector128<ulong>.Count * 2);
+                Vector128<ulong> acc4 = Vector128.Load(accumulators + Vector128<ulong>.Count * 3);
+
+                for (int j = 0; j < blockCount; j++)
+                {
+                    secret = secretForAccumulate;
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Vector128<uint> secretVal = Vector128.Load((uint*)secret);
+                        acc1 = Accumulate128(acc1, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count);
+                        acc2 = Accumulate128(acc2, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 2);
+                        acc3 = Accumulate128(acc3, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 3);
+                        acc4 = Accumulate128(acc4, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secret += SecretConsumeRateBytes;
+                    }
+
+                    if (scramble)
+                    {
+                        acc1 = ScrambleAccumulator128(acc1, Vector128.Load((ulong*)secretForScramble));
+                        acc2 = ScrambleAccumulator128(acc2, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count));
+                        acc3 = ScrambleAccumulator128(acc3, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count * 2));
+                        acc4 = ScrambleAccumulator128(acc4, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count * 3));
+                    }
+                }
+
+                Vector128.Store(acc1, accumulators);
+                Vector128.Store(acc2, accumulators + Vector128<ulong>.Count);
+                Vector128.Store(acc3, accumulators + Vector128<ulong>.Count * 2);
+                Vector128.Store(acc4, accumulators + Vector128<ulong>.Count * 3);
+            }
+            else
+#endif
+            {
+                for (int j = 0; j < blockCount; j++)
+                {
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Accumulate512Inlined(accumulators, source + (i * StripeLengthBytes),
+                            secret + (i * SecretConsumeRateBytes));
+                    }
+
+                    if (scramble)
+                    {
+                        ScrambleAccumulators(accumulators, secretForScramble);
+                    }
+                }
             }
         }
 
@@ -748,19 +836,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
                 {
-                    Vector256<ulong> accVec = Vector256.Load(accumulators);
-                    Vector256<uint> sourceVec = Vector256.Load((uint*)source);
-                    Vector256<uint> sourceKey = sourceVec ^ Vector256.Load((uint*)secret);
-
-                    // TODO: Figure out how to unwind this shuffle and just use Vector256.Multiply
-                    Vector256<uint> sourceKeyLow = Vector256.Shuffle(sourceKey, Vector256.Create(1u, 0, 3, 0, 5, 0, 7, 0));
-                    Vector256<uint> sourceSwap = Vector256.Shuffle(sourceVec, Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5));
-                    Vector256<ulong> sum = accVec + sourceSwap.AsUInt64();
-                    Vector256<ulong> product = Avx2.IsSupported ?
-                        Avx2.Multiply(sourceKey, sourceKeyLow) :
-                        (sourceKey & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64();
-
-                    Vector256.Store(product + sum, accumulators);
+                    Vector256<ulong> accVec = Accumulate256(Vector256.Load(accumulators), source, Vector256.Load((uint*)secret));
+                    Vector256.Store(accVec, accumulators);
 
                     accumulators += Vector256<ulong>.Count;
                     secret += Vector256<byte>.Count;
@@ -771,19 +848,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector128<ulong>.Count; i++)
                 {
-                    Vector128<ulong> accVec = Vector128.Load(accumulators);
-                    Vector128<uint> sourceVec = Vector128.Load((uint*)source);
-                    Vector128<uint> sourceKey = sourceVec ^ Vector128.Load((uint*)secret);
-
-                    // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
-                    Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
-                    Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
-                    Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
-                    Vector128<ulong> product = Sse2.IsSupported ?
-                        Sse2.Multiply(sourceKey, sourceKeyLow) :
-                        (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
-
-                    Vector128.Store(product + sum, accumulators);
+                    Vector128<ulong> accVec = Accumulate128(Vector128.Load(accumulators), source, Vector128.Load((uint*)secret));
+                    Vector128.Store(accVec, accumulators);
 
                     accumulators += Vector128<ulong>.Count;
                     secret += Vector128<byte>.Count;
@@ -804,6 +870,42 @@ namespace System.IO.Hashing
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<ulong> Accumulate256(Vector256<ulong> accVec, byte* source, Vector256<uint> secret)
+        {
+            Vector256<uint> sourceVec = Vector256.Load((uint*)source);
+            Vector256<uint> sourceKey = sourceVec ^ secret;
+
+            // TODO: Figure out how to unwind this shuffle and just use Vector256.Multiply
+            Vector256<uint> sourceKeyLow = Vector256.Shuffle(sourceKey, Vector256.Create(1u, 0, 3, 0, 5, 0, 7, 0));
+            Vector256<uint> sourceSwap = Vector256.Shuffle(sourceVec, Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5));
+            Vector256<ulong> sum = accVec + sourceSwap.AsUInt64();
+            Vector256<ulong> product = Avx2.IsSupported ?
+                Avx2.Multiply(sourceKey, sourceKeyLow) :
+                (sourceKey & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64();
+
+            accVec = product + sum;
+            return accVec;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> Accumulate128(Vector128<ulong> accVec, byte* source, Vector128<uint> secret)
+        {
+            Vector128<uint> sourceVec = Vector128.Load((uint*)source);
+            Vector128<uint> sourceKey = sourceVec ^ secret;
+
+            // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
+            Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
+            Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
+            Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
+            Vector128<ulong> product = Sse2.IsSupported ?
+                Sse2.Multiply(sourceKey, sourceKeyLow) :
+                (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+
+            accVec = product + sum;
+            return accVec;
+        }
+
         private static void ScrambleAccumulators(ulong* accumulators, byte* secret)
         {
 #if NET7_0_OR_GREATER
@@ -811,10 +913,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
                 {
-                    Vector256<ulong> accVec = Vector256.Load(accumulators);
-                    Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
-                    Vector256<ulong> xorWithKey = xorShift ^ Vector256.Load((ulong*)secret);
-                    Vector256.Store(xorWithKey * Vector256.Create((ulong)XxHash32.Prime32_1), accumulators);
+                    Vector256<ulong> accVec = ScrambleAccumulator256(Vector256.Load(accumulators), Vector256.Load((ulong*)secret));
+                    Vector256.Store(accVec, accumulators);
 
                     accumulators += Vector256<ulong>.Count;
                     secret += Vector256<byte>.Count;
@@ -824,10 +924,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector128<ulong>.Count; i++)
                 {
-                    Vector128<ulong> accVec = Vector128.Load(accumulators);
-                    Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
-                    Vector128<ulong> xorWithKey = xorShift ^ Vector128.Load((ulong*)secret);
-                    Vector128.Store(xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1), accumulators);
+                    Vector128<ulong> accVec = ScrambleAccumulator128(Vector128.Load(accumulators), Vector128.Load((ulong*)secret));
+                    Vector128.Store(accVec, accumulators);
 
                     accumulators += Vector128<ulong>.Count;
                     secret += Vector128<byte>.Count;
@@ -846,6 +944,25 @@ namespace System.IO.Hashing
                     secret += sizeof(ulong);
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<ulong> ScrambleAccumulator256(Vector256<ulong> accVec, Vector256<ulong> secret)
+        {
+            Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
+            Vector256<ulong> xorWithKey = xorShift ^ secret;
+            accVec = xorWithKey * Vector256.Create((ulong)XxHash32.Prime32_1);
+            return accVec;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> ScrambleAccumulator128(Vector128<ulong> accVec, Vector128<ulong> secret)
+        {
+            Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
+            Vector128<ulong> xorWithKey = xorShift ^ secret;
+            accVec = xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1);
+            return accVec;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
