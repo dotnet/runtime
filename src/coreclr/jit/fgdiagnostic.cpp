@@ -3368,6 +3368,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     }
 
     fgDebugCheckNodesUniqueness();
+    fgDebugCheckSsa();
 }
 
 //------------------------------------------------------------------------------
@@ -3579,6 +3580,552 @@ void Compiler::fgDebugCheckNodesUniqueness()
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
             }
         }
+    }
+}
+
+// SsaCheckWalker keeps data that is necessary to check if
+// we are properly updating SSA uses and defs.
+//
+class SsaCheckVisitor : public GenTreeVisitor<SsaCheckVisitor>
+{
+private:
+    struct SsaKey
+    {
+    private:
+        unsigned m_lclNum;
+        unsigned m_ssaNum;
+
+    public:
+        SsaKey() : m_lclNum(BAD_VAR_NUM), m_ssaNum(SsaConfig::RESERVED_SSA_NUM)
+        {
+        }
+
+        SsaKey(unsigned lclNum, unsigned ssaNum) : m_lclNum(lclNum), m_ssaNum(ssaNum)
+        {
+        }
+
+        static bool Equals(const SsaKey& x, const SsaKey& y)
+        {
+            return (x.m_lclNum == y.m_lclNum) && (x.m_ssaNum == y.m_ssaNum);
+        }
+
+        static unsigned GetHashCode(const SsaKey& x)
+        {
+            return (x.m_lclNum << 16) ^ x.m_ssaNum;
+        }
+
+        unsigned GetLclNum() const
+        {
+            return m_lclNum;
+        }
+        unsigned GetSsaNum() const
+        {
+            return m_ssaNum;
+        }
+    };
+
+    struct SsaInfo
+    {
+    private:
+        BasicBlock* m_defBlock;
+        BasicBlock* m_useBlock;
+        unsigned    m_useCount;
+        bool        m_hasPhiUse;
+        bool        m_hasGlobalUse;
+        bool        m_hasMultipleDef;
+
+    public:
+        SsaInfo()
+            : m_defBlock(nullptr)
+            , m_useBlock(nullptr)
+            , m_useCount(0)
+            , m_hasPhiUse(false)
+            , m_hasGlobalUse(false)
+            , m_hasMultipleDef(false)
+        {
+        }
+
+        void AddUse(BasicBlock* block, const SsaKey& key)
+        {
+            // We may see uses before defs. If so, record the first use block we see.
+            // And if we see multiple uses before/without seeing a def, use that to decide
+            // if the uses are global.
+            //
+            if (m_defBlock == nullptr)
+            {
+                if (m_useBlock == nullptr)
+                {
+                    // Use before we've seen a def
+                    //
+                    m_useBlock = block;
+                }
+                else if (m_useBlock != block)
+                {
+                    // Another use, before def, see if global
+                    //
+                    m_hasGlobalUse = true;
+                }
+            }
+            else if (m_defBlock != block)
+            {
+                m_hasGlobalUse = true;
+            }
+
+            m_useCount++;
+        }
+
+        void AddPhiUse(BasicBlock* block, const SsaKey& key)
+        {
+            m_hasPhiUse = true;
+            AddUse(block, key);
+        }
+
+        void AddDef(BasicBlock* block, const SsaKey& key)
+        {
+            if (m_defBlock == nullptr)
+            {
+                // If we already saw a use, it might have been a global use.
+                //
+                if ((m_useBlock != nullptr) && (m_useBlock != block))
+                {
+                    m_hasGlobalUse = true;
+                }
+
+                m_defBlock = block;
+            }
+            else
+            {
+                m_hasMultipleDef = true;
+            }
+        }
+
+        BasicBlock* GetDefBlock() const
+        {
+            return m_defBlock;
+        }
+
+        unsigned GetNumUses() const
+        {
+            // The ssa table use count saturates at USHRT_MAX.
+            //
+            if (m_useCount > USHRT_MAX)
+            {
+                return USHRT_MAX;
+            }
+            return m_useCount;
+        }
+
+        bool HasPhiUse() const
+        {
+            return m_hasPhiUse;
+        }
+
+        bool HasGlobalUse() const
+        {
+            return m_hasGlobalUse;
+        }
+
+        bool HasMultipleDef() const
+        {
+            return m_hasMultipleDef;
+        }
+    };
+
+    typedef JitHashTable<SsaKey, SsaKey, SsaInfo*> SsaInfoMap;
+
+    Compiler* const m_compiler;
+    BasicBlock*     m_block;
+    SsaInfoMap      m_infoMap;
+    bool            m_hasErrors;
+
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    SsaCheckVisitor(Compiler* compiler)
+        : GenTreeVisitor<SsaCheckVisitor>(compiler)
+        , m_compiler(compiler)
+        , m_block(nullptr)
+        , m_infoMap(compiler->getAllocator(CMK_DebugOnly))
+        , m_hasErrors(false)
+    {
+    }
+
+    void ProcessDef(GenTree* tree, unsigned lclNum, unsigned ssaNum)
+    {
+        // If the var is not in ssa, the local should not have an ssa num.
+        //
+        if (!m_compiler->lvaInSsa(lclNum))
+        {
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Unexpected SSA number on def [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        // All defs of ssa vars should have valid ssa nums.
+        //
+        if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            SetHasErrors();
+            JITDUMP("[error] Missing SSA number on def [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            return;
+        }
+
+        SsaKey   key(lclNum, ssaNum);
+        SsaInfo* ssaInfo = nullptr;
+        if (!m_infoMap.Lookup(key, &ssaInfo))
+        {
+            ssaInfo = new (m_compiler->getAllocator(CMK_DebugOnly)) SsaInfo;
+            m_infoMap.Set(key, ssaInfo);
+        }
+
+        ssaInfo->AddDef(m_block, key);
+    }
+
+    void ProcessDefs(GenTree* tree)
+    {
+        GenTreeLclVarCommon* lclNode;
+        bool                 isFullDef    = false;
+        ssize_t              offset       = 0;
+        unsigned             storeSize    = 0;
+        bool                 definesLocal = tree->DefinesLocal(m_compiler, &lclNode, &isFullDef, &offset, &storeSize);
+
+        if (!definesLocal)
+        {
+            return;
+        }
+
+        const bool       isUse  = (lclNode->gtFlags & GTF_VAR_USEASG) != 0;
+        unsigned const   lclNum = lclNode->GetLclNum();
+        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        assert(!(isFullDef && isUse));
+
+        if (lclNode->HasCompositeSsaName())
+        {
+            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            {
+                unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
+                LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                unsigned const   fieldSsaNum = lclNode->GetSsaNum(m_compiler, index);
+
+                ssize_t  fieldStoreOffset;
+                unsigned fieldStoreSize;
+                if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+                {
+                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum);
+
+                    if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                    {
+                        assert(isUse);
+                        unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
+                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum);
+                    }
+                }
+            }
+        }
+        else
+        {
+            unsigned const ssaNum = lclNode->GetSsaNum();
+            ProcessDef(lclNode, lclNum, ssaNum);
+
+            if (isUse)
+            {
+                unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                }
+                ProcessUse(lclNode, lclNum, useSsaNum);
+            }
+        }
+    }
+
+    void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)
+    {
+        // If the var is not in ssa, the tree should not have an ssa num.
+        //
+        if (!m_compiler->lvaInSsa(lclNum))
+        {
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Unexpected SSA number on [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        // All uses of ssa vars should have valid ssa nums, unless there are no defs.
+        //
+        if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (varDsc->lvPerSsaData.GetCount() > 0)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Missing SSA number on use [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        SsaKey   key(lclNum, ssaNum);
+        SsaInfo* ssaInfo = nullptr;
+
+        if (!m_infoMap.Lookup(key, &ssaInfo))
+        {
+            ssaInfo = new (m_compiler->getAllocator(CMK_DebugOnly)) SsaInfo;
+            m_infoMap.Set(key, ssaInfo);
+        }
+
+        if (tree->OperIs(GT_PHI_ARG))
+        {
+            ssaInfo->AddPhiUse(m_block, key);
+        }
+        else
+        {
+            ssaInfo->AddUse(m_block, key);
+        }
+    }
+
+    void ProcessUses(GenTreeLclVarCommon* tree)
+    {
+        unsigned const lclNum = tree->GetLclNum();
+        unsigned const ssaNum = tree->GetSsaNum();
+
+        // We currently should not see composite SSA numbers for uses.
+        //
+        if (tree->HasCompositeSsaName())
+        {
+            SetHasErrors();
+            JITDUMP("[error] Composite SSA number on use [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            return;
+        }
+
+        ProcessUse(tree, lclNum, ssaNum);
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const tree = *use;
+
+        if (tree->OperIsSsaDef())
+        {
+            ProcessDefs(tree);
+        }
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+        {
+            ProcessUses(tree->AsLclVarCommon());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    void SetHasErrors()
+    {
+        if (!m_hasErrors)
+        {
+            JITDUMP("fgDebugCheckSsa: errors found\n");
+            m_hasErrors = true;
+        }
+    }
+
+    bool HasErrors() const
+    {
+        return m_hasErrors;
+    }
+
+    void SetBlock(BasicBlock* block)
+    {
+        m_block = block;
+    }
+
+    void DoChecks()
+    {
+        for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
+        {
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (!varDsc->lvInSsa)
+            {
+                continue;
+            }
+
+            const SsaDefArray<LclSsaVarDsc>& ssaDefs = varDsc->lvPerSsaData;
+
+            for (unsigned i = 0; i < ssaDefs.GetCount(); i++)
+            {
+                LclSsaVarDsc* const ssaVarDsc = ssaDefs.GetSsaDefByIndex(i);
+                const unsigned      ssaNum    = ssaDefs.GetSsaNum(ssaVarDsc);
+
+                SsaKey   key(lclNum, ssaNum);
+                SsaInfo* ssaInfo = nullptr;
+
+                if (!m_infoMap.Lookup(key, &ssaInfo))
+                {
+                    // Possibly there are no more references to this local.
+                    continue;
+                }
+
+                // VarDsc block should be accurate.
+                //
+                BasicBlock* const ssaInfoDefBlock   = ssaInfo->GetDefBlock();
+                BasicBlock* const ssaVarDscDefBlock = ssaVarDsc->GetBlock();
+
+                if (ssaInfoDefBlock != ssaVarDscDefBlock)
+                {
+                    // We are inconsistent in tracking where the initial values of params
+                    // and uninit locals come from. Tolerate.
+                    //
+                    const bool initialValOfParamOrLocal =
+                        (lclNum < m_compiler->lvaCount) && (ssaNum == SsaConfig::FIRST_SSA_NUM);
+                    const bool noDefBlockOrFirstBB =
+                        (ssaInfoDefBlock == nullptr) && (ssaVarDscDefBlock == m_compiler->fgFirstBB);
+                    if (!(initialValOfParamOrLocal && noDefBlockOrFirstBB))
+                    {
+                        JITDUMP("[error] Wrong def block for V%02u.%u : IR " FMT_BB " SSA " FMT_BB "\n", lclNum, ssaNum,
+                                ssaInfoDefBlock == nullptr ? 0 : ssaInfoDefBlock->bbNum,
+                                ssaVarDscDefBlock == nullptr ? 0 : ssaVarDscDefBlock->bbNum);
+
+                        SetHasErrors();
+                    }
+                }
+
+                unsigned const ssaInfoUses   = ssaInfo->GetNumUses();
+                unsigned const ssaVarDscUses = ssaVarDsc->GetNumUses();
+
+                // VarDsc use count must be accurate or an over-estimate
+                //
+                if (ssaInfoUses > ssaVarDscUses)
+                {
+                    // If this assert fires, it's possible some optimization did not call optRecordSsaUse.
+                    //
+                    JITDUMP("[error] NumUses underestimated for V%02u.%u: IR %u SSA %u\n", lclNum, ssaNum, ssaInfoUses,
+                            ssaVarDscUses);
+                    SetHasErrors();
+                }
+                else if (ssaInfoUses < ssaVarDscUses)
+                {
+                    JITDUMP("[info] NumUses overestimated for V%02u.%u: IR %u SSA %u\n", lclNum, ssaNum, ssaInfoUses,
+                            ssaVarDscUses);
+                }
+
+                // HasPhiUse use must be accurate or an over-estimate
+                //
+                if (ssaInfo->HasPhiUse() && !ssaVarDsc->HasPhiUse())
+                {
+                    JITDUMP("[error] HasPhiUse underestimated for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+                else if (!ssaInfo->HasPhiUse() && ssaVarDsc->HasPhiUse())
+                {
+                    JITDUMP("[info] HasPhiUse overestimated for V%02u.%u\n", lclNum, ssaNum);
+                }
+
+                // HasGlobalUse use must be accurate or an over-estimate
+                //
+                if (ssaInfo->HasGlobalUse() && !ssaVarDsc->HasGlobalUse())
+                {
+                    JITDUMP("[error] HasGlobalUse underestimated for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+                else if (!ssaInfo->HasGlobalUse() && ssaVarDsc->HasGlobalUse())
+                {
+                    JITDUMP("[info] HasGlobalUse overestimated for V%02u.%u\n", lclNum, ssaNum);
+                }
+
+                // There should be at most one def.
+                //
+                if (ssaInfo->HasMultipleDef())
+                {
+                    JITDUMP("[error] HasMultipleDef for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+            }
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
+// fgDebugCheckSsa: Check that certain SSA invariants hold.
+//
+// Currently verifies:
+// * There is at most one SSA def for a given SSA num, and it is in the expected block.
+// * Operands that should have SSA numbers have them
+// * Operands that should not have SSA numbers do not have them
+// * The number of SSA uses is accurate or an over-estimate
+// * The local/global bit is properly set or an over-estimate
+// * The has phi use bit is properly set or an over-estimate
+//
+// Todo:
+// * Try and sanity check PHIs
+// * Verify VNs on uses match the VN on the def
+//
+void Compiler::fgDebugCheckSsa()
+{
+    if (!fgSsaChecksEnabled)
+    {
+        return;
+    }
+
+    assert(fgSsaPassesCompleted > 0);
+    assert(fgDomsComputed);
+
+    // This class visits the flow graph the same way the SSA builder does.
+    //
+    class SsaCheckDomTreeVisitor : public DomTreeVisitor<SsaCheckDomTreeVisitor>
+    {
+        SsaCheckVisitor& m_checkVisitor;
+
+    public:
+        SsaCheckDomTreeVisitor(Compiler* compiler, SsaCheckVisitor& checkVisitor)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_checkVisitor(checkVisitor)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_checkVisitor.SetBlock(block);
+
+            for (Statement* const stmt : block->Statements())
+            {
+                m_checkVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+    };
+
+    // Visit the blocks SSA modified
+    //
+    SsaCheckVisitor        scv(this);
+    SsaCheckDomTreeVisitor visitor(this, scv);
+    visitor.WalkTree();
+
+    // Also visit any blocks added afterwards
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->bbNum > fgDomBBcount)
+        {
+            visitor.PreOrderVisit(block);
+        }
+    }
+
+    // Cross-check the information gathered from IR against the info in the SSA table
+    //
+    scv.DoChecks();
+
+    if (scv.HasErrors())
+    {
+        assert(!"SSA check failures");
+    }
+    else
+    {
+        JITDUMP("SSA checks completed successfully\n");
     }
 }
 

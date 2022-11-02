@@ -842,9 +842,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    gtDispLclVar(var->varNumber, false);
-    printf("(%10s) : From %08Xh to %08Xh, in ", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name),
-           var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
@@ -1616,7 +1624,7 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t handle)
+void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
 {
     const size_t maxStrSize = 64;
     char         str[maxStrSize];
@@ -1624,7 +1632,7 @@ void Compiler::eePrintObjectDescriptionDescription(const char* prefix, size_t ha
 
     // Ignore potential SPMI failures
     bool success = eeRunFunctorWithSPMIErrorTrap(
-        [&]() { actualLen = this->info.compCompHnd->printObjectDescription((void*)handle, str, maxStrSize); });
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription(handle, str, maxStrSize); });
 
     if (!success)
     {

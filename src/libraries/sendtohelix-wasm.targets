@@ -38,14 +38,12 @@
     </PrepareForBuildHelixWorkItems_WasmDependsOn>
 
     <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
-    <BuildHelixWorkItemsDependsOn Condition="'$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadFirefoxToSendToHelix</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
-    <FirefoxForHelixPayload>$(TestArchiveRoot)firefox.zip</FirefoxForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
@@ -159,17 +157,18 @@
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and !Exists($(ChromeDir))"
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
            Text="Could not find chrome at $(ChromeDir)" />
-    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and !Exists($(ChromeDriverDir))"
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
            Text="Could not find chromedriver at $(ChromeDriverDir)" />
+    <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
+           Text="Could not find firefox at $(FirefoxDir)" />
 
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDir)" />
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
 
-      <!--<HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="firefox" Uri="$(FirefoxUrl)" />-->
-      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxForHelixPayload)" />
+      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxDir)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -290,12 +289,5 @@
     <Copy SourceFiles="@(_EmSdkFiles)"
           DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
-  </Target>
-
-  <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">
-    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(TestArchiveRoot)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <Exec Command="tar -xf $(_DownloadedFile) -C $(TestArchiveRoot) &amp;&amp; rm $(_DownloadedFile) &amp;&amp; cd $(TestArchiveRoot) &amp;&amp; zip -q -r firefox.zip firefox"/>
   </Target>
 </Project>

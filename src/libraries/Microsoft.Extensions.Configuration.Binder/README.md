@@ -5,7 +5,7 @@ Provides the functionality to bind an object to data in configuration providers 
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/configuration
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)
 
 The APIs and functionality are mature, but do get extended occasionally.
 

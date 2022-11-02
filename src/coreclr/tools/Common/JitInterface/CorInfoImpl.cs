@@ -1859,7 +1859,7 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
