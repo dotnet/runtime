@@ -2139,34 +2139,37 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        // FIXME: support valuetypes
         public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttributeForValueTypes(int valueTypeId, int typeId, CancellationToken token)
         {
             try
             {
-                //FIXME: Issue #68390
-                return null;
-                //int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
-                //if (methodId == -1)
-                //    return null;
+                var typeName = await GetTypeName(typeId, token);
+                int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
+                if (methodId == -1)
+                   return null;
 
-                //using var ctorArgsWriter = new MonoBinaryWriter();
-                //ctorArgsWriter.Write((byte)ValueTypeId.Null);
+                using var ctorArgsWriter = new MonoBinaryWriter();
+                ctorArgsWriter.Write((byte)ValueTypeId.Null);
 
-                //if (ValueCreator.TryGetValueTypeById(valueTypeId, out var valueType))
-                //{
-                //    ctorArgsWriter.Write((byte)0); //not used but needed
-                //    ctorArgsWriter.Write(0); //not used but needed
-                //    ctorArgsWriter.Write((int)1); // num args
-                //    ctorArgsWriter.Write(valueType.Buffer);
-                //}
+                if (!ValueCreator.TryGetValueTypeById(valueTypeId, out var valueType))
+                    return null;
+                ctorArgsWriter.Write((byte)0); //not used but needed
+                ctorArgsWriter.Write(0); //not used but needed
+                ctorArgsWriter.Write((int)1); // num args
+                ctorArgsWriter.Write(valueType.Buffer);
+                var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
+                if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
+                    throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
+                GetMembersResult members = await GetTypeMemberValues(dotnetObjectId,
+                                                                            GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute,
+                                                                            token);
+                return members;
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
+                return null;
             }
-
-            return null;
         }
 
         private async Task<int> FindDebuggerProxyConstructorIdFor(int typeId, CancellationToken token)
