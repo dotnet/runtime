@@ -324,7 +324,6 @@ set(VM_SOURCES_WKS
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
-    gcenv.os.cpp
     gchelpers.cpp
     genanalysis.cpp
     genmeth.cpp

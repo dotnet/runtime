@@ -630,25 +630,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-    // Optimization:
-    //
-    // If we are about to substitute GT_OBJ, see if we can simplify it first.
-    // Not doing so can lead to regressions...
-    //
-    // Hold off on doing this for call args for now (per issue #51569).
-    // Hold off on OBJ(GT_LCL_ADDR).
-    //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg() && fwdSubNode->gtGetOp1()->OperIs(GT_ADDR))
-    {
-        const bool     destroyNodes = false;
-        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
-        if (optTree != nullptr)
-        {
-            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
-            fwdSubNode = optTree;
-        }
-    }
-
     // Quirks:
     //
     // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
@@ -658,33 +639,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
-    }
-
-    // We may sometimes lose or change a type handle. Avoid substituting if so.
-    //
-    // However, we allow free substitution of hardware SIMD types.
-    //
-    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
-    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
-    if (fwdHnd != useHnd)
-    {
-        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
-        {
-            JITDUMP(" would add/remove struct handle (substitution)\n");
-            return false;
-        }
-
-#ifdef FEATURE_SIMD
-        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
-#else
-        const bool bothHWSIMD = false;
-#endif
-
-        if (!bothHWSIMD)
-        {
-            JITDUMP(" would change struct handle (substitution)\n");
-            return false;
-        }
     }
 
     // There are implicit assumptions downstream on where/how multi-reg ops

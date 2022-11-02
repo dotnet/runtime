@@ -1711,43 +1711,103 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 
     if (insertionPoint == nullptr)
     {
-        for (CallArg& arg : call->gtArgs.EarlyArgs())
-        {
-            assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in early args
-
-            if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
-            {
-                // found it
-                insertionPoint = arg.GetEarlyNode();
-                break;
-            }
-        }
+        insertionPoint = FindEarliestPutArg(call);
 
         if (insertionPoint == nullptr)
         {
-            for (CallArg& arg : call->gtArgs.LateArgs())
-            {
-                if (arg.GetLateNode()->OperIs(GT_PUTARG_REG, GT_PUTARG_STK))
-                {
-                    // found it
-                    insertionPoint = arg.GetLateNode();
-                    break;
-                }
-            }
-
-            // If there are no args, insert before the call node
-            if (insertionPoint == nullptr)
-            {
-                insertionPoint = call;
-            }
+            insertionPoint = call;
         }
     }
 
 #endif // !defined(TARGET_X86)
 
     assert(insertionPoint != nullptr);
+    JITDUMP("Inserting profiler tail call before [%06u]\n", comp->dspTreeID(insertionPoint));
+
     GenTree* profHookNode = new (comp, GT_PROF_HOOK) GenTree(GT_PROF_HOOK, TYP_VOID);
     BlockRange().InsertBefore(insertionPoint, profHookNode);
+}
+
+//------------------------------------------------------------------------
+// FindEarliestPutArg: Find the earliest direct PUTARG operand of a call node in
+// linear order.
+//
+// Arguments:
+//    call - the call
+//
+// Returns:
+//    A PUTARG_* node that is the earliest of the call, or nullptr if the call
+//    has no arguments.
+//
+GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
+{
+    size_t numMarkedNodes = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetEarlyNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
+        }
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
+        }
+    }
+
+    if (numMarkedNodes <= 0)
+    {
+        return nullptr;
+    }
+
+    GenTree* node = call;
+    do
+    {
+        node = node->gtPrev;
+
+        assert((node != nullptr) && "Reached beginning of basic block while looking for marked nodes");
+
+        if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            node->gtLIRFlags &= ~LIR::Flags::Mark;
+            numMarkedNodes--;
+        }
+    } while (numMarkedNodes > 0);
+
+    assert(node->OperIsPutArg());
+    return node;
+}
+
+//------------------------------------------------------------------------
+// MarkPutArgNodes: Mark all direct operand PUTARG nodes with a LIR mark.
+//
+// Arguments:
+//    node - the node (either a field list or PUTARG node)
+//
+// Returns:
+//    The number of marks added.
+//
+size_t Lowering::MarkPutArgNodes(GenTree* node)
+{
+    assert(node->OperIsPutArg() || node->OperIsFieldList());
+
+    size_t result = 0;
+    if (node->OperIsFieldList())
+    {
+        for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
+        {
+            assert(operand.GetNode()->OperIsPutArg());
+            result += MarkPutArgNodes(operand.GetNode());
+        }
+    }
+    else
+    {
+        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
+        node->gtLIRFlags |= LIR::Flags::Mark;
+        result++;
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -2880,7 +2940,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 {
                     GenTree* notNode   = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
                     op1->AsOp()->gtOp1 = notNode;
-                    BlockRange().InsertBefore(andOp2, notNode);
+                    BlockRange().InsertAfter(andOp1, notNode);
                 }
 
                 cmpUse.ReplaceWith(op1);
@@ -3354,8 +3414,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
                 bool constStructInit                  = retVal->IsConstInitVal();
                 bool implicitCastFromSameOrBiggerSize = (genTypeSize(retActualType) <= genTypeSize(retValActualType));
 
-                // This could happen if we have retyped op1 as a primitive type during struct promotion,
-                // check `retypedFieldsMap` for details.
+                // This could happen if we have retyped op1 as a primitive type during struct promotion.
                 bool actualTypesMatch = (retActualType == retValActualType);
 
                 assert(actualTypesMatch || constStructInit || implicitCastFromSameOrBiggerSize);
@@ -3659,6 +3718,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             }
             break;
 
+        case GT_BLK:
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
             FALLTHROUGH;
@@ -6808,14 +6868,14 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         }
     }
 #ifdef TARGET_XARCH
-    // For local stores on XARCH we only handle mismatched src/dest register count for
-    // calls of SIMD type. If the source was another lclVar similarly promoted, we would
-    // have broken it into multiple stores.
-    if (lclNode->OperIs(GT_STORE_LCL_VAR) && !lclNode->gtGetOp1()->OperIs(GT_CALL))
+    // For local stores on XARCH we only handle mismatched src/dest register count for calls of SIMD type.
+    // If the source was another lclVar similarly promoted, we would have broken it into multiple stores.
+    if (lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsStruct(lclNode->Data()) && !lclNode->Data()->OperIs(GT_CALL))
     {
         canEnregister = false;
     }
 #endif // TARGET_XARCH
+
     if (canEnregister)
     {
         lclNode->SetMultiReg();
@@ -6829,6 +6889,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         }
     }
 #endif
+
     return canEnregister;
 }
 
@@ -7119,7 +7180,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
         {
             const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
+            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
             {
                 // On platforms with weaker memory model we need to make sure we use a store with the release semantic
                 // when we publish a potentially mutable object

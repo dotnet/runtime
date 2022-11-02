@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class TimeSpanConverter : JsonConverter<TimeSpan>
+    internal sealed class TimeSpanConverter : JsonPrimitiveConverter<TimeSpan>
     {
         private const int MinimumTimeSpanFormatLength = 8; // hh:mm:ss
         private const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
@@ -19,6 +18,19 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
+
+            return ReadCore(ref reader);
+        }
+
+        internal override TimeSpan ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+            return ReadCore(ref reader);
+        }
+
+        private static TimeSpan ReadCore(ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
 
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumTimeSpanFormatLength, MaximumEscapedTimeSpanFormatLength))
             {
@@ -68,6 +80,16 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(result);
 
             writer.WriteStringValue(output.Slice(0, bytesWritten));
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
+
+            bool result = Utf8Formatter.TryFormat(value, output, out int bytesWritten, 'c');
+            Debug.Assert(result);
+
+            writer.WritePropertyName(output.Slice(0, bytesWritten));
         }
     }
 }

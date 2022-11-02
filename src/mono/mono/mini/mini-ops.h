@@ -1467,6 +1467,9 @@ MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
 
 /* LLVM only, compare 2 vectors for equality, set dreg to 1/0 */
 MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
+#if defined(TARGET_ARM64)
+MINI_OP(OP_XEQUAL_ARM64_V128_FAST, "arm64_xequal_v128", IREG, XREG, XREG)
+#endif
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
@@ -1698,16 +1701,6 @@ MINI_OP(OP_ARM64_SQXTUN2, "arm64_sqxtun2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SELECT_SCALAR, "arm64_select_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SELECT_QUAD, "arm64_select_quad", XREG, XREG, IREG)
 
-MINI_OP(OP_ARM64_FCVTZU, "arm64_fcvtzu", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZS, "arm64_fcvtzs", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZU_SCALAR, "arm64_fcvtzu_scalar", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZS_SCALAR, "arm64_fcvtzs_scalar", XREG, XREG, NONE)
-
-MINI_OP(OP_ARM64_UCVTF, "arm64_ucvtf", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_SCVTF, "arm64_scvtf", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_UCVTF_SCALAR, "arm64_ucvtf_scalar", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_SCVTF_SCALAR, "arm64_scvtf_scalar", XREG, XREG, NONE)
-
 MINI_OP(OP_ARM64_FCVTN, "arm64_fcvtn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTN2, "arm64_fcvtn2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_FCVTXN, "arm64_fcvtxn", XREG, XREG, NONE)
@@ -1779,4 +1772,14 @@ MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
+
+MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_SI,        "convert_fp_to_si", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_UI_SCALAR, "convert_fp_to_ui_scalar", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_SI_SCALAR, "convert_fp_to_si_scalar", XREG, XREG, NONE)
+
+MINI_OP(OP_CVT_UI_FP,        "convert_ui_to_fp", XREG, XREG, NONE)
+MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
+MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
+MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #endif // TARGET_ARM64 || TARGET_AMD64

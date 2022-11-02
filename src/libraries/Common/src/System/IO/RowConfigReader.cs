@@ -20,8 +20,8 @@ namespace System.IO
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
-        /// <param name="buffer">The string to parse through.</param>
         /// </summary>
+        /// <param name="buffer">The string to parse through.</param>
         public RowConfigReader(string buffer)
         {
             _buffer = buffer;
@@ -31,9 +31,9 @@ namespace System.IO
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
+        /// </summary>
         /// <param name="buffer">The string to parse through.</param>
         /// <param name="comparisonKind">The comparison kind to use.</param>
-        /// </summary>
         public RowConfigReader(string buffer, StringComparison comparisonKind)
         {
             _buffer = buffer;

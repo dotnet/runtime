@@ -27,8 +27,6 @@ class ArrayNative
 public:
     static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 
-    static FCDECL1(void, Initialize, ArrayBase* pArray);
-
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
     static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);
 
@@ -67,5 +65,7 @@ private:
     static void PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
 
 };
+
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
 
 #endif // _ARRAYNATIVE_H_

@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -38,6 +38,12 @@ namespace ILCompiler.DependencyAnalysis
         public TypeDesc ObjectType => _data.Type;
 
         public bool IsKnownImmutable => _data.IsKnownImmutable;
+
+        public int GetArrayLength()
+        {
+            Debug.Assert(ObjectType.IsArray);
+            return _data.ArrayLength;
+        }
 
         int ISymbolNode.Offset => 0;
 

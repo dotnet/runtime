@@ -213,22 +213,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
 
-                case "Debugger.scriptParsed":
-                    {
-                        string url = args?["url"]?.Value<string>() ?? "";
-
-                        switch (url)
-                        {
-                            case var _ when url == "":
-                            {
-                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
-                                return true;
-                            }
-                        }
-                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
-                        break;
-                    }
-
                 case "Target.attachedToTarget":
                     {
                         if (args["targetInfo"]["type"]?.ToString() == "page")
@@ -283,7 +267,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                return false;
+                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+                return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
             switch (method)
@@ -582,8 +567,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
             }
-
-            return false;
+            // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+            return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
@@ -758,15 +743,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 switch (objectId.Scheme)
                 {
+                    // ToDo: fix Exception types here
                     case "scope":
-                        Result resScope = await GetScopeProperties(id, objectId.Value, token);
-                        return resScope.IsOk
-                            ? ValueOrError<GetMembersResult>.WithValue(
-                                new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
-                            : ValueOrError<GetMembersResult>.WithError(resScope);
+                        GetMembersResult resScope = await GetScopeProperties(id, objectId.Value, token);
+                        resScope.CleanUp();
+                        return ValueOrError<GetMembersResult>.WithValue(resScope);
                     case "valuetype":
                         var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
                             context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        resValue?.CleanUp();
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -781,6 +766,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "object":
                         var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
                             context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        resObj.CleanUp();
                         return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
@@ -1409,14 +1395,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
+        internal async Task<GetMembersResult> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
         {
             try
             {
                 ExecutionContext context = GetContext(msg_id);
                 Frame scope = context.CallStack.FirstOrDefault(s => s.Id == scopeId);
                 if (scope == null)
-                    return Result.Err(JObject.FromObject(new { message = $"Could not find scope with id #{scopeId}" }));
+                    throw new Exception($"Could not find scope with id #{scopeId}");
 
                 VarInfo[] varIds = scope.Method.Info.GetLiveVarsAt(scope.Location.IlLocation.Offset);
 
@@ -1424,21 +1410,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (values != null)
                 {
                     if (values == null || values.Count == 0)
-                        return Result.OkFromObject(new { result = Array.Empty<object>() });
+                        return new GetMembersResult();
 
                     PerScopeCache frameCache = context.GetCacheForScope(scopeId);
                     foreach (JObject value in values)
                     {
                         frameCache.Locals[value["name"]?.Value<string>()] = value;
                     }
-                    return Result.OkFromObject(new { result = values });
+                    return GetMembersResult.FromValues(values);
                 }
-                return Result.OkFromObject(new { result = Array.Empty<object>() });
+                return new GetMembersResult();
             }
             catch (Exception exception)
             {
-                Log("verbose", $"Error resolving scope properties {exception.Message}");
-                return Result.Exception(exception);
+                throw new Exception($"Error resolving scope properties {exception.Message}");
             }
         }
 
@@ -1540,27 +1525,40 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
-            if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
-                return await context.ready.Task;
-            var res = await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token, false);
-            if (res.HasError) //it's not a wasm page then the command returns an error
+            try
+            {
+                ExecutionContext context = GetContext(sessionId);
+                if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
+                    return await context.ready.Task;
+                await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token);
+
+                if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
+                    await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
+
+                await context.SdbAgent.SetProtocolVersion(token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.UserBreak, token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.EnC, token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.MethodUpdate, token);
+
+                DebugStore store = await LoadStore(sessionId, true, token);
+                context.ready.SetResult(store);
+                await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+                await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
+                context.SdbAgent.ResetStore(store);
+                return store;
+            }
+            catch (DebuggerAgentException e)
+            {
+                //it's not a wasm page then the command throws an error
+                if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                    logger.LogDebug($"Unexpected error on RuntimeReady {e}");
                 return null;
-
-            if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
-                await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
-
-            await context.SdbAgent.SetProtocolVersion(token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.UserBreak, token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.EnC, token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.MethodUpdate, token);
-
-            DebugStore store = await LoadStore(sessionId, true, token);
-            context.ready.SetResult(store);
-            await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
-            await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
-            context.SdbAgent.ResetStore(store);
-            return store;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unexpected error on RuntimeReady {e}");
+                return null;
+            }
         }
 
         private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req, bool ifNoneFoundThenFindNext = false)

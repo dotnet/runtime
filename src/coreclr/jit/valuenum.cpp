@@ -2083,9 +2083,58 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     }
     else
     {
+        // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
+        if (func == VNFunc(GT_ARR_LENGTH))
+        {
+            // Case 1: ARR_LENGTH(FROZEN_OBJ)
+            ValueNum addressVN = VNNormalValue(arg0VN);
+            if (IsVNHandle(addressVN) && (GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
+            {
+                size_t handle = CoercedConstantValue<size_t>(addressVN);
+                int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
+                if (len >= 0)
+                {
+                    resultVN = VNForIntCon(len);
+                }
+            }
+
+            // Case 2: ARR_LENGTH(static-readonly-field)
+            VNFuncApp funcApp;
+            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
+            {
+                ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
+                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                {
+                    FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
+                    if (fieldSeq != nullptr)
+                    {
+                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+                        if (field != NULL)
+                        {
+                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                            if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
+                                                                                       TARGET_POINTER_SIZE, false))
+                            {
+                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                                // It's done to match the current crossgen/ILC behavior.
+                                CORINFO_OBJECT_HANDLE objHandle = NULL;
+                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
+                                if (len >= 0)
+                                {
+                                    resultVN = VNForIntCon(len);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Try to perform constant-folding.
         //
-        if (VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
+        if ((resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
         {
             resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
         }
@@ -4846,53 +4895,88 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
     // Should not have been recorded as updating the GC heap.
     assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
 
-    LclVarDsc* varDsc       = lvaGetDesc(lclDefNode);
-    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode);
+    auto processDef = [=](unsigned defLclNum, unsigned defSsaNum, ssize_t defOffset, unsigned defSize,
+                          ValueNumPair defValue) {
 
-    if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-    {
-        unsigned lclSize = lvaLclExactSize(lclDefNode->GetLclNum());
+        LclVarDsc* defVarDsc = lvaGetDesc(defLclNum);
 
-        ValueNumPair newLclValue;
-        if (vnStore->LoadStoreIsEntire(lclSize, offset, storeSize))
+        if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            newLclValue = value;
+            unsigned lclSize = lvaLclExactSize(defLclNum);
+
+            ValueNumPair newLclValue;
+            if (vnStore->LoadStoreIsEntire(lclSize, defOffset, defSize))
+            {
+                newLclValue = defValue;
+            }
+            else
+            {
+                assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
+                unsigned     oldDefSsaNum = defVarDsc->GetPerSsaData(defSsaNum)->GetUseDefSsaNum();
+                ValueNumPair oldLclValue  = defVarDsc->GetPerSsaData(oldDefSsaNum)->m_vnPair;
+                newLclValue               = vnStore->VNPairForStore(oldLclValue, lclSize, defOffset, defSize, defValue);
+            }
+
+            // Any out-of-bounds stores should have made the local address-exposed.
+            assert(newLclValue.BothDefined());
+
+            if (normalize)
+            {
+                // We normalize types stored in local locations because things outside VN itself look at them.
+                newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize);
+                assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(defVarDsc)));
+            }
+
+            defVarDsc->GetPerSsaData(defSsaNum)->m_vnPair = newLclValue;
+
+            JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), defLclNum, defSsaNum);
+            JITDUMPEXEC(vnpPrint(newLclValue, 1));
+            JITDUMP("\n");
+        }
+        else if (defVarDsc->IsAddressExposed())
+        {
+            ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
+            recordAddressExposedLocalStore(storeNode, heapVN DEBUGARG("local assign"));
         }
         else
         {
-            assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
-            // The "lclDefNode" node will be labeled with the SSA number of its "use" identity
-            // (we looked in a side table above for its "def" identity).  Look up that value.
-            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclDefNode->GetSsaNum())->m_vnPair;
-            newLclValue              = vnStore->VNPairForStore(oldLclValue, lclSize, offset, storeSize, value);
+            JITDUMP("Tree [%06u] assigns to non-address-taken local V%02u; excluded from SSA, so value not tracked\n",
+                    dspTreeID(storeNode), defLclNum);
         }
+    };
 
-        // Any out-of-bounds stores should have made the local address-exposed.
-        assert(newLclValue.BothDefined());
-
-        if (normalize)
-        {
-            // We normalize types stored in local locations because things outside VN itself look at them.
-            newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, varDsc->TypeGet(), lclSize);
-            assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)));
-        }
-
-        varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
-
-        JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
-                lclDefSsaNum);
-        JITDUMPEXEC(vnpPrint(newLclValue, 1));
-        JITDUMP("\n");
-    }
-    else if (varDsc->IsAddressExposed())
+    if (lclDefNode->HasCompositeSsaName())
     {
-        ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-        recordAddressExposedLocalStore(storeNode, heapVN DEBUGARG("local assign"));
+        LclVarDsc* varDsc = lvaGetDesc(lclDefNode);
+        assert(varDsc->lvPromoted);
+
+        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+        {
+            unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
+            LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
+
+            ssize_t  fieldStoreOffset;
+            unsigned fieldStoreSize;
+            if (gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+            {
+                // TYP_STRUCT can represent the general case where the value could be of any size.
+                var_types fieldStoreType = TYP_STRUCT;
+                if (vnStore->LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                {
+                    // Avoid redundant bitcasts for the common case of a full definition.
+                    fieldStoreType = fieldVarDsc->TypeGet();
+                }
+                ValueNumPair fieldStoreValue =
+                    vnStore->VNPairForLoad(value, storeSize, fieldStoreType, offset, fieldStoreSize);
+
+                processDef(fieldLclNum, lclDefNode->GetSsaNum(this, index), fieldStoreOffset, fieldStoreSize,
+                           fieldStoreValue);
+            }
+        }
     }
     else
     {
-        JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not tracked\n",
-                dspTreeID(storeNode), lclDefNode->GetLclNum());
+        processDef(lclDefNode->GetLclNum(), lclDefNode->GetSsaNum(), offset, storeSize, value);
     }
 }
 
@@ -8250,13 +8334,28 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
     // Is the type being stored different from the type computed by the rhs?
     if (rhs->TypeGet() != lhs->TypeGet())
     {
-        if (rhs->TypeGet() == TYP_REF)
+        if (tree->OperIsInitBlkOp())
+        {
+            ValueNum initObjVN;
+            if (rhs->IsIntegralConst(0))
+            {
+                initObjVN = lhs->TypeIs(TYP_STRUCT) ? vnStore->VNForZeroObj(lhs->GetLayout(this))
+                                                    : vnStore->VNZeroForType(lhs->TypeGet());
+            }
+            else
+            {
+                initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
+            }
+
+            rhsVNPair.SetBoth(initObjVN);
+        }
+        else if (rhs->TypeGet() == TYP_REF)
         {
             // If we have an unsafe IL assignment of a TYP_REF to a non-ref (typically a TYP_BYREF)
             // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
             rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
         }
-        else if (lhs->OperGet() != GT_BLK)
+        else
         {
             // This means that there is an implicit cast on the rhs value
             // We will add a cast function to reflect the possible narrowing of the rhs value
@@ -8377,75 +8476,45 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
     GenTree* rhs = tree->gtGetOp2();
 
     GenTreeLclVarCommon* lclVarTree = nullptr;
-    bool                 isEntire   = false;
     ssize_t              offset     = 0;
-    if (tree->DefinesLocal(this, &lclVarTree, &isEntire, &offset))
+    unsigned             storeSize  = 0;
+    if (tree->DefinesLocal(this, &lclVarTree, /* isEntire */ nullptr, &offset, &storeSize))
     {
         assert(lclVarTree->gtFlags & GTF_VAR_DEF);
-        // Should not have been recorded as updating the GC heap.
-        assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
-        unsigned   lhsLclNum    = lclVarTree->GetLclNum();
-        unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
-        LclVarDsc* lhsVarDsc    = lvaGetDesc(lhsLclNum);
+        LclVarDsc*   lhsVarDsc = lvaGetDesc(lclVarTree);
+        ValueNumPair rhsVNPair = ValueNumPair();
 
-        // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
-        // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
-        if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+        if (tree->OperIsInitBlkOp())
         {
-            ClassLayout* const layout    = lhs->GetLayout(this);
-            unsigned           storeSize = layout->GetSize();
+            ClassLayout* const layout = lhs->GetLayout(this);
 
-            ValueNumPair rhsVNPair = ValueNumPair();
-            if (tree->OperIsInitBlkOp())
+            ValueNum initObjVN = ValueNumStore::NoVN;
+            if (rhs->IsIntegralConst(0))
             {
-                ValueNum initObjVN = ValueNumStore::NoVN;
-                if (rhs->IsIntegralConst(0))
-                {
-                    initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout)
-                                                               : vnStore->VNZeroForType(lhs->TypeGet());
-                }
-                else
-                {
-                    // Non-zero block init is very rare so we'll use a simple, unique VN here.
-                    initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
-                }
-                rhsVNPair.SetBoth(initObjVN);
+                initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout)
+                                                           : vnStore->VNZeroForType(lhs->TypeGet());
             }
             else
             {
-                assert(tree->OperIsCopyBlkOp());
-                rhsVNPair = vnStore->VNPNormalPair(rhs->gtVNPair);
+                // Non-zero block init is very rare so we'll use a simple, unique VN here.
+                initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
             }
 
-            fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
+            rhsVNPair.SetBoth(initObjVN);
         }
-        else if (lclVarTree->HasSsaName())
+        else if (lhs->OperIs(GT_LCL_VAR) && lhsVarDsc->CanBeReplacedWithItsField(this))
         {
-            // The local wasn't in SSA, the tree is still an SSA def. There is only one
-            // case when this can happen - a promoted "CanBeReplacedWithItsField" struct.
-            assert((lhs == lclVarTree) && rhs->IsCall() && isEntire);
-            assert(lhsVarDsc->CanBeReplacedWithItsField(this));
-            // Give a new, unique, VN to the field.
-            LclVarDsc*    fieldVarDsc    = lvaGetDesc(lhsVarDsc->lvFieldLclStart);
-            LclSsaVarDsc* fieldVarSsaDsc = fieldVarDsc->GetPerSsaData(lclVarTree->GetSsaNum());
-            ValueNum      newUniqueVN    = vnStore->VNForExpr(compCurBB, fieldVarDsc->TypeGet());
-
-            fieldVarSsaDsc->m_vnPair.SetBoth(newUniqueVN);
-
-            JITDUMP("Tree [%06u] assigned VN to the only field V%02u/%u of promoted struct V%02u: new uniq ",
-                    dspTreeID(tree), lhsVarDsc->lvFieldLclStart, lclVarTree->GetSsaNum(), lhsLclNum);
-            JITDUMPEXEC(vnPrint(newUniqueVN, 1));
-            JITDUMP("\n");
-        }
-        else if (lhsVarDsc->IsAddressExposed())
-        {
-            fgMutateAddressExposedLocal(tree DEBUGARG("INITBLK/COPYBLK - address-exposed local"));
+            // TODO-CQ: remove this zero-diff quirk.
+            rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(lhsVarDsc->lvFieldLclStart)->TypeGet()));
         }
         else
         {
-            JITDUMP("LHS V%02u not in ssa at [%06u], so no VN assigned\n", lhsLclNum, dspTreeID(lclVarTree));
+            assert(tree->OperIsCopyBlkOp());
+            rhsVNPair = vnStore->VNPNormalPair(rhs->gtVNPair);
         }
+
+        fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
     }
     else
     {
@@ -8459,6 +8528,45 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
     vnpExcSet              = vnStore->VNPUnionExcSet(lhs->gtVNPair, vnpExcSet);
     vnpExcSet              = vnStore->VNPUnionExcSet(rhs->gtVNPair, vnpExcSet);
     tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberSsaVarDef: Perform value numbering for a variable definition that has SSA
+//
+// Arguments:
+//    lcl - the variable definition.
+//
+void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
+{
+    unsigned   lclNum = lcl->GetLclNum();
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+    assert(lcl->HasSsaName());
+    assert(lvaInSsa(lclNum));
+
+    ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
+    assert(wholeLclVarVNP.BothDefined());
+
+    // Account for type mismatches.
+    if (genActualType(varDsc) != genActualType(lcl))
+    {
+        if (genTypeSize(varDsc) != genTypeSize(lcl))
+        {
+            assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+            lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
+        }
+        else
+        {
+            assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                   ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
+            lcl->gtVNPair = wholeLclVarVNP;
+        }
+    }
+    else
+    {
+        lcl->gtVNPair = wholeLclVarVNP;
+    }
 }
 
 void Compiler::fgValueNumberTree(GenTree* tree)
@@ -8497,32 +8605,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (lcl->HasSsaName())
                     {
-                        // We expect all uses of promoted structs to be replaced with uses of their fields.
-                        assert(lvaInSsa(lclNum) && !varDsc->CanBeReplacedWithItsField(this));
-
-                        ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
-                        assert(wholeLclVarVNP.BothDefined());
-
-                        // Account for type mismatches.
-                        if (genActualType(varDsc) != genActualType(lcl))
-                        {
-                            if (genTypeSize(varDsc) != genTypeSize(lcl))
-                            {
-                                assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
-                                lcl->gtVNPair =
-                                    vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
-                            }
-                            else
-                            {
-                                assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
-                                       ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
-                                lcl->gtVNPair = wholeLclVarVNP;
-                            }
-                        }
-                        else
-                        {
-                            lcl->gtVNPair = wholeLclVarVNP;
-                        }
+                        fgValueNumberSsaVarDef(lcl);
                     }
                     else if (varDsc->IsAddressExposed())
                     {
@@ -8557,7 +8640,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     unsigned lclNum = lclFld->GetLclNum();
 
-                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName())
+                    if (!lclFld->HasSsaName())
                     {
                         lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                     }
@@ -8681,6 +8764,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         VNFunc loadFunc =
                             ((tree->gtFlags & GTF_IND_NONNULL) != 0) ? VNF_InvariantNonNullLoad : VNF_InvariantLoad;
 
+                        // Special case: for initialized non-null 'static readonly' fields we want to keep field
+                        // sequence to be able to fold their value
+                        if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
+                            (addr->AsIntCon()->gtFieldSeq != nullptr) &&
+                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue()))
+                        {
+                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
+                        }
+
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
                         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
@@ -8719,8 +8811,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
                 }
-                else if (addr->DefinesLocalAddr(&lclVarTree, &offset) && lvaInSsa(lclVarTree->GetLclNum()) &&
-                         lclVarTree->HasSsaName())
+                else if (addr->DefinesLocalAddr(&lclVarTree, &offset) && lclVarTree->HasSsaName())
                 {
                     ValueNumPair lclVNPair = lvaGetDesc(lclVarTree)->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
                     unsigned     lclSize   = lvaLclExactSize(lclVarTree->GetLclNum());
@@ -8779,7 +8870,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (tree->AsOp()->gtOp1 != nullptr)
                     {
-                        if (tree->OperGet() == GT_NOP)
+                        if (tree->OperIs(GT_NOP))
                         {
                             // Pass through arg vn.
                             tree->gtVNPair = tree->AsOp()->gtOp1->gtVNPair;
@@ -9135,6 +9226,37 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(use.GetNode()->gtVNPair));
                 }
                 break;
+
+            case GT_SELECT:
+            {
+                GenTreeConditional* const conditional = tree->AsConditional();
+
+                ValueNumPair condvnp;
+                ValueNumPair condXvnp;
+                vnStore->VNPUnpackExc(conditional->gtCond->gtVNPair, &condvnp, &condXvnp);
+
+                ValueNumPair op1vnp;
+                ValueNumPair op1Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
+                ValueNumPair op2vnp;
+                ValueNumPair op2Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                // Collect the exception sets.
+                ValueNumPair vnpExcSet = vnStore->VNPExcSetUnion(condXvnp, op1Xvnp);
+                vnpExcSet              = vnStore->VNPExcSetUnion(vnpExcSet, op2Xvnp);
+
+                // Get the normal value using the VN func.
+                VNFunc vnf = GetVNFuncForNode(tree);
+                assert(ValueNumStore::VNFuncIsLegal(vnf));
+                ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), vnf, condvnp, op1vnp, op2vnp);
+
+                // Attach the combined exception set
+                tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+
+                break;
+            }
 
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");
@@ -10009,11 +10131,11 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     // as well.
     GenTreeLclVarCommon* lclVarTree = nullptr;
     ssize_t              offset     = 0;
-    if (call->DefinesLocal(this, &lclVarTree, /* pIsEntire */ nullptr, &offset))
+    unsigned             storeSize  = 0;
+    if (call->DefinesLocal(this, &lclVarTree, /* pIsEntire */ nullptr, &offset, &storeSize))
     {
         ValueNumPair storeValue;
         storeValue.SetBoth(vnStore->VNForExpr(compCurBB, TYP_STRUCT));
-        unsigned storeSize = typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
         fgValueNumberLocalStore(call, lclVarTree, offset, storeSize, storeValue);
     }
