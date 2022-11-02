@@ -1412,11 +1412,26 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                p = CreateProcess(arg =>
+                p = CreateProcess((localPath, uncPath) =>
                 {
-                    Console.Write(File.ReadAllText(arg));
+                    try
+                    {
+                        _ = File.ReadAllText(localPath);
+                        Console.Write('1');
+                    }
+                    catch (SecurityException)
+                    {
+                        Console.Write('0');
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        Console.Write('0');
+                    }
+
+                    Console.Write(';');
+                    Console.Write(File.ReadAllText(uncPath));
                     return RemoteExecutor.SuccessExitCode;
-                }, testFileUncPath);
+                }, testFilePath, testFileUncPath);
                 p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
                 p.StartInfo.RedirectStandardOutput = true;
                 p.StartInfo.LoadUserProfile = false;
@@ -1443,7 +1458,9 @@ namespace System.Diagnostics.Tests
                     string output = p.StandardOutput.ReadToEnd();
                     Assert.True(p.WaitForExit(WaitInMS));
 
-                    Assert.Equal(testFileContent, output);
+                    string[] splitOutput = output.Split(';', StringSplitOptions.None);
+                    Assert.Equal("0", splitOutput[0]);
+                    Assert.Equal(testFileContent, splitOutput[1]);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
                 {
