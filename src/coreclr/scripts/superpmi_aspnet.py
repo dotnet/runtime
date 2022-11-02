@@ -232,10 +232,10 @@ def build_and_run(coreclr_args):
                                "--application.framework", "net7.0",
                                "--application.channel", "edge",
                                "--application.sdkVersion", "latest",
-                               "--application.environmentVariables", "COMPlus_JitName=" + spminame,
+                               "--application.environmentVariables", "DOTNET_JitName=" + spminame,
                                "--application.environmentVariables", "SuperPMIShimLogPath=.",
                                "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                               "--application.environmentVariables", "COMPlus_EnableExtraSuperPmiQueries=1",
+                               "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
                                "--application.options.downloadFiles", "*.mc",
                                "--application.options.displayOutput", "true",
 #                               "--application.options.dumpType", "full",
@@ -249,7 +249,7 @@ def build_and_run(coreclr_args):
                 runtime_arguments = []
                 for runtime_option in runtime_options:
                     runtime_arguments.append("--application.environmentVariables")
-                    runtime_arguments.append("COMPlus_" + runtime_option)
+                    runtime_arguments.append("DOTNET_" + runtime_option)
 
                 print("")
                 print("================================")

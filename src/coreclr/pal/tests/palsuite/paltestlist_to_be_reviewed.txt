@@ -10,8 +10,6 @@ c_runtime/fread/test2/paltest_fread_test2
 c_runtime/fread/test3/paltest_fread_test3
 c_runtime/ftell/test1/paltest_ftell_test1
 c_runtime/iswprint/test1/paltest_iswprint_test1
-c_runtime/swprintf/test2/paltest_swprintf_test2
-c_runtime/swprintf/test7/paltest_swprintf_test7
 c_runtime/vprintf/test1/paltest_vprintf_test1
 c_runtime/vswprintf/test2/paltest_vswprintf_test2
 c_runtime/vswprintf/test7/paltest_vswprintf_test7

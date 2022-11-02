@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitDoRedundantBranchOpts" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoRedundantBranchOpts" Value="0" />
   </ItemGroup>
 </Project>

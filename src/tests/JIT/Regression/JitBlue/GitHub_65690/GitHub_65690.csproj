@@ -10,8 +10,8 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitDoValueNumber" Value="0" />
-    <CLRTestEnvironmentVariable Include="COMPlus_JitStressRegs" Value="3" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoValueNumber" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressRegs" Value="3" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
   </ItemGroup>
 </Project>

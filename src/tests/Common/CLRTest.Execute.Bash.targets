@@ -63,9 +63,9 @@ WARNING:   When setting properties based on their current state (for example:
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_GCStress" ]
+if [ ! -z "$DOTNET_GCStress" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_GCStress IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -88,22 +88,22 @@ fi
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
+if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
-if [[ "$COMPlus_TieredCompilation" != "0" ]]
+if [[ "$DOTNET_TieredCompilation" != "0" ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
+  echo "SKIPPING EXECUTION BECAUSE DOTNET_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_HeapVerify" ]
+if [ ! -z "$DOTNET_HeapVerify" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>

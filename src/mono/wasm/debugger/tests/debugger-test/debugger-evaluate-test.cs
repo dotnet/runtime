@@ -516,10 +516,19 @@ namespace DebuggerTests
             public List<List<int>> numListOfLists;
             public string[][] textArrayOfArrays;
             public List<List<string>> textListOfLists;
+            public Dictionary<string, bool> indexedByStr;
+            public Dictionary<char, string> indexedByChar;
+            public Dictionary<bool, string> indexedByBool;
             public int idx0;
             public int idx1;
 
+            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
+            public string this[char key] => "res_" + key;
+            public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;
+            public int this[double key] => (int)key;
+            public int this[float key] => (int)key;
+            public int this[decimal key] => (int)key;
 
             public void run()
             {
@@ -531,6 +540,9 @@ namespace DebuggerTests
                 numListOfLists = new List<List<int>> { numList, numList };
                 textArrayOfArrays = new string[][] { textArray, textArray };
                 textListOfLists = new List<List<string>> { textList, textList };
+                indexedByStr = new Dictionary<string, bool>() { { "1", true }, { "111", false }, { "true", true} };
+                indexedByChar = new Dictionary<char, string>() { { 'i', "I" }, { '5', "5" } };
+                indexedByBool = new Dictionary<bool, string>() { { true, "TRUE" }, { false, "FALSE" } };
                 idx0 = 0;
                 idx1 = 1;
             }
@@ -542,6 +554,13 @@ namespace DebuggerTests
             int j = 1;
             TestEvaluate f = new TestEvaluate();
             f.run();
+            string longString = "longString";
+            string shortString = "9";
+            char aChar = '9';
+            bool aBool = true;
+            float aFloat = 1.23f;
+            double aDouble = 2.34;
+            decimal aDecimal = 3.34m;
         }
     }
 
