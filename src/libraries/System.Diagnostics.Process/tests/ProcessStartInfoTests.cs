@@ -7,7 +7,6 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.ComponentModel;
@@ -1405,14 +1404,7 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(testFilePath, testFileContent);
 
             using WindowsTestAccount accountWithoutFilePermission = new WindowsTestAccount("testForDotnetRuntime");
-
-            const string username = "testForDotnetNetwork";
-            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
-
-            uint removalResult = Interop.NetUserDel(null, username);
-            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
-
-            Interop.NetUserAdd(username, password);
+            using WindowsTestAccount accountWithFilePermission = new WindowsTestAccount("testForDotnetNetwork");
 
             bool hasStarted = false;
             Process p = null;
@@ -1429,8 +1421,8 @@ namespace System.Diagnostics.Tests
                 p.StartInfo.RedirectStandardOutput = true;
                 p.StartInfo.LoadUserProfile = false;
                 p.StartInfo.UseCredentialsForNetworkingOnly = true;
-                p.StartInfo.UserName = username;
-                p.StartInfo.PasswordInClearText = password;
+                p.StartInfo.UserName = accountWithFilePermission.AccountName;
+                p.StartInfo.PasswordInClearText = accountWithFilePermission.Password;
 
                 workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
                     ? Directory.GetCurrentDirectory()
@@ -1440,7 +1432,7 @@ namespace System.Diagnostics.Tests
                 {
                     // ensure the new user can access the .exe and the temp file (otherwise you get Access is denied exception)
                     SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: true);
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
+                    SetAccessControl(accountWithFilePermission.AccountName, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
                 }
 
                 try
@@ -1473,10 +1465,8 @@ namespace System.Diagnostics.Tests
                 {
                     // remove the access
                     SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: false);
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
+                    SetAccessControl(accountWithFilePermission.AccountName, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
     }
