@@ -327,6 +327,8 @@ namespace System.Threading.RateLimiting
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
                     if (nextPendingRequest.Tcs.Task.IsCompleted)
                     {
                         nextPendingRequest =
