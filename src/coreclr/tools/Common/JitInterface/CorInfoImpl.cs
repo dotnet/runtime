@@ -76,7 +76,6 @@ namespace Internal.JitInterface
         }
 
         private Dictionary<MethodDesc, PgoInstrumentationResults> _pgoResults = new Dictionary<MethodDesc, PgoInstrumentationResults>();
-        private HashSet<MethodDesc> _synthesizedPgoDependencies;
 
         [DllImport(JitLibrary)]
         private static extern IntPtr jitStartup(IntPtr host);
@@ -555,6 +554,12 @@ namespace Internal.JitInterface
                     }
                 }
             }
+
+            if (_synthesizedPgoDependencies != null)
+            {
+                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
+                _methodCodeNode.SynthesizedPgoDataDependencies = _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_synthesizedPgoDependencies);
+            }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
@@ -568,12 +573,6 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
-
-            if (_synthesizedPgoDependencies != null)
-            {
-                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
-                _methodCodeNode.SynthesizedPgoDataDependencies = _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_synthesizedPgoDependencies);
-            }
         }
 
         private void PublishROData()
@@ -682,12 +681,12 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _synthesizedPgoDependencies = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
 
             _pgoResults.Clear();
-            _synthesizedPgoDependencies = null;
         }
 
         private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
