@@ -12374,6 +12374,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
             changeToShift = true;
         }
+#ifdef TARGET_XARCH
         else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit))
         {
             int     shift  = genLog2(lowestBit);
@@ -12398,6 +12399,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 changeToShift = true;
             }
         }
+#endif // TARGET_XARCH
 
         if (changeToShift)
         {
