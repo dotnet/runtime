@@ -144,13 +144,9 @@ typedef struct _query_cxt_t
     uint32_t next_row_stride;
 } query_cxt_t;
 
-static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, query_cxt_t* qcxt)
+static uint32_t col_to_index(col_index_t col_idx, mdtable_t* table)
 {
-    assert(qcxt != NULL);
-    mdtable_t* table = CursorTable(cursor);
-    if (table == NULL)
-        return false;
-
+    assert(table != NULL);
     uint32_t idx = (uint32_t)col_idx;
 #ifdef DEBUG_TABLE_COLUMN_LOOKUP
     mdtable_id_t tgt_table_id = col_idx >> 8;
@@ -160,8 +156,20 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
         return false;
     }
     idx = (col_idx & 0xff);
+#else
+    (void)table;
 #endif
+    return idx;
+}
 
+static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, query_cxt_t* qcxt)
+{
+    assert(qcxt != NULL);
+    mdtable_t* table = CursorTable(cursor);
+    if (table == NULL)
+        return false;
+
+    uint32_t idx = col_to_index(col_idx, table);
     assert(idx < MDTABLE_MAX_COLUMN_COUNT);
     if (idx >= table->column_count)
         return false;
@@ -531,6 +539,28 @@ static void const* md_bsearch(
     return NULL;
 }
 
+static void const* md_lsearch(
+    void const* key,
+    void const* base,
+    rsize_t count,
+    rsize_t element_size,
+    md_bcompare_t cmp,
+    void* cxt)
+{
+    assert(key != NULL && base != NULL);
+    void const* row = base;
+    for (rsize_t i = 0; i < count; ++i)
+    {
+        int32_t res = cmp(key, row, cxt);
+        if (res == 0)
+            return row;
+
+        // Onto the next row.
+        row = (uint8_t const*)row + element_size;
+    }
+    return NULL;
+}
+
 typedef struct _find_cxt_t
 {
     uint32_t col_offset;
@@ -541,17 +571,7 @@ static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_
 {
     assert(table != NULL && fcxt != NULL);
 
-    uint32_t idx = (uint32_t)col_idx;
-#ifdef DEBUG_TABLE_COLUMN_LOOKUP
-    mdtable_id_t tgt_table_id = col_idx >> 8;
-    if (tgt_table_id != table->table_id)
-    {
-        assert(!"Unexpected table/column indexing");
-        return false;
-    }
-    idx = (col_idx & 0xff);
-#endif
-
+    uint32_t idx = col_to_index(col_idx, table);
     assert(idx < MDTABLE_MAX_COLUMN_COUNT);
     if (idx >= table->column_count)
         return false;
@@ -562,7 +582,7 @@ static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_
     return true;
 }
 
-static int32_t bcompare(void const* key, void const* row, void* cxt)
+static int32_t col_compare(void const* key, void const* row, void* cxt)
 {
     assert(key != NULL && row != NULL && cxt != NULL);
 
@@ -595,9 +615,6 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
     if (table == NULL || cursor == NULL)
         return false;
 
-    if (!table->is_sorted)
-        return false;
-
     uint32_t first_row = CursorRow(&begin);
     // Indices into tables begin at 1 - see II.22.
     if (first_row == 0 || first_row > table->row_count)
@@ -609,8 +626,10 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
 
     // Compute the starting row.
     void const* starting_row = cursor_to_row_bytes(&begin);
-    // Add +1 for inclusive count.
-    void const* row_maybe = md_bsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, bcompare, &fcxt);
+    // Add +1 for inclusive count - use binary search if sorted, otherwise linear.
+    void const* row_maybe = (table->is_sorted)
+        ? md_bsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt)
+        : md_lsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt);
     if (row_maybe == NULL)
         return false;
 
@@ -645,7 +664,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     {
         // Since we are moving backwards in a sorted column,
         // the value should match or be greater.
-        res = bcompare(&value, cursor_to_row_bytes(start), &fcxt);
+        res = col_compare(&value, cursor_to_row_bytes(start), &fcxt);
         assert(res >= 0);
         if (res > 0)
         {
@@ -660,7 +679,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     {
         // Since we are moving forwards in a sorted column,
         // the value should match or be less.
-        res = bcompare(&value, cursor_to_row_bytes(&end), &fcxt);
+        res = col_compare(&value, cursor_to_row_bytes(&end), &fcxt);
         assert(res <= 0);
         if (res < 0)
             break;

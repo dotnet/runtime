@@ -53,13 +53,29 @@ namespace Regression.UnitTests
             Assert.Equal(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
 
-            Assert.Equal(
-                EnumTypeDefsInterfaceImplsMethodsParamsFields(baselineImport),
-                EnumTypeDefsInterfaceImplsMethodsParamsFields(currentImport));
+            var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
+            foreach (var typedef in typedefs)
+            {
+                Assert.Equal(EnumInterfaceImpls(baselineImport, typedef), EnumInterfaceImpls(currentImport, typedef));
+                var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
+                foreach (var methoddef in methods)
+                {
+                    Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+                }
+                Assert.Equal(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
+                Assert.Equal(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
+            }
+
             Assert.Equal(EnumMembers(baselineImport), EnumMembers(currentImport));
             Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
             Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
             Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
+        }
+
+        private static IEnumerable<T> AssertAndReturn<T>(IEnumerable<T> baseline, IEnumerable<T> current)
+        {
+            Assert.Equal(baseline, current);
+            return baseline;
         }
 
         private static IMetaDataImport GetIMetaDataImport(IMetaDataDispenser disp, ref PEMemoryBlock block)
@@ -176,26 +192,6 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumTypeDefsInterfaceImplsMethodsParamsFields(IMetaDataImport import)
-        {
-            List<uint> tokens = new();
-            var typedefs = EnumTypeDefs(import);
-            foreach (var typedef in typedefs)
-            {
-                tokens.Add(typedef);
-                tokens.AddRange(EnumInterfaceImpls(import, typedef));
-                var methods = EnumMethods(import, typedef);
-                foreach (var methoddef in methods)
-                {
-                    tokens.Add(methoddef);
-                    tokens.AddRange(EnumParams(import, methoddef));
-                }
-                tokens.AddRange(EnumFields(import, typedef));
-            }
-
-            return tokens;
-        }
-
         private static List<uint> EnumInterfaceImpls(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
@@ -254,6 +250,31 @@ namespace Regression.UnitTests
             try
             {
                 while (0 == import.EnumParams(ref hcorenum, methoddef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumProperties(IMetaDataImport import, uint typedef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumProperties(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)

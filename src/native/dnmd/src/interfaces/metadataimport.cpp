@@ -587,7 +587,36 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
     ULONG       cMax,
     ULONG* pcProperties)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(td) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        // Create cursor for PropertyMap table
+        mdcursor_t propertyMap;
+        uint32_t propertyMapCount;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_PropertyMap, &propertyMap, &propertyMapCount))
+            return E_INVALIDARG;
+
+        // Find the entry in the PropertyMap table and then
+        // resolve the column to the range in the Property table.
+        mdcursor_t typedefPropMap;
+        mdcursor_t propertyList;
+        uint32_t propertyListCount;
+        if (!md_find_row_from_cursor(propertyMap, mdtPropertyMap_Parent, RidFromToken(td), &typedefPropMap)
+            || !md_get_column_value_as_range(typedefPropMap, mdtPropertyMap_PropertyList, &propertyList, &propertyListCount))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+
+        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+        InitHCORENUMImpl(enumImpl, propertyList, propertyListCount);
+        *phEnum = enumImpl;
+    }
+
+    return ReadFromEnum(enumImpl, rProperties, cMax, pcProperties);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
