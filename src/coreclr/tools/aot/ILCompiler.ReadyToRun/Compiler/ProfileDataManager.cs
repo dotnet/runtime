@@ -304,57 +304,10 @@ namespace ILCompiler
                     int index = rand.Next(list.Count);
                     T value = list[index];
                     TypeSystemEntityOrUnknown schemaValue = Create(value);
-                    bool contains = false;
-                    foreach (TypeSystemEntityOrUnknown existing in result)
-                    {
-                        if (schemaValue.Equals(existing))
-                        {
-                            contains = true;
-                            break;
-                        }
-                    }
 
-                    if (!contains)
+                    if (!result.Contains(schemaValue))
                     {
                         result.Add(schemaValue);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        private List<TypeSystemEntityOrUnknown> PickSample(IList<TypeDesc> list, Random rand)
-        {
-            const int sampleSize = 3;
-            List<TypeSystemEntityOrUnknown> result = new(sampleSize);
-
-            if (list.Count <= sampleSize)
-            {
-                foreach (TypeDesc type in list)
-                {
-                    result.Add(new TypeSystemEntityOrUnknown(type));
-                }
-            }
-            else
-            {
-                while (result.Count < sampleSize)
-                {
-                    int index = rand.Next(list.Count);
-                    TypeDesc type = list[index];
-                    bool contains = false;
-                    foreach (TypeSystemEntityOrUnknown existing in result)
-                    {
-                        if (existing.AsType == type)
-                        {
-                            contains = true;
-                            break;
-                        }
-                    }
-
-                    if (!contains)
-                    {
-                        result.Add(new TypeSystemEntityOrUnknown(type));
                     }
                 }
             }
