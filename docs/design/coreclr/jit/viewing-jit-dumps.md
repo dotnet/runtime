@@ -190,10 +190,4 @@ Below are some of the most useful `COMPlus` variables. Where {method-list} is sp
 
 ## Dumping native images
 
-If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in mscorlib, which (by default) is compiled ahead-of-time to a native image via [crossgen](/docs/workflow/building/coreclr/crossgen.md). Telling crossgen to dump the info works slightly differently.
-
-* First, perform a debug build of the native parts of the repo: `build skipmscorlib skiptests`.
-  * This should produce the binaries for crossgen in `artifacts/Product/<OS>.<arch>.Debug`.
-* Next, set the appropriate configuration knob for the info you want to dump. Usually, this is just the same as the corresponding JIT knob, except prefixed with `Ngen`; for example, to show the disassembly listing of a particular method you would `set COMPlus_NgenDisasm=Foo`.
-* Run crossgen on the assembly you want to dump: `crossgen MyLibrary.dll`
-  * If you want to see the output of crossgen specifically for mscorlib, invoke `build skipnative skiptests` from the repo root. The dumps should be written to a file in `artifacts/Logs` that you can just view.
+If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in System.Private.CoreLib.dll, which (by default) is compiled ahead-of-time via crossgen2. Telling crossgen2 to dump the info works slightly differently in that it has to be specified on the command line instead. For more information, see the [debugging-aot-compilers](/docs/workflow/debugging/coreclr/debugging-aot-compilers.md) document.

@@ -42,7 +42,10 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiDigitMethod = typeof(char).GetMethod("IsAsciiDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterLowerMethod = typeof(char).GetMethod("IsAsciiLetterLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterUpperMethod = typeof(char).GetMethod("IsAsciiLetterUpper", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
@@ -5686,32 +5689,92 @@ namespace System.Text.RegularExpressions
                     return;
             }
 
-            // We determined that the character class may contain ASCII, so we
-            // output the lookup against the lookup table.
+            // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
+            // characters other than that some might be included, for example if the character class
+            // were [\w\d], so if ch >= 128, we need to fall back to calling CharInClass. For ASCII, we
+            // can use a lookup table, but if it's a known set of ASCII characters we can also use a helper.
 
-            // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
+            // ch < 128 ?
             Ldloc(tempLocal);
             Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfOnlyRanges : 128);
             Bge(comparisonLabel);
-            Ldstr(bitVectorString);
-            Ldloc(tempLocal);
-            Ldc(4);
-            Shr();
-            Call(s_stringGetCharsMethod);
-            Ldc(1);
-            Ldloc(tempLocal);
-            Ldc(15);
-            And();
-            Ldc(31);
-            And();
-            Shl();
-            And();
-            Ldc(0);
-            CgtUn();
+
+            // ASCII
+            switch (bitVectorString)
+            {
+                case "\0\0\0\u03ff\ufffe\u07ff\ufffe\u07ff":
+                    // char.IsAsciiLetterOrDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    break;
+
+                case "\0\0\0\u03FF\0\0\0\0":
+                    // char.IsAsciiDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiDigitMethod);
+                    break;
+
+                case "\0\0\0\0\ufffe\u07FF\ufffe\u07ff":
+                    // char.IsAsciiLetter(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterMethod);
+                    break;
+
+                case "\0\0\0\0\0\0\ufffe\u07ff":
+                    // char.IsAsciiLetterLower(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterLowerMethod);
+                    break;
+
+                case "\0\0\0\0\ufffe\u07FF\0\0":
+                    // char.IsAsciiLetterUpper(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterUpperMethod);
+                    break;
+
+                case "\0\0\0\u03FF\u007E\0\u007E\0":
+                    // char.IsAsciiHexDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitMethod);
+                    break;
+
+                case "\0\0\0\u03FF\0\0\u007E\0":
+                    // char.IsAsciiHexDigitLower(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    break;
+
+                case "\0\0\0\u03FF\u007E\0\0\0":
+                    // char.IsAsciiHexDigitUpper(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    break;
+
+                default:
+                    // (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0
+                    Ldstr(bitVectorString);
+                    Ldloc(tempLocal);
+                    Ldc(4);
+                    Shr();
+                    Call(s_stringGetCharsMethod);
+                    Ldc(1);
+                    Ldloc(tempLocal);
+                    Ldc(15);
+                    And();
+                    Ldc(31);
+                    And();
+                    Shl();
+                    And();
+                    Ldc(0);
+                    CgtUn();
+                    break;
+            }
             Stloc(resultLocal);
             Br(doneLabel);
+
             MarkLabel(comparisonLabel);
 
+            // Non-ASCII
             if (analysis.ContainsOnlyAscii)
             {
                 // We know that all inputs that could match are ASCII, for example if the
@@ -5735,6 +5798,7 @@ namespace System.Text.RegularExpressions
                 // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
                 EmitCharInClass();
             }
+
             MarkLabel(doneLabel);
             Ldloc(resultLocal);
         }

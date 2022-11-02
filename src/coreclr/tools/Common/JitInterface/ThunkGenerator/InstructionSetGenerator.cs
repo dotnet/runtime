@@ -3,17 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Diagnostics;
 
 namespace Thunkerator
 {
     public class InstructionSetGenerator
     {
-        class InstructionSetInfo
+        sealed class InstructionSetInfo
         {
             public string Architecture { get; }
             public string ManagedName { get; }
@@ -58,9 +58,9 @@ namespace Thunkerator
             }
         }
 
-        record InstructionSetGroup(string Names, string Archs, string Sets);
+        sealed record InstructionSetGroup(string Names, string Archs, string Sets);
 
-        class InstructionSetImplication
+        sealed class InstructionSetImplication
         {
             public string Architecture { get; }
             public string JitName { get; }
@@ -85,13 +85,13 @@ namespace Thunkerator
         List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
         List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
         Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
-        SortedDictionary<string,int> _r2rNamesByName = new SortedDictionary<string,int>();
-        SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
+        SortedDictionary<string, int> _r2rNamesByName = new SortedDictionary<string, int>();
+        SortedDictionary<int, string> _r2rNamesByNumber = new SortedDictionary<int, string>();
         SortedSet<string> _architectures = new SortedSet<string>();
-        Dictionary<string,List<string>> _architectureJitNames = new Dictionary<string,List<string>>();
-        Dictionary<string,List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string,List<string>>();
+        Dictionary<string, List<string>> _architectureJitNames = new Dictionary<string, List<string>>();
+        Dictionary<string, List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string, List<string>>();
         HashSet<string> _64BitArchitectures = new HashSet<string>();
-        Dictionary<string,string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string,string>();
+        Dictionary<string, string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string, string>();
         // This represents the number of flags fields we currently track
         const int FlagsFieldCount = 1;
 
@@ -112,7 +112,7 @@ namespace Thunkerator
                 throw new Exception("Architecture not defined");
         }
 
-        private string ArchToIfDefArch(string arch)
+        private static string ArchToIfDefArch(string arch)
         {
             if (arch == "X64")
                 return "AMD64";
@@ -147,7 +147,7 @@ namespace Thunkerator
                     {
                         command[i] = command[i].Trim();
                     }
-                    switch(command[0])
+                    switch (command[0])
                     {
                         case "definearch":
                             if (command.Length != 4)
@@ -168,7 +168,7 @@ namespace Thunkerator
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _architectureJitNames[command[1]].Add(command[5]);
-                            _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5],command[6]));
+                            _instructionSets.Add(new InstructionSetInfo(command[1], command[2], command[3], command[4], command[5], command[6]));
                             break;
                         case "vectorinstructionset":
                             if (command.Length != 3)
@@ -187,7 +187,7 @@ namespace Thunkerator
                             if (command.Length != 4)
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
-                            _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
+                            _implications.Add(new InstructionSetImplication(command[1], command[2], command[3]));
                             break;
                         case "instructionsetgroup":
                             if (command.Length != 4)
@@ -1026,7 +1026,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
                     string r2rEnumerationValue;
                     if (String.IsNullOrEmpty(instructionSet.R2rName))
                         continue;
-                    
+
                     r2rEnumerationValue = $"READYTORUN_INSTRUCTION_{instructionSet.R2rName}";
 
                     tr.WriteLine($"        case {r2rEnumerationValue}: return InstructionSet_{instructionSet.JitName};");

@@ -1056,6 +1056,7 @@ typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
 typedef struct CORINFO_METHOD_STRUCT_*      CORINFO_METHOD_HANDLE;
 typedef struct CORINFO_FIELD_STRUCT_*       CORINFO_FIELD_HANDLE;
+typedef struct CORINFO_OBJECT_STRUCT_*      CORINFO_OBJECT_HANDLE;
 typedef struct CORINFO_ARG_LIST_STRUCT_*    CORINFO_ARG_LIST_HANDLE;    // represents a list of argument types
 typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
@@ -2284,7 +2285,7 @@ public:
     //    Bytes written to the given buffer, the range is [0..bufferSize)
     //
     virtual size_t printObjectDescription (
-            void*                       handle,                       /* IN  */
+            CORINFO_OBJECT_HANDLE       handle,                       /* IN  */
             char*                       buffer,                       /* OUT */
             size_t                      bufferSize,                   /* IN  */
             size_t*                     pRequiredBufferSize = nullptr /* OUT */
@@ -2500,7 +2501,7 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    virtual void* getRuntimeTypePointer(
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2514,7 +2515,7 @@ public:
     //    Returns true if object is known to be immutable
     //
     virtual bool isObjectImmutable(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     //------------------------------------------------------------------------------
@@ -2527,7 +2528,7 @@ public:
     //    Returns CORINFO_CLASS_HANDLE handle that represents given object's type
     //
     virtual CORINFO_CLASS_HANDLE getObjectType(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     virtual bool getReadyToRunHelper(
@@ -2728,6 +2729,8 @@ public:
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
+
+    virtual int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) = 0;
 
     /*********************************************************************************/
     //
@@ -3196,15 +3199,13 @@ public:
 
     //------------------------------------------------------------------------------
     // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
-    //    field represents a statically initialized readonly field of any type, it might be:
-    //    * integer/floating point primitive
-    //    * null
-    //    * frozen object reference (string, array or object)
+    //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
-    //    field      - field handle
-    //    buffer     - buffer field's value will be stored to
-    //    bufferSize - size of buffer
+    //    field                - field handle
+    //    buffer               - buffer field's value will be stored to
+    //    bufferSize           - size of buffer
+    //    ignoreMovableObjects - ignore movable reference types or not
     //
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
@@ -3212,7 +3213,8 @@ public:
     virtual bool getReadonlyStaticFieldValue(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
-                    int                     bufferSize
+                    int                     bufferSize,
+                    bool                    ignoreMovableObjects = true
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

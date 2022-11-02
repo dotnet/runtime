@@ -131,8 +131,6 @@
 
 // winbase.h
 #define WszFormatMessage   FormatMessageW
-#define Wszlstrcmp   lstrcmpW
-#define Wszlstrcmpi   lstrcmpiW
 #define WszCreateMutex CreateMutexW
 #define WszOpenMutex OpenMutexW
 #define WszCreateEvent CreateEventW
