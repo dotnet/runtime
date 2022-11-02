@@ -37,7 +37,6 @@
 #endif
 
 #include "contract.h"
-#include "entrypoints.h"
 
 #include<minipal/utils.h>
 

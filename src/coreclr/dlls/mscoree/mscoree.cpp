@@ -68,14 +68,11 @@ STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
 
     NonVMComHolder<IClassFactory> pcf(NULL);
     HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     IfFailGo(MetaDataDllGetClassObject(rclsid, IID_IClassFactory, (void **) &pcf));
     hr = pcf->CreateInstance(NULL, riid, ppv);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return (hr);
 }
 
@@ -98,13 +95,7 @@ STDAPI DLLEXPORT GetMetaDataInternalInterface(
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDInternalInterface(pData, cbData, flags, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDInternalInterface(pData, cbData, flags, riid, ppv);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,13 +116,7 @@ STDAPI DLLEXPORT GetMetaDataInternalInterfaceFromPublic(
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDInternalInterfaceFromPublic(pv, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDInternalInterfaceFromPublic(pv, riid, ppv);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,13 +137,7 @@ STDAPI DLLEXPORT GetMetaDataPublicInterfaceFromInternal(
         ENTRY_POINT;
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDPublicInterfaceFromInternal(pv, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDPublicInterfaceFromInternal(pv, riid, ppv);
 }
 
 
@@ -180,12 +159,7 @@ STDAPI ReOpenMetaDataWithMemory(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    hr = MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,12 +181,7 @@ STDAPI ReOpenMetaDataWithMemoryEx(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    hr = MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
 }
 
 static DWORD g_dwSystemDirectory = 0;
