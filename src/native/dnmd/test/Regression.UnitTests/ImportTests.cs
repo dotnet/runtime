@@ -52,11 +52,13 @@ namespace Regression.UnitTests
             Assert.Equal(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             Assert.Equal(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
-            Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
 
-            Assert.Equal(EnumInterfaceImpls(baselineImport), EnumInterfaceImpls(currentImport));
+            Assert.Equal(
+                EnumTypeDefsInterfaceImplsMethodsParamsFields(baselineImport),
+                EnumTypeDefsInterfaceImplsMethodsParamsFields(currentImport));
             Assert.Equal(EnumMembers(baselineImport), EnumMembers(currentImport));
             Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
+            Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
             Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
         }
 
@@ -174,14 +176,34 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumSignatures(IMetaDataImport import)
+        private static List<uint> EnumTypeDefsInterfaceImplsMethodsParamsFields(IMetaDataImport import)
+        {
+            List<uint> tokens = new();
+            var typedefs = EnumTypeDefs(import);
+            foreach (var typedef in typedefs)
+            {
+                tokens.Add(typedef);
+                tokens.AddRange(EnumInterfaceImpls(import, typedef));
+                var methods = EnumMethods(import, typedef);
+                foreach (var methoddef in methods)
+                {
+                    tokens.Add(methoddef);
+                    tokens.AddRange(EnumParams(import, methoddef));
+                }
+                tokens.AddRange(EnumFields(import, typedef));
+            }
+
+            return tokens;
+        }
+
+        private static List<uint> EnumInterfaceImpls(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
             nint hcorenum = 0;
             try
             {
-                while (0 == import.EnumSignatures(ref hcorenum, tokensBuffer, tokensBuffer.Length, out uint returned)
+                while (0 == import.EnumInterfaceImpls(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)
@@ -199,30 +221,77 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumInterfaceImpls(IMetaDataImport import)
+        private static List<uint> EnumMethods(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
-            var typedefs = EnumTypeDefs(import);
             var tokensBuffer = new uint[EnumBuffer];
-            foreach (uint typedef in typedefs)
+            nint hcorenum = 0;
+            try
             {
-                tokens.Add(typedef);
-                nint hcorenum = 0;
-                try
+                while (0 == import.EnumMethods(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
                 {
-                    while (0 == import.EnumInterfaceImpls(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
-                        && returned != 0)
+                    for (int i = 0; i < returned; ++i)
                     {
-                        for (int i = 0; i < returned; ++i)
-                        {
-                            tokens.Add(tokensBuffer[i]);
-                        }
+                        tokens.Add(tokensBuffer[i]);
                     }
                 }
-                finally
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumParams(IMetaDataImport import, uint methoddef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumParams(ref hcorenum, methoddef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
                 {
-                    import.CloseEnum(hcorenum);
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
                 }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumFields(IMetaDataImport import, uint typedef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumFields(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
             }
             return tokens;
         }
@@ -302,6 +371,31 @@ namespace Regression.UnitTests
                     }
                 }
             }
+        }
+
+        private static List<uint> EnumSignatures(IMetaDataImport import)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumSignatures(ref hcorenum, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
         }
 
         private static List<(nint Ptr, uint Len)> GetSigFromToken(IMetaDataImport import)

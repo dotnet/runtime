@@ -195,6 +195,36 @@ Done:
 
         return ReadFromEnum(enumImpl, rTokens, cMax, pcTokens);
     }
+
+    HRESULT EnumTokenRange(
+        mdhandle_t mdhandle,
+        mdToken token,
+        col_index_t column,
+        HCORENUM* phEnum,
+        mdToken rTokens[],
+        ULONG cMax,
+        ULONG* pcTokens)
+    {
+        HRESULT hr;
+        HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+        if (enumImpl == nullptr)
+        {
+            mdcursor_t cursor;
+            if (!md_token_to_cursor(mdhandle, token, &cursor))
+                return E_INVALIDARG;
+
+            mdcursor_t begin;
+            uint32_t count;
+            if (!md_get_column_value_as_range(cursor, column, &begin, &count))
+                return CLDB_E_FILE_CORRUPT;
+
+            RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+            InitHCORENUMImpl(enumImpl, begin, count);
+            *phEnum = enumImpl;
+        }
+
+        return ReadFromEnum(enumImpl, rTokens, cMax, pcTokens);
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
@@ -394,7 +424,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethods(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(cl) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    return EnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_MethodList, phEnum, rMethods, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodsWithName(
@@ -415,7 +448,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFields(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(cl) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    return EnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_FieldList, phEnum, rFields, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFieldsWithName(
@@ -437,7 +473,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumParams(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(mb) != mdtMethodDef)
+        return E_INVALIDARG;
+
+    return EnumTokenRange(_md_ptr.get(), mb, mdtMethodDef_ParamList, phEnum, rParams, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMemberRefs(
