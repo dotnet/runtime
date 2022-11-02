@@ -242,7 +242,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void ReadDataStreamOfGoLangTarTarGzGnu()
+        public void ReadDataStreamOfGoLangTarGzGnu()
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.GZip, "golang_tar", "pax-bad-hdr-large");
             using GZipStream decompressor = new GZipStream(archiveStream, CompressionMode.Decompress);
