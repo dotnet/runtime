@@ -810,8 +810,8 @@ namespace System.IO.Hashing
                 {
                     for (int i = 0; i < stripesToProcess; i++)
                     {
-                        Accumulate512Inlined(accumulators, source + (i * StripeLengthBytes),
-                            secret + (i * SecretConsumeRateBytes));
+                        Accumulate512Inlined(accumulators, source, secret + (i * SecretConsumeRateBytes));
+                        source += StripeLengthBytes;
                     }
 
                     if (scramble)
