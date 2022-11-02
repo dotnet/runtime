@@ -1716,7 +1716,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     // ARM64 has non-temporal stores (STNP) but we don't currently support them
 
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize,
+                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 #else
