@@ -9869,6 +9869,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         ASSIGN_HELPER_FOR_MOD:
 
+            if (!optValnumCSE_phase)
+            {
+                if (tree->OperIs(GT_MOD, GT_UMOD) && op2->IsIntegralConst(1))
+                {
+                    // Transformation: a % 1 = 0
+                    return fgMorphModToZero(tree->AsOp());
+                }
+
+                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
+                {
+                    // Transformation: a % b = a & (b - 1);
+                    return fgMorphUModToAndSub(tree->AsOp());
+                }
+#ifdef TARGET_ARM64
+                // ARM64 architecture manual suggests this transformation
+                // for the mod operator.
+                else if (tree->OperIs(GT_MOD, GT_UMOD))
+#else
+                // XARCH only applies this transformation if we know
+                // that magic division will be used - which is determined
+                // when 'b' is not a power of 2 constant and mod operator is signed.
+                // Lowering for XARCH does this optimization already,
+                // but is also done here to take advantage of CSE.
+                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+#endif
+                {
+                    // Transformation: a % b = a - (a / b) * b;
+                    return fgMorphModToSubMulDiv(tree->AsOp());
+                }
+            }
+
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -9892,52 +9923,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
 #endif
 #endif // !TARGET_64BIT
-
-            if (!optValnumCSE_phase)
-            {
-                if (tree->OperIs(GT_MOD, GT_UMOD) && op2->IsIntegralConst(1))
-                {
-                    // Transformation: a % 1 = 0
-                    tree = fgMorphModToZero(tree->AsOp());
-                    if (tree->OperIsBinary())
-                    {
-                        op1 = tree->gtGetOp1();
-                        op2 = tree->gtGetOp2();
-                    }
-                    else
-                    {
-                        assert(tree->IsIntegralConst(0));
-                        op1 = nullptr;
-                        op2 = nullptr;
-                    }
-                }
-
-                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
-                {
-                    // Transformation: a % b = a & (b - 1);
-                    tree = fgMorphUModToAndSub(tree->AsOp());
-                    op1  = tree->AsOp()->gtOp1;
-                    op2  = tree->AsOp()->gtOp2;
-                }
-#ifdef TARGET_ARM64
-                // ARM64 architecture manual suggests this transformation
-                // for the mod operator.
-                else if (tree->OperIs(GT_MOD, GT_UMOD))
-#else
-                // XARCH only applies this transformation if we know
-                // that magic division will be used - which is determined
-                // when 'b' is not a power of 2 constant and mod operator is signed.
-                // Lowering for XARCH does this optimization already,
-                // but is also done here to take advantage of CSE.
-                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
-#endif
-                {
-                    // Transformation: a % b = a - (a / b) * b;
-                    tree = fgMorphModToSubMulDiv(tree->AsOp());
-                    op1  = tree->AsOp()->gtOp1;
-                    op2  = tree->AsOp()->gtOp2;
-                }
-            }
             break;
 
         USE_HELPER_FOR_ARITH:
@@ -13189,12 +13174,10 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     {
         GenTree* comma = gtNewOperNode(GT_COMMA, type, op1SideEffects, zero);
 
-        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
         DEBUG_DESTROY_NODE(tree->gtOp2);
         DEBUG_DESTROY_NODE(tree);
 
-        return comma;
+        return fgMorphTree(comma);
     }
     else
     {
@@ -13330,13 +13313,9 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         result = gtNewOperNode(GT_COMMA, type, tempInfos[i].asg, result);
     }
 
-#ifdef DEBUG
-    result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-
     div->CheckDivideByConstOptimized(this);
 
-    return result;
+    return fgMorphTree(result);
 }
 
 //------------------------------------------------------------------------
@@ -13366,12 +13345,10 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
     GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
 
-    INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
 
-    return newTree;
+    return fgMorphTree(newTree);
 }
 
 //------------------------------------------------------------------------------
