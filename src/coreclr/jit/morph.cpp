@@ -13211,7 +13211,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
         return zero;
     }
 
-    GenTree* comma = gtNewOperNode(GT_COMMA, tree->gtType, op1, zero);
+    GenTree* comma = gtNewOperNode(GT_COMMA, type, op1, zero);
 
     INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
