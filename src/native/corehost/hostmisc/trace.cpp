@@ -5,6 +5,10 @@
 #include <mutex>
 #include <thread>
 
+#define TRACE_VERBOSITY_WARN 2
+#define TRACE_VERBOSITY_INFO 3
+#define TRACE_VERBOSITY_VERBOSE 4
+
 // g_trace_verbosity is used to encode COREHOST_TRACE and COREHOST_TRACE_VERBOSITY to selectively control output of
 //    trace::warn(), trace::info(), and trace::verbose()
 //  COREHOST_TRACE=0 COREHOST_TRACE_VERBOSITY=N/A        implies g_trace_verbosity = 0.  // Trace "disabled". error() messages will be produced.
@@ -13,7 +17,7 @@
 //  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=2          implies g_trace_verbosity = 2.  // Trace "enabled".  warn() and error() messages will be produced
 //  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=1          implies g_trace_verbosity = 1.  // Trace "enabled".  error() messages will be produced
 static int g_trace_verbosity = 0;
-static FILE * g_trace_file = stderr;
+static FILE * g_trace_file = nullptr;
 thread_local static trace::error_writer_fn g_error_writer = nullptr;
 
 namespace
@@ -83,7 +87,7 @@ bool trace::enable()
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
 
-        g_trace_file = stderr;
+        g_trace_file = stderr;  // Trace to stderr by default
         if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
         {
             FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
@@ -102,7 +106,7 @@ bool trace::enable()
         pal::string_t trace_str;
         if (!pal::getenv(_X("COREHOST_TRACE_VERBOSITY"), &trace_str))
         {
-            g_trace_verbosity = 4;  // Verbose trace by default
+            g_trace_verbosity = TRACE_VERBOSITY_VERBOSE;  // Verbose trace by default
         }
         else
         {
@@ -124,34 +128,34 @@ bool trace::is_enabled()
 
 void trace::verbose(const pal::char_t* format, ...)
 {
-    if (g_trace_verbosity > 3)
+    if (g_trace_verbosity < TRACE_VERBOSITY_VERBOSE)
+        return;
+
+    va_list args;
+    va_start(args, format);
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
-
-        va_list args;
-        va_start(args, format);
         pal::file_vprintf(g_trace_file, format, args);
-        va_end(args);
     }
+    va_end(args);
 }
 
 void trace::info(const pal::char_t* format, ...)
 {
-    if (g_trace_verbosity > 2)
+    if (g_trace_verbosity < TRACE_VERBOSITY_INFO)
+        return;
+
+    va_list args;
+    va_start(args, format);
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
-
-        va_list args;
-        va_start(args, format);
         pal::file_vprintf(g_trace_file, format, args);
-        va_end(args);
     }
+    va_end(args);
 }
 
 void trace::error(const pal::char_t* format, ...)
 {
-    std::lock_guard<spin_lock> lock(g_trace_lock);
-
     // Always print errors
     va_list args;
     va_start(args, format);
@@ -165,33 +169,38 @@ void trace::error(const pal::char_t* format, ...)
     std::vector<pal::char_t> buffer(count);
     pal::str_vprintf(&buffer[0], count, format, dup_args);
 
-    if (g_error_writer == nullptr)
-    {
-        pal::err_fputs(buffer.data());
-    }
-    else
-    {
-        g_error_writer(buffer.data());
-    }
-
 #if defined(_WIN32)
     ::OutputDebugStringW(buffer.data());
 #endif
 
-    if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != nullptr))
     {
-        pal::file_vprintf(g_trace_file, format, trace_args);
+        std::lock_guard<spin_lock> lock(g_trace_lock);
+
+        if (g_error_writer == nullptr)
+        {
+            pal::err_fputs(buffer.data());
+        }
+        else
+        {
+            g_error_writer(buffer.data());
+        }
+
+        if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != nullptr))
+        {
+            pal::file_vprintf(g_trace_file, format, trace_args);
+        }
     }
     va_end(args);
 }
 
 void trace::println(const pal::char_t* format, ...)
 {
-    std::lock_guard<spin_lock> lock(g_trace_lock);
-
     va_list args;
     va_start(args, format);
-    pal::out_vprintf(format, args);
+    {
+        std::lock_guard<spin_lock> lock(g_trace_lock);
+        pal::out_vprintf(format, args);
+    }
     va_end(args);
 }
 
@@ -202,24 +211,28 @@ void trace::println()
 
 void trace::warning(const pal::char_t* format, ...)
 {
-    if (g_trace_verbosity > 1)
+    if (g_trace_verbosity < TRACE_VERBOSITY_WARN)
+        return;
+
+    va_list args;
+    va_start(args, format);
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
-
-        va_list args;
-        va_start(args, format);
         pal::file_vprintf(g_trace_file, format, args);
-        va_end(args);
     }
+    va_end(args);
 }
 
 void trace::flush()
 {
-    std::lock_guard<spin_lock> lock(g_trace_lock);
+    if (g_trace_file != nullptr)
+    {
+        std::lock_guard<spin_lock> lock(g_trace_lock);
+        std::fflush(g_trace_file);
+    }
 
-    pal::file_flush(g_trace_file);
-    pal::err_flush();
-    pal::out_flush();
+    std::fflush(stderr);
+    std::fflush(stdout);
 }
 
 trace::error_writer_fn trace::set_error_writer(trace::error_writer_fn error_writer)
