@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
     public static class Vector64
     {
         internal const int Size = 8;
@@ -525,6 +526,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{T}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
