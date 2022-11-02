@@ -1469,7 +1469,7 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
 
     TypeHandle typeHandle = field->GetFieldTypeHandleThrowing();
     MethodTable* pFieldMT = typeHandle.GetMethodTable();
-    if (typeHandle.IsCanonicalSubtype() || pFieldMT->IsSharedByGenericInstantiations() || pFieldMT->ContainsPointers())
+    if (field->GetEnclosingMethodTable()->IsSharedByGenericInstantiations() || pFieldMT->ContainsPointers())
     {
         return NULL;
     }
