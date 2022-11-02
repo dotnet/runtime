@@ -183,17 +183,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstrumentationDataTable");
         }
 
-        public IEnumerable<ISymbolNode> ComputeSchemaDependencies(IEnumerable<PgoSchemaElem[]> schemas)
-        {
-            PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
-            foreach (PgoSchemaElem[] schema in schemas)
-            {
-                PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
-            }
-
-            return pgoEmitter.ReferencedImports;
-        }
-
         // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and return
         // the appropriate dependencies of the embedding.
         public IEnumerable<ISymbolNode> EmbedSynthesizedPgoDataForMethods(IEnumerable<MethodDesc> mds)
