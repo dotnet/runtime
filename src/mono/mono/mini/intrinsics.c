@@ -83,11 +83,15 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		return ins;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+#ifdef TARGET_WASM
 	if (cfg->opt & MONO_OPT_SIMD) {
+#endif
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
 			return ins;
+#ifdef TARGET_WASM
 	}
+#endif
 #endif
 
 	return ins;
@@ -2041,11 +2045,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+#ifndef TARGET_WASM
 	if (cfg->opt & MONO_OPT_SIMD) {
+#endif
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
 			return ins;
+#ifndef TARGET_WASM
 	}
+#endif
 #endif
 
 	/* Fallback if SIMD is disabled */
