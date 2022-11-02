@@ -353,6 +353,20 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [Theory]
+        [InlineData("NISTP256", "1.2.840.10045.3.1.7")]
+        [InlineData("NISTP384", "1.3.132.0.34")]
+        [InlineData("NISTP521", "1.3.132.0.35")]
+        public static void OidPresentOnCurveMiscased(string curveName, string expectedOid)
+        {
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                ecdsa.GenerateKey(ECCurve.CreateFromFriendlyName(curveName));
+                ECParameters exportedParameters = ecdsa.ExportParameters(false);
+                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+            }
+        }
+
         private static void VerifyNamedCurve(ECParameters parameters, ECDsa ec, int keySize, bool includePrivate)
         {
             parameters.Validate();

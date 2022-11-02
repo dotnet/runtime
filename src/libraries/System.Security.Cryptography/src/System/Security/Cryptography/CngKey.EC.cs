@@ -26,8 +26,9 @@ namespace System.Security.Cryptography
         {
             if (IsECNamedCurve())
             {
-                oidValue = null;
-                return _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+                string? curveName = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+                oidValue = curveName is null ? null : OidLookup.ToOid(curveName, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: false);
+                return curveName;
             }
 
             // Use hard-coded values (for use with pre-Win10 APIs)

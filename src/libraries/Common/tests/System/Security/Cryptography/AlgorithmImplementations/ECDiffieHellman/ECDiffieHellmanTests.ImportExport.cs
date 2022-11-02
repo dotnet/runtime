@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         // probe for this capability before depending on it.
         internal static bool ECDsa224Available =>
             ECDiffieHellmanFactory.IsCurveValid(new Oid(ECDSA_P224_OID_VALUE));
-        
+
         internal static bool CanDeriveNewPublicKey { get; }
             = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
@@ -413,6 +413,20 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 Assert.Equal(expectedX, exportedParameters.Q.X);
                 Assert.Equal(expectedY, exportedParameters.Q.Y);
                 Assert.Equal(limitedPrivateParameters.D, exportedParameters.D);
+            }
+        }
+
+        [Theory]
+        [InlineData("NISTP256", "1.2.840.10045.3.1.7")]
+        [InlineData("NISTP384", "1.3.132.0.34")]
+        [InlineData("NISTP521", "1.3.132.0.35")]
+        public static void OidPresentOnCurveMiscased(string curveName, string expectedOid)
+        {
+            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
+            {
+                ecdh.GenerateKey(ECCurve.CreateFromFriendlyName(curveName));
+                ECParameters exportedParameters = ecdh.ExportParameters(false);
+                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
             }
         }
 
