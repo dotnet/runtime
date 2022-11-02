@@ -83,8 +83,13 @@ namespace ILCompiler.ObjectWriter
                         _ => CV_REG_NONE,
                     };
 
-                //case TargetArchitecture.ARM64:
-                //    ...
+                case TargetArchitecture.ARM64:
+                    // X0-X28, FP, LR, SP have same order
+                    if (regNum <= 32)
+                        return (CodeViewRegister)(regNum + (uint)CV_ARM64_X0);
+                    // TODO: Floating point
+                    return CV_REG_NONE;
+
                 default:
                     return CV_REG_NONE;
             }
@@ -125,6 +130,16 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (var range in debugVar.DebugVarInfo.Ranges)
                 {
+                    uint rangeLength = range.EndOffset - range.StartOffset;
+
+                    // Limit the range length to the maximum range expressible in CodeView.
+                    // If this proves to be a problem we can emit additional records to
+                    // describe the continued range of the variable.
+                    if (rangeLength > 0xF000)
+                    {
+                        rangeLength = 0xF000;
+                    }
+
                     switch (range.VarLoc.LocationType)
                     {
                         case VarLocType.VLT_REG:
@@ -138,13 +153,13 @@ namespace ILCompiler.ObjectWriter
                                     recordWriter.Write((ushort)0); // TODO: Attributes
                                     recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECREL, methodName, (int)range.StartOffset);
                                     recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECTION, methodName);
-                                    recordWriter.Write((ushort)(range.EndOffset - range.StartOffset));
+                                    recordWriter.Write((ushort)rangeLength);
                                 }
                             }
                             break;
 
                         case VarLocType.VLT_STK:
-                            // FIXME: REGNUM_AMBIENT_SP
+                            // FIXME: Handle REGNUM_AMBIENT_SP
                             cvRegNum = GetCVRegNum((uint)range.VarLoc.B);
                             if (cvRegNum != CV_REG_NONE)
                             {
@@ -156,7 +171,7 @@ namespace ILCompiler.ObjectWriter
                                     recordWriter.Write((uint)range.VarLoc.C);
                                     recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECREL, methodName, (int)range.StartOffset);
                                     recordWriter.EmitSymbolReference(RelocType.IMAGE_REL_SECTION, methodName);
-                                    recordWriter.Write((ushort)(range.EndOffset - range.StartOffset));
+                                    recordWriter.Write((ushort)rangeLength);
                                 }
                             }
                             break;

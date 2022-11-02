@@ -5,6 +5,9 @@ using System;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Native constants and enumerations for CodeView binary format.
+    /// </summary>
     internal static class CodeViewNative
     {
         // Matches TYPE_ENUM_e in cvinfo.h
