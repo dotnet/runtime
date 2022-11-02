@@ -1667,36 +1667,10 @@ namespace System.Xml
 
         internal static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
         {
-            if (value)
-            {
-                if (destination.Length < 4)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
+            ReadOnlySpan<char> valueSpan = value ? "true" : "false";
 
-                destination[0] = 't';
-                destination[1] = 'r';
-                destination[2] = 'u';
-                destination[3] = 'e';
-                charsWritten = 4;
-
-                return true;
-            }
-
-            if (destination.Length < 5)
-            {
-                charsWritten = -1;
-                return false;
-            }
-
-            destination[0] = 'f';
-            destination[1] = 'a';
-            destination[2] = 'l';
-            destination[3] = 's';
-            destination[4] = 'e';
-            charsWritten = 5;
-            return true;
+            charsWritten = valueSpan.Length;
+            return valueSpan.TryCopyTo(destination);
         }
 
         internal static bool TryFormat(char value, Span<char> destination, out int charsWritten)
@@ -1756,92 +1730,50 @@ namespace System.Xml
 
         internal static bool TryFormat(float value, Span<char> destination, out int charsWritten)
         {
+            ReadOnlySpan<char> valueSpan = default;
+
             if (float.IsNegativeInfinity(value))
             {
-                if (destination.Length < 4)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = '-';
-                destination[1] = 'I';
-                destination[2] = 'N';
-                destination[3] = 'F';
-                charsWritten = 4;
-                return true;
+                valueSpan = "-INF";
+            }
+            else if (float.IsPositiveInfinity(value))
+            {
+                valueSpan = "INF";
+            }
+            else if (IsNegativeZero((double)value))
+            {
+                valueSpan = "-0";
             }
 
-            if (float.IsPositiveInfinity(value))
-            {
-                if (destination.Length < 3)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = 'I';
-                destination[1] = 'N';
-                destination[2] = 'F';
-                charsWritten = 3;
-                return true;
-            }
-            if (IsNegativeZero((double)value))
-            {
-                if (destination.Length < 2)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = '-';
-                destination[1] = '0';
-                charsWritten = 2;
-                return true;
-            }
-            return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            if (valueSpan.IsEmpty)
+                return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+
+            charsWritten = valueSpan.Length;
+            return valueSpan.TryCopyTo(destination);
         }
 
         internal static bool TryFormat(double value, Span<char> destination, out int charsWritten)
         {
+            ReadOnlySpan<char> valueSpan = default;
+
             if (double.IsNegativeInfinity(value))
             {
-                if (destination.Length < 4)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = '-';
-                destination[1] = 'I';
-                destination[2] = 'N';
-                destination[3] = 'F';
-                charsWritten = 4;
-                return true;
+                valueSpan = "-INF";
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                valueSpan = "INF";
+            }
+            else if (IsNegativeZero(value))
+            {
+                valueSpan = "-0";
             }
 
-            if (double.IsPositiveInfinity(value))
-            {
-                if (destination.Length < 3)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = 'I';
-                destination[1] = 'N';
-                destination[2] = 'F';
-                charsWritten = 3;
-                return true;
-            }
-            if (IsNegativeZero(value))
-            {
-                if (destination.Length < 2)
-                {
-                    charsWritten = -1;
-                    return false;
-                }
-                destination[0] = '-';
-                destination[1] = '0';
-                charsWritten = 2;
-                return true;
-            }
-            return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            if (valueSpan.IsEmpty)
+                return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+
+            charsWritten = valueSpan.Length;
+            return valueSpan.TryCopyTo(destination);
         }
 
         internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
