@@ -9922,7 +9922,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 #ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                else
+                else if (tree->OperIs(GT_MOD, GT_UMOD))
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
@@ -13183,7 +13183,20 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 
     GenTree* zero = gtNewZeroConNode(type);
 
-    if (op1->IsInvariant() || op1->IsLocal())
+    GenTree* op1SideEffects = nullptr;
+    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
+    if (op1SideEffects != nullptr)
+    {
+        GenTree* comma = gtNewOperNode(GT_COMMA, type, op1SideEffects, zero);
+
+        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree->gtOp2);
+        DEBUG_DESTROY_NODE(tree);
+
+        return comma;
+    }
+    else
     {
         INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
@@ -13193,15 +13206,6 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 
         return zero;
     }
-
-    GenTree* comma = gtNewOperNode(GT_COMMA, type, op1, zero);
-
-    INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-    DEBUG_DESTROY_NODE(tree->gtOp2);
-    DEBUG_DESTROY_NODE(tree);
-
-    return comma;
 }
 
 //------------------------------------------------------------------------
