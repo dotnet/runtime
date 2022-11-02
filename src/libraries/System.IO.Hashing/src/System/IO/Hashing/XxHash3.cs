@@ -870,6 +870,7 @@ namespace System.IO.Hashing
             }
         }
 
+#if NET7_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> Accumulate256(Vector256<ulong> accVec, byte* source, Vector256<uint> secret)
         {
@@ -905,6 +906,7 @@ namespace System.IO.Hashing
             accVec = product + sum;
             return accVec;
         }
+#endif
 
         private static void ScrambleAccumulators(ulong* accumulators, byte* secret)
         {
@@ -946,6 +948,7 @@ namespace System.IO.Hashing
             }
         }
 
+#if NET7_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> ScrambleAccumulator256(Vector256<ulong> accVec, Vector256<ulong> secret)
         {
@@ -955,7 +958,6 @@ namespace System.IO.Hashing
             return accVec;
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<ulong> ScrambleAccumulator128(Vector128<ulong> accVec, Vector128<ulong> secret)
         {
@@ -964,6 +966,7 @@ namespace System.IO.Hashing
             accVec = xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1);
             return accVec;
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong XorShift(ulong value, int shift)
