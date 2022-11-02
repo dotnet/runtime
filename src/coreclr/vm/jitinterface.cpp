@@ -1453,6 +1453,33 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
     return (CorInfoHelpFunc)helper;
 }
 
+static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These fields never hold frozen boxed statics
+    if (!field->IsStatic() || !field->IsByValue() || field->IsSpecialStatic())
+    {
+        return NULL;
+    }
+
+    TypeHandle typeHandle = field->GetFieldTypeHandleThrowing();
+    MethodTable* pFieldMT = typeHandle.GetMethodTable();
+    if (!typeHandle.IsCanonicalSubtype() && !pFieldMT->ContainsPointers())
+    {
+        Object** handle = (Object**)field->GetStaticAddressHandle(field->GetBase());
+        if (handle != nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
+        {
+            return ObjectToOBJECTREF(*handle);
+        }
+    }
+    return NULL;
+}
+
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1515,17 +1542,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
-                bool frozenBoxedStatic = false;
-                if (pFieldMT->ContainsPointersOrCollectible())
-                {
-                    Object** handle = (Object**)pField->GetStaticAddressHandle(pField->GetBase());
-                    if (*handle == nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
-                    {
-                        frozenBoxedStatic = true;
-                    }
-                }
-
-                if (!frozenBoxedStatic)
+                GCX_COOP();
+                if (getFrozenBoxedStatic(pField) == NULL)
                 {
                     fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
                 }
@@ -11965,10 +11983,23 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
         GCX_COOP();
 
-        base = (void *) field->GetBase();
+        // Check if the field holds a frozen boxed static, return its content in that case
+        result = OBJECTREFToObject(getFrozenBoxedStatic(field));
+        if (result != NULL)
+        {
+            // Skip pMT
+            result = (uint8_t*)result + sizeof(void*);
+        }
+        else
+        {
+            base = (void*)field->GetBase();
+        }
     }
 
-    result = field->GetStaticAddressHandle(base);
+    if (result == NULL)
+    {
+        result = field->GetStaticAddressHandle(base);
+    }
 
     EE_TO_JIT_TRANSITION();
 
