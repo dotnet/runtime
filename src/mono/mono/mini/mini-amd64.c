@@ -3885,15 +3885,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			int opcode= -1;
 			switch (ins->inst_c1)
 			{
-				case MONO_TYPE_R4:
-					opcode = OP_COMPPS;
-					break;
-				case MONO_TYPE_R8: {
-					opcode =  OP_COMPPD;
-					break;
-				}
-				default:
-					opcode = OP_PCMPEQD;
+			case MONO_TYPE_R4: opcode = OP_COMPPS; break;
+			case MONO_TYPE_R8: opcode =  OP_COMPPD;	break;
+			default: opcode = OP_PCMPEQD;
 			}
 			ins->inst_c0 = 0;
 
