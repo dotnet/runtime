@@ -573,7 +573,7 @@ namespace System.IO.Hashing
                 int blocksNum = (int)((length - 1) / BlockLen);
 
                 Accumulate(accumulators, source, secret, StripesPerBlock, true, blocksNum);
-                var offset = BlockLen * blocksNum;
+                int offset = BlockLen * blocksNum;
 
                 int stripesNumber = (int)((length - 1 - offset) / StripeLengthBytes);
                 Accumulate(accumulators, source + offset, secret, stripesNumber);
@@ -723,8 +723,8 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess, bool scramble = false, int blockCount = 1)
         {
-            var secretForAccumulate = secret;
-            var secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
+            byte* secretForAccumulate = secret;
+            byte* secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
 
 #if NET7_0_OR_GREATER
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
