@@ -663,27 +663,13 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
 
-
 FCFuncStart(gStreamFuncs)
     FCFuncElement("HasOverriddenBeginEndRead", StreamNative::HasOverriddenBeginEndRead)
     FCFuncElement("HasOverriddenBeginEndWrite", StreamNative::HasOverriddenBeginEndWrite)
 FCFuncEnd()
 
-FCFuncStart(gWeakReferenceFuncs)
-    FCFuncElement("Create", WeakReferenceNative::Create)
-    FCFuncElement("Finalize", WeakReferenceNative::Finalize)
-    FCFuncElement("get_Target", WeakReferenceNative::GetTarget)
-    FCFuncElement("set_Target", WeakReferenceNative::SetTarget)
-    FCFuncElement("get_IsAlive", WeakReferenceNative::IsAlive)
-    FCFuncElement("IsTrackResurrection", WeakReferenceNative::IsTrackResurrection)
-FCFuncEnd()
-
-FCFuncStart(gWeakReferenceOfTFuncs)
-    FCFuncElement("Create", WeakReferenceOfTNative::Create)
-    FCFuncElement("Finalize", WeakReferenceOfTNative::Finalize)
-    FCFuncElement("get_Target", WeakReferenceOfTNative::GetTarget)
-    FCFuncElement("set_Target", WeakReferenceOfTNative::SetTarget)
-    FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
+FCFuncStart(gComAwareWeakReferenceFuncs)
+    FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
@@ -723,6 +709,7 @@ FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
+FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
@@ -786,8 +773,6 @@ FCClassElement("ValueType", "System", gValueTypeFuncs)
 FCClassElement("Variant", "System", gVariantFuncs)
 #endif
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
-FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
-FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

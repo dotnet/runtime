@@ -15,7 +15,6 @@
 
 #include "common.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
 #include "assemblynative.hpp"
 #include "dllimport.h"

@@ -2004,6 +2004,10 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     {
         fgRemoveStmt(block, candidateStmt);
     }
+    else
+    {
+        optRecordSsaUses(substituteTree, block);
+    }
 
     JITDUMP(" -- done! new jump tree is\n");
     DISPTREE(jumpTree);

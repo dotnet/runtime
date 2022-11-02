@@ -38,7 +38,8 @@ namespace System.Runtime.InteropServices
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 // See the dispatch section in the runtime for details on the masking below.
-                const long DispatchThisPtrMask = ~0xfL;
+                long DispatchAlignmentThisPtr = sizeof(void*) == 8 ? 64 : 16; // Should be a power of 2.
+                long DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
                 var comInstance = *(ComInterfaceInstance**)(((long)dispatchPtr) & DispatchThisPtrMask);
 
                 return Unsafe.As<T>(GCHandle.InternalGet(comInstance->GcHandle));

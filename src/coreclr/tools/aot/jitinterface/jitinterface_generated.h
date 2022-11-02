@@ -48,7 +48,7 @@ struct JitInterfaceCallbacks
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
-    size_t (* printObjectDescription)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
+    size_t (* printObjectDescription)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -78,9 +78,9 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTypeForBox)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getUnBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    void* (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
-    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
+    CORINFO_OBJECT_HANDLE (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
+    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
     const char* (* getHelperName)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc helpFunc);
@@ -109,6 +109,7 @@ struct JitInterfaceCallbacks
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
+    int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
     void (* setBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap);
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
@@ -161,7 +162,7 @@ struct JitInterfaceCallbacks
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
     void* (* getFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
-    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize);
+    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -570,7 +571,7 @@ public:
 }
 
     virtual size_t printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize)
@@ -859,17 +860,17 @@ public:
     return temp;
 }
 
-    virtual void* getRuntimeTypePointer(
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->getRuntimeTypePointer(_thisHandle, &pException, cls);
+    CORINFO_OBJECT_HANDLE temp = _callbacks->getRuntimeTypePointer(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
     virtual bool isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isObjectImmutable(_thisHandle, &pException, objPtr);
@@ -878,7 +879,7 @@ public:
 }
 
     virtual CORINFO_CLASS_HANDLE getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getObjectType(_thisHandle, &pException, objPtr);
@@ -1155,6 +1156,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isFieldStatic(_thisHandle, &pException, fldHnd);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual int getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    int temp = _callbacks->getArrayOrStringLength(_thisHandle, &pException, objHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1649,10 +1659,11 @@ public:
     virtual bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          bool ignoreMovableObjects)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, buffer, bufferSize);
+    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, buffer, bufferSize, ignoreMovableObjects);
     if (pException != nullptr) throw pException;
     return temp;
 }
