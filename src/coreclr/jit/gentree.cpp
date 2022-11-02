@@ -17315,32 +17315,48 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //     true if node represents a constant; otherwise, false
 bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val)
 {
-    var_types simdType     = node->TypeGet();
-    var_types simdBaseType = node->GetSimdBaseType();
-    unsigned  simdSize     = node->GetSimdSize();
+    NamedIntrinsic intrinsic = node->GetHWIntrinsicId();
+    var_types simdType       = node->TypeGet();
+    var_types simdBaseType   = node->GetSimdBaseType();
+    unsigned  simdSize       = node->GetSimdSize();
 
     size_t argCnt    = node->GetOperandCount();
     size_t cnsArgCnt = 0;
 
-    switch (node->GetHWIntrinsicId())
+    switch (intrinsic)
     {
         case NI_Vector128_Create:
+        case NI_Vector128_CreateScalar:
         case NI_Vector128_CreateScalarUnsafe:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Create:
+        case NI_Vector256_CreateScalar:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalar:
         case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
+            // Zero out the simd32Val
+            simd32Val = {};
+
             // These intrinsics are meant to set the same value to every element.
             if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
             {
-                // Now assign the rest of the arguments.
-                for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
+                // CreateScalar leaves the upper bits as zero
+
+#if defined(TARGET_XARCH)
+                if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar))
+#elif defined(TARGET_ARM64)
+                if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
+#endif
                 {
-                    HandleArgForHWIntrinsicCreate(node->Op(1), i, simd32Val, simdBaseType);
+                    // Now assign the rest of the arguments.
+                    for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
+                    {
+                        HandleArgForHWIntrinsicCreate(node->Op(1), i, simd32Val, simdBaseType);
+                    }
                 }
 
                 cnsArgCnt = 1;
@@ -18924,6 +18940,13 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ExtractVector128:
         {
             // These HWIntrinsic operations are contained as part of a store
+            return true;
+        }
+
+        case NI_Vector128_get_Zero:
+        case NI_Vector256_get_Zero:
+        {
+            // These HWIntrinsic operations are contained as part of Sse41.Insert
             return true;
         }
 
