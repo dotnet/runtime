@@ -53,6 +53,7 @@
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/marshal-lightweight.h>
+#include <mono/metadata/marshal-noilgen.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
