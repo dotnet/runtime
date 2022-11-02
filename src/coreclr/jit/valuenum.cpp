@@ -10352,9 +10352,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcstaticBaseNoctor;
             break;
-        case CORINFO_HELP_READYTORUN_STATIC_BASE:
-            vnf = VNF_ReadyToRunStaticBase;
-            break;
         case CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
             vnf = VNF_ReadyToRunCctorTrigger;
             break;

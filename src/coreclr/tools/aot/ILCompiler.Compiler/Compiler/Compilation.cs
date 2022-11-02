@@ -336,7 +336,6 @@ namespace ILCompiler
             ReadyToRunHelperId res;
             switch (helper)
             {
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE: // there is actually no ID to this because is the generic entry
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
                     res = ReadyToRunHelperId.CctorTrigger;
                     break;
