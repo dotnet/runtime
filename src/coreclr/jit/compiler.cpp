@@ -4874,7 +4874,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        bool doIfConversion = (JitConfig.JitDoIfConversion() != 0);
+        bool doIfConversion = true;
+
+#if defined(OPT_CONFIG)
+        doIfConversion = (JitConfig.JitDoIfConversion() != 0);
+#endif
 
         // Optimize boolean conditions
         //
