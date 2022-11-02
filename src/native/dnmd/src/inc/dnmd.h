@@ -105,11 +105,6 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta);
 // Move to the next row.
 bool md_cursor_next(mdcursor_t* c);
 
-// Given two cursors into the same table, compute the
-// relative distance between the rows.
-// if 'end' is before 'begin', the distance will be negative.
-bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance);
-
 // Convert between a token and location in metadata tables.
 bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c);
 bool md_cursor_to_token(mdcursor_t c, mdToken* tk);
@@ -280,6 +275,7 @@ typedef enum
     MDTABLE_COLUMN(GenericParamConstraint, Constraint, 1),
 
 #ifdef DNMD_PORTABLE_PDB
+    // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
     MDTABLE_COLUMN(Document, Name, 0),
     MDTABLE_COLUMN(Document, HashAlgorithm, 1),
     MDTABLE_COLUMN(Document, Hash, 2),
@@ -319,6 +315,11 @@ typedef enum
 int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
 // The returned number represents the number of valid cursor(s) for indexing.
 int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor);
+// Resolve the column to a cursor and a range based on the "run" pattern in tables.
+// The run continues to the smaller of:
+//   * the last row of the target table
+//   * the next run in the target table, found by inspecting the column value of the next row in the current table.
+bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count);
 int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
 int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte);

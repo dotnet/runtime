@@ -13,19 +13,14 @@
 
 namespace
 {
+    // Represents a singly linked list enumerator
     struct HCORENUMImpl
     {
         mdcursor_t current;
         mdcursor_t start;
         uint32_t readIn;
         uint32_t total;
-        void* extraData;
-
-        template<typename T>
-        T* ExtraData() const
-        {
-            return static_cast<T*>(extraData);
-        }
+        HCORENUMImpl* next;
     };
 
     HCORENUMImpl* ToEnumImpl(HCORENUM hEnum) noexcept
@@ -38,24 +33,33 @@ namespace
         return reinterpret_cast<HCORENUM>(enumImpl);
     }
 
-    HRESULT CreateHCORENUMImpl(_In_ mdcursor_t cursor, _In_ uint32_t rows, _In_opt_ uint32_t extraData, _Out_ HCORENUMImpl** pEnumImpl) noexcept
+    HRESULT CreateHCORENUMImpl(_In_ size_t count, _Out_ HCORENUMImpl** pEnumImpl) noexcept
     {
         HCORENUMImpl* enumImpl;
-        enumImpl = (HCORENUMImpl*)::malloc(sizeof(*enumImpl) + extraData);
+        enumImpl = (HCORENUMImpl*)::malloc(sizeof(*enumImpl) * count);
         if (enumImpl == nullptr)
             return E_OUTOFMEMORY;
 
+        HCORENUMImpl* prev = enumImpl;
+        prev->next = nullptr;
+        for (size_t i = 1; i < count; ++i)
+        {
+            prev->next = &enumImpl[i];
+            prev = prev->next;
+            prev->next = nullptr;
+        }
+
+        *pEnumImpl = enumImpl;
+        return S_OK;
+    }
+
+    void InitHCORENUMImpl(_Inout_ HCORENUMImpl* enumImpl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept
+    {
         // Copy over cursor to new allocation
         enumImpl->current = cursor;
         enumImpl->start = cursor;
         enumImpl->readIn = 0;
         enumImpl->total = rows;
-
-        // Extra memory, if requested, is immediately after impl.
-        enumImpl->extraData = extraData == 0 ? nullptr : (void*)&enumImpl[1];
-
-        *pEnumImpl = enumImpl;
-        return S_OK;
     }
 
     void DestroyHCORENUM(HCORENUM hEnum) noexcept
@@ -75,10 +79,16 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pul
         return E_INVALIDARG;
 
     HCORENUMImpl* enumImpl = ToEnumImpl(hEnum);
-    *pulCount = (enumImpl != nullptr)
-        ? enumImpl->total
-        : 0;
 
+    // Accumulate all tables in the enumerator
+    uint32_t count = 0;
+    while (enumImpl != nullptr)
+    {
+        count += enumImpl->total;
+        enumImpl = enumImpl->next;
+    }
+
+    *pulCount = count;
     return S_OK;
 }
 
@@ -88,19 +98,45 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPo
     if (enumImpl == nullptr)
         return S_OK;
 
-    mdcursor_t newStart = enumImpl->start;
-    if (!md_cursor_move(&newStart, ulPos))
-        return E_INVALIDARG;
+    mdcursor_t newStart;
+    uint32_t newReadIn;
+    bool reset = false;
+    while (enumImpl != nullptr)
+    {
+        newStart = enumImpl->start;
+        if (reset)
+        {
+            // Reset the enumerator state
+            newReadIn = 0;
+        }
+        else if (ulPos < enumImpl->total)
+        {
+            // The current enumerator contains the position
+            if (!md_cursor_move(&newStart, ulPos))
+                return E_INVALIDARG;
+            newReadIn = ulPos;
+            reset = true;
+        }
+        else
+        {
+            // The current enumerator is consumed based on position
+            ulPos -= enumImpl->total;
+            if (!md_cursor_move(&newStart, enumImpl->total))
+                return E_INVALIDARG;
+            newReadIn = enumImpl->total;
+        }
 
-    // Reset the enum state
-    enumImpl->current = newStart;
-    enumImpl->readIn = ulPos;
+        enumImpl->current = newStart;
+        enumImpl->readIn = newReadIn;
+        enumImpl = enumImpl->next;
+    }
+
     return S_OK;
 }
 
 namespace
 {
-    HRESULT ExtractFromEnum(
+    HRESULT ReadFromEnum(
         HCORENUMImpl* enumImpl,
         mdToken rTokens[],
         ULONG cMax,
@@ -111,9 +147,14 @@ namespace
         uint32_t count = 0;
         for (uint32_t i = 0; i < cMax; ++i)
         {
-            // Check if all values have been read
-            if (enumImpl->readIn == enumImpl->total)
-                break;
+            // Check if all values have been read.
+            while (enumImpl->readIn == enumImpl->total)
+            {
+                enumImpl = enumImpl->next;
+                // Check next link in enumerator list
+                if (enumImpl == nullptr)
+                    goto Done;
+            }
 
             if (!md_cursor_to_token(enumImpl->current, &rTokens[count]))
                 break;
@@ -123,7 +164,7 @@ namespace
                 break;
             enumImpl->readIn++;
         }
-
+Done:
         if (pcTokens != nullptr)
             *pcTokens = count;
 
@@ -147,11 +188,12 @@ namespace
             if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
                 return E_INVALIDARG;
 
-            RETURN_IF_FAILED(CreateHCORENUMImpl(cursor, rows, 0, &enumImpl));
+            RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+            InitHCORENUMImpl(enumImpl, cursor, rows);
             *phEnum = enumImpl;
         }
 
-        return ExtractFromEnum(enumImpl, rTokens, cMax, pcTokens);
+        return ReadFromEnum(enumImpl, rTokens, cMax, pcTokens);
     }
 }
 
@@ -174,13 +216,15 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
         //  "The first row of the TypeDef table represents the pseudo class that acts as parent for functions
         //  and variables defined at module scope."
         // Based on the above we always skip the first row.
+        rows--;
         (void)md_cursor_next(&cursor);
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(cursor, rows, 0, &enumImpl));
+        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+        InitHCORENUMImpl(enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
 
-    return ExtractFromEnum(enumImpl, rTypeDefs, cMax, pcTypeDefs);
+    return ReadFromEnum(enumImpl, rTypeDefs, cMax, pcTypeDefs);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
@@ -203,11 +247,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
         if (!md_find_range_from_cursor(cursor, mdtInterfaceImpl_Class, id, &cursor, &rows))
             return CLDB_E_FILE_CORRUPT;
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(cursor, rows, 0, &enumImpl));
+        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+        InitHCORENUMImpl(enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
 
-    return ExtractFromEnum(enumImpl, rImpls, cMax, pcImpls);
+    return ReadFromEnum(enumImpl, rImpls, cMax, pcImpls);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeRefs(
@@ -264,6 +309,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetInterfaceImplProps(
     mdTypeDef* pClass,
     mdToken* ptkIface)
 {
+    if (TypeFromToken(iiImpl) != mdtInterfaceImpl)
+        return E_INVALIDARG;
+
     mdcursor_t cursor;
     if (!md_token_to_cursor(_md_ptr.get(), iiImpl, &cursor))
         return CLDB_E_INDEX_NOTFOUND;
@@ -298,7 +346,34 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(cl) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        mdcursor_t cursor;
+        if (!md_token_to_cursor(_md_ptr.get(), cl, &cursor))
+            return E_INVALIDARG;
+
+        mdcursor_t methodList;
+        uint32_t methodListCount;
+        mdcursor_t fieldList;
+        uint32_t fieldListCount;
+        if (!md_get_column_value_as_range(cursor, mdtTypeDef_FieldList, &fieldList, &fieldListCount)
+            || !md_get_column_value_as_range(cursor, mdtTypeDef_MethodList, &methodList, &methodListCount))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+
+        RETURN_IF_FAILED(CreateHCORENUMImpl(2, &enumImpl));
+        InitHCORENUMImpl(&enumImpl[0], methodList, methodListCount);
+        InitHCORENUMImpl(&enumImpl[1], fieldList, fieldListCount);
+        *phEnum = enumImpl;
+    }
+
+    return ReadFromEnum(enumImpl, rMembers, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(

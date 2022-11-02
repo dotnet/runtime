@@ -8,12 +8,19 @@
 
 static mdtable_t* CursorTable(mdcursor_t* c)
 {
+    assert(c != NULL);
     return (mdtable_t*)c->_reserved1;
 }
 
 static uint32_t CursorRow(mdcursor_t* c)
 {
+    assert(c != NULL);
     return ExtractTokenIndex(c->_reserved2);
+}
+
+static bool CursorNull(mdcursor_t* c)
+{
+    return CursorRow(c) == 0;
 }
 
 static bool CursorEnd(mdcursor_t* c)
@@ -23,7 +30,7 @@ static bool CursorEnd(mdcursor_t* c)
 
 mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
 {
-    assert(table != NULL && row != 0);
+    assert(table != NULL && row <= (table->row_count + 1));
     mdcursor_t c;
     c._reserved1 = (intptr_t)table;
     c._reserved2 = row;
@@ -83,34 +90,6 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta)
 bool md_cursor_next(mdcursor_t* c)
 {
     return md_cursor_move(c, 1);
-}
-
-bool md_row_distance(mdcursor_t begin, mdcursor_t end, int32_t* distance)
-{
-    mdtable_t* b_table = CursorTable(&begin);
-    mdtable_t* e_table = CursorTable(&end);
-
-    // Cursors must point to same table and be non-null.
-    if (b_table != e_table || b_table == NULL)
-        return false;
-
-    if (distance == NULL)
-        return false;
-
-    // Compute the relative distance between the two indices
-    uint32_t e_row = CursorRow(&end);
-    uint32_t b_row = CursorRow(&begin);
-    if (b_row < e_row)
-    {
-        *distance = (int32_t)(e_row - b_row);
-    }
-    else
-    {
-        // Compute distance, then negate
-        *distance = -(int32_t)(b_row - e_row);
-    }
-
-    return true;
 }
 
 bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
@@ -190,11 +169,12 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     mdtcol_t cd = table->column_details[idx];
 
     uint32_t offset = ExtractOffset(cd);
-    // Metadata row indexing is 1-based, minus 1.
-    uint32_t row = CursorRow(cursor) - 1;
-    if (row >= table->row_count)
+    uint32_t row = CursorRow(cursor);
+    if (row == 0 || row > table->row_count)
         return false;
 
+    // Metadata row indexing is 1-based.
+    row--;
     qcxt->table = table;
     qcxt->col_details = cd;
 
@@ -300,7 +280,9 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
             table = &qcxt.table->cxt->tables[table_id];
 
             // Indices into tables begin at 1 - see II.22.
-            if (table_row == 0 || table_row > table->row_count)
+            // However, tables can contain a row ID of 0 to
+            // indicate "none" or point 1 past the end.
+            if (table_row > table->row_count + 1)
                 return -1;
 
             assert(cursor != NULL);
@@ -326,6 +308,53 @@ int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_
         return 0;
     assert(cursor != NULL);
     return get_column_value_as_token_or_cursor(&c, col_idx, out_length, NULL, cursor);
+}
+
+bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count)
+{
+    assert(cursor != NULL);
+    if (1 != get_column_value_as_token_or_cursor(&c, col_idx, 1, NULL, cursor))
+        return false;
+
+    // Check if the cursor is null or the end of the table
+    if (CursorNull(cursor) || CursorEnd(cursor))
+    {
+        *count = 0;
+        return true;
+    }
+
+    mdcursor_t nextMaybe = c;
+    // Loop here as we may have a bunch of null cursors in the column.
+    for (;;)
+    {
+        // The cursor into the current table remains valid,
+        // we can safely move it at least one beyond the last.
+        (void)cursor_move_no_checks(&nextMaybe, 1);
+
+        // Check if we are at the end of the current table. If so,
+        // ECMA states we use the remaining rows in the target table.
+        if (CursorEnd(&nextMaybe))
+        {
+            // Add +1 for inclusive count.
+            *count = CursorTable(cursor)->row_count - CursorRow(cursor) + 1;
+        }
+        else
+        {
+            // Examine the current table's next row value to find the
+            // extrema of the target table range.
+            mdcursor_t end;
+            if (!md_get_column_value_as_cursor(nextMaybe, col_idx, 1, &end))
+                return false;
+
+            // The next row is a null cursor, which means we need to
+            // check the next row in the current table.
+            if (CursorNull(&end))
+                continue;
+            *count = CursorRow(&end) - CursorRow(cursor);
+        }
+        break;
+    }
+    return true;
 }
 
 int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant)
@@ -555,7 +584,7 @@ static int32_t bcompare(void const* key, void const* row, void* cxt)
 
 static void const* cursor_to_row_bytes(mdcursor_t* c)
 {
-    assert(c != NULL);
+    assert(c != NULL && (CursorRow(c) > 0));
     // Indices into tables begin at 1 - see II.22.
     return &CursorTable(c)->data.ptr[(CursorRow(c) - 1) * CursorTable(c)->row_size_bytes];
 }
@@ -580,7 +609,7 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
 
     // Compute the starting row.
     void const* starting_row = cursor_to_row_bytes(&begin);
-    // Rows are 1 based indexing, so +1 for finding count.
+    // Add +1 for inclusive count.
     void const* row_maybe = md_bsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, bcompare, &fcxt);
     if (row_maybe == NULL)
         return false;

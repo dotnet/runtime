@@ -12,7 +12,7 @@ namespace Regression.UnitTests
         void CloseEnum(IntPtr hEnum);
 
         [PreserveSig]
-        int CountEnum(IntPtr hEnum, out uint count);
+        int CountEnum(IntPtr hEnum, out int count);
 
         [PreserveSig]
         int ResetEnum(IntPtr hEnum, uint ulPos);
@@ -36,7 +36,7 @@ namespace Regression.UnitTests
         int GetModuleFromScope(out uint pmd);
 
         [PreserveSig]
-        int GetTypeDefProps(uint td, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]char[] szTypeDef, uint cchTypeDef, out uint pchTypeDef, out uint pdwTypeDefFlags, out uint ptkExtends);
+        int GetTypeDefProps(uint td, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]char[] szTypeDef, int cchTypeDef, out int pchTypeDef, out uint pdwTypeDefFlags, out uint ptkExtends);
 
         [PreserveSig]
         int GetInterfaceImplProps(uint iiImpl, out uint pClass, out uint ptkIface);
