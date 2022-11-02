@@ -857,7 +857,7 @@ namespace DebuggerTests
         [InlineData(1272, 8, 1266, 8, "StepOverHiddenSP3", "HiddenSequencePointTest.StepOverHiddenSP3")]
         public async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine(int line_bp, int column_bp, int line_pause, int column_pause, string method_to_call, string method_name)
         {
-            Console.WriteLine(await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", line_bp, column_bp));
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", line_bp, column_bp);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:" + method_to_call + "'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", line_pause, column_pause,

@@ -61,10 +61,10 @@ fi
 
 echo Collect profile with R2R disabled, use profile with R2R enabled
 rm -f profile.mcj
-export COMPlus_ReadyToRun=0
+export DOTNET_ReadyToRun=0
 "$CORE_ROOT/corerun" r2r/BasicTestWithMcj.dll
 CLRTestExitCode=$?
-unset COMPlus_ReadyToRun
+unset DOTNET_ReadyToRun
 if [ $CLRTestExitCode -ne $CLRTestExpectedExitCode ]; then
   exit $CLRTestExitCode
 fi

@@ -102,9 +102,9 @@ internal sealed class IcallTableGenerator
                 w.WriteLine(string.Format("{0},", icall.Func));
             }
             w.WriteLine("};");
-            w.WriteLine($"static uint8_t {aname}_icall_handles [] = {{");
+            w.WriteLine($"static uint8_t {aname}_icall_flags [] = {{");
             foreach (var icall in sorted)
-                w.WriteLine(string.Format("{0},", icall.Handles ? "1" : "0"));
+                w.WriteLine(string.Format("{0},", icall.Flags));
             w.WriteLine("};");
         }
     }
@@ -133,8 +133,9 @@ internal sealed class IcallTableGenerator
                 string name = nameElem.GetString()!;
                 string func = icall_j.GetProperty("func").GetString()!;
                 bool handles = icall_j.GetProperty("handles").GetBoolean();
+                int flags = icall_j.TryGetProperty ("flags", out var _) ? int.Parse (icall_j.GetProperty("flags").GetString()!) : 0;
 
-                icallClass.Icalls.Add(name, new Icall(name, func, handles));
+                icallClass.Icalls.Add(name, new Icall(name, func, handles, flags));
             }
         }
     }
@@ -315,10 +316,11 @@ internal sealed class IcallTableGenerator
 
     private sealed class Icall : IComparable<Icall>
     {
-        public Icall(string name, string func, bool handles)
+        public Icall(string name, string func, bool handles, int flags)
         {
             Name = name;
             Func = func;
+            Flags = flags;
             Handles = handles;
             TokenIndex = 0;
         }
@@ -327,6 +329,7 @@ internal sealed class IcallTableGenerator
         public string Func;
         public string? Assembly;
         public bool Handles;
+        public int Flags;
         public int TokenIndex;
         public MethodInfo? Method;
 

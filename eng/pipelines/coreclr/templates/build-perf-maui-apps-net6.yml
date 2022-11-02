@@ -27,7 +27,7 @@ steps:
 
   # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
-      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/net6.0/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ./dotnet-install.sh --channel 6.0 --quality daily --install-dir .

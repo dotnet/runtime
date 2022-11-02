@@ -55,7 +55,6 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
-void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -127,11 +126,11 @@ static int resolved_datetime_class = 0,
 int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
 typedef struct {
 	int version;
-	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles);
+	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *flags);
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
@@ -345,7 +344,7 @@ compare_int (const void *k1, const void *k2)
 }
 
 static void*
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles)
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
 {
 	uint32_t token = mono_method_get_token (method);
 	assert (token);
@@ -354,27 +353,18 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	int *indexes = NULL;
 	int indexes_size = 0;
-	uint8_t *handles = NULL;
+	uint8_t *flags = NULL;
 	void **funcs = NULL;
 
-	*uses_handles = 0;
+	*out_flags = 0;
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#if defined(ICALL_TABLE_mscorlib)
-	if (!strcmp (image_name, "mscorlib")) {
-		indexes = mscorlib_icall_indexes;
-		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
-		handles = mscorlib_icall_handles;
-		funcs = mscorlib_icall_funcs;
-		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
-	}
-#endif
 #if defined(ICALL_TABLE_corlib)
 	if (!strcmp (image_name, "System.Private.CoreLib")) {
 		indexes = corlib_icall_indexes;
 		indexes_size = sizeof (corlib_icall_indexes) / 4;
-		handles = corlib_icall_handles;
+		flags = corlib_icall_flags;
 		funcs = corlib_icall_funcs;
 		assert (sizeof (corlib_icall_indexes [0]) == 4);
 	}
@@ -383,7 +373,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
 		indexes_size = sizeof (System_icall_indexes) / 4;
-		handles = System_icall_handles;
+		flags = System_icall_flags;
 		funcs = System_icall_funcs;
 	}
 #endif
@@ -397,7 +387,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	}
 
 	uint32_t idx = (int*)p - indexes;
-	*uses_handles = handles [idx];
+	*out_flags = flags [idx];
 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
@@ -595,7 +585,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();

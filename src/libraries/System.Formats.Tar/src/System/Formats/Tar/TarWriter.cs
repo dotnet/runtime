@@ -306,7 +306,7 @@ namespace System.Formats.Tar
 
                 default:
                     Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format));
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format));
             }
 
             _wroteEntries = true;
@@ -328,7 +328,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
                 TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
             await task.ConfigureAwait(false);
 

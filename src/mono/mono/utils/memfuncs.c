@@ -70,7 +70,7 @@
 			__d [__i] = NULL;		\
 	} while (0)
 
-#define MINMEMSZ 209715200      /* Minimum restricted memory size */
+#define MINMEMSZ 20971520	/* Minimum restricted memory size - 20MB */
 
 /**
  * mono_gc_bzero_aligned:

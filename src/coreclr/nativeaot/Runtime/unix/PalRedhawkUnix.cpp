@@ -382,7 +382,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
 
@@ -410,7 +410,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     InitializeCurrentProcessCpuCount();
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -420,7 +420,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     return true;
 }
 
-#ifndef TARGET_LINUX
+#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -466,7 +466,7 @@ EXTERN_C intptr_t RhGetCurrentThunkContext()
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");

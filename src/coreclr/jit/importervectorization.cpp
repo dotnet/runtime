@@ -432,6 +432,29 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     //   [          value1          ]
     //                 [          value2          ]
     //
+
+    // For 5..6 the overlapping part is 4 bytes
+    if (len <= 6)
+    {
+        UINT32   value2     = MAKEINT32(cns[len - 2], cns[len - 1]);
+        GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
+
+        ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
+        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVar(), TYP_INT, offset, value2, cmpMode, Xor);
+
+        if ((firstIndir == nullptr) || (secondIndir == nullptr))
+        {
+            return nullptr;
+        }
+
+        secondIndir = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_LONG);
+        return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
+                             gtNewIconNode(0, TYP_LONG));
+    }
+
+    // For 7..8 the overlapping part is 8 bytes
+    assert((len == 7) || (len == 8));
+
     UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
     GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
 

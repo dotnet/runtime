@@ -31,6 +31,9 @@ namespace System.Globalization.Tests
 
             RemoteExecutor.Invoke(() =>
             {
+                // Start with calling Globalization to force the initialization.
+                CultureInfo ci = CultureInfo.GetCultureInfo("en-US");
+
                 Type? interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
                 Assert.NotNull(interopGlobalization);
 
@@ -41,8 +44,8 @@ namespace System.Globalization.Tests
                 Assert.Equal(0x44020009, (int)methodInfo.Invoke(null, null));
 
                 // Now call globalization API to ensure the binding working without any problem.
-                Assert.Equal(-1, CultureInfo.GetCultureInfo("en-US").CompareInfo.Compare("sample\u0000", "Sample\u0000", CompareOptions.IgnoreSymbols));
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                Assert.Equal(-1, ci.CompareInfo.Compare("sample\u0000", "Sample\u0000", CompareOptions.IgnoreSymbols));
+            }, new RemoteInvokeOptions { CheckExitCode = false, StartInfo = psi }).Dispose();
         }
     }
 }

@@ -110,10 +110,12 @@ OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
 OPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
 
-OPDEF(MINT_MOV_I1, "mov.i1", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_MOV_U1, "mov.u1", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_MOV_I2, "mov.i2", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_MOV_U2, "mov.u2", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_I4_I2, "mov.i4.i2", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_I4_U2, "mov.i4.u2", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_1, "mov.1", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MOV_2, "mov.2", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_4, "mov.4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_8, "mov.8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_VT, "mov.vt", 4, 1, 1, MintOpShortInt)
@@ -412,7 +414,8 @@ OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
 
-OPDEF(MINT_GETITEM_SPAN, "getitem.span", 7, 1, 2, MintOpTwoShorts)
+OPDEF(MINT_GETITEM_SPAN, "getitem.span", 5, 1, 2, MintOpTwoShorts)
+OPDEF(MINT_GETITEM_LOCALSPAN, "getitem.localspan", 5, 1, 2, MintOpTwoShorts)
 
 /* binops */
 OPDEF(MINT_ADD_I4, "add.i4", 4, 1, 2, MintOpNoArgs)
