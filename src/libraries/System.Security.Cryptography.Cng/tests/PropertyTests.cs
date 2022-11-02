@@ -16,10 +16,11 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 key = CngKey.Create(
                     CngAlgorithm.ECDsaP256,
-                    Guid.NewGuid().ToString(),
+                    $"{nameof(PlatformCryptoProviderFunctional)}Key",
                     new CngKeyCreationParameters
                     {
                         Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                        KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
                     });
 
                 return true;
