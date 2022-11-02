@@ -3499,10 +3499,10 @@ void MethodTable::AllocateRegularStaticBoxes()
                 TypeHandle  th = pField->GetFieldTypeHandleThrowing();
                 MethodTable* pFieldMT = th.GetMethodTable();
 
-                bool neverCollected = !pFieldMT->ContainsPointers() &&
-                    !Collectible();
                 LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, neverCollected);
+
+                bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
 
                 SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
             }
@@ -3514,7 +3514,7 @@ void MethodTable::AllocateRegularStaticBoxes()
 }
 
 //==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool neverCollected)
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool canBeFrozen)
 {
     CONTRACTL
     {
@@ -3530,10 +3530,10 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     pFieldMT->EnsureInstanceActive();
 
     OBJECTREF obj = NULL;
-    if (neverCollected)
+    if (canBeFrozen)
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
-        _ASSERT(!pFieldMT->ContainsPointersOrCollectible());
+        _ASSERT(!pFieldMT->ContainsPointers());
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
