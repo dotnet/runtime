@@ -1420,8 +1420,6 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // Schedule a process to see what env vars it gets.  Have it write out those variables
-                // to its output stream so we can read them.
                 p = CreateProcess(arg =>
                 {
                     Console.Write(File.ReadAllText(arg));
