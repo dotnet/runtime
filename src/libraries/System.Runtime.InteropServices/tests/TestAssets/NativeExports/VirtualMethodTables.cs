@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -41,14 +42,31 @@ namespace NativeExports
             return StaticTable;
         }
 
+        public readonly struct NativeObjectInterface
+        {
+            public struct VirtualFunctionTable
+            {
+                public delegate* unmanaged<NativeObjectInterface*, int> getData;
+                public delegate* unmanaged<NativeObjectInterface*, int, void> setData;
+            }
+
+            public readonly VirtualFunctionTable* VTable;
+
+            public NativeObjectInterface()
+            {
+                throw new UnreachableException("This type should only be accessed through a pointer as it represents an arbitrary implementation of a type that has a NativeObject virtual method table.");
+            }
+        }
+
         public struct NativeObject
         {
-            private struct VirtualFunctionTable
+
+            public struct VirtualFunctionTable
             {
+                // The order of functions here should match NativeObjectInterface.VirtualFunctionTable's members.
                 public delegate* unmanaged<NativeObject*, int> getData;
                 public delegate* unmanaged<NativeObject*, int, void> setData;
             }
-
             static NativeObject()
             {
                 VTablePointer = (VirtualFunctionTable*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NativeObject), sizeof(VirtualFunctionTable));
@@ -94,6 +112,20 @@ namespace NativeExports
         public static void DeleteNativeObject([DNNE.C99Type("struct NativeObject*")] NativeObject* obj)
         {
             NativeMemory.Free(obj);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "set_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void SetNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int x)
+        {
+            obj->VTable->setData(obj, x);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "get_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static int GetNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj)
+        {
+            return obj->VTable->getData(obj);
         }
     }
 }
