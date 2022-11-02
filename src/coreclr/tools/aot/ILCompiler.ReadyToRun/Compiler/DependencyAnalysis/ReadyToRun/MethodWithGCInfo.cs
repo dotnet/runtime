@@ -277,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (SynthesizedPgoDataDependencies != null)
             {
-                // We should not add anything to this list unless we are embedding synthesized PGO data.
+                // This should only be non-null when we are actually embedding things physically, otherwise computing the dependencies is a waste of cycles.
                 Debug.Assert(factory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to exist with synthesized PGO data dependency");
 
                 foreach (ISymbolNode node in SynthesizedPgoDataDependencies)
