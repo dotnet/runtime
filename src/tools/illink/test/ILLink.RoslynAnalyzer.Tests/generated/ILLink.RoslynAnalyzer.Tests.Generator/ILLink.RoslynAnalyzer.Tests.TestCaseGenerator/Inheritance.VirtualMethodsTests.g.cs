@@ -28,6 +28,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 		}
 
 		[Fact]
+		public Task OverrideInUnmarkedClassIsRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UnusedTypeWithOverrideOfVirtualMethodIsRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);

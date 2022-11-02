@@ -715,6 +715,8 @@ namespace Mono.Linker.Steps
 		// TODO: Move interface method marking logic here https://github.com/dotnet/linker/issues/3090
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
+			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
+				return false;
 			if (overrideInformation.IsOverrideOfInterfaceMember) {
 				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
 				return false;
