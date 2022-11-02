@@ -331,7 +331,7 @@ namespace ILCompiler.ObjectWriter
 
                 // Write the data. Note that this has to be done last as not to advance
                 // the section writer position.
-                sectionWriter.Stream.Write(nodeContents.Data);
+                sectionWriter.EmitData(nodeContents.Data);
             }
 
             EmitSectionsAndLayout();
