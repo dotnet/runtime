@@ -9912,6 +9912,23 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             if (!optValnumCSE_phase)
             {
+                if (tree->OperIs(GT_MOD, GT_UMOD) && op2->IsIntegralConst(1))
+                {
+                    // Transformation: a % 1 = 0
+                    tree = fgMorphModToZero(tree->AsOp());
+                    if (tree->OperIsBinary())
+                    {
+                        op1 = tree->gtGetOp1();
+                        op2 = tree->gtGetOp2();
+                    }
+                    else
+                    {
+                        assert(tree->IsIntegralConst(0));
+                        op1 = nullptr;
+                        op2 = nullptr;
+                    }
+                }
+
                 if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
@@ -13159,6 +13176,50 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     return multiOp;
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+//------------------------------------------------------------------------
+// fgMorphModToZero: Transform a % 1 into the equivalent 0.
+//
+// Arguments:
+//    tree - The GT_MOD/GT_UMOD tree to morph
+//
+// Returns:
+//    The morphed tree, will be a GT_COMMA or a zero constant node.
+//
+GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
+{
+    JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
+
+    assert(tree->OperIs(GT_MOD, GT_UMOD));
+    assert(tree->gtOp2->IsIntegralConst(1));
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    const var_types type = tree->TypeGet();
+
+    GenTree* zero = gtNewZeroConNode(type);
+
+    if (op1->IsInvariant() || op1->IsLocal())
+    {
+        INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree->gtOp2);
+        DEBUG_DESTROY_NODE(tree->gtOp1);
+        DEBUG_DESTROY_NODE(tree);
+
+        return zero;
+    }
+
+    GenTree* comma = gtNewOperNode(GT_COMMA, tree->gtType, op1, zero);
+
+    INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+    DEBUG_DESTROY_NODE(tree->gtOp2);
+    DEBUG_DESTROY_NODE(tree);
+
+    return comma;
+}
 
 //------------------------------------------------------------------------
 // fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
