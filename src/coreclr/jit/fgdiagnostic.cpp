@@ -3607,6 +3607,11 @@ void Compiler::fgDebugCheckNodesUniqueness()
 // LclSsaVarDsc may show more uses and more different kinds of uses then actually
 // remain in the IR.
 //
+// One important caveat is that for promoted locals there may be implicit uses
+// (via the parent var) that do not get numbered by SSA. Neither the LclSsaVarDsc
+// nor the IR will track these implicit uses. So the checking done below will
+// only catch anomalies in the defs or in the explicit uses.
+//
 class SsaCheckVisitor : public GenTreeVisitor<SsaCheckVisitor>
 {
 private:
