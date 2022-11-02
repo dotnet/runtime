@@ -4628,7 +4628,6 @@ private:
     BasicBlock* IfConvertCheckInnerBlockFlow(BasicBlock* block);
     bool IfConvertFindFlow();
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertAssignment* foundAssignment);
-    void IfConvertMoveSSA(BasicBlock* fromBlock);
     void IfConvertMergeBlocks(BasicBlock* fromBlock);
     void IfConvertDump();
 
@@ -4823,42 +4822,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertAss
 }
 
 //-----------------------------------------------------------------------------
-// IfConvertMoveSSA
-//
-// Move all SSA statements from a block to the start block.
-//
-// Arguments:
-//   fromBlock  -- Source block
-//
-void OptIfConversionDsc::IfConvertMoveSSA(BasicBlock* fromBlock)
-{
-    // Before moving anything, fix up any SSAs in the then block
-    for (Statement* const stmt : fromBlock->Statements())
-    {
-        for (GenTree* const node : stmt->TreeList())
-        {
-            if (node->IsLocal())
-            {
-                GenTreeLclVarCommon* lclVar = node->AsLclVarCommon();
-                unsigned             lclNum = lclVar->GetLclNum();
-                unsigned             ssaNum = lclVar->GetSsaNum();
-
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    LclSsaVarDsc* ssaDef = m_comp->lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-                    if (ssaDef->GetBlock() == fromBlock)
-                    {
-                        JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum,
-                                ssaDef->GetBlock()->bbNum, m_startBlock->bbNum);
-                        ssaDef->SetBlock(m_startBlock);
-                    }
-                }
-            }
-        }
-    }
-}
-
-//-----------------------------------------------------------------------------
 // IfConvertMergeBlocks
 //
 // Merge a block into the start block.
@@ -4993,8 +4956,7 @@ void OptIfConversionDsc::IfConvertDump()
 // +--*  LCL_VAR   int    V00 arg0
 // \--*  CNS_INT   int    9 $47
 //
-// Again this is squashed into a single block, with the SELECT node handling
-// both cases. The extra statement at the end ensures SSA defs stay valid.
+// Again this is squashed into a single block, with the SELECT node handling both cases.
 //
 // ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
 // STMT00004
@@ -5011,9 +4973,7 @@ void OptIfConversionDsc::IfConvertDump()
 //      +--*  CNS_INT   int    9 $47
 //
 // STMT00006
-//   *  ASG       int    $VN.Void
-// +--*  LCL_VAR   int    V00 arg0
-// +--*  LCL_VAR   int    V00 arg0
+//   *  NOP       void
 //
 // ------------ BB04 [00D..010), preds={} succs={BB06}
 // ------------ BB05 [00D..010), preds={} succs={BB06}
@@ -5022,7 +4982,7 @@ bool OptIfConversionDsc::optIfConvert()
 {
 #ifndef TARGET_ARM64
     return false;
-#else
+#endif
 
     // Don't optimise the block if it is inside a loop
     // When inside a loop, branches are quicker than selects.
@@ -5110,42 +5070,11 @@ bool OptIfConversionDsc::optIfConvert()
         }
     }
 
-    // Before rewriting the nodes, move all SSAs.
-    IfConvertMoveSSA(m_thenAssignment.block);
-    if (m_doElseConversion)
-    {
-        IfConvertMoveSSA(m_elseAssignment.block);
-    }
-
     // Duplicate the destination of the Then assignment.
     assert(m_thenAssignment.node->AsOp()->gtOp1->IsLocal());
     GenTreeLclVarCommon* destination       = m_thenAssignment.node->AsOp()->gtOp1->AsLclVarCommon();
     GenTree*             clonedDestination = m_comp->gtCloneExpr(destination);
     clonedDestination->gtFlags &= GTF_EMPTY;
-
-    // Set the SSA entry for the cloned destination.
-    if (!m_doElseConversion && destination->HasSsaName())
-    {
-        unsigned      lclNum            = destination->GetLclNum();
-        unsigned      destinationSsaNum = destination->GetSsaNum();
-        LclSsaVarDsc* destinationSsaDef = m_comp->lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
-
-        // Create a new SSA num.
-        unsigned newSsaNum = m_comp->lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA));
-        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
-        LclSsaVarDsc* newSsaDef = m_comp->lvaGetDesc(lclNum)->GetPerSsaData(newSsaNum);
-
-        // Copy across the SSA data.
-        newSsaDef->SetBlock(m_startBlock);
-        newSsaDef->SetAssignment(destinationSsaDef->GetAssignment());
-        newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
-        clonedDestination->AsLclVarCommon()->SetSsaNum(newSsaNum);
-
-        if (newSsaDef->m_vnPair.BothDefined())
-        {
-            m_comp->fgValueNumberSsaVarDef(clonedDestination->AsLclVarCommon());
-        }
-    }
 
     // Get the false input of the Select Node.
     GenTree* falseInput = (m_doElseConversion) ? m_elseAssignment.node->gtGetOp2() : clonedDestination;
@@ -5163,24 +5092,22 @@ bool OptIfConversionDsc::optIfConvert()
     m_comp->gtSetEvalOrder(m_thenAssignment.node);
     m_comp->fgSetStmtSeq(m_thenAssignment.stmt);
 
-    // Remove the JTRUE statement.
+    // Remove statements.
     last->ReplaceWith(m_comp->gtNewNothingNode(), m_comp);
     m_comp->gtSetEvalOrder(last);
     m_comp->fgSetStmtSeq(m_startBlock->lastStmt());
+    if (m_doElseConversion)
+    {
+        m_elseAssignment.node->ReplaceWith(m_comp->gtNewNothingNode(), m_comp);
+        m_comp->gtSetEvalOrder(m_elseAssignment.node);
+        m_comp->fgSetStmtSeq(m_elseAssignment.stmt);
+    }
 
-    // Move the Then assignment to the end of the original block
+    // Merge all the blocks.
     IfConvertMergeBlocks(m_thenAssignment.block);
-
-    // The Else assignment is no longer required, but removing it would create
-    // an orphaned SSA definition. Instead, Move the Else assignment to the end
-    // of the start block, and turn it into an assignment to self.
     if (m_doElseConversion)
     {
         IfConvertMergeBlocks(m_elseAssignment.block);
-        m_elseAssignment.node->AsOp()->gtOp2 = clonedDestination;
-        clonedDestination->AsLclVarCommon()->SetSsaNum(destination->GetSsaNum());
-        m_comp->gtSetEvalOrder(m_elseAssignment.node);
-        m_comp->fgSetStmtSeq(m_elseAssignment.stmt);
     }
 
     // Update the flow from the original block.
@@ -5196,7 +5123,6 @@ bool OptIfConversionDsc::optIfConvert()
 #endif
 
     return true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
