@@ -868,7 +868,7 @@ def run_tests(args,
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=true")
-        os.environ["RunCrossGen2"] = "true"
+        os.environ["RunCrossGen2"] = "1"
 
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
