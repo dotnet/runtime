@@ -302,33 +302,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private static ReadyToRunHelperId getRunHelperIdFromHelperFunc(CorInfoHelpFunc helper)
-        {
-            ReadyToRunHelperId res;
-            switch (helper)
-            {
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE: // there is actually no ID to this because is the generic entry
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
-                    res = ReadyToRunHelperId.CctorTrigger;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
-                    res = ReadyToRunHelperId.GetGCStaticBase;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
-                    res = ReadyToRunHelperId.GetNonGCStaticBase;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
-                    res = ReadyToRunHelperId.GetThreadStaticBase;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
-                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
-                    break;
-                default:
-                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
-            }
-            return res;
-        }
-
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
@@ -348,7 +321,7 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
-                        var helperId = getRunHelperIdFromHelperFunc(id);
+                        var helperId = Compilation.getRunHelperIdFromHelperFunc(id);
                         pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, type));
                     }
                     break;

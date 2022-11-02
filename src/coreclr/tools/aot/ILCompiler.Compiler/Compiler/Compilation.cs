@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -328,6 +329,33 @@ namespace ILCompiler
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        public static ReadyToRunHelperId getRunHelperIdFromHelperFunc(CorInfoHelpFunc helper)
+        {
+            ReadyToRunHelperId res;
+            switch (helper)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE: // there is actually no ID to this because is the generic entry
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
+                    res = ReadyToRunHelperId.CctorTrigger;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetNonGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                    break;
+                default:
+                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
+            }
+            return res;
         }
 
         public GenericDictionaryLookup ComputeGenericLookup(MethodDesc contextMethod, ReadyToRunHelperId lookupKind, object targetOfLookup)
