@@ -3499,9 +3499,8 @@ void MethodTable::AllocateRegularStaticBoxes()
                 TypeHandle  th = pField->GetFieldTypeHandleThrowing();
                 MethodTable* pFieldMT = th.GetMethodTable();
 
-                bool neverCollected = !pFieldMT->ContainsPointersOrCollectible() &&
-                    !pField->GetApproxEnclosingMethodTable()->Collectible();
-
+                bool neverCollected = !pFieldMT->ContainsPointers() &&
+                    !Collectible();
                 LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
                 OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, neverCollected);
 
