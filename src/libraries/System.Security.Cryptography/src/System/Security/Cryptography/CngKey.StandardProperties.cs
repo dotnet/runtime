@@ -192,6 +192,23 @@ namespace System.Security.Cryptography
                     throw errorCode.ToCryptographicException();
                 }
 
+                // The platform crypto provider always returns "0" for EC keys as of Windows 11 22H2.
+                // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
+                // What does work is the ECCCurveName.
+                if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
+                    (AlgorithmGroup == CngAlgorithmGroup.ECDiffieHellman || AlgorithmGroup == CngAlgorithmGroup.ECDsa))
+                {
+
+                    string? curve = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+
+                    switch (curve)
+                    {
+                        case nameof(ECCurve.NamedCurves.nistP256): return 256;
+                        case nameof(ECCurve.NamedCurves.nistP384): return 384;
+                        case nameof(ECCurve.NamedCurves.nistP521): return 521;
+                    }
+                }
+
                 return keySize;
             }
         }
