@@ -16,7 +16,7 @@
       export DOTNET_TieredCompilation=0
       export DOTNET_GCStress=0x3
       export DOTNET_GCSegmentSize=8000
-      ]]></CLRTestBashPreCommands>>
+      ]]></CLRTestBashPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
