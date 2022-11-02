@@ -258,9 +258,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>33cb335386d39da8e4e89e75449628be7e3b375a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22525.3">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22551.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>4db6ac94ffa8bf6dae8ad9c5c68f94b58de917fd</Sha>
+      <Sha>e502e7255030dde029e984e397924338485d1079</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22524.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
