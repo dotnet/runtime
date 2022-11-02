@@ -232,6 +232,9 @@ namespace ILCompiler
                         kind = PgoInstrumentationKind.HandleHistogramTypes;
                     }
 
+                    if (entities.Count <= 0)
+                        continue;
+
                     elems.Add(
                         new PgoSchemaElem
                         {
