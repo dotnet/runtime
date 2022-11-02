@@ -28,6 +28,7 @@ namespace System.Runtime.Intrinsics
     // value instead, thus reducing the number of locals and helping prevent us from hitting
     // the internal inlining limits of the JIT.
 
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 128-bit vectors.</summary>
     public static class Vector128
     {
         internal const int Size = 16;
@@ -1040,7 +1041,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{T}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="lower" /> and <paramref name="upper" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<T> Create<T>(Vector64<T> lower, Vector64<T> upper)
+        public static Vector128<T> Create<T>(Vector64<T> lower, Vector64<T> upper)
             where T : struct
         {
             if (AdvSimd.IsSupported)
@@ -1100,14 +1101,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{IntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<nint> Create(Vector64<nint> lower, Vector64<nint> upper) => Create<nint>(lower, upper);
+        public static unsafe Vector128<nint> Create(Vector64<nint> lower, Vector64<nint> upper) => Create<nint>(lower, upper);
 
         /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance from two <see cref="Vector64{UIntPtr}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UIntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<nuint> Create(Vector64<nuint> lower, Vector64<nuint> upper) => Create<nuint>(lower, upper);
+        public static unsafe Vector128<nuint> Create(Vector64<nuint> lower, Vector64<nuint> upper) => Create<nuint>(lower, upper);
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance from two <see cref="Vector64{SByte}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
@@ -1155,7 +1157,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<T> CreateScalar<T>(T value)
+        public static unsafe Vector128<T> CreateScalar<T>(T value)
             where T : struct => Vector64.CreateScalar(value).ToVector128();
 
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1404,7 +1406,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<T> CreateScalarUnsafe<T>(T value)
+        public static Vector128<T> CreateScalarUnsafe<T>(T value)
             where T : struct
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -1515,6 +1517,16 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Divide<T>(Vector128<T> left, Vector128<T> right)
+            where T : struct => left / right;
+
+        /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
+        /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
+        /// <param name="right">The scalar that will divide <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> Divide<T>(Vector128<T> left, T right)
             where T : struct => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
@@ -2970,6 +2982,224 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (Vector128<ulong> Lower, Vector128<ulong> Upper) Widen(Vector128<uint> source) => (WidenLower(source), WidenUpper(source));
 
+        /// <summary>Widens the lower half of a <see cref="Vector128{Byte}" /> into a <see cref="Vector128{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<ushort> WidenLower(Vector128<byte> source)
+        {
+            Vector64<byte> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{Int16}" /> into a <see cref="Vector128{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<int> WidenLower(Vector128<short> source)
+        {
+            Vector64<short> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{Int32}" /> into a <see cref="Vector128{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<long> WidenLower(Vector128<int> source)
+        {
+            Vector64<int> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{SByte}" /> into a <see cref="Vector128{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<short> WidenLower(Vector128<sbyte> source)
+        {
+            Vector64<sbyte> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{Single}" /> into a <see cref="Vector128{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<double> WidenLower(Vector128<float> source)
+        {
+            Vector64<float> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{UInt16}" /> into a <see cref="Vector128{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<uint> WidenLower(Vector128<ushort> source)
+        {
+            Vector64<ushort> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector128{UInt32}" /> into a <see cref="Vector128{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<ulong> WidenLower(Vector128<uint> source)
+        {
+            Vector64<uint> lower = source._lower;
+
+            return Create(
+                Vector64.WidenLower(lower),
+                Vector64.WidenUpper(lower)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{Byte}" /> into a <see cref="Vector128{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<ushort> WidenUpper(Vector128<byte> source)
+        {
+            Vector64<byte> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{Int16}" /> into a <see cref="Vector128{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<int> WidenUpper(Vector128<short> source)
+        {
+            Vector64<short> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{Int32}" /> into a <see cref="Vector128{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<long> WidenUpper(Vector128<int> source)
+        {
+            Vector64<int> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{SByte}" /> into a <see cref="Vector128{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<short> WidenUpper(Vector128<sbyte> source)
+        {
+            Vector64<sbyte> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{Single}" /> into a <see cref="Vector128{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<double> WidenUpper(Vector128<float> source)
+        {
+            Vector64<float> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{UInt16}" /> into a <see cref="Vector128{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<uint> WidenUpper(Vector128<ushort> source)
+        {
+            Vector64<ushort> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector128{UInt32}" /> into a <see cref="Vector128{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<ulong> WidenUpper(Vector128<uint> source)
+        {
+            Vector64<uint> upper = source._upper;
+
+            return Create(
+                Vector64.WidenLower(upper),
+                Vector64.WidenUpper(upper)
+            );
+        }
+
         /// <summary>Creates a new <see cref="Vector128{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the remaining elements from.</param>
@@ -3082,174 +3312,6 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Unsafe.AsRef(in vector._upper) = value;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<ushort> WidenLower(Vector128<byte> source)
-        {
-            Vector64<byte> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<int> WidenLower(Vector128<short> source)
-        {
-            Vector64<short> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<long> WidenLower(Vector128<int> source)
-        {
-            Vector64<int> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<short> WidenLower(Vector128<sbyte> source)
-        {
-            Vector64<sbyte> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<double> WidenLower(Vector128<float> source)
-        {
-            Vector64<float> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<uint> WidenLower(Vector128<ushort> source)
-        {
-            Vector64<ushort> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<ulong> WidenLower(Vector128<uint> source)
-        {
-            Vector64<uint> lower = source._lower;
-
-            return Create(
-                Vector64.WidenLower(lower),
-                Vector64.WidenUpper(lower)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<ushort> WidenUpper(Vector128<byte> source)
-        {
-            Vector64<byte> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<int> WidenUpper(Vector128<short> source)
-        {
-            Vector64<short> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<long> WidenUpper(Vector128<int> source)
-        {
-            Vector64<int> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<short> WidenUpper(Vector128<sbyte> source)
-        {
-            Vector64<sbyte> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<double> WidenUpper(Vector128<float> source)
-        {
-            Vector64<float> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<uint> WidenUpper(Vector128<ushort> source)
-        {
-            Vector64<ushort> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector128<ulong> WidenUpper(Vector128<uint> source)
-        {
-            Vector64<uint> upper = source._upper;
-
-            return Create(
-                Vector64.WidenLower(upper),
-                Vector64.WidenUpper(upper)
-            );
         }
     }
 }

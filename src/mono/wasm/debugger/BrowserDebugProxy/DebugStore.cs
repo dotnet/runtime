@@ -1218,7 +1218,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         builder.Append(c);
                         break;
                     default:
-                        builder.Append(string.Format($"%{((int)c):X2}"));
+                        builder.AppendFormat("%{0:X2}", (int)c);
                         break;
                 }
             }
