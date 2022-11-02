@@ -30,7 +30,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
-        private List<PgoSchemaElem[]> _synthesizedPgoDataDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -89,14 +88,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodCode = data;
         }
 
-        public void AddSynthesizedPgoDataDependency(PgoSchemaElem[] schema)
-        {
-            if (_synthesizedPgoDataDependencies == null)
-                _synthesizedPgoDataDependencies = new List<PgoSchemaElem[]>();
-
-            _synthesizedPgoDataDependencies.Add(schema);
-        }
-
         public MethodDesc Method => _method;
 
         public List<ISymbolNode> Fixups => _fixups;
@@ -104,6 +95,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
+
+        public IEnumerable<ISymbolNode> SynthesizedPgoDataDependencies { get; set; }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
@@ -282,14 +275,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
-            if (_synthesizedPgoDataDependencies != null)
+            if (SynthesizedPgoDataDependencies != null)
             {
                 // We should not add anything to this list unless we are embedding synthesized PGO data.
                 Debug.Assert(factory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to exist with synthesized PGO data dependency");
 
-                foreach (ISymbolNode node in factory.InstrumentationDataTable.ComputeSchemaDependencies(_synthesizedPgoDataDependencies))
+                foreach (ISymbolNode node in SynthesizedPgoDataDependencies)
                 {
-                    dependencyList.Add(node, "Part of synthesized PGO data");
+                    dependencyList.Add(node, "Dependency of synthesized PGO data");
                 }
             }
 

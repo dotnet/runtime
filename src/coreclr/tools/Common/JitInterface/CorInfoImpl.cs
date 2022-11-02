@@ -76,6 +76,7 @@ namespace Internal.JitInterface
         }
 
         private Dictionary<MethodDesc, PgoInstrumentationResults> _pgoResults = new Dictionary<MethodDesc, PgoInstrumentationResults>();
+        private HashSet<MethodDesc> _synthesizedPgoDependencies;
 
         [DllImport(JitLibrary)]
         private static extern IntPtr jitStartup(IntPtr host);
@@ -567,6 +568,12 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
+
+            if (_synthesizedPgoDependencies != null)
+            {
+                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
+                _methodCodeNode.SynthesizedPgoDataDependencies = _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_synthesizedPgoDependencies);
+            }
         }
 
         private void PublishROData()
@@ -680,6 +687,7 @@ namespace Internal.JitInterface
             _instantiationToJitVisibleInstantiation = null;
 
             _pgoResults.Clear();
+            _synthesizedPgoDependencies = null;
         }
 
         private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
@@ -4001,7 +4009,10 @@ namespace Internal.JitInterface
 
                 if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
                 {
-                    _methodCodeNode.AddSynthesizedPgoDataDependency(pgoResultsSchemas);
+                    if (_synthesizedPgoDependencies == null)
+                        _synthesizedPgoDependencies = new HashSet<MethodDesc>();
+
+                    _synthesizedPgoDependencies.Add(methodDesc);
                 }
 #else
                 PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;

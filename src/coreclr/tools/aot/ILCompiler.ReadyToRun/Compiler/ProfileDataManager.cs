@@ -99,17 +99,6 @@ namespace ILCompiler
             return _inputProfileData.GetPlacedMethodsForModuleDesc(moduleDesc);
         }
 
-        public IEnumerable<MethodDesc> GetSynthesizedProfileDataMethodsForModule(ModuleDesc moduleDesc)
-        {
-            if (_synthesizedProfileData == null)
-                return Array.Empty<MethodDesc>();
-
-            lock (_synthesizedProfileData)
-            {
-                return _synthesizedProfileData.GetPlacedMethodsForModuleDesc(moduleDesc).ToArray();
-            }
-        }
-
         public bool IsMethodInInputProfileData(MethodDesc method)
         {
             return _inputProfileData.Contains(method);

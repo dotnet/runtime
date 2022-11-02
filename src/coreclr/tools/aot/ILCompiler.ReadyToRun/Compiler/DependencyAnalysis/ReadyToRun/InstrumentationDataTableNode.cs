@@ -23,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly NodeFactory _factory;
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
         private readonly ProfileDataManager _profileDataManager;
+        private readonly HashSet<MethodDesc> _methodsWithSynthesizedPgoData = new HashSet<MethodDesc>();
 
         public InstrumentationDataTableNode(NodeFactory factory, ProfileDataManager profileDataManager)
             : base(factory.Target)
@@ -193,6 +194,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return pgoEmitter.ReferencedImports;
         }
 
+        // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and return
+        // the appropriate dependencies of the embedding.
+        public IEnumerable<ISymbolNode> EmbedSynthesizedPgoDataForMethods(IEnumerable<MethodDesc> mds)
+        {
+            PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
+            foreach (MethodDesc md in mds)
+            {
+                PgoSchemaElem[] schema = _profileDataManager[md].SchemaData;
+                Debug.Assert(schema != null);
+
+                _methodsWithSynthesizedPgoData.Add(md);
+                PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
+            }
+
+            return pgoEmitter.ReferencedImports;
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
@@ -243,17 +261,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         methodsToInsert.Add(method);
                     }
                 }
-
-                foreach (MethodDesc method in _profileDataManager.GetSynthesizedProfileDataMethodsForModule(inputModule))
-                {
-                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
-                    if (schema != null)
-                    {
-                        bool added = methodsToInsert.Add(method);
-                        Debug.Assert(added, "Only expected to see synthesized profile data for methods without input profile data");
-                    }
-                }
             }
+
+            methodsToInsert.UnionWith(_methodsWithSynthesizedPgoData);
 
             MethodDesc[] methods = methodsToInsert.ToArray();
             methods.MergeSort(TypeSystemComparer.Instance.Compare);
