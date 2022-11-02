@@ -13,14 +13,14 @@ namespace System.IO.Hashing
 {
     public sealed partial class XxHash32
     {
+        internal const uint Prime32_1 = 0x9E3779B1;
+        internal const uint Prime32_2 = 0x85EBCA77;
+        internal const uint Prime32_3 = 0xC2B2AE3D;
+        internal const uint Prime32_4 = 0x27D4EB2F;
+        internal const uint Prime32_5 = 0x165667B1;
+
         private struct State
         {
-            private const uint Prime32_1 = 0x9E3779B1;
-            private const uint Prime32_2 = 0x85EBCA77;
-            private const uint Prime32_3 = 0xC2B2AE3D;
-            private const uint Prime32_4 = 0x27D4EB2F;
-            private const uint Prime32_5 = 0x165667B1;
-
             private uint _acc1;
             private uint _acc2;
             private uint _acc3;

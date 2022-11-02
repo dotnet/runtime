@@ -23,6 +23,7 @@ namespace System.Globalization
         private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
         private const uint CAL_SERASTRING = 0x00000004;
         private const uint CAL_SABBREVERASTRING = 0x00000039;
+        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private const uint ENUM_ALL_CALENDARS = 0xffffffff;
 
@@ -425,6 +426,15 @@ namespace System.Globalization
 
             // Now we have a list of data, return the count
             return data.calendars.Count;
+        }
+
+        // Get native two digit year max
+        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        {
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
         }
     }
 }

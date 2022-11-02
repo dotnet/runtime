@@ -5,75 +5,75 @@ parameters:
 resources:
   containers:
     - container: Linux_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-20220907130538-70ed2e8
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
     - container: Linux_armv6
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10
       env:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: Linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220907130538-70ed2e8
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64
       env:
         ROOTFS_DIR: /crossrootfs/arm64
 
     - container: Linux_musl_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode-20210910135845-c401c85
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode
 
     - container: Linux_musl_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-alpine-20220915134743-78f7860
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
     - container: Linux_musl_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm64-alpine-20220915142421-44c622d
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm64-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm64
     # This container contains all required toolsets to build for Android and for Linux with bionic libc.
 
     - container: Linux_bionic
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android-20220808192756-8fcaabc
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android
 
     - container: Linux_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7
 
     - container: Linux_x86
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-x86-linux-20211022152824-f853169
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-x86-linux
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
     - container: SourceBuild_Linux_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-source-build-20210714125450-5d87b80
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-source-build
 
     - container: Linux_s390x
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x-20201102145728-d6e0352
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x
       env:
         ROOTFS_DIR: /crossrootfs/s390x
 
     - container: Linux_ppc64le
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-ppc64le-20220531132048-b9de666
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-ppc64le
       env:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
     - container: Browser_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-20220531132048-00a561c
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly
 
     - container: FreeBSD_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
       env:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: Tizen_armel
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-armel-tizen-20210719212651-8b02f56
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-armel-tizen
       env:
         ROOTFS_DIR: /crossrootfs/armel
 
     - container: debpkg
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
 
     - container: rpmpkg
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg
 
 stages: ${{ parameters.stages }}

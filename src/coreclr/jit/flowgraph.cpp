@@ -3514,6 +3514,8 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
     else
     {
+        bool inFuncletSection = false;
+
         for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
         {
             bool blockMustBeInHotSection = false;
@@ -3524,6 +3526,15 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 blockMustBeInHotSection = true;
             }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+
+#ifdef FEATURE_EH_FUNCLETS
+            // Make note of if we're in the funclet section,
+            // so we can stop the search early.
+            if (block == fgFirstFuncletBB)
+            {
+                inFuncletSection = true;
+            }
+#endif // FEATURE_EH_FUNCLETS
 
             // Do we have a candidate for the first cold block?
             if (firstColdBlock != nullptr)
@@ -3536,6 +3547,21 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
                     prevToFirstColdBlock = nullptr;
+
+#ifdef FEATURE_EH_FUNCLETS
+                    // If we're already in the funclet section, try to split
+                    // at fgFirstFuncletBB, and stop the search.
+                    if (inFuncletSection)
+                    {
+                        if (fgFuncletsAreCold())
+                        {
+                            firstColdBlock       = fgFirstFuncletBB;
+                            prevToFirstColdBlock = fgFirstFuncletBB->bbPrev;
+                        }
+
+                        break;
+                    }
+#endif // FEATURE_EH_FUNCLETS
                 }
             }
             else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
@@ -3547,7 +3573,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // consider splitting at the first funclet; do not consider splitting between funclets,
                 // as this may break unwind info.
                 //
-                if (block == fgFirstFuncletBB)
+                if (inFuncletSection)
                 {
                     if (fgFuncletsAreCold())
                     {

@@ -272,13 +272,14 @@ int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          int startIndex)
 {
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
 }
 
 size_t interceptor_ICJI::printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize)
@@ -478,20 +479,20 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(
     return original_ICorJitInfo->getUnBoxHelper(cls);
 }
 
-void* interceptor_ICJI::getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE interceptor_ICJI::getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->getRuntimeTypePointer(cls);
 }
 
 bool interceptor_ICJI::isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     return original_ICorJitInfo->isObjectImmutable(objPtr);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     return original_ICorJitInfo->getObjectType(objPtr);
 }
@@ -686,6 +687,12 @@ bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
     return original_ICorJitInfo->isFieldStatic(fldHnd);
+}
+
+int interceptor_ICJI::getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd)
+{
+    return original_ICorJitInfo->getArrayOrStringLength(objHnd);
 }
 
 void interceptor_ICJI::getBoundaries(
@@ -1056,9 +1063,10 @@ void* interceptor_ICJI::getFieldAddress(
 bool interceptor_ICJI::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          bool ignoreMovableObjects)
 {
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize);
+    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
