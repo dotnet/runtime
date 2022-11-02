@@ -423,36 +423,48 @@ namespace ILCompiler
                     {
                         foreach (MethodDesc method in type.GetMethods())
                         {
-                            if (method.Signature.IsStatic || method.IsAbstract)
-                                continue;
+                            try
+                            {
+                                if (!method.Signature.IsStatic && !method.IsAbstract)
+                                {
+                                    if (!delegateTargets.TryGetValue(method.Signature, out HashSet<MethodDesc> set))
+                                        delegateTargets.Add(method.Signature, set = new HashSet<MethodDesc>());
 
-                            if (!delegateTargets.TryGetValue(method.Signature, out HashSet<MethodDesc> set))
-                                delegateTargets.Add(method.Signature, set = new HashSet<MethodDesc>());
-
-                            set.Add(method);
+                                    set.Add(method);
+                                }
+                            }
+                            catch (TypeSystemException)
+                            {
+                            }
                         }
 
-                        if (!type.IsAbstract && !type.IsInterface)
+                        try
                         {
-                            void AddImplemented(TypeDesc implemented)
+                            if (!type.IsAbstract && !type.IsInterface)
                             {
-                                if (!implementers.TryGetValue(implemented, out HashSet<TypeDesc> set))
-                                    implementers.Add(implemented, set = new HashSet<TypeDesc>());
+                                void AddImplemented(TypeDesc implemented)
+                                {
+                                    if (!implementers.TryGetValue(implemented, out HashSet<TypeDesc> set))
+                                        implementers.Add(implemented, set = new HashSet<TypeDesc>());
 
-                                set.Add(type);
+                                    set.Add(type);
+                                }
+
+                                TypeDesc implemented = type;
+                                do
+                                {
+                                    AddImplemented(implemented);
+                                    implemented = implemented.BaseType;
+                                } while (implemented != null);
+
+                                foreach (TypeDesc iface in type.RuntimeInterfaces)
+                                {
+                                    AddImplemented(iface);
+                                }
                             }
-
-                            TypeDesc implemented = type;
-                            do
-                            {
-                                AddImplemented(implemented);
-                                implemented = implemented.BaseType;
-                            } while (implemented != null);
-
-                            foreach (TypeDesc iface in type.RuntimeInterfaces)
-                            {
-                                AddImplemented(iface);
-                            }
+                        }
+                        catch (TypeSystemException)
+                        {
                         }
                     }
                 }
