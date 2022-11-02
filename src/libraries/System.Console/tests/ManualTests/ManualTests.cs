@@ -350,14 +350,7 @@ namespace System
                 Assert.Equal(widthBefore / 2, Console.WindowWidth );
                 Assert.Equal(heightBefore / 2, Console.WindowHeight );
 
-                try
-                {
-                    AssertUserExpectedResults("terminal window getting two times smaller?");
-                }
-                finally
-                {
-                    Console.SetWindowSize(widthBefore, heightBefore);
-                }
+                Console.SetWindowSize(widthBefore, heightBefore);
             }
         }
 
