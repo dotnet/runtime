@@ -2312,7 +2312,10 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 				  mono_metadata_type_equal (fsig->params [0], type) &&
 				  mono_metadata_type_equal (fsig->params [1], type));
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
+			case SN_op_Equality:
+				ins = emit_xequal (cfg, klass, args [0], args [1]);
+				ins->inst_c1 = etype->type;
+				return ins;
 			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
