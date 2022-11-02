@@ -1467,13 +1467,6 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
         return NULL;
     }
 
-    PTR_MethodTable fieldOwningMT = field->GetEnclosingMethodTable();
-    if (!fieldOwningMT->IsRestored() || fieldOwningMT->GetModuleForStatics() == NULL ||
-        fieldOwningMT->GetDomainLocalModule() == NULL || !fieldOwningMT->IsClassInited())
-    {
-        return NULL;
-    }
-
     TypeHandle typeHandle = field->GetFieldTypeHandleThrowing();
     MethodTable* pFieldMT = typeHandle.GetMethodTable();
     if (typeHandle.IsCanonicalSubtype() || pFieldMT->IsSharedByGenericInstantiations() || pFieldMT->ContainsPointers())

@@ -3502,6 +3502,15 @@ void MethodTable::AllocateRegularStaticBoxes()
                 LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
 
                 bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+                if (type->RequiresAlign8())
+                {
+                    // 64bit alignment is not yet supported in FOH for 32bit targets
+                    canBeFrozen = false;
+                }
+#endif
+
                 OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
 
                 SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
