@@ -99,7 +99,7 @@ namespace ILCompiler.ObjectWriter
                     SectionCharacteristics.LinkerComdat;
             }
 
-            sectionStream = new MemoryStream();
+            sectionStream = new ObjectWriterStream();
             _sections.Add((sectionHeader, sectionStream, new List<CoffRelocation>(), section.ComdatName));
         }
 

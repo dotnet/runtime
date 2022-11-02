@@ -42,14 +42,33 @@ namespace ILCompiler.ObjectWriter
             Stream = stream;
         }
 
+        public void EmitData(ReadOnlyMemory<byte> data)
+        {
+            if (Stream is ObjectWriterStream objectWriterStream)
+            {
+                objectWriterStream.AppendData(data);
+            }
+            else
+            {
+                Stream.Write(data.Span);
+            }
+        }
+
         public void EmitAlignment(int alignment)
         {
             _objectWriter.UpdateSectionAlignment(SectionIndex, alignment);
 
             int padding = (int)(((Stream.Position + alignment - 1) & ~(alignment - 1)) - Stream.Position);
-            Span<byte> buffer = stackalloc byte[padding];
-            buffer.Fill(_paddingByte);
-            Stream.Write(buffer);
+            if (Stream is ObjectWriterStream objectWriterStream)
+            {
+                objectWriterStream.AppendPadding(padding);
+            }
+            else
+            {
+                Span<byte> buffer = stackalloc byte[padding];
+                buffer.Fill(_paddingByte);
+                Stream.Write(buffer);
+            }
         }
 
         public void EmitRelocation(
