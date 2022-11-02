@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::NormalizePath($(RepositoryRoot), 'eng', 'testing', 'ForXHarness.Directory.Build.targets'))" />
+</Project>

@@ -134,6 +134,7 @@ ICorJitInfo::PgoSource*, ref PgoSource
 CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*
 CORINFO_METHOD_HANDLE,CORINFO_METHOD_STRUCT_*
 CORINFO_FIELD_HANDLE,CORINFO_FIELD_STRUCT_*
+CORINFO_OBJECT_HANDLE,CORINFO_OBJECT_STRUCT_*
 CORINFO_CLASS_HANDLE,CORINFO_CLASS_STRUCT_*
 CORINFO_ASSEMBLY_HANDLE,CORINFO_ASSEMBLY_STRUCT_*
 CORINFO_JUST_MY_CODE_HANDLE,CORINFO_JUST_MY_CODE_HANDLE_*
@@ -192,7 +193,7 @@ FUNCTIONS
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex)
-    size_t printObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+    size_t printObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)
@@ -222,9 +223,9 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
-    void* getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
-    bool isObjectImmutable(void* objPtr)
-    CORINFO_CLASS_HANDLE getObjectType(void* objPtr)
+    CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+    bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
+    CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr)
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
@@ -253,6 +254,7 @@ FUNCTIONS
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field)
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
+    int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)
     void setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap)
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)
@@ -305,7 +307,7 @@ FUNCTIONS
     bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE    cls, void                  **ppIndirection);
     void* getFieldAddress(CORINFO_FIELD_HANDLE    field, VOIDSTARSTAR ppIndirection);
-    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t *buffer, int bufferSize);
+    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t *buffer, int bufferSize, bool ignoreMovableObjects);
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, void                  **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO       *pSig);

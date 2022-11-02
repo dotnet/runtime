@@ -26,7 +26,6 @@
 #include "ex.h"
 #include "assemblyspecbase.h"
 #include "eecontract.h"
-#include "metadatatracker.h"
 #include "stackwalktypes.h"
 #include <specstrings.h>
 #include "slist.h"
@@ -412,7 +411,7 @@ private:
 #else
         // NB: m_pMDImport_UseAccessor appears to be never assigned a value, but its purpose is just
         //     to be a placeholder that has the same type and offset as m_pMDImport.
-        // 
+        //
         //     The field has a different name so it would be an error to use directly.
         //     Only GetMDInternalRWAddress is supposed to use it via (TADDR)m_pMDImport_UseAccessor,
         //     which at that point will match the m_pMDImport on the debuggee side.
