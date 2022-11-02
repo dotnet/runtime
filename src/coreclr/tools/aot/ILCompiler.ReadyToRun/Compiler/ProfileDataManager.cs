@@ -89,7 +89,7 @@ namespace ILCompiler
 
             if (synthesizeRandomPgoData)
             {
-                _gdvEntityFinder = new GdvEntityFinder(versionBubbleModules);
+                _gdvEntityFinder = new GdvEntityFinder(versionBubble);
                 _synthesizedProfileData = new ProfileDataMap(nonLocalGenericsHome, _compilationGroup);
             }
         }
