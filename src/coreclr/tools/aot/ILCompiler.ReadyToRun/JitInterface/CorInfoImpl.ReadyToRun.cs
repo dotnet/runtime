@@ -735,7 +735,7 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
-                        var helperId = Compilation.getRunHelperIdFromHelperFunc(id);
+                        var helperId = CorInfoHelpers.getRunHelperIdFromHelperFunc(id);
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
                     }
                     break;
