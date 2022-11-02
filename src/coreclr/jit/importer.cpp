@@ -4421,7 +4421,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             switch (pFieldInfo->helper)
             {
                 case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-                    type = TYP_I_IMPL; // brian: see if I have to consider the same
+                    type = TYP_I_IMPL;
                     break;
                 case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
                 case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
