@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -629,5 +630,87 @@ namespace System.Reflection.Metadata
                 System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass.ExistingMethod ();
             });
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewMethod()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+                var assm = ty.Assembly;
+
+		var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+                var allMethods = ty.GetMethods(bindingFlags);
+
+                int objectMethods = typeof(object).GetMethods(bindingFlags).Length;
+                Assert.Equal (objectMethods + 1, allMethods.Length);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+
+                allMethods = ty.GetMethods(bindingFlags);
+                Assert.Equal (objectMethods + 2, allMethods.Length);
+
+                var mi = ty.GetMethod ("AddedNewMethod");
+
+                Assert.NotNull (mi);
+
+                var retParm = mi.ReturnParameter;
+                Assert.NotNull (retParm);
+                Assert.NotNull (retParm.ParameterType);
+                Assert.Equal (-1, retParm.Position);
+
+                var retCas = retParm.GetCustomAttributes(false);
+                Assert.NotNull(retCas);
+                Assert.Equal(0, retCas.Length);
+
+                var parms = mi.GetParameters();
+                Assert.Equal (5, parms.Length);
+
+                int parmPos = 0;
+                foreach (var parm in parms)
+                {
+                    Assert.NotNull(parm);
+                    Assert.NotNull(parm.ParameterType);
+                    Assert.Equal(parmPos, parm.Position);
+                    Assert.NotNull(parm.Name);
+                    
+                    var cas = parm.GetCustomAttributes(false);
+                    foreach (var ca in cas) {
+                        Assert.NotNull (ca);
+                    }
+
+                    parmPos++;
+                }
+
+		var parmAttrs = parms[4].GetCustomAttributes(false);
+                Assert.Equal (2, parmAttrs.Length);
+		bool foundCallerMemberName = false;
+		bool foundOptional = false;
+		foreach (var pa in parmAttrs) {
+		    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
+		    {
+			foundCallerMemberName = true;
+		    }
+		    if (typeof (OptionalAttribute).Equals(pa.GetType()))
+		    {
+			foundOptional = true;
+		    }
+		}
+		Assert.True(foundCallerMemberName);
+		Assert.True(foundOptional);
+
+		// n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
+		Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
+
+                Assert.True(parms[3].HasDefaultValue);
+		Assert.True(parms[4].HasDefaultValue);
+
+		Assert.Null(parms[3].DefaultValue);
+		Assert.Equal(string.Empty, parms[4].DefaultValue);
+            });
+	} 
     }
 }
