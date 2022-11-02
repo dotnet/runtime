@@ -6566,7 +6566,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 return ExceptionSetFlags::NullReferenceException;
             }
 
-            return ExceptionSetFlags::None;
+            return ExceptionSetFlags::IndexOutOfRangeException;
 
         case GT_FIELD:
         {
