@@ -1848,8 +1848,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 node->SetSimdSize(16);
                 LowerNode(node);
 
-                tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node, NI_Vector128_ToVector256Unsafe,
-                                                      simdBaseJitType, 16);
+                tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
+                                                      16);
                 BlockRange().InsertAfter(node, tmp2);
 
                 LIR::Use use;
@@ -7111,7 +7111,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             break;
                         }
-
 
                         case NI_SSE41_Insert:
                         {

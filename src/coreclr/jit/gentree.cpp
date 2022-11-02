@@ -17315,10 +17315,10 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //     true if node represents a constant; otherwise, false
 bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val)
 {
-    NamedIntrinsic intrinsic = node->GetHWIntrinsicId();
-    var_types simdType       = node->TypeGet();
-    var_types simdBaseType   = node->GetSimdBaseType();
-    unsigned  simdSize       = node->GetSimdSize();
+    NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
+    var_types      simdType     = node->TypeGet();
+    var_types      simdBaseType = node->GetSimdBaseType();
+    unsigned       simdSize     = node->GetSimdSize();
 
     size_t argCnt    = node->GetOperandCount();
     size_t cnsArgCnt = 0;
@@ -17344,7 +17344,7 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
             // These intrinsics are meant to set the same value to every element.
             if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
             {
-                // CreateScalar leaves the upper bits as zero
+// CreateScalar leaves the upper bits as zero
 
 #if defined(TARGET_XARCH)
                 if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar))
