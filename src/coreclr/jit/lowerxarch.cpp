@@ -1850,10 +1850,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                 tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
                                                       16);
-                BlockRange().InsertAfter(node, tmp2);
 
                 LIR::Use use;
-                if (BlockRange().TryGetUse(node, &use))
+                bool foundUse = BlockRange().TryGetUse(node, &use);
+                BlockRange().InsertAfter(node, tmp2);
+                
+                if (foundUse)
                 {
                     use.ReplaceWith(tmp2);
                 }
