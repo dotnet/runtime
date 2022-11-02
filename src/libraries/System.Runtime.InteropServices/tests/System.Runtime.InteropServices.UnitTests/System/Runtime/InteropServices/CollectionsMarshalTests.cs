@@ -505,5 +505,23 @@ namespace System.Runtime.InteropServices.Tests
             public int Value;
             public int Property { get; set; }
         }
+
+        [Fact]
+        public void ListSetCount()
+        {
+            List<int> list = null!;
+            Assert.Throws<ArgumentNullException>(() => CollectionsMarshal.SetCount(list, 3));
+
+            list = new();
+            Assert.Throws<ArgumentOutOfRangeException>(() => CollectionsMarshal.SetCount(list, -1));
+
+            CollectionsMarshal.SetCount(list, 5);
+            Assert.Equal(5, list.Count);
+
+            list = new() { 1, 2, 3, 4, 5 };
+            CollectionsMarshal.SetCount(list, 3);
+            Assert.Equal(3, list.Count);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[3]);
+        }
     }
 }
