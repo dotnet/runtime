@@ -1475,10 +1475,7 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
     }
 
     PTR_BYTE basePtr = field->GetBase();
-    if (basePtr == nullptr)
-    {
-        return NULL;
-    }
+    _ASSERTE(basePtr != nullptr);
 
     Object** handle = (Object**)field->GetStaticAddressHandle(basePtr);
     if (handle != nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
