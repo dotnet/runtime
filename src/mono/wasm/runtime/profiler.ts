@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { AOTProfilerOptions, BrowserProfilerOptions } from "./types";
 import cwraps from "./cwraps";
 import { MonoMethod } from "./types";
@@ -53,35 +53,35 @@ export type TimeStamp = {
     __brand: "TimeStamp"
 }
 
-const enableMeasure = performance && typeof performance.measure === "function";
+
 
 export function startMeasure(): TimeStamp {
-    if (enableMeasure) {
-        return performance.now() as any;
+    if (runtimeHelpers.enablePerfMeasure) {
+        return globalThis.performance.now() as any;
     }
     return undefined as any;
 }
 
 export function endMeasure(start: TimeStamp, block: string, id?: string) {
-    if (enableMeasure && start) {
+    if (runtimeHelpers.enablePerfMeasure && start) {
         const options = ENVIRONMENT_IS_WEB
             ? { start: start as any }
             : { startTime: start as any };
-        const name = id ? `${block}${id}` : block;
-        performance.measure(name, options);
+        const name = id ? `${block}${id} ` : block;
+        globalThis.performance.measure(name, options);
     }
 }
 
 const stackFrames: number[] = [];
 export function mono_wasm_profiler_enter(): void {
-    if (enableMeasure) {
-        stackFrames.push(performance.now());
+    if (runtimeHelpers.enablePerfMeasure) {
+        stackFrames.push(globalThis.performance.now());
     }
 }
 
 const methodNames: Map<number, string> = new Map();
 export function mono_wasm_profiler_leave(method: MonoMethod): void {
-    if (enableMeasure) {
+    if (runtimeHelpers.enablePerfMeasure) {
         const start = stackFrames.pop();
         const options = ENVIRONMENT_IS_WEB
             ? { start: start }
@@ -93,6 +93,6 @@ export function mono_wasm_profiler_leave(method: MonoMethod): void {
             methodNames.set(method as any, methodName);
             Module._free(chars as any);
         }
-        performance.measure(methodName, options);
+        globalThis.performance.measure(methodName, options);
     }
 }
