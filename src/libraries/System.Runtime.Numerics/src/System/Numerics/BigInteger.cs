@@ -3481,8 +3481,8 @@ namespace System.Numerics
 
             ulong result = 0;
 
-            // Both positive values and their two's-compliment negative representation will share the same TrailingZeroCount,
-            // so the stored sign of value does not matter and both cases can be handled in the same way
+            // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
+            // so the sign of value does not matter and both cases can be handled in the same way
 
             uint part = value._bits[0];
 
