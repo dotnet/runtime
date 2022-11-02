@@ -23,6 +23,7 @@ public class CleanTests : NativeRebuildTestsBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
     public void Blazor_BuildThenClean_NativeRelinking(string config)
     {
         string id = Path.GetRandomFileName();
@@ -51,12 +52,14 @@ public class CleanTests : NativeRebuildTestsBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
     public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/77740")]
     public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
 
