@@ -1469,13 +1469,21 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
 
     TypeHandle typeHandle = field->GetFieldTypeHandleThrowing();
     MethodTable* pFieldMT = typeHandle.GetMethodTable();
-    if (!typeHandle.IsCanonicalSubtype() && !pFieldMT->ContainsPointers())
+    if (typeHandle.IsCanonicalSubtype() || pFieldMT->ContainsPointers())
     {
-        Object** handle = (Object**)field->GetStaticAddressHandle(field->GetBase());
-        if (handle != nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
-        {
-            return ObjectToOBJECTREF(*handle);
-        }
+        return NULL;
+    }
+
+    PTR_BYTE basePtr = field->GetBase();
+    if (basePtr == nullptr)
+    {
+        return NULL;
+    }
+
+    Object** handle = (Object**)field->GetStaticAddressHandle(basePtr);
+    if (handle != nullptr && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
+    {
+        return ObjectToOBJECTREF(*handle);
     }
     return NULL;
 }
