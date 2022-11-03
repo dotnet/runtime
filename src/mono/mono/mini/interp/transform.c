@@ -8341,7 +8341,9 @@ interp_reorder_bblocks (TransformData *td)
 
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *first = interp_first_ins (bb);
-		if (first && MINT_IS_CONDITIONAL_BRANCH (first->opcode)) {
+		if (!first)
+			continue;
+		if (MINT_IS_CONDITIONAL_BRANCH (first->opcode)) {
 			// This means this bblock has a single instruction, the conditional branch
 			int i = 0;
 			int lookup_var2 = (mono_interp_op_dregs [first->opcode] > 1) ? first->sregs [1] : -1;
@@ -8387,6 +8389,36 @@ interp_reorder_bblocks (TransformData *td)
 						g_string_free (new_bb_info, TRUE);
 					}
 					// Since we changed links, in_bb might have changed, loop again from the start
+					i = 0;
+				} else {
+					i++;
+				}
+			}
+		} else if (first->opcode == MINT_BR) {
+			// All bblocks jumping into this bblock can jump directly into the br target
+			int i = 0;
+			while (i < bb->in_count) {
+				InterpBasicBlock *in_bb = bb->in_bb [i];
+				InterpInst *last_ins = interp_last_ins (in_bb);
+				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
+						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
+						last_ins->info.target_bb == bb) {
+					InterpBasicBlock *target_bb = first->info.target_bb;
+					last_ins->info.target_bb = target_bb;
+					interp_unlink_bblocks (in_bb, bb);
+					interp_link_bblocks (td, in_bb, target_bb);
+					if (td->verbose_level) {
+						GString* bb_info = get_interp_bb_links (bb);
+						GString* in_bb_info = get_interp_bb_links (in_bb);
+						GString* target_bb_info = get_interp_bb_links (target_bb);
+						g_print ("Propagated target bb BB%d into BB%d\n", target_bb->index, in_bb->index);
+						g_print ("\tBB%d: %s\n", bb->index, bb_info->str);
+						g_print ("\tBB%d: %s\n", in_bb->index, in_bb_info->str);
+						g_print ("\tBB%d: %s\n", target_bb->index, target_bb_info->str);
+						g_string_free (bb_info, TRUE);
+						g_string_free (in_bb_info, TRUE);
+						g_string_free (target_bb_info, TRUE);
+					}
 					i = 0;
 				} else {
 					i++;
