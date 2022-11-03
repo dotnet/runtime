@@ -155,6 +155,20 @@ check_c_source_compiles(
   "
   HAVE_GNU_STRERROR_R)
 
+if (HOST_FREEBSD)
+check_c_source_compiles(
+  "
+  #include <sched.h>
+  int main(void)
+  {
+    CPU_COUNT((cpuset_t *) 0);
+    return 0;
+  }
+  "
+  HAVE_GNU_CPU_COUNT)
+
+else()
+
 check_c_source_compiles(
   "
   #include <sched.h>
@@ -165,6 +179,7 @@ check_c_source_compiles(
   }
   "
   HAVE_GNU_CPU_COUNT)
+endif()
 
 if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)
