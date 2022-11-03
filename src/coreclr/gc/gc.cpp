@@ -12754,14 +12754,17 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
 
-    ptrdiff_t min_committed = MAX_PTR_DIFF;
-    ptrdiff_t max_committed = MIN_PTR_DIFF;
+    ptrdiff_t min_committed;
+    ptrdiff_t max_committed;
 
     while (true)
     {
         // figure out which are the heaps with the minimum and maximum committed space relative to the budget
         gc_heap* min_hp = nullptr;
         gc_heap* max_hp = nullptr;
+        min_committed = MAX_PTR_DIFF;
+        max_committed = MIN_PTR_DIFF;
+
 
         for (int i = 0; i < n_heaps; i++)
         {
