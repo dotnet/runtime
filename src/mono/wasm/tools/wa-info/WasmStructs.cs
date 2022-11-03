@@ -107,7 +107,7 @@ namespace WebAssemblyInfo
                     align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
                     string? optional = null;
 
-                    switch(SIMDOpcode)
+                    switch (SIMDOpcode)
                     {
                         case SIMDOpcode.V128_Const:
                         case SIMDOpcode.I8x16_Shuffle:
@@ -268,6 +268,21 @@ namespace WebAssemblyInfo
         PassiveOrDeclarative = 1,
         ExplicitIndex = 2,
         TypeAndExpressions = 4
+    }
+
+    struct Data
+    {
+        public DataMode Mode;
+        public Instruction[] Expression;
+        public UInt32 MemIdx;
+        public byte[] Content;
+    }
+
+    enum DataMode
+    {
+        Active = 0,
+        Passive = 1,
+        ActiveMemory = 2,
     }
 
     struct MemArg
@@ -527,7 +542,7 @@ namespace WebAssemblyInfo
         public string ToString(string? name, bool displayVars = false)
         {
             var results = Results.Types.Length == 0 ? "" : $" (result {Results})";
-            var parameters = Parameters.Types.Length == 0 ? "" : $"(param { Parameters.ToString(displayVars ? 0 : -1)})";
+            var parameters = Parameters.Types.Length == 0 ? "" : $"(param {Parameters.ToString(displayVars ? 0 : -1)})";
             return $"(func {name}{parameters}{results})";
         }
 

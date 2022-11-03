@@ -115,6 +115,9 @@ namespace WebAssemblyInfo
                     if (Program.AotStats || Program.Disassemble)
                         ReadCodeSection();
                     break;
+                case SectionId.Data:
+                    ReadDataSection();
+                    break;
                 default:
                     break;
             }
@@ -211,6 +214,47 @@ namespace WebAssemblyInfo
                             Console.WriteLine($"    idx[{j}] = {elements[i].Indices[j]}");
                     }
                 }
+            }
+        }
+
+        Data[]? dataSegments;
+        void ReadDataSection()
+        {
+            var count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            dataSegments = new Data[count];
+            for (uint i = 0; i < count; i++)
+            {
+                dataSegments[i].Mode = (DataMode)ReadU32();
+                switch (dataSegments[i].Mode)
+                {
+                    case DataMode.ActiveMemory:
+                        dataSegments[i].MemIdx = ReadU32();
+                        if (Program.Verbose2)
+                            Console.WriteLine($"  memory index: {dataSegments[i].MemIdx}");
+                        goto case DataMode.Active;
+                    case DataMode.Active:
+                        (dataSegments[i].Expression, _) = ReadBlock();
+                        if (Program.Verbose2)
+                        {
+                            Console.WriteLine("  expression:");
+                            foreach (var instruction in dataSegments[i].Expression)
+                                Console.WriteLine(instruction.ToString(this).Indent("    "));
+                        }
+                        break;
+                }
+
+                var length = ReadU32();
+                if (Program.Verbose2)
+                    Console.WriteLine($"  length: {length}");
+
+                dataSegments[i].Content = Reader.ReadBytes((int)length);
             }
         }
 
