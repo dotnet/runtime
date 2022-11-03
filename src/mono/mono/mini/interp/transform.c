@@ -8455,10 +8455,7 @@ interp_local_deadce (TransformData *td)
 	// Kill instructions that don't use stack and are storing into dead locals
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			if (MINT_IS_MOV (ins->opcode) ||
-					MINT_IS_LDC_I4 (ins->opcode) ||
-					MINT_IS_LDC_I8 (ins->opcode) ||
-					ins->opcode == MINT_MONO_LDPTR ||
+			if (MINT_NO_SIDE_EFFECTS (ins->opcode) ||
 					ins->opcode == MINT_LDLOCA_S) {
 				int dreg = ins->dreg;
 				if (td->locals [dreg].flags & INTERP_LOCAL_FLAG_DEAD) {
@@ -8847,6 +8844,7 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 	int sreg = *psreg;
 
 	local_ref_count [sreg]++;
+	local_defs [sreg].ref_count++;
 	if (local_defs [sreg].type == LOCAL_VALUE_LOCAL) {
 		int cprop_local = local_defs [sreg].local;
 
@@ -8871,6 +8869,7 @@ clear_local_defs (TransformData *td, int var, void *data)
 	LocalValue *local_defs = (LocalValue*) data;
 	local_defs [var].type = LOCAL_VALUE_NONE;
 	local_defs [var].ins = NULL;
+	local_defs [var].ref_count = 0;
 }
 
 static void
@@ -8940,6 +8939,18 @@ retry:
 			}
 
 			if (num_dregs) {
+				// Check if the previous definition of this var was used at all.
+				// If it wasn't we can just clear the instruction
+				if (local_defs [dreg].ins != NULL &&
+						local_defs [dreg].ref_count == 0 &&
+						!td->locals [dreg].indirects) {
+					InterpInst *prev_def = local_defs [dreg].ins;
+					if (MINT_NO_SIDE_EFFECTS (prev_def->opcode)) {
+						for (int i = 0; i < mono_interp_op_sregs [prev_def->opcode]; i++)
+							local_ref_count [prev_def->sregs [i]]--;
+						interp_clear_ins (prev_def);
+					}
+				}
 				local_defs [dreg].type = LOCAL_VALUE_NONE;
 				local_defs [dreg].ins = ins;
 				local_defs [dreg].def_index = ins_index;
