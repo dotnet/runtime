@@ -107,15 +107,28 @@ Methods decorated with ```MethodImpl(MethodImplOptions.Synchronized)``` attribut
 
 ## Data-dependent reads are ordered
 Memory ordering honors data dependency. When performing indirect reads from a location derived from a reference, it is guaranteed that reading of the data will not happen ahead of obtaining the reference. This guarantee applies to both managed references and unmanaged pointers.
+
 **Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
+ ```cs
+var x = nonlocal.a.b;
+var y = nonlocal.a;
+var z = y.b;
+
+// cannot have execution order as:
+
+var x = nonlocal.a.b;
+var y = nonlocal.a;
+var z = x;
+```
 
 ## Object assignment
-Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
+Object assignment to a location potentially accessible by other threads is a release with respect to accesses to the instance’s fields/elements and metadata. An optimizing compiler must preserve the order of object assignment and data-dependent memory accesses.
+
 The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (for example, method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
 The reading thread does not need to perform an acquiring read before accessing the content of an instance since runtime guarantees ordering of data-dependent reads.
 
-However, the ordering side-effects of reference assignment should not be used for general ordering purposes because:
--	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
+The ordering side-effects of reference assignment should not be used for general ordering purposes because:
+-	independent nonvolatile reference assignments could be reordered by the compiler.
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
 There was a lot of ambiguity around the guarantees provided by object assignments. Going forward the runtimes will only provide the guarantees described in this document.
