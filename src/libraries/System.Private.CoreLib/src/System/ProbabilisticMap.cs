@@ -89,19 +89,19 @@ namespace System
         }
 
         public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<DontNegate>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            IndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
 
         public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<Negate>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            IndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
 
         public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<DontNegate>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            LastIndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
 
         public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<Negate>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            LastIndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
 
         private static int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, INegator
+            where TNegator : struct, SpanHelpers.INegator<char>
         {
             ReadOnlySpan<char> valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
@@ -124,7 +124,7 @@ namespace System
                 return -1;
             }
 
-            if (typeof(TNegator) == typeof(DontNegate)
+            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
                 ? IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
                 : IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
             {
@@ -135,7 +135,7 @@ namespace System
         }
 
         private static int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, INegator
+            where TNegator : struct, SpanHelpers.INegator<char>
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
@@ -157,7 +157,7 @@ namespace System
                 return -1;
             }
 
-            if (typeof(TNegator) == typeof(DontNegate)
+            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
                 ? IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
                 : IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
             {
@@ -168,7 +168,7 @@ namespace System
         }
 
         private static unsafe int ProbabilisticIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, INegator
+            where TNegator : struct, SpanHelpers.INegator<char>
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
@@ -197,7 +197,7 @@ namespace System
         }
 
         private static unsafe int ProbabilisticLastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, INegator
+            where TNegator : struct, SpanHelpers.INegator<char>
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
@@ -222,21 +222,6 @@ namespace System
             }
 
             return -1;
-        }
-
-        private interface INegator
-        {
-            static abstract bool NegateIfNeeded(bool result);
-        }
-
-        private struct DontNegate : INegator
-        {
-            public static bool NegateIfNeeded(bool result) => result;
-        }
-
-        private struct Negate : INegator
-        {
-            public static bool NegateIfNeeded(bool result) => !result;
         }
     }
 }

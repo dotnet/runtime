@@ -953,6 +953,7 @@ namespace System.SpanTests
         }
 
         [Fact]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAny_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(

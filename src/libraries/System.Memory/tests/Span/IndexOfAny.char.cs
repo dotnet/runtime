@@ -775,6 +775,7 @@ namespace System.SpanTests
         }
 
         [Fact]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestIndexOfAny_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
@@ -798,33 +799,48 @@ namespace System.SpanTests
 
     public static class IndexOfAnyCharTestHelper
     {
+        private static readonly char[] s_randomAsciiChars;
+        private static readonly char[] s_randomChars;
+
+        static IndexOfAnyCharTestHelper()
+        {
+            s_randomAsciiChars = new char[10 * 1024];
+            s_randomChars = new char[1024 * 1024];
+
+            var rng = new Random(42);
+
+            for (int i = 0; i < s_randomAsciiChars.Length; i++)
+            {
+                s_randomAsciiChars[i] = (char)rng.Next(0, 128);
+            }
+
+            rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+        }
+
         public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values);
 
         public static void TestRandomInputs(IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
         {
-            TestRandomInputs(127, expected, actual);
-            TestRandomInputs(char.MaxValue, expected, actual);
-        }
+            var rng = new Random(42);
 
-        private static void TestRandomInputs(int maxNeedleValue, IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
-        {
-            maxNeedleValue++;
-
-            Span<char> needleSpace = stackalloc char[8];
-            Span<char> haystackSpace = stackalloc char[40];
-            var rng = new Random();
-
-            for (int iterations = 0; iterations < 100_000; iterations++)
+            for (int iterations = 0; iterations < 1_000_000; iterations++)
             {
-                Span<char> needle = needleSpace.Slice(0, rng.Next(needleSpace.Length + 1));
-                Span<char> haystack = haystackSpace.Slice(0, rng.Next(haystackSpace.Length + 1));
+                // There are more interesting corner cases with ASCII needles, stress those more.
+                Test(s_randomChars, s_randomAsciiChars);
 
-                for (int i = 0; i < needle.Length; i++)
-                {
-                    needle[i] = (char)rng.Next(0, maxNeedleValue);
-                }
+                Test(s_randomChars, s_randomChars);
+            }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(haystack));
+            void Test(ReadOnlySpan<char> haystackRandom, ReadOnlySpan<char> needleRandom)
+            {
+                const int MaxNeedleLength = 8;
+                const int MaxHaystackLength = 40;
+
+                ReadOnlySpan<char> haystack = haystackRandom.Slice(rng.Next(haystackRandom.Length + 1));
+                haystack = haystack.Slice(0, Math.Min(haystack.Length, rng.Next(MaxHaystackLength)));
+
+                ReadOnlySpan<char> needle = needleRandom.Slice(rng.Next(needleRandom.Length + 1));
+                needle = needle.Slice(0, Math.Min(needle.Length, rng.Next(MaxNeedleLength)));
 
                 int expectedIndex = expected(haystack, needle);
                 int actualIndex = actual(haystack, needle);

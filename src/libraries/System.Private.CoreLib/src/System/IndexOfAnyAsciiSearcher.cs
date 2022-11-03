@@ -17,7 +17,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe bool TryComputeBitmap(ReadOnlySpan<char> values, byte* bitmap, out bool needleContainsZero)
         {
-            byte* bitmapLocal = bitmap;
+            byte* bitmapLocal = bitmap; // https://github.com/dotnet/runtime/issues/9040
 
             foreach (char c in values)
             {
@@ -319,14 +319,14 @@ namespace System
             static abstract uint ExtractMask(Vector128<byte> result);
         }
 
-        private struct DontNegate : INegator
+        private readonly struct DontNegate : INegator
         {
             public static bool NegateIfNeeded(bool result) => result;
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static uint ExtractMask(Vector128<byte> result) => ~Vector128.Equals(result, Vector128<byte>.Zero).ExtractMostSignificantBits();
         }
 
-        private struct Negate : INegator
+        private readonly struct Negate : INegator
         {
             public static bool NegateIfNeeded(bool result) => !result;
             // This is intentionally testing for equality with 0 instead of "~result".
@@ -340,12 +340,12 @@ namespace System
             static abstract bool NeedleContainsZero { get; }
         }
 
-        private struct Ssse3HandleZeroInNeedle : IOptimizations
+        private readonly struct Ssse3HandleZeroInNeedle : IOptimizations
         {
             public static bool NeedleContainsZero => true;
         }
 
-        private struct Default : IOptimizations
+        private readonly struct Default : IOptimizations
         {
             public static bool NeedleContainsZero => false;
         }
