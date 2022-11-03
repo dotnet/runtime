@@ -505,7 +505,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Option2,
         }
 
-        public class WhenBindingCollectionsWeCanControlExceptionsWithTheErrorOnUnknownConfigurationProperty
+        public class CollectionsBindingWithErrorOnUnknownConfiguration
         {
             public class MyModelContainingArray
             {
@@ -610,7 +610,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                     SR.Format(SR.Error_GeneralErrorWhenBinding, nameof(BinderOptions.ErrorOnUnknownConfiguration)),
                     exception.Message);
             }
-
         }
 
         public record RootConfig(NestedConfig Nested);
