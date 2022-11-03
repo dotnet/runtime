@@ -38,8 +38,7 @@
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
-  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
-          Condition="'$(InstallChromeForTests)' == 'true' and ('$(ContinuousIntegrationBuild)' != 'true' or '$(IsWasmProject)' != 'true')" />
+  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets" />
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
