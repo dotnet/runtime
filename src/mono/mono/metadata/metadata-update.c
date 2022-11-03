@@ -230,3 +230,9 @@ mono_metadata_update_get_num_methods_added (MonoClass *klass)
 {
 	return mono_component_hot_reload()->get_num_methods_added (klass);
 }
+
+uint32_t
+mono_metadata_update_get_method_params (MonoImage *image, uint32_t methoddef_token, uint32_t *out_param_count_opt)
+{
+	return mono_component_hot_reload()->get_method_params (image, methoddef_token, out_param_count_opt);
+}
