@@ -950,6 +950,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             // a field dereference, which will do its own bounds checking if necessary.
             return false;
 
+        case GT_IND:
+            return (addr->gtFlags & GTF_IND_NONNULL) == 0;
+
         case GT_INDEX_ADDR:
             return !addr->AsIndexAddr()->IsNotNull();
 

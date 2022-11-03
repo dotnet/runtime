@@ -1064,12 +1064,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
-
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
-    }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
