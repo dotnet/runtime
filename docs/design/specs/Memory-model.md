@@ -30,7 +30,7 @@ The following methods perform atomic memory accesses regardless of the platform 
 
 ## Unmanaged memory access
 As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
-**Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.
+**Example:** memory accesses through pointers whose target address is *not properly aligned* to the data access size may be not atomic or cause faults depending on the platform and hardware configuration.
 
 Although rare, unaligned access is a realistic scenario and thus there is some limited support for unaligned memory accesses, such as:
 * `unaligned.` IL prefix
@@ -41,7 +41,7 @@ These facilities ensure fault-free access to potentially unaligned locations, bu
 As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop results in Undefined Behavior.
 
 ## Side-effects and optimizations of memory accesses
-.NET runtime assumes that the side-effects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
+.NET runtime assumes that the side-effects of memory reads and writes include only observing and changing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
 
 As a consequence:
 * Speculative writes are not allowed.
