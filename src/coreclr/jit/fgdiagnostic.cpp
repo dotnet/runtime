@@ -2440,6 +2440,13 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
         return WALK_CONTINUE;
     }
 
+    if (tree->gtGetOp1()->IsIntegralConst(0) || tree->gtGetOp2()->IsIntegralConst(0))
+    {
+        // Skip morphing cases with constant multiply by zero; it interferes with address mode formation
+        // in unoptimized code where it doesn't expect to see the IR nodes created here.
+        return WALK_CONTINUE;
+    }
+
     JITDUMP("STRESS_64RSLT_MUL before:\n");
     DISPTREE(tree);
 
