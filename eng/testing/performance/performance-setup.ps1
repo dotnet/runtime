@@ -26,7 +26,8 @@ Param(
     [switch] $DynamicPGO,
     [switch] $FullPGO,
     [switch] $iOSLlvmBuild,
-    [string] $MauiVersion
+    [string] $MauiVersion,
+    [switch] $UseLocalCommitTime
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -120,13 +121,19 @@ elseif($FullPGO)
     $SetupArguments = "$SetupArguments --full-pgo"
 }
 
+if($UseLocalCommitTime)
+{
+    $LocalCommitTime = (git show -s --format=%ci $CommitSha)
+    $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
+}
+
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
     
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+    git clone --branch release/7.0 --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")
