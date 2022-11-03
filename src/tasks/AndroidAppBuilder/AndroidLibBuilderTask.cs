@@ -8,7 +8,8 @@ using Microsoft.Build.Utilities;
 
 public class AndroidLibBuilderTask : Task
 {
-    public ITaskItem[] JavaFiles { get; set; } = Array.Empty<ITaskItem>();
+    [Required]
+    public string JavaSourceDirectory { get; set; } = ""!;
 
     [Required]
     public string OutputDir { get; set; } = ""!;
@@ -25,12 +26,6 @@ public class AndroidLibBuilderTask : Task
 
     public string? BuildToolsVersion { get; set; }
 
-    [Output]
-    public string DexFilePath { get; set; } = ""!;
-
-    [Output]
-    public string JarFilePath { get; set; } = ""!;
-
     public override bool Execute()
     {
         var androidSdk = new AndroidSdkHelper(
@@ -38,31 +33,48 @@ public class AndroidLibBuilderTask : Task
             buildApiLevel: BuildApiLevel,
             buildToolsVersion: BuildToolsVersion);
 
-        var compiler = new JavaCompiler(Log, androidSdk, workingDir: OutputDir);
-        var jarBuilder = new JarBuilder(Log, workingDir: OutputDir);
-        var dexBuilder = new DexBuilder(Log, androidSdk, workingDir: OutputDir);
-
-        var objDir = "obj";
-        var objPath = Path.Combine(OutputDir, objDir);
-        Directory.CreateDirectory(objPath);
+        var objDir = Path.Combine(OutputDir, "obj");
+        Directory.CreateDirectory(objDir);
 
         try
         {
-            foreach (var file in JavaFiles)
-            {
-                compiler.Compile(file.ItemSpec, outputDir: objDir);
-            }
+            CompileJava(objDir, androidSdk);
+            BuildJar(objDir);
+            BuildDex(objDir, androidSdk);
 
-            jarBuilder.Build(inputDir: objDir, outputFileName: JarFileName);
-            JarFilePath = Path.Combine(OutputDir, JarFileName);
-
-            dexBuilder.Build(inputDir: objDir, outputFileName: DexFileName);
-            DexFilePath = Path.Combine(OutputDir, DexFileName);
             return true;
         }
         finally
         {
-            Directory.Delete(objPath, recursive: true);
+            Directory.Delete(objDir, recursive: true);
         }
+    }
+
+    private void CompileJava(string objDir, AndroidSdkHelper androidSdk)
+    {
+        var compiler = new JavaCompiler(Log, androidSdk, workingDir: JavaSourceDirectory);
+        string[] javaFiles = Directory.GetFiles(JavaSourceDirectory, "*.java", SearchOption.AllDirectories);
+        foreach (var file in javaFiles)
+        {
+            compiler.Compile(file, outputDir: objDir);
+        }
+    }
+
+    private void BuildJar(string objDir)
+    {
+        var jarBuilder = new JarBuilder(Log);
+        var jarFilePath = Path.Combine(OutputDir, JarFileName);
+        jarBuilder.Build(inputDir: objDir, outputFileName: jarFilePath);
+
+        Log.LogMessage(MessageImportance.High, $"Built {jarFilePath}");
+    }
+
+    private void BuildDex(string objDir, AndroidSdkHelper androidSdk)
+    {
+        var dexBuilder = new DexBuilder(Log, androidSdk, workingDir: OutputDir);
+        var dexFilePath = Path.Combine(OutputDir, DexFileName);
+        dexBuilder.Build(inputDir: objDir, outputFileName: dexFilePath);
+
+        Log.LogMessage(MessageImportance.High, $"Built {dexFilePath}");
     }
 }

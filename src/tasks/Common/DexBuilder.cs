@@ -34,22 +34,19 @@ internal sealed class DexBuilder
         }
     }
 
-    private void BuildUsingD8(string inputDir, string outputFileName)
+    private void BuildUsingD8(string inputDir, string outputFilePath)
     {
-        string[] classFiles = Directory.GetFiles(Path.Combine(_workingDir, inputDir), "*.class", SearchOption.AllDirectories);
+        string[] classFiles = Directory.GetFiles(inputDir, "*.class", SearchOption.AllDirectories);
 
         if (!classFiles.Any())
             throw new InvalidOperationException("Didn't find any .class files");
 
         Utils.RunProcess(_logger, _androidSdk.D8Path, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: _workingDir);
 
-        if (outputFileName != "classes.dex")
-        {
-            File.Move(
-                sourceFileName: Path.Combine(_workingDir, "classes.dex"),
-                destFileName: Path.Combine(_workingDir, outputFileName),
-                overwrite: true);
-        }
+        File.Move(
+            sourceFileName: Path.Combine(_workingDir, "classes.dex"),
+            destFileName: outputFilePath,
+            overwrite: true);
     }
 
     private void BuildUsingDx(string inputDir, string outputFileName)
