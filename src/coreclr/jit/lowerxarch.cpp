@@ -1852,9 +1852,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                                                       16);
 
                 LIR::Use use;
-                bool foundUse = BlockRange().TryGetUse(node, &use);
+                bool     foundUse = BlockRange().TryGetUse(node, &use);
                 BlockRange().InsertAfter(node, tmp2);
-                
+
                 if (foundUse)
                 {
                     use.ReplaceWith(tmp2);
