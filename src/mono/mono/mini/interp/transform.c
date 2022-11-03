@@ -8377,17 +8377,26 @@ interp_local_deadce (TransformData *td)
 	for (unsigned int i = 0; i < td->locals_size; i++) {
 		g_assert (local_ref_count [i] >= 0);
 		g_assert (td->locals [i].indirects >= 0);
-		if (!local_ref_count [i] &&
-				!td->locals [i].indirects &&
-				(td->locals [i].flags & INTERP_LOCAL_FLAG_DEAD) == 0) {
+		if (td->locals [i].indirects || (td->locals [i].flags & INTERP_LOCAL_FLAG_DEAD))
+			continue;
+		if (!local_ref_count [i]) {
 			needs_dce = TRUE;
 			td->locals [i].flags |= INTERP_LOCAL_FLAG_DEAD;
+		} else if (!(td->locals [i].flags & INTERP_LOCAL_FLAG_UNKNOWN_USE)) {
+			if (!(td->locals [i].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY)) {
+				// The value of this var is not passed between multiple basic blocks
+				td->locals [i].flags |= INTERP_LOCAL_FLAG_LOCAL_ONLY;
+				if (td->verbose_level)
+					g_print ("Var %d is local only\n", i);
+				needs_cprop = TRUE;
+			}
 		}
+		td->locals [i].flags &= ~INTERP_LOCAL_FLAG_UNKNOWN_USE;
 	}
 
 	// Return early if all locals are alive
 	if (!needs_dce)
-		return FALSE;
+		return needs_cprop;
 
 	// Kill instructions that don't use stack and are storing into dead locals
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
@@ -8797,6 +8806,8 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 		local_ref_count [cprop_local]++;
 		if (td->verbose_level)
 			dump_interp_inst (ins);
+	} else if (!local_defs [sreg].ins) {
+		td->locals [sreg].flags |= INTERP_LOCAL_FLAG_UNKNOWN_USE;
 	}
 }
 
@@ -8810,6 +8821,34 @@ clear_local_defs (TransformData *td, int var, void *data)
 }
 
 static void
+clear_unused_defs (TransformData *td, int var, void *data)
+{
+	if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY))
+		return;
+	if (td->locals [var].indirects)
+		return;
+
+	LocalValue *local_def = &((LocalValue*) data) [var];
+	InterpInst *def_ins = local_def->ins;
+	if (!def_ins)
+		return;
+	if (local_def->ref_count)
+		return;
+
+	// This is a local only var that is defined in this bblock and its value is not used
+	// at all in this bblock. Clear the definition
+	if (MINT_NO_SIDE_EFFECTS (def_ins->opcode)) {
+		for (int i = 0; i < mono_interp_op_sregs [def_ins->opcode]; i++)
+			td->local_ref_count [def_ins->sregs [i]]--;
+		if (td->verbose_level) {
+			g_print ("kill unused local def:\n\t");
+			dump_interp_inst (def_ins);
+		}
+		interp_clear_ins (def_ins);
+	}
+}
+
+static void
 interp_cprop (TransformData *td)
 {
 	LocalValue *local_defs = (LocalValue*) g_malloc (td->locals_size * sizeof (LocalValue));
@@ -8817,6 +8856,7 @@ interp_cprop (TransformData *td)
 	InterpBasicBlock *bb;
 	gboolean needs_retry;
 	int ins_index;
+	int iteration_count = 0;
 
 	td->local_ref_count = local_ref_count;
 retry:
@@ -8824,7 +8864,7 @@ retry:
 	memset (local_ref_count, 0, td->locals_size * sizeof (int));
 
 	if (td->verbose_level)
-		g_print ("\ncprop iteration\n");
+		g_print ("\ncprop iteration %d\n", iteration_count++);
 
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
@@ -9222,8 +9262,12 @@ retry:
 					needs_retry = TRUE;
 				}
 			}
+
 			ins_index++;
 		}
+
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
+			foreach_local_var (td, ins, local_defs, clear_unused_defs);
 	}
 
 	needs_retry |= interp_local_deadce (td);

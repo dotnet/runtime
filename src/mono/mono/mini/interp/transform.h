@@ -21,6 +21,9 @@
 #define INTERP_LOCAL_FLAG_GLOBAL 8
 #define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
 
+#define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
+#define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
+
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
 
