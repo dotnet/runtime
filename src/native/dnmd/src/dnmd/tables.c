@@ -183,11 +183,19 @@ bool initialize_table_details(
         table->column_details[mdtTypeDef_MethodList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
         table->column_count = 6;
         break;
+    case 0x3: // FieldPtr
+        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
+        table->column_count = 1;
+        break;
     case mdtid_Field: // II.22.15
         table->column_details[mdtField_Flags] = mdtc_constant | mdtc_b2;
         table->column_details[mdtField_Name] = string_index;
         table->column_details[mdtField_Signature] = blob_index;
         table->column_count = 3;
+        break;
+    case 0x5: // MethodPtr
+        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_count = 1;
         break;
     case mdtid_MethodDef: // II.22.26
         table->column_details[mdtMethodDef_Rva] = mdtc_constant | mdtc_b4;
@@ -197,6 +205,10 @@ bool initialize_table_details(
         table->column_details[mdtMethodDef_Signature] = blob_index;
         table->column_details[mdtMethodDef_ParamList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
         table->column_count = 6;
+        break;
+    case 0x7: // ParamPtr
+        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
+        table->column_count = 1;
         break;
     case mdtid_Param: // II.22.33
         table->column_details[mdtParam_Flags] = mdtc_constant | mdtc_b2;
@@ -258,6 +270,10 @@ bool initialize_table_details(
         table->column_details[mdtEventMap_EventList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
         table->column_count = 2;
         break;
+    case 0x13: // EventPtr
+        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
+        table->column_count = 1;
+        break;
     case mdtid_Event:// II.22.13
         table->column_details[mdtEvent_EventFlags] = mdtc_constant | mdtc_b2;
         table->column_details[mdtEvent_Name] = string_index;
@@ -268,6 +284,10 @@ bool initialize_table_details(
         table->column_details[mdtPropertyMap_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
         table->column_details[mdtPropertyMap_PropertyList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
         table->column_count = 2;
+        break;
+    case 0x16: // PropertyPtr
+        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
+        table->column_count = 1;
         break;
     case mdtid_Property: // II.22.34
         table->column_details[mdtProperty_Flags] = mdtc_constant | mdtc_b2;
@@ -306,6 +326,15 @@ bool initialize_table_details(
         table->column_details[mdtFieldRva_Rva] = mdtc_constant | mdtc_b4;
         table->column_details[mdtFieldRva_Field] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
         table->column_count = 2;
+        break;
+    case 0x1e: // ENCLog
+        table->column_details[0] = mdtc_constant | mdtc_b4;
+        table->column_details[1] = mdtc_constant | mdtc_b4;
+        table->column_count = 2;
+        break;
+    case 0x1f: // ENCMap
+        table->column_details[0] = mdtc_constant | mdtc_b4;
+        table->column_count = 1;
         break;
     case mdtid_Assembly: // II.22.2
         table->column_details[mdtAssembly_HashAlgId] = mdtc_constant | mdtc_b4;
