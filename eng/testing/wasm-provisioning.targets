@@ -35,6 +35,10 @@
 
     <_JsvuDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'jsvu'))</_JsvuDir>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
+
+    <InstallJSEnginesForTests Condition="'$(InstallJSEnginesForTests)' == ''">$(InstallChromeForTests)</InstallJSEnginesForTests>
+    <InstallJSEnginesForTests Condition="'$(InstallJSEnginesForTests)' == '' and
+                                          ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallJSEnginesForTests>
   </PropertyGroup>
 
   <Target Name="_DownloadAndInstallChrome"
@@ -175,8 +179,8 @@
   </Target>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="ProvisionV8"
-          Condition="!Exists($(V8StampFile)) and '$(InstallChromeForTests)' == 'true'">
+
+  <Target Name="ProvisionV8" Condition="!Exists($(V8StampFile)) and '$(InstallJSEnginesForTests)' == 'true'">
 
     <ItemGroup>
       <_JsvuInstallArgs Condition="'$(_V8VersionTruncated)' != ''" Include="v8@$(_V8VersionTruncated)" />
