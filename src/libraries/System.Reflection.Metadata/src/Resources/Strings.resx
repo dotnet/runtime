@@ -406,9 +406,9 @@
     <value>Unexpected value '{0}' of unknown type.</value>
   </data>
   <data name="SwitchInstructionEncoderTooFewBranches" xml:space="preserve">
-    <value>The SwitchInstructionEncoder.Branch method has not been called enough times.</value>
+    <value>The SwitchInstructionEncoder.Branch method was invoked too few times.</value>
   </data>
   <data name="SwitchInstructionEncoderTooManyBranches" xml:space="preserve">
-    <value>The SwitchInstructionEncoder.Branch method has been called too many times.</value>
+    <value>The SwitchInstructionEncoder.Branch method was invoked too many times.</value>
   </data>
 </root>

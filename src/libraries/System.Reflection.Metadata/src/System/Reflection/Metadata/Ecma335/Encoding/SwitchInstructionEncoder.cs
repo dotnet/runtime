@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Reflection.Metadata.Ecma335
 {
     /// <summary>
-    /// Encodes the branches of a IL <c>switch</c> instruction.
+    /// Encodes the branches of an IL <c>switch</c> instruction.
     /// </summary>
     /// <remarks>
     /// See <see cref="InstructionEncoder.Switch(int)"/> for usage guidelines.
