@@ -31,6 +31,8 @@ namespace ILCompiler.ObjectWriter
         protected ObjectWritingOptions _options;
         protected bool _isSingleFileCompilation;
 
+        private Dictionary<ISymbolNode, string> _mangledNameMap = new();
+
         private byte _insPaddingByte;
 
         // Standard sections
@@ -187,6 +189,19 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual string ExternCName(string name) => name;
 
+        protected string GetMangledName(ISymbolNode symbolNode)
+        {
+            string symbolName;
+
+            if (!_mangledNameMap.TryGetValue(symbolNode, out symbolName))
+            {
+                symbolName = ExternCName(symbolNode.GetMangledName(_nodeFactory.NameMangler));
+                _mangledNameMap.Add(symbolNode, symbolName);
+            }
+
+            return symbolName;
+        }
+
         protected abstract void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -288,7 +303,7 @@ namespace ILCompiler.ObjectWriter
                 string currentSymbolName = null;
                 if (node is ISymbolNode symbolNode)
                 {
-                    currentSymbolName = ExternCName(symbolNode.GetMangledName(_nodeFactory.NameMangler));
+                    currentSymbolName = GetMangledName(symbolNode);
                 }
 
                 ObjectNodeSection section = node.Section;
@@ -305,7 +320,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
                     sectionWriter.EmitSymbolDefinition(
-                        n == node ? currentSymbolName : ExternCName(n.GetMangledName(_nodeFactory.NameMangler)),
+                        n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset,
                         isMethod ? nodeContents.Data.Length : 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
@@ -325,7 +340,7 @@ namespace ILCompiler.ObjectWriter
                             reloc.Offset,
                             nodeContents.Data.AsSpan(reloc.Offset),
                             reloc.RelocType,
-                            ExternCName(reloc.Target.GetMangledName(_nodeFactory.NameMangler)),
+                            GetMangledName(reloc.Target),
                             reloc.Target.Offset);
                     }
                 }
@@ -366,7 +381,7 @@ namespace ILCompiler.ObjectWriter
                         uint methodTypeIndex = node is IMethodNode methodNode ?
                             _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
                             0;
-                        string methodName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
+                        string methodName = GetMangledName(symbolDefinitionNode);
 
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
