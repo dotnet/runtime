@@ -41,7 +41,7 @@
 
   <ItemGroup>
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
-    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(BaseOutputPath)runtime.json" PackagePath="/" />
     <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
@@ -50,12 +50,12 @@
     <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
   </ItemGroup>
 
-  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''" BeforeTargets="GenerateNuspec">
+  <Target Name="GenerateRuntimeJson" AfterTargets="Build" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
                           AdditionalRuntimeIdentifierParent="$(AdditionalRuntimeIdentifierParent)"
-                          RuntimeJson="$(IntermediateOutputPath)runtime.json"
+                          RuntimeJson="$(BaseOutputPath)runtime.json"
                           UpdateRuntimeFiles="True" />
   </Target>
 
