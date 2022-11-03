@@ -332,13 +332,12 @@ namespace ILCompiler.ObjectWriter
             using (LeafRecordWriter record = StartLeafRecord(classTypeDescriptor.IsStruct == 1 ? LF_STRUCTURE : LF_CLASS))
             {
                 Debug.Assert(memberCount <= ushort.MaxValue);
-                Debug.Assert(classFieldsTypeDescriptor.Size <= ushort.MaxValue);
                 record.Write((ushort)memberCount); // Number of elements in class
                 record.Write((ushort)0); // TODO: Options
                 record.Write(fieldListTypeIndex); // Field descriptor index
                 record.Write((uint)0); // Derived-from descriptor index
                 record.Write((uint)0); // Vtshape descriptor index
-                record.Write((ushort)classFieldsTypeDescriptor.Size); // Size
+                record.WriteEncodedInteger(classFieldsTypeDescriptor.Size); // Size
                 record.Write(classTypeDescriptor.Name);
             }
 
