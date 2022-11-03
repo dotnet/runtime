@@ -15,3 +15,16 @@ permissions:
 jobs:
   backport:
     uses: dotnet/arcade/.github/workflows/backport-base.yml@main
+    with:
+      pr_description_template: |
+        Backport of #%source_pr_number% to %target_branch%
+
+        /cc %cc_users%
+
+        ## Customer Impact
+
+        ## Testing
+
+        ## Risk
+
+        IMPORTANT: Is this backport for a servicing release? If so and this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.
