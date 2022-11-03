@@ -111,6 +111,7 @@ code_t AddRexBPrefix(const instrDesc *id, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
 code_t AddEvexVPrimePrefix(code_t code);
+code_t AddEvexRPrimePrefix(code_t code);
 
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
@@ -1033,5 +1034,9 @@ inline bool HasEmbeddedBroadcast(instrDesc* id)
 {
     return false;
 }
+
+
+inline bool HasHighSIMDReg(const instrDesc *id) const;
+inline bool IsHighSIMDReg(regNumber) const;
 
 #endif // TARGET_XARCH

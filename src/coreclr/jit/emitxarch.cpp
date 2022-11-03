@@ -794,6 +794,11 @@ bool emitter::TakesEvexPrefix(const instrDesc *id) const
         return false;
     }
 
+    if (HasHighSIMDReg(id))
+    {
+        return true;
+    }
+
     instruction ins = id->idIns();
 
     // TODO-XArch-AVX512: Revisit 'HasKMaskRegisterDest()' check once KMask support is added.
@@ -1064,7 +1069,25 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
 }
 
 // Returns true if using this register will require an EVEX.R', EVEX.V' or EVEX.X bit.
-bool isHighSIMDReg(regNumber reg)
+bool emitter::HasHighSIMDReg(const instrDesc *id) const
+{
+#if defined(TARGET_AMD64)
+    if (IsHighSIMDReg(id->idReg1()) || IsHighSIMDReg(id->idReg2()))
+        return true;
+
+    if (id->idIsSmallDsc())
+        return false;
+
+    if ((id->idHasReg3() && IsHighSIMDReg(id->idReg3())) || 
+        (id->idHasReg4() && IsHighSIMDReg(id->idReg4())))
+        return true;
+#endif
+    // X86 JIT operates in 32-bit mode and hence extended reg are not available.
+    return false;
+}
+
+// Returns true if using this register will require an EVEX.R', EVEX.V' or EVEX.X bit.
+bool emitter::IsHighSIMDReg(regNumber reg) const
 {
 #ifdef TARGET_AMD64
     return ((reg >= REG_XMM16) && (reg <= REG_XMM31));
@@ -1072,7 +1095,6 @@ bool isHighSIMDReg(regNumber reg)
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
 #endif
-
 }
 
 // Returns true if using this register will require a REX.* prefix.
@@ -1082,7 +1104,7 @@ bool isHighSIMDReg(regNumber reg)
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM15));
+    return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -1291,12 +1313,18 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     return code | 0x4000000000ULL;
 }
 
-// Adds REX prefix (0x40) without W, R, X or B bits set
 emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 {
     assert(UseEvexEncoding() && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFFFFFF7FFFFFFFFULL);
 }
+
+emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
+{
+    assert(UseEvexEncoding() && hasEvexPrefix(code));
+    return emitter::code_t(code & 0xFFEFFFFFFFFFFFFFULL);
+}
+
 
 #endif // TARGET_AMD64
 
@@ -2724,7 +2752,14 @@ inline unsigned emitter::insEncodeReg012(const instrDesc *id, regNumber reg, emi
 
     if (IsExtendedReg(reg))
     {
-        *code = AddRexBPrefix(id, *code); // REX.B
+        if (IsHighSIMDReg(reg))
+        {
+            *code = AddRexXPrefix(id, *code);   // EVEX.X
+        }
+        if (reg & 0x8)
+        {
+            *code = AddRexBPrefix(id, *code); // REX.B
+        }
     }
     else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code != nullptr))
     {
@@ -2760,7 +2795,14 @@ inline unsigned emitter::insEncodeReg345(const instrDesc *id, regNumber reg, emi
 
     if (IsExtendedReg(reg))
     {
-        *code = AddRexRPrefix(id, *code); // REX.R
+        if (IsHighSIMDReg(reg))
+        {
+            *code = AddEvexRPrimePrefix(*code); // EVEX.R'
+        }
+        if (reg & 0x8)
+        {
+            *code = AddRexRPrefix(id, *code); // REX.R
+        }
     }
     else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code != nullptr))
     {
@@ -2810,7 +2852,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc *id, regNumber 
             // Rather see these paths cleaned up.
             regBits = HighAwareRegEncoding(reg);
 #if defined(TARGET_AMD64)
-            if (isHighSIMDReg(reg))
+            if (IsHighSIMDReg(reg))
             {
                 // Have to set the EVEX V' bit
                 code = AddEvexVPrimePrefix(code);
@@ -2861,7 +2903,14 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc *id, regNumber reg, cod
 
     if (IsExtendedReg(reg))
     {
-        *code = AddRexXPrefix(id, *code); // REX.X
+        if (IsHighSIMDReg(reg))
+        {
+            *code = AddEvexVPrimePrefix(*code);   // EVEX.X
+        }
+        if (reg & 0x8)
+        {
+            *code = AddRexXPrefix(id, *code); // REX.B
+        }
     }
     unsigned regBits = RegEncoding(reg);
 #else  // !TARGET_AMD64
