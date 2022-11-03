@@ -383,6 +383,14 @@ FormatMessageW(
                     nCount = 0;
                     goto exit;
                 }
+                if ( *lpSourceString == '!' )
+                {
+                    ERROR( "Embedded printf formatting ('!<printf format>!') is unsupported\n" );
+                    SetLastError( ERROR_INVALID_PARAMETER );
+                    lpWorkingString = NULL;
+                    nCount = 0;
+                    goto exit;
+                }
 
                 LPWSTR lpInsert = NULL;
                 if ( !bIsVaList )
