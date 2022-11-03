@@ -409,10 +409,12 @@ namespace System
                 {
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
+
                 if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
+
                 ConsolePal.WindowWidth = value;
             }
         }
@@ -434,10 +436,12 @@ namespace System
                 {
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
+
                 if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
+
                 ConsolePal.WindowHeight = value;
             }
         }
@@ -458,14 +462,17 @@ namespace System
             {
                 throw new IOException(SR.InvalidOperation_SetWindowSize);
             }
+
             if (width <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
             }
+
             if (height <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
             }
+
             ConsolePal.SetWindowSize(width, height);
         }
 

@@ -405,14 +405,9 @@ namespace System
                else
                {
                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                   if (errorInfo.Error == Interop.Error.ENOTSUP)
-                   {
-                       throw new PlatformNotSupportedException();
-                   }
-                   else
-                   {
-                       throw Interop.GetIOException(errorInfo);
-                   }
+                   throw errorInfo.Error == Interop.Error.ENOTSUP ?
+                       new PlatformNotSupportedException() :
+                       Interop.GetIOException(errorInfo);
                }
            }
         }
