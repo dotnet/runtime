@@ -39,7 +39,9 @@ namespace Microsoft.Interop
                     // Don't generate a file if we don't have to, to avoid the extra IDE overhead once we have generated
                     // files in play.
                     if (generatedSources.IsEmpty)
+                    {
                         return;
+                    }
 
                     StringBuilder source = new();
                     // Mark in source that the file is auto-generated.
