@@ -702,8 +702,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CustomAttributeRec  *pRecord = NULL; // New custom Attribute record.
     RID         iRecord;                // New custom Attribute RID.
     CMiniMdRW   *pMiniMd = &m_pStgdb->m_MiniMd;
@@ -823,8 +821,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineCustomAttribute
@@ -842,8 +838,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CustomAttributeRec  *pRecord = NULL;// Existing custom Attribute record.
 
     LOCKWRITE();
@@ -858,9 +852,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetCustomAttributeValue

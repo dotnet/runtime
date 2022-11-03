@@ -1015,8 +1015,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree*     dest      = nullptr;
-    GenTreeFlags destFlags = GTF_EMPTY;
+    GenTree* dest = nullptr;
 
     DebugInfo usedDI = di;
     if (!usedDI.IsValid())
@@ -1350,9 +1349,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
-
-    dest->gtFlags |= destFlags;
-    destFlags = dest->gtFlags;
 
     // return an assignment node, to be appended
     GenTree* asgNode = gtNewAssignNode(dest, src);
@@ -5687,33 +5683,6 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
     }
 }
 
-/*****************************************************************************/
-
-#ifdef DEBUG
-
-#undef RETURN // undef contracts RETURN macro
-
-enum controlFlow_t
-{
-    NEXT,
-    CALL,
-    RETURN,
-    THROW,
-    BRANCH,
-    COND_BRANCH,
-    BREAK,
-    PHI,
-    META,
-};
-
-const static controlFlow_t controlFlow[] = {
-#define OPDEF(c, s, pop, push, args, type, l, s1, s2, flow) flow,
-#include "opcode.def"
-#undef OPDEF
-};
-
-#endif // DEBUG
-
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
@@ -8068,8 +8037,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                // Create the comparison node.
+                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
+                {
+                    op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+                    op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+                }
 
+                // Create the comparison node.
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
                 // TODO: setting both flags when only one is appropriate.
@@ -13242,7 +13216,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileWeights())
     {
         const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
@@ -13259,7 +13233,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         profileFreq = 1.0;
     }
 
-    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, hasProfile);
     inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 

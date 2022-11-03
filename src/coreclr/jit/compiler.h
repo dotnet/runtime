@@ -217,12 +217,15 @@ class LclSsaVarDsc
     GenTreeOp* m_asg = nullptr;
     // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
     unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    // Number of uses of this SSA def (may be an over-estimate). Includes phi args uses.
+    // Number of uses of this SSA def (may be an over-estimate).
+    // May not be accurate for for promoted fields.
     unsigned short m_numUses = 0;
     // True if there may be phi args uses of this def
-    // (false implies all uses are non-phi)
+    // May not be accurate for for promoted fields.
+    // (false implies all uses are non-phi).
     bool m_hasPhiUse = false;
-    // True if there may be uses of the def in a different block
+    // True if there may be uses of the def in a different block.
+    // May not be accurate for for promoted fields.
     bool m_hasGlobalUse = false;
 
 public:
@@ -2350,7 +2353,7 @@ public:
 
     GenTree* gtNewZeroConNode(var_types type);
 
-    GenTree* gtNewOneConNode(var_types type);
+    GenTree* gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF);
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
@@ -2391,6 +2394,9 @@ public:
 
     GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
     GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
+
+    GenTreeConditional* gtNewConditionalNode(
+        genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
 
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
@@ -2831,6 +2837,7 @@ public:
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
+    GenTree* gtFoldExprConditional(GenTree* tree);
     GenTree* gtCreateHandleCompare(genTreeOps             oper,
                                    GenTree*               op1,
                                    GenTree*               op2,
@@ -4869,6 +4876,9 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
+    // Does value-numbering for a variable definition that has SSA.
+    void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
+
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
@@ -5398,7 +5408,7 @@ public:
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
-    void fgDebugCheckProfileData();
+    void fgDebugCheckProfileWeights();
     bool fgDebugCheckIncomingProfileData(BasicBlock* block);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
 
@@ -5505,6 +5515,7 @@ protected:
     }
 
     bool fgHaveProfileData();
+    bool fgHaveProfileWeights();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, weight_t* weight);
 
     Instrumentor* fgCountInstrumentor;
@@ -5532,18 +5543,19 @@ public:
     unsigned                               fgPgoInlineePgo;
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
+    bool                                   fgPgoHaveWeights;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, weight_t weight);
     void fgApplyProfileScale();
-    bool fgHaveSufficientProfileData();
-    bool fgHaveTrustedProfileData();
+    bool fgHaveSufficientProfileWeights();
+    bool fgHaveTrustedProfileWeights();
 
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
     //                           or if we have some fake profile data for the stress mode
     bool fgIsUsingProfileWeights()
     {
-        return (fgHaveProfileData() || fgStressBBProf());
+        return (fgHaveProfileWeights() || fgStressBBProf());
     }
 
     // fgProfileRunsCount - returns total number of scenario runs for the profile data
@@ -5767,7 +5779,6 @@ private:
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
-    GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -6083,6 +6094,7 @@ public:
     void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
+    PhaseStatus optIfConversion(); // If conversion
 
 protected:
     // This enumeration describes what is killed by a call.
@@ -6471,6 +6483,7 @@ protected:
     OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
+    bool optIfConvert(BasicBlock* block);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
@@ -7379,6 +7392,7 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -9577,6 +9591,8 @@ public:
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(GENERIC_CHECK)                                                              \
+        STRESS_MODE(IF_CONVERSION_COST)                                                         \
+        STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

@@ -1,6 +1,6 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project TreatAsLocalProperty="WasmNativeWorkload">
-  <Import Condition="'$(TargetsNet6)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(_BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6" />
+  <Import Condition="'$(TargetsNet6)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6" />
 
   <ImportGroup Condition="'$(TargetsNet6)' == 'true' and '$(TargetPlatformIdentifier)' == 'android'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net6" />

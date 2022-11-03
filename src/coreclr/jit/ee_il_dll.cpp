@@ -693,9 +693,15 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
+    {
+        // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
+        // We also need to free the nonused memory.
+        info.compCompHnd->freeArray(eeVars);
+        eeVars = nullptr;
+    }
 
     info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
-
     eeVars = nullptr; // We give up ownership after setVars()
 }
 
@@ -842,9 +848,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    gtDispLclVar(var->varNumber, false);
-    printf("(%10s) : From %08Xh to %08Xh, in ", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name),
-           var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
