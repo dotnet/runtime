@@ -192,7 +192,6 @@ set(SOURCES
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
   safecrt/strtok_s.cpp
-  safecrt/swprintf.cpp
   safecrt/vsprintf.cpp
   safecrt/vswprint.cpp
   safecrt/wcscat_s.cpp

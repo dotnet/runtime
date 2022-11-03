@@ -1681,7 +1681,7 @@ int __cdecl vsprintf_s(char (&_Dst)[_SizeInBytes], const char *_Format, va_list 
 
 /* _vsnprintf_s */
 /*
- * _snwprintf_s, _vsnprintf_s, _vsnwprintf_s format a string and copy at max _Count characters into _Dst;
+ * _vsnprintf_s, _vsnwprintf_s format a string and copy at max _Count characters into _Dst;
  * need safecrt.lib and msvcrt.dll;
  * string _Dst will always be null-terminated;
  * will call _SAFECRT_INVALID_PARAMETER if there is not enough space in _Dst;
@@ -1707,23 +1707,11 @@ int __cdecl _vsnprintf_s(char (&_Dst)[_SizeInBytes], size_t _Count, const char *
 
 /* no inline version of _vsnprintf_s */
 
-/* _snwprintf_s, _vsnwprintf_s */
+/* _vsnwprintf_s */
 _SAFECRT__EXTERN_C
 int __cdecl _vsnwprintf_s(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, va_list _ArgList);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
-template <size_t _SizeInWords>
-inline
-int __cdecl _snwprintf_s(WCHAR (&_Dst)[_SizeInWords], size_t _Count, const WCHAR *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = _vsnwprintf_s(_Dst, _SizeInWords, _Count, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
-}
-
 template <size_t _SizeInWords>
 inline
 int __cdecl _vsnwprintf_s(char (&_Dst)[_SizeInWords], size_t _Count, const char *_Format, va_list _ArgList)
@@ -1732,7 +1720,7 @@ int __cdecl _vsnwprintf_s(char (&_Dst)[_SizeInWords], size_t _Count, const char 
 }
 #endif
 
-/* no inline version of _snwprintf_s, _vsnwprintf_s */
+/* no inline version of _vsnwprintf_s */
 
 /* wscanf_s */
 _SAFECRT__EXTERN_C
