@@ -201,16 +201,16 @@
 
     <Message Text="** Installing V8@$(_V8VersionTruncated) . Set %24(V8VersionForTesting) to override, or %24(InstallChromeForTests)=false to skip." Importance="High" />
 
+    <Exec Command="find $(EMSDK_PATH)/node" />
     <RunWithEmSdkEnv
-              Command="npm install jsvu --prefix=$(_JsvuDir)"
+              Command="which jsvu"
               EmSdkPath="$(EMSDK_PATH)"
+              StandardOutputImportance="High"
+              StandardErrorImportance="High"
               IgnoreStandardErrorWarningFormat="true"
-              WorkingDirectory="$(ArtifactsDir)" />
-
-    <!-- FIXME: path sep on windows -->
+              WorkingDirectory="$(ArtifactsObjDir)" />
     <RunWithEmSdkEnv
               Command="jsvu @(_JsvuInstallArgs, ' ')"
-              EnvironmentVariables="PATH=$(_JsvuDir):$(PATH)"
               EmSdkPath="$(EMSDK_PATH)"
               StandardOutputImportance="High"
               StandardErrorImportance="High"
