@@ -250,7 +250,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
-                return false;
+            {
+                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+                return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
+            }
 
             switch (method)
             {
@@ -536,11 +539,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
             }
 
-            //ignore all protocol extension messages not supported on .net6
-            if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
-                return true;
-
-            return false;
+            // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+            return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
         {
