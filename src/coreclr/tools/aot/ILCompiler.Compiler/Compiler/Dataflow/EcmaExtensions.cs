@@ -114,5 +114,11 @@ namespace ILCompiler.Dataflow
                 _ => throw new NotImplementedException("Unexpected type system entity")
             };
         }
+
+        public static ParameterProxyEnumerable GetMetadataParameters(this MethodDesc method)
+        {
+            int implicitThisOffset = !method.Signature.IsStatic ? 1 : 0;
+            return new ParameterProxyEnumerable(implicitThisOffset, method.Signature.Length + implicitThisOffset, method);
+        }
     }
 }

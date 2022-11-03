@@ -80,7 +80,7 @@ namespace ILLink.Shared.TrimAnalysis
             // TODO: niche APIs that we probably shouldn't even have added
             // We have to issue a warning, otherwise we could break the app without a warning.
             // This is not the ideal warning, but it's good enough for now.
-            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName(1), calledMethod.GetDisplayName());
+            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameter((ParameterIndex)(1 + (calledMethod.HasImplicitThis() ? 1 : 0))).GetDisplayName(), calledMethod.GetDisplayName());
             resolvedType = default;
             return false;
         }
