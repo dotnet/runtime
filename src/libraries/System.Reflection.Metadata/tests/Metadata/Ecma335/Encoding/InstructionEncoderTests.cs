@@ -485,6 +485,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var switchEncoder = il.Switch(4);
             Assert.Throws<InvalidOperationException>(() => il.OpCode(ILOpCode.Nop));
             Assert.Throws<InvalidOperationException>(() => il.Token(0));
+            Assert.Throws<InvalidOperationException>(() => il.DefineLabel());
             Assert.Throws<InvalidOperationException>(() => il.MarkLabel(l));
             Assert.Throws<InvalidOperationException>(() => controlFlowBuilder.AddFinallyRegion(l, l, l, l));
             Assert.Throws<InvalidOperationException>(() => new MethodBodyStreamEncoder(new BlobBuilder()).AddMethodBody(il));

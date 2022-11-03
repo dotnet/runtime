@@ -53,7 +53,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public void OpCode(ILOpCode code)
         {
-            ControlFlowBuilder?.AssertNotInSwitch();
+            ControlFlowBuilder?.ValidateNotInSwitch();
             if (unchecked((byte)code) == (ushort)code)
             {
                 CodeBuilder.WriteByte((byte)code);
@@ -81,7 +81,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public void Token(int token)
         {
-            ControlFlowBuilder?.AssertNotInSwitch();
+            ControlFlowBuilder?.ValidateNotInSwitch();
             CodeBuilder.WriteInt32(token);
         }
 
@@ -477,7 +477,6 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="label"/> has default value.</exception>
         public void MarkLabel(LabelHandle label)
         {
-            ControlFlowBuilder?.AssertNotInSwitch();
             GetBranchBuilder().MarkLabel(Offset, label);
         }
 

@@ -109,6 +109,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal LabelHandle AddLabel()
         {
+            ValidateNotInSwitch();
             _labels.Add(-1);
             return new LabelHandle(_labels.Count);
         }
@@ -138,6 +139,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal void MarkLabel(int ilOffset, LabelHandle label)
         {
             Debug.Assert(ilOffset >= 0);
+            ValidateNotInSwitch();
             ValidateLabel(label, nameof(label));
             _labels[label.Id - 1] = ilOffset;
         }
@@ -240,7 +242,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(tryEnd, nameof(tryEnd));
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
-            AssertNotInSwitch();
+            ValidateNotInSwitch();
 
             _lazyExceptionHandlers ??= new List<ExceptionHandlerInfo>();
 
@@ -259,7 +261,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal int RemainingSwitchBranches { get; set; }
 
-        internal void AssertNotInSwitch()
+        internal void ValidateNotInSwitch()
         {
             if (RemainingSwitchBranches > 0)
             {

@@ -189,7 +189,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentOutOfRange(nameof(instructionEncoder), SR.TooManyExceptionRegions);
             }
 
-            flowBuilder?.AssertNotInSwitch();
+            flowBuilder?.ValidateNotInSwitch();
 
             // Note (see also https://github.com/dotnet/runtime/issues/24948)
             //
