@@ -14,6 +14,9 @@
 
     <CoreBuildDependsOn />
     <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
+    <ExtractTestClassNamesForHelix Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(ArchiveTests)' == 'true'">true</ExtractTestClassNamesForHelix>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
+    <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,7 +31,14 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
-                      AdditionalProperties="RuntimeConfiguration=$(Configuration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir)" />
+                      AdditionalProperties="
+                          RuntimeConfiguration=$(RuntimeConfiguration);
+                          ArchiveTests=$(ArchiveTests);
+                          ArchiveDirForHelix=$(TargetDir);
+                          TestArchiveTestsDir=$(TestArchiveTestsDir);
+                          ExtractTestClassNamesForHelix=$(ExtractTestClassNamesForHelix);
+                          DebuggerHost=$(DebuggerHost);
+                          DotNetForTests=$([MSBuild]::NormalizePath($(DotNetRoot), $(DotNetTool)))" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">

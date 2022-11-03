@@ -1313,8 +1313,8 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_DivByCns++;
             break;
 
-        case InlineObservation::CALLSITE_HAS_PROFILE:
-            m_HasProfile = value;
+        case InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS:
+            m_HasProfileWeights = value;
             break;
 
         case InlineObservation::CALLSITE_IN_NORETURN_REGION:
@@ -1346,7 +1346,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
 
             // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
-            if (m_HasProfile && (m_RootCompiler->fgHaveTrustedProfileData()))
+            if (m_HasProfileWeights && (m_RootCompiler->fgHaveTrustedProfileWeights()))
             {
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
             }
@@ -1379,7 +1379,8 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_IsForceInline && !m_HasProfile && !m_ConstArgFeedsIsKnownConst && !m_ArgFeedsIsKnownConst)
+            else if (!m_IsForceInline && !m_HasProfileWeights && !m_ConstArgFeedsIsKnownConst &&
+                     !m_ArgFeedsIsKnownConst)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
@@ -1681,7 +1682,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         }
     }
 
-    if (m_HasProfile)
+    if (m_HasProfileWeights)
     {
         // There are cases when Profile Data can be misleading or polluted:
         //  1) We don't support context-sensitive instrumentation
@@ -1693,7 +1694,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        if (m_RootCompiler->fgHaveTrustedProfileData())
+        if (m_RootCompiler->fgHaveTrustedProfileWeights())
         {
             multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         }
@@ -1791,7 +1792,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsFromValueClass)
     XATTR_B(m_NonGenericCallsGeneric)
     XATTR_B(m_IsCallsiteInNoReturnRegion)
-    XATTR_B(m_HasProfile)
+    XATTR_B(m_HasProfileWeights)
 }
 #endif
 
@@ -1846,7 +1847,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_CallSiteWeight(0)
     , m_ModelCodeSizeEstimate(0)
     , m_PerCallInstructionEstimate(0)
-    , m_HasProfile(false)
+    , m_HasProfileWeights(false)
     , m_IsClassCtor(false)
     , m_IsSameThis(false)
     , m_CallerHasNewArray(false)
@@ -1893,8 +1894,8 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
             // hotness for all candidates. So ignore.
             break;
 
-        case InlineObservation::CALLSITE_HAS_PROFILE:
-            m_HasProfile = value;
+        case InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS:
+            m_HasProfileWeights = value;
             break;
 
         default:
@@ -2931,7 +2932,7 @@ void ProfilePolicy::NoteInt(InlineObservation obs, int value)
         // If we're mimicking the default policy because there's no PGO
         // data for this call, also fail if thereare too many basic blocks.
         //
-        if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
+        if (!m_HasProfileWeights && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
         {
             SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
             return;
@@ -2956,7 +2957,7 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     // We expect to have profile data, otherwise we should not
     // have used this policy.
     //
-    if (!m_HasProfile)
+    if (!m_HasProfileWeights)
     {
         // Todo: investigate these cases more carefully.
         //
