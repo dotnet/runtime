@@ -1950,6 +1950,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
+    fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -2290,6 +2291,11 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
+        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
@@ -2706,6 +2712,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoQueryResult = E_FAIL;
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
+    fgPgoHaveWeights = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -2761,6 +2768,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (SUCCEEDED(fgPgoQueryResult))
         {
             assert(fgPgoSchema != nullptr);
+
+            for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
+            {
+                ICorJitInfo::PgoInstrumentationKind kind = fgPgoSchema[i].InstrumentationKind;
+                if (kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount)
+                {
+                    fgPgoHaveWeights = true;
+                    break;
+                }
+            }
         }
 
         // A failed result implies a NULL fgPgoSchema
@@ -3856,6 +3876,9 @@ _SetMinOpts:
     {
         opts.compFlags &= ~CLFLG_MAXOPT;
         opts.compFlags |= CLFLG_MINOPT;
+
+        lvaEnregEHVars &= compEnregLocals();
+        lvaEnregMultiRegVars &= compEnregLocals();
     }
 
     if (!compIsForInlining())
@@ -4101,13 +4124,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     }
     else if (tier1)
     {
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        if (opts.IsOSR())
         {
             return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
-            return "Tier1";
+            return instrumenting ? "Instrumented Tier1" : "Tier1";
         }
     }
     else if (opts.OptimizationEnabled())
@@ -4549,6 +4572,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     if (opts.OptimizationEnabled())
     {
+        // Tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+
         // Merge common throw blocks
         //
         DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
@@ -4650,6 +4677,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
+        // Second pass of tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
+
         // Compute reachability sets and dominators.
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
@@ -4724,6 +4755,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doCse           = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
+        bool doIfConversion  = true;
         int  iterations      = 1;
 
 #if defined(OPT_CONFIG)
@@ -4736,6 +4768,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doCse           = doValueNum;
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doIfConversion  = doIfConversion && (JitConfig.JitDoIfConversion() != 0);
 
         if (opts.optRepeat)
         {
@@ -4787,6 +4820,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doBranchOpt)
             {
+                // Optimize redundant branches
+                //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
@@ -4797,11 +4832,29 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
             }
 
+            // Assertion prop can do arbitrary statement remorphing, which
+            // can clone code and disrupt our simpleminded SSA accounting.
+            //
+            // So, disable the ssa checks.
+            //
+            if (fgSsaChecksEnabled)
+            {
+                JITDUMP("Disabling SSA checking before assertion prop\n");
+                fgSsaChecksEnabled = false;
+            }
+
             if (doAssertionProp)
             {
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
+            }
+
+            if (doIfConversion)
+            {
+                // If conversion
+                //
+                DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
             }
 
             if (doRangeAnalysis)
@@ -5330,6 +5383,7 @@ void Compiler::ResetOptAnnotations()
     m_blockToEHPreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
+    fgSsaChecksEnabled   = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5998,7 +6052,7 @@ void Compiler::compCompileFinish()
 
         printf("%08X | ", currentMethodToken);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             if (fgCalledCount < 1000)
             {
@@ -6451,7 +6505,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         InlineResult prejitResult(this, methodHnd, "prejit");
 
         // Profile data allows us to avoid early "too many IL bytes" outs.
-        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, fgHaveSufficientProfileWeights());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);

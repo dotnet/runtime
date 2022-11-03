@@ -48,6 +48,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:EnablePackageValidation=false</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

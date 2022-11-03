@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Hosting
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
-        private static void Write<T>(
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
             DiagnosticSource diagnosticSource,
             string name,
             T value)

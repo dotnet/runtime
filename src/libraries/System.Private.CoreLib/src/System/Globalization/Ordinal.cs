@@ -80,17 +80,19 @@ namespace System.Globalization
             IntPtr byteOffset = IntPtr.Zero;
 
 #if TARGET_64BIT
+            ulong valueAu64 = 0;
+            ulong valueBu64 = 0;
             // Read 4 chars (64 bits) at a time from each string
             while ((uint)length >= 4)
             {
-                ulong valueA = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
-                ulong valueB = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                valueAu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                valueBu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
 
                 // A 32-bit test - even with the bit-twiddling here - is more efficient than a 64-bit test.
-                ulong temp = valueA | valueB;
+                ulong temp = valueAu64 | valueBu64;
                 if (!Utf16Utility.AllCharsInUInt32AreAscii((uint)temp | (uint)(temp >> 32)))
                 {
-                    goto NonAscii; // one of the inputs contains non-ASCII data
+                    goto NonAscii64; // one of the inputs contains non-ASCII data
                 }
 
                 // Generally, the caller has likely performed a first-pass check that the input strings
@@ -100,7 +102,7 @@ namespace System.Globalization
                 // branching within this loop unless we're about to exit the loop, either due to failure or
                 // due to us running out of input data.
 
-                if (!Utf16Utility.UInt64OrdinalIgnoreCaseAscii(valueA, valueB))
+                if (!Utf16Utility.UInt64OrdinalIgnoreCaseAscii(valueAu64, valueBu64))
                 {
                     return false;
                 }
@@ -109,7 +111,8 @@ namespace System.Globalization
                 length -= 4;
             }
 #endif
-
+            uint valueAu32 = 0;
+            uint valueBu32 = 0;
             // Read 2 chars (32 bits) at a time from each string
 #if TARGET_64BIT
             if ((uint)length >= 2)
@@ -117,12 +120,12 @@ namespace System.Globalization
             while ((uint)length >= 2)
 #endif
             {
-                uint valueA = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
-                uint valueB = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                valueBu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
 
-                if (!Utf16Utility.AllCharsInUInt32AreAscii(valueA | valueB))
+                if (!Utf16Utility.AllCharsInUInt32AreAscii(valueAu32 | valueBu32))
                 {
-                    goto NonAscii; // one of the inputs contains non-ASCII data
+                    goto NonAscii32; // one of the inputs contains non-ASCII data
                 }
 
                 // Generally, the caller has likely performed a first-pass check that the input strings
@@ -132,7 +135,7 @@ namespace System.Globalization
                 // branching within this loop unless we're about to exit the loop, either due to failure or
                 // due to us running out of input data.
 
-                if (!Utf16Utility.UInt32OrdinalIgnoreCaseAscii(valueA, valueB))
+                if (!Utf16Utility.UInt32OrdinalIgnoreCaseAscii(valueAu32, valueBu32))
                 {
                     return false;
                 }
@@ -145,31 +148,47 @@ namespace System.Globalization
             {
                 Debug.Assert(length == 1);
 
-                uint valueA = Unsafe.AddByteOffset(ref charA, byteOffset);
-                uint valueB = Unsafe.AddByteOffset(ref charB, byteOffset);
+                valueAu32 = Unsafe.AddByteOffset(ref charA, byteOffset);
+                valueBu32 = Unsafe.AddByteOffset(ref charB, byteOffset);
 
-                if ((valueA | valueB) > 0x7Fu)
+                if ((valueAu32 | valueBu32) > 0x7Fu)
                 {
-                    goto NonAscii; // one of the inputs contains non-ASCII data
+                    goto NonAscii32; // one of the inputs contains non-ASCII data
                 }
 
-                if (valueA == valueB)
+                if (valueAu32 == valueBu32)
                 {
                     return true; // exact match
                 }
 
-                valueA |= 0x20u;
-                if ((uint)(valueA - 'a') > (uint)('z' - 'a'))
+                valueAu32 |= 0x20u;
+                if ((uint)(valueAu32 - 'a') > (uint)('z' - 'a'))
                 {
                     return false; // not exact match, and first input isn't in [A-Za-z]
                 }
 
-                return valueA == (valueB | 0x20u);
+                return valueAu32 == (valueBu32 | 0x20u);
             }
 
             Debug.Assert(length == 0);
             return true;
 
+        NonAscii32:
+            // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
+            if (Utf16Utility.AllCharsInUInt32AreAscii(valueAu32) || Utf16Utility.AllCharsInUInt32AreAscii(valueBu32))
+            {
+                return false;
+            }
+            goto NonAscii;
+
+#if TARGET_64BIT
+        NonAscii64:
+            // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
+            if (Utf16Utility.AllCharsInUInt64AreAscii(valueAu64) || Utf16Utility.AllCharsInUInt64AreAscii(valueBu64))
+            {
+                return false;
+            }
+#endif
         NonAscii:
             // The non-ASCII case is factored out into its own helper method so that the JIT
             // doesn't need to emit a complex prolog for its caller (this method).
