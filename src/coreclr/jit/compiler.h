@@ -5781,9 +5781,9 @@ private:
     void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
+    unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetBigOffsetMorphingTemp(var_types type); // We cache one temp per type to be
-                                                         // used when morphing big offset.
+    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
 
     //----------------------- Liveness analysis -------------------------------
 
@@ -5859,8 +5859,6 @@ private:
 #if !FEATURE_FIXED_OUT_ARGS
     unsigned fgThrowHlpBlkStkLevel(BasicBlock* block);
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    unsigned fgBigOffsetMorphingTemps[TYP_COUNT];
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
