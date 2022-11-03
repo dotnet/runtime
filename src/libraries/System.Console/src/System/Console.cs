@@ -392,17 +392,13 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("linux")]
-            [SupportedOSPlatform("freebsd")]
-            [SupportedOSPlatform("osx")]
             set
             {
                 if (Console.IsOutputRedirected)
@@ -419,17 +415,13 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("linux")]
-            [SupportedOSPlatform("freebsd")]
-            [SupportedOSPlatform("osx")]
             set
             {
                 if (Console.IsOutputRedirected)
@@ -452,10 +444,10 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("freebsd")]
-        [SupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetWindowSize(int width, int height)
         {
             if (Console.IsOutputRedirected)
