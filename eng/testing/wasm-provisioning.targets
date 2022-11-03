@@ -21,10 +21,23 @@
     <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
     <ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromeDirName), $(ChromeBinaryName)))</ChromeBinaryPath>
     <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
+
+    <GeneratePrereqsForTestingManifest Condition="'$(GeneratePrereqsForTestingManifest)' == ''">$(InstallChromeForTests)</GeneratePrereqsForTestingManifest>
+
+    <InstallWasmTestsPrerequisitesDependsOn>
+      $(InstallWasmTestsPrerequisitesDependsOn);
+      GetChromeVersion;
+      _DownloadAndInstallChrome;
+      _DownloadAndInstallChromeDriver;
+      DownloadAndInstallFirefox;
+      ProvisionV8
+    </InstallWasmTestsPrerequisitesDependsOn>
+
+    <_JsvuDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'jsvu'))</_JsvuDir>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
   </PropertyGroup>
 
-  <Target Name="DownloadAndInstallChrome"
-          AfterTargets="GetChromeVersion"
+  <Target Name="_DownloadAndInstallChrome"
           Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
     <RemoveDir Directories="$(ChromeDir)" />
@@ -45,8 +58,7 @@
     <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="DownloadAndInstallChromeDriver"
-          AfterTargets="GetChromeVersion"
+  <Target Name="_DownloadAndInstallChromeDriver"
           Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
     <RemoveDir Directories="$(ChromeDriverDir)" />
@@ -68,7 +80,6 @@
   </Target>
 
   <Target Name="DownloadAndInstallFirefox"
-          AfterTargets="Build"
           Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
     <ItemGroup>
       <_StampFile Include="$(_BrowserStampDir).install-firefox*.stamp" />
@@ -98,7 +109,9 @@
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
 
-  <Target Name="GetChromeVersion" AfterTargets="Build" Condition="'$(InstallChromeForTests)' == 'true'">
+  <Target Name="GetChromeVersion"
+          Condition="'$(InstallChromeForTests)' == 'true' or '$(GeneratePrereqsForTestingManifest)' == 'true'">
+
     <GetChromeVersions
                 OSIdentifier="$(ChromeOSIdentifier)"
                 OSPrefix="$(_ChromeOSPrefix)"
@@ -122,6 +135,89 @@
     <PropertyGroup>
       <ChromeStampFile>$([MSBuild]::NormalizePath('$(ChromeDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeStampFile>
       <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(ChromeDriverDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeDriverStampFile>
+
+      <_TestPrereqsManifestJson>
+<![CDATA[
+{
+  "v8": {
+    "version": "$(V8Version)"
+  }
+}
+]]>
+      </_TestPrereqsManifestJson>
+
+      <_V8VersionTruncated />
+      <_V8VersionTruncated Condition="'$(V8VersionForTesting)' != ''">$(V8VersionForTesting)</_V8VersionTruncated>
+      <_V8VersionTruncated Condition="'$(_V8VersionTruncated)' == ''">$([System.Text.RegularExpressions.Regex]::Replace($(V8Version), '(^\d+\.\d+.\d+).*$', '$1'))</_V8VersionTruncated>
+
+      <V8StampFile>$([MSBuild]::NormalizePath($(_JsvuDir), '.install-v8-$(_V8VersionTruncated).stamp'))</V8StampFile>
     </PropertyGroup>
+    <ItemGroup>
+      <_TestPrereqsManifestEnvVar Include="PREREQ_V8_VERSION=$(V8Version)" />
+      <_TestPrereqsManifestEnvVar Condition="'$(_V8VersionTruncated)' != ''" Include="PREREQ_JSVU_INSTALL_ARGS=&quot;--engines=v8@$(_V8VersionTruncated)&quot;" />
+      <_TestPrereqsManifestEnvVar Condition="'$(_V8VersionTruncated)' == ''" Include="PREREQ_JSVU_INSTALL_ARGS=&quot;--engines=v8&quot;" />
+
+      <_TestPrereqsManifestEnvVar Include="PREREQ_NODEJS_SETUP_VERSION=14.x" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+              Lines="$(_TestPrereqsManifestJson)"
+              File="$(ArtifactsBinDir)test-prereqs-manifest.json"
+              Overwrite="true"
+              WriteOnlyWhenDifferent="true"
+              />
+    <WriteLinesToFile
+              Lines="@(_TestPrereqsManifestEnvVar)"
+              File="$(ArtifactsBinDir)test-prereqs.env"
+              Overwrite="true"
+              WriteOnlyWhenDifferent="true"
+              />
   </Target>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="ProvisionV8"
+          Condition="!Exists($(V8StampFile)) and '$(InstallChromeForTests)' == 'true'">
+
+    <ItemGroup>
+      <_JsvuInstallArgs Condition="'$(_V8VersionTruncated)' != ''" Include="v8@$(_V8VersionTruncated)" />
+      <_JsvuInstallArgs Condition="'$(_V8VersionTruncated)' == ''" Include="--engines=v8" />
+
+      <!-- os={mac64,mac64arm,linux32,linux64,win32,win64,default} -->
+      <_JsvuInstallArgs Condition="$([MSBuild]::IsOSPlatform('windows'))"
+                        Include="--os=win64" />
+      <_JsvuInstallArgs Condition="$([MSBuild]::IsOSPlatform('linux'))"
+                        Include="--os=linux64" />
+      <_JsvuInstallArgs Condition="$([MSBuild]::IsOSPlatform('osx')) and '$(BuildArchitecture)' == 'arm64'"
+                        Include="--os=mac64arm" />
+      <_JsvuInstallArgs Condition="$([MSBuild]::IsOSPlatform('osx')) and '$(BuildArchitecture)' != 'arm64'"
+                        Include="--os=mac64" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(_JsvuDir)" />
+    <MakeDir Directories="$(_JsvuDir)" />
+
+    <Message Text="** Installing V8@$(_V8VersionTruncated) . Set %24(V8VersionForTesting) to override, or %24(InstallChromeForTests)=false to skip." Importance="High" />
+
+    <RunWithEmSdkEnv
+              Command="npm install jsvu --prefix=$(_JsvuDir)"
+              EmSdkPath="$(EMSDK_PATH)"
+              IgnoreStandardErrorWarningFormat="true"
+              WorkingDirectory="$(ArtifactsDir)" />
+
+    <!-- FIXME: path sep on windows -->
+    <RunWithEmSdkEnv
+              Command="jsvu @(_JsvuInstallArgs, ' ')"
+              EnvironmentVariables="PATH=$(_JsvuDir):$(PATH)"
+              EmSdkPath="$(EMSDK_PATH)"
+              StandardOutputImportance="High"
+              StandardErrorImportance="High"
+              IgnoreStandardErrorWarningFormat="true"
+              WorkingDirectory="$(ArtifactsObjDir)" />
+
+    <Touch Files="$(V8StampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="InstallWasmTestsPrerequisites"
+          AfterTargets="Build"
+          DependsOnTargets="$(InstallWasmTestsPrerequisitesDependsOn)" />
 </Project>

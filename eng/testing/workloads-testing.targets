@@ -16,7 +16,8 @@
       _PreparePackagesForWorkloadInstall;
       GetWorkloadInputs;
       _ProvisionDotNetForWorkloadTesting;
-      _InstallWorkloads
+      _InstallWorkloads;
+      InstallWasmTestsPrerequisites
     </InstallWorkloadUsingArtifactsDependsOn>
   </PropertyGroup>
 
