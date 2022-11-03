@@ -352,7 +352,9 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode && node is ISymbolDefinitionNode symbolDefinitionNode)
+                    if (node is INodeWithDebugInfo debugNode &&
+                        node is ISymbolDefinitionNode symbolDefinitionNode &&
+                        debugNode.GetNativeSequencePoints().Any())
                     {
                         uint methodTypeIndex = node is IMethodNode methodNode ?
                             _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
