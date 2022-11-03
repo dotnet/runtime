@@ -112,13 +112,13 @@ namespace ILCompiler.ObjectWriter
 
                         if (associatedDataNode != null)
                         {
-                            string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
+                            string symbolName = GetMangledName(associatedDataNode);
                             lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 
                         if (ehInfo != null)
                         {
-                            string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
+                            string symbolName = GetMangledName(ehInfo);
                             lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                         }
 

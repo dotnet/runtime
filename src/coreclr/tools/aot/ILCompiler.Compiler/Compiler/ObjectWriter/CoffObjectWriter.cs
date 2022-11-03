@@ -418,13 +418,13 @@ namespace ILCompiler.ObjectWriter
 
                         if (associatedDataNode != null)
                         {
-                            string symbolName = ExternCName(associatedDataNode.GetMangledName(_nodeFactory.NameMangler));
+                            string symbolName = GetMangledName(associatedDataNode);
                             xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, symbolName, 0);
                         }
 
                         if (ehInfo != null)
                         {
-                            string symbolName = ExternCName(ehInfo.GetMangledName(_nodeFactory.NameMangler));
+                            string symbolName = GetMangledName(ehInfo);
                             xdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, symbolName, 0);
                         }
 
