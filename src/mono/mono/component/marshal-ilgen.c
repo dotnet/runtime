@@ -33,7 +33,6 @@ static void emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 static void mono_marshal_ilgen_legacy_init (void);
 
 static MonoMarshalILgenCallbacks ilgen_marshal_cb;
-static MonoMarshalILgenCallbacks* ilgen_marshal_cb_ptr = NULL;
 
 static IlgenCallbacksToMono *cb_to_mono;
 
