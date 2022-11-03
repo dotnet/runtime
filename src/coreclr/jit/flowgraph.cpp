@@ -490,7 +490,7 @@ bool Compiler::fgCanSwitchToOptimized()
     if (result)
     {
         // Ensure that it would be safe to change the opt level
-        assert(opts.compFlags == CLFLG_MINOPT);
+        assert(opts.OptLevel() < OPT_Blended);
     }
 
     return result;
@@ -2717,8 +2717,9 @@ PhaseStatus Compiler::fgAddInternal()
         // We are allowed to have multiple individual exits
         // However we can still decide to have a single return
         //
-        if ((opts.OptLevelIs(OPT_SizeAndThroughput)) || stressMerging)
+        if (stressMerging)
         {
+            // TODO-OptLevel: opts.OptLevelIs(OPT_SizeAndThroughput) candidate
             // Under stress or for Small_Code case we always
             // generate a single return block when we have multiple
             // return points

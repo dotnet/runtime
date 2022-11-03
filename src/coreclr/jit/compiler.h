@@ -9056,8 +9056,9 @@ public:
     bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
-    bool compSwitchedToMinOpts;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit;       // There are vars with lvSuppressedZeroInit set
+    bool compSwitchedToMinOpts;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    const char* compSwitchedToMinOptsReason; // Reason why it was switched to MinOpts
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
@@ -9152,7 +9153,7 @@ public:
 
         bool MinOpts() const
         {
-            return compOptLevel == OPT_MinOpts;
+            return compOptLevel < OPT_Blended;
         }
         bool OptimizationDisabled() const
         {

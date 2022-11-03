@@ -2387,19 +2387,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     opts.jitFlags  = jitFlags;
-    opts.compFlags = CLFLG_MAXOPT; // Default value is for full optimization
-
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) ||
-        jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
-    {
-        opts.compFlags = CLFLG_MINOPT;
-    }
-    // Don't optimize .cctors (except prejit) or if we're an inlinee
-    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
-    {
-        opts.compFlags = CLFLG_MINOPT;
-    }
+    opts.compFlags = CLFLG_MINOPT;
 
     //-------------------------------------------------------------------------
 
@@ -2412,27 +2400,24 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // MinOpts level in case of explicit miopts mode or debug-friendly codegen request
         opts.compOptLevel = OPT_MinOpts;
     }
-    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
+    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) && !compIsForInlining())
     {
         // Don't waste time on static cctors in JIT mode
         opts.compOptLevel = OPT_MinOpts;
     }
+    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    {
+        opts.compOptLevel = OPT_SizeAndThroughput;
+    }
+    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
+    {
+        opts.compOptLevel = OPT_Speed;
+        opts.compFlags = CLFLG_MAXOPT;
+    }
     else
     {
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
-        {
-            // TODO: use this for Tier0
-            opts.compOptLevel = OPT_SizeAndThroughput;
-        }
-        else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
-        {
-            opts.compOptLevel = OPT_Speed;
-        }
-        else
-        {
-            opts.compOptLevel = OPT_Blended;
-        }
+        opts.compOptLevel = OPT_Blended;
+        opts.compFlags = CLFLG_MAXOPT;
     }
 
 #ifdef DEBUG
@@ -3661,12 +3646,6 @@ void Compiler::compSetOptimizationLevel()
 
     theMinOptsValue = false;
 
-    if (opts.compFlags == CLFLG_MINOPT)
-    {
-        JITLOG((LL_INFO100, "CLFLG_MINOPT set for method %s\n", info.compFullName));
-        theMinOptsValue = true;
-    }
-
 #ifdef DEBUG
     jitMinOpts = JitConfig.JitMinOpts();
 
@@ -3681,10 +3660,7 @@ void Compiler::compSetOptimizationLevel()
             default:
                 if (jitMinOpts <= methodCount)
                 {
-                    if (verbose)
-                    {
-                        printf(" Optimizations disabled by JitMinOpts and methodCount\n");
-                    }
+                    compSwitchedToMinOptsReason = "Force JitMinOpts";
                     theMinOptsValue = true;
                 }
                 break;
@@ -3695,10 +3671,7 @@ void Compiler::compSetOptimizationLevel()
 
                 if ((firstMinopts == methodCountMask) || (secondMinopts == methodCountMask))
                 {
-                    if (verbose)
-                    {
-                        printf("0xD: Optimizations disabled by JitMinOpts and methodCountMask\n");
-                    }
+                    compSwitchedToMinOptsReason = "0xD: Force JitMinOpts";
                     theMinOptsValue = true;
                 }
             }
@@ -3710,10 +3683,7 @@ void Compiler::compSetOptimizationLevel()
 
                 if ((startMinopts <= methodCountMask) && (endMinopts >= methodCountMask))
                 {
-                    if (verbose)
-                    {
-                        printf("0xE: Optimizations disabled by JitMinOpts and methodCountMask\n");
-                    }
+                    compSwitchedToMinOptsReason = "0xE: Force JitMinOpts";
                     theMinOptsValue = true;
                 }
             }
@@ -3725,10 +3695,7 @@ void Compiler::compSetOptimizationLevel()
 
                 if (((methodCountMask & bitsOne) == bitsOne) && ((~methodCountMask & bitsZero) == bitsZero))
                 {
-                    if (verbose)
-                    {
-                        printf("0xF: Optimizations disabled by JitMinOpts and methodCountMask\n");
-                    }
+                    compSwitchedToMinOptsReason = "0xF: Force JitMinOpts";
                     theMinOptsValue = true;
                 }
             }
@@ -3781,31 +3748,33 @@ void Compiler::compSetOptimizationLevel()
     {
         if ((unsigned)JitConfig.JitMinOptsCodeSize() < info.compILCodeSize)
         {
-            JITLOG((LL_INFO10, "IL Code Size exceeded, using MinOpts for method %s\n", info.compFullName));
+            compSwitchedToMinOptsReason = "IL too big";
             theMinOptsValue = true;
         }
         else if ((unsigned)JitConfig.JitMinOptsInstrCount() < opts.instrCount)
         {
-            JITLOG((LL_INFO10, "IL instruction count exceeded, using MinOpts for method %s\n", info.compFullName));
+            compSwitchedToMinOptsReason = "IL too many instr";
             theMinOptsValue = true;
         }
         else if ((unsigned)JitConfig.JitMinOptsBbCount() < fgBBcount)
         {
-            JITLOG((LL_INFO10, "Basic Block count exceeded, using MinOpts for method %s\n", info.compFullName));
+            compSwitchedToMinOptsReason = "Too many BBs";
             theMinOptsValue = true;
         }
         else if ((unsigned)JitConfig.JitMinOptsLvNumCount() < lvaCount)
         {
-            JITLOG((LL_INFO10, "Local Variable Num count exceeded, using MinOpts for method %s\n", info.compFullName));
+            compSwitchedToMinOptsReason = "Too many locals";
             theMinOptsValue = true;
         }
         else if ((unsigned)JitConfig.JitMinOptsLvRefCount() < opts.lvRefCount)
         {
-            JITLOG((LL_INFO10, "Local Variable Ref count exceeded, using MinOpts for method %s\n", info.compFullName));
+            compSwitchedToMinOptsReason = "Too many refs";
             theMinOptsValue = true;
         }
+
         if (theMinOptsValue == true)
         {
+            JITLOG((LL_INFO10, "%s, using MinOpts for method %s\n", compSwitchedToMinOptsReason, info.compFullName));
             JITLOG((LL_INFO10000, "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count "
                                   "%3d,%3d for method %s\n",
                     info.compILCodeSize, opts.instrCount, fgBBcount, lvaCount, opts.lvRefCount, info.compFullName));
@@ -5050,6 +5019,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             sprintf_s(osrBuffer, 20, " @0x%x", info.compILEntry);
         }
 
+        char switchToMinOpts[32] = { 0 };
+        if (compSwitchedToMinOpts)
+        {
+            assert(compSwitchedToMinOptsReason != nullptr);
+            sprintf_s(switchToMinOpts, 32, " - %s ", compSwitchedToMinOptsReason);
+        }
+
 #ifdef DEBUG
         const char* fullName = info.compFullName;
 #else
@@ -5062,7 +5038,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         const bool hasProf = fgHaveProfileData();
         printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
-               compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
+               compGetTieringName(), switchToMinOpts, osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, debugPart);
     }
 
@@ -6328,6 +6304,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compSwitchedToOptimized = false;
     compSwitchedToMinOpts   = false;
+    compSwitchedToMinOptsReason = nullptr;
 
     // compInitOptions will set the correct verbose flag.
 
