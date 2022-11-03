@@ -59,6 +59,8 @@ typedef struct {
 	// The instruction that writes this local.
 	InterpInst *ins;
 	int def_index;
+	// ref count for ins->dreg
+	int ref_count;
 } LocalValue;
 
 struct _InterpInst {
