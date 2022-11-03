@@ -493,7 +493,8 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 #else	
 	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
-	ins->inst_c1 = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
+	if (!COMPILE_LLVM (cfg))
+		ins->inst_c1 = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
 	return ins;
 #endif
 }
