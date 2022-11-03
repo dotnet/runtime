@@ -7,9 +7,11 @@
 #define __MONO_MARSHAL_LIGHTWEIGHT_H__
 #include <glib.h>
 #include <mono/utils/mono-publib.h>
-
 MONO_API void
 mono_marshal_lightweight_init (void);
+
+MONO_API void
+mono_marshal_ilgen_init (void);
 
 gboolean
 mono_marshal_is_ilgen_requested (void);
