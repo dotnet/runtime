@@ -199,7 +199,6 @@ namespace System.Security.Cryptography
                 if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
                     (AlgorithmGroup == CngAlgorithmGroup.ECDiffieHellman || AlgorithmGroup == CngAlgorithmGroup.ECDsa))
                 {
-
                     string? curve = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
 
                     switch (curve)

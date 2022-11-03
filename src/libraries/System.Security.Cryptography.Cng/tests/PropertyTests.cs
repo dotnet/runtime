@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class PropertyTests
     {
-        private static Lazy<bool> _lazyPlatformCryptoProviderFunctional = new Lazy<bool>(static () =>
+        private static Lazy<bool> s_lazyPlatformCryptoProviderFunctional = new Lazy<bool>(static () =>
         {
             CngKey key = null;
 
@@ -33,9 +33,9 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 key?.Delete();
             }
-        }, isThreadSafe: true);
+        });
 
-        public static bool PlatformCryptoProviderFunctional => _lazyPlatformCryptoProviderFunctional.Value;
+        public static bool PlatformCryptoProviderFunctional => s_lazyPlatformCryptoProviderFunctional.Value;
 
         [ConditionalTheory(nameof(PlatformCryptoProviderFunctional))]
         [InlineData("ECDH_P256", 256)]
