@@ -9876,28 +9876,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     // Transformation: a % 1 = 0
                     return fgMorphModToZero(tree->AsOp());
                 }
-
-                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
-                {
-                    // Transformation: a % b = a & (b - 1);
-                    return fgMorphUModToAndSub(tree->AsOp());
-                }
-#ifdef TARGET_ARM64
-                // ARM64 architecture manual suggests this transformation
-                // for the mod operator.
-                else if (tree->OperIs(GT_MOD, GT_UMOD))
-#else
-                // XARCH only applies this transformation if we know
-                // that magic division will be used - which is determined
-                // when 'b' is not a power of 2 constant and mod operator is signed.
-                // Lowering for XARCH does this optimization already,
-                // but is also done here to take advantage of CSE.
-                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
-#endif
-                {
-                    // Transformation: a % b = a - (a / b) * b;
-                    return fgMorphModToSubMulDiv(tree->AsOp());
-                }
             }
 
 #ifndef TARGET_64BIT
@@ -9923,6 +9901,30 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
 #endif
 #endif // !TARGET_64BIT
+            if (!optValnumCSE_phase)
+            {
+                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
+                {
+                    // Transformation: a % b = a & (b - 1);
+                    return fgMorphUModToAndSub(tree->AsOp());
+                }
+#ifdef TARGET_ARM64
+                // ARM64 architecture manual suggests this transformation
+                // for the mod operator.
+                else if (tree->OperIs(GT_MOD, GT_UMOD))
+#else
+                // XARCH only applies this transformation if we know
+                // that magic division will be used - which is determined
+                // when 'b' is not a power of 2 constant and mod operator is signed.
+                // Lowering for XARCH does this optimization already,
+                // but is also done here to take advantage of CSE.
+                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+#endif
+                {
+                    // Transformation: a % b = a - (a / b) * b;
+                    return fgMorphModToSubMulDiv(tree->AsOp());
+                }
+            }
             break;
 
         USE_HELPER_FOR_ARITH:
