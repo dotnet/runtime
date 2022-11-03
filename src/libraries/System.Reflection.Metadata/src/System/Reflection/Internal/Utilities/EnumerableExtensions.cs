@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 
 namespace System.Reflection.Internal
 {
@@ -13,14 +11,6 @@ namespace System.Reflection.Internal
     /// </summary>
     internal static class EnumerableExtensions
     {
-        public static T? FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
-        {
-            // Despite being on the System.Linq namespace, this function resides
-            // in the System.Collections.Immutable assembly and avoids importing
-            // LINQ elsewhere.
-            return ImmutableArrayExtensions.FirstOrDefault(collection, predicate);
-        }
-
         // used only in debugger display so we needn't get fancy with optimizations.
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
