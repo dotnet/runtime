@@ -1253,9 +1253,10 @@ namespace System.Text.RegularExpressions.Tests
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
 
-                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
-
                 Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
+
+                // Generating the regex above itself uses a regex internally, so set the short timeout we want only after that's done
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.IsMatch(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Matches(input).Count);
