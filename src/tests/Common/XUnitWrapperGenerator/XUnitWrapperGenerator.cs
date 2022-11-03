@@ -190,7 +190,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             testExecutorBuilder.AppendLine("}");
         }
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput(""{assemblyName}""));");
+        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+        builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
         builder.AppendLine("return 100;");
 
         builder.Append(testExecutorBuilder);
