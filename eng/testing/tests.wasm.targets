@@ -29,6 +29,7 @@
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
+    <InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -146,28 +147,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
-                          Variant="net7"
-                          Version="$(PackageVersion)"
-                          VersionBand="$(SdkBandVersion)" />
-
-    <WorkloadIdForTesting Include="wasm-tools-net6"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
-                          Variant="net6"
-                          Version="$(PackageVersion)"
-                          VersionBand="$(SdkBandVersion)"
-                          IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
-                          />
-
-    <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
-    <!-- Latest net6 6.0.x versions are not available in feed currently so don't install them -->
-    <!--
-    <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />
-    <WorkloadCombinationsToInstall Include="net6+7" Variants="net6;net7" />
-    -->
-    <!--<WorkloadCombinationsToInstall Include="none" />-->
-
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
   </ItemGroup>
@@ -335,5 +314,31 @@
 
   <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
     <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
+    <ItemGroup>
+      <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
+                            Variant="net7"
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            VersionBand="$(SdkBandVersion)" />
+
+      <WorkloadIdForTesting Include="wasm-tools-net6"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
+                            Variant="net6"
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            VersionBand="$(SdkBandVersion)"
+                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
+                            />
+
+      <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
+      <!-- Latest net6 6.0.x versions are not available in feed currently so don't install them -->
+      <!--
+      <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />
+      <WorkloadCombinationsToInstall Include="net6+7" Variants="net6;net7" />
+      -->
+      <!--<WorkloadCombinationsToInstall Include="none" />-->
+    </ItemGroup>
   </Target>
 </Project>

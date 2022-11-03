@@ -376,7 +376,7 @@ export const enum MemoryViewType {
     Double = 2,
 }
 
-abstract class MemoryView implements IMemoryView, IDisposable {
+abstract class MemoryView implements IMemoryView {
     protected constructor(public _pointer: VoidPtr, public _length: number, public _viewType: MemoryViewType) {
     }
 
@@ -432,7 +432,7 @@ abstract class MemoryView implements IMemoryView, IDisposable {
     }
 }
 
-export interface IMemoryView {
+export interface IMemoryView extends IDisposable {
     /**
      * copies elements from provided source to the wasm memory.
      * target has to have the elements of the same type as the underlying C# array.
@@ -453,7 +453,7 @@ export interface IMemoryView {
     get byteLength(): number;
 }
 
-export class Span extends MemoryView implements IDisposable {
+export class Span extends MemoryView {
     private is_disposed = false;
     public constructor(pointer: VoidPtr, length: number, viewType: MemoryViewType) {
         super(pointer, length, viewType);
