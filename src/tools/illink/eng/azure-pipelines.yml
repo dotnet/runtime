@@ -28,6 +28,10 @@ variables:
     value: ${{ format('{0} /p:OfficialBuildId=$(Build.BuildNumber) /p:Test=false /p:IntegrationTest=false', variables['_BuildArgs']) }}
   # Provide HelixApiAccessToken for telemetry
   - group: DotNet-HelixApi-Access
+  - name: Codeql.Enabled
+    value: True
+  - name: Codeql.TSAEnabled
+    value: True
 
 stages:
 - stage: build
