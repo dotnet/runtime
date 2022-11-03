@@ -4888,8 +4888,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             // If conversion
             //
-            // Note: this invalidates SSA
-            //
             DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
         }
 
