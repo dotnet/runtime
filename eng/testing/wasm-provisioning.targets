@@ -114,7 +114,7 @@
              TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
 
   <Target Name="GetChromeVersion"
-          Condition="'$(InstallChromeForTests)' == 'true' or '$(GeneratePrereqsForTestingManifest)' == 'true'">
+          Condition="'$(InstallChromeForTests)' == 'true' or '$(InstallJSEnginesForTests)' == 'true' or '$(GeneratePrereqsForTestingManifest)' == 'true'">
 
     <GetChromeVersions
                 OSIdentifier="$(ChromeOSIdentifier)"
@@ -181,7 +181,6 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <Target Name="ProvisionV8" Condition="!Exists($(V8StampFile)) and '$(InstallJSEnginesForTests)' == 'true'">
-
     <ItemGroup>
       <_JsvuInstallArgs Condition="'$(_V8VersionTruncated)' != ''" Include="v8@$(_V8VersionTruncated)" />
       <_JsvuInstallArgs Condition="'$(_V8VersionTruncated)' == ''" Include="--engines=v8" />
