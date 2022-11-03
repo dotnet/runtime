@@ -299,7 +299,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                // for arrays, collections, and read-only list-like interfaces, we concatenate on to what is already there, if we can
+                // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
                 if (type.IsArray || IsArrayCompatibleInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
@@ -313,6 +313,19 @@ namespace Microsoft.Extensions.Configuration
                     {
                         return;
                     }
+                }
+
+                Type? iCollectionInterfaceType = GetICollectionInterfaceType(type);
+                if (iCollectionInterfaceType is not null)
+                {
+                    if (bindingPoint.Value is null)
+                    {
+                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                        bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                    }
+
+                    BindCollection(bindingPoint.Value!, iCollectionInterfaceType, config, options);
+                    return;
                 }
 
                 // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
@@ -836,6 +849,27 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
+        private static Type? GetICollectionInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            if (!type.IsInterface || !type.IsConstructedGenericType) { return null; }
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+
+            if (genericTypeDefinition == typeof(ICollection<>))
+            {
+                return type;
+            }
+
+            // We always try to use ICollection<T> type because during binding we use the Add method. Currently the Reflection
+            // cannot provide the Add method from the IList<> interface even IList<> extend ICollection<>.
+            if (genericTypeDefinition == typeof(IList<>))
+            {
+                return FindOpenGenericInterface(typeof(ICollection<>), type);
+            }
+
+            return null;
+        }
+
         private static bool TypeIsADictionaryInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -851,8 +885,6 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IEnumerable<>)
-                || genericTypeDefinition == typeof(ICollection<>)
-                || genericTypeDefinition == typeof(IList<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
