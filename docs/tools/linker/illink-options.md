@@ -123,7 +123,7 @@ unreachable will be removed.
 
 ### Adding custom linker steps
 
-You can write [custom steps](/docs/custom-steps.md) for the linker and instruct
+You can write [custom steps](custom-steps.md) for the linker and instruct
 the linker to add them into its existing pipeline. To tell the linker where this assembly is
 located, you have to append its full path after a comma which separates the custom
  step's name from the custom assembly's path
