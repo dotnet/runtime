@@ -156,7 +156,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (_appendBuffer.WrittenCount > 0 || paddingLength > _padding.Length)
             {
-                _appendBuffer.GetSpan(paddingLength).Clear();
+                _appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Clear();
                 _appendBuffer.Advance(paddingLength);
                 _position += paddingLength;
                 _bufferPosition += paddingLength;
