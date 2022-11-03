@@ -1,6 +1,6 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'" />
 
   <PropertyGroup>
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>

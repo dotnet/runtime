@@ -7189,9 +7189,11 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
+        {
             zero                          = gtNewVconNode(type);
             zero->AsVecCon()->gtSimd32Val = {};
             break;
+        }
 #endif // FEATURE_SIMD
 
         default:
@@ -7201,9 +7203,10 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     return zero;
 }
 
-GenTree* Compiler::gtNewOneConNode(var_types type)
+GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = TYP_UNDEF */)
 {
     GenTree* one;
+
     switch (type)
     {
         case TYP_INT:
@@ -7220,6 +7223,88 @@ GenTree* Compiler::gtNewOneConNode(var_types type)
         case TYP_DOUBLE:
             one = gtNewDconNode(1.0, type);
             break;
+
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+        {
+            GenTreeVecCon* vecCon = gtNewVconNode(type);
+
+            unsigned simdSize   = genTypeSize(type);
+            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.u8[index] = 1;
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.u16[index] = 1;
+                    }
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.u32[index] = 1;
+                    }
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.u64[index] = 1;
+                    }
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.f32[index] = 1.0f;
+                    }
+                    break;
+                }
+
+                case TYP_DOUBLE:
+                {
+                    for (uint32_t index = 0; index < simdLength; index++)
+                    {
+                        vecCon->gtSimd32Val.f64[index] = 1.0;
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            one = vecCon;
+            break;
+        }
+#endif // FEATURE_SIMD
 
         default:
             unreached();
@@ -19224,6 +19309,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             // TODO-XARCH-CQ: We could support division by constant for integral types
             assert(varTypeIsFloating(simdBaseType));
 
+            if (varTypeIsArithmetic(op2))
+            {
+                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            }
+
             if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -19244,9 +19334,22 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
         case GT_RSH:
         case GT_RSZ:
         {
+            // float and double don't have actual instructions for shifting
+            // so we'll just use the equivalent integer instruction instead.
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseJitType = CORINFO_TYPE_INT;
+                simdBaseType    = TYP_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseJitType = CORINFO_TYPE_LONG;
+                simdBaseType    = TYP_LONG;
+            }
+
             assert(!varTypeIsByte(simdBaseType));
-            assert(!varTypeIsFloating(simdBaseType));
-            assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
+            assert((op != GT_RSH) || (!varTypeIsUnsigned(simdBaseType) && !varTypeIsLong(simdBaseType)));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
             // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
@@ -19558,6 +19661,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             // TODO-AARCH-CQ: We could support division by constant for integral types
             assert(varTypeIsFloating(simdBaseType));
 
+            if (varTypeIsArithmetic(op2))
+            {
+                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            }
+
             if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
             {
                 intrinsic = NI_AdvSimd_DivideScalar;
@@ -19573,8 +19681,21 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
         case GT_RSH:
         case GT_RSZ:
         {
-            assert(!varTypeIsFloating(simdBaseType));
             assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
+
+            // float and double don't have actual instructions for shifting
+            // so we'll just use the equivalent integer instruction instead.
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseJitType = CORINFO_TYPE_INT;
+                simdBaseType    = TYP_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseJitType = CORINFO_TYPE_LONG;
+                simdBaseType    = TYP_LONG;
+            }
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
             // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot

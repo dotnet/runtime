@@ -1248,4 +1248,7 @@ mono_metadata_table_to_ptr_table (int table_num)
 	}
 }
 
+uint32_t
+mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t *last_param_out);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
