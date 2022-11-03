@@ -17,7 +17,7 @@ rm -f SIMD.log
   </PropertyGroup>
 
   <ItemGroup>
-    <CLRTestBashEnvironmentVariable Include="COMPlus_JitFuncInfoLogFile" Value="SIMD.log" />
+    <CLRTestBashEnvironmentVariable Include="DOTNET_JitFuncInfoLogFile" Value="SIMD.log" />
   </ItemGroup>
 
 </Project>
