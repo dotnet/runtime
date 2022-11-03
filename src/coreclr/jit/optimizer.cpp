@@ -153,7 +153,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
     noway_assert(fgReachable(begBlk, endBlk));
-    noway_assert(!opts.MinOpts());
+    noway_assert(!opts.OptimizationDisabled());
 
 #ifdef DEBUG
     if (verbose)
@@ -277,7 +277,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-    noway_assert(!opts.MinOpts());
+    noway_assert(!opts.OptimizationDisabled());
 
     unsigned backEdgeCount = 0;
 
@@ -386,7 +386,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         return;
     }
 
-    noway_assert(!opts.MinOpts());
+    noway_assert(!opts.OptimizationDisabled());
 
     bool removeLoop = false;
 

@@ -1717,7 +1717,7 @@ void CodeGen::genGenerateMachineCode()
                 printf("MinOpts code");
                 break;
             case Compiler::OPT_SizeAndThroughput:
-                printf("size/throughput-aware code");
+                printf("quick and small code");
                 break;
             case Compiler::OPT_Blended:
                 printf("blended code");
@@ -5317,7 +5317,7 @@ void CodeGen::genFinalizeFrame()
     regMaskTP maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
 
     if ((maskPushRegsFloat != RBM_NONE) ||
-        (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
+        (compiler->opts.OptimizationDisabled() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
     {
         // Here we try to keep stack double-aligned before the vpush
         if ((genCountBits(regSet.rsMaskPreSpillRegs(true) | maskPushRegsInt) % 2) != 0)

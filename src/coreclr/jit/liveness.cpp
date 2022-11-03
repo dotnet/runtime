@@ -1573,7 +1573,7 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
         // Dead store
         node->gtFlags |= GTF_VAR_DEATH;
 
-        if (!opts.MinOpts())
+        if (!opts.OptimizationDisabled())
         {
             // keepAliveVars always stay alive
             noway_assert(!VarSetOps::IsMember(this, keepAliveVars, varIndex));
@@ -1690,7 +1690,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
         if (fieldsAreTracked && VarSetOps::IsEmpty(this, liveFields))
         {
             // None of the fields were live, so this is a dead store.
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // keepAliveVars always stay alive
                 VARSET_TP keepAliveFields(VarSetOps::Intersection(this, fieldSet, keepAliveVars));
@@ -1900,7 +1900,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
-                    if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
+                    if (!opts.OptimizationDisabled() && !opts.ShouldUsePInvokeHelpers() &&
                         ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) ||
                          (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         lvaTable[info.compLvFrameListRoot].lvTracked)
@@ -1927,7 +1927,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     DISPNODE(lclVarNode);
 
                     blockRange.Delete(this, block, node);
-                    if (varDsc.lvTracked && !opts.MinOpts())
+                    if (varDsc.lvTracked && !opts.OptimizationDisabled())
                     {
                         fgStmtRemoved = true;
                     }
@@ -1952,7 +1952,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     const bool isTracked = lvaTable[node->AsLclVarCommon()->GetLclNum()].lvTracked;
                     blockRange.Delete(this, block, node);
-                    if (isTracked && !opts.MinOpts())
+                    if (isTracked && !opts.OptimizationDisabled())
                     {
                         fgStmtRemoved = true;
                     }
@@ -2172,7 +2172,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 //
 bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
-    assert(!opts.MinOpts());
+    assert(!opts.OptimizationDisabled());
 
     // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
     // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks

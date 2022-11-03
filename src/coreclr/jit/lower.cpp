@@ -3137,7 +3137,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
-    if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
+    if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.OptimizationDisabled())
     {
         GenTree* next = OptimizeConstCompare(cmp);
 
@@ -5656,7 +5656,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    if (!comp->opts.MinOpts() && (divisorValue >= 3))
+    if (!comp->opts.OptimizationDisabled() && (divisorValue >= 3))
     {
         size_t magic;
         bool   increment;
@@ -5938,7 +5938,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 
     if (!isPow2(absDivisorValue))
     {
-        if (comp->opts.MinOpts())
+        if (comp->opts.OptimizationDisabled())
         {
             return nullptr;
         }

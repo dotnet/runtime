@@ -847,7 +847,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         if (m_dstVarDsc->lvPromoted)
         {
             noway_assert(varTypeIsStruct(m_dstVarDsc));
-            noway_assert(!m_comp->opts.MinOpts());
+            noway_assert(!m_comp->opts.OptimizationDisabled());
 
             if (m_blockSize == m_dstVarDsc->lvExactSize)
             {
@@ -867,7 +867,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         if (m_srcVarDsc->lvPromoted)
         {
             noway_assert(varTypeIsStruct(m_srcVarDsc));
-            noway_assert(!m_comp->opts.MinOpts());
+            noway_assert(!m_comp->opts.OptimizationDisabled());
 
             if (m_blockSize == m_srcVarDsc->lvExactSize)
             {

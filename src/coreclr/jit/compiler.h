@@ -4668,7 +4668,7 @@ public:
 
     bool backendRequiresLocalVarLifetimes()
     {
-        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+        return !opts.OptimizationDisabled() || m_pLinearScan->willEnregisterLocalVars();
     }
 
     void fgLocalVarLiveness();
@@ -9153,7 +9153,7 @@ public:
 
         bool MinOpts() const
         {
-            return compOptLevel < OPT_Blended;
+            return compOptLevel == OPT_MinOpts;
         }
         bool OptimizationDisabled() const
         {

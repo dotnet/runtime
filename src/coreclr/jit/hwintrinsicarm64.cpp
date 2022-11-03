@@ -1295,7 +1295,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts
@@ -1334,7 +1334,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts
@@ -1643,7 +1643,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts
@@ -1666,7 +1666,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned during minopts, so only skip the intrinsic handling if we're minopts

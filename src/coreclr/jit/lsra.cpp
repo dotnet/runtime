@@ -1515,7 +1515,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     //   if so mark all args and locals as volatile, so that they
     //   won't ever get enregistered.
     //
-    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
+    if (compiler->opts.OptimizationDisabled() && compiler->compHndBBtabCount > 0)
     {
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
@@ -1655,7 +1655,7 @@ void LinearScan::identifyCandidates()
     weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
     doDoubleAlign            = false;
     bool checkDoubleAlign    = true;
-    if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
+    if (compiler->codeGen->isFramePointerRequired() || compiler->opts.OptimizationDisabled())
     {
         checkDoubleAlign = false;
     }

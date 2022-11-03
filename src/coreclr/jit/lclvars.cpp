@@ -3742,7 +3742,7 @@ void Compiler::lvaSortByRefCount()
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
         }
-        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
+        if (opts.OptimizationDisabled() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
         {
             varDsc->lvTracked = 0;
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
@@ -3763,7 +3763,7 @@ void Compiler::lvaSortByRefCount()
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
         //
-        if (opts.MinOpts() && compHndBBtabCount > 0)
+        if (opts.OptimizationDisabled() && compHndBBtabCount > 0)
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
         }

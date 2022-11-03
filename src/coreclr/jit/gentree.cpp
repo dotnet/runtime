@@ -7898,7 +7898,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    if (!comp->opts.OptimizationDisabled() && ((divisorValue >= 3) || !isSignedDivide))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
         return true;

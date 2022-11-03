@@ -3496,7 +3496,7 @@ void Compiler::fgFindBasicBlocks()
 #ifndef DEBUG
     // fgNormalizeEH assumes that this test has been passed.  And Ssa assumes that fgNormalizeEHTable
     // has been run.  So do this unless we're in minOpts mode (and always in debug).
-    if (!opts.MinOpts())
+    if (!opts.OptimizationDisabled())
 #endif
     {
         fgCheckBasicBlockControlFlow();

@@ -4071,7 +4071,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // Attempt to find a local we have already used for an outgoing struct and reuse it.
     // We do not reuse within a statement.
-    if (!opts.MinOpts())
+    if (!opts.OptimizationDisabled())
     {
         indexType lclNum;
         FOREACH_HBV_BIT_SET(lclNum, fgOutgoingArgTemps)
@@ -4330,7 +4330,7 @@ void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
 
 BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
 {
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         delay = false;
     }
@@ -4396,7 +4396,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     //
     // This expansion explicitly exposes the bounds check and the address calculation to the optimizer, which allows
     // for more straightforward bounds-check removal, CSE, etc.
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
         indexAddr->Index() = fgMorphTree(indexAddr->Index());

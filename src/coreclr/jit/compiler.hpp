@@ -2263,7 +2263,7 @@ inline
             int encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
 
             // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
-            if (opts.MinOpts() || (actualSPOffset <= encodingLimitUpper))
+            if (opts.OptimizationDisabled() || (actualSPOffset <= encodingLimitUpper))
             {
                 varOffset = spVarOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;

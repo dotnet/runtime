@@ -5910,7 +5910,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                         }
                         else
                         {
-                            supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                            supportsAlignedSIMDLoads   = !comp->opts.OptimizationDisabled();
                             supportsUnalignedSIMDLoads = true;
                         }
 
@@ -5963,7 +5963,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
                     // unaligned inputs as they read mem64 (half the vector width) instead
 
-                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsAlignedSIMDLoads   = !comp->opts.OptimizationDisabled();
                     supportsUnalignedSIMDLoads = true;
 
                     const unsigned expectedSize = genTypeSize(containingNode->TypeGet()) / 2;
@@ -5984,7 +5984,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     }
                     else
                     {
-                        supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                        supportsAlignedSIMDLoads   = !comp->opts.OptimizationDisabled();
                         supportsUnalignedSIMDLoads = true;
                     }
 
@@ -6037,7 +6037,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     const unsigned expectedSize = genTypeSize(containingNode->GetSimdBaseType());
                     const unsigned operandSize  = genTypeSize(node->TypeGet());
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.OptimizationDisabled();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
                     supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;
@@ -6052,7 +6052,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     const unsigned expectedSize = 16;
                     const unsigned operandSize  = genTypeSize(node->TypeGet());
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.OptimizationDisabled();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
                     supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;

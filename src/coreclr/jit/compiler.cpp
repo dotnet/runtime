@@ -2342,7 +2342,7 @@ bool Compiler::compShouldThrowOnNoway(
     // In min opts, we don't want the noway assert to go through the exception
     // path. Instead we want it to just silently go through codegen for
     // compat reasons.
-    return !opts.MinOpts();
+    return !opts.OptimizationDisabled();
 }
 
 // ConfigInteger does not offer an option for decimal flags.  Any numbers are interpreted as hex.
@@ -3640,7 +3640,7 @@ void Compiler::compSetOptimizationLevel()
 
     if (compIsForInlining())
     {
-        theMinOptsValue = impInlineInfo->InlinerCompiler->opts.MinOpts();
+        theMinOptsValue = impInlineInfo->InlinerCompiler->opts.OptimizationDisabled();
         goto _SetMinOpts;
     }
 
@@ -3927,7 +3927,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
             "  compArgSize = %6d\n",
             frameSize, compArgSize);
 
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         // Have a recovery path in case we fail to reserve REG_OPT_RSVD and go
         // over the limit of SP and FP offset ranges due to large
@@ -8571,7 +8571,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     }
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
-    fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
+    fprintf(s_csvFile, "%u,", comp->opts.OptimizationDisabled());
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
 #if FEATURE_LOOP_ALIGN

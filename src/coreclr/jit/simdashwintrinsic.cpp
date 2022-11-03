@@ -657,7 +657,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_StoreAligned:
         case NI_VectorT128_StoreAlignedNonTemporal:
         {
-            if (!opts.MinOpts())
+            if (!opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned loads/stores, but aligned simd ops are only validated
                 // to be aligned during minopts, so only skip the intrinsic handling if we're minopts

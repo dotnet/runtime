@@ -9616,7 +9616,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
     gcInfo.gcRegByrefSetCur = GetEmitter()->emitInitByrefRegs;
 
-    noway_assert(!compiler->opts.MinOpts() || isFramePointerUsed()); // FPO not allowed with minOpts
+    noway_assert(!compiler->opts.OptimizationDisabled() || isFramePointerUsed()); // FPO not allowed with minOpts
 
 #ifdef DEBUG
     genInterruptibleUsed = true;

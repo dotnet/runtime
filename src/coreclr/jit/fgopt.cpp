@@ -3932,7 +3932,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 //
 bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 {
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         return false;
     }

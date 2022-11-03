@@ -46,7 +46,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -314,7 +314,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -643,7 +643,7 @@ PhaseStatus Compiler::fgCloneFinally()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("Method compiled with minOpts, no cloning.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -1634,7 +1634,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("Method compiled with minOpts, no merging.\n");
         return PhaseStatus::MODIFIED_NOTHING;
