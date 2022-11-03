@@ -276,13 +276,39 @@ interp_clear_ins (InterpInst *ins)
 	ins->opcode = MINT_NOP;
 }
 
+static gboolean
+interp_ins_is_nop (InterpInst *ins)
+{
+	return ins->opcode == MINT_NOP || ins->opcode == MINT_IL_SEQ_POINT;
+}
+
 static InterpInst*
 interp_prev_ins (InterpInst *ins)
 {
 	ins = ins->prev;
-	while (ins && (ins->opcode == MINT_NOP || ins->opcode == MINT_IL_SEQ_POINT))
+	while (ins && interp_ins_is_nop (ins))
 		ins = ins->prev;
 	return ins;
+}
+
+static InterpInst*
+interp_first_ins (InterpBasicBlock *bb)
+{
+	InterpInst *ins = bb->first_ins;
+	if (!ins || !interp_ins_is_nop (ins))
+		return ins;
+	while (ins && interp_ins_is_nop (ins))
+		ins = ins->next;
+	return ins;
+}
+
+static InterpInst*
+interp_last_ins (InterpBasicBlock *bb)
+{
+	InterpInst *ins = bb->last_ins;
+	if (!ins || !interp_ins_is_nop (ins))
+		return ins;
+	return interp_prev_ins (ins);
 }
 
 #define CHECK_STACK(td, n) \
@@ -3590,19 +3616,28 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 }
 
 static InterpBasicBlock*
+alloc_bb (TransformData *td)
+{
+	InterpBasicBlock *bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+	bb->il_offset = -1;
+	bb->native_offset = -1;
+	bb->stack_height = -1;
+	bb->index = td->bb_count++;
+
+	return bb;
+}
+
+static InterpBasicBlock*
 get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 {
 	int offset = GPTRDIFF_TO_INT (ip - td->il_code);
 	InterpBasicBlock *bb = td->offset_to_bb [offset];
 
 	if (!bb) {
-		bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
-		bb->il_offset = offset;
-		bb->native_offset = -1;
-		bb->stack_height = -1;
-		bb->index = td->bb_count++;
-		td->offset_to_bb [offset] = bb;
+		bb = alloc_bb (td);
 
+		bb->il_offset = offset;
+		td->offset_to_bb [offset] = bb;
                 /* Add the blocks in reverse order */
                 if (make_list)
                         td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
@@ -8222,12 +8257,75 @@ interp_mark_reachable_bblocks (TransformData *td)
 	}
 }
 
+static void
+interp_reorder_bblocks (TransformData *td)
+{
+	InterpBasicBlock *bb;
+
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *first = interp_first_ins (bb);
+		if (first && MINT_IS_CONDITIONAL_BRANCH (first->opcode)) {
+			// This means this bblock has a single instruction, the conditional branch
+			int i = 0;
+			while (i < bb->in_count) {
+				InterpBasicBlock *in_bb = bb->in_bb [i];
+				InterpInst *last_ins = interp_last_ins (in_bb);
+				if (last_ins && last_ins->opcode == MINT_BR) {
+					// This bblock is reached unconditionally from one of its parents
+					// Move the conditional branch inside the parent to facilitate propagation
+					// of condition value.
+					InterpBasicBlock *cond_true_bb = first->info.target_bb;
+					InterpBasicBlock *next_bb = bb->next_bb;
+
+					// parent bb will do the conditional branch
+					interp_unlink_bblocks (in_bb, bb);
+					last_ins->opcode = first->opcode;
+					last_ins->sregs [0] = first->sregs [0];
+					last_ins->sregs [1] = first->sregs [1];
+					last_ins->info.target_bb = cond_true_bb;
+					interp_link_bblocks (td, in_bb, cond_true_bb);
+
+					// Create new fallthrough bb between in_bb and in_bb->next_bb
+					InterpBasicBlock *new_bb = alloc_bb (td);
+					new_bb->next_bb = in_bb->next_bb;
+					in_bb->next_bb = new_bb;
+					interp_link_bblocks (td, in_bb, new_bb);
+
+
+					InterpInst *new_inst = interp_insert_ins_bb (td, new_bb, NULL, MINT_BR);
+					new_inst->info.target_bb = next_bb;
+
+					interp_link_bblocks (td, new_bb, next_bb);
+					if (td->verbose_level) {
+						GString* bb_info = get_interp_bb_links (bb);
+						GString* in_bb_info = get_interp_bb_links (in_bb);
+						GString* new_bb_info = get_interp_bb_links (new_bb);
+						g_print ("Moved cond branch BB%d into BB%d, new BB%d\n", bb->index, in_bb->index, new_bb->index);
+						g_print ("\tBB%d: %s\n", bb->index, bb_info->str);
+						g_print ("\tBB%d: %s\n", in_bb->index, in_bb_info->str);
+						g_print ("\tBB%d: %s\n", new_bb->index, new_bb_info->str);
+						g_string_free (bb_info, TRUE);
+						g_string_free (in_bb_info, TRUE);
+						g_string_free (new_bb_info, TRUE);
+					}
+					// Since we changed links, in_bb might have changed, loop again from the start
+					i = 0;
+				} else {
+					i++;
+				}
+			}
+		}
+	}
+}
+
 // Traverse the list of basic blocks and merge adjacent blocks
 static gboolean
 interp_optimize_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb = td->entry_bb;
 	gboolean needs_cprop = FALSE;
+
+	interp_reorder_bblocks (td);
 
 	interp_mark_reachable_bblocks (td);
 
