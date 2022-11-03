@@ -15,6 +15,7 @@ namespace IntelHardwareIntrinsicTest._Crc32.X64
         const int Fail = 0;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54185", TestRuntimes.Mono)]
         public static void Test()
         {
             ulong s1l = 0, s2l = 0, resl;

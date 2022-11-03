@@ -238,12 +238,12 @@ namespace System.Runtime.Intrinsics
         {
             for (int index = 0; index < Count; index++)
             {
-                if (Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
+                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
-                    return false;
+                    return true;
                 }
             }
-            return true;
+            return false;
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
