@@ -192,7 +192,8 @@ namespace System.Security.Cryptography
                     throw errorCode.ToCryptographicException();
                 }
 
-                // The platform crypto provider always returns "0" for EC keys as of Windows 11 22H2.
+                // The platform crypto provider always returns "0" for EC keys when asked for a key size. This
+                // has been observed in Windows 10 and most recently observed in Windows 11 22H2.
                 // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
                 // What does work is the ECCCurveName.
                 if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
