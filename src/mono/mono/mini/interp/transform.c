@@ -6034,19 +6034,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
 					g_assert (!m_field_is_from_update (field));
 					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
-					if (td->sp->type == STACK_TYPE_O) {
-						interp_add_ins (td, MINT_LDFLDA);
-						td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
-					} else {
-						int sp_type = td->sp->type;
-						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
-						if (foffset) {
-							interp_add_ins (td, MINT_LDFLDA_UNSAFE);
-							td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
-						} else {
-							interp_add_ins (td, MINT_MOV_P);
-						}
-					}
+					int sp_type = td->sp->type;
+					g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I || sp_type == STACK_TYPE_O);
+					interp_add_ins (td, MINT_LDFLDA);
+					td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					push_simple_type (td, STACK_TYPE_MP);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
