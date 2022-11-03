@@ -48,13 +48,15 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual bool EmitCompactUnwinding(DwarfFde fde) => false;
 
-        protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo)
+        protected override void EmitUnwindInfo(
+            SectionWriter sectionWriter,
+            INodeWithCodeInfo nodeWithCodeInfo,
+            string currentSymbolName)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
                 SectionWriter lsdaSectionWriter;
-                string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
                 Span<byte> tempBuffer = stackalloc byte[4];
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))

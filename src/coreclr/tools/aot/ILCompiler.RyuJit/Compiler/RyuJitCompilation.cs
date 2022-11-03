@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,16 +108,18 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
                 LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else if (NodeFactory.Target.OperatingSystem == TargetOS.OSX)
                 MachObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
                 CoffObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
-            else if (NodeFactory.Target.OperatingSystem == TargetOS.Linux)
-                ElfObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else
-                LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+                ElfObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            stopwatch.Stop();
+            Console.WriteLine("Emitting object file took " + stopwatch.Elapsed);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

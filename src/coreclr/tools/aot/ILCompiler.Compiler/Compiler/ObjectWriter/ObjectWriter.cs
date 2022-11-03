@@ -187,7 +187,10 @@ namespace ILCompiler.ObjectWriter
 
         protected virtual string ExternCName(string name) => name;
 
-        protected abstract void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo);
+        protected abstract void EmitUnwindInfo(
+            SectionWriter sectionWriter,
+            INodeWithCodeInfo nodeWithCodeInfo,
+            string currentSymbolName);
 
         protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
         {
@@ -282,12 +285,16 @@ namespace ILCompiler.ObjectWriter
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
+                string currentSymbolName = null;
+                if (node is ISymbolNode symbolNode)
+                {
+                    currentSymbolName = ExternCName(symbolNode.GetMangledName(_nodeFactory.NameMangler));
+                }
+
                 ObjectNodeSection section = node.Section;
                 if (ShouldShareSymbol(node))
                 {
-                    section = GetSharedSection(
-                        section,
-                        ExternCName(((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler)));
+                    section = GetSharedSection(section, currentSymbolName);
                 }
 
                 SectionWriter sectionWriter = GetOrCreateSection(section);
@@ -298,7 +305,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
                     sectionWriter.EmitSymbolDefinition(
-                        ExternCName(n.GetMangledName(_nodeFactory.NameMangler)),
+                        n == node ? currentSymbolName : ExternCName(n.GetMangledName(_nodeFactory.NameMangler)),
                         n.Offset,
                         isMethod ? nodeContents.Data.Length : 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
@@ -326,7 +333,7 @@ namespace ILCompiler.ObjectWriter
                 // Emit unwinding frames and LSDA
                 if (node is INodeWithCodeInfo nodeWithCodeInfo)
                 {
-                    EmitUnwindInfo(sectionWriter, nodeWithCodeInfo);
+                    EmitUnwindInfo(sectionWriter, nodeWithCodeInfo, currentSymbolName);
                 }
 
                 // Write the data. Note that this has to be done last as not to advance

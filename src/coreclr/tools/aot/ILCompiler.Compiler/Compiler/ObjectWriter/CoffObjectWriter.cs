@@ -357,14 +357,16 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo)
+        protected override void EmitUnwindInfo(
+            SectionWriter sectionWriter,
+            INodeWithCodeInfo nodeWithCodeInfo,
+            string currentSymbolName)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode symbolDefinitionNode)
             {
                 SectionWriter xdataSectionWriter;
                 SectionWriter pdataSectionWriter;
-                string currentSymbolName = ExternCName(symbolDefinitionNode.GetMangledName(_nodeFactory.NameMangler));
                 Span<byte> tempBuffer = stackalloc byte[4];
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
