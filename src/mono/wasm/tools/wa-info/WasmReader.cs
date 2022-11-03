@@ -232,6 +232,8 @@ namespace WebAssemblyInfo
             for (uint i = 0; i < count; i++)
             {
                 dataSegments[i].Mode = (DataMode)ReadU32();
+                if (Program.Verbose2)
+                    Console.WriteLine($"  mode: {dataSegments[i].Mode}");
                 switch (dataSegments[i].Mode)
                 {
                     case DataMode.ActiveMemory:
@@ -243,7 +245,7 @@ namespace WebAssemblyInfo
                         (dataSegments[i].Expression, _) = ReadBlock();
                         if (Program.Verbose2)
                         {
-                            Console.WriteLine("  expression:");
+                            Console.WriteLine("  offset expression:");
                             foreach (var instruction in dataSegments[i].Expression)
                                 Console.WriteLine(instruction.ToString(this).Indent("    "));
                         }
