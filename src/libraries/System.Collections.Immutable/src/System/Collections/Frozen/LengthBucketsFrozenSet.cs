@@ -41,6 +41,8 @@ namespace System.Collections.Frozen
             int minLength = int.MaxValue, maxLength = int.MinValue;
             foreach (string s in source)
             {
+                Debug.Assert(s is not null, "This implementation should not be used with null source values.");
+
                 if (s.Length < minLength) minLength = s.Length;
                 if (s.Length > maxLength) maxLength = s.Length;
 
@@ -99,9 +101,9 @@ namespace System.Collections.Frozen
         private protected override int CountCore => _items.Length;
 
         /// <inheritdoc />
-        private protected override int FindItemIndex(string item)
+        private protected override int FindItemIndex(string? item)
         {
-            if (item is not null) // this implementation won't be used for null values
+            if (item is not null) // this implementation won't be constructed from null values, but Contains may still be called with one
             {
                 // If the length doesn't have an associated bucket, the key isn't in the set.
                 int length = item.Length - _minLength;
