@@ -1363,6 +1363,15 @@
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/GenericAttribute/**">
             <Issue>https://github.com/dotnet/runtime/issues/56887</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
         </ExcludeList>
@@ -3006,9 +3015,16 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/virtualstubdispatch/bigvtbl/bigvtbl_cs*/**">
             <Issue>https://github.com/dotnet/runtime/issues/57352</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/57352</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/DisabledRuntimeMarshalling_Disabled_NativeAssemblyEnabled/**">
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
@@ -3043,6 +3059,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
             <Issue>Fuzzlyn</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
             <Issue> needs triage </Issue>
@@ -3268,6 +3287,13 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
