@@ -15,7 +15,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
@@ -421,30 +420,6 @@ namespace System
                 }
             }
             return del;
-        }
-
-        private string GetTargetMethodsDescriptionForDebugger()
-        {
-            if (m_functionPointer == GetThunk(MulticastThunk))
-            {
-                // Multi-cast delegates return the Target of the last delegate in the list
-                Delegate[] invocationList = (Delegate[])m_helperObject;
-                int invocationCount = (int)m_extraFunctionPointerOrData;
-                StringBuilder builder = new StringBuilder();
-                for (int c = 0; c < invocationCount; c++)
-                {
-                    if (c != 0)
-                        builder.Append(", ");
-
-                    builder.Append(invocationList[c].GetTargetMethodsDescriptionForDebugger());
-                }
-
-                return builder.ToString();
-            }
-            else
-            {
-                return "";
-            }
         }
     }
 }
