@@ -1467,9 +1467,8 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
         return NULL;
     }
 
-    MethodTable* fieldType = field->GetFieldTypeHandleThrowing().GetMethodTable();
     MethodTable* owningType = field->GetEnclosingMethodTable();
-    if (owningType->IsSharedByGenericInstantiations() || fieldType->ContainsPointers())
+    if (!owningType->IsClassInited() && owningType->IsSharedByGenericInstantiations())
     {
         return NULL;
     }
@@ -1479,9 +1478,14 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
 
     Object** handle = (Object**)field->GetStaticAddressHandle(basePtr);
     _ASSERT(handle != nullptr);
-    if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*handle))
+    Object* frozenObj = *handle;
+
+    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+    // for structs containing gc handles
+    if (frozenObj != nullptr && !frozenObj->GetMethodTable()->ContainsPointers() &&
+        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
     {
-        return ObjectToOBJECTREF(*handle);
+        return ObjectToOBJECTREF(frozenObj);
     }
     return NULL;
 }
