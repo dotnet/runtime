@@ -28,6 +28,6 @@ namespace ILLink.Shared.TrimAnalysis
 
         public TypeDesc? StaticType { get; }
 
-        internal ParameterOrigin ParameterOrigin => new ParameterOrigin(Parameter.Method.Method, Parameter.MetadataIndex);
+        internal ParameterOrigin ParameterOrigin => new ParameterOrigin(Parameter.Method.Method, (int)Parameter.Index);
     }
 }

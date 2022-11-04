@@ -388,13 +388,6 @@ namespace ILLink.Shared.TrimAnalysis
 
                     DynamicallyAccessedMemberTypes methodMemberTypes = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, reader.GetMethodDefinition(method.Handle).GetCustomAttributes());
 
-                    // Warn if there is an annotation on a method without a `this` parameter -- we won't catch it in the for loop if there's no parameters
-                    if (methodMemberTypes != DynamicallyAccessedMemberTypes.None
-                        && method.Signature.IsStatic)
-                    {
-                        _logger.LogWarning(method, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods);
-                    }
-
                     MethodSignature signature;
                     try
                     {
@@ -792,13 +785,14 @@ namespace ILLink.Shared.TrimAnalysis
             switch (provider)
             {
                 case ParameterProxy parameter:
+                    ParameterProxy baseParameter = (ParameterProxy)baseProvider;
                     if (parameter.IsImplicitThis)
                         _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides,
-                            DiagnosticUtilities.GetMethodSignatureDisplayName(parameter.Method.Method), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
+                            DiagnosticUtilities.GetMethodSignatureDisplayName(parameter.Method.Method), DiagnosticUtilities.GetMethodSignatureDisplayName(baseParameter.Method.Method));
                     else
                         _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides,
-                            DiagnosticUtilities.GetParameterNameForErrorMessage(origin, parameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(origin),
-                            DiagnosticUtilities.GetParameterNameForErrorMessage((MethodDesc)baseProvider, parameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
+                            DiagnosticUtilities.GetParameterNameForErrorMessage(parameter.Method.Method, parameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(origin),
+                            DiagnosticUtilities.GetParameterNameForErrorMessage(baseParameter.Method.Method, baseParameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
                     break;
                 case GenericParameterDesc genericParameterOverride:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
