@@ -1,8 +1,8 @@
 # System.Linq
 
-Documentation can be found at https://learn.microsoft.com/dotnet/api/system.linq.
-
 Language-Integrated Query (LINQ) is the name for a set of technologies based on the integration of query capabilities directly into the C# language.
+
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.linq.
 
 ## Contribution Bar
 

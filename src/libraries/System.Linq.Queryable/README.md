@@ -1,8 +1,8 @@
 # System.Linq.Queryable
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.linq.
-
 Provides a set of static methods for querying data structures that implement `IQueryable<T>`.
+
+Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.linq.
 
 ## Contribution Bar
 
