@@ -255,11 +255,10 @@ LEAF_END RhpCheckedXchg, _TEXT
 // On entry:
 //      rdi: address of ref-field (assigned to)
 //      rsi: address of the data (source)
-//      rcx: be trashed
 //
 // On exit:
 //      rdi, rsi are incremented by 8,
-//      rcx: trashed
+//      rcx, r10, r11: trashed
 //
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
     mov     rcx, [rsi]

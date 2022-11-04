@@ -411,5 +411,7 @@ EXTERN g_highest_address    : QWORD
 EXTERN g_ephemeral_low      : QWORD
 EXTERN g_ephemeral_high     : QWORD
 EXTERN g_card_table         : QWORD
+EXTERN g_card_bundle_table  : QWORD
+EXTERN g_write_watch_table  : QWORD
 EXTERN RhpTrapThreads       : DWORD
 
