@@ -74,7 +74,9 @@ nativeStringResourceTable_mscorrc
 #sprintf_s
 #vsprintf_s
 #_snprintf_s
+#_snwprintf_s
 #_vsnprintf_s
+#_vsnwprintf_s
 #_itow_s
 #_i64tow_s
 #memcpy_s
