@@ -185,8 +185,7 @@ void Compiler::lvaInitTypeRef()
         info.compTypeCtxtArg = BAD_VAR_NUM;
     }
 
-    lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
-
+    info.compLocalsCount   = info.compArgsCount + info.compMethodInfo->locals.numArgs;
     info.compILlocalsCount = info.compILargsCount + info.compMethodInfo->locals.numArgs;
 
     /* Now allocate the variable descriptor table */
@@ -194,12 +193,15 @@ void Compiler::lvaInitTypeRef()
     if (compIsForInlining())
     {
         lvaTable    = impInlineInfo->InlinerCompiler->lvaTable;
-        lvaCount    = impInlineInfo->InlinerCompiler->lvaCount;
         lvaTableCnt = impInlineInfo->InlinerCompiler->lvaTableCnt;
+
+        SetLvaCount(impInlineInfo->InlinerCompiler->lvaCount);
 
         // No more stuff needs to be done.
         return;
     }
+
+    SetLvaCount(info.compLocalsCount);
 
     lvaTableCnt = lvaCount * 2;
 
@@ -3640,6 +3642,9 @@ void Compiler::lvaSortByRefCount()
 {
     lvaTrackedCount             = 0;
     lvaTrackedCountInSizeTUnits = 0;
+
+    lvaAllVarsCount             = 0;
+    lvaAllVarsCountInSizeTUnits = 0;
 
 #ifdef DEBUG
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeEmpty(this));

@@ -70,14 +70,13 @@ BitSetSupport::BitSetOpCounter* TrackedVarBitSetTraits::GetOpCounter(Compiler* c
 // static
 unsigned AllVarBitSetTraits::GetSize(Compiler* comp)
 {
-    return min(comp->lvaCount, lclMAX_ALLSET_TRACKED);
+    return comp->lvaAllVarsCount;
 }
 
 // static
 unsigned AllVarBitSetTraits::GetArrSize(Compiler* comp)
 {
-    const unsigned elemBits = 8 * sizeof(size_t);
-    return roundUp(GetSize(comp), elemBits) / elemBits;
+    return comp->lvaAllVarsCountInSizeTUnits;
 }
 
 // static

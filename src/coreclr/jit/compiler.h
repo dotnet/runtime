@@ -3037,6 +3037,18 @@ public:
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
+    unsigned lvaAllVarsCount;             // # of locals being tracked in the AllVarsBitSet
+    unsigned lvaAllVarsCountInSizeTUnits; // min # of size_t's sufficient to hold bits for the AllVarsBitSet
+
+    void SetLvaCount(unsigned count)
+    {
+        lvaCount = count;
+
+        lvaAllVarsCount = min(lvaCount, lclMAX_ALLSET_TRACKED);
+        lvaAllVarsCountInSizeTUnits =
+            roundUp((unsigned)lvaAllVarsCount, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
+    }
+
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
 #endif

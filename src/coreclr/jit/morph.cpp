@@ -5571,7 +5571,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
             new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
         }
 
-        lvaCount = startVars;
+        SetLvaCount(startVars);
     }
 }
 

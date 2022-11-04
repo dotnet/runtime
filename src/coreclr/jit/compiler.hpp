@@ -1699,8 +1699,10 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
         lvaTable        = pComp->lvaTable;
-        lvaCount        = pComp->lvaCount;
         lvaTableCnt     = pComp->lvaTableCnt;
+
+        SetLvaCount(pComp->lvaCount);
+
         return tmpNum;
     }
 
@@ -1738,7 +1740,7 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     }
 
     const unsigned tempNum = lvaCount;
-    lvaCount++;
+    SetLvaCount(lvaCount + 1);
 
     // Initialize lvType, lvIsTemp and lvOnFrame
     lvaTable[tempNum].lvType    = TYP_UNDEF;
@@ -1783,8 +1785,10 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
         unsigned tmpNum = impInlineInfo->InlinerCompiler->lvaGrabTemps(cnt DEBUGARG(reason));
 
         lvaTable    = impInlineInfo->InlinerCompiler->lvaTable;
-        lvaCount    = impInlineInfo->InlinerCompiler->lvaCount;
         lvaTableCnt = impInlineInfo->InlinerCompiler->lvaTableCnt;
+
+        SetLvaCount(impInlineInfo->InlinerCompiler->lvaCount);
+
         return tmpNum;
     }
 
@@ -1832,14 +1836,16 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
     }
 
     unsigned tempNum = lvaCount;
+    unsigned newTemp;
 
-    while (cnt--)
+    for (newTemp = lvaCount; cnt > 0; cnt--, newTemp++)
     {
-        lvaTable[lvaCount].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
-        lvaTable[lvaCount].lvIsTemp  = false;
-        lvaTable[lvaCount].lvOnFrame = true;
-        lvaCount++;
+        lvaTable[newTemp].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
+        lvaTable[newTemp].lvIsTemp  = false;
+        lvaTable[newTemp].lvOnFrame = true;
     }
+
+    SetLvaCount(newTemp);
 
     return tempNum;
 }
@@ -1859,8 +1865,10 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
         unsigned tmpNum = impInlineInfo->InlinerCompiler->lvaGrabTempWithImplicitUse(shortLifetime DEBUGARG(reason));
 
         lvaTable    = impInlineInfo->InlinerCompiler->lvaTable;
-        lvaCount    = impInlineInfo->InlinerCompiler->lvaCount;
         lvaTableCnt = impInlineInfo->InlinerCompiler->lvaTableCnt;
+
+        SetLvaCount(impInlineInfo->InlinerCompiler->lvaCount);
+
         return tmpNum;
     }
 
