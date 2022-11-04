@@ -797,7 +797,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
             BlockRange().Remove(op2);
             BlockRange().Remove(op1);
 
-            return castOp->gtNext;
+            return LowerNode(castOp);
         }
     }
 #endif // TARGET_AMD64
