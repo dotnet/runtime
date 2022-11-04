@@ -115,6 +115,14 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$CrossGen2SynthesizePgo" ]
+then
+  echo SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[

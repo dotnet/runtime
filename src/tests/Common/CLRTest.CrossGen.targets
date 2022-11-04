@@ -104,10 +104,12 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
-        echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
         echo --method-layout:random>>$__ResponseFile
-        echo --synthesize-random-mibc>>$__ResponseFile
-        echo --embed-pgo-data>>$__ResponseFile
+        if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
+            echo --synthesize-random-mibc>>$__ResponseFile
+            echo --embed-pgo-data>>$__ResponseFile
+        fi
+        echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
         echo -O>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
@@ -249,8 +251,10 @@ if defined RunCrossGen2 (
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
-    echo --synthesize-random-mibc>>!__ResponseFile!
-    echo --embed-pgo-data>>!__ResponseFile!
+    if defined CrossGen2SynthesizePgo (
+        echo --synthesize-random-mibc>>!__ResponseFile!
+        echo --embed-pgo-data>>!__ResponseFile!
+    )
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
