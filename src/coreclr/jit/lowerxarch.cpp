@@ -781,7 +781,8 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     var_types tmpType    = TYP_UNDEF;
 
 #if TARGET_AMD64
-    if (castOp->OperIs(GT_ADD) && castOp->gtGetOp1()->OperIs(GT_CAST) && castOp->gtGetOp2()->OperIs(GT_CAST))
+    if (castOp->OperIs(GT_ADD) && varTypeIsIntegral(castToType) && varTypeIsIntegral(srcType) &&
+        castOp->gtGetOp1()->OperIs(GT_CAST) && castOp->gtGetOp2()->OperIs(GT_CAST))
     {
         GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
         GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
