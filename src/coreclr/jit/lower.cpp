@@ -82,8 +82,7 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 
     if (!isSafeToContainMem)
     {
-        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode),
-                comp->dspTreeID(parentNode));
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
         assert(isSafeToContainMem);
     }
 #endif
