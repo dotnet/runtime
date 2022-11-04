@@ -2838,7 +2838,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) &&
-        isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
+        isAssigned(availablePhysRegRecord, currentInterval))
     {
         if (regSelector->isSpilling())
         {
@@ -3143,26 +3143,18 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 //
 // Arguments:
 //    regRec       - The RegRecord to check that it is assigned.
-//    newRegType   - There are elements to judge according to the upcoming register type.
+//    newInterval  - New interval that we are trying to assign to regRec to decide if we need to also check if consecutive registers
+//                   are also assigned.
 //
 // Return Value:
 //    Returns true if the given RegRecord has an assignedInterval.
 //
-bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
+bool LinearScan::isAssigned(RegRecord* regRec, Interval* newInterval)
 {
-    if (regRec->assignedInterval != nullptr)
-    {
-        return true;
-    }
-    else if (isFirstRegNum(regRec))
-    {
-        return false;
-    }
-
     RegRecord* firstRegRec        = getFirstRegRec(regRec);
     regNumber  currReg            = firstRegRec->regNum;
     bool       intervalIsAssigned = false;
-    int        regCount           = regRec->regCount;
+    int        regCount           = newInterval->regCount;
 
     do
     {

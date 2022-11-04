@@ -1194,7 +1194,7 @@ private:
         assignPhysReg(getRegisterRecord(reg), interval);
     }
 
-    bool isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType));
+    bool isAssigned(RegRecord* regRec, Interval* newInterval);
     void checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType));
     void unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition);
