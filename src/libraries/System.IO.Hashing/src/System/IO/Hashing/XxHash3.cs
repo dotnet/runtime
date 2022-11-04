@@ -896,12 +896,24 @@ namespace System.IO.Hashing
             Vector128<uint> sourceKey = sourceVec ^ secret;
 
             // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
-            Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
             Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
             Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
-            Vector128<ulong> product = Sse2.IsSupported ?
-                Sse2.Multiply(sourceKey, sourceKeyLow) :
-                (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+
+            Vector128<ulong> product;
+            // TODO: Workaround for ARM as `*` is software emulated.
+            if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported)
+            {
+                Vector64<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(0u, 2, 0, 0)).GetLower();
+                Vector64<uint> sourceKeyHigh = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 3, 0, 0)).GetLower();
+                product = System.Runtime.Intrinsics.Arm.AdvSimd.MultiplyWideningLower(sourceKeyLow, sourceKeyHigh);
+            }
+            else
+            {
+                Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
+                product = Sse2.IsSupported
+                    ? Sse2.Multiply(sourceKey, sourceKeyLow)
+                    : (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+            }
 
             accVec = product + sum;
             return accVec;
