@@ -577,6 +577,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 {
                     MakeSrcContained(putArgStk, fieldNode);
                 }
+                else if (IsContainableMemoryOp(fieldNode) && IsSafeToContainMem(putArgStk, fieldNode))
+                {
+                    MakeSrcContained(putArgStk, fieldNode);
+                }
                 else
                 {
                     // For the case where we cannot directly push the value, if we run out of registers,
@@ -585,7 +589,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                     // are promoted structs, which do not not have a large number of fields, and of those
                     // most are lclVars or copy-propagated constants.
 
-                    TryMakeSrcContainedOrRegOptional(putArgStk, fieldNode);
+                    fieldNode->SetRegOptional();
                 }
             }
         }
@@ -5151,10 +5155,15 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (divisor->TypeGet() == node->TypeGet())
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, divisor))
     {
+        MakeSrcContained(node, divisor);
+    }
+    else if (divisorCanBeRegOptional)
+    {
+        // If there are no containable operands, we can make an operand reg optional.
         // Div instruction allows only divisor to be a memory op.
-        TryMakeSrcContainedOrRegOptional(node, divisor);
+        divisor->SetRegOptional();
     }
 }
 
