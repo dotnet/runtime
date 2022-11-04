@@ -285,6 +285,19 @@ namespace WebAssemblyInfo
         ActiveMemory = 2,
     }
 
+    struct Global
+    {
+        public ValueType Type;
+        public Mutability Mutability;
+        public Instruction[] Expression;
+    }
+
+    enum Mutability
+    {
+        Const = 0,
+        Var = 1,
+    }
+
     struct MemArg
     {
         public UInt32 Align;

@@ -118,6 +118,9 @@ namespace WebAssemblyInfo
                 case SectionId.Data:
                     ReadDataSection();
                     break;
+                case SectionId.Global:
+                    ReadGlobalSection();
+                    break;
                 default:
                     break;
             }
@@ -257,6 +260,52 @@ namespace WebAssemblyInfo
                     Console.WriteLine($"  length: {length}");
 
                 dataSegments[i].Content = Reader.ReadBytes((int)length);
+            }
+        }
+
+        Global[]? globals;
+        void ReadGlobalSection()
+        {
+            var count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            globals = new Global[count];
+            for (uint i = 0; i < count; i++)
+            {
+                if (Program.Verbose2)
+                    Console.Write($"  global idx: {i}");
+
+                ReadValueType(ref globals[i].Type);
+                if (Program.Verbose2)
+                    Console.Write($" type: {globals[i].Type}");
+
+                globals[i].Mutability = (Mutability)Reader.ReadByte();
+                if (Program.Verbose2)
+                    Console.Write($" mutability: {globals[i].Mutability.ToString().ToLower()}");
+
+                (globals[i].Expression, _) = ReadBlock();
+
+                if (Program.Verbose2)
+                {
+                    if (globals[i].Expression.Length == 1)
+                    {
+                        Console.Write($" init expression: {globals[i].Expression[0]}");
+                    }
+                    else
+                    {
+                        Console.WriteLine(" init expression:");
+                        foreach (var instruction in globals[i].Expression)
+                            Console.Write(instruction.ToString(this).Indent("    "));
+                    }
+                }
+
+                if (Program.Verbose2)
+                    Console.WriteLine();
             }
         }
 
