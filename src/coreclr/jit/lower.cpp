@@ -40,6 +40,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
+
     childNode->SetContained();
     assert(childNode->isContained());
 
@@ -56,6 +57,34 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
                     comp->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// MakeSrcRegOptional: Make "childNode" a regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can regOptional its 'childNode'
+//    childNode  - is an op that will now be regOptional to its parent.
+//
+void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    assert(!parentNode->OperIsLeaf());
+
+    childNode->SetRegOptional();
+    assert(childNode->IsRegOptional());
+
+#ifdef DEBUG
+    // Verify caller of this method checked safety.
+    //
+    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+    if (!isSafeToContainMem)
+    {
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode),
+                comp->dspTreeID(parentNode));
+        assert(isSafeToContainMem);
     }
 #endif
 }
