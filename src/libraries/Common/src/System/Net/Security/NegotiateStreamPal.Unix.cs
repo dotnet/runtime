@@ -296,12 +296,13 @@ namespace System.Net.Security
             return status;
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal AcceptSecurityContext(
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
-            ContextFlagsPal _ /*requestedContextFlags*/,
+            ContextFlagsPal requestedContextFlags,
             ReadOnlySpan<byte> incomingBlob,
-            ChannelBinding? _1 /*channelBinding*/,
+            ChannelBinding? channelBinding,
             ref byte[] resultBlob,
             out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
@@ -387,6 +388,7 @@ namespace System.Net.Security
                 negoContext.SetGssContext(contextHandle);
             }
         }
+#pragma warning restore IDE0060
 
         // https://www.gnu.org/software/gss/reference/gss.pdf (page 25)
         private static SecurityStatusPalErrorCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
@@ -434,11 +436,13 @@ namespace System.Net.Security
             return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
-        internal static int QueryMaxTokenSize(string _ /*package*/)
+#pragma warning disable IDE0060
+        internal static int QueryMaxTokenSize(string package)
         {
             // This value is not used on Unix
             return 0;
         }
+#pragma warning restore IDE0060
 
         internal static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
         {
@@ -486,12 +490,14 @@ namespace System.Net.Security
             }
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal CompleteAuthToken(
-            ref SafeDeleteContext? _ /*securityContext*/,
-            ReadOnlySpan<byte> _1 /*incomingBlob*/)
+            ref SafeDeleteContext? securityContext,
+            ReadOnlySpan<byte> incomingBlob)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,

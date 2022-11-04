@@ -145,7 +145,7 @@ namespace System.Diagnostics.PerformanceData
                                     (void*)(_dataBlock + CounterOffset * sizeof(long)));
                     if (Status != (uint)Interop.Errors.ERROR_SUCCESS)
                     {
-                        DisposeThis();
+                        DisposeCore();
 
                         // ERROR_INVALID_PARAMETER or ERROR_NOT_FOUND
                         throw Status switch
@@ -162,16 +162,16 @@ namespace System.Diagnostics.PerformanceData
 
         public void Dispose()
         {
-            DisposeThis();
+            DisposeCore();
             GC.SuppressFinalize(this);
         }
 
         ~CounterSetInstanceCounterDataSet()
         {
-            DisposeThis();
+            DisposeCore();
         }
 
-        private void DisposeThis()
+        private void DisposeCore()
         {
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
             {

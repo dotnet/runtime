@@ -69,24 +69,22 @@ namespace System.Diagnostics
         ///     Creates the Performance Counter Object
         /// </summary>
         public PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName)
+            : this(categoryName, counterName, instanceName, machineName, skipInit: false)
         {
-            MachineName = machineName;
-            CategoryName = categoryName;
-            CounterName = counterName;
-            InstanceName = instanceName;
-            _isReadOnly = true;
-            Initialize();
-            GC.SuppressFinalize(this);
         }
 
-        internal PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName, bool _)
+        internal PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName, bool skipInit)
         {
             MachineName = machineName;
             CategoryName = categoryName;
             CounterName = counterName;
             InstanceName = instanceName;
             _isReadOnly = true;
-            _initialized = true;
+            if (skipInit)
+                _initialized = true;
+            else
+                Initialize();
+
             GC.SuppressFinalize(this);
         }
 

@@ -47,12 +47,12 @@ namespace System.IO.Internal
             GC.SuppressFinalize(this);
         }
 
+#pragma warning disable IDE0060
 #if CODEDOM
         protected virtual
 #else
         internal
 #endif
-#pragma warning disable IDE0060
         void Dispose(bool disposing)
         {
             SafeDelete();

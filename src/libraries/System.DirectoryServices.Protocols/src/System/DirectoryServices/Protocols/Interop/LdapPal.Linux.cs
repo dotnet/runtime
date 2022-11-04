@@ -177,16 +177,17 @@ namespace System.DirectoryServices.Protocols
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
         /// that get passed in by using the defaults that we get passed in.
         /// </summary>
         /// <param name="ldapHandle">The connection handle to the LDAP server.</param>
-        /// <param name="_"></param>
+        /// <param name="flags"></param>
         /// <param name="defaultsPtr">Pointer to the defaults structure that was sent to sasl_interactive_bind</param>
         /// <param name="interactPtr">Pointer to the challenge we need to resolve</param>
         /// <returns></returns>
-        internal static int SaslInteractionProcedure(IntPtr ldapHandle, uint _, IntPtr defaultsPtr, IntPtr interactPtr)
+        internal static int SaslInteractionProcedure(IntPtr ldapHandle, uint flags, IntPtr defaultsPtr, IntPtr interactPtr)
         {
             if (ldapHandle == IntPtr.Zero)
             {
@@ -231,5 +232,6 @@ namespace System.DirectoryServices.Protocols
 
             return 0;
         }
+#pragma warning restore IDE0060
     }
 }

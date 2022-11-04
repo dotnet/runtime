@@ -984,9 +984,9 @@ namespace Microsoft.Interop.Analyzers
                 return false;
             }
 
-#pragma warning disable CA1822, IDE0060 // Mark members as static
+#pragma warning disable CA1822, IDE0060
             private void AnalyzeStatefulMarshallerType(DiagnosticReporter diagnosticReporter, ITypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
-#pragma warning restore CA1822, IDE0060 // Mark members as static
+#pragma warning restore CA1822, IDE0060
             {
                 if (mode is MarshalMode.ElementIn
                     or MarshalMode.ElementRef

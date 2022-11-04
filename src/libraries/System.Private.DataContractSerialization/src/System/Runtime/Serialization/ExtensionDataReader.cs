@@ -289,7 +289,59 @@ namespace System.Runtime.Serialization
             if (_nodeType == XmlNodeType.Attribute && MoveToNextAttribute())
                 return true;
 
-            throw NotImplemented.ByDesign;
+            MoveNext(_element!.dataNode);
+
+            switch (_internalNodeType)
+            {
+                case ExtensionDataNodeType.Element:
+                case ExtensionDataNodeType.ReferencedElement:
+                case ExtensionDataNodeType.NullElement:
+                    PushElement();
+                    SetElement();
+                    break;
+
+                case ExtensionDataNodeType.Text:
+                    _nodeType = XmlNodeType.Text;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
+                    _attributeCount = 0;
+                    _attributeIndex = -1;
+                    break;
+
+                case ExtensionDataNodeType.EndElement:
+                    _nodeType = XmlNodeType.EndElement;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
+                    _value = string.Empty;
+                    _attributeCount = 0;
+                    _attributeIndex = -1;
+                    PopElement();
+                    break;
+
+                case ExtensionDataNodeType.None:
+                    if (_depth != 0)
+                        throw new XmlException(SR.InvalidXmlDeserializingExtensionData);
+                    _nodeType = XmlNodeType.None;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
+                    _value = string.Empty;
+                    _attributeCount = 0;
+                    _readState = ReadState.EndOfFile;
+                    return false;
+
+                case ExtensionDataNodeType.Xml:
+                    // do nothing
+                    break;
+
+                default:
+                    Fx.Assert("ExtensionDataReader in invalid state");
+                    throw new SerializationException(SR.InvalidStateInExtensionDataReader);
+            }
+            _readState = ReadState.Interactive;
+            return true;
         }
 
         public override string Name
