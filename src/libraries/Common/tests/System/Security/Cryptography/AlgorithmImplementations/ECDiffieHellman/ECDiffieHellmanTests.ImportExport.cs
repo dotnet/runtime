@@ -420,22 +420,21 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [InlineData("NISTP256", "1.2.840.10045.3.1.7")]
         [InlineData("NISTP384", "1.3.132.0.34")]
         [InlineData("NISTP521", "1.3.132.0.35")]
+        [InlineData("ecdh_P256", "1.2.840.10045.3.1.7")]
+        [InlineData("ecdh_P384", "1.3.132.0.34")]
+        [InlineData("ecdh_P521", "1.3.132.0.35")]
         public static void OidPresentOnCurveMiscased(string curveName, string expectedOid)
         {
+            ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
-                ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+                ecdh.GenerateKey(curve);
+                ECParameters exportedParameters = ecdh.ExportParameters(false);
+                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
 
-                if (PlatformDetection.IsWindows10OrLater)
-                {
-                    ecdh.GenerateKey(curve);
-                    ECParameters exportedParameters = ecdh.ExportParameters(false);
-                    Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => ecdh.GenerateKey(curve));
-                }
+                exportedParameters.Curve = curve;
+                ecdh.ImportParameters(exportedParameters);
             }
         }
 

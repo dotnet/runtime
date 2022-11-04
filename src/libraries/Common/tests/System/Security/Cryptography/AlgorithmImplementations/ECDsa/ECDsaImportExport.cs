@@ -357,22 +357,21 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [InlineData("NISTP256", "1.2.840.10045.3.1.7")]
         [InlineData("NISTP384", "1.3.132.0.34")]
         [InlineData("NISTP521", "1.3.132.0.35")]
-        public static void OidPresentOnCurveMiscased(string curveName, string expectedOid)
+        [InlineData("ecdsa_P256", "1.2.840.10045.3.1.7")]
+        [InlineData("ecdsa_P384", "1.3.132.0.34")]
+        [InlineData("ecdsa_P521", "1.3.132.0.35")]
+        public static void GenerateKey_OidPresentOnCurveMiscased(string curveName, string expectedOid)
         {
+            ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+
             using (ECDsa ecdsa = ECDsaFactory.Create())
             {
-                ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+                ecdsa.GenerateKey(curve);
+                ECParameters exportedParameters = ecdsa.ExportParameters(false);
+                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
 
-                if (PlatformDetection.IsWindows10OrLater)
-                {
-                    ecdsa.GenerateKey(curve);
-                    ECParameters exportedParameters = ecdsa.ExportParameters(false);
-                    Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => ecdsa.GenerateKey(curve));
-                }
+                exportedParameters.Curve = curve;
+                ecdsa.ImportParameters(exportedParameters);
             }
         }
 

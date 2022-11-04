@@ -1094,10 +1094,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Equal(ExpectedPem, output);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsWindows10OrLater))]
+        [Theory]
         [InlineData("NISTP256", "SHA256")]
         [InlineData("NISTP384", "SHA384")]
         [InlineData("NISTP521", "SHA512")]
+        [InlineData("EcDsA_p256", "SHA256")]
+        [InlineData("EcDsA_p384", "SHA384")]
+        [InlineData("EcDsA_p521", "SHA512")]
         public static void CreateSelfSigned_CurveNameIsCaseInsensitive(string curveName, string hashName)
         {
             ECCurve ecCurve = ECCurve.CreateFromFriendlyName(curveName);
