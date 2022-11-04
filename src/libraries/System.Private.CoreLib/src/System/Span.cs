@@ -184,10 +184,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
+        /// </summary>
         /// <exception cref="System.NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
@@ -195,10 +195,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed.
+        /// </summary>
         /// <exception cref="System.NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("GetHashCode() on Span will always throw an exception.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() =>

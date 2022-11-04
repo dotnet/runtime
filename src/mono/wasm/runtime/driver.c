@@ -55,7 +55,6 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
-void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -67,6 +66,7 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int signature);
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -586,7 +586,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
@@ -1401,9 +1400,21 @@ mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(M
 void mono_profiler_init_aot (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_profiler_aot (const char *desc)
+mono_wasm_profiler_init_aot (const char *desc)
 {
 	mono_profiler_init_aot (desc);
+}
+
+#endif
+
+#ifdef ENABLE_BROWSER_PROFILER
+
+void mono_profiler_init_browser (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_browser (const char *desc)
+{
+	mono_profiler_init_browser (desc);
 }
 
 #endif
@@ -1468,4 +1479,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 	*destination = (int64_t)value;
 	return I52_ERROR_NONE;
+}
+
+EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
+	return mono_method_full_name(method, 0);
 }

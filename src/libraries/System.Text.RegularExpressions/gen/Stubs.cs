@@ -60,6 +60,13 @@ namespace System
             return length;
         }
     }
+
+    internal static class CharExtensions
+    {
+        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
+        public static bool IsAsciiLetter(char c) =>
+            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
+    }
 }
 
 namespace System.Buffers

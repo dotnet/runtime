@@ -712,7 +712,7 @@ namespace System.Net
 
             // Create empty LM2 response.
             SetField(ref response.LmChallengeResponse, ChallengeResponseLength, payloadOffset);
-            payload.Slice(payloadOffset, ChallengeResponseLength).Fill(0);
+            payload.Slice(payloadOffset, ChallengeResponseLength).Clear();
             payloadOffset += ChallengeResponseLength;
 
             // Create NTLM2 response

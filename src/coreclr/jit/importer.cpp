@@ -1015,8 +1015,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree*     dest      = nullptr;
-    GenTreeFlags destFlags = GTF_EMPTY;
+    GenTree* dest = nullptr;
 
     DebugInfo usedDI = di;
     if (!usedDI.IsValid())
@@ -1350,9 +1349,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
-
-    dest->gtFlags |= destFlags;
-    destFlags = dest->gtFlags;
 
     // return an assignment node, to be appended
     GenTree* asgNode = gtNewAssignNode(dest, src);
@@ -4344,7 +4340,7 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
         }
         case TYP_REF:
         {
-            void* ptr;
+            size_t ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
 
             if (ptr == 0)
@@ -4354,9 +4350,9 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
             else
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
             }
             break;
         }
@@ -5686,33 +5682,6 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
         BADCODE("Invalid opcode for unaligned. or volatile. prefix");
     }
 }
-
-/*****************************************************************************/
-
-#ifdef DEBUG
-
-#undef RETURN // undef contracts RETURN macro
-
-enum controlFlow_t
-{
-    NEXT,
-    CALL,
-    RETURN,
-    THROW,
-    BRANCH,
-    COND_BRANCH,
-    BREAK,
-    PHI,
-    META,
-};
-
-const static controlFlow_t controlFlow[] = {
-#define OPDEF(c, s, pop, push, args, type, l, s1, s2, flow) flow,
-#include "opcode.def"
-#undef OPDEF
-};
-
-#endif // DEBUG
 
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
@@ -8068,8 +8037,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                // Create the comparison node.
+                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
+                {
+                    op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+                    op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+                }
 
+                // Create the comparison node.
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
                 // TODO: setting both flags when only one is appropriate.
@@ -11613,23 +11587,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 }
             }
 
-            // TODO-Inlining: Setting gtSubstBB unconditionally here does not
-            // make sense. The intention is to be able to propagate BB flags in
-            // UpdateInlineReturnExpressionPlaceHolder, but we only need to
-            // propagate the mandatory flags in case gtSubstExpr is a tree
-            // (e.g. GT_ARR_LENGTH in gtSubstExpr means we need to set
-            // BBF_HAS_IDX_LEN on the final BB that the substituted expression
-            // ends up in -- so we should not need to set this for the spill
-            // temp cases above).
-            //
-            // However, during substitution we actually propagate all
-            // BBF_SPLIT_GAINED flags which includes BBF_PROF_WEIGHT. The net
-            // effect of this is that if we inline a tree from a hot block into
-            // a block without profile data we suddenly start to believe the
-            // inliner block is hot, and then future inline candidates are
-            // treated more aggressively. Changing this leads to large diffs.
-            assert(inlRetExpr->gtSubstExpr != nullptr);
-            inlRetExpr->gtSubstBB = compCurBB;
+            // If gtSubstExpr is an arbitrary tree then we may need to
+            // propagate mandatory "IR presence" flags (e.g. BBF_HAS_IDX_LEN)
+            // to the BB it ends up in.
+            inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }
 
@@ -13242,7 +13203,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileWeights())
     {
         const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
@@ -13259,7 +13220,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         profileFreq = 1.0;
     }
 
-    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, hasProfile);
     inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 

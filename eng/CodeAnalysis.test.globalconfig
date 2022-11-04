@@ -213,6 +213,9 @@ dotnet_diagnostic.CA1420.severity = none
 # CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
 dotnet_diagnostic.CA1421.severity = none
 
+# CA1422: Validate platform compatibility
+dotnet_diagnostic.CA1422.severity = none
+
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
 
@@ -411,6 +414,9 @@ dotnet_diagnostic.CA1853.severity = none
 # CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
 dotnet_diagnostic.CA1854.severity = none
 
+# CA1855: Prefer 'Clear' over 'Fill'
+dotnet_diagnostic.CA1855.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -590,6 +596,9 @@ dotnet_diagnostic.CA2258.severity = none
 
 # CA2259: 'ThreadStatic' only affects static fields
 dotnet_diagnostic.CA2259.severity = none
+
+# CA2260: Use correct type parameter
+dotnet_diagnostic.CA2260.severity = none
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -1583,6 +1592,15 @@ dotnet_diagnostic.IDE0220.severity = silent
 
 # IDE0230: Use UTF8 string literal
 dotnet_diagnostic.IDE0230.severity = silent
+
+# IDE0240: Remove redundant nullable directive
+dotnet_diagnostic.IDE0240.severity = silent
+
+# IDE0241: Remove unnecessary nullable directive
+dotnet_diagnostic.IDE0241.severity = silent
+
+# IDE0250: Make struct readonly
+dotnet_diagnostic.IDE0250.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = silent

@@ -430,8 +430,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Reads a structure of type T out of a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
@@ -469,8 +469,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Writes a structure of type T into a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct
