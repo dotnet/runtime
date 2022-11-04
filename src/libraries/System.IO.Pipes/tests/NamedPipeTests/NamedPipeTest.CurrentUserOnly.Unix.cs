@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ namespace System.IO.Pipes.Tests
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientPipeDirection)
         {
-            bool isRoot = AdminHelpers.IsProcessElevated();
+            bool isRoot = Environment.IsPrivilegedProcess;
             if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
             {
                 throw new SkipTestException("Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");

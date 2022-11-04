@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Security.Principal;
@@ -17,18 +18,7 @@ namespace System.ServiceProcess.Tests
 
         private const int readTimeout = 60000;
 
-        private static readonly Lazy<bool> s_runningWithElevatedPrivileges = new Lazy<bool>(() =>
-        {
-            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
-            return new WindowsPrincipal(currentIdentity).IsInRole(WindowsBuiltInRole.Administrator);
-        });
-
         private NamedPipeClientStream _client;
-
-        public static bool RunningWithElevatedPrivileges
-        {
-            get { return s_runningWithElevatedPrivileges.Value; }
-        }
 
         public NamedPipeClientStream Client
         {

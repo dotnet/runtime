@@ -11,8 +11,7 @@ namespace BasicEventSourceTests
     partial class TestsWriteEvent
     {
         // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
-        private static bool IsProcessElevated => s_isElevated.Value;
+        private static bool IsProcessElevated => Environment.IsPrivilegedProcess;
         private static bool IsProcessElevatedAndNotWindowsNanoServer =>
             IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
 

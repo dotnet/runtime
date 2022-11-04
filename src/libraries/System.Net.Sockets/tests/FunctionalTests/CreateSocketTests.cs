@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -40,7 +41,7 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Unknown, ProtocolType.Udp },
         };
 
-        private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
+        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess;
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop]

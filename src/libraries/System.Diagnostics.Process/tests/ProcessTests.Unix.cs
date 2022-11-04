@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -656,7 +657,7 @@ namespace System.Diagnostics.Tests
 
         private static string GetCurrentRealUserName()
         {
-            string realUserName = geteuid() == 0 ?
+            string realUserName = Environment.IsPrivilegedProcess ?
                 Environment.GetEnvironmentVariable("SUDO_USER") :
                 Environment.UserName;
 
