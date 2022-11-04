@@ -217,12 +217,15 @@ class LclSsaVarDsc
     GenTreeOp* m_asg = nullptr;
     // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
     unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    // Number of uses of this SSA def (may be an over-estimate). Includes phi args uses.
+    // Number of uses of this SSA def (may be an over-estimate).
+    // May not be accurate for for promoted fields.
     unsigned short m_numUses = 0;
     // True if there may be phi args uses of this def
-    // (false implies all uses are non-phi)
+    // May not be accurate for for promoted fields.
+    // (false implies all uses are non-phi).
     bool m_hasPhiUse = false;
-    // True if there may be uses of the def in a different block
+    // True if there may be uses of the def in a different block.
+    // May not be accurate for for promoted fields.
     bool m_hasGlobalUse = false;
 
 public:
@@ -4334,7 +4337,7 @@ public:
 
         if (verbose)
         {
-            unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this, sizeof(size_t));
+            unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this);
             printf("\nNew BlockSet epoch %d, # of blocks (including unused BB00): %u, bitset array size: %u (%s)",
                    fgCurBBEpoch, fgCurBBEpochSize, epochArrSize, (epochArrSize <= 1) ? "short" : "long");
             if ((fgCurBBEpoch != 1) && ((oldEpochArrSize <= 1) != (epochArrSize <= 1)))
