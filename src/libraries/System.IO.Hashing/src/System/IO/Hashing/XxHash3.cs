@@ -917,7 +917,8 @@ namespace System.IO.Hashing
             else
             {
                 Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
-                return Sse2.IsSupported ? Sse2.Multiply(source, sourceLow) :
+                return Sse2.IsSupported ?
+                    Sse2.Multiply(source, sourceLow) :
                     (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
             }
         }
