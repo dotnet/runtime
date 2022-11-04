@@ -1153,6 +1153,7 @@ namespace WebAssemblyInfo
         }
 
         Import[]? imports;
+        uint functionImportsCount = 0;
 
         void ReadImportSection()
         {
@@ -1172,6 +1173,9 @@ namespace WebAssemblyInfo
                 imports[i].Name = ReadString();
                 imports[i].Desc = (ImportDesc)Reader.ReadByte();
                 imports[i].Idx = ReadU32();
+
+                if (imports[i].Desc == ImportDesc.TypeIdx)
+                    functionImportsCount++;
 
                 if (Program.Verbose2)
                     Console.WriteLine($"  {imports[i]}");
@@ -1330,10 +1334,7 @@ namespace WebAssemblyInfo
                 return false;
             }
 
-            idx = nameToFunction[name];
-
-            if (imports != null)
-                idx -= (UInt32)imports.Length;
+            idx = nameToFunction[name] - functionImportsCount;
 
             return true;
         }
@@ -1403,10 +1404,7 @@ namespace WebAssemblyInfo
             PrintFunctionWithPrefix(idx, name, null);
         }
 
-        UInt32 FunctionOffset(UInt32 idx)
-        {
-            return (imports == null ? 0 : (UInt32)imports.Length) + idx;
-        }
+        UInt32 FunctionOffset(UInt32 idx) => functionImportsCount + idx;
 
         public string FunctionName(UInt32 idx)
         {
@@ -1440,7 +1438,7 @@ namespace WebAssemblyInfo
             uint count = 0, totalCount = 0;
             for (UInt32 idx = 0; idx < funcsCode.Length; idx++)
             {
-                UInt32 funcIdx = idx + (UInt32)imports.Length;
+                UInt32 funcIdx = FunctionOffset(idx);
                 var name = functionNames[funcIdx];
                 if (Program.FunctionFilter != null && !Program.FunctionFilter.Match(name).Success)
                     continue;
@@ -1464,7 +1462,7 @@ namespace WebAssemblyInfo
             if (funcsCode == null || imports == null)
                 return false;
 
-            var code = funcsCode[idx - imports.Length];
+            var code = funcsCode[idx - functionImportsCount];
             if (!code.EnsureCodeReaded(this))
                 return false;
 
