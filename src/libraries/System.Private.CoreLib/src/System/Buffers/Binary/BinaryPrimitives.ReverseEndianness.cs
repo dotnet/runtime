@@ -19,53 +19,29 @@ namespace System.Buffers.Binary
         public static void ReverseEndianness(ReadOnlySpan<ushort> source, Span<ushort> destination) =>
             ReverseEndianness<short, Int16EndiannessReverser>(MemoryMarshal.Cast<ushort, short>(source), MemoryMarshal.Cast<ushort, short>(destination));
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         public static void ReverseEndianness(ReadOnlySpan<short> source, Span<short> destination) =>
             ReverseEndianness<short, Int16EndiannessReverser>(source, destination);
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         [CLSCompliant(false)]
         public static void ReverseEndianness(ReadOnlySpan<uint> source, Span<uint> destination) =>
             ReverseEndianness<int, Int32EndiannessReverser>(MemoryMarshal.Cast<uint, int>(source), MemoryMarshal.Cast<uint, int>(destination));
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         public static void ReverseEndianness(ReadOnlySpan<int> source, Span<int> destination) =>
             ReverseEndianness<int, Int32EndiannessReverser>(source, destination);
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         [CLSCompliant(false)]
         public static void ReverseEndianness(ReadOnlySpan<ulong> source, Span<ulong> destination) =>
             ReverseEndianness<long, Int64EndiannessReverser>(MemoryMarshal.Cast<ulong, long>(source), MemoryMarshal.Cast<ulong, long>(destination));
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         public static void ReverseEndianness(ReadOnlySpan<long> source, Span<long> destination) =>
             ReverseEndianness<long, Int64EndiannessReverser>(source, destination);
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         [CLSCompliant(false)]
         public static void ReverseEndianness(ReadOnlySpan<nuint> source, Span<nuint> destination) =>
 #if TARGET_64BIT
@@ -74,11 +50,7 @@ namespace System.Buffers.Binary
             ReverseEndianness<int, Int32EndiannessReverser>(MemoryMarshal.Cast<nuint, int>(source), MemoryMarshal.Cast<nuint, int>(destination));
 #endif
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         public static void ReverseEndianness(ReadOnlySpan<nint> source, Span<nint> destination) =>
 #if TARGET_64BIT
             ReverseEndianness<long, Int64EndiannessReverser>(MemoryMarshal.Cast<nint, long>(source), MemoryMarshal.Cast<nint, long>(destination));
@@ -88,18 +60,22 @@ namespace System.Buffers.Binary
 
         private readonly struct Int16EndiannessReverser : IEndiannessReverser<short>
         {
+            public static short Reverse(short value) =>
+                ReverseEndianness(value);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static short Reverse(short value) => ReverseEndianness(value);
+            public static Vector128<short> Reverse(Vector128<short> vector) =>
+                Vector128.ShiftLeft(vector, 8) | Vector128.ShiftRightLogical(vector, 8);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<short> Reverse(Vector128<short> vector) => Vector128.ShiftLeft(vector, 8) | Vector128.ShiftRightLogical(vector, 8);
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<short> Reverse(Vector256<short> vector) => Vector256.ShiftLeft(vector, 8) | Vector256.ShiftRightLogical(vector, 8);
+            public static Vector256<short> Reverse(Vector256<short> vector) =>
+                Vector256.ShiftLeft(vector, 8) | Vector256.ShiftRightLogical(vector, 8);
         }
 
         private readonly struct Int32EndiannessReverser : IEndiannessReverser<int>
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Reverse(int value) => ReverseEndianness(value);
+            public static int Reverse(int value) =>
+                ReverseEndianness(value);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<int> Reverse(Vector128<int> vector) =>
@@ -112,8 +88,8 @@ namespace System.Buffers.Binary
 
         private readonly struct Int64EndiannessReverser : IEndiannessReverser<long>
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static long Reverse(long value) => ReverseEndianness(value);
+            public static long Reverse(long value) =>
+                ReverseEndianness(value);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<long> Reverse(Vector128<long> vector) =>
@@ -212,20 +188,12 @@ namespace System.Buffers.Binary
             static abstract Vector256<T> Reverse(Vector256<T> vector);
         }
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         [CLSCompliant(false)]
         public static void ReverseEndianness(ReadOnlySpan<UInt128> source, Span<UInt128> destination) =>
             ReverseEndianness(MemoryMarshal.Cast<UInt128, Int128>(source), MemoryMarshal.Cast<UInt128, Int128>(destination));
 
-        /// <summary>Copies every primitive value from <paramref name="source"/> to <paramref name="destination"/>, reversing each primitive by performing an endianness swap as part of writing each.</summary>
-        /// <param name="source">The source span to copy.</param>
-        /// <param name="destination">The destination to which the source elements should be copied.</param>
-        /// <remarks>The source and destination spans may overlap. The same span may be passed as both the source and the destination in order to reverse each element's endianness in place.</remarks>
-        /// <exception cref="ArgumentException">The <paramref name="destination"/>'s length is smaller than that of the <paramref name="source"/>.</exception>
+        /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
         public static void ReverseEndianness(ReadOnlySpan<Int128> source, Span<Int128> destination)
         {
             if (destination.Length < source.Length)
