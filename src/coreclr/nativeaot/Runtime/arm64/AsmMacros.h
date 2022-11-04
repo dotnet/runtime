@@ -146,6 +146,15 @@ MovInstr SETS "movk"
         $MovInstr $Reg, #(($ConstantLo):AND:0xffff)
     MEND
 
+;;-----------------------------------------------------------------------------
+;; Macro for loading a 64bit value of a global variable into a register
+    MACRO
+        PREPARE_EXTERNAL_VAR_INDIRECT $Name, $Reg
+
+        adrp $Reg, $Name
+        ldr  $Reg, [$Reg, $Name]
+    MEND
+
 ;; -----------------------------------------------------------------------------
 ;;
 ;; Macro to export a pointer to an address inside a stub as a 64-bit variable

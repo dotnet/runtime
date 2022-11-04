@@ -282,9 +282,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.
     cmp     rdi, [g_lowest_address]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      RhpByRefAssignRef_NoBarrierRequired
     cmp     rdi, [g_highest_address]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     RhpByRefAssignRef_NoBarrierRequired
 
     ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     ;; we're in a debug build and write barrier checking has been enabled).
@@ -308,9 +308,9 @@ RhpByRefAssignRef_CheckCardTable:
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
     cmp     rcx, [g_ephemeral_low]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      RhpByRefAssignRef_NoBarrierRequired
     cmp     rcx, [g_ephemeral_high]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     RhpByRefAssignRef_NoBarrierRequired
 
     ;; move current rdi value into rcx, we need to keep rdi and eventually increment by 8
     mov     rcx, rdi
@@ -322,7 +322,7 @@ RhpByRefAssignRef_CheckCardTable:
     shr     rcx, 0Bh
     mov     r10, [g_card_table]
     cmp     byte ptr [rcx + r10], 0FFh
-    je      RhpByRefAssignRef_NotInHeap
+    je      RhpByRefAssignRef_NoBarrierRequired
 
 ;; We get here if it's necessary to update the card table.
     mov     byte ptr [rcx + r10], 0FFh
@@ -332,12 +332,12 @@ ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     shr     rcx, 0Ah
     add     rcx, [g_card_bundle_table]
     cmp     byte ptr [rcx], 0FFh
-    je      RhpByRefAssignRef_NotInHeap
+    je      RhpByRefAssignRef_NoBarrierRequired
 
     mov     byte ptr [rcx], 0FFh
 endif
 
-RhpByRefAssignRef_NotInHeap:
+RhpByRefAssignRef_NoBarrierRequired:
     ;; Increment the pointers before leaving
     add     rdi, 8h
     add     rsi, 8h
