@@ -38,6 +38,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         }
         public static IEnumerable<object[]> SurrogateProvider_MemberData()
         {
+            int majorVersion = Assembly.GetExecutingAssembly().GetName().Version.Major;
             yield return new object[] { typeof(SurrogateTests.CircleContainer), new NodeToSerializableNode(new CircleToSquare(new XmlSerializerToXmlFormatter(null))), (string s, XmlSchemaSet ss) => {
                 SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref s);
 
@@ -55,7 +56,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
                 SchemaUtils.OrderedContains(@"<xs:complexType name=""SurrogateTests.Square"">", ref s);
                 SchemaUtils.OrderedContains(@"<Surrogate xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" z:Id=""1"" xmlns:d1p1=""http://schemas.datacontract.org/2004/07/System"" i:type=""d1p1:Version"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Build>0</d1p1:_Build>", ref s);
-                SchemaUtils.OrderedContains(@"<d1p1:_Major>7</d1p1:_Major>", ref s);
+                SchemaUtils.OrderedContains($@"<d1p1:_Major>{majorVersion}</d1p1:_Major>", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Minor>0</d1p1:_Minor>", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Revision>0</d1p1:_Revision>", ref s);
                 SchemaUtils.OrderedContains(@"<xs:element name=""Side"" type=""xs:int"">", ref s);
@@ -69,7 +70,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
                 SchemaUtils.OrderedContains(@"<xs:complexType name=""SurrogateTests.SerializableNode"">", ref s);
                 SchemaUtils.OrderedContains(@"<Surrogate xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" z:Id=""1"" xmlns:d1p1=""http://schemas.datacontract.org/2004/07/System"" i:type=""d1p1:Version"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Build>0</d1p1:_Build>", ref s);
-                SchemaUtils.OrderedContains(@"<d1p1:_Major>7</d1p1:_Major>", ref s);
+                SchemaUtils.OrderedContains($@"<d1p1:_Major>{majorVersion}</d1p1:_Major>", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Minor>0</d1p1:_Minor>", ref s);
                 SchemaUtils.OrderedContains(@"<d1p1:_Revision>0</d1p1:_Revision>", ref s);
                 SchemaUtils.OrderedContains(@"<xs:element name=""next"" nillable=""true"" type=""tns:SurrogateTests.SerializableNode"">", ref s);

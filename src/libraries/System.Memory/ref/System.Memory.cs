@@ -442,6 +442,27 @@ namespace System.Buffers.Binary
         public static uint ReverseEndianness(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong ReverseEndianness(ulong value) { throw null; }
+        public static nint ReverseEndianness(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint ReverseEndianness(nuint value) { throw null; }
+        public static System.Int128 ReverseEndianness(System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ReverseEndianness(System.UInt128 value) { throw null; }
+        public static void ReverseEndianness(System.ReadOnlySpan<int> source, System.Span<int> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<Int128> source, System.Span<Int128> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<long> source, System.Span<long> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<nint> source, System.Span<nint> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<short> source, System.Span<short> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<nuint> source, System.Span<nuint> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<uint> source, System.Span<uint> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<UInt128> source, System.Span<UInt128> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<ulong> source, System.Span<ulong> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }

@@ -64,8 +64,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
 {
     HRESULT     hr;                     // A result.
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     LPUTF8      szName;                 // Name in UFT8.
     int         iLen;                   // A length.
     CMiniMdRW   *pMiniMd = NULL;
@@ -80,9 +78,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     hr = ImportHelper::GetCustomAttributeByName(pMiniMd, tkObj, szName, ppData, pcbData);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetCustomAttributeByName()
 
@@ -99,8 +94,6 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     ULONG           *pcCustomAttributes)    // Put # tokens returned here.
 {
     HRESULT         hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStart;
@@ -226,8 +219,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumCustomAttributes()
 
@@ -243,8 +234,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
     ULONG       *pcbSize)               // [OUT, OPTIONAL] Put size of data here.
 {
     HRESULT     hr = S_OK;              // A result.
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     CMiniMdRW   *pMiniMd;
 
@@ -269,8 +258,5 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
     }
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::GetCustomAttributeProps

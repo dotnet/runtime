@@ -1726,7 +1726,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     // We may have previously though this try entry was unreachable, but now we're going to
                     // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
                     //
-                    if (fgHaveProfileData() && !fromBlock->hasProfileWeight())
+                    if (fgHaveProfileWeights() && !fromBlock->hasProfileWeight())
                     {
                         JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
                                 fromBlock->bbNum, fgFirstBB->bbNum);
