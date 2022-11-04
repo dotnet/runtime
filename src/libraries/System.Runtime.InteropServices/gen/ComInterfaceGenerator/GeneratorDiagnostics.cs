@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -21,6 +20,7 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string InterfaceTypeNotSupported = "1053";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -144,6 +144,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+
+        public static readonly DiagnosticDescriptor InterfaceTypeNotSupported =
+            new DiagnosticDescriptor(
+                Ids.InterfaceTypeNotSupported,
+                GetResourceString(nameof(SR.InterfaceTypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 

@@ -37,6 +37,16 @@
         <target state="translated">Указанная конфигурация не поддерживается в P/Invoke с созданием источника.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedMessage">
+        <source>Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</source>
+        <target state="new">Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedTitle">
+        <source>Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</source>
+        <target state="new">Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
         <target state="translated">Метод \"{0}\" содержится в типе \"{1}\", который не помечен как \"partial\". Метод \"{0}\" будет игнорироваться при создании источника в P/Invoke.</target>

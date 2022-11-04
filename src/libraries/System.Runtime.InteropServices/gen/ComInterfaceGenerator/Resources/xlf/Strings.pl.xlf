@@ -37,6 +37,16 @@
         <target state="translated">Określona konfiguracja nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedMessage">
+        <source>Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</source>
+        <target state="new">Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedTitle">
+        <source>Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</source>
+        <target state="new">Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
         <target state="translated">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
