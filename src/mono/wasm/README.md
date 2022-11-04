@@ -175,7 +175,7 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
-## Was App Host
+## Wasm App Host
 
 [Use dotnet run to run wasm applications](host/README.md)
 

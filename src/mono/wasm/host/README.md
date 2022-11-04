@@ -1,6 +1,6 @@
 # Wasm App Host
 
-WasmAppHost is used when `dotnet run` executes for wasm targeting projects.
+WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
 ## Command line arguments
 
@@ -22,33 +22,33 @@ The `runtimeconfig.template.json` is a template that used by the .NET runtime to
 
 ## Per host configuration
 
-Wasm App Host supports running the application on various hosts, like browser, node js, v8, etc. These hosts has configuration in the `wasmHostProperties/perHostConfig`. Each of the configuration in this array has a name that can be passed as a command-line argument `--host` (`-h`) when starting the application, or as a `defaultConfig` in the `runtimeconfig.template.json`. If it's not specified, a first one declaration is used. 
+Wasm App Host supports running the application on various hosts, like browser, node js, v8, etc. These hosts has configuration in the `wasmHostProperties/perHostConfig`. Each of the configurations in this array has a name that can be passed as a command-line argument `--host` (`-h`) when starting the application, or set as a `defaultConfig` in the `runtimeconfig.template.json`. If it's not specified, the first declaration is used.
 
 > To use JavaScript engines or node, the executable needs to be present in the `PATH`.
 
-Depending on the host type, various properties can be set. 
+Depending on the host type, various properties can be set.
 
 ### Browser
 
-- `host: browser`: A identify this configuration to run on the browser.
+- `host: browser`: specifies that this configuration is for running on the browser.
 - `html-path`: A relative path of an HTML file to open in the browser. Eg.: `index.html`
 
 ### V8
 
-- `host: v8`: A identify this configuration to run on the V8.
+- `host: v8`: specifies that this configuration is for running with `V8`.
 - `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
 ### Node JS
 
-- `host: v8`: A identify this configuration to run on the node.
+- `host: nodejs`: specifies that this configuration is for running with `NodeJS`.
 - `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
 ### SpiderMonkey
 
-- `host: spidermonkey`: A identify this configuration to run on the SpiderMonkey.
+- `host: spidermonkey`: specifies that this configuration is for running with `SpiderMonkey`.
 - `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
 
 ### JavaScriptCore
 
-- `host: javascriptcore`: A identify this configuration to run on the JavaScriptCore.
+- `host: javascriptcore`: specifies that this configuration is for running with `JavaScriptCore`.
 - `js-path`: A relative path of a JavaScript file to execute. Eg.: `main.mjs`
