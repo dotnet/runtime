@@ -3979,21 +3979,34 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
     return retVal;
 }
 
+//--------------------------------------------------------------------------------------
+// isAssignedToInterval: Check if regRec is assigned to interval.
+//
+// Arguments:
+//    interval - Interval to check
+//    regRec - a register to check if it is assigned to the interval
+//
+// Note:
+//    If this is multi-register interval, the method will return true as long as
+//    one of the register is regRec.
+//
+// Return Value:
+//    True if regRec is assigned to the interval.
 bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
 {
-    if (isFirstRegNum(regRec))
+    if (interval->assignedReg == nullptr)
     {
-        return interval->assignedReg == regRec;
+        return false;
     }
 
-    RegRecord* firstRegRec        = getFirstRegRec(regRec);
-    regNumber  currReg            = firstRegRec->regNum;
-    bool      intervalIsAssigned = false;
-    int regCount = regRec->regCount;
+    regNumber  regRecToCheck      = regRec->regNum;
+    regNumber  currReg            = interval->assignedReg->regNum;
+    bool       intervalIsAssigned = false;
+    int        regCount           = interval->regCount;
 
     do
     {
-        intervalIsAssigned |= (interval->assignedReg == getRegisterRecord(currReg));
+        intervalIsAssigned |= (currReg == regRecToCheck);
         currReg = REG_NEXT(currReg);
     } while (--regCount > 0);
 
@@ -4656,7 +4669,6 @@ void LinearScan::allocateRegisters()
     {
         dumpRefPositions("BEFORE ALLOCATION");
         dumpVarRefPositions("BEFORE ALLOCATION");
-
         printf("\n\nAllocating Registers\n"
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
