@@ -4918,7 +4918,9 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                     fieldStoreType = fieldVarDsc->TypeGet();
                 }
 
-                ssize_t      fieldValueOffset = max(0, fieldVarDsc->lvFldOffset - offset);
+                // Calculate offset of this field's value, relative to the entire one.
+                ssize_t      fieldOffset      = fieldVarDsc->lvFldOffset;
+                ssize_t      fieldValueOffset = (fieldOffset < offset) ? 0 : (fieldOffset - offset);
                 ValueNumPair fieldStoreValue =
                     vnStore->VNPairForLoad(value, storeSize, fieldStoreType, fieldValueOffset, fieldStoreSize);
 
