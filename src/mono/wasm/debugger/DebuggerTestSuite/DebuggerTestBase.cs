@@ -780,7 +780,7 @@ namespace DebuggerTests
                     if (exp_i != null)
                     {
                         await CheckValue(act_i["value"],
-                            ((JObject)exp_i).GetValue("value").HasValues ? exp_i["value"] : exp_i,
+                            ((JObject)exp_i).GetValue("value")?.HasValues == true ? exp_i["value"] : exp_i,
                             $"{label}-{i}th value");
                     }
                 }
