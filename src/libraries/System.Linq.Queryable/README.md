@@ -1,6 +1,6 @@
 # System.Linq.Queryable
 
-Provides a set of static methods for querying data structures that implement `IQueryable<T>`.
+Provides a set of extension methods for querying data structures that implement `IQueryable<T>`.
 
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.linq.
 
