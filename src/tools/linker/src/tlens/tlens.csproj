@@ -10,8 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
   </ItemGroup>
 
 </Project>

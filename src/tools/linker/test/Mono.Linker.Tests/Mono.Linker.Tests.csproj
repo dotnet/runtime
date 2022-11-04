@@ -22,10 +22,8 @@
     <Folder Include="Extensions\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
-    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
@@ -33,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
-    <PackageReference Include="Microsoft.ILVerification" Version="$(MicrosoftILVerificationVersion)" />
+    <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
     <PackageReference Include="nunit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
     <!-- This reference is purely so that the linker can resolve this

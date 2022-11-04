@@ -340,17 +340,17 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.linkertests+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.Tasks.Tests\ILLink.Tasks.Tests.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.RoslynAnalyzer.Tests\ILLink.RoslynAnalyzer.Tests.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)linker\test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj"
-      Test="true" Category="tools" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
