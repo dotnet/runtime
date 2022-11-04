@@ -1128,7 +1128,7 @@ namespace ILCompiler.Dataflow
             int countToPop = 0;
             if (!isNewObj && !methodCalled.Signature.IsStatic)
                 countToPop++;
-            countToPop += methodCalled.Signature.Length;
+            countToPop += methodCalled.GetMetadataParametersCount();
 
             ValueNodeList methodParams = new ValueNodeList(countToPop);
             for (int iParam = 0; iParam < countToPop; ++iParam)

@@ -30,18 +30,14 @@ namespace ILLink.Shared.TypeSystemProxy
         /// <summary>
         /// Gets the number of entries in the 'Parameters' section of a method's metadata (i.e. excludes the implicit 'this' from the count)
         /// </summary>
-        internal partial int GetMetadataParametersCount() => Method.Signature.Length;
+        internal partial int GetMetadataParametersCount() => Method.GetMetadataParametersCount();
 
-        internal partial int GetParametersCount() => Method.Signature.IsStatic ? Method.Signature.Length : Method.Signature.Length + 1;
+        internal partial int GetParametersCount() => Method.GetParametersCount();
 
         /// <summary>
         /// Use only when iterating over all parameters. When wanting to index, use GetParameters(ParameterIndex)
         /// </summary>
-        internal partial ParameterProxyEnumerable GetParameters()
-        {
-            int implicitThisOffset = HasImplicitThis() ? 1 : 0;
-            return new ParameterProxyEnumerable(0, Method.Signature.Length + implicitThisOffset, Method);
-        }
+        internal partial ParameterProxyEnumerable GetParameters() => new ParameterProxyEnumerable(0, Method.GetParametersCount(), Method);
 
         internal partial ParameterProxy GetParameter(ParameterIndex index)
         {

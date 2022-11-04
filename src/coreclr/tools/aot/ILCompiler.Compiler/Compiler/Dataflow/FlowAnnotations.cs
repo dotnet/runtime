@@ -406,18 +406,13 @@ namespace ILLink.Shared.TrimAnalysis
                         continue;
                     }
 
-                    // We convert indices from metadata space to IL space here.
-                    // IL space assigns index 0 to the `this` parameter on instance methods.
-
-                    int offset = signature.IsStatic ? 0 : 1;
-
                     // If there's an annotation on the method itself and it's one of the special types (System.Type for example)
                     // treat that annotation as annotating the "this" parameter.
                     if (methodMemberTypes != DynamicallyAccessedMemberTypes.None)
                     {
                         if (IsTypeInterestingForDataflow(method.OwningType) && !signature.IsStatic)
                         {
-                            paramAnnotations = new DynamicallyAccessedMemberTypes[signature.Length + offset];
+                            paramAnnotations = new DynamicallyAccessedMemberTypes[method.GetParametersCount()];
                             paramAnnotations[0] = methodMemberTypes;
                         }
                         else
@@ -456,8 +451,10 @@ namespace ILLink.Shared.TrimAnalysis
                                 continue;
                             }
 
-                            paramAnnotations ??= new DynamicallyAccessedMemberTypes[signature.Length + offset];
-                            paramAnnotations[parameter.SequenceNumber - 1 + offset] = pa;
+                            // We convert indices from metadata space to IL space here.
+                            // IL space assigns index 0 to the `this` parameter on instance methods.
+                            paramAnnotations ??= new DynamicallyAccessedMemberTypes[method.GetParametersCount()];
+                            paramAnnotations[parameter.SequenceNumber - 1 + (signature.IsStatic ? 0 : 1)] = pa;
                         }
                     }
 
@@ -542,10 +539,9 @@ namespace ILLink.Shared.TrimAnalysis
                             if (setterAnnotation is not null)
                                 annotatedMethods.Remove(setterAnnotation.Value);
 
-                            int offset = setMethod.Signature.IsStatic ? 0 : 1;
                             DynamicallyAccessedMemberTypes[] paramAnnotations;
                             if (setterAnnotation?.ParameterAnnotations is null)
-                                paramAnnotations = new DynamicallyAccessedMemberTypes[setMethod.Signature.Length + offset];
+                                paramAnnotations = new DynamicallyAccessedMemberTypes[setMethod.GetParametersCount()];
                             else
                                 paramAnnotations = setterAnnotation.Value.ParameterAnnotations;
 
