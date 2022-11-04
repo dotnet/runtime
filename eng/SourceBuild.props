@@ -41,6 +41,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnablePackageValidation=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:DisableSourceLink=false</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) /p:PrimaryRuntimeFlavor=Mono /p:RuntimeFlavor=Mono</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
