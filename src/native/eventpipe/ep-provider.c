@@ -249,7 +249,7 @@ ep_provider_add_event (
 	// We filter out those bits here so later comparisons don't have to take them in to account. Without
 	// filtering, EventSources wouldn't show up with Keywords=0.
 	uint64_t session_mask = ~0xF00000000000;
-	// -1 is special, it means all keywords. Don't change it.
+	// -1 is special, it means all keywords and gets used on internal error notifications. Don't change it.
 	uint64_t all_keywords = (uint64_t)(-1);
 	if (keywords != all_keywords) {
 		keywords &= session_mask;
