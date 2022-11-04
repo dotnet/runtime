@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 
+[assembly:Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+
 namespace JIT.HardwareIntrinsics.X86._Bmi2.X64
 {
     public static partial class Program

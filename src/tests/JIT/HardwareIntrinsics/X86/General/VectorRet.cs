@@ -384,6 +384,7 @@ public partial class Program
         return Pass;
     }
 
+    [Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
     [Fact]
     public static unsafe void VectorRet()
     {
