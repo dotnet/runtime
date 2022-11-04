@@ -3,11 +3,7 @@
 
 //#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text.Json.Reflection;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -109,7 +105,7 @@ namespace System.Text.Json.SourceGeneration
                         INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
                         string fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-                        if (fullName == Parser.JsonSerializableAttributeFullName)
+                        if (fullName == JsonConstants.JsonSerializableAttributeFullName)
                         {
                             return classDeclarationSyntax;
                         }

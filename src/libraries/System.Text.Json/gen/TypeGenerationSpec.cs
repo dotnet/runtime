@@ -76,7 +76,7 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string? RuntimeTypeRef { get; private set; }
 
-        public TypeGenerationSpec? ExtensionDataPropertyTypeSpec { get; private set; }
+        public PropertyGenerationSpec? ExtensionDataPropertySpec { get; private set; }
 
         public string? ConverterInstantiationLogic { get; private set; }
 
@@ -126,7 +126,7 @@ namespace System.Text.Json.SourceGeneration
             ObjectConstructionStrategy constructionStrategy,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? runtimeTypeRef,
-            TypeGenerationSpec? extensionDataPropertyTypeSpec,
+            PropertyGenerationSpec? extDataPropSpec,
             string? converterInstantiationLogic,
             bool implementsIJsonOnSerialized,
             bool implementsIJsonOnSerializing,
@@ -152,7 +152,7 @@ namespace System.Text.Json.SourceGeneration
             ConstructionStrategy = constructionStrategy;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             RuntimeTypeRef = runtimeTypeRef;
-            ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;
+            ExtensionDataPropertySpec = extDataPropSpec;
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
@@ -253,11 +253,6 @@ namespace System.Text.Json.SourceGeneration
 
             if (ClassType == ClassType.Object)
             {
-                if (ExtensionDataPropertyTypeSpec != null)
-                {
-                    return false;
-                }
-
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {
                     if (property.TypeGenerationSpec.Type.IsObjectType() ||

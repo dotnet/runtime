@@ -47,17 +47,20 @@ namespace System.Text.Json.SourceGeneration
             // global::fully.qualified.name for referenced types
             private const string ArrayTypeRef = "global::System.Array";
             private const string InvalidOperationExceptionTypeRef = "global::System.InvalidOperationException";
+            private const string StringTypeRef = "global::System.String";
             private const string TypeTypeRef = "global::System.Type";
             private const string UnsafeTypeRef = "global::System.Runtime.CompilerServices.Unsafe";
             private const string EqualityComparerTypeRef = "global::System.Collections.Generic.EqualityComparer";
+            private const string IDictionaryTypeRef = "global::System.Collections.Generic.IDictionary";
             private const string IListTypeRef = "global::System.Collections.Generic.IList";
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string JsonEncodedTextTypeRef = "global::System.Text.Json.JsonEncodedText";
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
-            private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
+            private const string JsonNodeTypeRef = "global::System.Text.Json.Nodes.JsonNode";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
+            private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
@@ -268,10 +271,16 @@ namespace {@namespace}
                                 }
                             }
 
-                            TypeGenerationSpec? extPropTypeSpec = typeGenerationSpec.ExtensionDataPropertyTypeSpec;
+                            TypeGenerationSpec? extPropTypeSpec = typeGenerationSpec.ExtensionDataPropertySpec?.TypeGenerationSpec;
                             if (extPropTypeSpec != null)
                             {
                                 GenerateTypeInfo(extPropTypeSpec);
+
+                                if (extPropTypeSpec.Type == _generationSpec.JsonObjectType)
+                                {
+                                    GenerateTypeInfo(extPropTypeSpec.CollectionKeyTypeMetadata);
+                                    GenerateTypeInfo(extPropTypeSpec.CollectionValueTypeMetadata);
+                                }
                             }
                         }
                         break;
@@ -542,6 +551,17 @@ namespace {@namespace}
 
             private string GenerateFastPathFuncForDictionary(TypeGenerationSpec typeGenerationSpec)
             {
+                string serializationLogic = $@"{WriterVarName}.WriteStartObject();
+
+{IndentSource(GenerateFastPathForDictionaryKeyValuePairs(typeGenerationSpec, ValueVarName), numIndentations: 1)}
+
+    {WriterVarName}.WriteEndObject();";
+
+                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
+            }
+
+            private string GenerateFastPathForDictionaryKeyValuePairs(TypeGenerationSpec typeGenerationSpec, string dictionaryValueVarName)
+            {
                 TypeGenerationSpec keyTypeGenerationSpec = typeGenerationSpec.CollectionKeyTypeMetadata;
                 TypeGenerationSpec valueTypeGenerationSpec = typeGenerationSpec.CollectionValueTypeMetadata;
 
@@ -568,16 +588,7 @@ namespace {@namespace}
         {GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec, valueToWrite)}";
                 }
 
-                string serializationLogic = $@"{WriterVarName}.WriteStartObject();
-
-    foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
-    {{
-        {elementSerializationLogic}
-    }}
-
-    {WriterVarName}.WriteEndObject();";
-
-                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
+                return $"foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {dictionaryValueVarName})\r\n    {{\r\n        {elementSerializationLogic}\r\n    }}";
             }
 
             private string GenerateForObject(TypeGenerationSpec typeMetadata)
@@ -832,7 +843,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 foreach (PropertyGenerationSpec propertyGenSpec in serializableProperties.Values)
                 {
-                    if (!ShouldIncludePropertyForFastPath(propertyGenSpec, options))
+                    if (propertyGenSpec.IsExtensionData || !ShouldIncludePropertyForFastPath(propertyGenSpec, options))
                     {
                         continue;
                     }
@@ -890,6 +901,34 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     }
 
                     sb.Append(WrapSerializationLogicInDefaultCheckIfRequired(serializationLogic, propValue, propertyTypeSpec.TypeRef, defaultCheckType));
+                }
+
+                PropertyGenerationSpec? extDataPropSpec = typeGenSpec.ExtensionDataPropertySpec;
+                if (extDataPropSpec != null)
+                {
+                    TypeGenerationSpec extDataPropTypeSpec = extDataPropSpec.TypeGenerationSpec;
+                    string dictionaryValue = $"{ValueVarName}.{extDataPropSpec.ClrName}";
+
+                    ClassType classType = extDataPropTypeSpec.ClassType;
+
+                    if (_currentContext.ContextTypeRef.Contains("Extension"))
+                    {
+                    }
+
+                    if (classType != ClassType.Dictionary)
+                    {
+                        Debug.Assert(extDataPropTypeSpec.Type == _generationSpec.JsonObjectType);
+                        dictionaryValue = $"({IDictionaryTypeRef}<{StringTypeRef}, {JsonNodeTypeRef}>){dictionaryValue}";
+                    }
+
+                    sb.Append($@"
+
+    // Writing extension data members
+    if ({dictionaryValue} != null)
+    {{
+        {GenerateFastPathForDictionaryKeyValuePairs(extDataPropSpec.TypeGenerationSpec, dictionaryValue)}
+    }}
+");
                 }
 
                 // End method logic.

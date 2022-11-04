@@ -44,8 +44,6 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
-            internal const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
-
             private const string DateOnlyFullName = "System.DateOnly";
             private const string TimeOnlyFullName = "System.TimeOnly";
             private const string IAsyncEnumerableFullName = "System.Collections.Generic.IAsyncEnumerable`1";
@@ -251,7 +249,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConstants.JsonSerializableAttributeFullName);
                 INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
                 INamedTypeSymbol jsonConverterOfTAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConverterOfTFullName);
 
@@ -392,6 +390,7 @@ namespace System.Text.Json.SourceGeneration
                     BooleanType = _booleanType,
                     ByteArrayType = _byteArrayType,
                     CharType = _charType,
+                    JsonObjectType = _jsonObjectType,
                     DateTimeType = _dateTimeType,
                     DateTimeOffsetType = _dateTimeOffsetType,
                     GuidType = _guidType,
@@ -705,7 +704,7 @@ namespace System.Text.Json.SourceGeneration
                 TypeGenerationSpec? collectionKeyTypeSpec = null;
                 TypeGenerationSpec? collectionValueTypeSpec = null;
                 TypeGenerationSpec? nullableUnderlyingTypeGenSpec = null;
-                TypeGenerationSpec? dataExtensionPropGenSpec = null;
+                PropertyGenerationSpec? dataExtPropGenSpec = null;
                 string? runtimeTypeRef = null;
                 List<PropertyGenerationSpec>? propGenSpecList = null;
                 ObjectConstructionStrategy constructionStrategy = default;
@@ -759,6 +758,13 @@ namespace System.Text.Json.SourceGeneration
 
                         isPolymorphic = true;
                     }
+                }
+
+                // Populate info required to support JsonObject as extension data in fast-path.
+                if (type == _jsonObjectType)
+                {
+                    collectionKeyTypeSpec = GetOrAddTypeGenerationSpec(_stringType, generationMode);
+                    collectionValueTypeSpec = GetOrAddTypeGenerationSpec(_jsonNodeType, generationMode);
                 }
 
                 if (foundDesignTimeCustomConverter)
@@ -1029,6 +1035,7 @@ namespace System.Text.Json.SourceGeneration
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
                             PropertyGenerationSpec spec;
+                            bool seenExtDataAttr = false;
 
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                             {
@@ -1077,19 +1084,25 @@ namespace System.Text.Json.SourceGeneration
 
                                 if (spec.IsExtensionData)
                                 {
-                                    if (dataExtensionPropGenSpec != null)
+                                    if (seenExtDataAttr)
                                     {
                                         _typeLevelDiagnostics.Add((type, MultipleJsonExtensionDataAttribute, new string[] { type.Name }));
                                     }
-
-                                    Type propType = spec.TypeGenerationSpec.Type;
-                                    if (!IsValidDataExtensionPropertyType(propType))
+                                    else
                                     {
-                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, memberLocation, new string[] { type.Name, spec.ClrName }));
-                                    }
+                                        seenExtDataAttr = true;
+                                        Type propType = spec.TypeGenerationSpec.Type;
 
-                                    dataExtensionPropGenSpec = GetOrAddTypeGenerationSpec(propType, generationMode);
-                                    _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
+                                        if (!IsValidDataExtensionPropertyType(propType))
+                                        {
+                                            _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, memberLocation, new string[] { type.Name, spec.ClrName }));
+                                        }
+                                        else
+                                        {
+                                            dataExtPropGenSpec = spec;
+                                            _implicitlyRegisteredTypes.Add(GetOrAddTypeGenerationSpec(propType, generationMode));
+                                        }
+                                    }
                                 }
 
                                 if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
@@ -1125,7 +1138,7 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy,
                     nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
                     runtimeTypeRef,
-                    dataExtensionPropGenSpec,
+                    dataExtPropGenSpec,
                     converterInstatiationLogic,
                     implementsIJsonOnSerialized : implementsIJsonOnSerialized,
                     implementsIJsonOnSerializing : implementsIJsonOnSerializing,

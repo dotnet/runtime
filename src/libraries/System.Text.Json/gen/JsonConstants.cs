@@ -11,5 +11,7 @@ namespace System.Text.Json
 
         public const string IJsonOnSerializedFullName = "System.Text.Json.Serialization.IJsonOnSerialized";
         public const string IJsonOnSerializingFullName = "System.Text.Json.Serialization.IJsonOnSerializing";
+
+        public const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
     }
 }

@@ -4,13 +4,8 @@
 //#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text.Json.Reflection;
-using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 #if !ROSLYN4_4_OR_GREATER
@@ -32,7 +27,7 @@ namespace System.Text.Json.SourceGeneration
 #if !ROSLYN4_4_OR_GREATER
                     context,
 #endif
-                    Parser.JsonSerializableAttributeFullName,
+                    JsonConstants.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
@@ -42,7 +37,9 @@ namespace System.Text.Json.SourceGeneration
             context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext sourceProductionContext)
+#pragma warning restore CA1822 // Mark members as static
         {
 #if LAUNCH_DEBUGGER
             if (!Diagnostics.Debugger.IsAttached)
