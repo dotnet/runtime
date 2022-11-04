@@ -1094,7 +1094,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Equal(ExpectedPem, output);
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection), nameof(PlatformDetection.IsWindows10OrLater))]
         [InlineData("NISTP256", "SHA256")]
         [InlineData("NISTP384", "SHA384")]
         [InlineData("NISTP521", "SHA512")]

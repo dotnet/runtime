@@ -361,9 +361,18 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             using (ECDsa ecdsa = ECDsaFactory.Create())
             {
-                ecdsa.GenerateKey(ECCurve.CreateFromFriendlyName(curveName));
-                ECParameters exportedParameters = ecdsa.ExportParameters(false);
-                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+                ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+
+                if (PlatformDetection.IsWindows10OrLater)
+                {
+                    ecdsa.GenerateKey(curve);
+                    ECParameters exportedParameters = ecdsa.ExportParameters(false);
+                    Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => ecdsa.GenerateKey(curve));
+                }
             }
         }
 

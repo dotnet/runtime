@@ -424,9 +424,18 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
-                ecdh.GenerateKey(ECCurve.CreateFromFriendlyName(curveName));
-                ECParameters exportedParameters = ecdh.ExportParameters(false);
-                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+                ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+
+                if (PlatformDetection.IsWindows10OrLater)
+                {
+                    ecdh.GenerateKey(curve);
+                    ECParameters exportedParameters = ecdh.ExportParameters(false);
+                    Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => ecdh.GenerateKey(curve));
+                }
             }
         }
 
