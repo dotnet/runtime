@@ -1,3 +1,12 @@
+### Release version 0.0.12
+
+Changes:
+
+wa-info and wa-diff
+ * parse Data section
+ * parse Global section
+ * fix error in function offsets calculation
+
 ### Release version 0.0.11
 
 Changes:
