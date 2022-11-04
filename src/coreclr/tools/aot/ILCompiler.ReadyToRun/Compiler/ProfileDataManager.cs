@@ -89,7 +89,7 @@ namespace ILCompiler
 
             if (synthesizeRandomPgoData)
             {
-                _gdvEntityFinder = new GdvEntityFinder(versionBubble);
+                _gdvEntityFinder = new GdvEntityFinder(context, versionBubble);
                 _synthesizedProfileData = new ProfileDataMap(nonLocalGenericsHome, _compilationGroup);
             }
         }
@@ -413,7 +413,7 @@ namespace ILCompiler
             private readonly Dictionary<MethodSignature, List<MethodDesc>> _delegateTargets;
             private readonly Dictionary<TypeDesc, List<TypeDesc>> _implementers;
 
-            public GdvEntityFinder(IEnumerable<ModuleDesc> modules)
+            public GdvEntityFinder(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> modules)
             {
                 Dictionary<MethodSignature, HashSet<MethodDesc>> delegateTargets = new();
                 Dictionary<TypeDesc, HashSet<TypeDesc>> implementers = new();
@@ -427,6 +427,8 @@ namespace ILCompiler
                             {
                                 if (!method.Signature.IsStatic && !method.IsAbstract)
                                 {
+                                    context.EnsureLoadableMethod(method);
+
                                     if (!delegateTargets.TryGetValue(method.Signature, out HashSet<MethodDesc> set))
                                         delegateTargets.Add(method.Signature, set = new HashSet<MethodDesc>());
 
@@ -442,6 +444,8 @@ namespace ILCompiler
                         {
                             if (!type.IsAbstract && !type.IsInterface)
                             {
+                                context.EnsureLoadableType(type);
+
                                 void AddImplemented(TypeDesc implemented)
                                 {
                                     if (!implementers.TryGetValue(implemented, out HashSet<TypeDesc> set))
