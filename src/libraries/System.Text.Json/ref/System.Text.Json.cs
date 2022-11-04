@@ -130,6 +130,7 @@ namespace System.Text.Json
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.ReadOnlySpan<byte> EncodedUtf8Bytes { get { throw null; } }
+        public string Value { get { throw null; } }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(string value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
@@ -156,6 +157,10 @@ namespace System.Text.Json
     {
         protected JsonNamingPolicy() { }
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
     }
     public readonly partial struct JsonProperty
@@ -718,6 +723,7 @@ namespace System.Text.Json.Nodes
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.Nodes.JsonNode (sbyte value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (float value) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static implicit operator System.Text.Json.Nodes.JsonNode? (string? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.Nodes.JsonNode (ushort value) { throw null; }
@@ -799,6 +805,7 @@ namespace System.Text.Json.Nodes
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Nodes.JsonValue Create(sbyte value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(float value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static System.Text.Json.Nodes.JsonValue? Create(string? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(System.Text.Json.JsonElement value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -911,6 +918,10 @@ namespace System.Text.Json.Serialization
     {
         Unspecified = 0,
         CamelCase = 1,
+        SnakeCaseLower = 2,
+        SnakeCaseUpper = 3,
+        KebabCaseLower = 4,
+        KebabCaseUpper = 5,
     }
     [System.FlagsAttribute]
     public enum JsonNumberHandling
@@ -1192,7 +1203,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo() { }
         public System.Text.Json.Serialization.JsonConverter Converter { get { throw null; } }
         public System.Func<object>? CreateObject { get { throw null; } set { } }
+        public bool IsReadOnly { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
+        public void MakeReadOnly() { throw null; }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Action<object>? OnDeserialized { get { throw null; } set { } }
         public System.Action<object>? OnDeserializing { get { throw null; } set { } }

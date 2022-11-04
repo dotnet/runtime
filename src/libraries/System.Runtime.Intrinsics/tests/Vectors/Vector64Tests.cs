@@ -11,6 +11,13 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     public sealed class Vector64Tests
     {
         [Fact]
+        public unsafe void Vector64IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector64).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector64.IsHardwareAccelerated, methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
         public unsafe void Vector64ByteExtractMostSignificantBitsTest()
         {
             Vector64<byte> vector = Vector64.Create(
@@ -3883,6 +3890,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector64DoubleEqualsNonCanonicalNaNTest()
+        {
+            // max 8 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt64BitsToDouble(0x7FF7_FFFF_FFFF_FFFF);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
+
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector64.Create(i).Equals(Vector64.Create(j)));
+                    Assert.False(Vector64.Create(i) == Vector64.Create(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void Vector64SingleEqualsNonCanonicalNaNTest()
+        {
+            // max 11 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt32BitsToSingle(0x7FBF_FFFF);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
+
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector64.Create(i).Equals(Vector64.Create(j)));
+                    Assert.False(Vector64.Create(i) == Vector64.Create(j));
+                }
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
@@ -3949,6 +4004,51 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             MethodInfo methodInfo = typeof(Vector64<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.False((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
+        public void GetOneByte() => TestGetOne<byte>();
+
+        [Fact]
+        public void GetOneDouble() => TestGetOne<double>();
+
+        [Fact]
+        public void GetOneInt16() => TestGetOne<short>();
+
+        [Fact]
+        public void GetOneInt32() => TestGetOne<int>();
+
+        [Fact]
+        public void GetOneInt64() => TestGetOne<long>();
+
+        [Fact]
+        public void GetOneIntPtr() => TestGetOne<nint>();
+
+        [Fact]
+        public void GetOneSByte() => TestGetOne<sbyte>();
+
+        [Fact]
+        public void GetOneSingle() => TestGetOne<float>();
+
+        [Fact]
+        public void GetOneUInt16() => TestGetOne<ushort>();
+
+        [Fact]
+        public void GetOneUInt32() => TestGetOne<uint>();
+
+        [Fact]
+        public void GetOneUInt64() => TestGetOne<ulong>();
+
+        [Fact]
+        public void GetOneUIntPtr() => TestGetOne<nuint>();
+
+        private static void TestGetOne<T>()
+            where T : struct, INumber<T>
+        {
+            Assert.Equal(Vector64<T>.One, Vector64.Create(T.One));
+
+            MethodInfo methodInfo = typeof(Vector64<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.Equal((Vector64<T>)methodInfo.Invoke(null, null), Vector64.Create(T.One));
         }
     }
 }

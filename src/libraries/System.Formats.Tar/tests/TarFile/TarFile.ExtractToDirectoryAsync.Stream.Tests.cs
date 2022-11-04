@@ -45,7 +45,7 @@ namespace System.Formats.Tar.Tests
             {
                 using (WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true))
                 {
-                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+                    await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
                 }
             }
         }
@@ -94,6 +94,19 @@ namespace System.Formats.Tar.Tests
                     Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
                     Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
                 }
+            }
+        }
+
+        [Fact]
+        public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts_Async()
+        {
+            using (TempDirectory root = new TempDirectory())
+            {
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "docker-hello-world");
+                await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+
+                Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
+                Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
             }
         }
 

@@ -28,8 +28,6 @@
 
 #include "wrappers.h"
 
-#include "nativeoverlapped.h"
-
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
@@ -577,7 +575,7 @@ DWORD Thread::StartThread()
 #endif
 
     _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
-    DWORD dwRetVal = ::ResumeThread(GetThreadHandle());
+    DWORD dwRetVal = ClrResumeThread(GetThreadHandle());
     return dwRetVal;
 }
 
@@ -1052,11 +1050,9 @@ Thread* WINAPI CreateThreadBlockThrow()
     // We want to throw an exception for reverse p-invoke, and our assertion may fire if
     // a unmanaged caller does not setup an exception handler.
     CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-    Thread* pThread = NULL;
-    BEGIN_ENTRYPOINT_THROWS;
 
     HRESULT hr = S_OK;
-    pThread = SetupThreadNoThrow(&hr);
+    Thread* pThread = SetupThreadNoThrow(&hr);
     if (pThread == NULL)
     {
         // Creating Thread failed, and we need to throw an exception to report status.
@@ -1064,7 +1060,6 @@ Thread* WINAPI CreateThreadBlockThrow()
         ULONG_PTR arg = hr;
         RaiseException(EXCEPTION_EXX, 0, 1, &arg);
     }
-    END_ENTRYPOINT_THROWS;
 
     return pThread;
 }
@@ -1975,36 +1970,37 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct ProtectArgs
+    struct
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } gc;
+    gc.pThrowable = NULL;
+    gc.pReason = NULL;
 
-    GCPROTECT_BEGIN(args);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    args.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
 
     if (m_pExceptionDuringStartup)
     {
-        args.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
         Exception::Delete(m_pExceptionDuringStartup);
         m_pExceptionDuringStartup = NULL;
     }
 
     ARG_SLOT args1[] = {
-        ObjToArgSlot(args.pThrowable),
-        ObjToArgSlot(args.pReason),
+        ObjToArgSlot(gc.pThrowable),
+        ObjToArgSlot(gc.pReason),
     };
     exceptionCtor.Call(args1);
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
 }
 
 #ifndef TARGET_UNIX

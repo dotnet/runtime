@@ -166,6 +166,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.Converter.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }

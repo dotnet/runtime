@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     //
     // It is used to keep track of uses of virtual methods to ensure that the
     // vtables are properly constructed
-    internal class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
+    internal sealed class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _decl;
 
@@ -38,15 +38,14 @@ namespace ILCompiler.DependencyAnalysis
             _decl = decl;
         }
 
-        protected override string GetName(NodeFactory factory) => $"VirtualMethodUse {_decl.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"VirtualMethodUse {_decl}";
 
         protected override void OnMarked(NodeFactory factory)
         {
             // If the VTable slice is getting built on demand, the fact that the virtual method is used means
             // that the slot is used.
             var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
-            if (lazyVTableSlice != null)
-                lazyVTableSlice.AddEntry(factory, _decl);
+            lazyVTableSlice?.AddEntry(factory, _decl);
         }
 
         public override bool HasConditionalStaticDependencies => _decl.Context.SupportsUniversalCanon && _decl.OwningType.HasInstantiation && !_decl.OwningType.IsInterface;

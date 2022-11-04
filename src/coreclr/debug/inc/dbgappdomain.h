@@ -283,7 +283,7 @@ struct AppDomainEnumerationIPCBlock
         pADInfo->FreeEntry();
 
 #ifdef _DEBUG
-        memset(pADInfo, 0, sizeof(AppDomainInfo));
+        *pADInfo = {};
 #endif
 
         // decrement the used slot count

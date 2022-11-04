@@ -109,13 +109,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 #define SZ_UNHANDLED_EXCEPTION W("Unhandled exception.")
 #define SZ_UNHANDLED_EXCEPTION_CHARLEN ((sizeof(SZ_UNHANDLED_EXCEPTION) / sizeof(WCHAR)))
 
-
-typedef struct {
-    OBJECTREF pThrowable;
-    STRINGREF s1;
-    OBJECTREF pTmpThrowable;
-} ProtectArgsStruct;
-
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
@@ -6533,24 +6526,6 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-static void FixContextForFaultingExceptionFrame(
-    EXCEPTION_POINTERS* ep,
-    EXCEPTION_RECORD* pOriginalExceptionRecord,
-    CONTEXT* pOriginalExceptionContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // don't copy param args as have already supplied them on the throw
-    memcpy((void*) ep->ExceptionRecord,
-           (void*) pOriginalExceptionRecord,
-           offsetof(EXCEPTION_RECORD, ExceptionInformation)
-          );
-
-    ReplaceExceptionContextRecord(ep->ContextRecord, pOriginalExceptionContext);
-
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-}
-
 struct HandleManagedFaultFilterParam
 {
     // It's possible for our filter to be called more than once if some other first-pass
@@ -6558,7 +6533,6 @@ struct HandleManagedFaultFilterParam
     // the first exception we see.  This flag takes care of that.
     BOOL fFilterExecuted;
     EXCEPTION_RECORD *pOriginalExceptionRecord;
-    CONTEXT *pOriginalExceptionContext;
 };
 
 static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
@@ -6569,7 +6543,8 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
 
     if (!pParam->fFilterExecuted)
     {
-        FixContextForFaultingExceptionFrame(ep, pParam->pOriginalExceptionRecord, pParam->pOriginalExceptionContext);
+        ep->ExceptionRecord->ExceptionAddress = pParam->pOriginalExceptionRecord->ExceptionAddress;
+        GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
         pParam->fFilterExecuted = TRUE;
     }
 
@@ -6591,7 +6566,6 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     HandleManagedFaultFilterParam param;
     param.fFilterExecuted = FALSE;
     param.pOriginalExceptionRecord = pExceptionRecord;
-    param.pOriginalExceptionContext = pContext;
 
     PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
     {
@@ -6599,7 +6573,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 
         EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
 
-        RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
+        RaiseException(pRecord->ExceptionCode, 0,
             pRecord->NumberParameters, pRecord->ExceptionInformation);
     }
     PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
@@ -8387,7 +8361,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable to be used
@@ -8511,7 +8485,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable corresponding to the escaping exception
@@ -8663,7 +8637,8 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
         OBJECTREF oThrowable;
         U1ARRAYREF oBuckets;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
+    gc.oBuckets = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.oThrowable = fUseLastThrownObject ? pThread->LastThrownObject() : pThread->GetThrowable();
@@ -8812,10 +8787,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oThrowable = oThrowable;
+    GCPROTECT_BEGIN(gc);
 
     fIsTAE = IsExceptionOfType(kThreadAbortException, &gc.oThrowable);
 
@@ -8872,10 +8845,8 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     {
         OBJECTREF oPreAllocThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oPreAllocThrowable = oPreAllocThrowable;
+    GCPROTECT_BEGIN(gc);
 
     // Start walking the list to find the tracker corresponding
     // to the preallocated exception object.
@@ -8922,10 +8893,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     {
         OBJECTREF oPreAllocThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oPreAllocThrowable = oPreAllocThrowable;
+    GCPROTECT_BEGIN(gc);
 
     // Before doing anything, check if this is a thread abort exception. If it is,
     // then simply return the reference to the UE watson bucket tracker since it
@@ -9088,9 +9057,10 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF oBuckets;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
     gc.refException = refException;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.oBuckets = NULL;
+    GCPROTECT_BEGIN(gc);
 
     Thread *pThread = GetThread();
 
@@ -9362,7 +9332,9 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oCurrentThrowable = NULL;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.refSourceWatsonBucketArray = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -9968,7 +9940,9 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oCurrentThrowable = NULL;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.refSourceWatsonBucketArray = NULL;
     GCPROTECT_BEGIN(gc);
 
     Thread* pThread = GetThread();
@@ -10787,7 +10761,12 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         OBJECTREF   oCurrentThrowable;
         OBJECTREF   oCurAppDomain;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oNotificationDelegate = NULL;
+    gc.arrDelegates = NULL;
+    gc.oInnerDelegate = NULL;
+    gc.oEventArgs = NULL;
+    gc.oCurrentThrowable = NULL;
+    gc.oCurAppDomain = NULL;
 
     // This will hold the MethodDesc of the callback that will be invoked.
     MethodDesc *pMDDelegate = NULL;
@@ -11656,30 +11635,27 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    StackSString sFormat;
-    StackSString sAlcName;
+    SString detailsUtf8;
 
+    SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-
     if (pPEAssembly->GetPath().IsEmpty())
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_BYTE);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8());
     }
     else
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_PATH);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode(),
-                                   pPEAssembly->GetPath().GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8(),
+                                   pPEAssembly->GetPath().GetUTF8());
     }
+
+    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
 }
 
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,

@@ -1,6 +1,6 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'" />
 
   <PropertyGroup>
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
@@ -11,6 +11,10 @@
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
           Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
+
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
+  </PropertyGroup>
 
   <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="PublishTestAsSelfContained" />

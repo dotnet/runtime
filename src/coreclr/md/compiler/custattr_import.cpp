@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -65,13 +64,10 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
 {
     HRESULT     hr;                     // A result.
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     LPUTF8      szName;                 // Name in UFT8.
     int         iLen;                   // A length.
     CMiniMdRW   *pMiniMd = NULL;
 
-    START_MD_PERF();
     LOCKREAD();
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
@@ -82,10 +78,6 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     hr = ImportHelper::GetCustomAttributeByName(pMiniMd, tkObj, szName, ppData, pcbData);
 
 ErrExit:
-
-    STOP_MD_PERF(GetCustomAttributeByName);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetCustomAttributeByName()
 
@@ -103,8 +95,6 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
 {
     HRESULT         hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStart;
     RID             ridEnd;
@@ -114,7 +104,6 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
 
     LOG((LOGMD, "RegMeta::EnumCustomAttributes(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes));
-    START_MD_PERF();
     LOCKREAD();
 
     if ( *ppmdEnum == 0 )
@@ -230,9 +219,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumCustomAttributes);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumCustomAttributes()
 
@@ -249,11 +235,8 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
 {
     HRESULT     hr = S_OK;              // A result.
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW   *pMiniMd;
 
-    START_MD_PERF();
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(cv) == mdtCustomAttribute);
@@ -275,9 +258,5 @@ STDMETHODIMP RegMeta::GetCustomAttributeProps(
     }
 
 ErrExit:
-
-    STOP_MD_PERF(GetCustomAttributeProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::GetCustomAttributeProps

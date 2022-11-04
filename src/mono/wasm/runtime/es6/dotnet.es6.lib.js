@@ -69,6 +69,10 @@ const linked_functions = [
     // mono-threads-wasm.c
     "schedule_background_exec",
 
+    // interp.c
+    "mono_wasm_profiler_enter",
+    "mono_wasm_profiler_leave",
+
     // driver.c
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
@@ -88,6 +92,7 @@ const linked_functions = [
     "mono_wasm_compile_function_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
+    "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
 

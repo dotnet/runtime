@@ -161,6 +161,8 @@ private:
                                   GenTree*     lookForUsesStart,
                                   GenTreeCall* callNode);
     void InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
+    GenTree* FindEarliestPutArg(GenTreeCall* call);
+    size_t MarkPutArgNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
@@ -317,6 +319,7 @@ private:
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+    GenTree* TryLowerMulToLshSubOrLshAdd(GenTreeOp* node);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);

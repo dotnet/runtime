@@ -135,9 +135,6 @@ SIZE_T MethodDesc::SizeOf()
         (mdcClassification
         | mdcHasNonVtableSlot
         | mdcMethodImpl
-#ifdef FEATURE_COMINTEROP
-        | mdcHasComPlusCallInfo
-#endif
         | mdcHasNativeCodeSlot)];
 
     return size;
@@ -359,7 +356,7 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
 /*
  * Function to get a method's full name, something like
- * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
+ * void [System.Private.CoreLib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
 VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {
@@ -1691,7 +1688,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fComPlusCallInfo, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1714,13 +1711,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     if (fNativeCodeSlot)
         oneSize += sizeof(MethodDesc::NativeCodeSlot);
-
-#ifdef FEATURE_COMINTEROP
-    if (fComPlusCallInfo)
-        oneSize += sizeof(ComPlusCallInfo);
-#else // FEATURE_COMINTEROP
-    _ASSERTE(!fComPlusCallInfo);
-#endif // FEATURE_COMINTEROP
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
@@ -1761,10 +1751,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
                 pMD->SetHasNonVtableSlot();
             if (fNativeCodeSlot)
                 pMD->SetHasNativeCodeSlot();
-#ifdef FEATURE_COMINTEROP
-            if (fComPlusCallInfo)
-                pMD->SetupGenericComPlusCall();
-#endif // FEATURE_COMINTEROP
 
             _ASSERTE(pMD->SizeOf() == oneSize);
 
@@ -2295,7 +2281,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsComPlusCall() || IsGenericComPlusCall())
+    if (IsNDirect() || IsComPlusCall())
         return TRUE;
 
 

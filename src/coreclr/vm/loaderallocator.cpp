@@ -733,15 +733,17 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
     LOADERHANDLE retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         LOADERALLOCATORREF loaderAllocator;
         PTRARRAYREF handleTable;
         PTRARRAYREF handleTableOld;
     } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
+    gc.value = NULL;
+    gc.loaderAllocator = NULL;
+    gc.handleTable = NULL;
+    gc.handleTableOld = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -903,14 +905,16 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
 
     OBJECTREF retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         OBJECTREF compare;
         OBJECTREF previous;
     } gc;
+    gc.value = NULL;
+    gc.compare = NULL;
+    gc.previous = NULL;
 
-    ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
     gc.value = valueUNSAFE;
@@ -1736,7 +1740,7 @@ void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelea
     m_binderToRelease = binderToRelease;
 }
 
-STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData)
+STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -1752,7 +1756,7 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, CanUnload(), ppPinnedString);
 }
 
 //*****************************************************************************
@@ -1810,7 +1814,7 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, FALSE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, FALSE, CanUnload());
 }
 
 STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
@@ -1829,7 +1833,7 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, TRUE, CanUnload());
 }
 
 void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)

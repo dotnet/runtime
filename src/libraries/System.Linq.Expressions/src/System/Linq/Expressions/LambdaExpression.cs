@@ -370,7 +370,7 @@ namespace System.Linq.Expressions
             throw Error.ArgumentOutOfRange(nameof(index));
         }
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => EmptyReadOnlyCollection<ParameterExpression>.Instance;
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReadOnlyCollection<ParameterExpression>.Empty;
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {

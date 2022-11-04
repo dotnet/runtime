@@ -12,8 +12,8 @@ namespace TypeSystemTests
 {
     public class HashcodeTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public HashcodeTests()
         {
@@ -27,7 +27,6 @@ namespace TypeSystemTests
         [Fact]
         public void TestMultidimensionalArrays()
         {
-            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
             ArrayType objectMDArrayRank1 = _context.GetArrayType(objectType, 1);
@@ -42,8 +41,6 @@ namespace TypeSystemTests
         [Fact]
         public void TestSingleDimensionalArrays()
         {
-            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
-
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
             ArrayType objectArray = _context.GetArrayType(objectType);
@@ -54,7 +51,6 @@ namespace TypeSystemTests
         [Fact]
         public void TestNonGenericTypes()
         {
-            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             MetadataType nonNestedType = (MetadataType)_testModule.GetType("Hashcode", "NonNestedType");
             TypeDesc nestedType = nonNestedType.GetNestedType("NestedType");
 
@@ -67,7 +63,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        void TestGenericTypes()
+        public void TestGenericTypes()
         {
             MetadataType ilistType = (MetadataType)_testModule.GetType("System.Collections.Generic", "IList`1");
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);

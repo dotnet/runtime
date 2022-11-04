@@ -1,15 +1,17 @@
 parameters:
   packageType: null
-  image: null
+  target: ''
   packageStepDescription: null
   packagingArgs: ''
   subsetArg: ''
 
 steps:
+## Run NuGet Authentication for each of the side containers
+- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  - task: NuGetAuthenticate@0
+    target: ${{ parameters.target }}
 - script: |
-    set -x
-    df -h
-    $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
+    $(Build.SourcesDirectory)/build.sh \
       --ci \
       ${{ parameters.subsetArg }} \
       ${{ parameters.packagingArgs }} \
@@ -17,3 +19,10 @@ steps:
       $(LiveOverridePathArgs) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
+  target: ${{ parameters.target }}
+# Broken symbolic links break the SBOM processing
+# We make some symlinks during the installer generation process,
+# but they aren't always valid on disk afterwards. Some of our tooling,
+# in particular the SBOM tooling, breaks on broken symlinks.
+- script: find . -xtype l -delete
+  displayName: Remove broken symbolic links

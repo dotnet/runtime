@@ -72,14 +72,12 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#ifdef DEBUG
     const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
         assert(jitstdout != nullptr);
     }
-#endif // DEBUG
 
 #if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
@@ -695,9 +693,15 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
+    {
+        // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
+        // We also need to free the nonused memory.
+        info.compCompHnd->freeArray(eeVars);
+        eeVars = nullptr;
+    }
 
     info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
-
     eeVars = nullptr; // We give up ownership after setVars()
 }
 
@@ -844,8 +848,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
-           (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
@@ -1506,25 +1519,24 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     return param.fieldOrMethodOrClassNamePtr;
 }
 
+//------------------------------------------------------------------------
+// eeGetClassName:
+//   Get the name (including namespace and instantiation) of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Return value:
+//   The name string.
+//
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
-        param.fieldOrMethodOrClassNamePtr = "hackishClassName";
+        printer.Truncate(0);
+        printer.Append("hackishClassName");
     }
-    return param.fieldOrMethodOrClassNamePtr;
+
+    return printer.GetBuffer();
 }
 
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
@@ -1618,33 +1630,38 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-const WCHAR* Compiler::eeGetCPString(size_t strHandle)
+void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
 {
-#ifdef HOST_UNIX
-    return nullptr;
-#else
-    char buff[512 + sizeof(CORINFO_String)];
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = 0;
 
-    // make this bulletproof, so it works even if we are wrong.
-    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription(handle, str, maxStrSize); });
+
+    if (!success)
     {
-        return (nullptr);
+        return;
     }
 
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
-
-    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
+    for (size_t i = 0; i < actualLen; i++)
     {
-        return (nullptr);
+        // Replace \n and \r symbols with whitespaces
+        if (str[i] == '\n' || str[i] == '\r')
+        {
+            str[i] = ' ';
+        }
     }
 
-    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
-    {
-        return nullptr;
-    }
-
-    return (WCHAR*)(asString->chars);
-#endif // HOST_UNIX
+    printf("%s '%s'\n", prefix, str);
 }
-
-#endif // DEBUG
+#else  // DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif // !DEBUG

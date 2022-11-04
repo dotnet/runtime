@@ -230,7 +230,7 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(reader.GetNextEntry());
             Assert.NotNull(reader.GetNextEntry());
             Assert.NotNull(reader.GetNextEntry());
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Fact]
@@ -239,6 +239,14 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-path-hdr");
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<EndOfStreamException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void ReadDataStreamOfGoLangTarGzGnu()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.GZip, "golang_tar", "pax-bad-hdr-large");
+            using GZipStream decompressor = new GZipStream(archiveStream, CompressionMode.Decompress);
+            VerifyDataStreamOfTarInternal(decompressor, copyData: false);
         }
 
         [Theory]
@@ -268,7 +276,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
             using TarReader reader = new TarReader(archiveStream);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Fact]

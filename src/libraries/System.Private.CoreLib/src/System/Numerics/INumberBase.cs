@@ -125,7 +125,7 @@ namespace System.Numerics
         /// <summary>Determines if a value represents a complex value.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a complex number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where either <c>a</c> or <c>b</c> is zero. In other words, it excludes real numbers and pure imaginary numbers.</remarks>
         static abstract bool IsComplexNumber(TSelf value);
 
         /// <summary>Determines if a value represents an even integral value.</summary>
@@ -143,10 +143,10 @@ namespace System.Numerics
         /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsInfinity(TSelf)" /> will return <c>true</c>. <c>NaN</c> is not finite nor infinite.</remarks>
         static abstract bool IsFinite(TSelf value);
 
-        /// <summary>Determines if a value represents an imaginary value.</summary>
+        /// <summary>Determines if a value represents a pure imaginary value.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is an imaginary number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>a</c> is non-zero.</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> is a pure imaginary number; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>a</c> is non-zero, as that number is not purely imaginary.</remarks>
         static abstract bool IsImaginaryNumber(TSelf value);
 
         /// <summary>Determines if a value is infinite.</summary>
@@ -330,22 +330,22 @@ namespace System.Numerics
             where TOther : INumberBase<TOther>;
 #nullable restore
 
-        /// <summary>Tries to parses a string into a value.</summary>
+        /// <summary>Tries to parse a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
         /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
-        static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
 
-        /// <summary>Tries to parses a span of characters into a value.</summary>
+        /// <summary>Tries to parse a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
         /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
-        static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
     }
 }

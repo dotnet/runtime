@@ -25,7 +25,7 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
 
-        public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
+        public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context)
         {
             return new GeneratedStatements
             {
@@ -33,12 +33,19 @@ namespace Microsoft.Interop
                 Marshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Marshal }),
                 Pin = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Pin }).Cast<FixedStatementSyntax>().ToImmutableArray(),
                 PinnedMarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }),
-                InvokeStatement = GenerateStatementForNativeInvoke(marshallers, context with { CurrentStage = StubCodeContext.Stage.Invoke }, expressionToInvoke),
+                InvokeStatement = EmptyStatement(),
                 Unmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.UnmarshalCapture })
                             .AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Unmarshal })),
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }),
                 Cleanup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Cleanup }),
+            };
+        }
+        public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
+        {
+            return Create(marshallers, context) with
+            {
+                InvokeStatement = GenerateStatementForNativeInvoke(marshallers, context with { CurrentStage = StubCodeContext.Stage.Invoke }, expressionToInvoke)
             };
         }
 

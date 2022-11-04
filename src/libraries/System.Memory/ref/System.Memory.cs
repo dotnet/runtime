@@ -257,10 +257,14 @@ namespace System
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static int IndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        public static int IndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static bool IsWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
@@ -277,10 +281,14 @@ namespace System
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static int LastIndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOf<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T?> { throw null; }
         public static int LastIndexOf<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        public static int LastIndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
@@ -434,6 +442,27 @@ namespace System.Buffers.Binary
         public static uint ReverseEndianness(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong ReverseEndianness(ulong value) { throw null; }
+        public static nint ReverseEndianness(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint ReverseEndianness(nuint value) { throw null; }
+        public static System.Int128 ReverseEndianness(System.Int128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ReverseEndianness(System.UInt128 value) { throw null; }
+        public static void ReverseEndianness(System.ReadOnlySpan<int> source, System.Span<int> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<Int128> source, System.Span<Int128> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<long> source, System.Span<long> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<nint> source, System.Span<nint> destination) { }
+        public static void ReverseEndianness(System.ReadOnlySpan<short> source, System.Span<short> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<nuint> source, System.Span<nuint> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<uint> source, System.Span<uint> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<UInt128> source, System.Span<UInt128> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<ulong> source, System.Span<ulong> destination) { }
+        [System.CLSCompliant(false)]
+        public static void ReverseEndianness(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }

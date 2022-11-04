@@ -51,10 +51,6 @@ typedef enum {
 
 NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 
-#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
-#define SGEN_POSIX_STW 1
-#endif
-
 /*
  * The nursery section uses this struct.
  */
@@ -304,6 +300,7 @@ enum {
 	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
 	SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT = 2,
 	SGEN_GC_BIT_FINALIZER_AWARE = 4,
+	SGEN_GC_BIT_WEAKREF = 8,
 };
 
 void sgen_gc_init (void)

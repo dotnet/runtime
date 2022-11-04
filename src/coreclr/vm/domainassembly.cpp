@@ -13,8 +13,6 @@
 // Headers
 // --------------------------------------------------------------------------------
 
-#include <shlwapi.h>
-
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"
@@ -809,6 +807,14 @@ void DomainAssembly::DeliverSyncEvents()
     CONTRACTL_END;
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
+
+#ifdef PROFILING_SUPPORTED
+    if (!IsProfilerNotified())
+    {
+        SetProfilerNotified();
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
+    }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();

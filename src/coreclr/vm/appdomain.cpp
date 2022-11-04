@@ -22,6 +22,7 @@
 #include "assemblynative.hpp"
 #include "shimload.h"
 #include "stringliteralmap.h"
+#include "frozenobjectheap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
 #include "eventtrace.h"
@@ -50,9 +51,6 @@
 #include "typeequivalencehash.hpp"
 
 #include "appdomain.inl"
-#include "typeparse.h"
-
-#include "nativeoverlapped.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -94,12 +92,13 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 #ifndef DACCESS_COMPILE
 
 // Base Domain Statics
-CrstStatic          BaseDomain::m_SpecialStaticsCrst;
+CrstStatic          BaseDomain::m_MethodTableExposedClassObjectCrst;
 
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
-GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
+GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
+FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -557,7 +556,7 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 //*****************************************************************************
 void BaseDomain::Attach()
 {
-    m_SpecialStaticsCrst.Init(CrstSpecialStatics);
+    m_MethodTableExposedClassObjectCrst.Init(CrstMethodTableExposedObject);
 }
 
 BaseDomain::BaseDomain()
@@ -1193,6 +1192,24 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     }
 }
 
+void SystemDomain::LazyInitFrozenObjectsHeap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
+    {
+        pFoh.SuppressRelease();
+    }
+}
+
 /*static*/ void SystemDomain::EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
     CONTRACT_VOID
@@ -1366,6 +1383,9 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pThreadAbortExceptionClass = CoreLibBinder::GetException(kThreadAbortException);
 
     g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
+
+    g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
+    g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
 #ifdef FEATURE_COMINTEROP
     if (g_pConfig->IsBuiltInCOMSupported())
@@ -3749,10 +3769,10 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     {
         if (CoreLibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
         {
-            struct _gc {
+            struct {
                 OBJECTREF    orThis;
             } gc;
-            ZeroMemory(&gc, sizeof(gc));
+            gc.orThis = NULL;
 
             ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
@@ -3835,14 +3855,14 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     if (orDelegate == NULL)
         return FALSE;
 
-    struct _gc {
+    struct {
         OBJECTREF Delegate;
         OBJECTREF Sender;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.Delegate = orDelegate;
+    gc.Sender = NULL;
 
     GCPROTECT_BEGIN(gc);
-    gc.Delegate = orDelegate;
     if (orDelegate != NULL)
     {
         DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
@@ -4349,11 +4369,12 @@ DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssemb
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4406,11 +4427,12 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4467,11 +4489,12 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     Assembly* pAssembly = NULL;
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
     {

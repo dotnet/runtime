@@ -221,7 +221,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddAdditionalArgument (additionalArgument.Key, additionalArgument.Value);
 		}
 
-		static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)
+		private static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)
 		{
 			bool empty = true;
 

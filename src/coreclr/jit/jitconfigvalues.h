@@ -41,8 +41,8 @@ CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithTypeTests, W("JitCloneLoopsWithTypeTests"), 1) // If 0, don't clone loops based on
-                                                                               // invariant type tests
+CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
+                                                                             // invariant type/method address tests
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -75,6 +75,10 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
 
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
                                                                                      // through return buffers.
+
+CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
+               W("JitUnrollLoopMaxIterationCount"),
+               DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
 
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
@@ -155,7 +159,6 @@ CONFIG_INTEGER(JitSplitFunctionSize, W("JitSplitFunctionSize"), 0) // On ARM, us
 CONFIG_INTEGER(JitSsaStress, W("JitSsaStress"), 0) // Perturb order of processing of blocks in SSA; 0 = no stress; 1 =
                                                    // use method hash; * = supplied value as random hash
 CONFIG_INTEGER(JitStackChecks, W("JitStackChecks"), 0)
-CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
 CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no stress, 2 = all stress, other = vary
                                              // stress based on a hash of the method and this value
 CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)               // Internal Jit stress mode
@@ -190,10 +193,11 @@ CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDis
 CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
                                                                        // disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)       // Dump inline compiler phases
+CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)      // Display native code when any register spilling occurs
+CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -257,6 +261,7 @@ CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
 #endif // !defined(DEBUG)
 
 CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0) // Prints all jitted methods to the console
+CONFIG_STRING(JitStdOutFile, W("JitStdOutFile"))           // If set, sends JIT's stdout output to this file.
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 
@@ -292,8 +297,9 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the Alt
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
-CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
-                                                                   // defined or used in a multireg context.
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)   // Enable the enregistration of locals that are
+                                                                     // defined or used in a multireg context.
+CONFIG_INTEGER(JitStressEVEXEncoding, W("JitStressEVEXEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
 
 // clang-format off
 
@@ -306,6 +312,14 @@ CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ h
 CONFIG_INTEGER(EnableAES,          W("EnableAES"),          1) // Allows AES+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX,          W("EnableAVX"),          1) // Allows AVX+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX2,         W("EnableAVX2"),         1) // Allows AVX2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW,     W("EnableAVX512BW"),     1) // Allows AVX512BW+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD,     W("EnableAVX512CD"),     1) // Allows AVX512CD+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ,     W("EnableAVX512DQ"),     1) // Allows AVX512DQ+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F,      W("EnableAVX512F"),      1) // Allows AVX512F+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,      W("EnableAVXVNNI"),      1) // Allows AVX VNNI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI1,         W("EnableBMI1"),         1) // Allows BMI1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI2,         W("EnableBMI2"),         1) // Allows BMI2+ hardware intrinsics to be disabled
@@ -405,12 +419,14 @@ CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop i
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
+CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 
 CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))            // Runs optimizer multiple times on the method
 CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
+CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 #endif                                                       // defined(OPT_CONFIG)
 
 CONFIG_INTEGER(JitTelemetry, W("JitTelemetry"), 1) // If non-zero, gather JIT telemetry data
@@ -561,14 +577,12 @@ CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo d
 CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
-#endif // debug
+CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
+                                                                                     // for some methods.
+#endif                                                                               // debug
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
-
-// Control when Virtual Calls are expanded
-CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
-                                                                 // phase)
 
 // Force the generation of CFG checks
 CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
@@ -577,6 +591,9 @@ CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
 // 1: Use dispatcher on all platforms that support it
 // 2: Default behavior, depends on platform (yes on x64, no on arm64)
 CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
+
+// Enable tail merging
+CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

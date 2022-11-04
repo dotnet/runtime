@@ -25,7 +25,6 @@
 #include "clrhost.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
-#include "winnls.h"
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
@@ -37,7 +36,6 @@
 #endif
 
 #include "contract.h"
-#include "entrypoints.h"
 
 #include<minipal/utils.h>
 
@@ -59,7 +57,6 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
-#define LegacyCoreLibName_A "mscorlib"
 
 class StringArrayList;
 
@@ -411,33 +408,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     *str = W('\0');
     return str;
 }
-
-class GuidString final
-{
-    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
-public:
-    static void Create(const GUID& g, GuidString& ret)
-    {
-        // Ensure we always have a null
-        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
-        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            g.Data1, g.Data2, g.Data3,
-            g.Data4[0], g.Data4[1],
-            g.Data4[2], g.Data4[3],
-            g.Data4[4], g.Data4[5],
-            g.Data4[6], g.Data4[7]);
-    }
-
-    const char* AsString() const
-    {
-        return _buffer;
-    }
-
-    operator const char*() const
-    {
-        return _buffer;
-    }
-};
 
 inline
 LPWSTR DuplicateString(
@@ -941,15 +911,9 @@ inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 // Paths functions. Use these instead of the CRT.
 //
 //*****************************************************************************
-// secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(const WCHAR *path,
-                  __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-                  __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-                  __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-                  __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords);
 
 //*******************************************************************************
-// A much more sensible version that just points to each section of the string.
+// Split a path into individual components - points to each section of the string
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
@@ -958,25 +922,6 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
-
-void    MakePath(_Out_ CQuickWSTR &path,
-                 _In_ LPCWSTR drive,
-                 _In_ LPCWSTR dir,
-                 _In_ LPCWSTR fname,
-                 _In_ LPCWSTR ext);
-
-WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
-
-//*****************************************************************************
-//
-// SString version of the path functions.
-//
-//*****************************************************************************
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext);
 
 #include "ostype.h"
 
@@ -996,31 +941,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // Allocate free memory with specific alignment
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
-
-class NumaNodeInfo
-{
-private:
-    static BOOL m_enableGCNumaAware;
-    static uint16_t m_nNodes;
-    static BOOL InitNumaNodeInfoAPI();
-
-public:
-    static BOOL CanEnableGCNumaAware();
-    static void InitNumaNodeInfo();
-
-#if !defined(FEATURE_NATIVEAOT)
-public: 	// functions
-
-    static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
-                                     DWORD allocType, DWORD prot, DWORD node);
-#ifdef HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
-    static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // HOST_WINDOWS
-#endif
-};
 
 #ifdef HOST_WINDOWS
 
@@ -3467,28 +3387,50 @@ private:
     BYTE m_inited;
 };
 
-//*****************************************************************************
-// Convert a pointer to a string into a GUID.
-//*****************************************************************************
-HRESULT LPCSTRToGuid(                   // Return status.
-    LPCSTR      szGuid,                 // String to convert.
-    GUID        *psGuid);               // Buffer for converted GUID.
+// 38 characters + 1 null terminating.
+#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
 
 //*****************************************************************************
 // Convert a GUID into a pointer to a string
 //*****************************************************************************
-int GuidToLPWSTR(                  // Return status.
-    GUID        Guid,                  // [IN] The GUID to convert.
-    _Out_writes_ (cchGuid) LPWSTR szGuid, // [OUT] String into which the GUID is stored
-    DWORD       cchGuid);              // [IN] Size in wide chars of szGuid
+int GuidToLPSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPSTR szGuid,   // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in chars of szGuid
+
+template<DWORD N>
+int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
+{
+    return GuidToLPSTR(guid, s, N);
+}
+
+//*****************************************************************************
+// Convert a pointer to a string into a GUID.
+//*****************************************************************************
+BOOL LPCSTRToGuid(
+    LPCSTR szGuid,  // [IN] String to convert.
+    GUID* pGuid);  // [OUT] Buffer for converted GUID.
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int GuidToLPWSTR(
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPWSTR szGuid,  // [OUT] String into which the GUID is stored
+    DWORD cchGuid); // [IN] Size in wide chars of szGuid
+
+template<DWORD N>
+int GuidToLPWSTR(REFGUID guid, WCHAR (&s)[N])
+{
+    return GuidToLPWSTR(guid, s, N);
+}
 
 //*****************************************************************************
 // Parse a Wide char string into a GUID
 //*****************************************************************************
-BOOL LPWSTRToGuid(
-    GUID      * Guid,                         // [OUT] The GUID to fill in
-    _In_reads_(cchGuid)   LPCWSTR szGuid,    // [IN] String to parse
-    DWORD       cchGuid);                     // [IN] Count in wchars in string
+BOOL LPCWSTRToGuid(
+    LPCWSTR szGuid, // [IN] String to convert.
+    GUID* pGuid);   // [OUT] Buffer for converted GUID.
 
 typedef VPTR(class RangeList) PTR_RangeList;
 
@@ -4415,13 +4357,6 @@ inline T* InterlockedCompareExchangeT(
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
 HRESULT GetClrModuleDirectory(SString& wszPath);
-HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
-
-HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
-// This is a slight variation that can be used for anything else
-typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
-void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
 
 namespace Clr { namespace Util
 {

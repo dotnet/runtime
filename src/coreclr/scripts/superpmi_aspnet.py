@@ -16,6 +16,7 @@ import logging
 import shutil
 import sys
 import zipfile
+import stat
 
 from os import path
 from coreclr_arguments import *
@@ -123,12 +124,29 @@ def build_and_run(coreclr_args):
 
     checked_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Checked")
     release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
+    spmi_temp = path.join(source_directory, "artifacts", "spmi_aspnet_collection")
+
+    # Set up/clean up temp dir
+    if not os.path.exists(spmi_temp):
+        os.makedirs(spmi_temp)
+
+    def remove_readonly(func, path, _):
+        "Clear the readonly bit and reattempt the removal"
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    spmi_temp_items = [os.path.join(spmi_temp, item) for item in os.listdir(spmi_temp)]
+    for item in spmi_temp_items:
+        if os.path.isdir(item):
+            shutil.rmtree(item, onerror=remove_readonly)
+        else:
+            os.remove(item)
 
     # We'll use repo script to install dotnet
     dotnet_install_script_name = "dotnet-install.cmd" if is_windows else "dotnet-install.sh"
     dotnet_install_script_path = path.join(source_directory, "eng", "common", dotnet_install_script_name)
 
-    with TempDir(skip_cleanup=True) as temp_location:
+    with TempDir(spmi_temp, skip_cleanup=True) as temp_location:
 
         print ("Executing in " + temp_location)
 
@@ -179,9 +197,14 @@ def build_and_run(coreclr_args):
 
         # note tricks to get one element tuples
 
-        runtime_options_list = [("Dummy=0",), ("TieredCompilation=0", ), ("TieredPGO=1",), ("TieredPGO=1", "ReadyToRun=0"),
+        runtime_options_list = [
+            ("Dummy=0",),
+            ("TieredCompilation=0", ),
+            ("TieredPGO=1",),
+            ("TieredPGO=1", "ReadyToRun=0"),
             ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
-            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10")]
+            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10")
+            ]
 
         # runtime_options_list = [("TieredCompilation=0", )]
 
@@ -209,10 +232,10 @@ def build_and_run(coreclr_args):
                                "--application.framework", "net7.0",
                                "--application.channel", "edge",
                                "--application.sdkVersion", "latest",
-                               "--application.environmentVariables", "COMPlus_JitName=" + spminame,
+                               "--application.environmentVariables", "DOTNET_JitName=" + spminame,
                                "--application.environmentVariables", "SuperPMIShimLogPath=.",
                                "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                               "--application.environmentVariables", "COMPlus_EnableExtraSuperPmiQueries=1",
+                               "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
                                "--application.options.downloadFiles", "*.mc",
                                "--application.options.displayOutput", "true",
 #                               "--application.options.dumpType", "full",
@@ -226,7 +249,7 @@ def build_and_run(coreclr_args):
                 runtime_arguments = []
                 for runtime_option in runtime_options:
                     runtime_arguments.append("--application.environmentVariables")
-                    runtime_arguments.append("COMPlus_" + runtime_option)
+                    runtime_arguments.append("DOTNET_" + runtime_option)
 
                 print("")
                 print("================================")

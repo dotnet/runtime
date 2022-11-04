@@ -234,7 +234,6 @@ protected:
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #ifdef TARGET_LOONGARCH64
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
@@ -1398,7 +1397,6 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForAddEx(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
@@ -1432,13 +1430,16 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#ifdef TARGET_XARCH
+    void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
+#else  // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
-
-#if defined(TARGET_XARCH)
-    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp);
-#endif // defined(TARGET_XARCH)
+#endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
 
@@ -1645,7 +1646,7 @@ public:
             if (m_indir == nullptr)
             {
                 GenTreeIndir indirForm = CodeGen::indirForm(m_indirType, m_addr);
-                memcpy(pIndirForm, &indirForm, sizeof(GenTreeIndir));
+                memcpy((void*)pIndirForm, (void*)&indirForm, sizeof(GenTreeIndir));
             }
             else
             {

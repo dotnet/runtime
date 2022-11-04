@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Formats.Cbor;
 using Test.Cryptography;
@@ -81,6 +82,67 @@ namespace System.Security.Cryptography.Cose.Tests
             writer.WriteNull();
             writer.WriteEndArray();
             Assert.Throws<CryptographicException>(() => CoseMessage.DecodeMultiSign(writer.Encode()));
+        }
+
+        [Theory]
+        // COSE_Sign is an indefinite-length array
+        [InlineData("D8629F40A054546869732069732074686520636F6E74656E742E818343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30AFF")]
+        // [+COSE_Signature]
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E9F8343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30AFF")]
+        // COSE_Signature
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E819F43A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30AFF")]
+        // All of them
+        [InlineData("D8629F40A054546869732069732074686520636F6E74656E742E9F9F43A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30AFFFFFF")]
+        public void DecodeMultiSign_IndefiniteLengthArray(string hexCborPayload)
+        {
+            byte[] cborPayload = ByteUtils.HexToByteArray(hexCborPayload);
+            CoseMultiSignMessage msg = CoseMessage.DecodeMultiSign(cborPayload);
+
+            ReadOnlyCollection<CoseSignature> signatures = msg.Signatures;
+            Assert.Equal(1, signatures.Count);
+            Assert.True(signatures[0].VerifyEmbedded(DefaultKey));
+        }
+
+        [Theory]
+        // COSE_Sign
+        [InlineData("D8629F40A054546869732069732074686520636F6E74656E742E818343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A")]
+        // [+COSE_Signature]
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E9F8343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A")]
+        // COSE_Signature
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E819F43A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A")]
+        public void DecodeMultiSign_IndefiniteLengthArray_MissingBreak(string hexCborPayload)
+        {
+            byte[] cborPayload = ByteUtils.HexToByteArray(hexCborPayload);
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeMultiSign(cborPayload));
+            Assert.IsType<CborContentException>(ex.InnerException);
+        }
+
+        // All these payloads contain one extra element of type byte string.
+        [Theory]
+        // COSE_Sign
+        [InlineData("D8629F40A054546869732069732074686520636F6E74656E742E818343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A40FF")]
+        // [+COSE_Signature] - this structure does not have a fixed length required, but the byte string is unexpected.
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E9F8343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A40FF")]
+        // COSE_Signature
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E819F43A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A40FF")]
+        public void DecodeMultiSign_IndefiniteLengthArray_LargerByOne(string hexCborPayload)
+        {
+            byte[] cborPayload = ByteUtils.HexToByteArray(hexCborPayload);
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeMultiSign(cborPayload));
+        }
+
+        [Theory]
+        // COSE_Sign
+        [InlineData("D8629F40A054546869732069732074686520636F6E74656E742EFF")]
+        // [+COSE_Signature]
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E9FFF")]
+        // COSE_Signature
+        [InlineData("D8628440A054546869732069732074686520636F6E74656E742E819F43A10126A104423131FF")]
+        public void DecodeMultiSign_IndefiniteLengthArray_ShorterByOne(string hexCborPayload)
+        {
+            byte[] cborPayload = ByteUtils.HexToByteArray(hexCborPayload);
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeMultiSign(cborPayload));
+            Assert.Null(ex.InnerException);
         }
     }
 }

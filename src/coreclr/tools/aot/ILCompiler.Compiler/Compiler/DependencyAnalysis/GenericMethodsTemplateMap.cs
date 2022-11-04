@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!IsEligibleToBeATemplate(method))
                 return;
 
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodEntry(method), "Template Method Entry"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout(method), "Template Method Layout"));
         }

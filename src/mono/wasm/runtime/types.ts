@@ -10,6 +10,9 @@ export type GCHandle = {
 export type JSHandle = {
     __brand: "JSHandle"
 }
+export type JSFnHandle = {
+    __brand: "JSFnHandle"
+}
 export interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject"
 }
@@ -117,7 +120,7 @@ export type MonoConfig = {
 export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
-    coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
+    browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     logExitCode?: boolean
@@ -213,6 +216,7 @@ export type RuntimeHelpers = {
     maxParallelDownloads: number;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
+    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory: string
@@ -234,9 +238,7 @@ export type AOTProfilerOptions = {
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
 }
 
-export type CoverageProfilerOptions = {
-    writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
+export type BrowserProfilerOptions = {
 }
 
 // how we extended emscripten Module
@@ -411,10 +413,15 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: void InstallSynchronizationContext()
     install_synchronization_context(): void;
+
+    // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
+    get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 }
 
-export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
-export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs) => void;
+export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
+export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs) => void;
+export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
+export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 
 export interface JSMarshalerArguments extends NativePointer {
     __brand: "JSMarshalerArguments"
@@ -513,6 +520,7 @@ export type RuntimeAPI = {
     runtimeId: number,
     runtimeBuildInfo: {
         productVersion: string,
+        gitHash: string,
         buildConfiguration: string,
     }
 } & APIType

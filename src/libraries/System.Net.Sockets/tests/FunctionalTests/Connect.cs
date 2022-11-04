@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -213,6 +214,28 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
         public ConnectTask(ITestOutputHelper output) : base(output) {}
+
+        [OuterLoop]
+        [Fact]
+        public static void Connect_ThrowSocketException_Success()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int anonymousPort = socket.BindToAnonymousPort(IPAddress.Loopback);
+                IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, anonymousPort);
+                Assert.ThrowsAsync<SocketException>(() => socket.ConnectAsync(ep));
+                try
+                {
+                    socket.Connect(ep);
+                    Assert.Fail("Socket Connect should throw SocketException in this case.");
+                }
+                catch (SocketException ex)
+                {
+                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
+                    Assert.Contains(ep.ToString(), ex.Message);
+                }
+            }
+        }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>

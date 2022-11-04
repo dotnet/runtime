@@ -256,6 +256,23 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        /// <summary>
+        /// Specifies whether the current instance has been locked for modification.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="JsonTypeInfo"/> instance can be locked either if
+        /// it has been passed to one of the <see cref="JsonSerializer"/> methods,
+        /// has been associated with a <see cref="JsonSerializerContext"/> instance,
+        /// or a user explicitly called the <see cref="MakeReadOnly"/> method on the instance.
+        /// </remarks>
+        public bool IsReadOnly { get; private set; }
+
+        /// <summary>
+        /// Locks the current instance for further modification.
+        /// </summary>
+        /// <remarks>This method is idempotent.</remarks>
+        public void MakeReadOnly() => IsReadOnly = true;
+
         private protected JsonPolymorphismOptions? _polymorphismOptions;
 
         internal object? CreateObjectWithArgs { get; set; }
@@ -341,7 +358,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (KeyType != null)
                     {
-                        Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
+                        Debug.Assert(Kind == JsonTypeInfoKind.Dictionary);
 
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
@@ -401,20 +418,15 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonTypeInfoKind Kind { get; private set; }
 
         /// <summary>
-        /// The JsonPropertyInfo for this JsonTypeInfo. It is used to obtain the converter for the TypeInfo.
+        /// Dummy <see cref="JsonPropertyInfo"/> instance corresponding to the declaring type of this <see cref="JsonTypeInfo"/>.
         /// </summary>
         /// <remarks>
-        /// The returned JsonPropertyInfo does not represent a real property; instead it represents either:
-        /// a collection element type,
-        /// a generic type parameter,
-        /// a property type (if pushed to a new stack frame),
-        /// or the root type passed into the root serialization APIs.
-        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// Used as convenience in cases where we want to serialize property-like values that do not define property metadata, such as:
+        /// 1. a collection element type,
+        /// 2. a dictionary key or value type or,
+        /// 3. the property metadata for the root-level value.
+        /// For example, for a property returning <see cref="List{T}"/> where T is a string,
         /// a JsonTypeInfo will be created with .Type=typeof(string) and .PropertyInfoForTypeInfo=JsonPropertyInfo{string}.
-        /// Without this property, a "Converter" property would need to be added to JsonTypeInfo and there would be several more
-        /// `if` statements to obtain the converter from either the actual JsonPropertyInfo (for a real property) or from the
-        /// TypeInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
-        /// need to add an argument for JsonTypeInfo.
         /// </remarks>
         internal JsonPropertyInfo PropertyInfoForTypeInfo { get; }
 
@@ -456,7 +468,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo();
             ElementType = converter.ElementType;
 
-            switch (PropertyInfoForTypeInfo.ConverterStrategy)
+            switch (converter.ConverterStrategy)
             {
                 case ConverterStrategy.Dictionary:
                     {
@@ -473,16 +485,16 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                     break;
                 default:
-                    Debug.Fail($"Unexpected class type: {PropertyInfoForTypeInfo.ConverterStrategy}");
+                    Debug.Fail($"Unexpected class type: {converter.ConverterStrategy}");
                     throw new InvalidOperationException();
             }
 
-            Kind = GetTypeInfoKind(type, PropertyInfoForTypeInfo.ConverterStrategy);
+            Kind = GetTypeInfoKind(type, converter.ConverterStrategy);
         }
 
         internal void VerifyMutable()
         {
-            if (_isConfigured)
+            if (IsReadOnly)
             {
                 ThrowHelper.ThrowInvalidOperationException_TypeInfoImmutable();
             }
@@ -516,6 +528,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         Configure();
 
+                        IsReadOnly = true;
                         _isConfigured = true;
                     }
                     catch (Exception e)
@@ -542,9 +555,8 @@ namespace System.Text.Json.Serialization.Metadata
             CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
 
             JsonConverter converter = Converter;
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
-                $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
-
+            Debug.Assert(PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy == Converter.ConverterStrategy,
+                $"ConverterStrategy from PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy ({PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
             if (Kind == JsonTypeInfoKind.Object)
             {
                 InitializePropertyCache();
@@ -570,7 +582,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal string GetDebugInfo()
         {
-            ConverterStrategy strat = PropertyInfoForTypeInfo.ConverterStrategy;
+            ConverterStrategy converterStrategy = Converter.ConverterStrategy;
             string jtiTypeName = GetType().Name;
             string typeName = Type.FullName!;
             bool propCacheInitialized = PropertyCache != null;
@@ -579,7 +591,7 @@ namespace System.Text.Json.Serialization.Metadata
             sb.AppendLine("{");
             sb.AppendLine($"  GetType: {jtiTypeName},");
             sb.AppendLine($"  Type: {typeName},");
-            sb.AppendLine($"  ConverterStrategy: {strat},");
+            sb.AppendLine($"  ConverterStrategy: {converterStrategy},");
             sb.AppendLine($"  IsConfigured: {IsConfigured},");
             sb.AppendLine($"  HasPropertyCache: {propCacheInitialized},");
 
@@ -699,6 +711,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A blank <see cref="JsonPropertyInfo"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="propertyType"/> or <paramref name="name"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="propertyType"/> cannot be used for serialization.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="JsonTypeInfo"/> instance has been locked for further modification.</exception>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
@@ -718,6 +731,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
+            VerifyMutable();
             JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
             propertyInfo.Name = name;
 
@@ -737,7 +751,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (!_isConfigured)
                     {
-                        // Ensure SourceGen had a chance to add properties
                         LateAddProperties();
                         _properties = new(this);
                         return;
@@ -754,6 +767,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
             string memberName = jsonPropertyInfo.MemberName;
+
+            jsonPropertyInfo.EnsureChildOf(this);
 
             if (jsonPropertyInfo.IsExtensionData)
             {
@@ -882,12 +897,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                // Resolver didn't modify properties
-
-                // Source gen currently when initializes properties
-                // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
-                // cycles in the object graph. For that reason properties cannot be added immediately.
-                // This is a no-op for ReflectionJsonTypeInfo
+                // Resolver didn't modify any properties, create the property cache from scratch.
                 LateAddProperties();
                 PropertyCache ??= CreatePropertyCache(capacity: 0);
             }

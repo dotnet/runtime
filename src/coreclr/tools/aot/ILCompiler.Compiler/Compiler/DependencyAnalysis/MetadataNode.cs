@@ -4,7 +4,6 @@
 using System;
 
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -14,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
-        ObjectAndOffsetSymbolNode _endSymbol;
+        private ObjectAndOffsetSymbolNode _endSymbol;
 
         public MetadataNode()
         {

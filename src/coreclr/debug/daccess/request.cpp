@@ -1112,6 +1112,12 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     break;
+                case NativeCodeVersion::OptimizationTier0Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJittedInstrumented;
+                    break;
+                case NativeCodeVersion::OptimizationTier1Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1Instrumented;
+                    break;
                 }
             }
             else if (pMD->IsJitOptimizationDisabled())
@@ -2892,7 +2898,7 @@ ClrDataAccess::GetOOMStaticData(struct DacpOomData *oomData)
 
     SOSDacEnter();
 
-    memset(oomData, 0, sizeof(DacpOomData));
+    *oomData = {};
 
     if (!GCHeapUtilities::IsServerHeap())
     {
@@ -2921,7 +2927,7 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpOomData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -2974,7 +2980,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (g_heap_type != GC_HEAP_SVR)
     {
@@ -3007,7 +3013,7 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -3210,9 +3216,6 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-                            HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP
                             };
 
     return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);
@@ -3251,9 +3254,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-                            HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                             };
 
     DacHandleWalker *walker = new DacHandleWalker();

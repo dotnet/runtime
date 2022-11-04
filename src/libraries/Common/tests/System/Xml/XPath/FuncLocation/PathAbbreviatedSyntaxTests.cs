@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Location.Paths
 {
@@ -18,8 +16,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Find all title elements.
         /// bookstore//title
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest121()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest121(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"bookstore//title";
@@ -133,15 +134,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "Trenton Today, Trenton Tomorrow"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Return all title children.
         /// //child::title
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest122()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest122(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//child::title/text()";
@@ -194,15 +198,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "Trenton Today, Trenton Tomorrow"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Return all titles.
         /// bookstore//title
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest123()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest123(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"bookstore//title";
@@ -316,28 +323,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "Trenton Today, Trenton Tomorrow"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Return all magazine elements
         /// book/./magazine
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest124()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest124(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"book/./magazine";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Error Case
         /// node()/.
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest126()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest126(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"node()/.";
@@ -360,15 +373,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Return all children of the root node.
         /// /*
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest127()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest127(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/child::*[1]";
@@ -386,15 +402,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return last child elements text node . ""Where in the world is Trenton?""
-        /// (//*)[last()]/text()
+        /// (//*)[last()]/text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest129()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest129(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(//*)[last()]/text()";
@@ -406,15 +425,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "Where in the world is Trenton?"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Should only return last elements of each level (T and D).
         /// Query "//*[last()]
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest1210()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest1210(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
             var testExpression = @"//*[last()]";
@@ -437,15 +459,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression for 62969
         /// //*[position()!=last()]
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest1211()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest1211(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
             var testExpression = @"//*[position()!=last()]";
@@ -478,28 +503,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasNameTable = true
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression for 62969
         /// //*[not(last())]
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest1212()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest1212(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
             var testExpression = @"//*[not( last())]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression for 62969
         /// //*[1]
         /// </summary>
-        [Fact]
-        public static void AbbreviatedSyntaxTest1213()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AbbreviatedSyntaxTest1213(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//*[1]";
@@ -848,7 +879,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     Value = "Where in the world is Trenton?"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
     }
 }
