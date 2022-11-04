@@ -205,7 +205,70 @@ namespace BasicEventSourceTests
                     log.EventS(null);
                     Assert.Equal(8, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    Assert.Null((string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventSS(null, null);
+                    Assert.Equal(9, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventSSS(null, null, null);
+                    Assert.Equal(10, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(3, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[1]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[2]);
+
+                    log.EventSI(null, 10);
+                    Assert.Equal(11, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventSL(null, 10);
+                    Assert.Equal(12, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal(10, (long)LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventSII(null, 10, 11);
+                    Assert.Equal(13, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(3, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
+                    Assert.Equal(11, (int)LoudListener.t_lastEvent.Payload[2]);
+
+                    log.EventWithLongAndString(10, null);
+                    Assert.Equal(43, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(10, (long)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventWithIntAndString(10, null);
+                    Assert.Equal(42, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventWithByteArray(null);
+                    Assert.Equal(52, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(new byte[0], (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithLongAndByteArray(10, null);
+                    Assert.Equal(55, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(10, (long)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal(new byte[0], (byte[])LoudListener.t_lastEvent.Payload[1]);
+
+                    log.EventWithFallbackArgs(null, 10, 11, 12);
+                    Assert.Equal(56, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(4, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                    Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
+                    Assert.Equal(11, (float)LoudListener.t_lastEvent.Payload[2]);
+                    Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[3]);
 
                     #endregion
 

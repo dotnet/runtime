@@ -367,6 +367,18 @@ namespace SdtEventSources
             WriteEventCore(54, 1, &data);
         }
 
+        [Event(55)]
+        public unsafe void EventWithLongAndByteArray(long l, byte[] arr)
+        {
+            this.WriteEvent(55, l, arr);
+        }
+
+        [Event(56)]
+        public unsafe void EventWithFallbackArgs(string str, int i, float f, long l)
+        {
+            this.WriteEvent(56, str, i, f, l);
+        }
+
         #region Keywords / Tasks /Opcodes / Channels
         public class Keywords
         {
