@@ -770,7 +770,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
-void Lowering::LowerCast(GenTree* tree)
+
+GenTree* Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -778,6 +779,28 @@ void Lowering::LowerCast(GenTree* tree)
     var_types castToType = tree->CastToType();
     var_types srcType    = castOp->TypeGet();
     var_types tmpType    = TYP_UNDEF;
+
+#if TARGET_AMD64
+    if (castOp->OperIs(GT_ADD) && castOp->gtGetOp1()->OperIs(GT_CAST) && castOp->gtGetOp2()->OperIs(GT_CAST))
+    {
+        GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+        GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+        if (castToType == op1->CastToType() && castToType == op2->CastToType())
+        {
+            op1->CastOp()->ClearRegOptional();
+            op2->CastOp()->ClearRegOptional();
+
+            castOp->AsOp()->gtOp1 = op1->CastOp();
+            castOp->AsOp()->gtOp2 = op2->CastOp();
+
+            BlockRange().Remove(op2);
+            BlockRange().Remove(op1);
+
+            return castOp->gtNext;
+        }
+    }
+#endif // TARGET_AMD64
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
@@ -835,6 +858,8 @@ void Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
+
+    return tree->gtNext;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
