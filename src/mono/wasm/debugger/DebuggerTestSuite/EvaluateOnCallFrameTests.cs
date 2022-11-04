@@ -1178,72 +1178,67 @@ namespace DebuggerTests
                 await CheckValue(testRootHidden, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testRootHidden));
                 var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
 
-                var (refList, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.list");
-                var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
-
-                // FixMe: https://github.com/dotnet/runtime/issues/76876
-                var list = refListProp.First(v => v["name"]?.Value<string>() is "Items" or "_items");
-                var refListElementsProp = await GetProperties(list["value"]["objectId"]?.Value<string>());
-
-                var (refArray, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.array");
-                var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
-
-                var (refStruct, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleStruct");
-                var refStructProp = await GetProperties(refStruct["objectId"]?.Value<string>());
-
-                var (refClass, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleClass");
-                var refClassProp = await GetProperties(refClass["objectId"]?.Value<string>());
-
                 JObject[] expectedListRootHiddenElements = new[]
                 {
-                    TNumber(1),
-                    TNumber(2)
+                    JObject.FromObject(new { value = TNumber(1), name = "listRootHidden[0]"}),
+                    JObject.FromObject(new { value = TNumber(2), name = "listRootHidden[1]"})
                 };
                 JObject[] expectedArrayElements = new[]
                 {
-                    TNumber(11),
-                    TNumber(22)
+                    JObject.FromObject(new { value = TNumber(11), name = "arrayRootHidden[0]"}),
+                    JObject.FromObject(new { value = TNumber(22), name = "arrayRootHidden[1]"})
                 };
                 JObject[] expectedStructRootHiddenElements = new[]
                 {
-                    JObject.FromObject(new { value = TNumber(100), name = "Id"}),
-                    JObject.FromObject(new { value = TBool(true), name = "IsStruct"})
+                    JObject.FromObject(new { value = TNumber(100), name = "sampleStructRootHidden.Id"}),
+                    JObject.FromObject(new { value = TBool(true), name = "sampleStructRootHidden.IsStruct"})
                 };
                 JObject[] expectedClassRootHiddenElements = new[]
                 {
-                    JObject.FromObject(new { value = TNumber(200), name = "ClassId"}),
-                    JObject.FromObject(new { value = TObject("System.Collections.Generic.List<string>", description: "Count = 1"), name = "Items"})
+                    JObject.FromObject(new { value = TNumber(200), name = "sampleClassRootHidden.ClassId"}),
+                    JObject.FromObject(new { value = TObject("System.Collections.Generic.List<string>", description: "Count = 1"), name = "sampleClassRootHidden.Items"})
                 };
 
                 // in Console App names are in []
                 // adding variable name to make elements unique
                 for (int i = 0; i < expectedListRootHiddenElements.Length; i ++)
                 {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"listRootHidden[{i}]");
-                    await CheckValue(actualValObj["value"], expectedListRootHiddenElements[i], "listRootHidden");
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, expectedListRootHiddenElements[i]["name"].Value<string>());
+                    await CheckValue(actualValObj["value"], expectedListRootHiddenElements[i]["value"], "listRootHidden");
                 }
-                await CheckProps(refListElementsProp, expectedListRootHiddenElements, "listRootHidden");
 
                 for (int i = 0; i < expectedArrayElements.Length; i ++)
                 {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"arrayRootHidden[{i}]");
-                    await CheckValue(actualValObj["value"], expectedArrayElements[i], "x");
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, expectedArrayElements[i]["name"].Value<string>());
+                    await CheckValue(actualValObj["value"], expectedArrayElements[i]["value"], "x");
                 }
-                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
 
                 foreach (var structItem in expectedStructRootHiddenElements)
                 {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"sampleStructRootHidden.{structItem["name"]}");
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, structItem["name"].Value<string>());
                     await CheckValue(actualValObj["value"], structItem["value"], "sampleStructRootHidden");
                 }
-                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
 
                 foreach (var classItem in expectedClassRootHiddenElements)
                 {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, $"sampleClassRootHidden.{classItem["name"]}");
+                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, classItem["name"].Value<string>());
                     await CheckValue(actualValObj["value"], classItem["value"], "sampleClassRootHidden");
                 }
-                await CheckProps(refArrayProp, expectedArrayElements, "arrayRootHidden");
+
+                JObject[] expectedTestRootHiddenProps = new[]
+                {
+                    expectedArrayElements[0],
+                    expectedArrayElements[1],
+                    expectedListRootHiddenElements[0],
+                    expectedListRootHiddenElements[1],
+                    expectedClassRootHiddenElements[0],
+                    expectedClassRootHiddenElements[1],
+                    expectedStructRootHiddenElements[0],
+                    expectedStructRootHiddenElements[1]
+                };
+                // CheckProps for JArrays care about the order and here the order differs between InlineData
+                var testRootHiddenPropsSorted = new JArray(testRootHiddenProps.OrderBy(v => (string)v["name"]));
+                await CheckProps(testRootHiddenPropsSorted, expectedTestRootHiddenProps, "listRootHidden");
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
