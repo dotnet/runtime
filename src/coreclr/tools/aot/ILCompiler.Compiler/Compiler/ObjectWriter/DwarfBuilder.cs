@@ -751,6 +751,11 @@ namespace ILCompiler.ObjectWriter
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
             IEnumerable<DebugEHClauseInfo> debugEHClauseInfos)
         {
+            if (methodTypeIndex == 0)
+            {
+                return;
+            }
+
             var subprogramSpec = _memberFunctions[(int)methodTypeIndex - 1];
 
             _dwarfFile.StringTable.GetOrCreateString(methodName);
