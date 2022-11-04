@@ -12296,7 +12296,7 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
                       (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
                       (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%I64p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
 
 
     if (fIsCorCode)

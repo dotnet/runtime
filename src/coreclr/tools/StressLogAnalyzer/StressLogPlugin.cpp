@@ -591,7 +591,7 @@ void Usage()
     printf(" -f: print the raw format strings along with the message\n");
     printf("     (useful to search for the format string in the source code)\n");
     printf(" -f:<format string>: search for a specific format string\n");
-    printf("    e.g. '-f:\"<%%Ix>:%%Ix\"'\n");
+    printf("    e.g. '-f:\"<%%zx>:%%zx\"'\n");
     printf("\n");
     printf(" -i:<hex facility code>: ignore messages from log facilities\n");
     printf("   e.g. '-i:7ffe' means ignore messages from anything but LF_GC\n");
@@ -1036,14 +1036,14 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
         {
             wrappedWriteThreadCount++;
         }
-        // printf("thread: %Ix\n", tsl->threadId);
+        // printf("thread: %zx\n", tsl->threadId);
         StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
         StressLogChunk* slc = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk);
         int chunkCount = 0;
         StressMsg* prevMsg = nullptr;
         while (true)
         {
-            // printf("stress log chunk %Ix\n", (size_t)slc);
+            // printf("stress log chunk %zx\n", (size_t)slc);
             if (!slc->IsValid())
             {
                 printf("oops, invalid stress log chunk\n");
@@ -1485,7 +1485,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         (double)usedSize / (1024 * 1024 * 1024), (double)availSize/ (1024 * 1024 * 1024),
         s_threadStressLogCount, (int)s_wrappedWriteThreadCount);
     if (hdr->threadsWithNoLog != 0)
-        printf("%Id threads did not get a log!\n", hdr->threadsWithNoLog);
+        printf("%lld threads did not get a log!\n", hdr->threadsWithNoLog);
     printf("Number of messages examined: "); PrintFriendlyNumber(s_totalMsgCount); printf(", printed: "); PrintFriendlyNumber(s_msgCount); printf("\n");
 
     delete[] s_threadMsgBuf;

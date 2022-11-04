@@ -1890,7 +1890,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1902,7 +1902,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1938,7 +1938,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                     if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||IsSpecialNumber(str))
-                        sprintf_s(str, 64, "0x%I64X",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                        sprintf_s(str, 64, "0x%llX",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -2597,10 +2597,10 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(%s)", KEYWORD((char *)(MDDV.m_byteValue ? "true" : "false")));
             break;
         case ELEMENT_TYPE_I8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("int64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("int64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_U8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("uint64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("uint64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_R4:
             {
@@ -2627,7 +2627,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float64"),szf);
                 else
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%I64X) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%llX) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
             }
             break;
 
@@ -3743,7 +3743,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                     sprintf_s(pszArgname[j].name,16,"A_%d",g_fThisIsInstanceMethod ? j+1 : j);
                 }
             }// end for( along the argnames)
-            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszArgname);
+            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%zd0",(size_t)pszArgname);
         } //end if (ulArgs)
         g_pImport->EnumClose(&hArgEnum);
     }

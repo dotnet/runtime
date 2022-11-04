@@ -360,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %Iu\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %zu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -2196,7 +2196,7 @@ LPCWSTR MDInfo::VariantAsString(VARIANT *pVariant)
         // Set variant type to bstr.
         V_VT(pVariant) = VT_BSTR;
         // Create the ansi string.
-        sprintf_s(szStr, 32, "%I64d", V_CY(pVariant).int64);
+        sprintf_s(szStr, 32, "%lld", V_CY(pVariant).int64);
         // Convert to unicode.
         WszMultiByteToWideChar(CP_ACP, 0, szStr, -1, wszStr, 32);
         // convert to bstr and set variant value.

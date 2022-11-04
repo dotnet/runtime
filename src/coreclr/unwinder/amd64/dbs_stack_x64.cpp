@@ -127,10 +127,10 @@ Arguments:
     MachineFrame = FALSE;
     PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
 
-    m_Services->Status(1, "Prol: RIP %I64X, 0x%X bytes in function at %I64X\n",
+    m_Services->Status(1, "Prol: RIP %llX, 0x%X bytes in function at %llX\n",
                        ControlPc, PrologOffset,
                        FunctionEntry->BeginAddress + ImageBase);
-    m_Services->Status(1, "Prol: Read unwind info at %I64X\n",
+    m_Services->Status(1, "Prol: Read unwind info at %llX\n",
                        FunctionEntry->UnwindInfoAddress + ImageBase);
 
     if ((Status =
@@ -147,7 +147,7 @@ Arguments:
 
     while (Index < UnwindInfo->CountOfCodes) {
 
-        m_Services->Status(1, "  %02X: Code %X offs %03X, RSP %I64X\n",
+        m_Services->Status(1, "  %02X: Code %X offs %03X, RSP %llX\n",
              Index, UnwindInfo->UnwindCode[Index].UnwindOp,
              UnwindInfo->UnwindCode[Index].CodeOffset,
              ContextRecord->Rsp);
@@ -182,7 +182,7 @@ Arguments:
                                    &IntegerRegister[OpInfo],
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read failed at %I64X\n",
+                                       "read failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -249,7 +249,7 @@ Arguments:
                                   &IntegerRegister[OpInfo],
                                   sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -272,7 +272,7 @@ Arguments:
                                    &IntegerRegister[OpInfo],
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -295,7 +295,7 @@ Arguments:
                                    &FloatingRegister[OpInfo].Low,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -319,7 +319,7 @@ Arguments:
                                    &FloatingRegister[OpInfo].Low,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -341,7 +341,7 @@ Arguments:
                                    &FloatingRegister[OpInfo],
                                    sizeof(AMD64_M128))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -364,7 +364,7 @@ Arguments:
                                    &FloatingRegister[OpInfo],
                                    sizeof(AMD64_M128))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -395,7 +395,7 @@ Arguments:
                                    &ContextRecord->Rip,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read 1 failed at %I64X\n",
+                                       "read 1 failed at %llX\n",
                                        UnwindOp, ReturnAddress);
                     goto Fail;
                 }
@@ -404,7 +404,7 @@ Arguments:
                                    &ContextRecord->Rsp,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read 2 failed at %I64X\n",
+                                       "read 2 failed at %llX\n",
                                        UnwindOp, StackAddress);
                     goto Fail;
                 }
@@ -480,7 +480,7 @@ Arguments:
         ChainEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
             &UnwindInfo->UnwindCode[Index];
 
-        m_Services->Status(1, "  Chain with entry at %I64X\n",
+        m_Services->Status(1, "  Chain with entry at %llX\n",
              FunctionEntry->UnwindInfoAddress + ImageBase +
              (ULONG64)((PUCHAR)&UnwindInfo->UnwindCode[Index] -
                        (PUCHAR)UnwindInfo));
@@ -507,7 +507,7 @@ Arguments:
             ContextRecord->Rsp += 8;
         }
 
-        m_Services->Status(1, "Prol: Returning with RIP %I64X, RSP %I64X\n",
+        m_Services->Status(1, "Prol: Returning with RIP %llX, RSP %llX\n",
                            ContextRecord->Rip, ContextRecord->Rsp);
         return S_OK;
     }
@@ -660,7 +660,7 @@ Arguments:
     if ((Status = m_Services->
          ReadMemory(ControlPc, InstrBuffer, sizeof(InstrBuffer),
                     &InstrBytes)) != S_OK) {
-        m_Services->Status(1, "Unable to read instruction stream at %I64X\n",
+        m_Services->Status(1, "Unable to read instruction stream at %llX\n",
                            ControlPc);
 
         // We need the code to look for epilogue ops.
@@ -966,7 +966,7 @@ Arguments:
                     ReadAllMemory(ContextRecord->Rsp,
                                   &IntegerRegister[RegisterNumber],
                                   sizeof(ULONG64))) != S_OK) {
-                    m_Services->Status(1, "Unable to read stack at %I64X\n",
+                    m_Services->Status(1, "Unable to read stack at %llX\n",
                          ContextRecord->Rsp);
                     return Status;
                 }
@@ -987,7 +987,7 @@ Arguments:
                      ReadAllMemory(ContextRecord->Rsp,
                                    &IntegerRegister[RegisterNumber],
                                    sizeof(ULONG64))) != S_OK) {
-                    m_Services->Status(1, "Unable to read stack at %I64X\n",
+                    m_Services->Status(1, "Unable to read stack at %llX\n",
                          ContextRecord->Rsp);
                     return Status;
                 }
@@ -1011,7 +1011,7 @@ Arguments:
             ReadAllMemory(ContextRecord->Rsp,
                           &ContextRecord->Rip,
                           sizeof(ULONG64))) != S_OK) {
-            m_Services->Status(1, "Unable to read stack at %I64X\n",
+            m_Services->Status(1, "Unable to read stack at %llX\n",
                  ContextRecord->Rsp);
             return Status;
         }
@@ -1467,7 +1467,7 @@ DbsX64StackUnwinder::BaseUnwind(void)
         // directly to the return address.
         //
 
-        m_Services->Status(1, "Leaf %I64X RSP %I64X\n",
+        m_Services->Status(1, "Leaf %llX RSP %llX\n",
                            m_Context.Rip, m_Context.Rsp);
 
         if ((Status = m_Services->

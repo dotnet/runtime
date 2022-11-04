@@ -359,7 +359,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
                 *Out++ = '1';
                 *Out++ = '6';
             }
-            /* native *printf does not support %I64p
+            /* native *printf does not support %p
                (actually %llp), so we need to cheat a little bit */
             *Out++ = 'l';
             *Out++ = 'l';
