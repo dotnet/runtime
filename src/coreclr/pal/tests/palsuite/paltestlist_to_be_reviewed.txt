@@ -11,15 +11,9 @@ c_runtime/fread/test3/paltest_fread_test3
 c_runtime/ftell/test1/paltest_ftell_test1
 c_runtime/iswprint/test1/paltest_iswprint_test1
 c_runtime/vprintf/test1/paltest_vprintf_test1
-c_runtime/vswprintf/test2/paltest_vswprintf_test2
-c_runtime/vswprintf/test7/paltest_vswprintf_test7
 c_runtime/_gcvt/test1/paltest_gcvt_test1
 c_runtime/_gcvt/test2/paltest_gcvt_test2
 c_runtime/_getw/test1/paltest_getw_test1
-c_runtime/_snwprintf_s/test2/paltest_snwprintf_test2
-c_runtime/_snwprintf_s/test7/paltest_snwprintf_test7
-c_runtime/_vsnwprintf_s/test2/paltest_vsnwprintf_test2
-c_runtime/_vsnwprintf_s/test7/paltest_vsnwprintf_test7
 debug_api/DebugBreak/test1/paltest_debugbreak_test1
 debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1
 debug_api/WriteProcessMemory/test1/paltest_writeprocessmemory_test1

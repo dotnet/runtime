@@ -11,12 +11,12 @@
       set DOTNET_GCStress=0x3
       set DOTNET_GCSegmentSize=8000
       ]]></CLRTestBatchPreCommands>
-          <BashCLRTestPreCommands><![CDATA[
-      $(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+      $(CLRTestBashPreCommands)
       export DOTNET_TieredCompilation=0
       export DOTNET_GCStress=0x3
       export DOTNET_GCSegmentSize=8000
-      ]]></BashCLRTestPreCommands>
+      ]]></CLRTestBashPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

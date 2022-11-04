@@ -5,17 +5,19 @@
     <CLRTestBatchPreCommands>
       <![CDATA[
 $(CLRTestBatchPreCommands)
-set DOTNET_JitFuncInfoLogFile=SIMD.log
 if EXIST SIMD.log (del SIMD.log)
 ]]>
     </CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands>
+    <CLRTestBashPreCommands>
       <![CDATA[
-$(BashCLRTestPreCommands)
-export DOTNET_JitFuncInfoLogFile=SIMD.log
+$(CLRTestBashPreCommands)
 rm -f SIMD.log
 ]]>
-    </BashCLRTestPreCommands>
+    </CLRTestBashPreCommands>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable Include="DOTNET_JitFuncInfoLogFile" Value="SIMD.log" />
+  </ItemGroup>
 
 </Project>

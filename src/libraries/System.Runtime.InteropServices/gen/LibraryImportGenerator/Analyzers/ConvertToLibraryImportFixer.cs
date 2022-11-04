@@ -119,7 +119,7 @@ namespace Microsoft.Interop.Analyzers
             public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
-                                string.Format(SR.ConvertToLibraryImportWithSuffix, suffix),
+                                SR.Format(SR.ConvertToLibraryImportWithSuffix, suffix),
                                 cancelToken => ConvertToLibraryImport(
                                     document,
                                     methodSyntax,
@@ -155,7 +155,7 @@ namespace Microsoft.Interop.Analyzers
             public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
-                    string.Format(SR.ConvertToLibraryImportWithSuffixAddUnsafe, suffix),
+                    SR.Format(SR.ConvertToLibraryImportWithSuffixAddUnsafe, suffix),
                     async cancelToken =>
                     {
                         Solution solutionWithUnsafe = AddUnsafe(document.Project.Solution, document.Project);

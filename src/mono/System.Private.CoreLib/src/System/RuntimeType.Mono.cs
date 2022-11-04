@@ -1277,7 +1277,7 @@ namespace System
         public override bool IsEnum => GetBaseType() == EnumType;
 
         // Returns true for actual enum types only.
-        internal bool IsActualEnum => RuntimeTypeHandle.GetBaseType(this) == EnumType;
+        internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
         public override GenericParameterAttributes GenericParameterAttributes
         {

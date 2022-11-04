@@ -376,7 +376,7 @@ int WrapICorJitInfo::getStringLiteral(
 }
 
 size_t WrapICorJitInfo::printObjectDescription(
-          void* handle,
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
           size_t bufferSize,
           size_t* pRequiredBufferSize)
@@ -665,17 +665,17 @@ CorInfoHelpFunc WrapICorJitInfo::getUnBoxHelper(
     return temp;
 }
 
-void* WrapICorJitInfo::getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE WrapICorJitInfo::getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(getRuntimeTypePointer);
-    void* temp = wrapHnd->getRuntimeTypePointer(cls);
+    CORINFO_OBJECT_HANDLE temp = wrapHnd->getRuntimeTypePointer(cls);
     API_LEAVE(getRuntimeTypePointer);
     return temp;
 }
 
 bool WrapICorJitInfo::isObjectImmutable(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     API_ENTER(isObjectImmutable);
     bool temp = wrapHnd->isObjectImmutable(objPtr);
@@ -684,7 +684,7 @@ bool WrapICorJitInfo::isObjectImmutable(
 }
 
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
-          void* objPtr)
+          CORINFO_OBJECT_HANDLE objPtr)
 {
     API_ENTER(getObjectType);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getObjectType(objPtr);
@@ -962,6 +962,15 @@ bool WrapICorJitInfo::isFieldStatic(
     API_ENTER(isFieldStatic);
     bool temp = wrapHnd->isFieldStatic(fldHnd);
     API_LEAVE(isFieldStatic);
+    return temp;
+}
+
+int WrapICorJitInfo::getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd)
+{
+    API_ENTER(getArrayOrStringLength);
+    int temp = wrapHnd->getArrayOrStringLength(objHnd);
+    API_LEAVE(getArrayOrStringLength);
     return temp;
 }
 
@@ -1473,10 +1482,11 @@ void* WrapICorJitInfo::getFieldAddress(
 bool WrapICorJitInfo::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
-          int bufferSize)
+          int bufferSize,
+          bool ignoreMovableObjects)
 {
     API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
     API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }

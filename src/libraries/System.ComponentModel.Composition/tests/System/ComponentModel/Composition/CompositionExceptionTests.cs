@@ -416,8 +416,8 @@ namespace System.ComponentModel.Composition
                 }
                 else
                 {
-                    string option1 = string.Format(CultureInfo.CurrentCulture, SR.CompositionException_SingleErrorWithMultiplePaths, rootCauseCount);
-                    string option2 = string.Format(CultureInfo.CurrentCulture, SR.CompositionException_MultipleErrorsWithMultiplePaths, rootCauseCount);
+                    string option1 = SR.Format(SR.CompositionException_SingleErrorWithMultiplePaths, rootCauseCount);
+                    string option2 = SR.Format(SR.CompositionException_MultipleErrorsWithMultiplePaths, rootCauseCount);
                     if (!line.Contains(option1) && !line.Contains(option2))
                     {
                         throw new XunitException($"`{line}` contains neither `{option1}` nor `{option2}`");
