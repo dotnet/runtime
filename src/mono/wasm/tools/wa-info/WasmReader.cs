@@ -236,28 +236,36 @@ namespace WebAssemblyInfo
             {
                 dataSegments[i].Mode = (DataMode)ReadU32();
                 if (Program.Verbose2)
-                    Console.WriteLine($"  mode: {dataSegments[i].Mode}");
+                    Console.Write($"  data idx: {i} mode: {dataSegments[i].Mode}");
                 switch (dataSegments[i].Mode)
                 {
                     case DataMode.ActiveMemory:
                         dataSegments[i].MemIdx = ReadU32();
                         if (Program.Verbose2)
-                            Console.WriteLine($"  memory index: {dataSegments[i].MemIdx}");
+                            Console.Write($" memory index: {dataSegments[i].MemIdx}");
                         goto case DataMode.Active;
                     case DataMode.Active:
                         (dataSegments[i].Expression, _) = ReadBlock();
                         if (Program.Verbose2)
                         {
-                            Console.WriteLine("  offset expression:");
-                            foreach (var instruction in dataSegments[i].Expression)
-                                Console.WriteLine(instruction.ToString(this).Indent("    "));
+                            Console.Write(" offset expression:");
+                            if (dataSegments[i].Expression.Length == 1)
+                            {
+                                Console.Write($" {dataSegments[i].Expression[0]}");
+                            }
+                            else
+                            {
+                                Console.WriteLine();
+                                foreach (var instruction in dataSegments[i].Expression)
+                                    Console.Write(instruction.ToString(this).Indent("    "));
+                            }
                         }
                         break;
                 }
 
                 var length = ReadU32();
                 if (Program.Verbose2)
-                    Console.WriteLine($"  length: {length}");
+                    Console.WriteLine($" length: {length}");
 
                 dataSegments[i].Content = Reader.ReadBytes((int)length);
             }
