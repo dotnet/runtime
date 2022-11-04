@@ -80,6 +80,19 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Gets a new <see cref="Vector512{T}" /> with all elements initialized to one.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector512<T> One
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Vector256<T> vector = Vector256<T>.One;
+                return Vector512.Create(vector, vector);
+            }
+        }
+
         /// <summary>Gets a new <see cref="Vector512{T}" /> with all elements initialized to zero.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector512<T> Zero
@@ -175,6 +188,20 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
+        /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
+        /// <param name="right">The scalar that will divide <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> operator /(Vector512<T> left, T right)
+        {
+            return Vector512.Create(
+                left._lower / right,
+                left._upper / right
+            );
+        }
+
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
@@ -214,6 +241,20 @@ namespace System.Runtime.Intrinsics
         {
             return (left._lower != right._lower)
                 || (left._upper != right._upper);
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> operator <<(Vector512<T> value, int shiftCount)
+        {
+            return Vector512.Create(
+                value._lower << shiftCount,
+                value._upper << shiftCount
+            );
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -269,6 +310,20 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> operator >>(Vector512<T> value, int shiftCount)
+        {
+            return Vector512.Create(
+                value._lower >> shiftCount,
+                value._upper >> shiftCount
+            );
+        }
+
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
@@ -308,6 +363,20 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
             return value;
+        }
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> operator >>>(Vector512<T> value, int shiftCount)
+        {
+            return Vector512.Create(
+                value._lower >>> shiftCount,
+                value._upper >>> shiftCount
+            );
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
