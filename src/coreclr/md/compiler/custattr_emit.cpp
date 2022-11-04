@@ -864,7 +864,6 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
 {
     HRESULT     hr = S_OK;              // A result.
     CCustAttrHashKey sLookup;           // For looking up a custom attribute.
-    CCustAttrHashKey *pFound;           // Result of a lookup.
     LPCSTR      szNamespace = "";       // Namespace of custom attribute type.
     LPCSTR      szName = "";            // Name of custom attribute type.
     TypeDefRec  *pTypeDefRec = NULL;    // Parent record, when a TypeDef.
@@ -882,7 +881,8 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
     sLookup.tkType = tkCtor;
 
     // See if this custom attribute type has been seen before.
-    if ((pFound = m_caHash.Find(&sLookup)))
+    const CCustAttrHashKey* pFound = m_caHash.LookupPtr(tkCtor);
+    if (pFound)
     {   // Yes, already seen.
         *pca = pFound->ca;
         hr = (pFound->ca == CA_UNKNOWN) ? S_FALSE : S_OK;
@@ -991,9 +991,7 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
 
     // Add to hash.
     sLookup.ca = ixCa;
-    pFound = m_caHash.Add(&sLookup);
-    IfNullGo(pFound);
-    *pFound = sLookup;
+    m_caHash.Add(sLookup);
     *pca = ixCa;
 
 ErrExit:
