@@ -264,17 +264,17 @@ namespace System.IO.Hashing
             ulong bitflip = (DefaultSecretUInt64_2 ^ DefaultSecretUInt64_3) + seed;
             ulong keyed = input64 ^ bitflip;
 
-            Hash128 m128 = new(Multiply64To128(keyed, Prime64_1 + (length << 2)));
+            var (m128Low, m128High) = Multiply64To128(keyed, Prime64_1 + (length << 2));
 
-            m128.High64 += (m128.Low64 << 1);
-            m128.Low64 ^= (m128.High64 >> 3);
+            m128High += (m128Low << 1);
+            m128Low ^= (m128High >> 3);
 
-            m128.Low64 = XorShift64(m128.Low64, 35);
-            m128.Low64 *= 0x9FB21C651E98DF25UL;
-            m128.Low64 = XorShift64(m128.Low64, 28);
-            m128.High64 = Avalanche(m128.High64);
+            m128Low = XorShift64(m128Low, 35);
+            m128Low *= 0x9FB21C651E98DF25UL;
+            m128Low = XorShift64(m128Low, 28);
+            m128High = Avalanche(m128High);
 
-            return m128;
+            return new Hash128(m128Low, m128High);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -285,86 +285,88 @@ namespace System.IO.Hashing
             ulong bitfliph = (DefaultSecretUInt64_6 ^ DefaultSecretUInt64_7) + seed;
             ulong inputLo = ReadUInt64LE(source);
             ulong inputHi = ReadUInt64LE(source + length - 8);
-            Hash128 m128 = new(Multiply64To128(inputLo ^ inputHi ^ bitflipl, Prime64_1));
+            var (m128Low, m128High) = Multiply64To128(inputLo ^ inputHi ^ bitflipl, Prime64_1);
 
-            m128.Low64 += (ulong)(length - 1) << 54;
+            m128Low += (ulong)(length - 1) << 54;
             inputHi ^= bitfliph;
 
-            m128.High64 += sizeof(void*) < sizeof(ulong) ?
+            m128High += sizeof(void*) < sizeof(ulong) ?
                 (inputHi & 0xFFFFFFFF00000000UL) + Multiply32To64((uint)inputHi, Prime32_2) :
                 inputHi + Multiply32To64((uint)inputHi, Prime32_2 - 1);
 
-            m128.Low64 ^= BinaryPrimitives.ReverseEndianness(m128.High64);
+            m128Low ^= BinaryPrimitives.ReverseEndianness(m128High);
 
-            Hash128 h128 = new(Multiply64To128(m128.Low64, Prime64_2));
-            h128.High64 += m128.High64 * (ulong)Prime64_2;
+            var (h128Low, h128High) = Multiply64To128(m128Low, Prime64_2);
+            h128High += m128High * (ulong)Prime64_2;
 
-            h128.Low64 = Avalanche(h128.Low64);
-            h128.High64 = Avalanche(h128.High64);
-            return h128;
+            h128Low = Avalanche(h128Low);
+            h128High = Avalanche(h128High);
+            return new Hash128(h128Low, h128High);
         }
 
         private static Hash128 HashLength17To128(byte* source, uint length, ulong seed)
         {
             Debug.Assert(length >= 17 && length <= 128);
 
-            Hash128 acc = new Hash128(length * Prime64_1, 0);
+            ulong accLow = length * Prime64_1;
+            ulong accHigh = 0;
 
             switch ((length - 1) / 32)
             {
                 default: // case 3
-                    acc = Mix32Bytes(acc, source + 48, source + length - 64, DefaultSecretUInt64_12, DefaultSecretUInt64_13, DefaultSecretUInt64_14, DefaultSecretUInt64_15, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + 48, source + length - 64, DefaultSecretUInt64_12, DefaultSecretUInt64_13, DefaultSecretUInt64_14, DefaultSecretUInt64_15, seed);
                     goto case 2;
                 case 2:
-                    acc = Mix32Bytes(acc, source + 32, source + length - 48, DefaultSecretUInt64_8, DefaultSecretUInt64_9, DefaultSecretUInt64_10, DefaultSecretUInt64_11, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + 32, source + length - 48, DefaultSecretUInt64_8, DefaultSecretUInt64_9, DefaultSecretUInt64_10, DefaultSecretUInt64_11, seed);
                     goto case 1;
                 case 1:
-                    acc = Mix32Bytes(acc, source + 16, source + length - 32, DefaultSecretUInt64_4, DefaultSecretUInt64_5, DefaultSecretUInt64_6, DefaultSecretUInt64_7,seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + 16, source + length - 32, DefaultSecretUInt64_4, DefaultSecretUInt64_5, DefaultSecretUInt64_6, DefaultSecretUInt64_7,seed);
                     goto case 0;
                 case 0:
-                    acc = Mix32Bytes(acc, source, source + length - 16, DefaultSecretUInt64_0, DefaultSecretUInt64_1, DefaultSecretUInt64_2, DefaultSecretUInt64_3, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source, source + length - 16, DefaultSecretUInt64_0, DefaultSecretUInt64_1, DefaultSecretUInt64_2, DefaultSecretUInt64_3, seed);
                     break;
             }
 
-            return AvalancheHash(acc, length, seed);
+            return AvalancheHash(accLow, accHigh, length, seed);
         }
 
         private static Hash128 HashLength129To240(byte* source, uint length, ulong seed)
         {
             Debug.Assert(length >= 129 && length <= 240);
 
-            Hash128 acc = new Hash128(length * Prime64_1, 0);
+            ulong accLow = length * Prime64_1;
+            ulong accHigh = 0;
 
-            acc = Mix32Bytes(acc, source + (32 * 0), source + (32 * 0) + 16, DefaultSecretUInt64_0, DefaultSecretUInt64_1, DefaultSecretUInt64_2, DefaultSecretUInt64_3, seed);
-            acc = Mix32Bytes(acc, source + (32 * 1), source + (32 * 1) + 16, DefaultSecretUInt64_4, DefaultSecretUInt64_5, DefaultSecretUInt64_6, DefaultSecretUInt64_7, seed);
-            acc = Mix32Bytes(acc, source + (32 * 2), source + (32 * 2) + 16, DefaultSecretUInt64_8, DefaultSecretUInt64_9, DefaultSecretUInt64_10, DefaultSecretUInt64_11, seed);
-            acc = Mix32Bytes(acc, source + (32 * 3), source + (32 * 3) + 16, DefaultSecretUInt64_12, DefaultSecretUInt64_13, DefaultSecretUInt64_14, DefaultSecretUInt64_15, seed);
+            Mix32Bytes(ref accLow, ref accHigh, source + (32 * 0), source + (32 * 0) + 16, DefaultSecretUInt64_0, DefaultSecretUInt64_1, DefaultSecretUInt64_2, DefaultSecretUInt64_3, seed);
+            Mix32Bytes(ref accLow, ref accHigh, source + (32 * 1), source + (32 * 1) + 16, DefaultSecretUInt64_4, DefaultSecretUInt64_5, DefaultSecretUInt64_6, DefaultSecretUInt64_7, seed);
+            Mix32Bytes(ref accLow, ref accHigh, source + (32 * 2), source + (32 * 2) + 16, DefaultSecretUInt64_8, DefaultSecretUInt64_9, DefaultSecretUInt64_10, DefaultSecretUInt64_11, seed);
+            Mix32Bytes(ref accLow, ref accHigh, source + (32 * 3), source + (32 * 3) + 16, DefaultSecretUInt64_12, DefaultSecretUInt64_13, DefaultSecretUInt64_14, DefaultSecretUInt64_15, seed);
 
-            acc.Low64 = Avalanche(acc.Low64);
-            acc.High64 = Avalanche(acc.High64);
+            accLow = Avalanche(accLow);
+            accHigh = Avalanche(accHigh);
 
             switch ((length - (32 * 4)) / 32)
             {
                 default: // case 3
                     Debug.Assert((length - 32 * 4) / 32 == 3);
-                    acc = Mix32Bytes(acc, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
-                    acc = Mix32Bytes(acc, source + (32 * 5), source + (32 * 5) + 16, DefaultSecret3UInt64_4, DefaultSecret3UInt64_5, DefaultSecret3UInt64_6, DefaultSecret3UInt64_7, seed);
-                    acc = Mix32Bytes(acc, source + (32 * 6), source + (32 * 6) + 16, DefaultSecret3UInt64_8, DefaultSecret3UInt64_9, DefaultSecret3UInt64_10, DefaultSecret3UInt64_11, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 5), source + (32 * 5) + 16, DefaultSecret3UInt64_4, DefaultSecret3UInt64_5, DefaultSecret3UInt64_6, DefaultSecret3UInt64_7, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 6), source + (32 * 6) + 16, DefaultSecret3UInt64_8, DefaultSecret3UInt64_9, DefaultSecret3UInt64_10, DefaultSecret3UInt64_11, seed);
                     goto case 0;
                 case 2:
-                    acc = Mix32Bytes(acc, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
-                    acc = Mix32Bytes(acc, source + (32 * 5), source + (32 * 5) + 16, DefaultSecret3UInt64_4, DefaultSecret3UInt64_5, DefaultSecret3UInt64_6, DefaultSecret3UInt64_7, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 5), source + (32 * 5) + 16, DefaultSecret3UInt64_4, DefaultSecret3UInt64_5, DefaultSecret3UInt64_6, DefaultSecret3UInt64_7, seed);
                     goto case 0;
                 case 1:
-                    acc = Mix32Bytes(acc, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);
                     goto case 0;
                 case 0:
                     // AsUInt64(DefaultSecret[103], DefaultSecret[111], DefaultSecret[119], DefaultSecret[127])
-                    acc = Mix32Bytes(acc, source + length - 16, source + length - 32, 0x4F0BC7C7BBDCF93F, 0x59B4CD4BE0518A1D, 0x7378D9C97E9FC831, 0xEBD33483ACC5EA64, 0 - seed);
+                    Mix32Bytes(ref accLow, ref accHigh, source + length - 16, source + length - 32, 0x4F0BC7C7BBDCF93F, 0x59B4CD4BE0518A1D, 0x7378D9C97E9FC831, 0xEBD33483ACC5EA64, 0 - seed);
                     break;
             }
 
-            return AvalancheHash(acc, length, seed);
+            return AvalancheHash(accLow, accHigh, length, seed);
         }
 
         private static Hash128 HashLengthOver240(byte* source, uint length, ulong seed)
@@ -394,12 +396,12 @@ namespace System.IO.Hashing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Hash128 AvalancheHash(Hash128 acc, uint length, ulong seed)
+        private static Hash128 AvalancheHash(ulong accLow, ulong accHigh, uint length, ulong seed)
         {
             Hash128 h128;
-            h128.Low64 = acc.Low64 + acc.High64;
-            h128.High64 = (acc.Low64 * Prime64_1)
-                          + (acc.High64 * Prime64_4)
+            h128.Low64 = accLow + accHigh;
+            h128.High64 = (accLow * Prime64_1)
+                          + (accHigh * Prime64_4)
                           + ((length - seed) * Prime64_2);
             h128.Low64 = Avalanche(h128.Low64);
             h128.High64 = 0ul - Avalanche(h128.High64);
@@ -417,13 +419,12 @@ namespace System.IO.Hashing
         private static ulong Multiply32To64(uint v1, uint v2) => (ulong)v1 * v2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Hash128 Mix32Bytes(Hash128 acc, byte* input1, byte* input2, ulong secret1, ulong secret2, ulong secret3, ulong secret4, ulong seed)
+        private static void Mix32Bytes(ref ulong accLow, ref ulong accHigh, byte* input1, byte* input2, ulong secret1, ulong secret2, ulong secret3, ulong secret4, ulong seed)
         {
-            acc.Low64 += Mix16Bytes(input1, secret1, secret2, seed);
-            acc.Low64 ^= ReadUInt64LE(input2) + ReadUInt64LE(input2 + 8);
-            acc.High64 += Mix16Bytes(input2, secret3, secret4, seed);
-            acc.High64 ^= ReadUInt64LE(input1) + ReadUInt64LE(input1 + 8);
-            return acc;
+            accLow += Mix16Bytes(input1, secret1, secret2, seed);
+            accLow ^= ReadUInt64LE(input2) + ReadUInt64LE(input2 + 8);
+            accHigh += Mix16Bytes(input2, secret3, secret4, seed);
+            accHigh ^= ReadUInt64LE(input1) + ReadUInt64LE(input1 + 8);
         }
 
         [DebuggerDisplay("Low64: {" + nameof(Low64) + "}, High64: {" + nameof(High64) + "}")]
