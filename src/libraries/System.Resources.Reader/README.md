@@ -1,4 +1,4 @@
-# System.Resources.ResourceReader 
+# System.Resources.ResourceReader
 
 Enumerates the resources in a binary resources (.resources) file by reading sequential resource name/value pairs.
 This is part of [System.Resources assembly](../System.Resources.ResourceManager/Readme.md)

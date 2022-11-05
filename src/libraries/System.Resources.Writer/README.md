@@ -1,6 +1,6 @@
 # System.Resources.Writer
 Writes resources in the system-default format to an output file or an output stream.
-This is part of [System.Resources assembly](../System.Resources.ResourceManager/Readme.md).  
+This is part of [System.Resources assembly](../System.Resources.ResourceManager/Readme.md).
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.resources.resourcewriter.
 
