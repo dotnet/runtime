@@ -13185,7 +13185,6 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
         DEBUG_DESTROY_NODE(tree->gtOp2);
         DEBUG_DESTROY_NODE(tree);
 
-
         return fgMorphTree(comma);
     }
     else
