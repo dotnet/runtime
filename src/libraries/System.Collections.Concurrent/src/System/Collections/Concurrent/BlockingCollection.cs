@@ -496,10 +496,15 @@ namespace System.Collections.Concurrent
                         throw;
                     }
 
-                    _occupiedNodes.Release();
-
-                    if (!addingSucceeded)
+                    if (addingSucceeded)
                     {
+                        //After adding an element to the underlying storage, signal to the consumers
+                        //waiting on _occupiedNodes that there is a new item added ready to be consumed.
+                        _occupiedNodes.Release();
+                    }
+                    else
+                    {
+                        _freeNodes?.Release();
                         throw new InvalidOperationException(SR.BlockingCollection_Add_Failed);
                     }
                 }
