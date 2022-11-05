@@ -9022,10 +9022,10 @@ private:
     bool DoJitStressEvexEncoding() const
     {
 #if defined(TARGET_XARCH) && defined(DEBUG)
-// Using JitStressEVEXEncoding flag will force instructions which would
-// otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-// This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-// causing failure if not running on compatible hardware.
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
 
         if (JitConfig.JitForceEVEXEncoding())
         {
