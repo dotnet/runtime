@@ -2873,7 +2873,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             // assignedInterval->physReg.
             bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
                                (assignedInterval->physReg == foundReg);
-            unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
+            unassignPhysRegForNewInterval(availablePhysRegRecord, currentInterval);
             if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
             {
                 assert(assignedInterval->isConstant);
@@ -3455,12 +3455,12 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 }
 
 //------------------------------------------------------------------------
-// unassignPhysReg: Unassign the given physical register record, and spill the
-//                  assignedInterval at the given spillRefPosition, if any.
+// unassignPhysRegForNewInterval: Unassign the given physical register record, and spill the
+//                  assignedInterval at the most recent RefPosition of an interval, if any.
 //
 // Arguments:
 //    regRec           - The RegRecord to be unassigned
-//    newRegType       - The RegisterType of interval that would be assigned
+//    newInterval      - The new interval that would be assigned
 //
 // Return Value:
 //    None.
@@ -3469,14 +3469,24 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 //    On ARM architecture, Intervals have to be unassigned considering
 //    with the register type of interval that would be assigned.
 //
-void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType))
+void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newInterval)
 {
+    // If either of the new interval (being assigned) or existing interval (being unassigned)
+    // has consecutive registers, make sure to unassign both.
+    int newRegCount = max(regRec->regCount, newInterval->regCount);
+    regNumber currReg     = regRec->regNum;
+
     RegRecord* regRecToUnassign = regRec;
-    RegRecord* firstRegRec      = getFirstRegRec(regRec);
-    if (firstRegRec->assignedInterval != nullptr)
+    do
     {
-        unassignPhysReg(firstRegRec, firstRegRec->assignedInterval->recentRefPosition);
-    }
+        if (regRecToUnassign->assignedInterval != nullptr)
+        {
+            unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
+        }
+
+        currReg = REG_NEXT(currReg);
+        regRecToUnassign = getRegisterRecord(currReg);
+    } while (--newRegCount > 0);
 }
 
 //------------------------------------------------------------------------
