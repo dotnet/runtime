@@ -76,31 +76,6 @@ namespace System.Globalization
             return OrdinalCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Vector128EqualsIgnoreCaseAscii(Vector128<sbyte> vec1, Vector128<sbyte> vec2)
-        {
-            // Input is expected to be all-ASCII
-            Debug.Assert(Vector128AllAscii(vec1.AsUInt16()));
-            Debug.Assert(Vector128AllAscii(vec2.AsUInt16()));
-
-            Vector128<sbyte> tmp1 = Vector128.Create((sbyte)(128 - 'A')) + vec1;
-            Vector128<sbyte> tmp2 = Vector128.Create((sbyte)(128 - 'A')) + vec2;
-
-            // Calculate no-modify parts
-            tmp1 = Vector128.LessThan(Vector128.Create((sbyte)(-128 + 25)), tmp1);
-            tmp2 = Vector128.LessThan(Vector128.Create((sbyte)(-128 + 25)), tmp2);
-
-            tmp1 = Vector128.AndNot(Vector128.Create((sbyte)0x20), tmp1);
-            tmp2 = Vector128.AndNot(Vector128.Create((sbyte)0x20), tmp2);
-            return ((tmp1 + vec1) ^ (tmp2 + vec2)) == Vector128<sbyte>.Zero;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Vector128AllAscii(Vector128<ushort> vec1)
-        {
-            return (vec1 & Vector128.Create(unchecked((ushort)~0x007F))) == Vector128<ushort>.Zero;
-        }
-
         private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
         {
             Debug.Assert(length >= Vector128<ushort>.Count);
@@ -116,12 +91,12 @@ namespace System.Globalization
                 vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
                 vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
 
-                if (!Vector128AllAscii(vec1 | vec2))
+                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
                 {
                     goto NON_ASCII;
                 }
 
-                if (!Vector128EqualsIgnoreCaseAscii(vec1.AsSByte(), vec2.AsSByte()))
+                if (!Utf16Utility.Vector128OrdinalIgnoreCaseAscii(vec1, vec2))
                 {
                     return false;
                 }
@@ -133,7 +108,7 @@ namespace System.Globalization
             return i == lengthU || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
 
         NON_ASCII:
-            if (Vector128AllAscii(vec1) || Vector128AllAscii(vec2))
+            if (Utf16Utility.AllCharsInVector128AreAscii(vec1) || Utf16Utility.AllCharsInVector128AreAscii(vec2))
             {
                 // No need to use the fallback if one of the inputs is full-ASCII
                 return false;
