@@ -8,10 +8,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using static System.IO.Hashing.XxHashShared;
 
 namespace System.IO.Hashing
 {
-    using static XxHashShared;
 
     /// <summary>Provides an implementation of the XXH3 hash algorithm for generating a 64-bit hash.</summary>
     /// <remarks>

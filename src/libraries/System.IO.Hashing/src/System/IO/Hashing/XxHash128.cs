@@ -8,11 +8,10 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.IO.Hashing.XxHashShared;
 
 namespace System.IO.Hashing
 {
-    using static XxHashShared;
-
     /// <summary>Provides an implementation of the XXH3 hash algorithm for generating a 128-bit hash.</summary>
     /// <remarks>
     /// For methods that persist the computed numerical hash value as bytes,
