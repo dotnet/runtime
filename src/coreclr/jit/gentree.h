@@ -4057,6 +4057,19 @@ struct GenTreeField : public GenTreeUnOp
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
+
+    bool IsInstance() const
+    {
+        return GetFldObj() != nullptr;
+    }
+
+    bool IsOffsetKnown() const
+    {
+#ifdef FEATURE_READYTORUN
+        return gtFieldLookup.addr == nullptr;
+#endif // FEATURE_READYTORUN
+        return true;
+    }
 };
 
 // There was quite a bit of confusion in the code base about which of gtOp1 and gtOp2 was the

@@ -319,7 +319,7 @@ private:
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
-    GenTree* TryLowerMulToLshSubOrLshAdd(GenTreeOp* node);
+    GenTree* TryLowerMulWithConstant(GenTreeOp* node);
     GenTree* TryLowerCastOfSimpleOp(GenTreeCast* node);
 #endif // TARGET_XARCH
 
