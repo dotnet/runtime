@@ -89,6 +89,33 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 }
 
 //------------------------------------------------------------------------
+// TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can contain or regOptional its 'childNode'
+//    childNode  - is an op that will now be contained or regOptional to its parent.
+//
+void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
+    assert(!parentNode->OperIsHWIntrinsic());
+
+    if (!IsSafeToContainMem(parentNode, childNode))
+    {
+        return;
+    }
+
+    if (IsContainableMemoryOp(childNode))
+    {
+        MakeSrcContained(parentNode, childNode);
+    }
+    else
+    {
+        MakeSrcRegOptional(parentNode, childNode);
+    }
+}
+
+//------------------------------------------------------------------------
 // CheckImmedAndMakeContained: Checks if the 'childNode' is a containable immediate
 //    and, if so, makes it contained.
 //

@@ -471,25 +471,7 @@ private:
     void MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const;
 
     // Tries to make 'childNode' contained or regOptional in the 'parentNode'
-    inline void TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const
-    {
-        // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
-        assert(!parentNode->OperIsHWIntrinsic());
-
-        if (!IsSafeToContainMem(parentNode, childNode))
-        {
-            return;
-        }
-
-        if (IsContainableMemoryOp(childNode))
-        {
-            MakeSrcContained(parentNode, childNode);
-        }
-        else
-        {
-            MakeSrcRegOptional(parentNode, childNode);
-        }
-    }
+    void TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const;
 
 #if defined(FEATURE_HW_INTRINSICS)
     // Tries to make 'childNode' contained or regOptional in the 'parentNode'
