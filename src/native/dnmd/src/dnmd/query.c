@@ -134,6 +134,31 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     return true;
 }
 
+int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, uint32_t out_length, mduserstring_t* strings, uint32_t* offsets)
+{
+    mdcxt_t* cxt = extract_mdcxt(handle);
+    if (cxt == NULL)
+        return -1;
+
+    if (cursor == NULL)
+        return -1;
+
+    uint32_t offset = (uint32_t)*cursor;
+    size_t next_offset;
+    uint32_t read_in = 0;
+    for (uint32_t i = 0; i < out_length; ++i)
+    {
+        if (!try_get_user_string(cxt, offset, &strings[read_in], &next_offset))
+            break;
+        offsets[i] = offset;
+        read_in++;
+        offset = (uint32_t)next_offset;
+    }
+
+    *cursor = offset;
+    return read_in;
+}
+
 typedef struct _query_cxt_t
 {
     mdtable_t* table;
@@ -418,11 +443,11 @@ int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte)
+int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings)
 {
     if (out_length == 0)
         return 0;
-    assert(str != NULL && str_chars != NULL && final_byte != NULL);
+    assert(strings != NULL);
 
     query_cxt_t qcxt;
     if (!create_query_context(&c, col_idx, out_length, &qcxt))
@@ -432,13 +457,14 @@ int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t
     if (!(qcxt.col_details & mdtc_hus))
         return -1;
 
+    size_t unused;
     uint32_t offset;
     int32_t read_in = 0;
     do
     {
         if (!read_column_data(&qcxt, &offset))
             return -1;
-        if (!try_get_user_string(qcxt.table->cxt, offset, &str[read_in], &str_chars[read_in], &final_byte[read_in]))
+        if (!try_get_user_string(qcxt.table->cxt, offset, &strings[read_in], &unused))
             return -1;
         read_in++;
     } while (next_row(&qcxt));
@@ -651,11 +677,16 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     if (!md_find_row_from_cursor(begin, idx, value, &found))
         return false;
 
+    // If the table isn't sorted, then a range isn't possible.
+    mdtable_t* table = CursorTable(&begin);
+    if (!table->is_sorted)
+        return false;
+
     int32_t res;
     find_cxt_t fcxt;
     // This was already created and validated when the row was found.
     // We assume the data is still valid.
-    (void)create_find_context(CursorTable(&begin), idx, &fcxt);
+    (void)create_find_context(table, idx, &fcxt);
 
     // A valid value was found, so we are at least within the range.
     // Now find the extrema.

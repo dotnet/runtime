@@ -27,29 +27,37 @@ bool validate_strings_heap(mdcxt_t* cxt)
     return true;
 }
 
-bool try_get_user_string(mdcxt_t* cxt, size_t offset, WCHAR const** str, uint32_t* str_wchars, uint8_t* final_byte)
+bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_t* next_offset)
 {
-    assert(cxt != NULL && str != NULL && str_wchars != NULL && final_byte != NULL);
-
+    assert(cxt != NULL && str != NULL && next_offset != NULL);
     mdstream_t* h = &cxt->user_string_heap;
     if (h->size <= offset)
         return false;
 
-    uint8_t const* ptr = (uint8_t const*)(h->ptr + offset);
+    uint8_t const* begin = (uint8_t const*)(h->ptr + offset);
 
     size_t data_len = h->size - offset;
     uint32_t byte_count;
-    if (!decompress_u32(&ptr, &data_len, &byte_count))
+    if (!decompress_u32(&begin, &data_len, &byte_count))
         return false;
 
-    // II.24.2.4
-    // The count on each string is the number of bytes in the string.
-    // There is an additional terminal byte which holds a 1 or 0.
-    // The 1 signifies Unicode characters that require handling beyond
-    // that normally provided for 8-bit encoding sets.
-    *str = (WCHAR const*)ptr;
-    *str_wchars = (byte_count - 1) / sizeof(WCHAR);
-    *final_byte = ptr[byte_count - 1];
+    if (byte_count == 0)
+    {
+        memset(str, 0, sizeof(*str));
+    }
+    else
+    {
+        // II.24.2.4
+        // The count on each string is the number of bytes in the string.
+        // There is an additional terminal byte which holds a 1 or 0.
+        // The 1 signifies Unicode characters that require handling beyond
+        // that normally provided for 8-bit encoding sets.
+        str->str = (WCHAR const*)begin;
+        str->str_bytes = byte_count;
+        str->final_byte = begin[byte_count - 1];
+    }
+
+    *next_offset = &begin[byte_count] - h->ptr;
     return true;
 }
 

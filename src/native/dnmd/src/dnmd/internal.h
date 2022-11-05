@@ -132,7 +132,7 @@ bool try_get_string(mdcxt_t* cxt, size_t offset, char const** str);
 bool validate_strings_heap(mdcxt_t* cxt);
 
 // User strings heap, #US - II.24.2.4
-bool try_get_user_string(mdcxt_t* cxt, size_t offset, WCHAR const** str, uint32_t* str_wchars, uint8_t* final_byte);
+bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_t* next_offset);
 bool validate_user_string_heap(mdcxt_t* cxt);
 
 // Blob heap, #Blob - II.24.2.4

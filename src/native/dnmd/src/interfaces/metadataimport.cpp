@@ -16,10 +16,15 @@ namespace
     // Represents a singly linked list enumerator
     struct HCORENUMImpl
     {
+        // Cursors for table walking
         mdcursor_t current;
         mdcursor_t start;
         uint32_t readIn;
         uint32_t total;
+
+        // Cursor for user string heap walking
+        mduserstringcursor_t us_current;
+
         HCORENUMImpl* next;
     };
 
@@ -53,13 +58,20 @@ namespace
         return S_OK;
     }
 
+    void InitHCORENUMImpl(_Inout_ HCORENUMImpl* enumImpl, _In_ mduserstringcursor_t cursor, _In_ uint32_t count) noexcept
+    {
+        ::memset(enumImpl, 0, sizeof(*enumImpl));
+        enumImpl->total = count;
+        enumImpl->us_current = cursor;
+    }
+
     void InitHCORENUMImpl(_Inout_ HCORENUMImpl* enumImpl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept
     {
-        // Copy over cursor to new allocation
         enumImpl->current = cursor;
         enumImpl->start = cursor;
         enumImpl->readIn = 0;
         enumImpl->total = rows;
+        enumImpl->us_current = (mduserstringcursor_t)~0; // Used create an invalid cursor.
     }
 
     void DestroyHCORENUM(HCORENUM hEnum) noexcept
@@ -626,7 +638,36 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     ULONG       cMax,
     ULONG* pcEvents)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(td) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        // Create cursor for EventMap table
+        mdcursor_t eventMap;
+        uint32_t eventMapCount;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_EventMap, &eventMap, &eventMapCount))
+            return E_INVALIDARG;
+
+        // Find the entry in the EventMap table and then
+        // resolve the column to the range in the Event table.
+        mdcursor_t typedefEventMap;
+        mdcursor_t eventList;
+        uint32_t eventListCount;
+        if (!md_find_row_from_cursor(eventMap, mdtEventMap_Parent, RidFromToken(td), &typedefEventMap)
+            || !md_get_column_value_as_range(typedefEventMap, mdtEventMap_EventList, &eventList, &eventListCount))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+
+        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+        InitHCORENUMImpl(enumImpl, eventList, eventListCount);
+        *phEnum = enumImpl;
+    }
+
+    return ReadFromEnum(enumImpl, rEvents, cMax, pcEvents);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
@@ -706,7 +747,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetSigFromToken(
     PCCOR_SIGNATURE* ppvSig,
     ULONG* pcbSig)
 {
-    if (ppvSig == nullptr || pcbSig == nullptr)
+    if (TypeFromToken(mdSig) != mdtSignature || ppvSig == nullptr || pcbSig == nullptr)
         return E_INVALIDARG;
 
     mdcursor_t cursor;
@@ -768,7 +809,36 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
     ULONG       cchString,
     ULONG* pchString)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(stk) != mdtString || pchString == nullptr)
+        return E_INVALIDARG;
+
+    mduserstringcursor_t cursor = RidFromToken(stk);
+    mduserstring_t string;
+    uint32_t offset;
+    if (!md_walk_user_string_heap(_md_ptr.get(), &cursor, 1, &string, &offset))
+        return CLDB_E_INDEX_NOTFOUND;
+
+    // Strings in #US should have a trailing single byte.
+    if (string.str_bytes % sizeof(WCHAR) == 0)
+        return CLDB_E_FILE_CORRUPT;
+
+    // Set the return as soon as we know.
+    uint32_t retCharLen = (string.str_bytes - 1) / sizeof(WCHAR);
+    *pchString = retCharLen;
+
+    if (cchString > 0 && retCharLen > 0)
+    {
+        uint32_t toCopyWChar = cchString < retCharLen ? cchString : retCharLen;
+        assert(szString != nullptr);
+        memcpy(szString, string.str, toCopyWChar * sizeof(WCHAR));
+        if (cchString < retCharLen)
+        {
+            ::memset(&szString[cchString - 1], 0, sizeof(WCHAR)); // Ensure null terminator
+            return CLDB_S_TRUNCATION;
+        }
+    }
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
@@ -801,13 +871,70 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
     return EnumTokens(_md_ptr.get(), mdtid_TypeSpec, phEnum, rTypeSpecs, cMax, pcTypeSpecs);
 }
 
+namespace
+{
+    uint32_t EnumNonEmptyUserStrings(
+        _In_ mdhandle_t handle,
+        _Inout_ mduserstringcursor_t& cursor,
+        _Out_writes_opt_(cMax) mdString rStrings[],
+        _In_ ULONG cMax)
+    {
+        assert(cMax != 0);
+        mduserstring_t us[8];
+        uint32_t offsets[ARRAYSIZE(us)];
+
+        // Initialize buffer if provided.
+        if (rStrings != nullptr)
+            ::memset(rStrings, 0, cMax * sizeof(rStrings[0]));
+
+        uint32_t bulkRead;
+        uint32_t i = 0;
+        while (i < cMax)
+        {
+            bulkRead = ARRAYSIZE(us) < (cMax - i) ? ARRAYSIZE(us) : (cMax - i);
+            int32_t count = md_walk_user_string_heap(handle, &cursor, bulkRead, us, offsets);
+            if (count == 0)
+                break;
+
+            for (int32_t j = 0; j < count; ++j)
+            {
+                if (us[j].str_bytes == 0)
+                    continue;
+
+                if (rStrings != nullptr)
+                    rStrings[i] = RidToToken(offsets[j], mdtString);
+
+                i++;
+            }
+        }
+
+        return i;
+    }
+}
+
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     HCORENUM* phEnum,
     mdString    rStrings[],
     ULONG       cMax,
     ULONG* pcStrings)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        mduserstringcursor_t cursor = 0;
+        uint32_t count = EnumNonEmptyUserStrings(_md_ptr.get(), cursor, nullptr, UINT32_MAX);
+
+        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
+        cursor = 0;
+        InitHCORENUMImpl(enumImpl, cursor, count);
+        *phEnum = enumImpl;
+    }
+
+    *pcStrings = (cMax > 0)
+        ? EnumNonEmptyUserStrings(_md_ptr.get(), enumImpl->us_current, rStrings, cMax)
+        : 0;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamForMethodIndex(

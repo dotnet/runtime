@@ -109,6 +109,18 @@ bool md_cursor_next(mdcursor_t* c);
 bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c);
 bool md_cursor_to_token(mdcursor_t c, mdToken* tk);
 
+// Walk the #US heap. The initial value should be set to 0 or
+// a valid offset into the #US heap - see RidFromToken in corhdr.h.
+typedef intptr_t mduserstringcursor_t;
+
+typedef struct _mduserstring_t
+{
+    WCHAR const* str;
+    uint32_t str_bytes;
+    uint8_t final_byte;
+} mduserstring_t;
+int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, uint32_t out_length, mduserstring_t* strings, uint32_t* offsets);
+
 // Define to help debug table indexing
 //#define DEBUG_TABLE_COLUMN_LOOKUP
 
@@ -322,7 +334,7 @@ int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count);
 int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
-int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, WCHAR const** str, uint32_t* str_chars, uint8_t* final_byte);
+int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
 int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
