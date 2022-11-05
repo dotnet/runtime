@@ -95,15 +95,16 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Vector128AllAscii(Vector128<ushort> vec1)
         {
-            return Sse2.And(vec1, Vector128.Create(unchecked((ushort)~0x007F))) == Vector128<ushort>.Zero;
+            return (vec1 & Vector128.Create(unchecked((ushort)~0x007F))) == Vector128<ushort>.Zero;
         }
 
-        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, nuint length)
+        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
         {
-            Debug.Assert(length >= (nuint)Vector128<ushort>.Count);
+            Debug.Assert(length >= Vector128<ushort>.Count);
             Debug.Assert(Vector128.IsHardwareAccelerated);
 
-            nuint lengthToExamine = length - (nuint)Vector128<ushort>.Count;
+            nuint lengthU = (nuint)length;
+            nuint lengthToExamine = lengthU - (nuint)Vector128<ushort>.Count;
             nuint i = 0;
             Vector128<ushort> vec1;
             Vector128<ushort> vec2;
@@ -123,7 +124,7 @@ namespace System.Globalization
             } while (i <= lengthToExamine);
 
             // Use scalar path for trailing elements
-            return i == length || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(length - i));
+            return i == lengthU || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
 
         NON_ASCII:
             if (Vector128AllAscii(vec1) != Vector128AllAscii(vec2))
@@ -132,8 +133,8 @@ namespace System.Globalization
             }
 
             return CompareStringIgnoreCase(
-                ref Unsafe.Add(ref charA, i), (int)(length - i),
-                ref Unsafe.Add(ref charB, i), (int)(length - i)) == 0;
+                ref Unsafe.Add(ref charA, i), (int)(lengthU - i),
+                ref Unsafe.Add(ref charB, i), (int)(lengthU - i)) == 0;
 
         NOT_EQUAL:
             return false;
@@ -144,7 +145,7 @@ namespace System.Globalization
         {
             if (!Vector128.IsHardwareAccelerated || length <= Vector128<ushort>.Count)
                 return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
-            return EqualsIgnoreCase_Vector128(ref charA, ref charB, (nuint)length);
+            return EqualsIgnoreCase_Vector128(ref charA, ref charB, length);
         }
 
         internal static bool EqualsIgnoreCase_Scalar(ref char charA, ref char charB, int length)
