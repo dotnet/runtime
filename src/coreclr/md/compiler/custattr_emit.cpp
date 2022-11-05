@@ -991,7 +991,7 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
 
     // Add to hash.
     sLookup.ca = ixCa;
-    if (m_caHash.AddNoThrow(sLookup) != TRUE)
+    if (!m_caHash.AddNoThrow(sLookup))
         return E_OUTOFMEMORY;
 
     *pca = ixCa;
