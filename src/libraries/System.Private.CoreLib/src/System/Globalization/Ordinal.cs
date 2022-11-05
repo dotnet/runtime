@@ -116,7 +116,7 @@ namespace System.Globalization
                 }
                 if (!Vector128EqualsIgnoreCaseAscii(vec1.AsSByte(), vec2.AsSByte()))
                 {
-                    goto NOT_EQUAL;
+                    return false;
                 }
                 i += (nuint)Vector128<ushort>.Count;
             } while (i <= lengthToExamine);
@@ -127,22 +127,21 @@ namespace System.Globalization
         NON_ASCII:
             if (Vector128AllAscii(vec1) != Vector128AllAscii(vec2))
             {
-                goto NOT_EQUAL;
+                return false;
             }
 
             return CompareStringIgnoreCase(
                 ref Unsafe.Add(ref charA, i), (int)(lengthU - i),
                 ref Unsafe.Add(ref charB, i), (int)(lengthU - i)) == 0;
-
-        NOT_EQUAL:
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsIgnoreCase(ref char charA, ref char charB, int length)
         {
             if (!Vector128.IsHardwareAccelerated || length <= Vector128<ushort>.Count)
+            {
                 return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
+            }
             return EqualsIgnoreCase_Vector128(ref charA, ref charB, length);
         }
 
