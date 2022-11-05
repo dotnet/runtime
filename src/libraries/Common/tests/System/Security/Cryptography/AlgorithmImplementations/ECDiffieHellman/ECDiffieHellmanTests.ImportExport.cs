@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
@@ -417,24 +418,44 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Theory]
-        [InlineData("NISTP256", "1.2.840.10045.3.1.7")]
-        [InlineData("NISTP384", "1.3.132.0.34")]
-        [InlineData("NISTP521", "1.3.132.0.35")]
-        [InlineData("ecdh_P256", "1.2.840.10045.3.1.7")]
-        [InlineData("ecdh_P384", "1.3.132.0.34")]
-        [InlineData("ecdh_P521", "1.3.132.0.35")]
-        public static void OidPresentOnCurveMiscased(string curveName, string expectedOid)
+        [MemberData(nameof(NamedCurves))]
+        public static void OidPresentOnCurveMiscased(ECCurve curve)
         {
-            ECCurve curve = ECCurve.CreateFromFriendlyName(curveName);
+            ECCurve miscasedCurve = ECCurve.CreateFromFriendlyName(InvertStringCase(curve.Oid.FriendlyName));
+            Assert.NotEqual(miscasedCurve.Oid.FriendlyName, curve.Oid.FriendlyName);
+            Assert.Equal(miscasedCurve.Oid.FriendlyName, curve.Oid.FriendlyName, ignoreCase: true);
 
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
-                ecdh.GenerateKey(curve);
+                ecdh.GenerateKey(miscasedCurve);
                 ECParameters exportedParameters = ecdh.ExportParameters(false);
-                Assert.Equal(expectedOid, exportedParameters.Curve.Oid.Value);
+                Assert.Equal(curve.Oid.Value, exportedParameters.Curve.Oid.Value);
 
-                exportedParameters.Curve = curve;
+                exportedParameters.Curve = miscasedCurve;
                 ecdh.ImportParameters(exportedParameters);
+            }
+        }
+
+        public static IEnumerable<object[]> NamedCurves
+        {
+            get
+            {
+                yield return new object[] { ECCurve.NamedCurves.nistP256 };
+                yield return new object[] { ECCurve.NamedCurves.nistP384 };
+                yield return new object[] { ECCurve.NamedCurves.nistP521 };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDH_P256") };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDH_P384") };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDH_P521") };
+
+                if (ECDiffieHellmanFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160r1.Oid))
+                {
+                    yield return new object[] { ECCurve.NamedCurves.brainpoolP160r1 };
+                }
+
+                if (ECDiffieHellmanFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160t1.Oid))
+                {
+                    yield return new object[] { ECCurve.NamedCurves.brainpoolP160t1 };
+                }
             }
         }
 

@@ -249,6 +249,22 @@ namespace System.Security.Cryptography.Tests
                 }
             }
         }
+
+        internal static string InvertStringCase(string str)
+        {
+            return string.Create(str.Length, str, static (destination, str) =>
+            {
+                for (int i = 0; i < str.Length; i++)
+                {
+                    destination[i] = str[i] switch
+                    {
+                        char c and >= 'A' and <= 'Z' => char.ToLowerInvariant(c),
+                        char c and >= 'a' and <= 'z' => char.ToUpperInvariant(c),
+                        char c => c
+                    };
+                }
+            });
+        }
 #endif
     }
 }
