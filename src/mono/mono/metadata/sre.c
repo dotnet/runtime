@@ -4211,39 +4211,22 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 
 		*handle_class = mono_defaults.typehandle_class;
 	} else if (strcmp (oklass->name, "SignatureHelper") == 0) {
-		MonoReflectionSigHelper *helper = (MonoReflectionSigHelper*)obj;
-		MonoMethodSignature *sig;
-		mono_array_size_t nargs, i;
+		MONO_STATIC_POINTER_INIT (MonoMethod, get_signature)
 
-		if (helper->arguments)
-			nargs = mono_array_length_internal (helper->arguments);
-		else
-			nargs = 0;
+			get_signature = mono_class_get_method_from_name_checked (oklass, "GetSignature", 0, 0, error);
+			mono_error_assert_ok (error);
 
-		sig = mono_metadata_signature_alloc (image, nargs);
-		sig->explicit_this = helper->call_conv & 64 ? 1 : 0;
-		sig->hasthis = helper->call_conv & 32 ? 1 : 0;
+		MONO_STATIC_POINTER_INIT_END (MonoMethod, get_signature);
 
-		if (helper->unmanaged_call_conv) { /* unmanaged */
-			sig->call_convention = helper->unmanaged_call_conv - 1;
-			sig->pinvoke = TRUE;
-		} else if (helper->call_conv & 0x02) {
-			sig->call_convention = MONO_CALL_VARARG;
-		} else {
-			sig->call_convention = MONO_CALL_DEFAULT;
-		}
+		MonoArray *arr = (MonoArray*)mono_runtime_invoke_checked (get_signature, obj, NULL, error);
+		mono_error_assert_ok (error);
+		MONO_HANDLE_PIN (arr);
 
-		sig->param_count = GUINT32_TO_UINT16 (nargs);
-		/* TODO: Copy type ? */
-		sig->ret = helper->return_type->type;
-		for (i = 0; i < nargs; ++i) {
-			sig->params [i] = mono_type_array_get_and_resolve_raw (helper->arguments, i, error); /* FIXME use handles */
-			if (!is_ok (error)) {
-				image_g_free (image, sig);
-				goto return_null;
-			}
-		}
-
+		// FIXME: Can this handle type tokens ?
+		const char *rptr;
+		MonoMethodSignature *sig = mono_metadata_parse_method_signature_full (image, NULL, 0, mono_array_addr_internal (arr, const char, 0),
+																			   &rptr, error);
+		mono_error_assert_ok (error);
 		result = sig;
 		*handle_class = NULL;
 	} else if (strcmp (oklass->name, "DynamicMethod") == 0) {
