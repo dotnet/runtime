@@ -236,23 +236,25 @@ namespace System.Text.Unicode
         internal static bool Vector128OrdinalIgnoreCaseAscii(Vector128<ushort> vec1, Vector128<ushort> vec2)
         {
             // ASSUMPTION: Caller has validated that input values are ASCII.
-            Debug.Assert(AllCharsInVector128AreAscii(vec1));
-            Debug.Assert(AllCharsInVector128AreAscii(vec2));
 
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
-            Vector128<sbyte> lowerInd1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
-            Vector128<sbyte> lowerInd2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
+            Vector128<sbyte> lowIndicator1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
+            Vector128<sbyte> lowIndicator2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
-            Vector128<sbyte> combInd1 = Vector128.LessThan(Vector128.Create((sbyte)(-0x80 + 25)), lowerInd1);
-            Vector128<sbyte> combInd2 = Vector128.LessThan(Vector128.Create((sbyte)(-0x80 + 25)), lowerInd2);
+            Vector128<sbyte> combIndicator1 = 
+                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
+            Vector128<sbyte> combIndicator2 = 
+                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator2);
 
             // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
-            Vector128<sbyte> lcaseVec1 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combInd1) + vec1.AsSByte();
-            Vector128<sbyte> lcaseVec2 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combInd2) + vec2.AsSByte();
+            Vector128<sbyte> lcVec1 = 
+                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator1) + vec1.AsSByte();
+            Vector128<sbyte> lcVec2 = 
+                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator2) + vec2.AsSByte();
 
             // Compare two lowercased vectors
-            return (lcaseVec1 ^ lcaseVec2) == Vector128<sbyte>.Zero;
+            return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
         }
     }
 }
