@@ -1226,20 +1226,12 @@ namespace System.IO
                         _charPos = 0;
                         if (readToUserBuffer)
                         {
-                            n += _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
-
-                            // Why did the bytes yield no chars?
-                            Debug.Assert(n > 0);
-
+                            n = _decoder.GetChars(new ReadOnlySpan<byte>(tmpByteBuffer, 0, _byteLen), buffer.Span.Slice(charsRead), flush: false);
                             _charLen = 0;  // StreamReader's buffer is empty.
                         }
                         else
                         {
                             n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
-
-                            // Why did the bytes yield no chars?
-                            Debug.Assert(n > 0);
-
                             _charLen += n;  // Number of chars in StreamReader's buffer.
                         }
                     } while (n == 0);
