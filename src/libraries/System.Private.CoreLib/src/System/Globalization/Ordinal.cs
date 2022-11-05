@@ -127,6 +127,7 @@ namespace System.Globalization
             {
                 return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
             }
+
             return EqualsIgnoreCase_Vector128(ref charA, ref charB, length);
         }
 
