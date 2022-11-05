@@ -4916,28 +4916,50 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
     return tree;
 }
 
-/*****************************************************************************
-  Grab a temp for big offset morphing.
-  This method will grab a new temp if no temp of this "type" has been created.
-  Or it will return the same cached one if it has been created.
-*/
-unsigned Compiler::fgGetBigOffsetMorphingTemp(var_types type)
+//------------------------------------------------------------------------
+// fgGetFieldMorphingTemp: Get a local to use for field morphing.
+//
+// We will reuse locals created when morphing field addresses, as well as
+// fields with large offsets.
+//
+// Arguments:
+//    fieldNode - The field node
+//
+// Return Value:
+//    The local number.
+//
+unsigned Compiler::fgGetFieldMorphingTemp(GenTreeField* fieldNode)
 {
-    unsigned lclNum = fgBigOffsetMorphingTemps[type];
+    assert(fieldNode->IsInstance());
 
-    if (lclNum == BAD_VAR_NUM)
+    unsigned lclNum = BAD_VAR_NUM;
+
+    if (fieldNode->IsOffsetKnown() && (fieldNode->gtFldOffset == 0))
     {
-        // We haven't created a temp for this kind of type. Create one now.
-        lclNum                         = lvaGrabTemp(false DEBUGARG("Big Offset Morphing"));
-        fgBigOffsetMorphingTemps[type] = lclNum;
+        // Quirk: always use a fresh temp for zero-offset fields. This is
+        // because temp reuse can create IR where some uses will be in
+        // positions we do not support (i. e. [use...store...user]).
+        lclNum = lvaGrabTemp(true DEBUGARG("Zero offset field obj"));
     }
     else
     {
-        // We better get the right type.
-        noway_assert(lvaTable[lclNum].TypeGet() == type);
+        var_types type = genActualType(fieldNode->GetFldObj());
+        lclNum         = fgBigOffsetMorphingTemps[type];
+
+        if (lclNum == BAD_VAR_NUM)
+        {
+            // We haven't created a temp for this kind of type. Create one now.
+            lclNum                         = lvaGrabTemp(false DEBUGARG("Field obj"));
+            fgBigOffsetMorphingTemps[type] = lclNum;
+        }
+        else
+        {
+            // We better get the right type.
+            noway_assert(lvaTable[lclNum].TypeGet() == type);
+        }
     }
 
-    noway_assert(lclNum != BAD_VAR_NUM);
+    assert(lclNum != BAD_VAR_NUM);
     return lclNum;
 }
 
@@ -5115,7 +5137,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
             {
-                lclNum = fgGetBigOffsetMorphingTemp(genActualType(objRef->TypeGet()));
+                lclNum = fgGetFieldMorphingTemp(tree->AsField());
 
                 // Create the "asg" node
                 asg = gtNewTempAssign(lclNum, objRef);
