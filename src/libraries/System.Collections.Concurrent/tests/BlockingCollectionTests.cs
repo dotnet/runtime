@@ -861,6 +861,33 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<InvalidOperationException>(() => bc.Add(1));
         }
 
+        [Fact]
+        public static void Test_AddTakeWithReject_DoNotCorruptCount()
+        {
+            var secondFalse = new FalseOnSecondAddOrTake();
+            BlockingCollection<int> bc = new BlockingCollection<int>(secondFalse, 2);
+
+            Assert.True(bc.TryAdd(1));
+            Assert.Equal(1, bc.Count);
+            Assert.Throws<InvalidOperationException>(() => bc.TryAdd(1));
+            Assert.Equal(1, bc.Count);
+            Assert.True(bc.TryAdd(1));
+            Assert.Equal(2, bc.Count);
+
+            secondFalse = new FalseOnSecondAddOrTake();
+            secondFalse.Enqueue(1);
+            secondFalse.Enqueue(1);
+            bc = new BlockingCollection<int> (secondFalse, 2);
+
+            Assert.Equal(2, bc.Count);
+            int item;
+            Assert.True(bc.TryTake(out item));
+            Assert.Equal(1, bc.Count);
+            Assert.Throws<InvalidOperationException>(() => bc.TryTake(out item));
+            Assert.True(bc.TryTake(out item));
+        }
+
+
         /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
@@ -871,6 +898,7 @@ namespace System.Collections.Concurrent.Tests
             int item;
             Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryTake(out item, new TimeSpan(0, 0, 0, 1, 2147483647)) );
             Assert.Throws<ArgumentOutOfRangeException>(() =>  blockingCollection.TryTake(out item, -2) );
+            Assert.Equal(1, blockingCollection.Count);
 
             Assert.Throws<InvalidOperationException>(() =>
                 {
@@ -1293,6 +1321,29 @@ namespace System.Collections.Concurrent.Tests
             bool IProducerConsumerCollection<T>.TryAdd(T item)
             {
                 return false;
+            }
+        }
+
+        private class FalseOnSecondAddOrTake : ConcurrentQueue<int>, IProducerConsumerCollection<int>
+        {
+            private int _add;
+            private int _take;
+
+            bool IProducerConsumerCollection<int>.TryAdd(int value)
+            {
+                if (Interlocked.Increment(ref _add) == 1) return false;
+
+                Enqueue(value);
+                return true;
+
+            }
+            bool IProducerConsumerCollection<int>.TryTake(out int value)
+            {
+                value = default;
+                if (Interlocked.Increment(ref _take) == 1) return false;
+
+                _take++;
+                return TryDequeue(out value);
             }
         }
 
