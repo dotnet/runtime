@@ -1330,7 +1330,7 @@ namespace System.Collections.Concurrent.Tests
 
             bool IProducerConsumerCollection<int>.TryAdd(int value)
             {
-                if (Interlocked.Increment(ref _add) == 1) return false;
+                if (Interlocked.Increment(ref _add) == 2) return false;
 
                 Enqueue(value);
                 return true;
@@ -1339,9 +1339,8 @@ namespace System.Collections.Concurrent.Tests
             bool IProducerConsumerCollection<int>.TryTake(out int value)
             {
                 value = default;
-                if (Interlocked.Increment(ref _take) == 1) return false;
+                if (Interlocked.Increment(ref _take) == 2) return false;
 
-                _take++;
                 return TryDequeue(out value);
             }
         }
