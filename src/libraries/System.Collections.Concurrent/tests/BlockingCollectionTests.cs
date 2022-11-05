@@ -884,7 +884,9 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(bc.TryTake(out item));
             Assert.Equal(1, bc.Count);
             Assert.Throws<InvalidOperationException>(() => bc.TryTake(out item));
+            Assert.Equal(1, bc.Count);
             Assert.True(bc.TryTake(out item));
+            Assert.Equal(0, bc.Count);
         }
 
 
