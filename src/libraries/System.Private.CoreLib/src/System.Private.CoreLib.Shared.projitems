@@ -660,6 +660,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ManifestResourceInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MdImport.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberTypes.cs" />
