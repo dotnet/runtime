@@ -288,9 +288,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
 
     set(value: T): T {
         if (value === <any>0) {
-            // Don't use .set since it involves a gc write barrier, and the write barrier
-            //  is unnecessary overhead for zeroing that shows up in profiles.
-            // The write barrier is only necessary when storing a managed pointer into
+            // The expensive write barrier is only necessary when storing a managed pointer into
             //  a root because doing that changes its reachability/liveness
             const address32 = this.__buffer.get_address_32(this.__index);
             Module.HEAPU32[address32] = 0;
@@ -391,9 +389,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
 
     set(value: T): T {
         if (value === <any>0) {
-            // Don't use .set since it involves a gc write barrier, and the write barrier
-            //  is unnecessary overhead for zeroing that shows up in profiles.
-            // The write barrier is only necessary when storing a managed pointer into
+            // The expensive write barrier is only necessary when storing a managed pointer into
             //  a root because doing that changes its reachability/liveness
             Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
         } else {
