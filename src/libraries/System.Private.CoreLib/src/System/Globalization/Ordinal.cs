@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Globalization
 {
@@ -75,7 +76,78 @@ namespace System.Globalization
             return OrdinalCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Vector128EqualsIgnoreCaseAscii(Vector128<sbyte> vec1, Vector128<sbyte> vec2)
+        {
+            Debug.Assert(Vector128AllAscii(vec1));
+            Debug.Assert(Vector128AllAscii(vec2));
+
+            // Works for both 1- and 2-bytes ASCII (to potentially re-use for UTF8)
+            Vector128<sbyte> tmp1 = Vector128.Create((sbyte)0x3f) + vec1;
+            Vector128<sbyte> tmp2 = Vector128.Create((sbyte)0x3f) + vec2;
+            tmp1 = Vector128.LessThan(Vector128.Create((byte)0x99).AsSByte(), tmp1);
+            tmp2 = Vector128.LessThan(Vector128.Create((byte)0x99).AsSByte(), tmp2);
+            tmp1 = Vector128.AndNot(Vector128.Create((sbyte)0x20), tmp1);
+            tmp2 = Vector128.AndNot(Vector128.Create((sbyte)0x20), tmp2);
+            return ((tmp1 + vec1) ^ (tmp2 + vec2)) == Vector128<sbyte>.Zero;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Vector128AllAscii(Vector128<ushort> vec1)
+        {
+            return Sse2.And(vec1, Vector128.Create(unchecked((ushort)~0x007F))) == Vector128<ushort>.Zero;
+        }
+
+        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, nuint length)
+        {
+            Debug.Assert(length >= (nuint)Vector128<ushort>.Count);
+            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+            nuint lengthToExamine = length - (nuint)Vector128<ushort>.Count;
+            nuint i = 0;
+            Vector128<ushort> vec1;
+            Vector128<ushort> vec2;
+            do
+            {
+                vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                if (!Vector128AllAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+                if (!Vector128EqualsIgnoreCaseAscii(vec1.AsSByte(), vec2.AsSByte()))
+                {
+                    goto NOT_EQUAL;
+                }
+                i += (nuint)Vector128<ushort>.Count;
+            } while (i <= lengthToExamine);
+
+            // Use scalar path for trailing elements
+            return i == length || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(length - i));
+
+        NON_ASCII:
+            if (Vector128AllAscii(vec1) != Vector128AllAscii(vec2))
+            {
+                goto NOT_EQUAL;
+            }
+
+            return CompareStringIgnoreCase(
+                ref Unsafe.Add(ref charA, i), (int)(length - i),
+                ref Unsafe.Add(ref charB, i), (int)(length - i)) == 0;
+
+        NOT_EQUAL:
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsIgnoreCase(ref char charA, ref char charB, int length)
+        {
+            if (!Vector128.IsHardwareAccelerated || length <= Vector128<ushort>.Count)
+                return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
+            return EqualsIgnoreCase_Vector128(ref charA, ref charB, (nuint)length);
+        }
+
+        internal static bool EqualsIgnoreCase_Scalar(ref char charA, ref char charB, int length)
         {
             IntPtr byteOffset = IntPtr.Zero;
 
