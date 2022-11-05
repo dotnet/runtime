@@ -898,7 +898,6 @@ namespace System.Collections.Concurrent.Tests
             int item;
             Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryTake(out item, new TimeSpan(0, 0, 0, 1, 2147483647)) );
             Assert.Throws<ArgumentOutOfRangeException>(() =>  blockingCollection.TryTake(out item, -2) );
-            Assert.Equal(1, blockingCollection.Count);
 
             Assert.Throws<InvalidOperationException>(() =>
                 {
