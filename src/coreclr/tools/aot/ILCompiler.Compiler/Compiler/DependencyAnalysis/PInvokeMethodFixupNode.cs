@@ -16,6 +16,11 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class PInvokeMethodFixupNode : ObjectNode, ISymbolDefinitionNode
     {
+        private const int CharSetMask = 0x7;
+        private const int IsObjectiveCMessageSendMask = 0x8;
+        private const int ObjectiveCMessageSendFunctionMask = 0x70;
+        private const int ObjectiveCMessageSendFunctionShift = 4;
+
         private readonly PInvokeMethodData _pInvokeMethodData;
 
         public PInvokeMethodFixupNode(PInvokeMethodData pInvokeMethodData)
@@ -73,7 +78,15 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_pInvokeMethodData.ModuleData));
 
-            builder.EmitInt((int)_pInvokeMethodData.CharSetMangling);
+            int flags = (int)_pInvokeMethodData.CharSetMangling & CharSetMask;
+
+            if (_pInvokeMethodData.ObjectiveCMessageSendFunction.HasValue)
+            {
+                flags |= IsObjectiveCMessageSendMask;
+                flags |= (_pInvokeMethodData.ObjectiveCMessageSendFunction.Value << ObjectiveCMessageSendFunctionShift) & ObjectiveCMessageSendFunctionMask;
+            }
+
+            builder.EmitInt(flags);
 
             return builder.ToObjectData();
         }
@@ -91,6 +104,7 @@ namespace ILCompiler.DependencyAnalysis
         public readonly PInvokeModuleData ModuleData;
         public readonly string EntryPointName;
         public readonly CharSet CharSetMangling;
+        public readonly int? ObjectiveCMessageSendFunction;
 
         public PInvokeMethodData(PInvokeLazyFixupField pInvokeLazyFixupField)
         {
@@ -133,6 +147,8 @@ namespace ILCompiler.DependencyAnalysis
                 charSetMangling = isAnsi ? CharSet.Ansi : CharSet.Unicode;
             }
             CharSetMangling = charSetMangling;
+
+            ObjectiveCMessageSendFunction = metadata.Flags.ObjectiveCMsgSendFunction;
         }
 
         public bool Equals(PInvokeMethodData other)

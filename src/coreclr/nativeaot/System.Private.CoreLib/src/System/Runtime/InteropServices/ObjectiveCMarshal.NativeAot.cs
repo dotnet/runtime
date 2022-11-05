@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             MessageSendFunction msgSendFunction,
             IntPtr func)
         {
-            throw new NotImplementedException();
+            return Internal.Runtime.CompilerHelpers.InteropHelpers.TrySetGlobalMessageSendCallback(msgSendFunction, func);
         }
 
         private static bool TryInitializeReferenceTracker(

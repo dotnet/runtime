@@ -10,6 +10,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
@@ -245,6 +246,19 @@ namespace Internal.Runtime.CompilerHelpers
             return Marshal.PtrToStringAnsi((IntPtr)buffer, (int)Marshal.SysStringByteLen((IntPtr)buffer));
         }
 
+#if FEATURE_OBJCMARSHAL
+#pragma warning disable CA1416
+        private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret + 1];
+
+        internal static bool TrySetGlobalMessageSendCallback(
+            ObjectiveCMarshal.MessageSendFunction msgSendFunction,
+            IntPtr func)
+        {
+            return Interlocked.CompareExchange(ref s_ObjcMessageSendFunctions[(int)msgSendFunction], func, IntPtr.Zero) == IntPtr.Zero;
+        }
+#pragma warning restore CA1416
+#endif
+
         internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)
         {
             if (pCell->Target != IntPtr.Zero)
@@ -342,6 +356,18 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
             IntPtr pTarget;
+
+#if FEATURE_OBJCMARSHAL
+            if (pCell->IsObjectiveCMessageSend)
+            {
+                pTarget = s_ObjcMessageSendFunctions[pCell->ObjectiveCMessageSendFunction];
+                if (pTarget != IntPtr.Zero)
+                {
+                    pCell->Target = pTarget;
+                    return;
+                }
+            }
+#endif
 
 #if TARGET_WINDOWS
             CharSet charSetMangling = pCell->CharSetMangling;
@@ -630,10 +656,19 @@ namespace Internal.Runtime.CompilerHelpers
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct MethodFixupCell
         {
+            private const int CharSetMask = 0x7;
+            private const int IsObjectiveCMessageSendMask = 0x8;
+            private const int ObjectiveCMessageSendFunctionMask = 0x70;
+            private const int ObjectiveCMessageSendFunctionShift = 4;
+
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
-            public CharSet CharSetMangling;
+            private int Flags;
+
+            public CharSet CharSetMangling => (CharSet)(Flags & CharSetMask);
+            public bool IsObjectiveCMessageSend => (Flags & IsObjectiveCMessageSendMask) != 0;
+            public int ObjectiveCMessageSendFunction => (Flags & ObjectiveCMessageSendFunctionMask) >> ObjectiveCMessageSendFunctionShift;
         }
 
         internal unsafe struct CustomMarshallerKey : IEquatable<CustomMarshallerKey>
