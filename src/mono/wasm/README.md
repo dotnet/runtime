@@ -175,6 +175,10 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
+## Wasm App Host
+
+[Use dotnet run to run wasm applications](host/README.md)
+
 ## Templates
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.

@@ -555,6 +555,10 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
             config.diagnosticTracing = true;
         }
         runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
+
+        runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
+            && globalThis.performance
+            && typeof globalThis.performance.measure === "function";
     }
 }
 
