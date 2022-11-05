@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -469,8 +471,9 @@ namespace System.IO
         private void CompressBuffer(int n)
         {
             Debug.Assert(_byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
-            _ = _byteBuffer.Length; // allow JIT to prove object is not null
-            new ReadOnlySpan<byte>(_byteBuffer, n, _byteLen - n).CopyTo(_byteBuffer);
+            byte[] byteBuffer = _byteBuffer;
+            _ = byteBuffer.Length; // allow JIT to prove object is not null
+            new ReadOnlySpan<byte>(byteBuffer, n, _byteLen - n).CopyTo(byteBuffer);
             _byteLen -= n;
         }
 
@@ -478,20 +481,22 @@ namespace System.IO
         {
             Debug.Assert(_byteLen >= 2, "Caller should've validated that at least 2 bytes were available.");
 
+            byte[] byteBuffer = _byteBuffer;
             _detectEncoding = false;
             bool changedEncoding = false;
-            if (_byteBuffer[0] == 0xFE && _byteBuffer[1] == 0xFF)
+
+            ushort firstTwoBytes = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
+            if (firstTwoBytes == 0xFFFE)
             {
                 // Big Endian Unicode
-
                 _encoding = Encoding.BigEndianUnicode;
                 CompressBuffer(2);
                 changedEncoding = true;
             }
-            else if (_byteBuffer[0] == 0xFF && _byteBuffer[1] == 0xFE)
+            else if (firstTwoBytes == 0xFEFF)
             {
                 // Little Endian Unicode, or possibly little endian UTF32
-                if (_byteLen < 4 || _byteBuffer[2] != 0 || _byteBuffer[3] != 0)
+                if (_byteLen < 4 || byteBuffer[2] != 0 || byteBuffer[3] != 0)
                 {
                     _encoding = Encoding.Unicode;
                     CompressBuffer(2);
@@ -504,15 +509,14 @@ namespace System.IO
                     changedEncoding = true;
                 }
             }
-            else if (_byteLen >= 3 && _byteBuffer[0] == 0xEF && _byteBuffer[1] == 0xBB && _byteBuffer[2] == 0xBF)
+            else if (_byteLen >= 3 && firstTwoBytes == 0xBBEF && byteBuffer[2] == 0xBF)
             {
                 // UTF-8
                 _encoding = Encoding.UTF8;
                 CompressBuffer(3);
                 changedEncoding = true;
             }
-            else if (_byteLen >= 4 && _byteBuffer[0] == 0 && _byteBuffer[1] == 0 &&
-                _byteBuffer[2] == 0xFE && _byteBuffer[3] == 0xFF)
+            else if (_byteLen >= 4 && firstTwoBytes == 0 && byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF)
             {
                 // Big Endian UTF32
                 _encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
@@ -529,7 +533,7 @@ namespace System.IO
             if (changedEncoding)
             {
                 _decoder = _encoding.GetDecoder();
-                int newMaxCharsPerBuffer = _encoding.GetMaxCharCount(_byteBuffer.Length);
+                int newMaxCharsPerBuffer = _encoding.GetMaxCharCount(byteBuffer.Length);
                 if (newMaxCharsPerBuffer > _maxCharsPerBuffer)
                 {
                     _charBuffer = new char[newMaxCharsPerBuffer];
@@ -811,7 +815,7 @@ namespace System.IO
                 }
             }
 
-            StringBuilder? sb = null;
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
             do
             {
                 // Look for '\r' or \'n'.
@@ -822,14 +826,14 @@ namespace System.IO
                 if (idxOfNewline >= 0)
                 {
                     string retVal;
-                    if (sb is null)
+                    if (vsb.Length == 0)
                     {
                         retVal = new string(charBufferSpan.Slice(0, idxOfNewline));
                     }
                     else
                     {
-                        sb.Append(charBufferSpan.Slice(0, idxOfNewline));
-                        retVal = StringBuilderCache.GetStringAndRelease(sb);
+                        retVal = string.Concat(vsb.AsSpan(), charBufferSpan.Slice(0, idxOfNewline));
+                        vsb.Dispose();
                     }
 
                     char matchedChar = charBufferSpan[idxOfNewline];
@@ -853,11 +857,10 @@ namespace System.IO
                 // We didn't find '\r' or '\n'. Add it to the StringBuilder
                 // and loop until we reach a newline or EOF.
 
-                sb ??= StringBuilderCache.Acquire(charBufferSpan.Length + 80);
-                sb.Append(charBufferSpan);
+                vsb.Append(charBufferSpan);
             } while (ReadBuffer() > 0);
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return vsb.ToString();
         }
 
         public override Task<string?> ReadLineAsync() =>
@@ -917,38 +920,40 @@ namespace System.IO
                 return null;
             }
 
-            StringBuilder? sb = null;
+            string retVal;
+            char[]? arrayPoolBuffer = null;
+            int arrayPoolBufferPos = 0;
+
             do
             {
-                char[] tmpCharBuffer = _charBuffer;
-                int tmpCharLen = _charLen;
-                int tmpCharPos = _charPos;
+                char[] charBuffer = _charBuffer;
+                int charLen = _charLen;
+                int charPos = _charPos;
 
                 // Look for '\r' or \'n'.
-                Debug.Assert(tmpCharPos < tmpCharLen, "ReadBuffer returned > 0 but didn't bump _charLen?");
+                Debug.Assert(charPos < charLen, "ReadBuffer returned > 0 but didn't bump _charLen?");
 
-                int idxOfNewline = tmpCharBuffer.AsSpan(tmpCharPos, tmpCharLen - tmpCharPos).IndexOfAny('\r', '\n');
+                int idxOfNewline = charBuffer.AsSpan(charPos, charLen - charPos).IndexOfAny('\r', '\n');
                 if (idxOfNewline >= 0)
                 {
-                    string retVal;
-                    if (sb is null)
+                    if (arrayPoolBuffer is null)
                     {
-                        retVal = new string(tmpCharBuffer, tmpCharPos, idxOfNewline);
+                        retVal = new string(charBuffer, charPos, idxOfNewline);
                     }
                     else
                     {
-                        sb.Append(tmpCharBuffer, tmpCharPos, idxOfNewline);
-                        retVal = StringBuilderCache.GetStringAndRelease(sb);
+                        retVal = string.Concat(arrayPoolBuffer.AsSpan(0, arrayPoolBufferPos), charBuffer.AsSpan(charPos, idxOfNewline));
+                        ArrayPool<char>.Shared.Return(arrayPoolBuffer);
                     }
 
-                    tmpCharPos += idxOfNewline;
-                    char matchedChar = tmpCharBuffer[tmpCharPos++];
-                    _charPos = tmpCharPos;
+                    charPos += idxOfNewline;
+                    char matchedChar = charBuffer[charPos++];
+                    _charPos = charPos;
 
                     // If we found '\r', consume any immediately following '\n'.
                     if (matchedChar == '\r')
                     {
-                        if (tmpCharPos < tmpCharLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0)
+                        if (charPos < charLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0)
                         {
                             if (_charBuffer[_charPos] == '\n')
                             {
@@ -960,14 +965,35 @@ namespace System.IO
                     return retVal;
                 }
 
-                // We didn't find '\r' or '\n'. Add it to the StringBuilder
+                // We didn't find '\r' or '\n'. Add the read data to the pooled buffer
                 // and loop until we reach a newline or EOF.
+                if (arrayPoolBuffer is null)
+                {
+                    arrayPoolBuffer = ArrayPool<char>.Shared.Rent(charLen - charPos + 80);
+                }
+                else if ((arrayPoolBuffer.Length - arrayPoolBufferPos) < (charLen - charPos))
+                {
+                    char[] newBuffer = ArrayPool<char>.Shared.Rent(checked(arrayPoolBufferPos + charLen - charPos));
+                    arrayPoolBuffer.AsSpan(0, arrayPoolBufferPos).CopyTo(newBuffer);
+                    ArrayPool<char>.Shared.Return(arrayPoolBuffer);
+                    arrayPoolBuffer = newBuffer;
+                }
+                charBuffer.AsSpan(charPos, charLen - charPos).CopyTo(arrayPoolBuffer.AsSpan(arrayPoolBufferPos));
+                arrayPoolBufferPos += charLen - charPos;
+            }
+            while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
 
-                sb ??= StringBuilderCache.Acquire(tmpCharLen - tmpCharPos + 80);
-                sb.Append(tmpCharBuffer, tmpCharPos, tmpCharLen - tmpCharPos);
-            } while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
+            if (arrayPoolBuffer is not null)
+            {
+                retVal = new string(arrayPoolBuffer, 0, arrayPoolBufferPos);
+                ArrayPool<char>.Shared.Return(arrayPoolBuffer);
+            }
+            else
+            {
+                retVal = string.Empty;
+            }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return retVal;
         }
 
         public override Task<string> ReadToEndAsync() => ReadToEndAsync(default);
