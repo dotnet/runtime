@@ -398,14 +398,13 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Hash128 AvalancheHash(ulong accLow, ulong accHigh, uint length, ulong seed)
         {
-            Hash128 h128;
-            h128.Low64 = accLow + accHigh;
-            h128.High64 = (accLow * Prime64_1)
+            ulong h128Low = accLow + accHigh;
+            ulong h128High = (accLow * Prime64_1)
                           + (accHigh * Prime64_4)
                           + ((length - seed) * Prime64_2);
-            h128.Low64 = Avalanche(h128.Low64);
-            h128.High64 = 0ul - Avalanche(h128.High64);
-            return h128;
+            h128Low = Avalanche(h128Low);
+            h128High = 0ul - Avalanche(h128High);
+            return new Hash128(h128Low, h128High);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
