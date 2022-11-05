@@ -707,7 +707,6 @@ namespace System.Collections.Concurrent
             if (waitForSemaphoreWasSuccessful)
             {
                 bool removeSucceeded = false;
-                bool removeFaulted = true;
                 try
                 {
                     //The token may have been canceled before an item arrived, so we need a check after the wait has completed.
@@ -716,7 +715,6 @@ namespace System.Collections.Concurrent
 
                     //If an item was successfully removed from the underlying collection.
                     removeSucceeded = _collection.TryTake(out item);
-                    removeFaulted = false;
                     if (!removeSucceeded)
                     {
                         // Check if the collection is empty which means that the collection was modified outside BlockingCollection
@@ -735,7 +733,7 @@ namespace System.Collections.Concurrent
                             _freeNodes.Release();
                         }
                     }
-                    else if (removeFaulted ||!removeSucceeded && !removeFaulted)
+                    else
                     {
                         _occupiedNodes.Release();
                     }
