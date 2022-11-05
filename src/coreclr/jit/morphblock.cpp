@@ -813,9 +813,12 @@ void MorphCopyBlockHelper::TrySpecialCases()
         // associate multiple SSA definitions (SSA numbers) with one store.
         m_dstVarDsc->lvIsMultiRegRet = true;
 
-        JITDUMP("Not morphing a multireg node return\n");
-        m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
-        m_result                 = m_asg;
+        if (m_src->GetMultiRegCount(m_comp) == m_dstVarDsc->lvFieldCnt)
+        {
+            JITDUMP("Not morphing a multireg node return\n");
+            m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
+            m_result                 = m_asg;
+        }
     }
     else if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
     {
