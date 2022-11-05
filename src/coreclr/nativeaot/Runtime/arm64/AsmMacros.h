@@ -107,6 +107,8 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN g_ephemeral_low
     EXTERN g_ephemeral_high
     EXTERN g_card_table
+    EXTERN g_card_bundle_table
+    EXTERN g_write_watch_table
 
 
 ;; -----------------------------------------------------------------------------
