@@ -104,10 +104,15 @@ namespace Internal.TypeSystem
         // MethodImportAttributes is limited to `short`. This enum is based on int
         // and we have 16 spare bytes.
         PreserveSig = 0x10000,
+        IsObjCMsgSend = 0x20000,
+        // 0x1C0000, room for the ObjectiveCMarshal.MessageSendFunction enum
+        ObjCMsgSendMask = 0x7 << PInvokeFlags.ObjCMsgSendShift,
     }
 
     public struct PInvokeFlags : IEquatable<PInvokeFlags>, IComparable<PInvokeFlags>
     {
+        internal const int ObjCMsgSendShift = 18;
+
         private PInvokeAttributes _attributes;
         public PInvokeAttributes Attributes
         {
@@ -300,6 +305,27 @@ namespace Internal.TypeSystem
                 {
                     _attributes &= ~PInvokeAttributes.PreserveSig;
                 }
+            }
+        }
+
+        public bool IsObjCMsgSend
+        {
+            get
+            {
+                return (_attributes & PInvokeAttributes.IsObjCMsgSend) != 0;
+            }
+        }
+
+        public int? ObjectiveCMsgSendFunction
+        {
+            get
+            {
+                if ((_attributes & PInvokeAttributes.IsObjCMsgSend) == 0)
+                {
+                    return null;
+                }
+
+                return (int)(_attributes & PInvokeAttributes.ObjCMsgSendMask) >> ObjCMsgSendShift;
             }
         }
 
