@@ -495,7 +495,6 @@ namespace System.Collections.Concurrent
                         _freeNodes?.Release();
                         throw;
                     }
-
                     if (addingSucceeded)
                     {
                         //After adding an element to the underlying storage, signal to the consumers
