@@ -45,6 +45,7 @@
 #include "daccess.h"
 
 #include "GCMemoryHelpers.h"
+#include "interoplibinterface.h"
 
 #include "holder.h"
 #include "volatile.h"
@@ -682,13 +683,25 @@ void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 
 void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (!is_concurrent)
+    {
+        ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 // EE can perform post stack scanning action, while the user threads are still suspended
-void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* /*sc*/)
+void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* sc)
 {
     // Invoke any registered callouts for the end of the mark phase.
     RestrictedCallouts::InvokeGcCallouts(GCRC_AfterMarkPhase, condemned);
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+    {
+        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 void GCToEEInterface::GcDone(int condemned)
@@ -699,6 +712,11 @@ void GCToEEInterface::GcDone(int condemned)
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference(pObject, &isReferenced))
+        return isReferenced;
+#endif // FEATURE_OBJCMARSHAL
     return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObject);
 }
 
@@ -1153,6 +1171,14 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (obj->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue(obj);
+        return false;
+    }
+#endif
+
     if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
         return false;
 

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 
@@ -11,6 +11,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
     public static unsafe partial class ObjectiveCMarshal
     {
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
+        private static int s_initialized;
+        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
+        private static IntPtr s_IsTrackedReferenceCallback;
+        private static IntPtr s_OnEnteredFinalizerQueueCallback;
 
         [ThreadStatic]
         private static Exception? t_pendingExceptionObject;
@@ -51,12 +55,55 @@ namespace System.Runtime.InteropServices.ObjectiveC
             }
         }
 
+        [RuntimeExport("ObjectiveCMarshalTryGetTaggedMemory")]
+        static bool TryGetTaggedMemory(IntPtr pObj, IntPtr* tagged)
+        {
+            // We are paused in the GC, so this is safe.
+            object obj = Unsafe.AsRef<object>((void*)&pObj);
+
+            if (!s_objects.TryGetValue(obj, out ObjcTrackingInformation? info))
+            {
+                return false;
+            }
+
+            *tagged = info._memory;
+            return true;
+        }
+
+        [RuntimeExport("ObjectiveCMarshalGetIsTrackedReferenceCallback")]
+        static IntPtr GetIsTrackedReferenceCallback()
+        {
+            return s_IsTrackedReferenceCallback;
+        }
+
+        [RuntimeExport("ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback")]
+        static IntPtr GetOnEnteredFinalizerQueueCallback()
+        {
+            return s_OnEnteredFinalizerQueueCallback;
+        }
+
         private static bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
         {
-            throw new NotImplementedException();
+            if (Interlocked.CompareExchange(ref s_initialized, 1, 0) != 0)
+            {
+                return false;
+            }
+
+            if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
+            {
+                // We failed to allocate unmanaged memory, so no state has been changed.
+                // Reset s_initialized so initialization can be attempted again.
+                s_initialized = 0;
+                throw new OutOfMemoryException();
+            }
+
+            s_IsTrackedReferenceCallback = (IntPtr)isReferencedCallback;
+            s_OnEnteredFinalizerQueueCallback = (IntPtr)trackedObjectEnteredFinalization;
+
+            return true;
         }
 
         private static IntPtr CreateReferenceTrackingHandleInternal(
@@ -64,7 +111,74 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
-            throw new NotImplementedException();
+            if (s_initialized == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
+            }
+
+            if (!obj.GetEETypePtr().IsTrackedReferenceWithFinalizer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
+            }
+
+            var trackerInfo = s_objects.GetValue(obj, static o => new ObjcTrackingInformation());
+            trackerInfo.EnsureInitialized(obj);
+            trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
+            return RuntimeImports.RhHandleAllocRefCounted(obj);
+        }
+
+        class ObjcTrackingInformation
+        {
+            const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+
+            internal IntPtr _memory;
+            IntPtr _longWeakHandle;
+
+            public ObjcTrackingInformation()
+            {
+                _memory = (IntPtr)NativeMemory.AllocZeroed(TAGGED_MEMORY_SIZE_IN_POINTERS * (nuint)IntPtr.Size);
+            }
+
+            public void GetTaggedMemory(out int memInSizeT, out IntPtr mem)
+            {
+                memInSizeT = TAGGED_MEMORY_SIZE_IN_POINTERS;
+                mem = _memory;
+            }
+
+            public void EnsureInitialized(object o)
+            {
+                // RuntimeImports.RhHandleAlloc
+                if (_longWeakHandle != IntPtr.Zero)
+                {
+                    return;
+                }
+
+                IntPtr newHandle = RuntimeImports.RhHandleAlloc(o, GCHandleType.WeakTrackResurrection);
+                if (Interlocked.CompareExchange(ref _longWeakHandle, newHandle, IntPtr.Zero) != IntPtr.Zero)
+                {
+                    RuntimeImports.RhHandleFree(newHandle);
+                }
+            }
+
+            ~ObjcTrackingInformation()
+            {
+                if (_longWeakHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(_longWeakHandle) != null)
+                {
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
+                if (_memory != IntPtr.Zero)
+                {
+                    NativeMemory.Free((void*)_memory);
+                    _memory = IntPtr.Zero;
+                }
+                if (_longWeakHandle != IntPtr.Zero)
+                {
+                    RuntimeImports.RhHandleFree(_longWeakHandle);
+                    _longWeakHandle = IntPtr.Zero;
+                }
+            }
         }
     }
 }

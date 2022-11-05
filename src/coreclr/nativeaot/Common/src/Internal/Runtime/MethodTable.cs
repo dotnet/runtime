@@ -791,6 +791,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsTrackedReferenceWithFinalizer
+        {
+            get
+            {
+                return (ExtendedFlags & (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag) != 0;
+            }
+        }
+
         internal uint ValueTypeFieldPadding
         {
             get
