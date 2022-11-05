@@ -79,10 +79,8 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Vector128EqualsIgnoreCaseAscii(Vector128<sbyte> vec1, Vector128<sbyte> vec2)
         {
-            Debug.Assert(Vector128AllAscii(vec1));
-            Debug.Assert(Vector128AllAscii(vec2));
-
-            // Works for both 1- and 2-bytes ASCII (to potentially re-use for UTF8)
+            Debug.Assert(Vector128AllAscii(vec1.AsUInt16()));
+            Debug.Assert(Vector128AllAscii(vec2.AsUInt16()));
             Vector128<sbyte> tmp1 = Vector128.Create((sbyte)0x3f) + vec1;
             Vector128<sbyte> tmp2 = Vector128.Create((sbyte)0x3f) + vec2;
             tmp1 = Vector128.LessThan(Vector128.Create((byte)0x99).AsSByte(), tmp1);
