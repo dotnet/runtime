@@ -30,12 +30,38 @@ namespace CodeGenTests
             return value % 1;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Int32_RemainderByNegativeOne()
+        {
+            // X64:      call CORINFO
+            // X64-NEXT: xor [[REG0:[a-z]+]], [[REG0]]
+
+            // ARM64:      bl CORINFO
+            // ARM64-NEXT: mov [[REG0:[a-z0-9]+]], wzr
+            return _fieldValue % -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Int32_RemainderByNegativeOneWithValue(int value)
+        {
+            // X64: xor [[REG0:[a-z]+]], [[REG0]]
+
+            // ARM64: mov [[REG0:[a-z0-9]+]], wzr
+            return value % -1;
+        }
+
         static int Main()
         {
             if (Int32_RemainderByOne() != 0)
                 return 0;
 
             if (Int32_RemainderByOneWithValue(-123) != 0)
+                return 0;
+
+            if (Int32_RemainderByNegativeOne() != 0)
+                return 0;
+
+            if (Int32_RemainderByNegativeOneWithValue(-123) != 0)
                 return 0;
 
             return 100;
