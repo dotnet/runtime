@@ -318,10 +318,6 @@ HANDLES(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken, gint32, 3, (Mon
 HANDLES(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex, guint32, 2, (MonoReflectionModuleBuilder, MonoString))
 HANDLES(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type, void, 2, (MonoReflectionModuleBuilder, MonoReflectionType))
 
-ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
-HANDLES(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_field, MonoArray, 1, (MonoReflectionSigHelper))
-HANDLES(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local, MonoArray, 1, (MonoReflectionSigHelper))
-
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
 HANDLES(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class, MonoReflectionType, 1, (MonoReflectionTypeBuilder))
 
