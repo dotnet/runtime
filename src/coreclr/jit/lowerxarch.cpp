@@ -752,6 +752,12 @@ GenTree* Lowering::TryLowerCastOfSimpleOp(GenTreeCast* node)
     var_types castToType = node->CastToType();
     var_types srcType    = castOp->TypeGet();
 
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (node->gtFlags & GTF_UNSIGNED)
+    {
+        srcType = varTypeToUnsigned(srcType);
+    }
+
     assert(castOp->OperIsSimple());
 
     if (castOp->OperMayOverflow() && castOp->gtOverflow())
@@ -761,6 +767,9 @@ GenTree* Lowering::TryLowerCastOfSimpleOp(GenTreeCast* node)
         return nullptr;
 
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
+        return nullptr;
+
+    if (varTypeIsUnsigned(castToType) && !varTypeIsUnsigned(srcType))
         return nullptr;
 
     if (castOp->OperIsArithmetic())
