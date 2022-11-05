@@ -811,7 +811,14 @@ namespace System.Reflection.Emit
         {
             // GetMethodSigHelper expects a ModuleBuilder or null, and module might be
             // a normal module when using dynamic methods.
-            SignatureHelper helper = SignatureHelper.GetMethodSigHelper(module as ModuleBuilder, 0, unmanagedCallConv, returnType, parameterTypes);
+            SignatureHelper helper = SignatureHelper.GetMethodSigHelper(module as ModuleBuilder, unmanagedCallConv, returnType);
+            if (parameterTypes != null)
+            {
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    helper.AddArgument(parameterTypes[i]);
+                }
+            }
             Emit(opcode, helper);
         }
 
@@ -820,7 +827,14 @@ namespace System.Reflection.Emit
             if (optionalParameterTypes != null)
                 throw new NotImplementedException();
 
-            SignatureHelper helper = SignatureHelper.GetMethodSigHelper(module as ModuleBuilder, callingConvention, 0, returnType, parameterTypes);
+            SignatureHelper helper = SignatureHelper.GetMethodSigHelper(module as ModuleBuilder, callingConvention, returnType);
+            if (parameterTypes != null)
+            {
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    helper.AddArgument(parameterTypes[i]);
+                }
+            }
             Emit(opcode, helper);
         }
 

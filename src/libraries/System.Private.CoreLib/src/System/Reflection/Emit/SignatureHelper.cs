@@ -345,9 +345,12 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument is TypeBuilder)
             {
-                TypeBuilder clsBuilder = (TypeBuilder)clsArgument;
                 int tkType;
 
+#if MONO
+                tkType = m_module!.GetTypeToken(clsArgument);
+#else
+                TypeBuilder clsBuilder = (TypeBuilder)clsArgument;
                 if (clsBuilder.Module.Equals(m_module))
                 {
                     tkType = clsBuilder.TypeToken;
@@ -356,6 +359,7 @@ namespace System.Reflection.Emit
                 {
                     tkType = m_module!.GetTypeToken(clsArgument);
                 }
+#endif
 
                 if (clsArgument.IsValueType)
                 {
@@ -368,9 +372,12 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument is EnumBuilder)
             {
-                TypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
                 int tkType;
 
+#if MONO
+                tkType = m_module!.GetTypeToken(clsArgument);
+#else
+                TypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
                 if (clsBuilder.Module.Equals(m_module))
                 {
                     tkType = clsBuilder.TypeToken;
@@ -379,6 +386,7 @@ namespace System.Reflection.Emit
                 {
                     tkType = m_module!.GetTypeToken(clsArgument);
                 }
+#endif
 
                 if (clsArgument.IsValueType)
                 {
@@ -728,6 +736,7 @@ namespace System.Reflection.Emit
             return temp;
         }
 
+#if CORECLR
         internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             IncrementArgCounts();
@@ -782,6 +791,7 @@ namespace System.Reflection.Emit
 
             AddOneArgTypeHelper(clsArgument);
         }
+#endif
 
         #endregion
 

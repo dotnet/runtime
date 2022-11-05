@@ -536,21 +536,6 @@ namespace System.Reflection.Emit
             return GetToken(str);
         }
 
-        internal static int GetTypeToken(Type type)
-        {
-            ArgumentNullException.ThrowIfNull(type);
-            if (type.IsByRef)
-                throw new ArgumentException("type can't be a byref type", nameof(type));
-            return type.MetadataToken;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Reflection.Emit is not subject to trimming")]
-        internal int GetTypeToken(string name)
-        {
-            return GetTypeToken(GetType(name)!);
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int getUSIndex(ModuleBuilder mb, string str);
 
@@ -571,6 +556,11 @@ namespace System.Reflection.Emit
             }
 
             return result;
+        }
+
+        internal int GetTypeToken(Type type)
+        {
+            return GetToken(type);
         }
 
         private static int typeref_tokengen = 0x01ffffff;
