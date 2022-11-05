@@ -1373,7 +1373,7 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartInfo info = new ProcessStartInfo
             {
-                UseShellExecute = true,
+                UseShellExecute = false,
                 LoadUserProfile = true,
                 UseCredentialsForNetworkingOnly = true,
                 FileName = "notepad.exe",
