@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text;
@@ -596,6 +597,25 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return marshaller;
+        }
+
+        [ThreadStatic]
+        private static Exception? s_pendingExceptionObject;
+
+        [StackTraceHidden]
+        internal static void ThrowPendingExceptionObject()
+        {
+            Exception? ex = s_pendingExceptionObject;
+            if (ex != null)
+            {
+                s_pendingExceptionObject = null;
+                ExceptionDispatchInfo.Throw(ex);
+            }
+        }
+
+        internal static void SetPendingExceptionObject(Exception? exception)
+        {
+            s_pendingExceptionObject = exception;
         }
 
         [StructLayout(LayoutKind.Sequential)]

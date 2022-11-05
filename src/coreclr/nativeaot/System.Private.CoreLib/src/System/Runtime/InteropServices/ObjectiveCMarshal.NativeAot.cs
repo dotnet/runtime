@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendPendingException(Exception? exception)
         {
-            throw new NotImplementedException();
+            Internal.Runtime.CompilerHelpers.InteropHelpers.SetPendingExceptionObject(exception);
         }
 
         private static bool TrySetGlobalMessageSendCallback(
