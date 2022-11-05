@@ -175,7 +175,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
