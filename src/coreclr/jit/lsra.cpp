@@ -2818,7 +2818,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
                                (assignedInterval->physReg == foundReg);
             unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-            if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
+            if (compiler->opts.OptimizationEnabled() && regSelector->isMatchingConstant())
             {
                 assert(assignedInterval->isConstant);
                 refPosition->treeNode->SetReuseRegVal();
@@ -11971,7 +11971,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     else
     {
         // Set the 'matchingConstants' set.
-        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
+        if (linearScan->compiler->opts.OptimizationEnabled() && currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
         {
             matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
         }
