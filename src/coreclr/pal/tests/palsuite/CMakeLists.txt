@@ -169,7 +169,6 @@ add_executable_clr(paltests
   c_runtime/malloc/test2/test2.cpp
   c_runtime/memchr/test1/test1.cpp
   c_runtime/memcmp/test1/test1.cpp
-  c_runtime/memcpy/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
   c_runtime/modf/test1/test1.cpp

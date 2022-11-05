@@ -164,7 +164,7 @@ fi
         ]]>
       </CrossgenBashScript>
 
-      <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(CrossgenBashScript)</BashCLRTestPreCommands>
+      <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(CrossgenBashScript)</CLRTestBashPreCommands>
     </PropertyGroup>
   </Target>
 
