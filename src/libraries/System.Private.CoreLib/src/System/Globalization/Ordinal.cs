@@ -138,7 +138,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsIgnoreCase(ref char charA, ref char charB, int length)
         {
-            if (!Vector128.IsHardwareAccelerated || length <= Vector128<ushort>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<ushort>.Count)
             {
                 return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
             }
