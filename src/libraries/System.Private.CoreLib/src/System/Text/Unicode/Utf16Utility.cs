@@ -240,19 +240,19 @@ namespace System.Text.Unicode
             Debug.Assert(AllCharsInVector128AreAscii(vec2));
 
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
-            Vector128<sbyte> lowerIndicator1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
-            Vector128<sbyte> lowerIndicator2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
+            Vector128<sbyte> lowerInd1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
+            Vector128<sbyte> lowerInd2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
-            Vector128<sbyte> combinedIndicator1 = Vector128.LessThan(Vector128.Create((sbyte)(-128 + 0x80 - 0x5B)), lowerIndicator1);
-            Vector128<sbyte> combinedIndicator2 = Vector128.LessThan(Vector128.Create((sbyte)(-128 + 0x80 - 0x5B)), lowerIndicator2);
+            Vector128<sbyte> combInd1 = Vector128.LessThan(Vector128.Create((sbyte)(-0x80 + 25)), lowerInd1);
+            Vector128<sbyte> combInd2 = Vector128.LessThan(Vector128.Create((sbyte)(-0x80 + 25)), lowerInd2);
 
             // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
-            Vector128<sbyte> lowerCasedVec1 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combinedIndicator1) + vec1.AsSByte();
-            Vector128<sbyte> lowerCasedVec2 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combinedIndicator2) + vec2.AsSByte();
+            Vector128<sbyte> lcaseVec1 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combInd1) + vec1.AsSByte();
+            Vector128<sbyte> lcaseVec2 = Vector128.AndNot(Vector128.Create((sbyte)0x20), combInd2) + vec2.AsSByte();
 
             // Compare two lowercased vectors
-            return (lowerCasedVec1 ^ lowerCasedVec2) == Vector128<sbyte>.Zero;
+            return (lcaseVec1 ^ lcaseVec2) == Vector128<sbyte>.Zero;
         }
     }
 }
