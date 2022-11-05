@@ -1719,7 +1719,7 @@ struct CORINFO_FIELD_INFO
     CorInfoIsAccessAllowedResult accessAllowed;
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
-    CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
+    CORINFO_CONST_LOOKUP    fieldLookup;
 };
 
 //----------------------------------------------------------------------------

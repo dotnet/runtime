@@ -1468,7 +1468,7 @@ static OBJECTREF getFrozenBoxedStatic(FieldDesc* field)
     }
 
     MethodTable* owningType = field->GetEnclosingMethodTable();
-    if (!owningType->IsClassInited() && owningType->IsSharedByGenericInstantiations())
+    if (!owningType->IsClassInited() || owningType->IsSharedByGenericInstantiations())
     {
         return NULL;
     }
@@ -1517,6 +1517,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fieldFlags = 0;
 
     pResult->offset = pField->GetOffset();
+    pResult->fieldLookup.addr = nullptr;
+
     if (pField->IsStatic())
     {
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
@@ -1553,7 +1555,14 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
                 GCX_COOP();
-                if (getFrozenBoxedStatic(pField) == NULL)
+                Object* frozenBoxedStatic = OBJECTREFToObject(getFrozenBoxedStatic(pField));
+                if (frozenBoxedStatic != nullptr)
+                {
+                    // Skip pMT of the frozen object holding struct
+                    pResult->fieldLookup.addr = (uint8_t*)frozenBoxedStatic + sizeof(void*);
+                    pResult->fieldLookup.accessType = InfoAccessType::IAT_VALUE;
+                }
+                else
                 {
                     fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
                 }
@@ -11993,23 +12002,10 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
         GCX_COOP();
 
-        // Check if the field holds a frozen boxed static, return its content in that case
-        result = OBJECTREFToObject(getFrozenBoxedStatic(field));
-        if (result != NULL)
-        {
-            // Skip pMT
-            result = (uint8_t*)result + sizeof(void*);
-        }
-        else
-        {
-            base = (void*)field->GetBase();
-        }
+        base = (void *) field->GetBase();
     }
 
-    if (result == NULL)
-    {
-        result = field->GetStaticAddressHandle(base);
-    }
+    result = field->GetStaticAddressHandle(base);
 
     EE_TO_JIT_TRANSITION();
 
