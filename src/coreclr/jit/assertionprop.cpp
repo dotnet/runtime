@@ -3313,10 +3313,11 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
                 GenTreeOp* asgNode = def->GetAssignment();
                 if (asgNode != nullptr)
                 {
-                    GenTree* val = asgNode->gtGetOp2();
-                    if (val->IsLocal())
+                    GenTree* lhs = asgNode->gtGetOp1();
+                    GenTree* rhs = asgNode->gtGetOp2();
+                    if (rhs->IsLocal() && lhs->IsLocal() && lhs->AsLclVarCommon()->GetLclNum() == currlcl->GetLclNum())
                     {
-                        currlcl = val->AsLclVarCommon();
+                        currlcl = rhs->AsLclVarCommon();
                         continue;
                     }
                 }
