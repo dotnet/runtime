@@ -1253,10 +1253,24 @@ namespace System.Text.RegularExpressions.Tests
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
 
+                // We have to set the app-domain-wide regex timeout before using any non-source generated regex, as it's read once
+                // and cached in a static on the Regex type for all non-source generated regex.
+                // However we can't do it here for source generated regexes, because generating the source for the
+                // regex uses Roslyn which uses its own regexes and in rare cases those could hit the timeout.
+                // Happily, source generated regexes read the app-domain-wide regex timeout in their generated code, not from the
+                // static on the Regex type, so for them we can set it after the generation is done.
+                if (!RegexHelpers.IsSourceGenerated(engine))
+                {
+                    AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+                }
+
                 Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
-                // Generating the regex above itself uses a regex internally, so set the short timeout we want only after that's done
-                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+                if (RegexHelpers.IsSourceGenerated(engine))
+                {
+                    AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+                }
+
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.IsMatch(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Matches(input).Count);

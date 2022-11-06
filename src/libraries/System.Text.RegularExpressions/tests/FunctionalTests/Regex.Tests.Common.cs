@@ -107,6 +107,9 @@ namespace System.Text.RegularExpressions.Tests
         public static bool IsNonBacktracking(RegexEngine engine) =>
             engine is RegexEngine.NonBacktracking or RegexEngine.NonBacktrackingSourceGenerated;
 
+        public static bool IsSourceGenerated(RegexEngine engine) =>
+            engine is RegexEngine.SourceGenerated or RegexEngine.NonBacktrackingSourceGenerated;
+
         public static async Task<Regex> GetRegexAsync(RegexEngine engine, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null)
         {
             if (options is null)
