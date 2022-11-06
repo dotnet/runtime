@@ -294,6 +294,8 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+        GetElement,
+        WithElement,
         LclVar,
         LclFld
     };
@@ -909,13 +911,45 @@ private:
 
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
-                indir->gtGetOp1()->ChangeOper(GT_LCL_VAR);
-                indir->gtGetOp1()->ChangeType(varDsc->TypeGet());
-                indir->gtGetOp1()->AsLclVar()->SetLclNum(lclNum);
-                lclNode = indir->gtGetOp1()->AsLclVarCommon();
+                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
                 break;
 
+#ifdef FEATURE_HW_INTRINSICS
+            case IndirTransform::GetElement:
+            {
+                var_types elementType = indir->TypeGet();
+                assert(elementType == TYP_FLOAT);
+
+                lclNode            = BashToLclVar(indir->gtGetOp1(), lclNum);
+                GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                GenTree* hwiNode   = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
+                                                                       CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
+                                                                       /* isSimdAsHWIntrinsic */ false);
+                indir->ReplaceWith(hwiNode, m_compiler);
+            }
+            break;
+
+            case IndirTransform::WithElement:
+            {
+                assert(user->OperIs(GT_ASG) && (user->gtGetOp1() == indir));
+                var_types elementType = indir->TypeGet();
+                assert(elementType == TYP_FLOAT);
+
+                lclNode              = BashToLclVar(indir, lclNum);
+                GenTree* simdLclNode = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+                GenTree* indexNode   = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                GenTree* elementNode = user->gtGetOp2();
+                user->AsOp()->gtOp2 =
+                    m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
+                                                         /* isSimdAsHWIntrinsic */ false);
+                user->ChangeType(varDsc->TypeGet());
+            }
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
             case IndirTransform::LclVar:
+                // TODO-ADDR: use "BashToLclVar" here.
                 if (indir->TypeGet() != varDsc->TypeGet())
                 {
                     assert(genTypeSize(indir) == genTypeSize(varDsc)); // BOOL <-> UBYTE.
@@ -996,14 +1030,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            if (varTypeIsSIMD(varDsc))
-            {
-                // TODO-ADDR: skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
-                // fgMorphFieldToSimdGetElement need to be updated to recognize LCL_FLDs or moved
-                // here.
-                return IndirTransform::None;
-            }
-
             // Bool and ubyte are the same type.
             if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
                 (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
@@ -1011,9 +1037,10 @@ private:
                 return IndirTransform::LclVar;
             }
 
+            bool isDef = user->OperIs(GT_ASG) && (user->gtGetOp1() == indir);
+
             // For small locals on the LHS we can ignore the signed/unsigned diff.
-            if (user->OperIs(GT_ASG) && (user->gtGetOp1() == indir) &&
-                (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
+            if (isDef && (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
             {
                 assert(varTypeIsSmall(indir));
                 return IndirTransform::LclVar;
@@ -1022,6 +1049,12 @@ private:
             if (m_compiler->opts.OptimizationDisabled())
             {
                 return IndirTransform::LclFld;
+            }
+
+            if (varTypeIsSIMD(varDsc) && indir->TypeIs(TYP_FLOAT) && ((val.Offset() % genTypeSize(TYP_FLOAT)) == 0) &&
+                m_compiler->IsBaselineSimdIsaSupported())
+            {
+                return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
             }
 
             // Turn this into a bitcast if we can.
@@ -1297,6 +1330,27 @@ private:
     static bool IsUnused(GenTree* node, GenTree* user)
     {
         return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
+    }
+
+    //------------------------------------------------------------------------
+    // BashToLclVar: Bash node to a LCL_VAR.
+    //
+    // Arguments:
+    //    node   - the node to bash
+    //    lclNum - the local's number
+    //
+    // Return Value:
+    //    The bashed node.
+    //
+    GenTreeLclVar* BashToLclVar(GenTree* node, unsigned lclNum)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        node->ChangeOper(GT_LCL_VAR);
+        node->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+        node->AsLclVar()->SetLclNum(lclNum);
+
+        return node->AsLclVar();
     }
 };
 
