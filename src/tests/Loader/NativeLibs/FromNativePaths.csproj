@@ -21,7 +21,7 @@
     <PathEnvSetupCommands><![CDATA[
       mkdir Subdirectory
       ]]></PathEnvSetupCommands>
-    <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
-    <CLRTestBatchPreCommands>$(BatchCLRTestPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(PathEnvSetupCommands)</CLRTestBashPreCommands>
+    <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
   </PropertyGroup>
 </Project>

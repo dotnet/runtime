@@ -73,8 +73,8 @@ $(CLRTestBatchPreCommands)
     set DOTNET_GCName=!__gcStandaloneModeToRestore!
 
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 
     __OutputDir=$PWD
     __ResponseFile=$__OutputDir/multifolder.rsp
@@ -116,6 +116,6 @@ $(BashCLRTestPreCommands)
     ExePath=multifolder/multifolder.dll
     export DOTNET_NativeImageSearchPaths=$__OutputDir
 
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

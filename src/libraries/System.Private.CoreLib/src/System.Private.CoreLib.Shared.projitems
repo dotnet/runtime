@@ -103,6 +103,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\BinaryPrimitives.ReverseEndianness.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\Reader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderLittleEndian.cs" />
@@ -414,6 +415,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyAsciiSearcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
