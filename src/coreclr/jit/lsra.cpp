@@ -11971,8 +11971,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     else
     {
         // Set the 'matchingConstants' set.
-        if (linearScan->compiler->opts.OptimizationEnabled() && currentInterval->isConstant &&
-            RefTypeIsDef(refPosition->refType))
+        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
         {
             matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
         }
