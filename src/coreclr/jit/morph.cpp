@@ -5173,6 +5173,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
         // Create the "comma" subtree.
         GenTree* asg = nullptr;
+        unsigned lclNum;
 
         if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
         {
