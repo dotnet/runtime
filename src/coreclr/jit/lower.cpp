@@ -5410,6 +5410,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             {
                 unusedStack.Push(operand);
             }
+
+            DEBUG_DESTROY_NODE(unused);
         }
     }
 
