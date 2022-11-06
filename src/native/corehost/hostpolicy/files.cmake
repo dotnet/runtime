@@ -10,6 +10,8 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/args.cpp
     ${CMAKE_CURRENT_LIST_DIR}/breadcrumbs.cpp
     ${CMAKE_CURRENT_LIST_DIR}/coreclr.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/deps_entry.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/deps_format.cpp
     ${CMAKE_CURRENT_LIST_DIR}/deps_resolver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_context.cpp
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy.cpp
@@ -25,6 +27,8 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/args.h
     ${CMAKE_CURRENT_LIST_DIR}/breadcrumbs.h
     ${CMAKE_CURRENT_LIST_DIR}/coreclr.h
+    ${CMAKE_CURRENT_LIST_DIR}/deps_entry.h
+    ${CMAKE_CURRENT_LIST_DIR}/deps_format.h
     ${CMAKE_CURRENT_LIST_DIR}/deps_resolver.h
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_context.h
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_init.h

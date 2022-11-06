@@ -6,8 +6,8 @@
 #include <cassert>
 
 #include <trace.h>
-#include <deps_entry.h>
-#include <deps_format.h>
+#include "deps_entry.h"
+#include "deps_format.h"
 #include "deps_resolver.h"
 #include <utils.h>
 #include <fx_ver.h>
