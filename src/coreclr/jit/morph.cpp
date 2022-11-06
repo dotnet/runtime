@@ -4984,30 +4984,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
                  ((tree->gtFlags & GTF_GLOB_REF) != 0));
 
-#ifdef FEATURE_SIMD
-    // if this field belongs to simd struct, translate it to simd intrinsic.
-    if (mac == nullptr)
-    {
-        if (IsBaselineSimdIsaSupported())
-        {
-            GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
-            if (newTree != tree)
-            {
-                newTree = fgMorphTree(newTree);
-                return newTree;
-            }
-        }
-    }
-    else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
-    {
-        GenTreeLclVarCommon* lcl = objRef->IsLocalAddrExpr();
-        if (lcl != nullptr)
-        {
-            lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
-        }
-    }
-#endif
-
     // Create a default MorphAddrContext early so it doesn't go out of scope
     // before it is used.
     MorphAddrContext defMAC(MACK_Ind);
@@ -9255,129 +9231,6 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
 
     return nullptr;
 }
-
-/*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the operation
-*  to the SimdGetElementNode, and return the new tree. Otherwise, return the old tree.
-*  Argument:
-*   tree - GenTree*. If this pointer points to simd struct which is used for simd
-*          intrinsic, we will morph it as simd intrinsic NI_Vector128_GetElement.
-*  Return:
-*   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
-*   return nullptr.
-*/
-
-GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
-{
-    unsigned    index           = 0;
-    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize        = 0;
-    GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
-
-    if (simdStructNode != nullptr)
-    {
-        var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-        GenTree*  op2          = gtNewIconNode(index, TYP_INT);
-
-        assert(simdSize <= 32);
-        assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
-
-#if defined(TARGET_XARCH)
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    return tree;
-                }
-                break;
-            }
-
-            case TYP_DOUBLE:
-            case TYP_FLOAT:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE2))
-                {
-                    return tree;
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-#elif defined(TARGET_ARM64)
-        if (!compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
-        {
-            return tree;
-        }
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-        tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
-                                       /* isSimdAsHWIntrinsic */ true);
-    }
-    return tree;
-}
-
-/*****************************************************************************
-*  Transform an assignment of a SIMD struct field to SimdWithElementNode, and
-*  return a new tree. If it is not such an assignment, then return the old tree.
-*  Argument:
-*   tree - GenTree*. If this pointer points to simd struct which is used for simd
-*          intrinsic, we will morph it as simd intrinsic set.
-*  Return:
-*   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
-*   return nullptr.
-*/
-
-GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
-{
-    assert(tree->OperGet() == GT_ASG);
-
-    unsigned    index           = 0;
-    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize        = 0;
-    GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
-
-    if (simdStructNode != nullptr)
-    {
-        var_types simdType     = simdStructNode->gtType;
-        var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-
-        assert(simdSize <= 32);
-        assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
-
-        GenTree*       op2         = gtNewIconNode(index, TYP_INT);
-        GenTree*       op3         = tree->gtGetOp2();
-        NamedIntrinsic intrinsicId = NI_Vector128_WithElement;
-
-        GenTree* target = gtClone(simdStructNode);
-        assert(target != nullptr);
-
-        GenTree* simdTree = gtNewSimdWithElementNode(simdType, simdStructNode, op2, op3, simdBaseJitType, simdSize,
-                                                     /* isSimdAsHWIntrinsic */ true);
-
-        tree->AsOp()->gtOp1 = target;
-        tree->AsOp()->gtOp2 = simdTree;
-
-#ifdef DEBUG
-        tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-    }
-
-    return tree;
-}
-
 #endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------------
@@ -9590,26 +9443,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             /* fgDoNormalizeOnStore can change op2 */
             noway_assert(op1 == tree->AsOp()->gtOp1);
             op2 = tree->AsOp()->gtOp2;
-
-#ifdef FEATURE_SIMD
-            if (IsBaselineSimdIsaSupported())
-            {
-                // We should check whether op2 should be assigned to a SIMD field or not.
-                // If it is, we should translate the tree to simd intrinsic.
-                assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
-                GenTree* newTree = fgMorphFieldAssignToSimdSetElement(tree);
-                typ              = tree->TypeGet();
-                op1              = tree->gtGetOp1();
-                op2              = tree->gtGetOp2();
-#ifdef DEBUG
-                assert((tree == newTree) && (tree->OperGet() == oper));
-                if ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
-                {
-                    tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-                }
-#endif // DEBUG
-            }
-#endif
 
             // We can't CSE the LHS of an assignment. Only r-values can be CSEed.
             // Previously, the "lhs" (addr) of a block op was CSE'd.  So, to duplicate the former
