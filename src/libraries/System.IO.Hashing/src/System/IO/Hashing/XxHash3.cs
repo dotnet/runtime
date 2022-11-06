@@ -7,7 +7,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 using static System.IO.Hashing.XxHashShared;
 
 namespace System.IO.Hashing

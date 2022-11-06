@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+#endif
 
 namespace System.IO.Hashing
 {
@@ -414,10 +416,10 @@ namespace System.IO.Hashing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (ulong, ulong) Multiply64To128(ulong left, ulong right)
+        public static ulong Multiply64To128(ulong left, ulong right, out ulong lower)
         {
 #if NET5_0_OR_GREATER
-            ulong upper = Math.BigMul(left, right, out ulong lower);
+            return Math.BigMul(left, right, out lower);
 #else
             ulong lowerLow = Multiply32To64(left & 0xFFFFFFFF, right & 0xFFFFFFFF);
             ulong higherLow = Multiply32To64(left >> 32, right & 0xFFFFFFFF);
@@ -425,17 +427,17 @@ namespace System.IO.Hashing
             ulong higherHigh = Multiply32To64(left >> 32, right >> 32);
 
             ulong cross = (lowerLow >> 32) + (higherLow & 0xFFFFFFFF) + lowerHigh;
-            ulong upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
+            upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
             ulong lower = (cross << 32) | (lowerLow & 0xFFFFFFFF);
+            return lower;
 #endif
-            return (lower, upper);
         }
 
         /// <summary>Calculates a 64-bit to 128-bit multiply, then XOR folds it.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply64To128ThenFold(ulong left, ulong right)
         {
-            var (lower, upper) = Multiply64To128(left, right);
+            var upper = Multiply64To128(left, right, out ulong lower);
             return lower ^ upper;
         }
 
