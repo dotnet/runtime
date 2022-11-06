@@ -76,7 +76,7 @@ public:
         return m_rid_fallback_graph;
     }
 
-    pal::string_t get_deps_file() const
+    const pal::string_t& get_deps_file() const
     {
         return m_deps_file;
     }
