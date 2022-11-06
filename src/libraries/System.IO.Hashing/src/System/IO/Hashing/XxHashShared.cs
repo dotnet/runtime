@@ -427,9 +427,9 @@ namespace System.IO.Hashing
             ulong higherHigh = Multiply32To64(left >> 32, right >> 32);
 
             ulong cross = (lowerLow >> 32) + (higherLow & 0xFFFFFFFF) + lowerHigh;
-            upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
-            ulong lower = (cross << 32) | (lowerLow & 0xFFFFFFFF);
-            return lower;
+            ulong upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
+            lower = (cross << 32) | (lowerLow & 0xFFFFFFFF);
+            return upper;
 #endif
         }
 

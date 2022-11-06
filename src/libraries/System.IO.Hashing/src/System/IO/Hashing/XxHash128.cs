@@ -199,7 +199,7 @@ namespace System.IO.Hashing
 
             ref var dest0 = ref MemoryMarshal.GetReference(destination);
             Unsafe.WriteUnaligned(ref dest0, high);
-            Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, (nuint)sizeof(ulong)), low);
+            Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -429,12 +429,6 @@ namespace System.IO.Hashing
             {
                 Low64 = low64;
                 High64 = high64;
-            }
-
-            public Hash128((ulong, ulong) u128)
-            {
-                Low64 = u128.Item1;
-                High64 = u128.Item2;
             }
 
             public ulong Low64;
