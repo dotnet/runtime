@@ -10851,10 +10851,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
                 op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
-                if (op1->OperIs(GT_OBJ))
-                {
-                    gtSetObjGcInfo(op1->AsObj());
-                }
                 op2 = gtNewIconNode(0);
 
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
