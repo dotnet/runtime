@@ -3275,7 +3275,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
 
     gtPrepareCost(value);
 
-    if ((value->GetCostEx() > 1) && (value->GetCostSz() > 1))
+    if ((value->GetCostEx() > 2) && (value->GetCostSz() > 1))
     {
         // Try to find the block this constant was originally defined in
         if (lcl->HasSsaName())
@@ -3289,7 +3289,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
                 const weight_t defBlockWeight = defBlock->getBBWeight(this);
                 const weight_t lclblockWeight = lclBlock->getBBWeight(this);
 
-                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= 4))
                 {
                     JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", lclBlock->bbNum);
                     return false;
