@@ -216,6 +216,7 @@ export type RuntimeHelpers = {
     maxParallelDownloads: number;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
+    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory: string

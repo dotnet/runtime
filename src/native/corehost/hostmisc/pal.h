@@ -262,10 +262,6 @@ namespace pal
 
     bool getcwd(string_t* recv);
 
-    inline void file_flush(FILE* f) { std::fflush(f); }
-    inline void err_flush() { std::fflush(stderr); }
-    inline void out_flush() { std::fflush(stdout); }
-
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {

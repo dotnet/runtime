@@ -1,0 +1,4 @@
+<Project>
+  <!-- This is for use with projects that don't need to be built with artifacts. And
+       need to be loadable by xharness. For example, aspnetcore middleware -->
+</Project>

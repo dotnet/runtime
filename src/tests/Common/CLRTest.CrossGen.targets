@@ -76,6 +76,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
 
       __cg2ExitCode=0
+      __r2rDumpExitCode=0
 
       OneFileCrossgen2() {
         date +%H:%M:%S
@@ -164,7 +165,7 @@ fi
         ]]>
       </CrossgenBashScript>
 
-      <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(CrossgenBashScript)</BashCLRTestPreCommands>
+      <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(CrossgenBashScript)</CLRTestBashPreCommands>
     </PropertyGroup>
   </Target>
 
@@ -184,6 +185,7 @@ if defined RunCrossGen2 (
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     set CrossGen2Status=0
+    set R2RDumpStatus=0
     set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
     if exist "IL-CG2" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
@@ -281,7 +283,6 @@ if defined RunCrossGen2 (
 
     set CrossGen2Status=!ERRORLEVEL!
 
-    set R2RDumpStatus=0
     IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
 
     echo "!__R2RDumpCommand!"

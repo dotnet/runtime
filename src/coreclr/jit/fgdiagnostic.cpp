@@ -831,7 +831,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         fprintf(fgxFile, "\n    bytesOfIL=\"%d\"", info.compILCodeSize);
         fprintf(fgxFile, "\n    localVarCount=\"%d\"", lvaCount);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
@@ -3583,12 +3583,40 @@ void Compiler::fgDebugCheckNodesUniqueness()
     }
 }
 
-// SsaCheckWalker keeps data that is necessary to check if
-// we are properly updating SSA uses and defs.
+//------------------------------------------------------------------------------
+// SsaCheckVisitor: build and maintain state about SSA uses in the IR
+//
+// Expects to be invoked on each root expression in each basic block that
+// SSA renames (note SSA will not rename defs and uses in unreachable blocks)
+// and all blocks created after SSA was built (identified by bbID).
+//
+// Maintains a hash table keyed by (lclNum, ssaNum) that tracks information
+// about that SSA lifetime. This information is updated by each SSA use and
+// def seen in the trees via ProcessUses and ProcessDefs.
+//
+// We can spot certain errors during collection, if local occurrences either
+// unexpectedy lack or have SSA numbers.
+//
+// Once collection is done, DoChecks() verifies that the collected information
+// is soundly approximated by the data stored in the LclSsaVarDsc entries.
+//
+// In particular the properties claimed for an SSA lifetime via its
+// LclSsaVarDsc must be accurate or an over-estimate. We tolerate over-estimates
+// as there is no good mechanism in the jit for keeping track when bits of IR
+// are deleted, so over time the number and kind of uses indicated in the
+// LclSsaVarDsc may show more uses and more different kinds of uses then actually
+// remain in the IR.
+//
+// One important caveat is that for promoted locals there may be implicit uses
+// (via the parent var) that do not get numbered by SSA. Neither the LclSsaVarDsc
+// nor the IR will track these implicit uses. So the checking done below will
+// only catch anomalies in the defs or in the explicit uses.
 //
 class SsaCheckVisitor : public GenTreeVisitor<SsaCheckVisitor>
 {
 private:
+    // Hash key for tracking per-SSA lifetime info
+    //
     struct SsaKey
     {
     private:
@@ -3624,6 +3652,8 @@ private:
         }
     };
 
+    // Per-SSA lifetime info
+    //
     struct SsaInfo
     {
     private:
@@ -3949,6 +3979,8 @@ public:
     {
         for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
         {
+            // Check each local in SSA
+            //
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
             if (!varDsc->lvInSsa)
@@ -3956,6 +3988,8 @@ public:
                 continue;
             }
 
+            // Check each SSA lifetime of that local
+            //
             const SsaDefArray<LclSsaVarDsc>& ssaDefs = varDsc->lvPerSsaData;
 
             for (unsigned i = 0; i < ssaDefs.GetCount(); i++)
@@ -3963,16 +3997,21 @@ public:
                 LclSsaVarDsc* const ssaVarDsc = ssaDefs.GetSsaDefByIndex(i);
                 const unsigned      ssaNum    = ssaDefs.GetSsaNum(ssaVarDsc);
 
+                // Find the SSA info we gathered for this lifetime via the IR walk
+                //
                 SsaKey   key(lclNum, ssaNum);
                 SsaInfo* ssaInfo = nullptr;
 
                 if (!m_infoMap.Lookup(key, &ssaInfo))
                 {
-                    // Possibly there are no more references to this local.
+                    // IR has no information about this lifetime.
+                    // Possibly there are no more references.
+                    //
                     continue;
                 }
 
-                // VarDsc block should be accurate.
+                // Now cross-check the gathered ssaInfo vs the LclSsaVarDsc.
+                // LclSsaVarDsc should have the correct def block
                 //
                 BasicBlock* const ssaInfoDefBlock   = ssaInfo->GetDefBlock();
                 BasicBlock* const ssaVarDscDefBlock = ssaVarDsc->GetBlock();
@@ -3999,7 +4038,7 @@ public:
                 unsigned const ssaInfoUses   = ssaInfo->GetNumUses();
                 unsigned const ssaVarDscUses = ssaVarDsc->GetNumUses();
 
-                // VarDsc use count must be accurate or an over-estimate
+                // LclSsaVarDsc use count must be accurate or an over-estimate
                 //
                 if (ssaInfoUses > ssaVarDscUses)
                 {
@@ -4015,7 +4054,7 @@ public:
                             ssaVarDscUses);
                 }
 
-                // HasPhiUse use must be accurate or an over-estimate
+                // LclSsaVarDsc HasPhiUse use must be accurate or an over-estimate
                 //
                 if (ssaInfo->HasPhiUse() && !ssaVarDsc->HasPhiUse())
                 {
@@ -4027,7 +4066,7 @@ public:
                     JITDUMP("[info] HasPhiUse overestimated for V%02u.%u\n", lclNum, ssaNum);
                 }
 
-                // HasGlobalUse use must be accurate or an over-estimate
+                // LclSsaVarDsc HasGlobalUse use must be accurate or an over-estimate
                 //
                 if (ssaInfo->HasGlobalUse() && !ssaVarDsc->HasGlobalUse())
                 {
@@ -4058,9 +4097,9 @@ public:
 // * There is at most one SSA def for a given SSA num, and it is in the expected block.
 // * Operands that should have SSA numbers have them
 // * Operands that should not have SSA numbers do not have them
-// * The number of SSA uses is accurate or an over-estimate
-// * The local/global bit is properly set or an over-estimate
-// * The has phi use bit is properly set or an over-estimate
+// * GetNumUses is accurate or an over-estimate
+// * HasGlobalUse is properly set or an over-estimate
+// * HasPhiUse is properly set or an over-estimate
 //
 // Todo:
 // * Try and sanity check PHIs
@@ -4077,6 +4116,7 @@ void Compiler::fgDebugCheckSsa()
     assert(fgDomsComputed);
 
     // This class visits the flow graph the same way the SSA builder does.
+    // In particular it may skip over blocks that SSA did not rename.
     //
     class SsaCheckDomTreeVisitor : public DomTreeVisitor<SsaCheckDomTreeVisitor>
     {
@@ -4099,13 +4139,13 @@ void Compiler::fgDebugCheckSsa()
         }
     };
 
-    // Visit the blocks SSA modified
+    // Visit the blocks that SSA intially renamed
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
     visitor.WalkTree();
 
-    // Also visit any blocks added afterwards
+    // Also visit any blocks added after SSA was built
     //
     for (BasicBlock* const block : Blocks())
     {
@@ -4115,7 +4155,8 @@ void Compiler::fgDebugCheckSsa()
         }
     }
 
-    // Cross-check the information gathered from IR against the info in the SSA table
+    // Cross-check the information gathered from IR against the info
+    // in the LclSsaVarDscs.
     //
     scv.DoChecks();
 
