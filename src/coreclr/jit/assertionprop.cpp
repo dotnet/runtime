@@ -3275,26 +3275,51 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
 
     gtPrepareCost(value);
 
-    if ((value->GetCostEx() > 2) && (value->GetCostSz() > 1))
+    if ((value->GetCostEx() > 1) && (value->GetCostSz() > 1))
     {
         // Try to find the block this constant was originally defined in
         if (lcl->HasSsaName())
         {
-            BasicBlock* defBlock = lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum())->GetBlock();
-            if (defBlock != nullptr)
-            {
-                // Avoid propagating if the weighted use cost is significantly greater than the def cost.
-                // NOTE: this currently does not take "a float living across a call" case into account
-                // where we might end up with spill/restore on ABIs without callee-saved registers
-                const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                const weight_t lclblockWeight = lclBlock->getBBWeight(this);
-
-                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= 4))
+            auto isBlockWeightDifferenceTooBig = [](Compiler* comp, BasicBlock* defBlock, BasicBlock* useBlock) -> bool {
+                if (defBlock != nullptr)
                 {
-                    JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", lclBlock->bbNum);
+                    // Avoid propagating if the weighted use cost is significantly greater than the def cost.
+                    // NOTE: this currently does not take "a float living across a call" case into account
+                    // where we might end up with spill/restore on ABIs without callee-saved registers
+                    const weight_t defBlockWeight = defBlock->getBBWeight(comp);
+                    const weight_t lclblockWeight = useBlock->getBBWeight(comp);
+
+                    if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= 4))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // Scan up to 4 defs to see if we have a def with much lower block's weight
+            GenTreeLclVarCommon* currlcl = lcl;
+            for (size_t i = 0; i < 4; i++)
+            {
+                LclSsaVarDsc* def = lvaGetDesc(currlcl)->GetPerSsaData(currlcl->GetSsaNum());
+                if (isBlockWeightDifferenceTooBig(this, def->GetBlock(), lclBlock))
+                {
                     return false;
                 }
+                GenTreeOp* asgNode = def->GetAssignment();
+                if (asgNode != nullptr)
+                {
+                    GenTree* val = asgNode->gtGetOp2();
+                    if (val->IsLocal())
+                    {
+                        currlcl = val->AsLclVarCommon();
+                        continue;
+                    }
+                }
+                
+                return true;
             }
+
         }
     }
     return true;
