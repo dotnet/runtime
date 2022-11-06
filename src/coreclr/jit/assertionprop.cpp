@@ -3302,6 +3302,10 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
             for (size_t i = 0; i < 4; i++)
             {
                 LclSsaVarDsc* def = lvaGetDesc(currlcl)->GetPerSsaData(currlcl->GetSsaNum());
+                if (def == nullptr)
+                {
+                    return true;
+                }
                 if (isBlockWeightDifferenceTooBig(this, def->GetBlock(), lclBlock))
                 {
                     return false;
