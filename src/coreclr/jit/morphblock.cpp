@@ -814,8 +814,6 @@ void MorphCopyBlockHelper::TrySpecialCases()
     {
         assert(m_dst->OperIs(GT_LCL_VAR));
 
-        // This will exclude field locals (if any) from SSA: we do not have a way to
-        // associate multiple SSA definitions (SSA numbers) with one store.
         m_dstVarDsc->lvIsMultiRegRet = true;
 
         JITDUMP("Not morphing a multireg node return\n");
