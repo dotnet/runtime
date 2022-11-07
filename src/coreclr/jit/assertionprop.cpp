@@ -3301,6 +3301,10 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
             GenTreeLclVarCommon* currlcl = lcl;
             for (size_t i = 0; i < 4; i++)
             {
+                if (currlcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
+                {
+                    return true;
+                }
                 LclSsaVarDsc* def = lvaGetDesc(currlcl)->GetPerSsaData(currlcl->GetSsaNum());
                 if (def == nullptr)
                 {
