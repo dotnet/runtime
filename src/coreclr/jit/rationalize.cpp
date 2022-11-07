@@ -574,8 +574,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
             {
-                if (!arg.GetEarlyNode()->IsValue())
+                if (arg.GetLateNode() != nullptr)
                 {
+                    if (arg.GetEarlyNode()->IsValue())
+                    {
+                        arg.GetEarlyNode()->SetUnusedValue();
+                    }
                     arg.SetEarlyNode(nullptr);
                 }
             }
