@@ -2949,7 +2949,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(ushort))
                 {
-                    // Use ushort rather than short, as this avoid a sign-extending move.
+                    // Use ushort rather than short, as this avoids a sign-extending move.
                     ref ushort src = ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
                         ref src,

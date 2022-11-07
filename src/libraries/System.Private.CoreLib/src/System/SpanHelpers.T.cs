@@ -2674,7 +2674,8 @@ namespace System
                         result.StoreUnsafe(ref dst, idx);
 
                         idx += (uint)Vector128<T>.Count;
-                    } while (idx < lastVectorIndex);
+                    }
+                    while (idx < lastVectorIndex);
 
                     // There are (0, Vector128<T>.Count] elements remaining now.
                     // As the operation is idempotent, and we know that in total there are at least Vector128<T>.Count
@@ -2703,7 +2704,8 @@ namespace System
                         result.StoreUnsafe(ref dst, idx);
 
                         idx += (uint)Vector256<T>.Count;
-                    } while (idx < lastVectorIndex);
+                    }
+                    while (idx < lastVectorIndex);
 
                     original = Vector256.LoadUnsafe(ref src, lastVectorIndex);
                     mask = Vector256.Equals(oldValues, original);
