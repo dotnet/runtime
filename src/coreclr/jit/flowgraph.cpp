@@ -953,6 +953,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
     }
+    else if (addr->OperIs(GT_IND))
+    {
+        return (addr->gtFlags & GTF_IND_NONNULL) == 0;
+    }
     else if (addr->gtOper == GT_LCL_VAR)
     {
         unsigned varNum = addr->AsLclVarCommon()->GetLclNum();

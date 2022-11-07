@@ -657,12 +657,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         // We were unable to determine the relop value via dominance checks.
         // See if we can jump thread via phi disambiguation.
         //
-        // optJumpThreadPhi disabled as it is exposing problems with stale SSA.
-        // See issue #76636 and related.
-        //
-        // return optJumpThreadPhi(block, tree, treeNormVN);
-
-        return false;
+        return optJumpThreadPhi(block, tree, treeNormVN);
     }
 
     // Be conservative if there is an exception effect and we're in an EH region
@@ -815,21 +810,68 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // Note we neglect PHI assignments. This reflects a general lack of
-    // SSA update abilities in the jit. We really should update any uses
-    // of PHIs defined here with the corresponding PHI input operand.
+    // For non-PHI RBO, we neglect PHI assignments. This can leave SSA
+    // in an incorrect state but so far it has not yet caused problems.
     //
-    // TODO: if block has side effects, for those predecessors that are
+    // For PHI-based RBO we need to be more cautious and insist that
+    // any PHI is locally consumed, so that if we bypass the block we
+    // don't need to make SSA updates.
+    //
+    // TODO: handle blocks with side effects. For those predecessors that are
     // favorable (ones that don't reach block via a critical edge), consider
     // duplicating block's IR into the predecessor. This is the jump threading
     // analog of the optimization we encourage via fgOptimizeUncondBranchToSimpleCond.
     //
     Statement* const lastStmt = block->lastStmt();
+    bool const       isPhiRBO = (domBlock == nullptr);
 
-    for (Statement* const stmt : block->NonPhiStatements())
+    for (Statement* const stmt : block->Statements())
     {
         GenTree* const tree = stmt->GetRootNode();
 
+        // If we are doing PHI-based RBO then all local PHIs must be locally consumed.
+        //
+        if (stmt->IsPhiDefnStmt())
+        {
+            if (isPhiRBO)
+            {
+                GenTreeLclVarCommon* const phiDef = tree->AsOp()->gtGetOp1()->AsLclVarCommon();
+                unsigned const             lclNum = phiDef->GetLclNum();
+                unsigned const             ssaNum = phiDef->GetSsaNum();
+                LclVarDsc* const           varDsc = lvaGetDesc(lclNum);
+
+                // We do not put implicit uses of promoted local fields into SSA.
+                // So assume the worst here, that there is some implicit use of this ssa
+                // def we don't know about.
+                //
+                if (varDsc->lvIsStructField)
+                {
+                    JITDUMP(FMT_BB " has phi for promoted field V%02u.%u; no phi-based threading\n", block->bbNum,
+                            lclNum, ssaNum);
+                    return false;
+                }
+
+                LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+
+                // Bypassing a global use might require SSA updates.
+                // Note a phi use is ok if it's local (self loop)
+                //
+                if (ssaVarDsc->HasGlobalUse())
+                {
+                    JITDUMP(FMT_BB " has global phi for V%02u.%u; no phi-based threading\n", block->bbNum, lclNum,
+                            ssaNum);
+                    return false;
+                }
+            }
+
+            // We are either not doing PHI-based RBO or this PHI won't cause
+            // problems. Carry on.
+            //
+            continue;
+        }
+
+        // This is a "real" statement.
+        //
         // We can ignore exception side effects in the jump tree.
         //
         // They are covered by the exception effects in the dominating compare.

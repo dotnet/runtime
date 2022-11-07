@@ -34,6 +34,7 @@
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
+    <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -106,6 +107,7 @@
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_WasmBrowserPathForTests)' != ''" >$(_XHarnessArgs) &quot;--browser-path=$(_WasmBrowserPathForTests)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
