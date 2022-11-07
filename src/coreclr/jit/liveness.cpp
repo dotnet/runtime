@@ -2177,14 +2177,13 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
     // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
     // exposing uninitialized references.
-    if ((lclNode->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+    if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNode);
-        assert(varDsc->lvHasExplicitInit);
-
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr())
+        if (varDsc->lvHasExplicitInit && (varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr() &&
+            (varDsc->lvRefCnt() > 1))
         {
-            JITDUMP("Not removing an explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
+            JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
             return false;
         }
     }
