@@ -9,7 +9,7 @@
 
 #include "dnmd.hpp"
 
-class MetadataImportRO : IMetaDataImport2
+class MetadataImportRO final : IMetaDataImport2
 {
     std::atomic_uint32_t _refCount;
     mdhandle_ptr _md_ptr;
@@ -27,31 +27,31 @@ public:
     virtual ~MetadataImportRO() = default;
 
 public: // IMetaDataImport
-    STDMETHOD_(void, CloseEnum)(HCORENUM hEnum);
-    STDMETHOD(CountEnum)(HCORENUM hEnum, ULONG *pulCount);
-    STDMETHOD(ResetEnum)(HCORENUM hEnum, ULONG ulPos);
+    STDMETHOD_(void, CloseEnum)(HCORENUM hEnum) override;
+    STDMETHOD(CountEnum)(HCORENUM hEnum, ULONG *pulCount) override;
+    STDMETHOD(ResetEnum)(HCORENUM hEnum, ULONG ulPos) override;
     STDMETHOD(EnumTypeDefs)(HCORENUM *phEnum, mdTypeDef rTypeDefs[],
-                            ULONG cMax, ULONG *pcTypeDefs);
+                            ULONG cMax, ULONG *pcTypeDefs) override;
     STDMETHOD(EnumInterfaceImpls)(HCORENUM *phEnum, mdTypeDef td,
                             mdInterfaceImpl rImpls[], ULONG cMax,
-                            ULONG* pcImpls);
+                            ULONG* pcImpls) override;
     STDMETHOD(EnumTypeRefs)(HCORENUM *phEnum, mdTypeRef rTypeRefs[],
-                            ULONG cMax, ULONG* pcTypeRefs);
+                            ULONG cMax, ULONG* pcTypeRefs) override;
 
     STDMETHOD(FindTypeDefByName)(
         LPCWSTR     szTypeDef,
         mdToken     tkEnclosingClass,
-        mdTypeDef   *ptd);
+        mdTypeDef   *ptd) override;
 
     STDMETHOD(GetScopeProps)(
       _Out_writes_to_opt_(cchName, *pchName)
         LPWSTR      szName,
         ULONG       cchName,
         ULONG       *pchName,
-        GUID        *pmvid);
+        GUID        *pmvid) override;
 
     STDMETHOD(GetModuleFromScope)(
-        mdModule    *pmd);
+        mdModule    *pmd) override;
 
     STDMETHOD(GetTypeDefProps)(
         mdTypeDef   td,
@@ -60,12 +60,12 @@ public: // IMetaDataImport
         ULONG       cchTypeDef,
         ULONG       *pchTypeDef,
         DWORD       *pdwTypeDefFlags,
-        mdToken     *ptkExtends);
+        mdToken     *ptkExtends) override;
 
     STDMETHOD(GetInterfaceImplProps)(
         mdInterfaceImpl iiImpl,
         mdTypeDef   *pClass,
-        mdToken     *ptkIface);
+        mdToken     *ptkIface) override;
 
     STDMETHOD(GetTypeRefProps)(
         mdTypeRef   tr,
@@ -73,16 +73,16 @@ public: // IMetaDataImport
       _Out_writes_to_opt_(cchName, *pchName)
         LPWSTR      szName,
         ULONG       cchName,
-        ULONG       *pchName);
+        ULONG       *pchName) override;
 
-    STDMETHOD(ResolveTypeRef)(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd);
+    STDMETHOD(ResolveTypeRef)(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd) override;
 
     STDMETHOD(EnumMembers)(
         HCORENUM    *phEnum,
         mdTypeDef   cl,
         mdToken     rMembers[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumMembersWithName)(
         HCORENUM    *phEnum,
@@ -90,14 +90,14 @@ public: // IMetaDataImport
         LPCWSTR     szName,
         mdToken     rMembers[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumMethods)(
         HCORENUM    *phEnum,
         mdTypeDef   cl,
         mdMethodDef rMethods[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumMethodsWithName)(
         HCORENUM    *phEnum,
@@ -105,14 +105,14 @@ public: // IMetaDataImport
         LPCWSTR     szName,
         mdMethodDef rMethods[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumFields)(
         HCORENUM    *phEnum,
         mdTypeDef   cl,
         mdFieldDef  rFields[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumFieldsWithName)(
         HCORENUM    *phEnum,
@@ -120,7 +120,7 @@ public: // IMetaDataImport
         LPCWSTR     szName,
         mdFieldDef  rFields[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
 
     STDMETHOD(EnumParams)(
@@ -128,14 +128,14 @@ public: // IMetaDataImport
         mdMethodDef mb,
         mdParamDef  rParams[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumMemberRefs)(
         HCORENUM    *phEnum,
         mdToken     tkParent,
         mdMemberRef rMemberRefs[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumMethodImpls)(
         HCORENUM    *phEnum,
@@ -143,7 +143,7 @@ public: // IMetaDataImport
         mdToken     rMethodBody[],
         mdToken     rMethodDecl[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(EnumPermissionSets)(
         HCORENUM    *phEnum,
@@ -151,35 +151,35 @@ public: // IMetaDataImport
         DWORD       dwActions,
         mdPermission rPermission[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(FindMember)(
         mdTypeDef   td,
         LPCWSTR     szName,
         PCCOR_SIGNATURE pvSigBlob,
         ULONG       cbSigBlob,
-        mdToken     *pmb);
+        mdToken     *pmb) override;
 
     STDMETHOD(FindMethod)(
         mdTypeDef   td,
         LPCWSTR     szName,
         PCCOR_SIGNATURE pvSigBlob,
         ULONG       cbSigBlob,
-        mdMethodDef *pmb);
+        mdMethodDef *pmb) override;
 
     STDMETHOD(FindField)(
         mdTypeDef   td,
         LPCWSTR     szName,
         PCCOR_SIGNATURE pvSigBlob,
         ULONG       cbSigBlob,
-        mdFieldDef  *pmb);
+        mdFieldDef  *pmb) override;
 
     STDMETHOD(FindMemberRef)(
         mdTypeRef   td,
         LPCWSTR     szName,
         PCCOR_SIGNATURE pvSigBlob,
         ULONG       cbSigBlob,
-        mdMemberRef *pmr);
+        mdMemberRef *pmr) override;
 
     STDMETHOD (GetMethodProps)(
         mdMethodDef mb,
@@ -192,7 +192,7 @@ public: // IMetaDataImport
         PCCOR_SIGNATURE *ppvSigBlob,
         ULONG       *pcbSigBlob,
         ULONG       *pulCodeRVA,
-        DWORD       *pdwImplFlags);
+        DWORD       *pdwImplFlags) override;
 
     STDMETHOD(GetMemberRefProps)(
         mdMemberRef mr,
@@ -202,21 +202,21 @@ public: // IMetaDataImport
         ULONG       cchMember,
         ULONG       *pchMember,
         PCCOR_SIGNATURE *ppvSigBlob,
-        ULONG       *pbSig);
+        ULONG       *pbSig) override;
 
     STDMETHOD(EnumProperties)(
         HCORENUM    *phEnum,
         mdTypeDef   td,
         mdProperty  rProperties[],
         ULONG       cMax,
-        ULONG       *pcProperties);
+        ULONG       *pcProperties) override;
 
     STDMETHOD(EnumEvents)(
         HCORENUM    *phEnum,
         mdTypeDef   td,
         mdEvent     rEvents[],
         ULONG       cMax,
-        ULONG       *pcEvents);
+        ULONG       *pcEvents) override;
 
     STDMETHOD(GetEventProps)(
         mdEvent     ev,
@@ -231,19 +231,19 @@ public: // IMetaDataImport
         mdMethodDef *pmdFire,
         mdMethodDef rmdOtherMethod[],
         ULONG       cMax,
-        ULONG       *pcOtherMethod);
+        ULONG       *pcOtherMethod) override;
 
     STDMETHOD(EnumMethodSemantics)(
         HCORENUM    *phEnum,
         mdMethodDef mb,
         mdToken     rEventProp[],
         ULONG       cMax,
-        ULONG       *pcEventProp);
+        ULONG       *pcEventProp) override;
 
     STDMETHOD(GetMethodSemantics)(
         mdMethodDef mb,
         mdToken     tkEventProp,
-        DWORD       *pdwSemanticsFlags);
+        DWORD       *pdwSemanticsFlags) override;
 
     STDMETHOD(GetClassLayout) (
         mdTypeDef   td,
@@ -251,63 +251,63 @@ public: // IMetaDataImport
         COR_FIELD_OFFSET rFieldOffset[],
         ULONG       cMax,
         ULONG       *pcFieldOffset,
-        ULONG       *pulClassSize);
+        ULONG       *pulClassSize) override;
 
     STDMETHOD(GetFieldMarshal) (
         mdToken     tk,
         PCCOR_SIGNATURE *ppvNativeType,
-        ULONG       *pcbNativeType);
+        ULONG       *pcbNativeType) override;
 
     STDMETHOD(GetRVA)(
         mdToken     tk,
         ULONG       *pulCodeRVA,
-        DWORD       *pdwImplFlags);
+        DWORD       *pdwImplFlags) override;
 
     STDMETHOD(GetPermissionSetProps) (
         mdPermission pm,
         DWORD       *pdwAction,
         void const  **ppvPermission,
-        ULONG       *pcbPermission);
+        ULONG       *pcbPermission) override;
 
     STDMETHOD(GetSigFromToken)(
         mdSignature mdSig,
         PCCOR_SIGNATURE *ppvSig,
-        ULONG       *pcbSig);
+        ULONG       *pcbSig) override;
 
     STDMETHOD(GetModuleRefProps)(
         mdModuleRef mur,
       _Out_writes_to_opt_(cchName, *pchName)
         LPWSTR      szName,
         ULONG       cchName,
-        ULONG       *pchName);
+        ULONG       *pchName) override;
 
     STDMETHOD(EnumModuleRefs)(
         HCORENUM    *phEnum,
         mdModuleRef rModuleRefs[],
         ULONG       cMax,
-        ULONG       *pcModuleRefs);
+        ULONG       *pcModuleRefs) override;
 
     STDMETHOD(GetTypeSpecFromToken)(
         mdTypeSpec typespec,
         PCCOR_SIGNATURE *ppvSig,
-        ULONG       *pcbSig);
+        ULONG       *pcbSig) override;
 
     STDMETHOD(GetNameFromToken)(            // Not Recommended! May be removed!
         mdToken     tk,
-        MDUTF8CSTR  *pszUtf8NamePtr);
+        MDUTF8CSTR  *pszUtf8NamePtr) override;
 
     STDMETHOD(EnumUnresolvedMethods)(
         HCORENUM    *phEnum,
         mdToken     rMethods[],
         ULONG       cMax,
-        ULONG       *pcTokens);
+        ULONG       *pcTokens) override;
 
     STDMETHOD(GetUserString)(
         mdString    stk,
       _Out_writes_to_opt_(cchString, *pchString)
         LPWSTR      szString,
         ULONG       cchString,
-        ULONG       *pchString);
+        ULONG       *pchString) override;
 
     STDMETHOD(GetPinvokeMap)(
         mdToken     tk,
@@ -316,30 +316,30 @@ public: // IMetaDataImport
         LPWSTR      szImportName,
         ULONG       cchImportName,
         ULONG       *pchImportName,
-        mdModuleRef *pmrImportDLL);
+        mdModuleRef *pmrImportDLL) override;
 
     STDMETHOD(EnumSignatures)(
         HCORENUM    *phEnum,
         mdSignature rSignatures[],
         ULONG       cMax,
-        ULONG       *pcSignatures);
+        ULONG       *pcSignatures) override;
 
     STDMETHOD(EnumTypeSpecs)(
         HCORENUM    *phEnum,
         mdTypeSpec  rTypeSpecs[],
         ULONG       cMax,
-        ULONG       *pcTypeSpecs);
+        ULONG       *pcTypeSpecs) override;
 
     STDMETHOD(EnumUserStrings)(
         HCORENUM    *phEnum,
         mdString    rStrings[],
         ULONG       cMax,
-        ULONG       *pcStrings);
+        ULONG       *pcStrings) override;
 
     STDMETHOD(GetParamForMethodIndex)(
         mdMethodDef md,
         ULONG       ulParamSeq,
-        mdParamDef  *ppd);
+        mdParamDef  *ppd) override;
 
     STDMETHOD(EnumCustomAttributes)(
         HCORENUM    *phEnum,
@@ -347,19 +347,19 @@ public: // IMetaDataImport
         mdToken     tkType,
         mdCustomAttribute rCustomAttributes[],
         ULONG       cMax,
-        ULONG       *pcCustomAttributes);
+        ULONG       *pcCustomAttributes) override;
 
     STDMETHOD(GetCustomAttributeProps)(
         mdCustomAttribute cv,
         mdToken     *ptkObj,
         mdToken     *ptkType,
         void const  **ppBlob,
-        ULONG       *pcbSize);
+        ULONG       *pcbSize) override;
 
     STDMETHOD(FindTypeRef)(
         mdToken     tkResolutionScope,
         LPCWSTR     szName,
-        mdTypeRef   *ptr);
+        mdTypeRef   *ptr) override;
 
     STDMETHOD(GetMemberProps)(
         mdToken     mb,
@@ -375,7 +375,7 @@ public: // IMetaDataImport
         DWORD       *pdwImplFlags,
         DWORD       *pdwCPlusTypeFlag,
         UVCP_CONSTANT *ppValue,
-        ULONG       *pcchValue);
+        ULONG       *pcchValue) override;
 
     STDMETHOD(GetFieldProps)(
         mdFieldDef  mb,
@@ -389,7 +389,7 @@ public: // IMetaDataImport
         ULONG       *pcbSigBlob,
         DWORD       *pdwCPlusTypeFlag,
         UVCP_CONSTANT *ppValue,
-        ULONG       *pcchValue);
+        ULONG       *pcchValue) override;
 
     STDMETHOD(GetPropertyProps)(
         mdProperty  prop,
@@ -407,7 +407,7 @@ public: // IMetaDataImport
         mdMethodDef *pmdGetter,
         mdMethodDef rmdOtherMethod[],
         ULONG       cMax,
-        ULONG       *pcOtherMethod);
+        ULONG       *pcOtherMethod) override;
 
     STDMETHOD(GetParamProps)(
         mdParamDef  tk,
@@ -420,29 +420,29 @@ public: // IMetaDataImport
         DWORD       *pdwAttr,
         DWORD       *pdwCPlusTypeFlag,
         UVCP_CONSTANT *ppValue,
-        ULONG       *pcchValue);
+        ULONG       *pcchValue) override;
 
     STDMETHOD(GetCustomAttributeByName)(
         mdToken     tkObj,
         LPCWSTR     szName,
         const void  **ppData,
-        ULONG       *pcbData);
+        ULONG       *pcbData) override;
 
     STDMETHOD_(BOOL, IsValidToken)(
-        mdToken     tk);
+        mdToken     tk) override;
 
     STDMETHOD(GetNestedClassProps)(
         mdTypeDef   tdNestedClass,
-        mdTypeDef   *ptdEnclosingClass);
+        mdTypeDef   *ptdEnclosingClass) override;
 
     STDMETHOD(GetNativeCallConvFromSig)(
         void const  *pvSig,
         ULONG       cbSig,
-        ULONG       *pCallConv);
+        ULONG       *pCallConv) override;
 
     STDMETHOD(IsGlobal)(
         mdToken     pd,
-        int         *pbGlobal);
+        int         *pbGlobal) override;
 
 public: // IMetaDataImport2
     STDMETHOD(EnumGenericParams)(
@@ -450,7 +450,7 @@ public: // IMetaDataImport2
         mdToken      tk,
         mdGenericParam rGenericParams[],
         ULONG       cMax,
-        ULONG       *pcGenericParams);
+        ULONG       *pcGenericParams) override;
 
     STDMETHOD(GetGenericParamProps)(
         mdGenericParam gp,
@@ -461,42 +461,42 @@ public: // IMetaDataImport2
       _Out_writes_to_opt_(cchName, *pchName)
         LPWSTR       wzname,
         ULONG        cchName,
-        ULONG        *pchName);
+        ULONG        *pchName) override;
 
     STDMETHOD(GetMethodSpecProps)(
         mdMethodSpec mi,
         mdToken *tkParent,
         PCCOR_SIGNATURE *ppvSigBlob,
-        ULONG       *pcbSigBlob);
+        ULONG       *pcbSigBlob) override;
 
     STDMETHOD(EnumGenericParamConstraints)(
         HCORENUM    *phEnum,
         mdGenericParam tk,
         mdGenericParamConstraint rGenericParamConstraints[],
         ULONG       cMax,
-        ULONG       *pcGenericParamConstraints);
+        ULONG       *pcGenericParamConstraints) override;
 
     STDMETHOD(GetGenericParamConstraintProps)(
         mdGenericParamConstraint gpc,
         mdGenericParam *ptGenericParam,
-        mdToken      *ptkConstraintType);
+        mdToken      *ptkConstraintType) override;
 
     STDMETHOD(GetPEKind)(
         DWORD* pdwPEKind,
-        DWORD* pdwMAchine);
+        DWORD* pdwMAchine) override;
 
     STDMETHOD(GetVersionString)(
       _Out_writes_to_opt_(ccBufSize, *pccBufSize)
         LPWSTR      pwzBuf,
         DWORD       ccBufSize,
-        DWORD       *pccBufSize);
+        DWORD       *pccBufSize) override;
 
     STDMETHOD(EnumMethodSpecs)(
         HCORENUM    *phEnum,
         mdToken      tk,
         mdMethodSpec rMethodSpecs[],
         ULONG       cMax,
-        ULONG       *pcMethodSpecs);
+        ULONG       *pcMethodSpecs) override;
 
 public: // IUnknown
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
