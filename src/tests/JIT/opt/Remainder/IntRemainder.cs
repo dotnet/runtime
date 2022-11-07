@@ -13,40 +13,44 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Int32_RemainderByOne()
         {
-            // X64:      call CORINFO
-            // X64-NEXT: xor [[REG0:[a-z]+]], [[REG0]]
+            // X64-FULL-LINE:      call CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+            // X64-FULL-LINE-NEXT: xor [[REG0:[a-z]+]], [[REG0]]
 
-            // ARM64:      bl CORINFO
-            // ARM64-NEXT: mov [[REG0:[a-z0-9]+]], wzr
+            // ARM64-FULL-LINE:      bl CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+            // ARM64-FULL-LINE-NEXT: mov [[REG0:[a-z0-9]+]], wzr
+            
             return _fieldValue % 1;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Int32_RemainderByOneWithValue(int value)
         {
-            // X64: xor [[REG0:[a-z]+]], [[REG0]]
+            // X64-FULL-LINE: xor [[REG0:[a-z]+]], [[REG0]]
 
-            // ARM64: mov [[REG0:[a-z0-9]+]], wzr
+            // ARM64-FULL-LINE: mov [[REG0:[a-z0-9]+]], wzr
+
             return value % 1;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Int32_RemainderByNegativeOne()
         {
-            // X64:      call CORINFO
-            // X64-NEXT: xor [[REG0:[a-z]+]], [[REG0]]
+            // X64-FULL-LINE:      call CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+            // X64-FULL-LINE-NEXT: xor [[REG0:[a-z]+]], [[REG0]]
 
-            // ARM64:      bl CORINFO
-            // ARM64-NEXT: mov [[REG0:[a-z0-9]+]], wzr
+            // ARM64-FULL-LINE:      bl CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+            // ARM64-FULL-LINE-NEXT: mov [[REG0:[a-z0-9]+]], wzr
+
             return _fieldValue % -1;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Int32_RemainderByNegativeOneWithValue(int value)
         {
-            // X64: xor [[REG0:[a-z]+]], [[REG0]]
+            // X64-FULL-LINE: xor [[REG0:[a-z]+]], [[REG0]]
 
-            // ARM64: mov [[REG0:[a-z0-9]+]], wzr
+            // ARM64-FULL-LINE: mov [[REG0:[a-z0-9]+]], wzr
+
             return value % -1;
         }
 
