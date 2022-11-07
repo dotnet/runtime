@@ -40,6 +40,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
+
     childNode->SetContained();
     assert(childNode->isContained());
 
@@ -58,6 +59,60 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// MakeSrcRegOptional: Make "childNode" a regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can regOptional its 'childNode'
+//    childNode  - is an op that will now be regOptional to its parent.
+//
+void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    assert(!parentNode->OperIsLeaf());
+
+    childNode->SetRegOptional();
+    assert(childNode->IsRegOptional());
+
+#ifdef DEBUG
+    // Verify caller of this method checked safety.
+    //
+    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+    if (!isSafeToContainMem)
+    {
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
+        assert(isSafeToContainMem);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can contain or regOptional its 'childNode'
+//    childNode  - is an op that will now be contained or regOptional to its parent.
+//
+void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
+    assert(!parentNode->OperIsHWIntrinsic());
+
+    if (!IsSafeToContainMem(parentNode, childNode))
+    {
+        return;
+    }
+
+    if (IsContainableMemoryOp(childNode))
+    {
+        MakeSrcContained(parentNode, childNode);
+    }
+    else
+    {
+        MakeSrcRegOptional(parentNode, childNode);
+    }
 }
 
 //------------------------------------------------------------------------
