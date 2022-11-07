@@ -1,0 +1,140 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
+    <PackageRID>wasi-wasm</PackageRID>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- TODOWASI use wasi-wasm in transport NUGET instead of browser-wasm -->
+    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
+    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
+    <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
+    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+  </PropertyGroup>
+
+  <Target Name="CheckEnv">
+    <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+    <Error Condition="'$(TargetOS)' != 'Wasi'" Text="Expected TargetOS==Wasi, got '$(TargetOS)'"/>
+    <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <UsingTask TaskName="GenerateWasmBundle"
+    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
+  <Target Name="BundleTimeZones">
+    <PropertyGroup>
+      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
+    </PropertyGroup>
+    <GenerateWasmBundle
+      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
+      OutputFileName="$(TimeZonesDataPath)" />
+  </Target>
+
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
+      <WasmInterpToNativeTablePath>$(WasmObjDir)\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmPInvokeModule Include="libSystem.Native" />
+      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
+    </ItemGroup>
+
+    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
+    </MSBuild>
+
+    <MakeDir Directories="$(WasmObjDir)" Condition="!Exists('$(WasmObjDir)')" />
+
+    <ManagedToNativeGenerator
+      Assemblies="@(WasmPInvokeAssembly)"
+      PInvokeModules="@(WasmPInvokeModule)"
+      PInvokeOutputPath="$(WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
+  </Target>
+
+  <!-- This is a documented target that is invoked by developers in their innerloop work. -->
+  <Target Name="BuildWasiRuntimes"
+          AfterTargets="Build"
+          DependsOnTargets="GenerateManagedToNative;BundleTimeZones">
+
+    <ItemGroup>
+      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
+                                  $(ICULibDir)/libicui18n.a;
+                                  $(ICULibDir)/libicudata.a" />
+      <ICULibFiles Include="$(ICULibDir)/*.dat" />
+    </ItemGroup>
+    <PropertyGroup>
+      <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
+      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(PInvokeTableFile)"
+          DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(InterpToNativeTableFile)"
+          DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+<!--
+    <Copy SourceFiles="runtime/driver.c;
+                       runtime/pinvoke.c;
+                       runtime/corebindings.c;
+                       "
+          DestinationFolder="$(NativeBinDir)src"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
+          DestinationFolder="$(NativeBinDir)include\wasm"
+          SkipUnchangedFiles="true" />
+-->
+
+
+    <Copy SourceFiles="@(ICULibFiles);
+                       @(ICULibNativeFiles);"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat" />
+      <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
+      <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
+    </ItemGroup>
+
+    <Copy SourceFiles="$(NativeBinDir)dotnet.wasm;
+                       $(NativeBinDir)dotnet.timezones.blat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmSrcFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmHeaderFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\wasm"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+
+</Project>

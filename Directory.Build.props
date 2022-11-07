@@ -157,6 +157,7 @@
     <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Solaris' or '$(TargetOS)' == 'Solaris'">solaris</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'Wasi'">wasi</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iossimulator</_portableOS>

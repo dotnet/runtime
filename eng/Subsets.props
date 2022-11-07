@@ -414,6 +414,10 @@
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasiruntime+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)wasi\wasi.proj" Category="mono" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
