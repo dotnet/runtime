@@ -170,7 +170,7 @@ error_t TP_putenv_s(LPWSTR name, LPWSTR value)
         return 0;
 #else
     int retVal = 0;
-    size_t assignmentSize = sizeof(char) * (TP_slen(name) + TP_slen(value) + 1);
+    size_t assignmentSize = sizeof(char) * (TP_slen(name) + TP_slen(value) + 1 + 1);
     char *assignment = (char*) malloc(assignmentSize);
     snprintf(assignment, assignmentSize, "%s=%s", HackyConvertToSTR(name), HackyConvertToSTR(value));
 
