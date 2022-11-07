@@ -21,14 +21,19 @@ public class Runtime_77710
 
         if (Base.BaseCalls != 1)
         {
-            Console.WriteLine("Expected BaseCalls to be 1, is actually {0}", Base.BaseCalls);
+            Console.WriteLine("FAIL: Expected BaseCalls to be 1, is actually {0}", Base.BaseCalls);
             result = -1;
         }
 
         if (Derived.DerivedCalls != 1)
         {
-            Console.WriteLine("Expected DerivedCalls to be 1, is actually {0}", Derived.DerivedCalls);
+            Console.WriteLine("FAIL: Expected DerivedCalls to be 1, is actually {0}", Derived.DerivedCalls);
             result = -1;
+        }
+
+        if (result == 100)
+        {
+            Console.WriteLine("PASS");
         }
 
         return result;
