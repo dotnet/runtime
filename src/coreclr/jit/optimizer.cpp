@@ -10690,7 +10690,6 @@ void Compiler::optRemoveRedundantZeroInits()
     }
 }
 
-
 //------------------------------------------------------------------------
 // optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
 //
@@ -10730,41 +10729,22 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
 
                 GenTree* lhs = store->gtGetOp1();
-                ValueNum oldStoreValue;
-                if (lhs->OperIs(GT_LCL_VAR))
+                if (!lhs->OperIs(GT_LCL_FLD) || ((lhs->gtFlags & GTF_VAR_USEASG) == 0) ||
+                    (lhs->AsLclFld()->GetLclNum() != lclNum))
                 {
-                    LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
-                    if (lastDefDsc->GetBlock() != defDsc->GetBlock())
-                    {
-                        continue;
-                    }
-
-                    oldStoreValue = lastDefDsc->m_vnPair.GetConservative();
-                }
-                else if (lhs->OperIs(GT_LCL_FLD) && ((lhs->gtFlags & GTF_VAR_USEASG) != 0))
-                {
-                    ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
-                    oldStoreValue        = vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum),
-                                                              lhs->TypeGet(), lhs->AsLclFld()->GetLclOffs(),
-                                                              lhs->AsLclFld()->GetSize());
-                }
-                else
-                {
-                    // TODO-ADDR: delete.
                     continue;
                 }
 
-                if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
-                {
-                    JITDUMP(" -- no, it is an 'explicit init'\n");
-                    continue;
-                }
+                ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                ValueNum oldStoreValue =
+                    vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                       lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
 
                 GenTree* rhs = store->gtGetOp2();
                 ValueNum storeValue;
                 if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
                 {
-                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclFld()->GetLayout());
                 }
                 else
                 {
@@ -11038,4 +11018,3 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
 }
-
