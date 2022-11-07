@@ -420,6 +420,22 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void UseAfterDispose()
+        {
+            byte[] key = new byte[16];
+            byte[] nonce = new byte[12];
+            byte[] plaintext = Array.Empty<byte>();
+            byte[] ciphertext = Array.Empty<byte>();
+            byte[] tag = "58e2fccefa7e3061367f1d57a4e7455a".HexToByteArray();
+
+            AesGcm aesGcm = new AesGcm(key);
+            aesGcm.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => aesGcm.Encrypt(nonce, plaintext, ciphertext, new byte[tag.Length]));
+            Assert.Throws<ObjectDisposedException>(() => aesGcm.Decrypt(nonce, ciphertext, tag, plaintext));
+        }
+
         public static IEnumerable<object[]> GetValidNonceSizes()
         {
             return GetValidSizes(AesGcm.NonceByteSizes);

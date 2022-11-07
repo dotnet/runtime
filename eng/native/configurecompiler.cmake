@@ -462,6 +462,8 @@ if (CLR_CMAKE_HOST_UNIX)
       # src/coreclr/vm/stackingallocator.h. It is a false-positive, fixed in g++ 12.
       # see: https://github.com/dotnet/runtime/pull/69188#issuecomment-1136764770
       add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     endif()
 
     if (CMAKE_CXX_COMPILER_ID)

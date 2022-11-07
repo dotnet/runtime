@@ -2696,7 +2696,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         return;
     }
 
-    if (tree->OperIs(GT_AND) && op2->isContainedAndNotIntOrIImmed())
+    if (tree->isContainedCompareChainSegment(op2))
     {
         GenCondition cond;
         bool         chain = false;
@@ -2819,9 +2819,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     unsigned   varNum = tree->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
     GenTree* data = tree->gtOp1;
     genConsumeRegs(data);
@@ -4616,6 +4613,9 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCon
     // Should only be called on contained nodes.
     assert(targetReg == REG_NA);
 
+    // Should not be called for test conditionals (Arm64 does not have a ctst).
+    assert(tree->OperIsCmpCompare());
+
     // For the ccmp flags, invert the condition of the compare.
     insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
 
@@ -4714,7 +4714,7 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     GenTree*  op2     = tree->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
+    emitAttr  attr    = emitActualTypeSize(tree->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
@@ -4724,10 +4724,20 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     if (opcond->isContained())
     {
         // Generate the contained condition.
-        bool chain = false;
-        JITDUMP("Generating compare chain:\n");
-        genCodeForContainedCompareChain(opcond, &chain, &prevCond);
-        assert(chain);
+        if (opcond->OperIsCompare())
+        {
+            genCodeForCompare(opcond->AsOp());
+            prevCond = GenCondition::FromRelop(opcond);
+        }
+        else
+        {
+            // Condition is a compare chain. Try to contain it.
+            assert(opcond->OperIs(GT_AND));
+            bool chain = false;
+            JITDUMP("Generating compare chain:\n");
+            genCodeForContainedCompareChain(opcond, &chain, &prevCond);
+            assert(chain);
+        }
     }
     else
     {
@@ -4741,8 +4751,9 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     regNumber               srcReg2   = genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
 
-    emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+    emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

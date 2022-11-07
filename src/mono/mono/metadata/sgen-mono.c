@@ -444,6 +444,12 @@ mono_gc_get_vtable_bits (MonoClass *klass)
 		if (fin_callbacks.is_class_finalization_aware (klass))
 			res |= SGEN_GC_BIT_FINALIZER_AWARE;
 	}
+
+	if (m_class_get_image (klass) == mono_defaults.corlib &&
+			strcmp (m_class_get_name_space (klass), "System") == 0 &&
+			strncmp (m_class_get_name (klass), "WeakReference", 13) == 0)
+		res |= SGEN_GC_BIT_WEAKREF;
+
 	return res;
 }
 
@@ -457,12 +463,12 @@ is_finalization_aware (MonoObject *obj)
 gboolean
 sgen_client_object_finalize_eagerly (GCObject *obj)
 {
-	if (obj->vtable->klass == mono_defaults.weakreference_class ||
-	    obj->vtable->klass == mono_defaults.generic_weakreference_class) {
+	if (obj->vtable->gc_bits & SGEN_GC_BIT_WEAKREF) {
 		MonoWeakReference *wr = (MonoWeakReference*)obj;
-		MonoGCHandle gc_handle = (MonoGCHandle)(wr->handleAndKind & ~(gsize)1);
+		MonoGCHandle gc_handle = (MonoGCHandle)(wr->taggedHandle & ~(gsize)1);
 		mono_gchandle_free_internal (gc_handle);
-		wr->handleAndKind &= (gsize)1;
+		// keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+		wr->taggedHandle &= (gsize)1;
 		return TRUE;
 	}
 

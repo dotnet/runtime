@@ -38,6 +38,9 @@ namespace Microsoft.Extensions.Hosting
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="HostBuilder"/>.
+        /// </summary>
         [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostBuilder()
         {
@@ -190,7 +193,7 @@ namespace Microsoft.Extensions.Hosting
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
-        private static void Write<T>(
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
             DiagnosticSource diagnosticSource,
             string name,
             T value)

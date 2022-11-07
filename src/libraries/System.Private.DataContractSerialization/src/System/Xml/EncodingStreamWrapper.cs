@@ -21,12 +21,6 @@ namespace System.Xml
     internal sealed class EncodingStreamWrapper : Stream
     {
         private enum SupportedEncoding { UTF8, UTF16LE, UTF16BE, None }
-        private static readonly UTF8Encoding s_safeUTF8 = new UTF8Encoding(false, false);
-        private static readonly UnicodeEncoding s_safeUTF16 = new UnicodeEncoding(false, false, false);
-        private static readonly UnicodeEncoding s_safeBEUTF16 = new UnicodeEncoding(true, false, false);
-        private static readonly UTF8Encoding s_validatingUTF8 = new UTF8Encoding(false, true);
-        private static readonly UnicodeEncoding s_validatingUTF16 = new UnicodeEncoding(false, false, true);
-        private static readonly UnicodeEncoding s_validatingBEUTF16 = new UnicodeEncoding(true, false, true);
         private const int BufferLength = 128;
 
         // UTF-8 is fastpath, so that's how these are stored
@@ -91,7 +85,7 @@ namespace System.Xml
                     CleanupCharBreak();
                     int count = _encoding.GetChars(_bytes, _byteOffset, _byteCount, _chars, 0);
                     _byteOffset = 0;
-                    _byteCount = s_validatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
+                    _byteCount = DataContractSerializer.ValidatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
 
                     // Check for declaration
                     if (_bytes[1] == '?' && _bytes[0] == '<')
@@ -123,18 +117,18 @@ namespace System.Xml
         private static Encoding GetEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_validatingUTF8,
-                SupportedEncoding.UTF16LE => s_validatingUTF16,
-                SupportedEncoding.UTF16BE => s_validatingBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.ValidatingUTF8,
+                SupportedEncoding.UTF16LE => DataContractSerializer.ValidatingUTF16,
+                SupportedEncoding.UTF16BE => DataContractSerializer.ValidatingBEUTF16,
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
         private static Encoding GetSafeEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_safeUTF8,
-                SupportedEncoding.UTF16LE => s_safeUTF16,
-                SupportedEncoding.UTF16BE => s_safeBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.UTF8NoBom,
+                SupportedEncoding.UTF16LE => DataContractSerializer.UTF16NoBom,
+                SupportedEncoding.UTF16BE => DataContractSerializer.BEUTF16NoBom,
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
@@ -151,11 +145,11 @@ namespace System.Xml
         {
             if (encoding == null)
                 return SupportedEncoding.None;
-            else if (encoding.WebName == s_validatingUTF8.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF8.WebName)
                 return SupportedEncoding.UTF8;
-            else if (encoding.WebName == s_validatingUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF16.WebName)
                 return SupportedEncoding.UTF16LE;
-            else if (encoding.WebName == s_validatingBEUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingBEUTF16.WebName)
                 return SupportedEncoding.UTF16BE;
             else
                 throw new XmlException(SR.XmlEncodingNotSupported);
@@ -174,7 +168,7 @@ namespace System.Xml
             if (_encodingCode != SupportedEncoding.UTF8)
             {
                 EnsureBuffers();
-                _dec = s_validatingUTF8.GetDecoder();
+                _dec = DataContractSerializer.ValidatingUTF8.GetDecoder();
                 _enc = _encoding.GetEncoder();
 
                 // Emit BOM
@@ -400,15 +394,15 @@ namespace System.Xml
             else if (encCount == s_encodingUnicode.Length && CompareCaseInsensitive(s_encodingUnicode, buffer, encStart))
             {
                 if (e == SupportedEncoding.UTF8)
-                    ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), s_safeUTF8.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
+                    ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), DataContractSerializer.UTF8NoBom.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
             }
             else
             {
-                ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
             }
 
             if (e != declEnc)
-                ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
         }
 
         private static bool CompareCaseInsensitive(byte[] key, byte[] buffer, int offset)
@@ -470,8 +464,8 @@ namespace System.Xml
                 int inputCount = Math.Min(count, BufferLength * 2);
                 chars = new char[localEnc.GetMaxCharCount(inputCount)];
                 int ccount = localEnc.GetChars(buffer, offset, inputCount, chars, 0);
-                bytes = new byte[s_validatingUTF8.GetMaxByteCount(ccount)];
-                int bcount = s_validatingUTF8.GetBytes(chars, 0, ccount, bytes, 0);
+                bytes = new byte[DataContractSerializer.ValidatingUTF8.GetMaxByteCount(ccount)];
+                int bcount = DataContractSerializer.ValidatingUTF8.GetBytes(chars, 0, ccount, bytes, 0);
 
                 // Check for declaration
                 if (bytes[1] == '?' && bytes[0] == '<')
@@ -485,7 +479,7 @@ namespace System.Xml
                         throw new XmlException(SR.XmlDeclarationRequired);
                 }
 
-                seg = new ArraySegment<byte>(s_validatingUTF8.GetBytes(GetEncoding(declEnc).GetChars(buffer, offset, count)));
+                seg = new ArraySegment<byte>(DataContractSerializer.ValidatingUTF8.GetBytes(GetEncoding(declEnc).GetChars(buffer, offset, count)));
                 return seg;
             }
             catch (DecoderFallbackException e)

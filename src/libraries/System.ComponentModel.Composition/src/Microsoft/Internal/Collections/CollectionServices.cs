@@ -60,7 +60,7 @@ namespace Microsoft.Internal.Collections
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return new ReadOnlyCollection<T>(source.AsArray());
+            return Array.AsReadOnly(source.AsArray());
         }
 
         public static IEnumerable<T>? ConcatAllowingNull<T>(this IEnumerable<T>? source, IEnumerable<T>? second)

@@ -4,7 +4,7 @@ using System;
 using System.Runtime.InteropServices;
 
 // Represents a problem with contained nodes chains, that contain lclVar reads, that were moved through lclVar stores.
-// Notice that the project file sets complus_JitStressModeNames.
+// Notice that the project file sets DOTNET_JitStressModeNames.
 
 [StructLayout(LayoutKind.Explicit)]
 internal class AA
@@ -61,7 +61,7 @@ internal class TestApp
         // So we calculate AA.a_init[num].q and store as tmp0, use this temp to do nullCheck.
         // Then store AA.a_zero[num].q as tmp0, destroy the old value and try to do EQ thinking that 
         // tmp0 is AA.a_init[num].q.
-        // It needs stress (complus_JitStressModeNames=STRESS_NULL_OBJECT_CHECK, STRESS_MAKE_CSE)
+        // It needs stress (DOTNET_JitStressModeNames=STRESS_NULL_OBJECT_CHECK, STRESS_MAKE_CSE)
         // to force the compiler to do implicit null checks and store values as local variables.
 // Bad IL example, t53 is set as contained, t143 is set as contained, it means they will be calculated as part of their parent t9.
 // But at that moment V02, that is read in t143 is already modified by [000056].

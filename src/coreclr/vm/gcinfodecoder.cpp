@@ -125,7 +125,6 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
     m_IsVarArg                 = headerFlags & GC_INFO_IS_VARARG;
-    int hasSecurityObject      = headerFlags & GC_INFO_HAS_SECURITY_OBJECT;
     int hasGSCookie            = headerFlags & GC_INFO_HAS_GS_COOKIE;
     int hasPSPSym              = headerFlags & GC_INFO_HAS_PSP_SYM;
     int hasGenericsInstContext = (headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE;
@@ -177,7 +176,7 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeEnd = (UINT32) DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
         _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
     }
-    else if (hasSecurityObject || hasGenericsInstContext)
+    else if (hasGenericsInstContext)
     {
         // Decode prolog information
         UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
@@ -191,23 +190,6 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
     remainingFlags &= ~DECODE_PROLOG_LENGTH;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    // Decode the offset to the security object.
-    if(hasSecurityObject)
-    {
-        m_SecurityObjectStackSlot = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(SECURITY_OBJECT_STACK_SLOT_ENCBASE));
-    }
-    else
-    {
-        m_SecurityObjectStackSlot = NO_SECURITY_OBJECT;
-    }
-
-    remainingFlags &= ~DECODE_SECURITY_OBJECT;
     if (remainingFlags == 0)
     {
         // Bail, if we've decoded enough,
@@ -504,12 +486,6 @@ void GcInfoDecoder::EnumerateInterruptibleRanges (
 
         lastInterruptibleRangeStopOffsetNormalized = rangeStopOffsetNormalized;
     }
-}
-
-INT32 GcInfoDecoder::GetSecurityObjectStackSlot()
-{
-    _ASSERTE( m_Flags & DECODE_SECURITY_OBJECT );
-    return m_SecurityObjectStackSlot;
 }
 
 INT32 GcInfoDecoder::GetGSCookieStackSlot()

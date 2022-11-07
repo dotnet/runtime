@@ -63,6 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanCreateRuntimeGraph()
         {
             // will generate and compare to existing file.
@@ -80,6 +81,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanIgnoreExistingInferRids()
         {
             // will generate and compare to existing file.
@@ -134,6 +136,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "ubuntu.22.04-arm64" };
@@ -150,6 +153,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddParentVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "centos.9.2-arm64" };
@@ -169,6 +173,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddMajorVersionsToExistingGroups()
         {
 
@@ -184,8 +189,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
         }
-
+        
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureToExistingGroups()
         {
             var additionalRIDs = new[] { "win10-x128" };
@@ -208,6 +214,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureAndVersionToExistingGroups()
         {
             var additionalRIDs = new[] { "osx.13-powerpc" };
@@ -235,6 +242,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddNewGroups()
         {
             var additionalRIDs = new[] { "yolinux.42.0-quantum" };

@@ -288,9 +288,6 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         // Find "a op cast(b)"
         GenTree* castOp = childNode->AsCast()->CastOp();
 
-        // We want to prefer the combined op here over containment of the cast op
-        castOp->ClearContained();
-
         bool isSupportedCast = false;
 
         if (varTypeIsSmall(childNode->CastToType()))
@@ -688,7 +685,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#endif // TARGET_ARM
+#else // !TARGET_ARM
+    if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
+    {
+        return;
+    }
+#endif // !TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
@@ -2010,13 +2012,25 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableBinaryOp(node, op2))
         {
+            if (op2->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op2->AsCast()->CastOp()->ClearContained();
+            }
             MakeSrcContained(node, op2);
+
             return;
         }
 
         if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
         {
+            if (op1->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op1->AsCast()->CastOp()->ClearContained();
+            }
             MakeSrcContained(node, op1);
+
             std::swap(node->gtOp1, node->gtOp2);
             return;
         }
@@ -2241,26 +2255,21 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (parent->isContainedCompareChainSegment(child))
     {
         // Already have a chain.
-        assert(child->OperIs(GT_AND) || child->OperIsCmpCompare());
         return true;
     }
-    else
+    else if (child->OperIs(GT_AND))
     {
-        if (child->OperIs(GT_AND))
-        {
-            // Count both sides.
-            return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
-                   IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
-        }
-        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
-                 varTypeIsIntegral(child->gtGetOp2()))
-        {
-            // Can the child compare be contained.
-            return IsSafeToContainMem(parent, child);
-        }
+        // Count both sides.
+        return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
+               IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
+    }
+    else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
+    {
+        // Can the child compare be contained.
+        return IsSafeToContainMem(parent, child);
     }
 
     return false;
@@ -2285,9 +2294,9 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
     *startOfChain = nullptr; // Nothing found yet.
 
-    if (child->isContainedAndNotIntOrIImmed())
+    if (parent->isContainedCompareChainSegment(child))
     {
-        // Already have a chain.
+        // Already have a contained chain.
         return true;
     }
     // Can the child be contained.
@@ -2296,7 +2305,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         if (child->OperIs(GT_AND))
         {
             // If Op2 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp2()->isContainedAndNotIntOrIImmed())
+            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp2()))
             {
                 if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
                 {
@@ -2306,7 +2315,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             }
 
             // If Op1 is not contained, then try to contain it.
-            if (!child->AsOp()->gtGetOp1()->isContainedAndNotIntOrIImmed())
+            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp1()))
             {
                 if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
                 {
@@ -2318,8 +2327,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
-                 varTypeIsIntegral(child->gtGetOp2()))
+        else if (child->OperIsCmpCompare())
         {
             child->AsOp()->SetContained();
 
@@ -2413,17 +2421,28 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
         return;
     }
 
-    // Check if the compare does not need to be generated into a register.
-    GenTree* startOfChain = nullptr;
-    ContainCheckCompareChain(node->gtCond, node, &startOfChain);
-
-    if (startOfChain != nullptr)
+    if (node->gtCond->OperIsCompare())
     {
-        // The earliest node in the chain will be generated as a standard compare.
-        assert(startOfChain->OperIsCmpCompare());
-        startOfChain->AsOp()->gtGetOp1()->ClearContained();
-        startOfChain->AsOp()->gtGetOp2()->ClearContained();
-        ContainCheckCompare(startOfChain->AsOp());
+        // All compare node types (including TEST_) are containable.
+        if (IsSafeToContainMem(node, node->gtCond))
+        {
+            node->gtCond->AsOp()->SetContained();
+        }
+    }
+    else
+    {
+        // Check for a compare chain and try to contain it.
+        GenTree* startOfChain = nullptr;
+        ContainCheckCompareChain(node->gtCond, node, &startOfChain);
+
+        if (startOfChain != nullptr)
+        {
+            // The earliest node in the chain will be generated as a standard compare.
+            assert(startOfChain->OperIsCmpCompare());
+            startOfChain->AsOp()->gtGetOp1()->ClearContained();
+            startOfChain->AsOp()->gtGetOp2()->ClearContained();
+            ContainCheckCompare(startOfChain->AsOp());
+        }
     }
 }
 
