@@ -4480,6 +4480,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 #endif
 
 #if defined(TARGET_WASM)
+static
 MonoInst*
 arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -4492,6 +4493,7 @@ arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoC
 	return NULL;
 }
 #else
+static
 MonoInst*
 arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
