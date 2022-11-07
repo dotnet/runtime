@@ -1743,9 +1743,11 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             switch (simdBaseType)
             {
                 case TYP_BYTE:
+                case TYP_UBYTE:
                 {
-                    // Signed types need to be explicitly zero-extended to ensure upper-bits are zero
+                    // Types need to be explicitly zero-extended to ensure upper-bits are zero
                     // We need to explicitly use TYP_UBYTE since unsigned is ignored for small types
+                    // Explicitly handle both BYTE and UBYTE to account for reinterpret casts and the like
 
                     tmp1 = comp->gtNewCastNode(TYP_UBYTE, op1, /* unsigned */ true, TYP_INT);
                     BlockRange().InsertAfter(op1, tmp1);
@@ -1757,9 +1759,11 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 }
 
                 case TYP_SHORT:
+                case TYP_USHORT:
                 {
-                    // Signed types need to be explicitly zero-extended to ensure upper-bits are zero
-                    // We need to explicitly use TYP_UBYTE since unsigned is ignored for small types
+                    // Types need to be explicitly zero-extended to ensure upper-bits are zero
+                    // We need to explicitly use TYP_USHORT since unsigned is ignored for small types
+                    // Explicitly handle both BYTE and UBYTE to account for reinterpret casts and the like
 
                     tmp1 = comp->gtNewCastNode(TYP_USHORT, op1, /* unsigned */ true, TYP_INT);
                     BlockRange().InsertAfter(op1, tmp1);
@@ -1767,15 +1771,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     node->ChangeHWIntrinsicId(NI_SSE2_ConvertScalarToVector128Int32, tmp1);
                     node->SetSimdBaseJitType(CORINFO_TYPE_INT);
-                    break;
-                }
-
-                case TYP_UBYTE:
-                case TYP_USHORT:
-                {
-                    // Unsigned types are implicitly zero extended
-                    node->ChangeHWIntrinsicId(NI_SSE2_ConvertScalarToVector128UInt32);
-                    node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
                     break;
                 }
 
