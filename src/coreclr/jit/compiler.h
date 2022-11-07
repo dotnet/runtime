@@ -6054,10 +6054,6 @@ protected:
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
 
-    // During global assertion prop, returns the conservative normal VN for a tree;
-    // otherwise returns NoVN
-    ValueNum optConservativeNormalVN(GenTree* tree);
-
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
     // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and
@@ -7333,6 +7329,10 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
+
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree*         op1,
                                       GenTree*         op2,
@@ -7340,7 +7340,6 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
-    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 

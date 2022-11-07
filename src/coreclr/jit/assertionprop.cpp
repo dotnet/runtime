@@ -1307,6 +1307,17 @@ Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
     return assertion;
 }
 
+ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+{
+    if (optLocalAssertionProp)
+    {
+        return ValueNumStore::NoVN;
+    }
+
+    assert(vnStore != nullptr);
+    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
+}
+
 //------------------------------------------------------------------------
 // optCastConstantSmall: Cast a constant to a small type.
 //
