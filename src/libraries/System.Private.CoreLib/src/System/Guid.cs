@@ -868,6 +868,7 @@ namespace System
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool EqualsCore(in Guid left, in Guid right)
         {
             if (Vector128.IsHardwareAccelerated)

@@ -189,6 +189,11 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
+#if MONO
+        // We have to keep these implementations for Mono here because MemoryExtensions.Equals("True", OrdinalIgnoreCase)
+        // triggers CompareInfo static initialization which is not desired when we parse configs on start.
+        // TODO: Remove once Mono aligns its behavior with CoreCLR around .beforefieldinit
+        // https://github.com/dotnet/runtime/issues/77513
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
@@ -205,6 +210,18 @@ namespace System
                    (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
                     ((value[4] | 0x20) == 'e'));
         }
+#else
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // JIT inlines and unrolls this, see https://github.com/dotnet/runtime/pull/77398
+            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+#endif
 
         // Determines whether a String represents true or false.
         //

@@ -4134,10 +4134,16 @@ namespace System.Text.Json.Tests
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
 
             string comment = "comment is */ invalid";
-
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment.AsSpan()));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(Encoding.UTF8.GetBytes(comment)));
+
+            comment = "comment with unpaired surrogate \udc00";
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment.AsSpan()));
+
+            var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(invalidUtf8));
         }
 
         [Theory]
@@ -4162,16 +4168,11 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteCommentValue(comment.AsSpan());
             jsonUtf8.WriteCommentValue(Encoding.UTF8.GetBytes(comment));
 
-            comment = "comment is / * valid even with unpaired surrogate \udc00 this part no longer visible";
+            comment = "comment is / * valid";
             jsonUtf8.WriteCommentValue(comment);
             jsonUtf8.WriteCommentValue(comment.AsSpan());
 
             jsonUtf8.Flush();
-
-            // Explicitly skipping flushing here
-            var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
-            jsonUtf8.WriteCommentValue(invalidUtf8);
-
             string expectedStr = GetCommentExpectedString(prettyPrint: formatted);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
@@ -4197,7 +4198,7 @@ namespace System.Text.Json.Tests
             json.WriteComment(comment);
             json.WriteComment(comment);
 
-            comment = "comment is / * valid even with unpaired surrogate ";
+            comment = "comment is / * valid";
             json.WriteComment(comment);
             json.WriteComment(comment);
 

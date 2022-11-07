@@ -18,13 +18,13 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Specific.cs" />
     <Compile Include="PipeStream.ProtectedMethods.Tests.cs" />
     <Compile Include="PipeStreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
     <Compile Include="InteropTest.Windows.cs" />

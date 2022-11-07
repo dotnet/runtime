@@ -1177,8 +1177,8 @@ namespace System.Text.Json.Serialization.Tests
             // Only when the collection contains elements.
 
             var dictionary = new Dictionary<object, object>();
-            // Uri is an unsupported dictionary key.
-            dictionary.Add(new Uri("http://foo"), "bar");
+            // ValueTuple is an unsupported dictionary key.
+            dictionary.Add((0, 1), "bar");
 
             var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
 

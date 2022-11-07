@@ -660,7 +660,7 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     return kill(pid, signal);
 }
 
-int32_t SystemNative_GetPid()
+int32_t SystemNative_GetPid(void)
 {
     return getpid();
 }
@@ -675,7 +675,7 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
@@ -874,7 +874,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 }
 #endif
 
-char* SystemNative_GetProcessPath()
+char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }

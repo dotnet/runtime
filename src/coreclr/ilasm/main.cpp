@@ -16,14 +16,39 @@
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
-    WCHAR* pchE = wcschr(szArg,L'=');
-    WCHAR* pchC = wcschr(szArg,L':');
+    WCHAR* pchE = wcschr(szArg,W('='));
+    WCHAR* pchC = wcschr(szArg,W(':'));
     WCHAR* ret;
     if(pchE == NULL) ret = pchC;
     else if(pchC == NULL) ret = pchE;
     else ret = (pchE < pchC)? pchE : pchC;
     return ret;
 }
+
+// When converting a string for number parsing it is
+// possible to simply cast a WCHAR to a char with no
+// loss of data.
+class NarrowForNumberParsing final
+{
+    char* _buffer;
+public:
+    NarrowForNumberParsing(const WCHAR* str)
+    {
+        size_t len = wcslen(str);
+        _buffer = (char*)malloc(len + 1);
+        for (size_t i = 0; i < len; ++i)
+            _buffer[i] = (char)str[i];
+        _buffer[len] = '\0';
+    }
+    ~NarrowForNumberParsing()
+    {
+        free(_buffer);
+    }
+    operator const char*() const
+    {
+        return _buffer;
+    }
+};
 
 static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlignment=0,g_dwTestRepeat=0;
 static ULONGLONG   g_stBaseAddress=0;
@@ -214,9 +239,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             for (i = 1; i < argc; i++)
             {
 #ifdef TARGET_UNIX
-                if(argv[i][0] == L'-')
+                if(argv[i][0] == W('-'))
 #else
-                if((argv[i][0] == L'/') || (argv[i][0] == L'-'))
+                if((argv[i][0] == W('/')) || (argv[i][0] == W('-')))
 #endif
                 {
                     char szOpt[3 + 1] = { 0 };
@@ -247,7 +272,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                       WCHAR *pStr = EqualOrColon(argv[i]);
                       if(pStr != NULL)
                       {
-                          for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                          for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                           if(wcslen(pStr)==0) goto InvalidOption; //if no suboption
                           else
                           {
@@ -260,9 +285,10 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                 pAsm->m_dwIncludeDebugInfo = 0x103;
                               else
                               {
-                                const WCHAR *pFmt =((*pStr == '0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
-                                if(swscanf_s(pStr,pFmt,&(pAsm->m_dwIncludeDebugInfo))!=1)
-                                goto InvalidOption; // bad subooption
+                                const CHAR *pFmt =((*pStr == '0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                                NarrowForNumberParsing str{pStr};
+                                if(sscanf_s(str,pFmt,&(pAsm->m_dwIncludeDebugInfo))!=1)
+                                    goto InvalidOption; // bad subooption
                               }
                           }
                       }
@@ -360,7 +386,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         {
                             WCHAR *pStr = EqualOrColon(argv[i]);
                             if(pStr == NULL) goto ErrorExit;
-                            for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                            for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                             if(wcslen(pStr)==0) goto InvalidOption; //if no file name
                             pAsm->m_wzResourceFile = pStr;
                         }
@@ -371,7 +397,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no file name
                         pAsm->m_wzKeySourceName = pStr;
                     }
@@ -379,7 +405,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no file name
                         wzIncludePath = pStr;
                     }
@@ -387,7 +413,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no file name
                         if(wcslen(pStr) >= MAX_FILENAME_LENGTH)
                         {
@@ -400,7 +426,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no version string
                         pAsm->m_wzMetadataVersion = pStr;
                     }
@@ -408,11 +434,12 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
-                            if(swscanf_s(pStr,W("%d.%d"),&major, &minor)==2)
+                            NarrowForNumberParsing str{pStr};
+                            if(sscanf_s(str,"%d.%d",&major, &minor)==2)
                             {
                                 if((major >= 0)&&(major < 0xFF))
                                     pAsm->m_wMSVmajor = (WORD)major;
@@ -426,18 +453,20 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
-                        if(swscanf_s(pStr,pFmt,&g_dwSubsystem)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_dwSubsystem)!=1) goto InvalidOption;
                     }
                     else if (!_stricmp(szOpt, "SSV"))
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
+                        for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
                         if(wcslen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
-                            if(swscanf_s(pStr,W("%d.%d"),&major, &minor)==2)
+                            NarrowForNumberParsing str{pStr};
+                            if(sscanf_s(str,"%d.%d",&major, &minor)==2)
                             {
                                 if((major >= 0)&&(major < 0xFFFF))
                                     pAsm->m_wSSVersionMajor = (WORD)major;
@@ -452,8 +481,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
-                        if(swscanf_s(pStr,pFmt,&g_dwFileAlignment)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_dwFileAlignment)!=1) goto InvalidOption;
                         if((g_dwFileAlignment & (g_dwFileAlignment-1))
                            || (g_dwFileAlignment < 0x200) || (g_dwFileAlignment > 0x10000))
                         {
@@ -466,16 +496,18 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
-                        if(swscanf_s(pStr,pFmt,&g_dwComImageFlags)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_dwComImageFlags)!=1) goto InvalidOption;
                     }
                     else if (!_stricmp(szOpt, "BAS"))
                     {
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%I64x") : W("%I64d");
-                        if(swscanf_s(pStr,pFmt,&g_stBaseAddress)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%llx" : "%lld";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_stBaseAddress)!=1) goto InvalidOption;
                         if(g_stBaseAddress & 0xFFFF)
                         {
                             fprintf(stderr,"\nBase address must be 0x10000-aligned\n");
@@ -487,8 +519,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
-                        if(swscanf_s(pStr,pFmt,&g_stSizeOfStackReserve)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_stSizeOfStackReserve)!=1) goto InvalidOption;
                     }
 #ifdef _SPECIAL_INTERNAL_USE_ONLY
                     else if (!_stricmp(szOpt, "TES"))
@@ -496,8 +529,9 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
-                        if(swscanf_s(pStr,pFmt,&g_dwTestRepeat)!=1) goto InvalidOption;
+                        const CHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? "%x" : "%d";
+                        NarrowForNumberParsing str{pStr};
+                        if(sscanf_s(str,pFmt,&g_dwTestRepeat)!=1) goto InvalidOption;
                     }
 #endif
                     else
@@ -592,7 +626,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 do
                 {
                     j--;
-                    if(wzOutputFilename[j] == L'.')
+                    if(wzOutputFilename[j] == W('.'))
                     {
                         wzOutputFilename[j] = 0;
                         break;
@@ -604,7 +638,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             if (pAsm->m_fGeneratePDB)
             {
                 wcscpy_s(wzPdbFilename, MAX_FILENAME_LENGTH, wzOutputFilename);
-                WCHAR* extPos = wcsrchr(wzPdbFilename, L'.');
+                WCHAR* extPos = wcsrchr(wzPdbFilename, W('.'));
                 if (extPos != NULL)
                     *extPos = 0;
                 wcscat_s(wzPdbFilename, MAX_FILENAME_LENGTH, W(".pdb"));
@@ -805,15 +839,23 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     if (exitval || !bGeneratePdb)
     {
         // PE file was not created, or no debug info required. Kill PDB if any
-        WCHAR* pc = wcsrchr(wzOutputFilename,L'.');
+        WCHAR* pc = wcsrchr(wzOutputFilename,W('.'));
         if(pc==NULL)
         {
             pc = &wzOutputFilename[wcslen(wzOutputFilename)];
-            *pc = L'.';
+            *pc = W('.');
         }
         wcscpy_s(pc+1,4,W("PDB"));
-#undef DeleteFileW
-        DeleteFileW(wzOutputFilename);
+
+#ifdef TARGET_WINDOWS
+        _wremove(wzOutputFilename);        
+#else
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(szOutputFilename, wzOutputFilename);
+        if (szOutputFilename != NULL)
+        {
+            remove(szOutputFilename);
+        }
+#endif        
     }
     if (exitval == 0)
     {

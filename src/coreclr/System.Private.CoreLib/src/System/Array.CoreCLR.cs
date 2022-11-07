@@ -381,8 +381,52 @@ namespace System
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void Initialize();
+        public unsafe void Initialize()
+        {
+            MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);
+            TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
+            if (thElem.IsTypeDesc)
+            {
+                return;
+            }
+
+            MethodTable* pElemMT = thElem.AsMethodTable();
+            if (!pElemMT->HasDefaultConstructor || !pElemMT->IsValueType)
+            {
+                return;
+            }
+
+            RuntimeType arrayType = (RuntimeType)GetType();
+
+            if (arrayType.GenericCache is not ArrayInitializeCache cache)
+            {
+                cache = new ArrayInitializeCache(arrayType);
+                arrayType.GenericCache = cache;
+            }
+
+            delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            nuint elementSize = pArrayMT->ComponentSize;
+
+            for (int i = 0; i < Length; i++)
+            {
+                constructorFtn(ref arrayRef);
+                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
+            }
+        }
+
+        private sealed unsafe partial class ArrayInitializeCache
+        {
+            internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
+
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
+            private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
+
+            public ArrayInitializeCache(RuntimeType arrayType)
+            {
+                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+            }
+        }
     }
 
 #pragma warning disable CA1822 // Mark members as static
