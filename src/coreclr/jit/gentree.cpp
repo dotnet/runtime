@@ -6566,10 +6566,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_ARR_ELEM:
             if (comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj))
             {
-                return ExceptionSetFlags::NullReferenceException;
+                return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
             }
 
-            return ExceptionSetFlags::None;
+            return ExceptionSetFlags::IndexOutOfRangeException;
 
         case GT_FIELD:
         {
@@ -17626,7 +17626,7 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
 //    size              - Size of the store in bytes
 //    pFieldStoreOffset - [out] parameter for the store's offset relative
 //                        to the field local itself
-//    pFileStoreSize    - [out] parameter for the amount of the field's
+//    pFieldStoreSize   - [out] parameter for the amount of the field's
 //                        local's bytes affected by the store
 //
 // Return Value:
@@ -17634,7 +17634,7 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
 //    otherwise.
 //
 bool Compiler::gtStoreDefinesField(
-    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize)
+    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize)
 {
     ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
     unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
@@ -17644,7 +17644,7 @@ bool Compiler::gtStoreDefinesField(
     if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
     {
         *pFieldStoreOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
-        *pFileStoreSize    = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
+        *pFieldStoreSize   = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
 
         return true;
     }
@@ -23790,10 +23790,10 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
             return SsaNumInfo(COMPOSITE_ENCODING_BIT | ssaNumEncoded);
         }
 
-        return SsaNumInfo(ssaNumEncoded | baseNum.m_value);
+        return SsaNumInfo(ssaNumEncoded | (baseNum.m_value & ~(SIMPLE_NUM_MASK << (index * BITS_PER_SIMPLE_NUM))));
     }
 
-    if (!baseNum.IsInvalid())
+    if (!baseNum.IsInvalid() && !baseNum.HasCompactFormat())
     {
         *baseNum.GetOutlinedNumSlot(compiler, index) = ssaNum;
         return baseNum;
@@ -23807,11 +23807,23 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
     }
 
     // Allocate a new chunk for the field numbers. Once allocated, it cannot be expanded.
-    int                            count              = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
-    JitExpandArrayStack<unsigned>* table              = compiler->m_outlinedCompositeSsaNums;
-    int                            outIdx             = table->Size();
-    unsigned*                      pLastSlot          = &table->GetRef(outIdx + count - 1); // This will grow the table.
-    pLastSlot[-(count - 1) + static_cast<int>(index)] = ssaNum;
+    int                            count      = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
+    JitExpandArrayStack<unsigned>* table      = compiler->m_outlinedCompositeSsaNums;
+    int                            outIdx     = table->Size();
+    unsigned*                      pLastSlot  = &table->GetRef(outIdx + count - 1); // This will grow the table.
+    unsigned*                      pFirstSlot = pLastSlot - count + 1;
+
+    // Copy over all of the already encoded numbers.
+    if (!baseNum.IsInvalid())
+    {
+        for (int i = 0; i < SIMPLE_NUM_COUNT; i++)
+        {
+            pFirstSlot[i] = baseNum.GetNum(compiler, i);
+        }
+    }
+
+    // Copy the one being set last to overwrite any previous values.
+    pFirstSlot[index] = ssaNum;
 
     // Split the index if it does not fit into a small encoding.
     if ((outIdx & ~OUTLINED_INDEX_LOW_MASK) != 0)

@@ -2650,21 +2650,21 @@ namespace System
             return (int)offset + index;
         }
 
-        private interface INegator<T> where T : struct
+        internal interface INegator<T> where T : struct
         {
             static abstract bool NegateIfNeeded(bool equals);
             static abstract Vector128<T> NegateIfNeeded(Vector128<T> equals);
             static abstract Vector256<T> NegateIfNeeded(Vector256<T> equals);
         }
 
-        private readonly struct DontNegate<T> : INegator<T> where T : struct
+        internal readonly struct DontNegate<T> : INegator<T> where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
         }
 
-        private readonly struct Negate<T> : INegator<T> where T : struct
+        internal readonly struct Negate<T> : INegator<T> where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => !equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
