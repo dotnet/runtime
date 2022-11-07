@@ -1373,9 +1373,10 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartInfo info = new ProcessStartInfo
             {
-                UseShellExecute = false,
                 LoadUserProfile = true,
                 UseCredentialsForNetworkingOnly = true,
+                UserName = "dummy",
+                PasswordInClearText = "not used, because ArgumentException should be thrown before",
                 FileName = "notepad.exe",
                 Arguments = null,
                 WindowStyle = ProcessWindowStyle.Minimized
