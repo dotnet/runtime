@@ -5818,9 +5818,9 @@ private:
     void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
+    unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetBigOffsetMorphingTemp(var_types type); // We cache one temp per type to be
-                                                         // used when morphing big offset.
+    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
 
     //----------------------- Liveness analysis -------------------------------
 
@@ -5896,8 +5896,6 @@ private:
 #if !FEATURE_FIXED_OUT_ARGS
     unsigned fgThrowHlpBlkStkLevel(BasicBlock* block);
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    unsigned fgBigOffsetMorphingTemps[TYP_COUNT];
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
@@ -8996,7 +8994,8 @@ private:
     // canUseEvexEncoding - Answer the question: Is Evex encoding supported on this target.
     //
     // Returns:
-    //    TRUE if Evex encoding is supported, FALSE if not.
+    //    `true` if Evex encoding is supported, `false` if not.
+    //
     bool canUseEvexEncoding() const
     {
 #ifdef TARGET_XARCH
@@ -9010,18 +9009,21 @@ private:
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
     //
     // Returns:
-    //    TRUE if user requests EVEX encoding and it's safe, FALSE if not.
+    //    `true` if user requests EVEX encoding and it's safe, `false` if not.
+    //
     bool DoJitStressEvexEncoding() const
     {
 #ifdef TARGET_XARCH
-        // Using JitStressEVEXEncoding flag will force instructions which would
-        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support.
-        if (JitConfig.JitStressEVEXEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+// Using JitStressEvexEncoding flag will force instructions which would
+// otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+// This requires AVX512VL support.
+#ifdef DEBUG
+        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             return true;
         }
-#endif
+#endif // DEBUG
+#endif // TARGET_XARCH
         return false;
     }
 
