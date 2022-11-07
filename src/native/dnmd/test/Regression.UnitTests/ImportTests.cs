@@ -50,8 +50,10 @@ namespace Regression.UnitTests
             // Verify APIs
             Assert.Equal(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             Assert.Equal(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
-            Assert.Equal(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+
+            Assert.Equal(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
+            Assert.Equal(GetTypeSpecFromToken(baselineImport), GetTypeSpecFromToken(currentImport));
 
             var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             foreach (var typedef in typedefs)
@@ -61,10 +63,15 @@ namespace Regression.UnitTests
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+                    Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
                 }
                 Assert.Equal(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
                 Assert.Equal(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
-                Assert.Equal(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
+                var fields = AssertAndReturn(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
+                foreach (var fielddef in fields)
+                {
+                    Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
+                }
                 Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
 
@@ -169,6 +176,18 @@ namespace Regression.UnitTests
                 import.CloseEnum(hcorenum);
             }
             return tokens;
+        }
+
+        private static List<(nint Ptr, uint Len)> GetTypeSpecFromToken(IMetaDataImport import)
+        {
+            List<(nint Ptr, uint Len)> specs = new();
+            var tokens = EnumTypeSpecs(import);
+            foreach (uint tk in tokens)
+            {
+                Assert.Equal(0, import.GetTypeSpecFromToken(tk, out nint sig, out uint len));
+                specs.Add((sig, len));
+            }
+            return specs;
         }
 
         private static List<uint> EnumModuleRefs(IMetaDataImport import)
@@ -319,6 +338,24 @@ namespace Regression.UnitTests
                 import.CloseEnum(hcorenum);
             }
             return tokens;
+        }
+
+        private static List<uint> GetRVA(IMetaDataImport import, uint tk)
+        {
+            List<uint> values = new();
+            int hr = import.GetRVA(tk,
+                out uint pulCodeRVA,
+                out uint pdwImplFlags);
+            if (hr != 0)
+            {
+                values.Add((uint)hr);
+            }
+            else
+            {
+                values.Add(pulCodeRVA);
+                values.Add(pdwImplFlags);
+            }
+            return values;
         }
 
         private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)

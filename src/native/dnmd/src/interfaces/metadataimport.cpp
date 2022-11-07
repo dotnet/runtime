@@ -803,7 +803,43 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetRVA(
     ULONG* pulCodeRVA,
     DWORD* pdwImplFlags)
 {
-    return E_NOTIMPL;
+    uint32_t codeRVA = 0;
+    uint32_t implFlags = 0;
+
+    mdcursor_t cursor;
+    if (TypeFromToken(tk) == mdtMethodDef)
+    {
+        if (!md_token_to_cursor(_md_ptr.get(), tk, &cursor))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtMethodDef_Rva, 1, &codeRVA)
+            || 1 != md_get_column_value_as_constant(cursor, mdtMethodDef_ImplFlags, 1, &implFlags))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+    }
+    else
+    {
+        if (TypeFromToken(tk) != mdtFieldDef)
+            return E_INVALIDARG;
+
+        uint32_t unused;
+        mdcursor_t fieldRvaRow;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldRva, &cursor, &unused)
+            || !md_find_row_from_cursor(cursor, mdtFieldRva_Field, RidFromToken(tk), &fieldRvaRow))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        if (1 != md_get_column_value_as_constant(fieldRvaRow, mdtFieldRva_Rva, 1, &codeRVA))
+            return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (pulCodeRVA != nullptr)
+        *pulCodeRVA = (ULONG)codeRVA;
+
+    if (pdwImplFlags != nullptr)
+        *pdwImplFlags = (DWORD)implFlags;
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPermissionSetProps(
@@ -856,7 +892,17 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeSpecFromToken(
     PCCOR_SIGNATURE* ppvSig,
     ULONG* pcbSig)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(typespec) != mdtTypeSpec)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), typespec, &cursor)
+        || 1 != md_get_column_value_as_blob(cursor, mdtTypeSpec_Signature, 1, ppvSig, (uint32_t*)pcbSig))
+    {
+        return CLDB_E_RECORD_NOTFOUND;
+    }
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNameFromToken(            // Not Recommended! May be removed!
