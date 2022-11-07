@@ -4,20 +4,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
-using System.ComponentModel;
-using System.Security;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
-using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
@@ -451,7 +450,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyInChildProcess()
         {
-            string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
+            string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory;
             Assert.NotEqual(workingDirectory, Directory.GetCurrentDirectory());
             var psi = new ProcessStartInfo { WorkingDirectory = workingDirectory };
             RemoteExecutor.Invoke(wd =>
@@ -467,62 +466,15 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             const string username = "testForDotnetRuntime";
-            using WindowsTestAccount testAccount = new WindowsTestAccount(username);
 
-            bool hasStarted = false;
-            SafeProcessHandle handle = null;
-            Process p = null;
-            string workingDirectory = null;
+            using Process p = CreateProcessLong();
+            p.StartInfo.LoadUserProfile = true;
 
-            try
-            {
-                p = CreateProcessLong();
+            using var testAccountCleanup = CreateUserAndExecute(p,  null, null, null);
 
-                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
-                    ? Directory.GetCurrentDirectory()
-                    : p.StartInfo.WorkingDirectory;
-
-                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
-                {
-                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: true);
-                }
-
-                p.StartInfo.LoadUserProfile = true;
-                p.StartInfo.UserName = username;
-                p.StartInfo.PasswordInClearText = testAccount.Password;
-
-                try
-                {
-                    hasStarted = p.Start();
-                }
-                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
-                {
-                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
-                }
-
-
-                Assert.Equal(username, Helpers.GetProcessUserName(p));
-                bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
-                Assert.True(isProfileLoaded);
-            }
-            finally
-            {
-                if (handle != null)
-                    handle.Dispose();
-
-                if (hasStarted)
-                {
-                    p.Kill();
-
-                    Assert.True(p.WaitForExit(WaitInMS));
-                }
-
-                if (PlatformDetection.IsNotWindowsServerCore)
-                {
-                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
-                }
-            }
+            Assert.Equal(username, Helpers.GetProcessUserName(p));
+            bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+            Assert.True(isProfileLoaded);
         }
 
         private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
@@ -534,7 +486,7 @@ namespace System.Diagnostics.Tests
 
             DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
             DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
-            Apply(userName, directorySecurity, FileSystemRights.Read , add);
+            Apply(userName, directorySecurity, FileSystemRights.Read, add);
             directoryInfo.SetAccessControl(directorySecurity);
 
             static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
@@ -1172,7 +1124,7 @@ namespace System.Diagnostics.Tests
                 return $"Didn't get expected HRESULT (1) when getting char count. HRESULT was 0x{result:x8}";
 
             string value = new string((char)0, (int)count - 1);
-            fixed(char* s = value)
+            fixed (char* s = value)
             {
                 result = AssocQueryStringW(flags, str, pszAssoc, pszExtra, s, ref count);
             }
@@ -1222,7 +1174,7 @@ namespace System.Diagnostics.Tests
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
-                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
+                if (!PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
                     && !PlatformDetection.IsWindowsNanoServer // By design
                     && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);
@@ -1404,87 +1356,189 @@ namespace System.Diagnostics.Tests
             string testFileContent = Guid.NewGuid().ToString();
             File.WriteAllText(testFilePath, testFileContent);
 
-            using WindowsTestAccount accountWithoutFilePermission = new WindowsTestAccount("testForDotnetRuntime");
-            using WindowsTestAccount accountWithFilePermission = new WindowsTestAccount("testForDotnetNetwork");
-
-            bool hasStarted = false;
-            Process p = null;
-            string workingDirectory = null;
-
-            try
+            using Process p = CreateProcess((localPath, uncPath) =>
             {
-                p = CreateProcess((localPath, uncPath) =>
-                {
-                    try
-                    {
-                        _ = File.ReadAllText(localPath);
-                        Console.Write('1');
-                    }
-                    catch (SecurityException)
-                    {
-                        Console.Write('0');
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        Console.Write('0');
-                    }
-
-                    Console.Write(';');
-                    Console.Write(File.ReadAllText(uncPath));
-                    return RemoteExecutor.SuccessExitCode;
-                }, testFilePath, testFileUncPath);
-                p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-                p.StartInfo.RedirectStandardOutput = true;
-                p.StartInfo.LoadUserProfile = false;
-                p.StartInfo.UseCredentialsForNetworkingOnly = true;
-                p.StartInfo.UserName = accountWithFilePermission.AccountName;
-                p.StartInfo.PasswordInClearText = accountWithFilePermission.Password;
-
-                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
-                    ? Directory.GetCurrentDirectory()
-                    : p.StartInfo.WorkingDirectory;
-
-                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
-                {
-                    // ensure the new user can access the .exe and the temp file (otherwise you get Access is denied exception)
-                    SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: true);
-                    SetAccessControl(accountWithFilePermission.AccountName, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
-                }
-
                 try
                 {
-                    hasStarted = WindowsIdentity.RunImpersonated(
-                        accountWithoutFilePermission.AccountTokenHandle,
-                        p.Start);
-                    string output = p.StandardOutput.ReadToEnd();
-                    Assert.True(p.WaitForExit(WaitInMS));
-
-                    string[] splitOutput = output.Split(';', StringSplitOptions.None);
-                    Assert.Equal("0", splitOutput[0]);
-                    Assert.Equal(testFileContent, splitOutput[1]);
+                    _ = File.ReadAllText(localPath);
+                    Console.Write('1');
                 }
-                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+                catch (SecurityException)
                 {
-                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
+                    Console.Write('0');
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    Console.Write('0');
                 }
 
-                Assert.Equal(accountWithoutFilePermission.AccountName.Split('\\').LastOrDefault(), Helpers.GetProcessUserName(p));
-            }
-            finally
+                Console.Write(';');
+                Console.Write(File.ReadAllText(uncPath));
+                return RemoteExecutor.SuccessExitCode;
+            }, testFilePath, testFileUncPath);
+            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.UseCredentialsForNetworkingOnly = true;
+
+            Action<string, string> setup = (username, _) =>
             {
-                if (hasStarted)
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
-                    p.Kill();
-
-                    Assert.True(p.WaitForExit(WaitInMS));
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
                 }
+            };
 
+            Action<string, string> cleanup = (username, _) =>
+            {
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
-                    SetAccessControl(accountWithoutFilePermission.AccountName, p.StartInfo.FileName, workingDirectory, add: false);
-                    SetAccessControl(accountWithFilePermission.AccountName, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
+            };
+
+            using var processInfo = CreateUserAndExecute(
+                p,
+                runImpersonated: true,
+                additionalSetup: setup,
+                additionalCleanup: cleanup);
+
+            string processUserName = Helpers.GetProcessUserName(p);
+            string output = p.StandardOutput.ReadToEnd();
+            Assert.True(p.WaitForExit(WaitInMS));
+
+            string[] splitOutput = output.Split(';', StringSplitOptions.None);
+            Assert.Equal("0", splitOutput[0]);
+            Assert.Equal(testFileContent, splitOutput[1]);
+
+            Assert.Equal(processInfo.ImpersonationAccountName?.Split('\\')?.LastOrDefault(), processUserName);
+        }
+
+        private TestProcessState CreateUserAndExecute(
+            Process process,
+            string username = "testDotNetProcess",
+            bool runImpersonated = false,
+            Action<string, string> additionalSetup = null,
+            Action<string, string> additionalCleanup = null)
+            => CreateUserAndExecute(process, username, runImpersonated ? "testDotNetProcessImpersonated" : null, additionalSetup, additionalCleanup);
+
+        private TestProcessState CreateUserAndExecute(
+            Process process,
+            string username = "testDotNetProcess",
+            string impersonationUserName = null,
+            Action<string, string> additionalSetup = null,
+            Action<string, string> additionalCleanup = null)
+        {
+            bool runImpersonated = !string.IsNullOrWhiteSpace(impersonationUserName);
+            WindowsTestAccount processAccount = new WindowsTestAccount(username);
+            WindowsTestAccount impersonationAccount =
+                runImpersonated
+                ? new WindowsTestAccount(impersonationUserName)
+                : null;
+            var workingDirectory = string.IsNullOrEmpty(process.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : process.StartInfo.WorkingDirectory;
+            if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+            {
+                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                SetAccessControl((impersonationAccount ?? processAccount).AccountName, process.StartInfo.FileName, workingDirectory, add: true);
+            }
+
+            additionalSetup?.Invoke(processAccount.AccountName, impersonationAccount?.AccountName);
+
+            process.StartInfo.UserName = processAccount.AccountName;
+            process.StartInfo.PasswordInClearText = processAccount.Password;
+
+            try
+            {
+                bool hasStarted;
+                if (runImpersonated)
+                {
+                    hasStarted = WindowsIdentity.RunImpersonated(
+                        impersonationAccount.AccountTokenHandle,
+                        process.Start);
+                }
+                else
+                {
+                    hasStarted = process.Start();
+                }
+
+                return new TestProcessState(process, hasStarted, processAccount, impersonationAccount, workingDirectory, additionalCleanup);
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+            {
+                throw new SkipTestException($"{process.StartInfo.FileName} has been locked by some other process");
+            }
+        }
+
+        private class TestProcessState : IDisposable
+        {
+            private readonly Process _process;
+
+            private readonly bool _hasStarted;
+
+            private readonly WindowsTestAccount _processAccount;
+
+            private readonly WindowsTestAccount _processImpersonationAccount;
+
+            private readonly string _workingDirectory;
+
+            private readonly Action<string, string> _additionalCleanup;
+
+            private bool _disposedValue;
+
+            public TestProcessState(
+                Process process,
+                bool hasStarted,
+                WindowsTestAccount processAccount,
+                WindowsTestAccount processImpersonationAccount,
+                string workingDirectory,
+                Action<string, string> additionalCleanup)
+            {
+                _process = process;
+                _hasStarted = hasStarted;
+                _processAccount = processAccount;
+                _processImpersonationAccount = processImpersonationAccount;
+                _workingDirectory = workingDirectory;
+                _additionalCleanup = additionalCleanup;
+            }
+
+            public string ProcessAccountName => _processAccount?.AccountName;
+
+            public string ImpersonationAccountName => _processImpersonationAccount?.AccountName;
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_disposedValue)
+                {
+                    if (disposing)
+                    {
+                        if (_hasStarted)
+                        {
+                            _process.Kill();
+
+                            Assert.True(_process.WaitForExit(WaitInMS));
+                        }
+
+                        if (PlatformDetection.IsNotWindowsServerCore)
+                        {
+                            // remove the access
+                            SetAccessControl((_processImpersonationAccount ?? _processAccount).AccountName, _process.StartInfo.FileName, _workingDirectory, add: false);
+                        }
+
+                        _additionalCleanup?.Invoke(_processAccount?.AccountName, _processImpersonationAccount?.AccountName);
+                        _processAccount?.Dispose();
+                        _processImpersonationAccount?.Dispose();
+                    }
+
+                    _disposedValue = true;
+                }
+            }
+
+            public void Dispose()
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
             }
         }
     }
