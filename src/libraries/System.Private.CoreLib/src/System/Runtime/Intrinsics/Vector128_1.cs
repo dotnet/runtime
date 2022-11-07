@@ -22,6 +22,9 @@ namespace System.Runtime.Intrinsics
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
 
+
+    /// <summary>Represents a 128-bit vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
+    /// <typeparam name="T">The type of the elements in the vector.</typeparam>
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]

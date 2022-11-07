@@ -279,10 +279,7 @@ int __cdecl _output(__inout FILE * _File, _In_z_ __format_string const char *_Fo
 int __cdecl _woutput(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, va_list _ArgList);
 int __cdecl _output_s(__inout FILE * _File, _In_z_ __format_string const char *_Format, va_list _ArgList);
 int __cdecl _output_p(__inout FILE * _File, _In_z_ __format_string const char *_Format, va_list _ArgList);
-int __cdecl _woutput_s(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, va_list _ArgList);
-int __cdecl _woutput_p(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, va_list _ArgList);
 typedef int (*OUTPUTFN)(FILE *, const char *, va_list);
-typedef int (*WOUTPUTFN)(FILE *, const char16_t *, va_list);
 
 #else  /* _SAFECRT_IMPL */
 
@@ -290,10 +287,7 @@ int __cdecl _output_l(__inout FILE * _File, _In_z_ __format_string const char *_
 int __cdecl _woutput_l(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, _In_opt_ _locale_t _Locale, va_list _ArgList);
 int __cdecl _output_s_l(__inout FILE * _File, _In_z_ __format_string const char *_Format, _In_opt_ _locale_t _Locale, va_list _ArgList);
 int __cdecl _output_p_l(__inout FILE * _File, _In_z_ __format_string const char *_Format, _In_opt_ _locale_t _Locale, va_list _ArgList);
-int __cdecl _woutput_s_l(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, _In_opt_ _locale_t _Locale, va_list _ArgList);
-int __cdecl _woutput_p_l(__inout FILE * _File, _In_z_ __format_string const char16_t *_Format, _In_opt_ _locale_t _Locale, va_list _ArgList);
 typedef int (*OUTPUTFN)(__inout FILE * _File, const char *, _locale_t, va_list);
-typedef int (*WOUTPUTFN)(__inout FILE * _File, const char16_t *, _locale_t, va_list);
 
 #endif  /* _SAFECRT_IMPL */
 
@@ -302,7 +296,6 @@ typedef int (*WOUTPUTFN)(__inout FILE * _File, const char16_t *, _locale_t, va_l
 int __cdecl _input(_In_ FILE * _File, _In_z_ __format_string const unsigned char * _Format, va_list _ArgList);
 int __cdecl _winput(_In_ FILE * _File, _In_z_ __format_string const char16_t * _Format, va_list _ArgList);
 int __cdecl _input_s(_In_ FILE * _File, _In_z_ __format_string const unsigned char * _Format, va_list _ArgList);
-int __cdecl _winput_s(_In_ FILE * _File, _In_z_ __format_string const char16_t * _Format, va_list _ArgList);
 typedef int (*INPUTFN)(FILE *, const unsigned char *, va_list);
 typedef int (*WINPUTFN)(FILE *, const char16_t *, va_list);
 
