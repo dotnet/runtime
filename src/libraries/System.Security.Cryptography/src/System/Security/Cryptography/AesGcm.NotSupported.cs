@@ -8,6 +8,7 @@ namespace System.Security.Cryptography
     public partial class AesGcm
     {
         public static bool IsSupported => false;
+        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
 
 #pragma warning disable CA1822
         private void ImportKey(ReadOnlySpan<byte> key)
