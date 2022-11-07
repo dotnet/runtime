@@ -207,7 +207,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueLimit = 1,
                 ReplenishmentPeriod = TimeSpan.FromMilliseconds(1),
                 TokensPerPeriod = 1,
-                AutoReplenishment = false
+                AutoReplenishment = true
             });
             using var lease = limiter.AttemptAcquire(1);
             var wait = limiter.AcquireAsync(1);
@@ -828,7 +828,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueLimit = 1,
                 ReplenishmentPeriod = TimeSpan.FromSeconds(20),
                 TokensPerPeriod = 1,
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new TokenBucketRateLimiter(options);
 
@@ -846,7 +846,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async Task CorrectRetryMetadataWithQueuedItem()
+        public async Task NotSetRetryMetadataWhenAutoReplenishmentIsDisabled()
         {
             var options = new TokenBucketRateLimiterOptions
             {
@@ -866,8 +866,57 @@ namespace System.Threading.RateLimiting.Test
 
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
+            Assert.False(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+        }
+
+        [Fact]
+        public async Task CorrectRetryMetadataWithQueuedItemOldestFirst()
+        {
+            var options = new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(20),
+                TokensPerPeriod = 1,
+                AutoReplenishment = true
+            };
+            var limiter = new TokenBucketRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+            // Queue item which changes the retry after time for failed items
+            var wait = limiter.AcquireAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.ReplenishmentPeriod.Ticks * 3, typedMetadata.Ticks);
+        }
+
+        [Fact]
+        public async Task CorrectRetryMetadataWithQueuedItemNewestFirst()
+        {
+            var options = new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(20),
+                TokensPerPeriod = 1,
+                AutoReplenishment = true
+            };
+            var limiter = new TokenBucketRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+            // Queue item which changes the retry after time for failed items
+            var wait = limiter.AcquireAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+            Assert.Equal(options.ReplenishmentPeriod.Ticks * 2, typedMetadata.Ticks);
         }
 
         [Fact]
@@ -880,7 +929,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueLimit = 1,
                 ReplenishmentPeriod = TimeSpan.FromSeconds(20),
                 TokensPerPeriod = 2,
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new TokenBucketRateLimiter(options);
 
@@ -905,7 +954,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueLimit = 1,
                 ReplenishmentPeriod = TimeSpan.FromSeconds(20),
                 TokensPerPeriod = 100,
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new TokenBucketRateLimiter(options);
 
@@ -930,7 +979,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueLimit = 1,
                 ReplenishmentPeriod = TimeSpan.FromSeconds(20),
                 TokensPerPeriod = 1,
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new TokenBucketRateLimiter(options);
 

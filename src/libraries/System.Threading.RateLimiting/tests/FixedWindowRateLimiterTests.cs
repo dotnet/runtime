@@ -184,7 +184,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
                 Window = TimeSpan.FromMilliseconds(1),
-                AutoReplenishment = false
+                AutoReplenishment = true
             });
             using var lease = limiter.AttemptAcquire(1);
             var wait = limiter.AcquireAsync(1);
@@ -718,7 +718,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
                 Window = TimeSpan.FromSeconds(20),
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new FixedWindowRateLimiter(options);
 
@@ -736,13 +736,13 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async Task CorrectRetryMetadataWithQueuedItem()
+        public async Task NotSetRetryMetadataWhenAutoReplenishmentIsDisabled()
         {
             var options = new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 1,
+                QueueLimit = 2,
                 Window = TimeSpan.FromSeconds(20),
                 AutoReplenishment = false
             };
@@ -750,15 +750,61 @@ namespace System.Threading.RateLimiting.Test
 
             using var lease = limiter.AttemptAcquire(2);
             // Queue item which changes the retry after time for failed items
-            var wait = limiter.AcquireAsync(1);
+            var wait = limiter.AcquireAsync(2);
+            Assert.False(wait.IsCompleted);
+
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.False(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+        }
+
+        [Fact]
+        public async Task CorrectRetryMetadataWithQueuedItemOldestFirst()
+        {
+            var options = new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2,
+                Window = TimeSpan.FromSeconds(20),
+                AutoReplenishment = true
+            };
+            var limiter = new FixedWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+            // Queue item which changes the retry after time for failed items
+            var wait = limiter.AcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
+            Assert.Equal(options.Window.Ticks * 2, typedMetadata.Ticks);
         }
 
+        [Fact]
+        public void CorrectRetryMetadataWithQueuedItemNewestFirst()
+        {
+            var options = new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 2,
+                Window = TimeSpan.FromSeconds(20),
+                AutoReplenishment = true
+            };
+            var limiter = new FixedWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+            // Queue item which changes the retry after time for failed items
+            var wait = limiter.AcquireAsync(2);
+            Assert.False(wait.IsCompleted);
+
+            var failedLease = limiter.AttemptAcquire(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
+        }
 
         [Fact]
         public async Task CorrectRetryMetadataWithNonZeroAvailableItems()
@@ -769,7 +815,7 @@ namespace System.Threading.RateLimiting.Test
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 1,
                 Window = TimeSpan.FromSeconds(20),
-                AutoReplenishment = false
+                AutoReplenishment = true
             };
             var limiter = new FixedWindowRateLimiter(options);
 

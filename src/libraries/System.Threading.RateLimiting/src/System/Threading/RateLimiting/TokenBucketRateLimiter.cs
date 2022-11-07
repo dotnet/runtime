@@ -217,7 +217,13 @@ namespace System.Threading.RateLimiting
 
         private RateLimitLease CreateFailedTokenLease(int tokenCount)
         {
-            int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
+            // in case the auto replenishment was disabled, it can not determine the exact retry after
+            if (!_options.AutoReplenishment)
+            {
+                return new TokenBucketLease(false, null);
+            }
+            int queueCount = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst ? _queueCount : 0;
+            int replenishAmount = tokenCount - (int)_tokenCount + queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
             // if TokensPerPeriod is larger than the replenishAmount needed then it would be 0
             Debug.Assert(_options.TokensPerPeriod > 0);

@@ -211,7 +211,13 @@ namespace System.Threading.RateLimiting
 
         private RateLimitLease CreateFailedWindowLease(int permitCount)
         {
-            int replenishAmount = permitCount - _permitCount + _queueCount;
+            // in case the auto replenishment was disabled, it can not determine the exact retry after
+            if (!_options.AutoReplenishment)
+            {
+                return new FixedWindowLease(false, null);
+            }
+            int queueCount = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst ? _queueCount : 0;
+            int replenishAmount = permitCount - _permitCount + queueCount;
             // can't have 0 replenish window, that would mean it should be a successful lease
             int replenishWindow = Math.Max(replenishAmount / _options.PermitLimit, 1);
 
