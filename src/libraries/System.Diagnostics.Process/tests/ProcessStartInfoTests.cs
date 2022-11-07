@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.AccessControl;
@@ -465,13 +466,12 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            const string username = "testForDotnetRuntime";
-
             using Process p = CreateProcessLong();
             p.StartInfo.LoadUserProfile = true;
 
-            using var testAccountCleanup = CreateUserAndExecute(p,  null, null, null);
+            using var testAccountCleanup = CreateUserAndExecute(p);
 
+            string username = testAccountCleanup.ProcessAccountName.Split('\\').Last();
             Assert.Equal(username, Helpers.GetProcessUserName(p));
             bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
             Assert.True(isProfileLoaded);
@@ -1397,11 +1397,7 @@ namespace System.Diagnostics.Tests
                 }
             };
 
-            using var processInfo = CreateUserAndExecute(
-                p,
-                runImpersonated: true,
-                additionalSetup: setup,
-                additionalCleanup: cleanup);
+            using var processInfo = CreateUserAndExecute(p, true, setup, cleanup);
 
             string processUserName = Helpers.GetProcessUserName(p);
             string output = p.StandardOutput.ReadToEnd();
@@ -1416,26 +1412,19 @@ namespace System.Diagnostics.Tests
 
         private TestProcessState CreateUserAndExecute(
             Process process,
-            string username = "testDotNetProcess",
             bool runImpersonated = false,
             Action<string, string> additionalSetup = null,
-            Action<string, string> additionalCleanup = null)
-            => CreateUserAndExecute(process, username, runImpersonated ? "testDotNetProcessImpersonated" : null, additionalSetup, additionalCleanup);
-
-        private TestProcessState CreateUserAndExecute(
-            Process process,
-            string username = "testDotNetProcess",
-            string impersonationUserName = null,
-            Action<string, string> additionalSetup = null,
-            Action<string, string> additionalCleanup = null)
+            Action<string, string> additionalCleanup = null,
+            [CallerMemberName] string memberName = "")
         {
-            bool runImpersonated = !string.IsNullOrWhiteSpace(impersonationUserName);
-            WindowsTestAccount processAccount = new WindowsTestAccount(username);
+            string callerIntials = new string(memberName.Where(c => char.IsUpper(c)).Take(18).ToArray());
+
+            WindowsTestAccount processAccount = new WindowsTestAccount(string.Concat("d", callerIntials));
             WindowsTestAccount impersonationAccount =
                 runImpersonated
-                ? new WindowsTestAccount(impersonationUserName)
+                ? new WindowsTestAccount(string.Concat("i", callerIntials))
                 : null;
-            var workingDirectory = string.IsNullOrEmpty(process.StartInfo.WorkingDirectory)
+            string workingDirectory = string.IsNullOrEmpty(process.StartInfo.WorkingDirectory)
                     ? Directory.GetCurrentDirectory()
                     : process.StartInfo.WorkingDirectory;
             if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
