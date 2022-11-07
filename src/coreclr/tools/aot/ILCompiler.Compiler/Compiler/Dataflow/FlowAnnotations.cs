@@ -115,7 +115,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             if (GetAnnotations(method.OwningType).TryGetAnnotation(method, out var annotation) && annotation.ParameterAnnotations != null)
             {
-                return annotation.ParameterAnnotations[(int) param.Index];
+                return annotation.ParameterAnnotations[(int)param.Index];
             }
 
             return DynamicallyAccessedMemberTypes.None;
