@@ -246,6 +246,7 @@ usage()
     echo "-msbuildonunsupportedplatform: build managed binaries even if distro is not officially supported."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
+    echo "-outputrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
@@ -268,6 +269,7 @@ __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
+__OutputRid=''
 
 __msbuildonunsupportedplatform=0
 
@@ -443,6 +445,16 @@ while :; do
             __BuildArch=wasm
             ;;
 
+        outputrid|-outputrid)
+            if [[ -n "$2" ]]; then
+                __OutputRid="$2"
+                shift
+            else
+                echo "ERROR: 'outputrid' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
         os|-os)
             if [[ -n "$2" ]]; then
                 __TargetOS="$2"
@@ -508,5 +520,8 @@ fi
 # init the target distro name
 initTargetDistroRid
 
+if [ -z "$__OutputRid" ]; then
+    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+fi
 # Init if MSBuild for .NET Core is supported for this platform
 isMSBuildOnNETCoreSupported
