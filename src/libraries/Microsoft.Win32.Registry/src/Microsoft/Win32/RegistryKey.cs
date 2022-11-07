@@ -215,11 +215,6 @@ namespace Microsoft.Win32
                 }
             }
 
-            return CreateSubKeyInternalCore(subkey, permissionCheck, registryOptions);
-        }
-
-        private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
-        {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
 
             // By default, the new key will be writable.
@@ -291,33 +286,28 @@ namespace Microsoft.Win32
                     }
                 }
 
-                DeleteSubKeyCore(subkey, throwOnMissingSubKey);
+                int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
+
+                if (ret != 0)
+                {
+                    if (ret == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    {
+                        if (throwOnMissingSubKey)
+                        {
+                            throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
+                        }
+                    }
+                    else
+                    {
+                        Win32Error(ret, null);
+                    }
+                }
             }
             else // there is no key which also means there is no subkey
             {
                 if (throwOnMissingSubKey)
                 {
                     throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-                }
-            }
-        }
-
-        private void DeleteSubKeyCore(string subkey, bool throwOnMissingSubKey)
-        {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-
-            if (ret != 0)
-            {
-                if (ret == Interop.Errors.ERROR_FILE_NOT_FOUND)
-                {
-                    if (throwOnMissingSubKey)
-                    {
-                        throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-                    }
-                }
-                else
-                {
-                    Win32Error(ret, null);
                 }
             }
         }
@@ -416,11 +406,6 @@ namespace Microsoft.Win32
         public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
-            DeleteValueCore(name, throwOnMissingValue);
-        }
-
-        private void DeleteValueCore(string name, bool throwOnMissingValue)
-        {
             int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
@@ -446,37 +431,26 @@ namespace Microsoft.Win32
             Debug.Assert(errorCode == 0, $"RegDeleteValue failed.  Here's your error code: {errorCode}");
         }
 
+        /// <summary>
+        /// Retrieves a new <see cref="RegistryKey"/>  that represents the requested <see cref="RegistryHive"/> .
+        /// </summary>
+        /// <param name="hKey">The hive to open.</param>
+        /// <param name="view">Which view over the registry to employ.</param>
+        /// <returns>The <see cref="RegistryKey"/> requested.</returns>
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
-            return OpenBaseKeyCore(hKey, view);
-        }
 
-        /// <summary>
-        /// Retrieves a new RegistryKey that represents the requested key. Valid
-        /// values are:
-        /// HKEY_CLASSES_ROOT,
-        /// HKEY_CURRENT_USER,
-        /// HKEY_LOCAL_MACHINE,
-        /// HKEY_USERS,
-        /// HKEY_PERFORMANCE_DATA,
-        /// HKEY_CURRENT_CONFIG.
-        /// </summary>
-        /// <param name="hKeyHive">HKEY_* to open.</param>
-        /// <param name="view">Which view over the registry to employ.</param>
-        /// <returns>The RegistryKey requested.</returns>
-        private static RegistryKey OpenBaseKeyCore(RegistryHive hKeyHive, RegistryView view)
-        {
-            nint hKey = (int)hKeyHive;
+            nint nKey = (int)hKey;
 
-            int index = ((int)hKey) & 0x0FFFFFFF;
+            int index = ((int)nKey) & 0x0FFFFFFF;
             Debug.Assert(index >= 0 && index < s_hkeyNames.Length, "index is out of range!");
-            Debug.Assert((((int)hKey) & 0xFFFFFFF0) == 0x80000000, "Invalid hkey value!");
+            Debug.Assert((((int)nKey) & 0xFFFFFFF0) == 0x80000000, "Invalid hkey value!");
 
-            bool isPerf = hKey == HKEY_PERFORMANCE_DATA;
+            bool isPerf = nKey == HKEY_PERFORMANCE_DATA;
 
             // only mark the SafeHandle as ownsHandle if the key is HKEY_PERFORMANCE_DATA.
-            SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
+            SafeRegistryHandle srh = new SafeRegistryHandle(nKey, isPerf);
 
             RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
             key._checkMode = RegistryKeyPermissionCheck.Default;
@@ -499,11 +473,6 @@ namespace Microsoft.Win32
 
             ValidateKeyView(view);
 
-            return OpenRemoteBaseKeyCore(hKey, machineName, view);
-        }
-
-        private static RegistryKey OpenRemoteBaseKeyCore(RegistryHive hKey, string machineName, RegistryView view)
-        {
             int index = (int)hKey & 0x0FFFFFFF;
             if (index < 0 || index >= s_hkeyNames.Length || ((int)hKey & 0xFFFFFFF0) != 0x80000000)
             {
@@ -558,11 +527,6 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             name = FixupName(name);
 
-            return InternalOpenSubKeyCore(name, writable);
-        }
-
-        private RegistryKey? InternalOpenSubKeyCore(string name, bool writable)
-        {
             int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
@@ -607,12 +571,7 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             name = FixupName(name); // Fixup multiple slashes to a single slash
 
-            return InternalOpenSubKeyCore(name, permissionCheck, (int)rights);
-        }
-
-        private RegistryKey? InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
-        {
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (rights | (int)_regView), out SafeRegistryHandle result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (int)rights | (int)_regView, out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, (permissionCheck == RegistryKeyPermissionCheck.ReadWriteSubTree), false, _remoteKey, false, _regView);
@@ -639,12 +598,7 @@ namespace Microsoft.Win32
             ValidateKeyName(name);
             EnsureNotDisposed();
 
-            return InternalOpenSubKeyWithoutSecurityChecksCore(name, writable);
-        }
-
-        internal RegistryKey? InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
-        {
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, GetRegistryKeyAccess(writable) | (int)_regView, out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
@@ -683,15 +637,9 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return InternalSubKeyCountCore();
-            }
-        }
-
-        private int InternalSubKeyCountCore()
-        {
-            int subkeys = 0;
-            int junk = 0;
-            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
+                int subkeys = 0;
+                int junk = 0;
+                int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -710,6 +658,7 @@ namespace Microsoft.Win32
             }
 
             return subkeys;
+        }
         }
 
         public RegistryView View
@@ -837,13 +786,12 @@ namespace Microsoft.Win32
         {
             EnsureNotDisposed();
             int subkeys = SubKeyCount;
-            return subkeys > 0 ?
-                InternalGetSubKeyNamesCore(subkeys) :
-                Array.Empty<string>();
-        }
 
-        private string[] InternalGetSubKeyNamesCore(int subkeys)
-        {
+            if (subkeys <= 0)
+            {
+                return Array.Empty<string>();
+            }
+
             var names = new List<string>(subkeys);
             char[] name = ArrayPool<char>.Shared.Rent(MaxKeyLength + 1);
 
@@ -890,14 +838,8 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return InternalValueCountCore();
-            }
-        }
-
-        private int InternalValueCountCore()
-        {
-            int values = 0;
-            int junk = 0;
+                int values = 0;
+                int junk = 0;
             int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
@@ -920,20 +862,17 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves an array of strings containing all the value names.</summary>
         /// <returns>All value names.</returns>
-        public string[] GetValueNames()
+        public unsafe string[] GetValueNames()
         {
             EnsureNotDisposed();
 
             int values = ValueCount;
-            return values > 0 ?
-                GetValueNamesCore(values) :
-                Array.Empty<string>();
-        }
 
-        /// <summary>Retrieves an array of strings containing all the value names.</summary>
-        /// <returns>All value names.</returns>
-        private unsafe string[] GetValueNamesCore(int values)
-        {
+            if (values <= 0)
+            {
+                return Array.Empty<string>();
+            }
+
             var names = new List<string>(values);
 
             // Names in the registry aren't usually very long, although they can go to as large
@@ -1051,15 +990,10 @@ namespace Microsoft.Win32
         }
 
         [return: NotNullIfNotNull(nameof(defaultValue))]
-        private object? InternalGetValue(string? name, object? defaultValue, bool doNotExpand)
+        private unsafe object? InternalGetValue(string? name, object? defaultValue, bool doNotExpand)
         {
             EnsureNotDisposed();
-            return InternalGetValueCore(name, defaultValue, doNotExpand);
-        }
 
-        [return: NotNullIfNotNull(nameof(defaultValue))]
-        private unsafe object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
-        {
             // Create an initial stack buffer large enough to satisfy many reg keys.  We need to call RegQueryValueEx
             // in order to determine the type of the value, and we can avoid further retries if all of the data can be
             // retrieved in that single call with this buffer.  If we do need to grow, we grow into a pooled array. The
@@ -1267,14 +1201,9 @@ namespace Microsoft.Win32
             }
         }
 
-        public RegistryValueKind GetValueKind(string? name)
+        public unsafe RegistryValueKind GetValueKind(string? name)
         {
             EnsureNotDisposed();
-            return GetValueKindCore(name);
-        }
-
-        private unsafe RegistryValueKind GetValueKindCore(string? name)
-        {
             int type = 0;
             int datasize = 0;
             int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, &type, (byte*)null, (uint*)&datasize);
@@ -1306,7 +1235,7 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public void SetValue(string? name, object value, RegistryValueKind valueKind)
+        public unsafe void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -1329,11 +1258,6 @@ namespace Microsoft.Win32
                 valueKind = CalculateValueKind(value);
             }
 
-            SetValueCore(name, value, valueKind);
-        }
-
-        private unsafe void SetValueCore(string? name, object value, RegistryValueKind valueKind)
-        {
             int ret = 0;
             try
             {
