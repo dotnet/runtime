@@ -65,6 +65,7 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
                 Assert.Equal(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
                 Assert.Equal(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
+                Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
 
             Assert.Equal(EnumMembers(baselineImport), EnumMembers(currentImport));
@@ -318,6 +319,34 @@ namespace Regression.UnitTests
                 import.CloseEnum(hcorenum);
             }
             return tokens;
+        }
+
+        private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)
+        {
+            List<uint> values = new();
+            var offsets = new COR_FIELD_OFFSET[24];
+            int hr = import.GetClassLayout(typedef,
+                out uint pdwPackSize,
+                offsets,
+                offsets.Length,
+                out int fieldOffsetCount,
+                out uint pulClassSize);
+            if (hr != 0)
+            {
+                values.Add((uint)hr);
+            }
+            else
+            {
+                values.Add(pdwPackSize);
+                values.Add(pulClassSize);
+
+                for (int i = 0; i < fieldOffsetCount; ++i)
+                {
+                    values.Add(offsets[i].ridOfField);
+                    values.Add(offsets[i].ulOffset);
+                }
+            }
+            return values;
         }
 
         private static List<uint> EnumEvents(IMetaDataImport import, uint typedef)

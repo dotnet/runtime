@@ -223,7 +223,7 @@ Done:
         {
             mdcursor_t cursor;
             if (!md_token_to_cursor(mdhandle, token, &cursor))
-                return E_INVALIDARG;
+                return CLDB_E_INDEX_NOTFOUND;
 
             mdcursor_t begin;
             uint32_t count;
@@ -358,9 +358,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetInterfaceImplProps(
     if (!md_token_to_cursor(_md_ptr.get(), iiImpl, &cursor))
         return CLDB_E_INDEX_NOTFOUND;
 
-    if (!md_get_column_value_as_token(cursor, mdtInterfaceImpl_Class, 1, pClass)
-        || !md_get_column_value_as_token(cursor, mdtInterfaceImpl_Interface, 1, ptkIface))
-        return E_FAIL;
+    if (1 != md_get_column_value_as_token(cursor, mdtInterfaceImpl_Class, 1, pClass)
+        || 1 != md_get_column_value_as_token(cursor, mdtInterfaceImpl_Interface, 1, ptkIface))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
 
     return S_OK;
 }
@@ -397,7 +399,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
     {
         mdcursor_t cursor;
         if (!md_token_to_cursor(_md_ptr.get(), cl, &cursor))
-            return E_INVALIDARG;
+            return CLDB_E_INDEX_NOTFOUND;
 
         mdcursor_t methodList;
         uint32_t methodListCount;
@@ -714,7 +716,78 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetClassLayout(
     ULONG* pcFieldOffset,
     ULONG* pulClassSize)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(td) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    mdcursor_t begin;
+    uint32_t unused;
+    mdcursor_t entry;
+    bool foundLayout = false;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ClassLayout, &begin, &unused)
+        || !md_find_row_from_cursor(begin, mdtClassLayout_Parent, RidFromToken(td), &entry))
+    {
+        *pcFieldOffset = 0;
+        *pulClassSize = 0;
+    }
+    else
+    {
+        foundLayout = true;
+        // Acquire the packing and class sizes for the type and cursor to the typedef entry.
+        if (1 != md_get_column_value_as_constant(entry, mdtClassLayout_PackingSize, 1, (uint32_t*)pdwPackSize)
+            || 1 != md_get_column_value_as_constant(entry, mdtClassLayout_ClassSize, 1, (uint32_t*)pulClassSize))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+    }
+
+    mdcursor_t typeEntry;
+    if (!md_token_to_cursor(_md_ptr.get(), td, &typeEntry))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    // Get the list of field data
+    mdcursor_t fieldList;
+    uint32_t fieldListCount;
+    if (!md_get_column_value_as_range(typeEntry, mdtTypeDef_FieldList, &fieldList, &fieldListCount))
+        return CLDB_E_FILE_CORRUPT;
+
+    *pcFieldOffset = fieldListCount;
+    if (fieldListCount > 0)
+    {
+        // It is possible the table is empty and can therefore fail. This API permits this
+        // behavior and sets the offset as -1 if this occurs.
+        mdcursor_t fieldLayoutBegin;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldLayout, &fieldLayoutBegin, &unused))
+            ::memset(&fieldLayoutBegin, 0, sizeof(fieldLayoutBegin));
+
+        uint32_t readIn = 0;
+        for (uint32_t i = 0; i < cMax; ++i)
+        {
+            COR_FIELD_OFFSET& offset = rFieldOffset[i];
+            if (!md_cursor_to_token(fieldList, &offset.ridOfField))
+                return CLDB_E_FILE_CORRUPT;
+
+            // See above comment about empty FieldLayout table.
+            offset.ulOffset = (ULONG)-1;
+            mdcursor_t fieldLayoutRow;
+            if (md_find_row_from_cursor(fieldLayoutBegin, mdtFieldLayout_Field, RidFromToken(offset.ridOfField), &fieldLayoutRow))
+            {
+                (void)md_get_column_value_as_constant(fieldLayoutRow, mdtFieldLayout_Offset, 1, (uint32_t*)&offset.ulOffset);
+                foundLayout = true;
+            }
+
+            readIn++;
+            if (readIn >= fieldListCount)
+                break;
+
+            if (!md_cursor_next(&fieldList))
+                return CLDB_E_FILE_CORRUPT;
+        }
+    }
+
+    if (!foundLayout)
+        return CLDB_E_RECORD_NOTFOUND;
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFieldMarshal(

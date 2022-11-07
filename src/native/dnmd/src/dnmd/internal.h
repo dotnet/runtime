@@ -31,7 +31,7 @@ typedef struct _mdcdata_t
 
 #define MDTABLE_MAX_COLUMN_COUNT 9
 
-// Flags and mases used to embed column details for
+// Flags and masks used to embed column details for
 // interpreting table rows.
 typedef enum
 {

@@ -1,5 +1,4 @@
-﻿
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Regression.UnitTests
 {
@@ -111,7 +110,7 @@ namespace Regression.UnitTests
         int GetMethodSemantics(uint mb, uint tkEventProp, out uint pdwSemanticsFlags);
 
         [PreserveSig]
-        int GetClassLayout(uint td, out uint pdwPackSize, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]long[] rFieldOffset, int cMax, out uint pcFieldOffset, out uint pulClassSize);
+        int GetClassLayout(uint td, out uint pdwPackSize, [Out][MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] COR_FIELD_OFFSET[] rFieldOffset, int cMax, out int pcFieldOffset, out uint pulClassSize);
 
         [PreserveSig]
         int GetFieldMarshal(uint tk, out IntPtr ppvNativeType, out uint pcbNativeType);
@@ -194,5 +193,12 @@ namespace Regression.UnitTests
 
         [PreserveSig]
         int IsGlobal(uint pd, out uint pbGlobal);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct COR_FIELD_OFFSET
+    {
+        public uint ridOfField;
+        public uint ulOffset;
     }
 }

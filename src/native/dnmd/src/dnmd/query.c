@@ -376,7 +376,7 @@ bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t*
             // Examine the current table's next row value to find the
             // extrema of the target table range.
             mdcursor_t end;
-            if (!md_get_column_value_as_cursor(nextMaybe, col_idx, 1, &end))
+            if (1 != md_get_column_value_as_cursor(nextMaybe, col_idx, 1, &end))
                 return false;
 
             // The next row is a null cursor, which means we need to

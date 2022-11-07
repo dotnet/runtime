@@ -6,7 +6,7 @@ uint32_t align_to(uint32_t val, uint32_t align)
     return (val + (align - 1)) & ~(align - 1);
 }
 
-// Brian Kernighan’s algorithm for counting bits
+// Brian Kernighan's algorithm for counting bits
 size_t count_set_bits(uint64_t val)
 {
     size_t count = 0;
