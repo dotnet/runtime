@@ -4142,14 +4142,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
-        if (!emitComp->opts.IsReadyToRun())
-        {
-            str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
-        }
-        else
-        {
-            str = "class handle";
-        }
+        str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_CONST_PTR)
     {
@@ -4161,14 +4154,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        if (!emitComp->opts.IsReadyToRun())
-        {
-            str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
-        }
-        else
-        {
-            str = "field handle";
-        }
+        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {
@@ -4176,14 +4162,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_METHOD_HDL)
     {
-        if (!emitComp->opts.IsReadyToRun())
-        {
-            str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
-        }
-        else
-        {
-            str = "method handle";
-        }
+        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {
