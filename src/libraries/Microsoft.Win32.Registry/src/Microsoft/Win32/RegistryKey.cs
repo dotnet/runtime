@@ -558,7 +558,7 @@ namespace Microsoft.Win32
 
         public RegistryKey? OpenSubKey(string name, RegistryRights rights)
         {
-            return OpenSubKey(name, this._checkMode, rights);
+            return OpenSubKey(name, _checkMode, rights);
         }
 
         public RegistryKey? OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck, RegistryRights rights)
@@ -640,25 +640,25 @@ namespace Microsoft.Win32
                 int subkeys = 0;
                 int junk = 0;
                 int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
-                                      null,
-                                      null,
-                                      IntPtr.Zero,
-                                      ref subkeys,  // subkeys
-                                      null,
-                                      null,
-                                      ref junk,     // values
-                                      null,
-                                      null,
-                                      null,
-                                      null);
+                                          null,
+                                          null,
+                                          0,
+                                          ref subkeys,  // subkeys
+                                          null,
+                                          null,
+                                          ref junk,     // values
+                                          null,
+                                          null,
+                                          null,
+                                          null);
 
-            if (ret != 0)
-            {
-                Win32Error(ret, null);
+                if (ret != 0)
+                {
+                    Win32Error(ret, null);
+                }
+
+                return subkeys;
             }
-
-            return subkeys;
-        }
         }
 
         public RegistryView View
@@ -686,7 +686,7 @@ namespace Microsoft.Win32
                 Debug.Assert(IsSystemKey());
 
                 int ret = Interop.Errors.ERROR_INVALID_HANDLE;
-                IntPtr baseKey = (IntPtr)0;
+                IntPtr baseKey = 0;
                 switch (_keyName)
                 {
                     case "HKEY_CLASSES_ROOT":
@@ -792,40 +792,33 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            var names = new List<string>(subkeys);
-            char[] name = ArrayPool<char>.Shared.Rent(MaxKeyLength + 1);
+            List<string> names = new List<string>(subkeys);
+            Span<char> name = stackalloc char[MaxKeyLength + 1];
 
-            try
+            int result;
+            int nameLength = name.Length;
+
+            while ((result = Interop.Advapi32.RegEnumKeyEx(
+                _hkey,
+                names.Count,
+                ref MemoryMarshal.GetReference(name),
+                ref nameLength,
+                null,
+                null,
+                null,
+                null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
             {
-                int result;
-                int nameLength = name.Length;
-
-                while ((result = Interop.Advapi32.RegEnumKeyEx(
-                    _hkey,
-                    names.Count,
-                    name,
-                    ref nameLength,
-                    null,
-                    null,
-                    null,
-                    null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
+                switch (result)
                 {
-                    switch (result)
-                    {
-                        case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
-                            nameLength = name.Length;
-                            break;
-                        default:
-                            // Throw the error
-                            Win32Error(result, null);
-                            break;
-                    }
+                    case Interop.Errors.ERROR_SUCCESS:
+                        names.Add(new string(name.Slice(0, nameLength)));
+                        nameLength = name.Length;
+                        break;
+                    default:
+                        // Throw the error
+                        Win32Error(result, null);
+                        break;
                 }
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(name);
             }
 
             return names.ToArray();
@@ -840,24 +833,25 @@ namespace Microsoft.Win32
                 EnsureNotDisposed();
                 int values = 0;
                 int junk = 0;
-            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
-                                      null,
-                                      null,
-                                      IntPtr.Zero,
-                                      ref junk,     // subkeys
-                                      null,
-                                      null,
-                                      ref values,   // values
-                                      null,
-                                      null,
-                                      null,
-                                      null);
-            if (ret != 0)
-            {
-                Win32Error(ret, null);
-            }
+                int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
+                                          null,
+                                          null,
+                                          0,
+                                          ref junk,     // subkeys
+                                          null,
+                                          null,
+                                          ref values,   // values
+                                          null,
+                                          null,
+                                          null,
+                                          null);
+                if (ret != 0)
+                {
+                    Win32Error(ret, null);
+                }
 
-            return values;
+                return values;
+            }
         }
 
         /// <summary>Retrieves an array of strings containing all the value names.</summary>
@@ -895,7 +889,7 @@ namespace Microsoft.Win32
                     names.Count,
                     name,
                     ref nameLength,
-                    IntPtr.Zero,
+                    0,
                     null,
                     null,
                     null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
