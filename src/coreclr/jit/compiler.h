@@ -1926,10 +1926,8 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-#if defined(FEATURE_HW_INTRINSICS)
     GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
-#endif // defined(FEATURE_HW_INTRINSICS)
 
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;

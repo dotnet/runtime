@@ -11292,7 +11292,6 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 }
 #endif // TARGET_ARM
 
-#if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // impAssignMultiRegTypeToVar: ensure calls that return structs in multiple
 //    registers return values to suitable temps.
@@ -11327,7 +11326,6 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     return ret;
 }
-#endif // defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // impReturnInstruction: import a return or an explicit tail call
