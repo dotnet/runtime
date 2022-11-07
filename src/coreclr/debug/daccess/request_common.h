@@ -110,7 +110,7 @@ inline bool IsRegionGCEnabled()
 
 inline bool IsBackgroundGCEnabled()
 {
-    return (g_gcDacGlobals->minor_version_number & 2) != 0;
+    return (g_gcDacGlobals->minor_version_number & 2) == 0;
 }
 
 // Load an instance of dac_gc_heap for the heap pointed by heap.

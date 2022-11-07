@@ -49167,9 +49167,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
 #endif //USE_REGIONS
-#ifdef BACKGROUND_GC
+#ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
-#endif //BACKGROUND_GC
+#endif //!BACKGROUND_GC
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);

@@ -166,8 +166,16 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     }
     else
     {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        if (IsBackgroundGCEnabled())
+        {
+            detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
+            detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        }
+        else
+        {
+            detailsData->saved_sweep_ephemeral_seg = 0;
+            detailsData->saved_sweep_ephemeral_start = 0;
+        }
     }
 
     // get bounds for the different generations

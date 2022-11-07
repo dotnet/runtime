@@ -85,7 +85,7 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
-// #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+#define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #if defined(BACKGROUND_GC) && defined(HOST_64BIT)

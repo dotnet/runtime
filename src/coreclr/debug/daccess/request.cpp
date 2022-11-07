@@ -2726,7 +2726,7 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     }
     else
     {
-        if (g_gcDacGlobals->current_c_gc_state.IsValid())
+        if (IsBackgroundGCEnabled())
         {
             detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
             detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
