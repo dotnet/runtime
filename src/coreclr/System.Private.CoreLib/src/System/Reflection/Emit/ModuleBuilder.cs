@@ -297,7 +297,7 @@ namespace System.Reflection.Emit
 
         internal RuntimeModule InternalModule => _internalModule;
 
-        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
+        private protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
 
         internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
         {

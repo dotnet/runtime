@@ -237,7 +237,7 @@ namespace System.Security.Cryptography
             // only 8bits/64bits feedback would be valid.
             if (feedback != 8 && feedback != 64)
             {
-                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
         }
     }

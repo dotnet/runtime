@@ -3,81 +3,28 @@ on:
   issue_comment:
     types: [created]
   schedule:
-    # once a day at 13:00 UTC
+    # once a day at 13:00 UTC to cleanup old runs
     - cron: '0 13 * * *'
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
+  actions: write
 
 jobs:
-  cleanup_old_runs:
-    if: github.event.schedule == '0 13 * * *'
-    runs-on: ubuntu-20.04
-    permissions:
-      actions: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-    - name: Delete old workflow runs
-      run: |
-        _UrlPath="/repos/$GITHUB_REPOSITORY/actions/workflows"
-        _CurrentWorkflowID="$(gh api -X GET "$_UrlPath" | jq '.workflows[] | select(.name == '\""$GITHUB_WORKFLOW"\"') | .id')"
-
-        # delete workitems which are 'completed'. (other candidate values of status field are: 'queued' and 'in_progress')
-
-        gh api -X GET "$_UrlPath/$_CurrentWorkflowID/runs" --paginate \
-          | jq '.workflow_runs[] | select(.status == "completed") | .id' \
-          | xargs -I{} gh api -X DELETE "/repos/$GITHUB_REPOSITORY/actions/runs"/{}
-
   backport:
-    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/backport to')
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Extract backport target branch
-      uses: actions/github-script@v3
-      id: target-branch-extractor
-      with:
-        result-encoding: string
-        script: |
-          if (context.eventName !== "issue_comment") throw "Error: This action only works on issue_comment events.";
+    uses: dotnet/arcade/.github/workflows/backport-base.yml@main
+    with:
+      pr_description_template: |
+        Backport of #%source_pr_number% to %target_branch%
 
-          // extract the target branch name from the trigger phrase containing these characters: a-z, A-Z, digits, forward slash, dot, hyphen, underscore
-          const regex = /^\/backport to ([a-zA-Z\d\/\.\-\_]+)/;
-          target_branch = regex.exec(context.payload.comment.body);
-          if (target_branch == null) throw "Error: No backport branch found in the trigger phrase.";
+        /cc %cc_users%
 
-          return target_branch[1];
-    - name: Post backport started comment to pull request
-      uses: actions/github-script@v3
-      with:
-        script: |
-          const backport_start_body = `Started backporting to ${{ steps.target-branch-extractor.outputs.result }}: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-          await github.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: backport_start_body
-          });
-    - name: Checkout repo
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Run backport
-      uses: ./eng/actions/backport
-      with:
-        target_branch: ${{ steps.target-branch-extractor.outputs.result }}
-        auth_token: ${{ secrets.GITHUB_TOKEN }}
-        pr_description_template: |
-          Backport of #%source_pr_number% to %target_branch%
+        ## Customer Impact
 
-          /cc %cc_users%
+        ## Testing
 
-          ## Customer Impact
+        ## Risk
 
-          ## Testing
-
-          ## Risk
-
-          IMPORTANT: Is this backport for a servicing release? If so and this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.
+        IMPORTANT: Is this backport for a servicing release? If so and this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.

@@ -40,8 +40,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     IMDCommon   *pAssemImportMDCommon = NULL;
     IMDCommon   *pImportMDCommon = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     RegMeta     *pRegMetaAssemEmit = static_cast<RegMeta*>(pAssemEmit);
     RegMeta     *pRegMetaEmit = NULL;
 
@@ -87,8 +85,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     if (pAssemImportMDCommon)
         pAssemImportMDCommon->Release();
     if (pImportMDCommon)

@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                             CryptographicOperations.ZeroMemory(plaintext);
                         }
 
-                        throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                        throw new AuthenticationTagMismatchException();
                     default:
                         throw CreateCryptographicException(ntStatus);
                 }

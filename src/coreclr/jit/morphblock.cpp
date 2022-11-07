@@ -363,7 +363,7 @@ void MorphInitBlockHelper::MorphStructCases()
         if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
             assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet());
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD
@@ -655,18 +655,15 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 break;
             case TYP_REF:
             case TYP_BYREF:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType, CORINFO_TYPE_FLOAT);
-                break;
 #endif // FEATURE_SIMD
+                assert(initPattern == 0);
+                src = m_comp->gtNewZeroConNode(fieldType);
+                break;
             default:
                 unreached();
         }
@@ -798,6 +795,14 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcLclNum = m_srcLclNode->GetLclNum();
         m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
     }
+
+    // Verify that the types on the LHS and RHS match.
+    assert(m_dst->TypeGet() == m_src->TypeGet());
+    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
+    if (m_dst->TypeIs(TYP_STRUCT) && !m_src->OperIs(GT_IND))
+    {
+        assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
@@ -809,8 +814,6 @@ void MorphCopyBlockHelper::TrySpecialCases()
     {
         assert(m_dst->OperIs(GT_LCL_VAR));
 
-        // This will exclude field locals (if any) from SSA: we do not have a way to
-        // associate multiple SSA definitions (SSA numbers) with one store.
         m_dstVarDsc->lvIsMultiRegRet = true;
 
         JITDUMP("Not morphing a multireg node return\n");

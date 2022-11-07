@@ -95,7 +95,7 @@ namespace Microsoft.Interop.Analyzers
             bool mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext(env, "return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.

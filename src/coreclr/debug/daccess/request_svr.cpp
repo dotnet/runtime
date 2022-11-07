@@ -45,7 +45,9 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->used = (CLRDATA_ADDRESS)(ULONG_PTR) pHeapSegment->used;
     pSegment->mem = (CLRDATA_ADDRESS)(ULONG_PTR) (pHeapSegment->mem);
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
+    pSegment->flags = pHeapSegment->flags;
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
+    pSegment->background_allocated = (CLRDATA_ADDRESS)(ULONG_PTR)pHeapSegment->background_allocated;
 
     TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
     dac_gc_heap heap = LoadGcHeapData(heapAddress);

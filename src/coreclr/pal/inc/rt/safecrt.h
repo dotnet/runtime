@@ -385,7 +385,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tmakepath_s    _wmakepath_s
 #define _tsplitpath_s   _wsplitpath_s
 #define _stprintf_s     swprintf_s
-#define _vsntprintf_s   _vsnwprintf_s
 #define _tscanf_s       wscanf_s
 #define _tsscanf_s      swscanf_s
 
@@ -1654,7 +1653,7 @@ error_erange:
 
 /* vsprintf_s */
 /*
- * swprintf_s, vsprintf_s, vswprintf_s format a string and copy it into _Dst;
+ * swprintf_s, vsprintf_s format a string and copy it into _Dst;
  * need safecrt.lib and msvcrt.dll;
  * will call _SAFECRT_INVALID_PARAMETER if there is not enough space in _Dst;
  * will call _SAFECRT_INVALID_PARAMETER if the format string is malformed;
@@ -1676,40 +1675,12 @@ int __cdecl vsprintf_s(char (&_Dst)[_SizeInBytes], const char *_Format, va_list 
 }
 #endif
 
-/* no inline version of vsprintf_s */
 
-/* swprintf_s, vswprintf_s */
-_SAFECRT__EXTERN_C
-int __cdecl swprintf_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Format, ...);
-_SAFECRT__EXTERN_C
-int __cdecl vswprintf_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Format, va_list _ArgList);
-
-#if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
-template <size_t _SizeInWords>
-inline
-int __cdecl swprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
-}
-
-template <size_t _SizeInWords>
-inline
-int __cdecl vswprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, va_list _ArgList)
-{
-    return vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
-}
-#endif
-
-/* no inline version of swprintf_s, vswprintf_s */
+/* no inline version of swprintf_s */
 
 /* _vsnprintf_s */
 /*
- * _snwprintf_s, _vsnprintf_s, _vsnwprintf_s format a string and copy at max _Count characters into _Dst;
+ * _vsnprintf_s formats a string and copy at max _Count characters into _Dst;
  * need safecrt.lib and msvcrt.dll;
  * string _Dst will always be null-terminated;
  * will call _SAFECRT_INVALID_PARAMETER if there is not enough space in _Dst;
@@ -1734,33 +1705,6 @@ int __cdecl _vsnprintf_s(char (&_Dst)[_SizeInBytes], size_t _Count, const char *
 #endif
 
 /* no inline version of _vsnprintf_s */
-
-/* _snwprintf_s, _vsnwprintf_s */
-_SAFECRT__EXTERN_C
-int __cdecl _vsnwprintf_s(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, va_list _ArgList);
-
-#if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
-template <size_t _SizeInWords>
-inline
-int __cdecl _snwprintf_s(WCHAR (&_Dst)[_SizeInWords], size_t _Count, const WCHAR *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = _vsnwprintf_s(_Dst, _SizeInWords, _Count, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
-}
-
-template <size_t _SizeInWords>
-inline
-int __cdecl _vsnwprintf_s(char (&_Dst)[_SizeInWords], size_t _Count, const char *_Format, va_list _ArgList)
-{
-    return _vsnwprintf_s(_Dst, _SizeInWords, _Count, _Format, _ArgList);
-}
-#endif
-
-/* no inline version of _snwprintf_s, _vsnwprintf_s */
 
 /* wscanf_s */
 _SAFECRT__EXTERN_C

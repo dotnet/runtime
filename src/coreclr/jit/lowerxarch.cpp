@@ -105,6 +105,113 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     ContainCheckStoreIndir(node);
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerMulWithConstant:
+//    Lowers a tree MUL(X, CNS) to LSH(X, CNS_SHIFT)
+//    or
+//    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
+//    or
+//    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
+//
+// Arguments:
+//    node - GT_MUL node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_MUL));
+
+    // Do not do these optimizations when min-opts enabled.
+    if (comp->opts.MinOpts())
+        return nullptr;
+
+    if (!varTypeIsIntegral(node))
+        return nullptr;
+
+    if (node->gtOverflow())
+        return nullptr;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (op1->isContained() || op2->isContained())
+        return nullptr;
+
+    if (!op2->IsCnsIntOrI())
+        return nullptr;
+
+    GenTreeIntConCommon* cns    = op2->AsIntConCommon();
+    ssize_t              cnsVal = cns->IconValue();
+
+    // Use GT_LEA if cnsVal is 3, 5, or 9.
+    // These are handled in codegen.
+    if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
+        return nullptr;
+
+    // Use GT_LSH if cnsVal is a power of two.
+    if (isPow2(cnsVal))
+    {
+        // Use shift for constant multiply when legal
+        unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
+
+        cns->SetIconValue(shiftAmount);
+        node->ChangeOper(GT_LSH);
+
+        ContainCheckShiftRotate(node);
+
+        return node;
+    }
+
+// We do not do this optimization in X86 as it is not recommended.
+#if TARGET_X86
+    return nullptr;
+#endif // TARGET_X86
+
+    ssize_t cnsValPlusOne  = cnsVal + 1;
+    ssize_t cnsValMinusOne = cnsVal - 1;
+
+    bool useSub = isPow2(cnsValPlusOne);
+
+    if (!useSub && !isPow2(cnsValMinusOne))
+        return nullptr;
+
+    LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+    op1 = ReplaceWithLclVar(op1Use);
+
+    if (useSub)
+    {
+        cnsVal = cnsValPlusOne;
+        node->ChangeOper(GT_SUB);
+    }
+    else
+    {
+        cnsVal = cnsValMinusOne;
+        node->ChangeOper(GT_ADD);
+    }
+
+    unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
+    cns->SetIconValue(shiftAmount);
+
+    node->gtOp1 = comp->gtNewOperNode(GT_LSH, node->gtType, op1, cns);
+    node->gtOp2 = comp->gtClone(op1);
+
+    BlockRange().Remove(op1);
+    BlockRange().Remove(cns);
+    BlockRange().InsertBefore(node, node->gtGetOp2());
+    BlockRange().InsertBefore(node, cns);
+    BlockRange().InsertBefore(node, op1);
+    BlockRange().InsertBefore(node, node->gtGetOp1());
+
+    ContainCheckBinary(node);
+    ContainCheckShiftRotate(node->gtGetOp1()->AsOp());
+
+    return node;
+}
+
 //------------------------------------------------------------------------
 // LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
 //
@@ -119,6 +226,15 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIsMul());
+
+    if (mul->OperIs(GT_MUL))
+    {
+        GenTree* replacementNode = TryLowerMulWithConstant(mul);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
+    }
 
     ContainCheckMul(mul);
 
@@ -1614,7 +1730,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().Remove(arg);
         }
 
-        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, simdBaseJitType);
+        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
         vecCon->gtSimd32Val = simd32Val;
         BlockRange().InsertBefore(node, vecCon);
@@ -1760,7 +1876,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   var tmp2 = Vector128<byte>.Zero;
                     //   return Ssse3.Shuffle(tmp1, tmp2);
 
-                    tmp2 = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+                    tmp2 = comp->gtNewZeroConNode(simdType);
                     BlockRange().InsertAfter(tmp1, tmp2);
                     LowerNode(tmp2);
 
@@ -2624,7 +2740,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             //   ...
             //   op1 = op1.GetLower();
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, 16);
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
             BlockRange().InsertBefore(node, tmp1);
             LowerNode(tmp1);
         }
@@ -2634,7 +2750,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic resIntrinsic = NI_Illegal;
 
-    if (imm8 == 0 && (genTypeSize(simdBaseType) >= 4))
+    if ((imm8 == 0) && (genTypeSize(simdBaseType) >= 4))
     {
         switch (simdBaseType)
         {
@@ -2712,9 +2828,8 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     node->SetSimdSize(16);
 
-    if (!varTypeIsFloating(simdBaseType))
+    if (node->GetHWIntrinsicId() != intrinsicId)
     {
-        assert(node->GetHWIntrinsicId() != intrinsicId);
         LowerNode(node);
     }
 
@@ -3393,7 +3508,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   op1  = Sse.And(op1, tmp1);
             //   ...
 
-            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType);
             vecCon1->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op1, vecCon1);
@@ -3422,7 +3537,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   op2  = Sse.And(op2, tmp2);
             //   ...
 
-            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType);
             vecCon2->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op2, vecCon2);
@@ -4784,23 +4899,82 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
     GenTree* src = node->Data();
+
     if (IsContainableImmed(node, src) && (!src->IsIntegralConst(0) || varTypeIsSmall(node)))
     {
         MakeSrcContained(node, src);
     }
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
-    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    if (comp->opts.OptimizationEnabled())
     {
-        unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
-        if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+        if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
         {
-            // Prefer containing in the store in case the load has been contained.
-            src->gtGetOp1()->ClearContained();
+            unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
 
-            MakeSrcContained(node, src);
+            if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+            {
+                // Prefer containing in the store in case the load has been contained.
+                src->gtGetOp1()->ClearContained();
+
+                MakeSrcContained(node, src);
+            }
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (src->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* hwintrinsic   = src->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
+            var_types           simdBaseType  = hwintrinsic->GetSimdBaseType();
+            bool                isContainable = false;
+
+            switch (intrinsicId)
+            {
+                case NI_SSE2_ConvertToInt32:
+                case NI_SSE2_ConvertToUInt32:
+                case NI_SSE2_X64_ConvertToInt64:
+                case NI_SSE2_X64_ConvertToUInt64:
+                case NI_AVX2_ConvertToInt32:
+                case NI_AVX2_ConvertToUInt32:
+                {
+                    // These intrinsics are "ins reg/mem, xmm"
+                    isContainable = varTypeIsIntegral(simdBaseType);
+                    break;
+                }
+
+                case NI_SSE2_Extract:
+                case NI_SSE41_Extract:
+                case NI_SSE41_X64_Extract:
+                case NI_AVX_ExtractVector128:
+                case NI_AVX2_ExtractVector128:
+                {
+                    // These intrinsics are "ins reg/mem, xmm, imm8"
+
+                    size_t   numArgs = hwintrinsic->GetOperandCount();
+                    GenTree* lastOp  = hwintrinsic->Op(numArgs);
+
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI();
+
+                    if (isContainable && (intrinsicId == NI_SSE2_Extract))
+                    {
+                        // The encoding that supports containment is SSE4.1 only
+                        isContainable = comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            if (isContainable && IsSafeToContainMem(node, src))
+            {
+                MakeSrcContained(node, src);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
     }
 
     ContainCheckIndir(node);
@@ -6330,8 +6504,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (varTypeIsIntegral(simdBaseType))
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
                             return;
                         }
 
@@ -6466,8 +6640,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm, imm8" and get
+                            // contained by the relevant store operation instead.
                             break;
                         }
 
@@ -6518,9 +6692,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_Extract:
                         case NI_SSE41_X64_Extract:
                         {
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
+
                             assert(!varTypeIsFloating(simdBaseType));
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
                             break;
                         }
 

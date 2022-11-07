@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -39,6 +39,12 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.Semaphore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs"
              Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs"

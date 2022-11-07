@@ -554,9 +554,9 @@ namespace Microsoft.Extensions.Configuration
         // Binds and potentially overwrites a concrete dictionary.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
-        // When a user specifies a concrete dictionary in their config class, then that
-        // value is used as-us. When a user specifies an interface (instantiated) in their config class,
-        // then it is cloned to a new dictionary, the same way as other collections.
+        // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
+        // in their config class, then that value is used as-is. When a user specifies an interface (instantiated)
+        // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindConcreteDictionary(
@@ -584,10 +584,17 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
-            PropertyInfo setter = genericType.GetProperty("Item", DeclaredOnlyLookup)!;
+            Debug.Assert(dictionary is not null);
+            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
+            PropertyInfo? setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            if (setter is null || !setter.CanWrite)
+            {
+                // Cannot set any item on the dictionary object.
+                return;
+            }
+
             foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
@@ -613,8 +620,13 @@ namespace Microsoft.Extensions.Configuration
                         setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
         }
@@ -646,8 +658,14 @@ namespace Microsoft.Extensions.Configuration
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
+
                 }
             }
         }
@@ -695,8 +713,13 @@ namespace Microsoft.Extensions.Configuration
                         list.Add(itemBindingPoint.Value);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 
@@ -754,8 +777,13 @@ namespace Microsoft.Extensions.Configuration
                         addMethod.Invoke(instance, arguments);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 

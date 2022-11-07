@@ -2716,6 +2716,7 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
 
+
     // ------------------------------------------------------------------
     // Private part of MethodTable
     // ------------------------------------------------------------------

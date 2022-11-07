@@ -83,3 +83,61 @@ Functionality that has been added or moved to SuperFileCheck:
   order of the functions.
 - `<check-prefix>-FULL-LINE:` - same as using FileCheck's `<check-prefix>:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 - `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
+# Test Run Limitations
+1. Disasm checks will not run if these environment variables are set:
+- `COMPlus_JitStress`
+- `COMPlus_JitStressRegs`
+- `COMPlus_TailcallStress`
+- `COMPlus_TieredPGO`
+2. Disasm checks will not run under GCStress test modes.
+3. Disasm checks will not run under heap-verify test modes.
+4. Disasm checks will not run under cross-gen2 test modes.
+# Method Disassembly Limitations
+There are a few limitations when using FileChecked methods that the user should be aware of:
+1. Local functions are not supported.
+2. Conditional defines are not recognized by the `.csproj`.
+3. Overloaded methods are not supported. Snippet below will not work:
+```csharp
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test(int x)
+    {
+        // CHECK: ...
+        return 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float Test(float x, float y)
+    {
+        // CHECK: ...
+        return 1;
+    }
+```
+4. Using a FileChecked generic method with different type arguments may result in ambiguity when FileCheck looks at the disassembly output. The snippet below will work, but the test itself is brittle and may fail:
+```csharp
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void Test<T>()
+    {
+        // CHECK: ...
+        (implementation)
+    }
+
+    static int Main(string args[])
+    {
+        // Disassembly output will have two specialized methods, each with different codegen that
+        // is ambiguous with our CHECK:
+        Test<float>();
+        Test<int>();
+        return 200;
+    }
+```
+The reason for these limitations are that SuperFileCheck only relies on the C# syntax tree. In the future, it may be possible to get the semantic model that will allow getting an accurate method signature, complete with types. However, it is non-trivial to resolve all required assemblies from the `.csproj` and feed them into C#'s compilation - it also adds a performance cost when using a full compilation compared to just the syntax tree.
+# Future Improvements
+- SuperFileCheck supports writing FileChecked methods where the methods are in any order. It can do this by determining the *start* and *end* "anchors" of the JIT disassembly output. However, these anchors are not necessarily standardized and changes to its current output would break disasm check tests. We should improve this by being very explicit with the output of the anchors. Below is an example of what the current anchor output is today:
+```
+; Assembly listing for method Program:PerformMod_1(uint):uint     <-- start anchor
+.......
+; Total bytes of code 6, prolog size 0, PerfScore 2.10, instruction count 3, allocated bytes for code 6 (MethodHash=e2c7b489) for method Program:PerformMod_1(uint):uint     <-- end anchor
+```
+- SuperFileCheck does not use a command line library today due to it being so minimal and most of the heavy lifting is done passing the arguments to FileCheck itself. As SuperFileCheck continues to grow, we will need to use a command line library, such as System.CommandLine.
+- Support various JIT test modes to allow testing codegen under specific scenarios. (Note: these can already be partially done by setting environment variables (like `COMPlus_JITMinOpts`) in the test itself.)
+- JIT IR Testing - we may want to allow testing against certain phases of a method by looking at the IR. There are a lot of unknowns surrounding this, but it would be useful to have a prototype.
