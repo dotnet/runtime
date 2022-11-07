@@ -326,20 +326,12 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvPromoted);
 
-        if (varDsc->CanBeReplacedWithItsField(this))
+        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
         {
-            // TODO-CQ: remove this zero-diff quirk.
-            pushDef(varDsc->lvFieldLclStart, SsaConfig::RESERVED_SSA_NUM);
-        }
-        else
-        {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            unsigned ssaNum = lclNode->GetSsaNum(this, index);
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
             {
-                unsigned ssaNum = lclNode->GetSsaNum(this, index);
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    pushDef(varDsc->lvFieldLclStart + index, ssaNum);
-                }
+                pushDef(varDsc->lvFieldLclStart + index, ssaNum);
             }
         }
     }

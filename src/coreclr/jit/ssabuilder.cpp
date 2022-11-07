@@ -1584,7 +1584,7 @@ void SsaBuilder::Build()
     // Mark all variables that will be tracked by SSA
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
     {
-        m_pCompiler->lvaTable[lclNum].lvInSsa = IncludeInSsa(lclNum);
+        m_pCompiler->lvaTable[lclNum].lvInSsa = m_pCompiler->lvaGetDesc(lclNum)->lvTracked;
     }
 
     // Insert phi functions.
@@ -1639,45 +1639,6 @@ void SsaBuilder::SetupBBRoot()
     {
         m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
     }
-}
-
-//------------------------------------------------------------------------
-// IncludeInSsa: Check if the specified variable can be included in SSA.
-//
-// Arguments:
-//    lclNum - the variable number
-//
-// Return Value:
-//    true if the variable is included in SSA
-//
-bool SsaBuilder::IncludeInSsa(unsigned lclNum)
-{
-    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
-
-    if (!varDsc->lvTracked)
-    {
-        return false; // SSA is only done for tracked variables
-    }
-    // lvPromoted structs are never tracked...
-    assert(!varDsc->lvPromoted);
-
-    if (varDsc->lvIsStructField &&
-        (m_pCompiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
-    {
-        // SSA must exclude struct fields that are not independent
-        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
-        //   assignment.
-        // - SSA doesn't allow a single node to contain multiple SSA definitions.
-        // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
-        //
-        return false;
-    }
-    else if (varDsc->lvIsStructField && m_pCompiler->lvaGetDesc(varDsc->lvParentLcl)->lvIsMultiRegRet)
-    {
-        return false;
-    }
-    // otherwise this variable is included in SSA
-    return true;
 }
 
 #ifdef DEBUG
