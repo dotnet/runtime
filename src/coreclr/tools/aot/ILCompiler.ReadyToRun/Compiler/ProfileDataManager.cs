@@ -148,7 +148,7 @@ namespace ILCompiler
 
             MethodProfileData profileData = null;
             // We only support synthesizing PGO data for normal methods.
-            if (method is EcmaMethod or MethodForInstantiatedType or InstantiatedMethod)
+            if (method.GetTypicalMethodDefinition() is EcmaMethod)
             {
                 profileData = new MethodProfileData(method, MethodProfilingDataFlags.ReadMethodCode, 0, null, 0, SynthesizeSchema(comp, method));
 
@@ -395,7 +395,6 @@ namespace ILCompiler
 
                 return Array.Empty<MethodDesc>();
             }
-
 
             public void Add(MethodProfileData profileData)
             {
