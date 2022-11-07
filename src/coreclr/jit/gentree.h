@@ -8496,7 +8496,6 @@ public:
 #if defined(TARGET_X86)
         if (condition.m_code == FEQ || condition.m_code == FLT || condition.m_code == FLE || condition.m_code == FNEU ||
             condition.m_code == FGEU || condition.m_code == FGTU)
-            ;
         {
             return false;
         }
