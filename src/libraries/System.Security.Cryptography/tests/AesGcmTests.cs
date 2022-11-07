@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Security.Cryptography.Tests
     {
         private const int CryptoKitSupportedTagSizeInBytes = 16;
 
-        [ConditionalTheory]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
@@ -395,7 +394,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetNistGcmTestCasesWithNonEmptyPT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
