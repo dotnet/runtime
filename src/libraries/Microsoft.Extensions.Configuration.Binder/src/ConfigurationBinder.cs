@@ -300,31 +300,14 @@ namespace Microsoft.Extensions.Configuration
             if (config != null && config.GetChildren().Any())
             {
                 // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
-                if (type.IsArray || IsArrayCompatibleInterface(type))
+                if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
                         bindingPoint.SetValue(BindArray(type, (IEnumerable?)bindingPoint.Value, config, options));
-                        return;
                     }
 
                     // for getter-only collection properties that we can't add to, nothing more we can do
-                    if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
-                    {
-                        return;
-                    }
-                }
-
-                Type? iCollectionInterfaceType = GetICollectionInterfaceType(type);
-                if (iCollectionInterfaceType is not null)
-                {
-                    if (bindingPoint.Value is null)
-                    {
-                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-                        bindingPoint.SetValue(Activator.CreateInstance(genericType));
-                    }
-
-                    BindCollection(bindingPoint.Value!, iCollectionInterfaceType, config, options);
                     return;
                 }
 
@@ -363,12 +346,24 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
-                    // on a new instance of the interface over populating the existing instance implementing the interface.
-                    // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
-                    // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
 
-                    bindingPoint.SetValue(CreateInstance(type, config, options));
+                    if (interfaceGenericType is not null &&
+                        (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                    {
+                        // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
+                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                        bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                    }
+                    else
+                    {
+                        // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
+                        // on a new instance of the interface over populating the existing instance implementing the interface.
+                        // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
+                        // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+
+                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                    }
                 }
 
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
@@ -597,9 +592,10 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
-
             Debug.Assert(dictionary is not null);
+
+            MethodInfo tryGetValue = dictionary.GetType().GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
+
             // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
             PropertyInfo? setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
             if (setter is null || !setter.CanWrite)
@@ -849,27 +845,6 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        private static Type? GetICollectionInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-        {
-            if (!type.IsInterface || !type.IsConstructedGenericType) { return null; }
-
-            Type genericTypeDefinition = type.GetGenericTypeDefinition();
-
-            if (genericTypeDefinition == typeof(ICollection<>))
-            {
-                return type;
-            }
-
-            // We always try to use ICollection<T> type because during binding we use the Add method. Currently the Reflection
-            // cannot provide the Add method from the IList<> interface even IList<> extend ICollection<>.
-            if (genericTypeDefinition == typeof(IList<>))
-            {
-                return FindOpenGenericInterface(typeof(ICollection<>), type);
-            }
-
-            return null;
-        }
-
         private static bool TypeIsADictionaryInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -877,16 +852,6 @@ namespace Microsoft.Extensions.Configuration
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IDictionary<,>)
                 || genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
-        }
-
-        private static bool IsArrayCompatibleInterface(Type type)
-        {
-            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
-
-            Type genericTypeDefinition = type.GetGenericTypeDefinition();
-            return genericTypeDefinition == typeof(IEnumerable<>)
-                || genericTypeDefinition == typeof(IReadOnlyCollection<>)
-                || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
         private static bool IsImmutableArrayCompatibleInterface(Type type)
