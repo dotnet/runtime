@@ -153,7 +153,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value), distinguishNewLines: !ConsoleUtils.UseNet6KeyParser) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -479,7 +479,7 @@ namespace System
                 // involved in reading/writing, such as when accessing a remote system. We also extend
                 // the timeout on the very first request to 15 seconds, to account for potential latency
                 // before we know if we will receive a response.
-                Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser, minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
+                Interop.Sys.InitializeConsoleBeforeRead(minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
                 try
                 {
                     // Write out the cursor position report request.
@@ -554,7 +554,7 @@ namespace System
                 {
                     if (reinitializeForRead)
                     {
-                        Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser);
+                        Interop.Sys.InitializeConsoleBeforeRead();
                     }
                     else
                     {
