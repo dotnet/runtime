@@ -1,5 +1,5 @@
 # System.Resources.ResourceManager
-Provides classes and interfaces that allow developers to create, store, and manage various culture-specific resources used in an application. One of the most important classes of this namespace is the [ResourceManager](https://learn.microsoft.com/dotnet/api/system.resources.resourcemanager) class, It allows the user to access and control resources stored in the main assembly or in resource satellite assemblies. In .NET core a resource file is compiled and embedded automatically with MSBuild.
+Provides classes and interfaces that allow developers to create, store, and manage various culture-specific resources used in an application. One of the most important classes of this namespace is the [`ResourceManager`](https://learn.microsoft.com/dotnet/api/system.resources.resourcemanager) class, It allows the user to access and control resources stored in the main assembly or in resource satellite assemblies. In .NET core a resource file is compiled and embedded automatically with MSBuild.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.resources.
 

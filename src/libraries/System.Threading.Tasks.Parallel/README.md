@@ -1,5 +1,5 @@
 # System.Threading.Tasks.Parallel
-Provides the S[ystem.Threading.Tasks.Parallel](https://learn.microsoft.com/dotnet/api/system.threading.tasks.parallel) class, which adds support for running loops and iterators in parallel.
+Provides the [System.Threading.Tasks.Parallel](https://learn.microsoft.com/dotnet/api/system.threading.tasks.parallel) class, which adds support for running loops and iterators in parallel.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.threading.tasks.parallel
 

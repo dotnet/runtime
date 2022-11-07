@@ -1,5 +1,5 @@
 # System.Threading.Tasks.Extensions
-Provides additional types that simplify the work of writing concurrent and asynchronous code.
+Provides types including [`ValueTask`](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask) and [`ValueTask<T>`](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1) that enable writing memory-efficient asynchronous code.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.threading.tasks
 
