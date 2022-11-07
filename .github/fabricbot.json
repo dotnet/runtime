@@ -175,6 +175,25 @@
         },
         {
           "labels": [
+            "area-tools-linker"
+          ],
+          "mentionees": [
+            "agocke",
+            "sbomer"
+          ]
+        },
+        {
+          "labels": [
+            "area-NativeAOT-coreclr"
+          ],
+          "mentionees": [
+            "agocke",
+            "MichalStrehovsky",
+            "jkotas"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Buffers"
           ],
           "mentionees": [
@@ -2074,6 +2093,12 @@
                 }
               },
               {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-tools-linker"
+                }
+              },
+              {
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-AssemblyLoader-coreclr"
@@ -2101,6 +2126,12 @@
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-Single-File"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-tools-linker"
                 }
               }
             ]
