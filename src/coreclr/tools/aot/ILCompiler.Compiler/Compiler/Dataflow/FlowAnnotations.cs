@@ -105,10 +105,6 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        /// <summary>
-        /// Retrieves the annotations for the given parameter.
-        /// </summary>
-        /// <param name="parameterIndex">Parameter index in the IL sense. Parameter 0 on instance methods is `this`.</param>
         internal DynamicallyAccessedMemberTypes GetParameterAnnotation(ParameterProxy param)
         {
             MethodDesc method = param.Method.Method.GetTypicalMethodDefinition();
