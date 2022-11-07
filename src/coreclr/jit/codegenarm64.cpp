@@ -4623,6 +4623,9 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCon
     const GenConditionDesc& prevDesc    = GenConditionDesc::Get(prevCond);
     insCond                 prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
 
+    // Can't handle compares that require multiple checks.
+    assert(prevDesc.oper == GT_NONE);
+
     if (op2->isContainedIntOrIImmed())
     {
         GenTreeIntConCommon* intConst = op2->AsIntConCommon();
@@ -4750,6 +4753,9 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     regNumber               srcReg1   = genConsumeReg(op1);
     regNumber               srcReg2   = genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
+
+    // Can't handle compares that require multiple checks.
+    assert(prevDesc.oper == GT_NONE);
 
     emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);

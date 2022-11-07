@@ -8475,6 +8475,26 @@ public:
         assert(condition.m_code < ArrLen(swap));
         return GenCondition(swap[condition.m_code]);
     }
+
+    // Is this a prefferable relop to use - essentially, will Codegen GenConditionDesc::map
+    // evaluate to a single operation.
+    static bool IsPreferredRelop(GenCondition condition)
+    {
+#if defined(TARGET_X86)
+        if (condition.m_code == FEQ || condition.m_code == FLT || condition.m_code == FLE || condition.m_code == FNEU ||
+            condition.m_code == FGEU || condition.m_code == FGTU)
+            ;
+        {
+            return false;
+        }
+#elif defined(TARGET_ARM64) || defined(TARGET_ARM)
+        if (condition.m_code == FNE || condition.m_code == FEQU)
+        {
+            return false;
+        }
+#endif
+        return true;
+    }
 };
 
 // Represents a GT_JCC or GT_SETCC node.

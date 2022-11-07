@@ -5128,6 +5128,17 @@ bool OptIfConversionDsc::optIfConvert()
     {
         return false;
     }
+    // Check the condition or inverted condition is usable. Prefer inverted.
+    bool         invertCond = true;
+    GenCondition genCond    = GenCondition::FromRelop(cond);
+    if (!GenCondition::IsPreferredRelop(GenCondition::Reverse(genCond)))
+    {
+        invertCond = false;
+        if (!GenCondition::IsPreferredRelop(genCond))
+        {
+            return false;
+        }
+    }
 
     // Look for valid flow of Then and Else blocks.
     IfConvertFindFlow();
@@ -5215,30 +5226,23 @@ bool OptIfConversionDsc::optIfConvert()
         }
     }
 
-    // Invert the condition.
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
-
-    // Insert a SELECT node.
+    // Get the select node inputs.
+    GenTree* selectTrueInput;
+    GenTree* selectFalseInput;
     if (m_mainOper == GT_ASG)
     {
-        // Duplicate the destination of the Then assignment.
-        assert(m_thenOperation.node->AsOp()->gtOp1->IsLocal());
-        GenTreeLclVarCommon* destination       = m_thenOperation.node->AsOp()->gtOp1->AsLclVarCommon();
-        GenTree*             clonedDestination = m_comp->gtCloneExpr(destination);
-        clonedDestination->gtFlags &= GTF_EMPTY;
-
-        // Get the false input of the Select Node.
-        GenTree* falseInput = (m_doElseConversion) ? m_elseOperation.node->gtGetOp2() : clonedDestination;
-
-        // Create a select node.
-        GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, cond, m_thenOperation.node->gtGetOp2(),
-                                                                  falseInput, m_thenOperation.node->TypeGet());
-
-        // Use the select as the source of the Then assignment.
-        m_thenOperation.node->AsOp()->gtOp2 = select;
-        m_thenOperation.node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-        m_comp->gtSetEvalOrder(m_thenOperation.node);
-        m_comp->fgSetStmtSeq(m_thenOperation.stmt);
+        if (m_doElseConversion)
+        {
+            selectTrueInput = m_elseOperation.node->gtGetOp2();
+        }
+        else
+        {
+            // Duplicate the destination of the Then assignment.
+            assert(m_thenOperation.node->AsOp()->gtOp1->IsLocal());
+            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->AsOp()->gtOp1->AsLclVarCommon());
+            selectTrueInput->gtFlags &= GTF_EMPTY;
+        }
+        selectFalseInput = m_thenOperation.node->gtGetOp2();
     }
     else
     {
@@ -5246,17 +5250,39 @@ bool OptIfConversionDsc::optIfConvert()
         assert(m_doElseConversion);
         assert(m_thenOperation.node->TypeGet() == m_elseOperation.node->TypeGet());
 
-        // Create a select node.
-        GenTreeConditional* select =
-            m_comp->gtNewConditionalNode(GT_SELECT, cond, m_thenOperation.node->gtGetOp1(),
-                                         m_elseOperation.node->gtGetOp1(), m_thenOperation.node->TypeGet());
-
-        // Use the select as the source of the Then return.
-        m_thenOperation.node->AsOp()->gtOp1 = select;
-        m_thenOperation.node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-        m_comp->gtSetEvalOrder(m_thenOperation.node);
-        m_comp->fgSetStmtSeq(m_thenOperation.stmt);
+        selectTrueInput  = m_elseOperation.node->gtGetOp1();
+        selectFalseInput = m_thenOperation.node->gtGetOp1();
     }
+
+    // Invert the condition if required.
+    if (invertCond)
+    {
+        cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+        if (varTypeIsFloating(cond->gtGetOp1()))
+        {
+            cond->gtFlags ^= GTF_RELOP_NAN_UN;
+        }
+        GenTree* tmp     = selectTrueInput;
+        selectTrueInput  = selectFalseInput;
+        selectFalseInput = tmp;
+    }
+
+    // Create a select node.
+    GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, cond, selectTrueInput, selectFalseInput,
+                                                              m_thenOperation.node->TypeGet());
+    m_thenOperation.node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+
+    // Use the select as the source of the Then operation.
+    if (m_mainOper == GT_ASG)
+    {
+        m_thenOperation.node->AsOp()->gtOp2 = select;
+    }
+    else
+    {
+        m_thenOperation.node->AsOp()->gtOp1 = select;
+    }
+    m_comp->gtSetEvalOrder(m_thenOperation.node);
+    m_comp->fgSetStmtSeq(m_thenOperation.stmt);
 
     // Remove statements.
     last->ReplaceWith(m_comp->gtNewNothingNode(), m_comp);
