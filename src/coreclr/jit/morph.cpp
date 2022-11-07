@@ -9871,10 +9871,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             if (!optValnumCSE_phase)
             {
-                if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1) || op2->IsIntegralConst(-1)))
+                if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1)))
                 {
                     // Transformation: a % 1 = 0
-                    // Transformation: a % -1 = 0
                     return fgMorphModToZero(tree->AsOp());
                 }
             }
@@ -13149,7 +13148,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
-// fgMorphModToZero: Transform 'a % 1' or 'a % -1' into the equivalent '0'.
+// fgMorphModToZero: Transform 'a % 1' into the equivalent '0'.
 //
 // Arguments:
 //    tree - The GT_MOD/GT_UMOD tree to morph
@@ -13162,7 +13161,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
 
     assert(tree->OperIs(GT_MOD, GT_UMOD));
-    assert(tree->gtOp2->IsIntegralConst(1) || tree->gtOp2->IsIntegralConst(-1));
+    assert(tree->gtOp2->IsIntegralConst(1));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
