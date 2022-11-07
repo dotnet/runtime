@@ -23,7 +23,7 @@ namespace System.Text.Encodings.Web
             private fixed byte AsBytes[16];
 
 #if NETCOREAPP
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
             [FieldOffset(0)] // ensure same offset with AsBytes field
             internal Vector128<byte> AsVector;
 #else

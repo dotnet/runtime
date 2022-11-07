@@ -7,7 +7,7 @@
 
 #include <config.h>
 
-#ifdef TARGET_WASM
+#ifdef TARGET_BROWSER
 
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -104,4 +104,4 @@ mono_profiler_init_browser (const char *desc)
 #endif /* HOST_WASM */
 }
 
-#endif /* TARGET_WASM */
+#endif /* TARGET_BROWSER */
