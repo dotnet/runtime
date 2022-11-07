@@ -86,6 +86,7 @@ internal static partial class Interop
                 }
             }
         }
+
         internal static unsafe void AesGcmEncrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,

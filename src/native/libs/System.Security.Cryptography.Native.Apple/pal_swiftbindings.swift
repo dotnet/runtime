@@ -67,12 +67,12 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
         return 0
     }
 
-    guard let sealedBoxRestored = try? ChaChaPoly.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
+    guard let sealedBox = try? ChaChaPoly.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
         return 0
     }
 
     do {
-        let result = try ChaChaPoly.open(sealedBoxRestored, using: symmetricKey, authenticating: aad)
+        let result = try ChaChaPoly.open(sealedBox, using: symmetricKey, authenticating: aad)
 
         assert(plaintextBufferLength >= result.count)
         result.copyBytes(to: plaintextBuffer, count: result.count)
@@ -149,12 +149,12 @@ public func AppleCryptoNative_AesGcmDecrypt(
         return 0
     }
 
-    guard let sealedBoxRestored = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
+    guard let sealedBox = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
         return 0
     }
 
     do {
-        let result = try AES.GCM.open(sealedBoxRestored, using: symmetricKey, authenticating: aad)
+        let result = try AES.GCM.open(sealedBox, using: symmetricKey, authenticating: aad)
 
         assert(plaintextBufferLength >= result.count)
         result.copyBytes(to: plaintextBuffer, count: result.count)

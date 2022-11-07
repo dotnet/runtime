@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = new byte[dataLength];
             byte[] key = new byte[16];
             byte[] nonce = new byte[AesGcm.NonceByteSizes.MinSize];
-            byte[] tag = new byte[AesGcm.TagByteSizes.MaxSize];
+            byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = new byte[dataLength];
             byte[] key = new byte[16];
             byte[] nonce = new byte[nonceSize];
-            byte[] tag = new byte[AesGcm.TagByteSizes.MaxSize];
+            byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 

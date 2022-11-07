@@ -17,7 +17,6 @@ namespace System.Security.Cryptography
         // CryptoKit only supports 16 byte tags.
         public static KeySizes TagByteSizes { get; } = new KeySizes(16, 16, 1);
 
-
         [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
