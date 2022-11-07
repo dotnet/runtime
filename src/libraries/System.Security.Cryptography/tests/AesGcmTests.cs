@@ -135,22 +135,11 @@ namespace System.Security.Cryptography.Tests
 
             using (var aesGcm = new AesGcm(key))
             {
-                if (PlatformDetection.IsOSX &&
-                    tagSize != CryptoKitSupportedTagSizeInBytes &&
-                    !PlatformDetection.OpenSslPresentOnSystem)
-                {
-                    byte[] decrypted = new byte[dataLength];
-                    Assert.Throws<PlatformNotSupportedException>(() => aesGcm.Encrypt(nonce, plaintext, ciphertext, tag));
-                    Assert.Throws<PlatformNotSupportedException>(() => aesGcm.Decrypt(nonce, ciphertext, tag, decrypted));
-                }
-                else
-                {
-                    aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
+                aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
 
-                    byte[] decrypted = new byte[dataLength];
-                    aesGcm.Decrypt(nonce, ciphertext, tag, decrypted);
-                    Assert.Equal(plaintext, decrypted);
-                }
+                byte[] decrypted = new byte[dataLength];
+                aesGcm.Decrypt(nonce, ciphertext, tag, decrypted);
+                Assert.Equal(plaintext, decrypted);
             }
         }
 
@@ -334,59 +323,75 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTests(AEADTest testCase)
         {
-            if (PlatformDetection.IsOSX &&
-                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
-                !PlatformDetection.OpenSslPresentOnSystem)
-            {
-                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
-            }
-
             using (var aesGcm = new AesGcm(testCase.Key))
             {
                 byte[] ciphertext = new byte[testCase.Plaintext.Length];
                 byte[] tag = new byte[testCase.Tag.Length];
-                aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
-                Assert.Equal(testCase.Ciphertext, ciphertext);
-                Assert.Equal(testCase.Tag, tag);
 
-                byte[] plaintext = new byte[testCase.Plaintext.Length];
-                aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData);
-                Assert.Equal(testCase.Plaintext, plaintext);
+                if (PlatformDetection.IsOSX && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
+                {
+                    Assert.Throws<ArgumentException>("tag", () =>
+                    {
+                        aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
+                    });
+                    Assert.Throws<ArgumentException>("tag", () =>
+                    {
+                        byte[] plaintext = new byte[testCase.Plaintext.Length];
+                        aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, testCase.Ciphertext, testCase.AssociatedData);
+                    });
+                }
+                else
+                {
+                    aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
+                    Assert.Equal(testCase.Ciphertext, ciphertext);
+                    Assert.Equal(testCase.Tag, tag);
+
+                    byte[] plaintext = new byte[testCase.Plaintext.Length];
+                    aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData);
+                    Assert.Equal(testCase.Plaintext, plaintext);
+                }
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperTag(AEADTest testCase)
         {
-            if (PlatformDetection.IsOSX &&
-                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
-                !PlatformDetection.OpenSslPresentOnSystem)
-            {
-                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
-            }
-
             using (var aesGcm = new AesGcm(testCase.Key))
             {
-                byte[] ciphertext = new byte[testCase.Plaintext.Length];
-                byte[] tag = new byte[testCase.Tag.Length];
-                aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
-                Assert.Equal(testCase.Ciphertext, ciphertext);
-                Assert.Equal(testCase.Tag, tag);
+                if (PlatformDetection.IsOSX && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
+                {
+                    byte[] plaintext = new byte[testCase.Plaintext.Length];
+                    byte[] tamperedTag = testCase.Tag.AsSpan().ToArray();
+                    tamperedTag[0] ^= 1;
 
-                tag[0] ^= 1;
+                    Assert.Throws<ArgumentException>("tag", () =>
+                    {
+                        aesGcm.Decrypt(testCase.Nonce, testCase.Ciphertext, tamperedTag, plaintext, testCase.AssociatedData);
+                    });
+                }
+                else
+                {
+                    byte[] ciphertext = new byte[testCase.Plaintext.Length];
+                    byte[] tag = new byte[testCase.Tag.Length];
+                    aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
+                    Assert.Equal(testCase.Ciphertext, ciphertext);
+                    Assert.Equal(testCase.Tag, tag);
 
-                byte[] plaintext = new byte[testCase.Plaintext.Length];
-                RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<AuthenticationTagMismatchException>(
-                    () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
-                Assert.Equal(new byte[plaintext.Length], plaintext);
+                    tag[0] ^= 1;
+
+                    byte[] plaintext = new byte[testCase.Plaintext.Length];
+                    RandomNumberGenerator.Fill(plaintext);
+                    Assert.Throws<AuthenticationTagMismatchException>(
+                        () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
+                    Assert.Equal(new byte[plaintext.Length], plaintext);
+                }
             }
         }
 
@@ -395,28 +400,32 @@ namespace System.Security.Cryptography.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
         {
-            if (PlatformDetection.IsOSX &&
-                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
-                !PlatformDetection.OpenSslPresentOnSystem)
-            {
-                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
-            }
-
             using (var aesGcm = new AesGcm(testCase.Key))
             {
-                byte[] ciphertext = new byte[testCase.Plaintext.Length];
-                byte[] tag = new byte[testCase.Tag.Length];
-                aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
-                Assert.Equal(testCase.Ciphertext, ciphertext);
-                Assert.Equal(testCase.Tag, tag);
+                if (PlatformDetection.IsOSX && testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes)
+                {
+                    byte[] tamperedCiphertext = testCase.Ciphertext.AsSpan().ToArray();
+                    tamperedCiphertext[0] ^= 1;
+                    Assert.Throws<ArgumentException>("tag", () =>
+                    {
+                        aesGcm.Decrypt(testCase.Nonce, tamperedCiphertext, testCase.Tag, testCase.Plaintext, testCase.AssociatedData);
+                    });
+                }
+                else
+                {
+                    byte[] ciphertext = new byte[testCase.Plaintext.Length];
+                    byte[] tag = new byte[testCase.Tag.Length];
+                    aesGcm.Encrypt(testCase.Nonce, testCase.Plaintext, ciphertext, tag, testCase.AssociatedData);
+                    Assert.Equal(testCase.Ciphertext, ciphertext);
+                    Assert.Equal(testCase.Tag, tag);
 
-                ciphertext[0] ^= 1;
+                    ciphertext[0] ^= 1;
 
-                byte[] plaintext = new byte[testCase.Plaintext.Length];
-                RandomNumberGenerator.Fill(plaintext);
-                Assert.Throws<AuthenticationTagMismatchException>(
-                    () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
-                Assert.Equal(new byte[plaintext.Length], plaintext);
+                    byte[] plaintext = RandomNumberGenerator.GetBytes(testCase.Plaintext.Length);
+                    Assert.Throws<AuthenticationTagMismatchException>(
+                        () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
+                    AssertExtensions.FilledWith<byte>(0, plaintext);
+                }
             }
         }
 
