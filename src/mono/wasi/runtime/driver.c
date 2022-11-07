@@ -33,7 +33,7 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
-#include "wasm/runtime/pinvoke.h"
+#include "pinvoke.h"
 
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
