@@ -42,8 +42,7 @@ __VerboseBuild=false
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-
-if [[ "$__TargetArch" == wasm ]]; then
+if [[ "$__TargetOS" == Browser ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
         echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
         exit 1
@@ -51,6 +50,8 @@ if [[ "$__TargetArch" == wasm ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
+elif [[ "$__TargetOS" == Wasi ]]; then
+    export CLR_CC=$(WASI_SDK_PATH)/bin/clang
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
