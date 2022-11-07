@@ -11321,9 +11321,6 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
 
-    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    ret->SetMultiReg();
-
     return ret;
 }
 

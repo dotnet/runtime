@@ -23134,9 +23134,10 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
     {
 #ifdef TARGET_XARCH
         case NI_X86Base_DivRem:
+            return compiler->typGetBlkLayout(8);
         case NI_X86Base_X64_DivRem:
             return compiler->typGetBlkLayout(16);
-#endif
+#endif // TARGET_XARCH
 #ifdef TARGET_ARM64
         case NI_AdvSimd_Arm64_LoadPairScalarVector64:
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
