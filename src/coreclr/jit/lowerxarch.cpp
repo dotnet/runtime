@@ -1743,11 +1743,25 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             switch (simdBaseType)
             {
                 case TYP_BYTE:
+                {
+                    // Signed types need to be explicitly zero-extended to ensure upper-bits are zero
+                    // We need to explicitly use TYP_UBYTE since unsigned is ignored for small types
+
+                    tmp1 = comp->gtNewCastNode(TYP_UBYTE, op1, /* unsigned */ true, TYP_INT);
+                    BlockRange().InsertAfter(op1, tmp1);
+                    LowerNode(tmp1);
+
+                    node->ChangeHWIntrinsicId(NI_SSE2_ConvertScalarToVector128Int32, tmp1);
+                    node->SetSimdBaseJitType(CORINFO_TYPE_INT);
+                    break;
+                }
+
                 case TYP_SHORT:
                 {
                     // Signed types need to be explicitly zero-extended to ensure upper-bits are zero
+                    // We need to explicitly use TYP_UBYTE since unsigned is ignored for small types
 
-                    tmp1 = comp->gtNewCastNode(simdBaseType, op1, /* unsigned */ true, TYP_INT);
+                    tmp1 = comp->gtNewCastNode(TYP_USHORT, op1, /* unsigned */ true, TYP_INT);
                     BlockRange().InsertAfter(op1, tmp1);
                     LowerNode(tmp1);
 
