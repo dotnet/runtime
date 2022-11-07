@@ -3889,7 +3889,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case MONO_TYPE_R8: opcode = OP_COMPPD; break;
 			default: opcode = OP_PCMPEQD;
 			}
-			ins->inst_c0 = 0;
 
 			NEW_SIMD_INS (cfg, ins, temp, opcode, temp_reg1, ins->sreg1, ins->sreg2);
 			NEW_SIMD_INS (cfg, ins, temp, OP_EXTRACT_MASK, temp_reg2, temp_reg1, -1);
