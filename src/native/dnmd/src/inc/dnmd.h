@@ -19,8 +19,9 @@ void md_destroy_handle(mdhandle_t handle);
 // Validate the metadata associated with the handle.
 bool md_validate(mdhandle_t handle);
 
-// Write all tables to stdout
-bool md_dump_tables(mdhandle_t handle);
+// Write all tables to stdout.
+// Set table_id to '-1' to print out all tables.
+bool md_dump_tables(mdhandle_t handle, int32_t table_id);
 
 //
 // All tables possible in ECMA-335

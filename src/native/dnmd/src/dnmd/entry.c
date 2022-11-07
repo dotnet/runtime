@@ -167,8 +167,6 @@ bool md_validate(mdhandle_t handle)
 
 static bool dump_table_rows(mdtable_t* table)
 {
-//#define PRINTF(...) printf(__VA_ARGS__);
-#define PRINTF(...) ;
 #define IF_NOT_ONE_REPORT_RETURN(exp) if (1 != (exp)) { printf("Failure in row %u (0x%x), column %u (0x%x)\n", i, i, j, j); return false; }
 
     if (table->row_count == 0)
@@ -177,7 +175,7 @@ static bool dump_table_rows(mdtable_t* table)
     }
     else
     {
-        printf("Table 0x%x rows: %u\n", table->table_id, table->row_count);
+        printf("Table %u (0x%x) rows: %u\n", table->table_id, table->table_id, table->row_count);
     }
 
     char const* str;
@@ -185,6 +183,7 @@ static bool dump_table_rows(mdtable_t* table)
     uint8_t const* blob;
     uint32_t blob_len;
     uint32_t constant;
+    mduserstring_t user_string;
     mdToken tk;
 
 #ifdef DEBUG_TABLE_COLUMN_LOOKUP
@@ -199,17 +198,18 @@ static bool dump_table_rows(mdtable_t* table)
 
     for (uint32_t i = 0; i < table->row_count; ++i)
     {
+        printf("|");
         for (uint16_t j = 0; j < table->column_count; ++j)
         {
             if (table->column_details[j] & mdtc_hstring)
             {
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, IDX(j), 1, &str));
-                PRINTF("'%s' ", str);
+                printf("'%s'|", str);
             }
             else if (table->column_details[j] & mdtc_hguid)
             {
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
-                PRINTF("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} ",
+                printf("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}|",
                     guid.Data1, guid.Data2, guid.Data3,
                     guid.Data4[0], guid.Data4[1],
                     guid.Data4[2], guid.Data4[3],
@@ -219,38 +219,53 @@ static bool dump_table_rows(mdtable_t* table)
             else if (table->column_details[j] & mdtc_hblob)
             {
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_blob(cursor, IDX(j), 1, &blob, &blob_len));
-                PRINTF("0x%p [len: %u] ", blob, blob_len);
+                printf("Offset: %zu (len: %u)|", (blob - table->cxt->blob_heap.ptr), blob_len);
+            }
+            else if (table->column_details[j] & mdtc_hus)
+            {
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_wchar(cursor, IDX(j), 1, &user_string));
+                printf("UTF-16 string (%u bytes)|", user_string.str_bytes);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))
             {
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_token(cursor, IDX(j), 1, &tk));
-                PRINTF("0x%08x (mdToken) ", tk);
+                printf("0x%08x (mdToken)|", tk);
             }
-            else if (table->column_details[j] & mdtc_constant)
+            else
             {
+                assert(table->column_details[j] & mdtc_constant);
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_constant(cursor, IDX(j), 1, &constant));
-                PRINTF("0x%08x ", constant);
+                printf("0x%08x|", constant);
             }
         }
-        PRINTF("\n");
+        printf("\n");
         if (!md_cursor_next(&cursor) && i != (table->row_count - 1))
             return false;
     }
-    PRINTF("\n");
+    printf("\n");
 #undef IF_NOT_ONE_REPORT_RETURN
-#undef PRINTF
 
     return true;
 }
 
-bool md_dump_tables(mdhandle_t handle)
+bool md_dump_tables(mdhandle_t handle, int32_t table_id)
 {
     mdcxt_t* cxt = extract_mdcxt(handle);
     if (cxt == NULL)
         return false;
 
-    for (uint32_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    for (int32_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
     {
+        // Check if the user supplied a table to check
+        if (table_id > -1)
+        {
+            if (i < table_id) // Less than, skip.
+                continue;
+            if (i > table_id) // Greater than, done.
+                break;
+            assert(i == table_id);
+        }
+
         if (!dump_table_rows(&cxt->tables[i]))
         {
             printf("Failure in table '%u'\n", i);
