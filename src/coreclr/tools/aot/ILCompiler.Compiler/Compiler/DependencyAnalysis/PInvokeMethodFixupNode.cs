@@ -8,6 +8,7 @@ using Internal.IL.Stubs;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -106,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
         public readonly CharSet CharSetMangling;
         public readonly int? ObjectiveCMessageSendFunction;
 
-        public PInvokeMethodData(PInvokeLazyFixupField pInvokeLazyFixupField)
+        public PInvokeMethodData(TargetDetails target, PInvokeLazyFixupField pInvokeLazyFixupField)
         {
             PInvokeMetadata metadata = pInvokeLazyFixupField.PInvokeMetadata;
             ModuleDesc declaringModule = ((MetadataType)pInvokeLazyFixupField.TargetMethod.OwningType).Module;
@@ -148,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             CharSetMangling = charSetMangling;
 
-            ObjectiveCMessageSendFunction = metadata.Flags.ObjectiveCMsgSendFunction;
+            ObjectiveCMessageSendFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(target, metadata);
         }
 
         public bool Equals(PInvokeMethodData other)

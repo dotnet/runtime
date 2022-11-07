@@ -132,7 +132,7 @@ namespace ILCompiler
         {
             if (field.GetType() == typeof(PInvokeLazyFixupField))
             {
-                return NodeFactory.PInvokeMethodFixup(new PInvokeMethodData((PInvokeLazyFixupField)field));
+                return NodeFactory.PInvokeMethodFixup(new PInvokeMethodData(field.Context.Target, (PInvokeLazyFixupField)field));
             }
             else if (field is ExternSymbolMappedField externField)
             {
