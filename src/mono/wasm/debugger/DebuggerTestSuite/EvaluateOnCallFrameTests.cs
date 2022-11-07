@@ -1153,7 +1153,7 @@ namespace DebuggerTests
                     }, "testCollapsedProps#1");
             });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        // [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("EvaluateBrowsableClass", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
@@ -1178,67 +1178,18 @@ namespace DebuggerTests
                 await CheckValue(testRootHidden, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testRootHidden));
                 var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
 
-                JObject[] expectedListRootHiddenElements = new[]
+                JObject[] expectedTestRootHiddenProps = new[]
                 {
                     JObject.FromObject(new { value = TNumber(1), name = "listRootHidden[0]"}),
-                    JObject.FromObject(new { value = TNumber(2), name = "listRootHidden[1]"})
-                };
-                JObject[] expectedArrayElements = new[]
-                {
+                    JObject.FromObject(new { value = TNumber(2), name = "listRootHidden[1]"}),
                     JObject.FromObject(new { value = TNumber(11), name = "arrayRootHidden[0]"}),
-                    JObject.FromObject(new { value = TNumber(22), name = "arrayRootHidden[1]"})
-                };
-                JObject[] expectedStructRootHiddenElements = new[]
-                {
+                    JObject.FromObject(new { value = TNumber(22), name = "arrayRootHidden[1]"}),
                     JObject.FromObject(new { value = TNumber(100), name = "sampleStructRootHidden.Id"}),
-                    JObject.FromObject(new { value = TBool(true), name = "sampleStructRootHidden.IsStruct"})
-                };
-                JObject[] expectedClassRootHiddenElements = new[]
-                {
+                    JObject.FromObject(new { value = TBool(true), name = "sampleStructRootHidden.IsStruct"}),
                     JObject.FromObject(new { value = TNumber(200), name = "sampleClassRootHidden.ClassId"}),
                     JObject.FromObject(new { value = TObject("System.Collections.Generic.List<string>", description: "Count = 1"), name = "sampleClassRootHidden.Items"})
                 };
-
-                // in Console App names are in []
-                // adding variable name to make elements unique
-                for (int i = 0; i < expectedListRootHiddenElements.Length; i ++)
-                {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, expectedListRootHiddenElements[i]["name"].Value<string>());
-                    await CheckValue(actualValObj["value"], expectedListRootHiddenElements[i]["value"], "listRootHidden");
-                }
-
-                for (int i = 0; i < expectedArrayElements.Length; i ++)
-                {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, expectedArrayElements[i]["name"].Value<string>());
-                    await CheckValue(actualValObj["value"], expectedArrayElements[i]["value"], "x");
-                }
-
-                foreach (var structItem in expectedStructRootHiddenElements)
-                {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, structItem["name"].Value<string>());
-                    await CheckValue(actualValObj["value"], structItem["value"], "sampleStructRootHidden");
-                }
-
-                foreach (var classItem in expectedClassRootHiddenElements)
-                {
-                    var actualValObj = GetAndAssertObjectWithName(testRootHiddenProps, classItem["name"].Value<string>());
-                    await CheckValue(actualValObj["value"], classItem["value"], "sampleClassRootHidden");
-                }
-
-                JObject[] expectedTestRootHiddenProps = new[]
-                {
-                    expectedArrayElements[0],
-                    expectedArrayElements[1],
-                    expectedListRootHiddenElements[0],
-                    expectedListRootHiddenElements[1],
-                    expectedClassRootHiddenElements[0],
-                    expectedClassRootHiddenElements[1],
-                    expectedStructRootHiddenElements[0],
-                    expectedStructRootHiddenElements[1]
-                };
-                // CheckProps for JArrays care about the order and here the order differs between InlineData
-                var testRootHiddenPropsSorted = new JArray(testRootHiddenProps.OrderBy(v => (string)v["name"]));
-                await CheckProps(testRootHiddenPropsSorted, expectedTestRootHiddenProps, "listRootHidden");
+                await CheckProps(testRootHiddenProps, expectedTestRootHiddenProps, "listRootHidden");
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
