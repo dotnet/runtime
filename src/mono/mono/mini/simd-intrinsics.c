@@ -4302,12 +4302,15 @@ static SimdIntrinsic packedsimd_methods [] = {
 };
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
-	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
 	{ "PackedSimd", MONO_CPU_WASM_SIMD, packedsimd_methods, sizeof (packedsimd_methods) },
 };
 
+static const IntrinGroup supported_wasm_common_intrinsics [] = {
+	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
+};
+
 static MonoInst*
-emit_packedsimd_intrinsics (
+emit_wasm_supported_intrinsics (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
 	MonoClass *klass, const IntrinGroup *intrin_group,
 	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
@@ -4452,11 +4455,8 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
 			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
-			emit_packedsimd_intrinsics);
+			emit_wasm_supported_intrinsics);
 	}
-
-	if (!(cfg->opt & MONO_OPT_SIMD))
-		return NULL;
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
@@ -4470,6 +4470,18 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	return NULL;
 }
+
+MonoInst*
+arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
+			supported_wasm_common_intrinsics, sizeof (supported_wasm_common_intrinsics),
+			emit_wasm_supported_intrinsics);
+	}
+
+	return NULL;
+}
 #else
 static
 MonoInst*
@@ -4477,10 +4489,18 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 {
 	return NULL;
 }
-#endif
 
 MonoInst*
-mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return NULL;
+}
+#endif
+
+typedef MonoInst* (*EmitCallback)(const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+
+static MonoInst*
+emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, EmitCallback ecb)
 {
 	const char *class_name;
 	const char *class_ns;
@@ -4496,7 +4516,20 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-	return arch_emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
+
+	return ecb (class_ns, class_name, cfg, cmethod, fsig, args);
+}
+
+MonoInst*
+mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return emit_intrinsics (cfg, cmethod, fsig, args, arch_emit_simd_intrinsics);
+}
+
+MonoInst*
+mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return emit_intrinsics (cfg, cmethod, fsig, args, arch_emit_common_intrinsics);
 }
 
 /*
