@@ -18,7 +18,12 @@ namespace ILCompiler
     {
         private readonly IBCProfileParser _ibcParser;
         private readonly List<ProfileData> _inputData = new List<ProfileData>();
+        // Profile data specified on the command line as .mibc files. This
+        // cannot be modified after loading and is accessed concurrently
+        // without locks.
         private readonly ProfileDataMap _inputProfileData;
+        // When synthesis is enabled, this represents the map of methods with
+        // synthesized PGO data. This is accessed and modified concurrently.
         private readonly ProfileDataMap _synthesizedProfileData;
         private readonly ReadyToRunCompilationModuleGroupBase _compilationGroup;
         private readonly CallChainProfile _callChainProfile;
