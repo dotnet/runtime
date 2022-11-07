@@ -194,7 +194,7 @@ namespace ILCompiler
                     if (targetMeth == null)
                         continue;
 
-                    if (targetMeth.Signature.IsStatic)
+                    if (targetMeth.Signature.IsStatic || !targetMeth.IsTypicalMethodDefinition)
                         continue;
 
                     bool isDelegateInvoke = targetMeth.OwningType.IsDelegate && targetMeth.Name == "Invoke";
@@ -212,11 +212,6 @@ namespace ILCompiler
                     }
                     else
                     {
-                        if (!targetMeth.IsTypicalMethodDefinition)
-                        {
-                            continue;
-                        }
-
                         entities = SampleImplementers(targetMeth.OwningType, rand);
                         kind = PgoInstrumentationKind.HandleHistogramTypes;
                     }
