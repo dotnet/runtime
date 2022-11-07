@@ -287,15 +287,8 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     set(value: T): T {
-        if (value === <any>0) {
-            // The expensive write barrier is only necessary when storing a managed pointer into
-            //  a root because doing that changes its reachability/liveness
-            const address32 = this.__buffer.get_address_32(this.__index);
-            Module.HEAPU32[address32] = 0;
-        } else {
-            const destinationAddress = this.__buffer.get_address(this.__index);
-            cwraps.mono_wasm_write_managed_pointer_unsafe(destinationAddress, <ManagedPointer>value);
-        }
+        const destinationAddress = this.__buffer.get_address(this.__index);
+        cwraps.mono_wasm_write_managed_pointer_unsafe(destinationAddress, <ManagedPointer>value);
         return value;
     }
 
@@ -334,7 +327,10 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     clear(): void {
-        this.set(<any>0);
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        const address32 = this.__buffer.get_address_32(this.__index);
+        Module.HEAPU32[address32] = 0;
     }
 
     release(): void {
@@ -388,13 +384,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     set(value: T): T {
-        if (value === <any>0) {
-            // The expensive write barrier is only necessary when storing a managed pointer into
-            //  a root because doing that changes its reachability/liveness
-            Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
-        } else {
-            cwraps.mono_wasm_write_managed_pointer_unsafe(this.__external_address, <ManagedPointer>value);
-        }
+        cwraps.mono_wasm_write_managed_pointer_unsafe(this.__external_address, <ManagedPointer>value);
         return value;
     }
 
@@ -433,7 +423,9 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     clear(): void {
-        this.set(<any>0);
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
     }
 
     release(): void {
