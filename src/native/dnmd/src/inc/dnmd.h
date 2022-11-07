@@ -133,7 +133,7 @@ int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor
 #define MDTABLE_COLUMN(table, col, value) mdt ## table ## _ ## col = ((mdtid_ ## table << 8) | (value))
 #else
 #define MDTABLE_COLUMN(table, col, value) mdt ## table ## _ ## col = (value)
-#endif // MDTABLE_COL_IDX
+#endif // DEBUG_TABLE_COLUMN_LOOKUP && !MDTABLES_BUILD
 
 //
 // Column indexes for tables
