@@ -6828,6 +6828,8 @@ public:
         }
     };
 
+    PhaseStatus optVNBasedDeadStoreRemoval();
+
 // clang-format off
 
 #define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array

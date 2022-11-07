@@ -10690,6 +10690,113 @@ void Compiler::optRemoveRedundantZeroInits()
     }
 }
 
+
+//------------------------------------------------------------------------
+// optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
+//
+// The phase iterates over the partial stores referenced by the SSA
+// descriptors and deletes those which do not change the local's value.
+//
+// Return Value:
+//    A suitable phase status.
+//
+PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
+{
+    bool madeChanges = false;
+
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+        unsigned   defCount = varDsc->lvPerSsaData.GetCount();
+        if (defCount <= 2)
+        {
+            continue;
+        }
+
+        for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
+        {
+            LclSsaVarDsc* defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
+            GenTreeOp*    store  = defDsc->GetAssignment();
+
+            if (store != nullptr)
+            {
+                assert(store->OperIs(GT_ASG) && defDsc->m_vnPair.BothDefined());
+
+                JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
+
+                GenTree* lhs = store->gtGetOp1();
+                ValueNum oldStoreValue;
+                if (lhs->OperIs(GT_LCL_VAR))
+                {
+                    LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
+                    if (lastDefDsc->GetBlock() != defDsc->GetBlock())
+                    {
+                        continue;
+                    }
+
+                    oldStoreValue = lastDefDsc->m_vnPair.GetConservative();
+                }
+                else if (lhs->OperIs(GT_LCL_FLD) && ((lhs->gtFlags & GTF_VAR_USEASG) != 0))
+                {
+                    ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                    oldStoreValue        = vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum),
+                                                              lhs->TypeGet(), lhs->AsLclFld()->GetLclOffs(),
+                                                              lhs->AsLclFld()->GetSize());
+                }
+                else
+                {
+                    // TODO-ADDR: delete.
+                    continue;
+                }
+
+                if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                {
+                    JITDUMP(" -- no, it is an 'explicit init'\n");
+                    continue;
+                }
+
+                GenTree* rhs = store->gtGetOp2();
+                ValueNum storeValue;
+                if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
+                {
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
+                }
+                else
+                {
+                    storeValue = rhs->GetVN(VNK_Conservative);
+                }
+
+                if (oldStoreValue == storeValue)
+                {
+                    JITDUMP("Removed dead store:\n");
+                    DISPTREE(store);
+
+                    lhs->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
+
+                    store->ChangeOper(GT_COMMA);
+                    if (store->IsReverseOp())
+                    {
+                        std::swap(store->gtOp1, store->gtOp2);
+                        store->ClearReverseOp();
+                    }
+                    store->gtType = store->gtGetOp2()->TypeGet();
+                    store->SetAllEffectsFlags(store->gtOp1, store->gtOp2);
+                    gtUpdateTreeAncestorsSideEffects(store);
+
+                    madeChanges = true;
+                }
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
