@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.ObjectiveC;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
@@ -499,25 +498,6 @@ namespace Internal.TypeSystem.Ecma
 
             if ((ImplAttributes & MethodImplAttributes.PreserveSig) != 0)
                 attributes |= PInvokeAttributes.PreserveSig;
-
-            if (Context.Target.IsOSX && moduleName == "/usr/lib/libobjc.dylib")
-            {
-#pragma warning disable CA1416
-                ObjectiveCMarshal.MessageSendFunction? msgSendFunction = name switch {
-                    "objc_msgSend" => ObjectiveCMarshal.MessageSendFunction.MsgSend,
-                    "objc_msgSend_fpret" => ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
-                    "objc_msgSend_stret" => ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
-                    "objc_msgSendSuper" => ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
-                    "objc_msgSendSuper_stret" => ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
-                    _ => null,
-                };
-                if (msgSendFunction.HasValue)
-                {
-                    attributes |= PInvokeAttributes.IsObjCMsgSend;
-                    attributes |= (PInvokeAttributes)(((int)msgSendFunction << PInvokeFlags.ObjCMsgSendShift) & (int)PInvokeAttributes.ObjCMsgSendMask);
-                }
-#pragma warning restore CA1416
-            }
 
             return new PInvokeMetadata(moduleName, name, attributes);
         }
