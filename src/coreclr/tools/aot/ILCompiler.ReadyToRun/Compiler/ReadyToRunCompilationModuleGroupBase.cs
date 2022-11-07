@@ -509,7 +509,7 @@ namespace ILCompiler
             return _crossModuleInlineableCache.GetOrAdd(method, _crossModuleInlineableCacheUncached);
         }
 
-        private bool CrossModuleInlineableUncached(MethodDesc method) 
+        private bool CrossModuleInlineableUncached(MethodDesc method)
         {
             // Defined in corelib
             MetadataType owningMetadataType = method.OwningType.GetTypeDefinition() as MetadataType;
