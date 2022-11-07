@@ -769,10 +769,7 @@ GenTree* Lowering::TryLowerCastOfSimpleOp(GenTreeCast* node)
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
         return nullptr;
 
-    if (varTypeIsUnsigned(castToType) && !varTypeIsUnsigned(srcType))
-        return nullptr;
-
-    if (castOp->OperIsArithmetic())
+    if (castOp->OperIs(GT_ADD, GT_SUB))
     {
         if (!castOp->gtGetOp1()->OperIs(GT_CAST) || !castOp->gtGetOp2()->OperIs(GT_CAST))
             return nullptr;
