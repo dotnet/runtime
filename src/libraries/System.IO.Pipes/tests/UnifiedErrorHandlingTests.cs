@@ -10,49 +10,49 @@ namespace System.IO.Pipes.Tests
     public static class UnifiedErrorHandlingTests
     {
         [Fact]
-        public static void WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadReturnsZero()
+        public static void When_AnonymousPipeServer_IsClosed_AnonymousPipeClient_ReadReturnsZero()
             => DiposeServerAndVerifyClientBehaviour(
                     GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteRead);
 
         [Fact]
-        public static void WhenAnonymousPipeServerIsClosedFileStreamClientReadReturnsZero()
+        public static void When_AnonymousPipeServer_IsClosed_FileStreamClient_ReadReturnsZero()
             => DiposeServerAndVerifyClientBehaviour(
                     GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteRead);
 
         [Fact]
-        public static void WhenAnonymousPipeServerIsClosedAnonymousPipeClientWriteThrows()
+        public static void When_AnonymousPipeServer_IsClosed_AnonymousPipeClient_WriteThrows()
             => DiposeServerAndVerifyClientBehaviour(
                     GetAnonymousPipeStreams(PipeDirection.In, PipeDirection.Out),
                     AssertWriteThrows);
 
         [Fact]
-        public static void WhenAnonymousPipeServerIsClosedFileStreamClientWriteThrows()
+        public static void When_AnonymousPipeServer_IsClosed_FileStreamClient_WriteThrows()
             => DiposeServerAndVerifyClientBehaviour(
                     GetAnonymousPipeServerAndFileStreamClient(PipeDirection.In, FileAccess.Write),
                     AssertWriteThrows);
 
         [Fact]
-        public static Task WhenAnonymousPipeServerIsClosedAnonymousPipeClientReadAsyncReturnsZero()
+        public static Task When_AnonymousPipeServer_IsClosed_AnonymousPipeClient_ReadAsyncReturnsZero()
             => DiposeServerAndVerifyClientBehaviourAsync(
                     GetAnonymousPipeStreams(PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteReadAsync);
 
         [Fact]
-        public static Task WhenAnonymousPipeServerIsClosedFileStreamClientReadAsyncReturnsZero()
+        public static Task When_AnonymousPipeServer_IsClosed_FileStreamClient_ReadAsyncReturnsZero()
             => DiposeServerAndVerifyClientBehaviourAsync(
                     GetAnonymousPipeServerAndFileStreamClient(PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteReadAsync);
 
         [Fact]
-        public static Task WhenAnonymousPipeServerIsClosedAnonymousPipeClientWriteAsyncThrows()
+        public static Task When_AnonymousPipeServer_IsClosed_AnonymousPipeClient_WriteAsyncThrows()
             => DiposeServerAndVerifyClientBehaviourAsync(
                     GetAnonymousPipeStreams(PipeDirection.In, PipeDirection.Out),
                     AssertWriteAsyncThrows);
 
         [Fact]
-        public static Task WhenAnonymousPipeServerIsClosedFileStreamClientWriteAsyncThrows()
+        public static Task When_AnonymousPipeServer_IsClosed_FileStreamClient_WriteAsyncThrows()
             => DiposeServerAndVerifyClientBehaviourAsync(
                     GetAnonymousPipeServerAndFileStreamClient(PipeDirection.In, FileAccess.Write),
                     AssertWriteAsyncThrows);
@@ -62,7 +62,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadReturnsZero(bool asyncHandles)
+        public static async Task When_NamedPipeServer_IsClosed_NamedPipeClient_ReadReturnsZero(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteRead);
@@ -70,8 +70,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerIsClosedFileStreamClientReadReturnsZero(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServer_IsClosed_FileStreamClient_ReadReturnsZero(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteRead);
@@ -81,7 +82,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteThrows(bool asyncHandles)
+        public static async Task When_NamedPipeServer_IsClosed_NamedPipeClient_WriteThrows(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
                     AssertWriteThrows);
@@ -89,8 +90,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerIsClosedFileStreamClientWriteThrows(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServer_IsClosed_FileStreamClient_WriteThrows(bool asyncHandles)
             => DiposeServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
                     AssertWriteThrows);
@@ -100,7 +102,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
+        public static async Task When_NamedPipeServer_IsClosed_NamedPipeClient_ReadAsyncReturnsZero(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteReadAsync);
@@ -108,8 +110,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerIsClosedFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServer_IsClosed_FileStreamClient_ReadAsyncReturnsZero(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteReadAsync);
@@ -119,7 +122,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerIsClosedNamedPipeClientWriteAsyncThrows(bool asyncHandles)
+        public static async Task When_NamedPipeServer_IsClosed_NamedPipeClient_WriteAsyncThrows(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
                     AssertWriteAsyncThrows);
@@ -127,8 +130,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerIsClosedFileStreamClientWriteAsyncThrows(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServer_IsClosed_FileStreamClient_WriteAsyncThrows(bool asyncHandles)
             => await DiposeServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
                     AssertWriteAsyncThrows);
@@ -138,7 +142,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadReturnsZero(bool asyncHandles)
+        public static async Task When_NamedPipeServerDisconnectsNamedPipeClient_ReadReturnsZero(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteRead);
@@ -146,8 +150,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientReadReturnsZero(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServerDisconnectsFileStreamClient_ReadReturnsZero(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteRead);
@@ -157,7 +162,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteThrows(bool asyncHandles)
+        public static async Task When_NamedPipeServerDisconnectsNamedPipeClient_WriteThrows(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
                     AssertWriteThrows);
@@ -165,8 +170,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientWriteThrows(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServerDisconnectsFileStreamClient_WriteThrows(bool asyncHandles)
             => DisconnectServerAndVerifyClientBehaviour(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
                     AssertWriteThrows);
@@ -176,7 +182,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientReadAsyncReturnsZero(bool asyncHandles)
+        public static async Task When_NamedPipeServerDisconnectsNamedPipeClient_ReadAsyncReturnsZero(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.Out, PipeDirection.In),
                     AssertZeroByteReadAsync);
@@ -184,8 +190,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientReadAsyncReturnsZero(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServerDisconnectsFileStreamClient_ReadAsyncReturnsZero(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.Out, FileAccess.Read),
                     AssertZeroByteReadAsync);
@@ -195,7 +202,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
-        public static async Task WhenNamedPipeServerDisconnectsNamedPipeClientWriteAsyncThrows(bool asyncHandles)
+        public static async Task When_NamedPipeServerDisconnectsNamedPipeClient_WriteAsyncThrows(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeStreams(asyncHandles, PipeDirection.In, PipeDirection.Out),
                     AssertWriteAsyncThrows);
@@ -203,8 +210,9 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static async Task WhenNamedPipeServerDisconnectsFileStreamClientWriteAsyncThrows(bool asyncHandles)
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public static async Task When_NamedPipeServerDisconnectsFileStreamClient_WriteAsyncThrows(bool asyncHandles)
             => await DisconnectServerAndVerifyClientBehaviourAsync(
                     await GetConnectedNamedPipeServerAndFileStreamClientStreams(asyncHandles, PipeDirection.In, FileAccess.Write),
                     AssertWriteAsyncThrows);
@@ -213,14 +221,14 @@ namespace System.IO.Pipes.Tests
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public static Task WhenNamedPipeServerIsClosedCopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
+        public static Task When_NamedPipeServer_IsClosed_CopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
             => TestCopyToAsync(asyncHandles, dispose: true);
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public static Task WhenNamedPipeServerDisconnectsCopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
+        public static Task When_NamedPipeServerDisconnectsCopyToAsyncJustFinishesWithoutThrowing(bool asyncHandles)
             => TestCopyToAsync(asyncHandles, dispose: false);
 
         private static async Task TestCopyToAsync(bool asyncHandles, bool dispose)
@@ -284,15 +292,31 @@ namespace System.IO.Pipes.Tests
         private static async Task<(NamedPipeServerStream server, FileStream client)> GetConnectedNamedPipeServerAndFileStreamClientStreams(
             bool asyncHandles, PipeDirection serverDirection, FileAccess clientAccess)
         {
-            PipeOptions pipeOptions = asyncHandles ? PipeOptions.Asynchronous : PipeOptions.None;
-            FileOptions fileOptions = asyncHandles ? FileOptions.Asynchronous : FileOptions.None;
-            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
-            NamedPipeServerStream server = new(pipeName, serverDirection, 1, PipeTransmissionMode.Byte, pipeOptions);
-            FileStream client = new($@"\\.\pipe\{pipeName}", FileMode.Open, clientAccess, FileShare.None, 0, fileOptions);
+            if (OperatingSystem.IsWindows())
+            {
+                PipeOptions pipeOptions = asyncHandles ? PipeOptions.Asynchronous : PipeOptions.None;
+                FileOptions fileOptions = asyncHandles ? FileOptions.Asynchronous : FileOptions.None;
+                string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+                NamedPipeServerStream server = new(pipeName, serverDirection, 1, PipeTransmissionMode.Byte, pipeOptions);
+                FileStream client = new($@"\\.\pipe\{pipeName}", FileMode.Open, clientAccess, FileShare.None, 0, fileOptions);
 
-            await server.WaitForConnectionAsync();
+                await server.WaitForConnectionAsync();
 
-            return (server, client);
+                return (server, client);
+            }
+            else
+            {
+                (NamedPipeServerStream server, NamedPipeClientStream namedPipeClient) = await GetConnectedNamedPipeStreams(
+                    asyncHandles, serverDirection, clientAccess == FileAccess.Read ? PipeDirection.In : PipeDirection.Out);
+
+                FileStream fileStreamClient = new(
+                    new SafeFileHandle(namedPipeClient.SafePipeHandle.DangerousGetHandle(), ownsHandle: true),
+                    clientAccess, bufferSize: 0, isAsync: false);
+
+                namedPipeClient.SafePipeHandle.SetHandleAsInvalid();
+
+                return (server, fileStreamClient);
+            }
         }
 
         private static void DiposeServerAndVerifyClientBehaviour((Stream server, Stream client) connectedStreams, Action<Stream> assertMethod)

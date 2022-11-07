@@ -227,24 +227,19 @@ namespace System.IO.Strategies
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
                         if (!synchronousSuccess && errorCode != Interop.Errors.ERROR_IO_PENDING)
                         {
-                            if (RandomAccess.IsEndOfFile(errorCode, handle, readAwaitable._position))
+                            if (!RandomAccess.IsEndOfFile(errorCode, handle, readAwaitable._position))
                             {
-                                // We're at or past the end of the file, and the overlapped callback
-                                // won't be raised in these cases. Mark it as completed so that the await
-                                // below will see it as such.
-                                readAwaitable.MarkCompleted();
-                            }
-                            else
-                            {
-                                // Everything else is an error (and there won't be a callback).
                                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                             }
+
+                            // We're at or past the end of the file, and the overlapped callback
+                            // won't be raised in these cases. Mark it as completed so that the await
+                            // below will see it as such.
+                            readAwaitable.MarkCompleted();
                         }
 
                         // Wait for the async operation (which may or may not have already completed), then throw if it failed.
                         await readAwaitable;
-
-
 
                         if (readAwaitable._errorCode != Interop.Errors.ERROR_SUCCESS)
                         {
@@ -252,14 +247,12 @@ namespace System.IO.Strategies
                             {
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             }
-                            else if (RandomAccess.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
-                            {
-                                Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
-                            }
-                            else
+                            else if (!RandomAccess.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
                             {
                                 throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, handle.Path);
                             }
+
+                            Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
                         }
 
                         // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.
