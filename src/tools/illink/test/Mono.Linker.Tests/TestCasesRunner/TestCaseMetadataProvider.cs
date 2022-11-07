@@ -89,8 +89,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void CustomizeLinker (LinkerDriver linker, LinkerCustomizations customizations)
 		{
-			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
-				attr.AttributeType.Name == nameof (DependencyRecordedAttribute))) {
+			if (!_testCaseTypeDefinition.CustomAttributes.Any (a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute> ())
+				|| _testCaseTypeDefinition.CustomAttributes.Any (attr =>
+				attr.AttributeType.Name == nameof (DependencyRecordedAttribute)
+				|| attr.AttributeType.Name == nameof (KeptByAttribute))) {
 				customizations.DependencyRecorder = new TestDependencyRecorder ();
 				customizations.CustomizeContext += context => {
 					context.Tracer.AddRecorder (customizations.DependencyRecorder);

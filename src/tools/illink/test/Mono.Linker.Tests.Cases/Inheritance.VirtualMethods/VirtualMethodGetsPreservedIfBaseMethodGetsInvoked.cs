@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
 		[KeptBaseType (typeof (B))]
 		class A : B
 		{
-			[Kept]
+			[KeptBy (typeof (A), "OverrideOnInstantiatedType")]
 			public override void Foo ()
 			{
 			}

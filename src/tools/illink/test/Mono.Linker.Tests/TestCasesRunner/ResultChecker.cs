@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
 					if (!HasAttribute (original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
-						CreateAssemblyChecker (original, linked).Verify ();
+						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 				}
 
@@ -106,9 +106,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
 		{
-			return new AssemblyChecker (original, linked);
+			return new AssemblyChecker (original, linked, linkedTestCase);
 		}
 
 		void InitializeResolvers (LinkedTestCaseResult linkedResult)

@@ -7,11 +7,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestDependencyRecorder : IDependencyRecorder
 	{
-		public struct Dependency
+		public record struct Dependency
 		{
 			public string Source;
 			public string Target;
 			public bool Marked;
+			public string DependencyKind;
 		}
 
 		public List<Dependency> Dependencies = new List<Dependency> ();
@@ -30,7 +31,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Dependencies.Add (new Dependency () {
 				Source = reason.Source?.ToString (),
 				Target = target.ToString (),
-				Marked = marked
+				Marked = marked,
+				DependencyKind = reason.Kind.ToString ()
 			});
 		}
 

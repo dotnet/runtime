@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	public class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
+		readonly LinkedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
@@ -23,10 +24,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
+			this.linkedTestCase = linkedTestCase;
 
 			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
 				attr.Name == nameof (RemovedNameValueAttribute));
@@ -44,6 +46,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			VerifyResources (originalAssembly, linkedAssembly);
 			VerifyReferences (originalAssembly, linkedAssembly);
+			VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName);
 
 			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
 				return s.FullName;
@@ -139,11 +142,76 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		/// <summary>
+		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// </summary>
+		void VerifyKeptByAttributes (IMemberDefinition src, IMemberDefinition linked)
+		{
+			foreach (var keptByAttribute in src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()))
+				VerifyKeptByAttribute (linked.FullName, keptByAttribute);
+		}
+
+		/// <summary>
+		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// <paramref name="src"/> is the attribute provider that may have a <see cref="KeptByAttribute"/>, and <paramref name="attributeProviderFullName"/> is the 'FullName' of <paramref name="src"/>.
+		/// </summary>
+		void VerifyKeptByAttributes (ICustomAttributeProvider src, string attributeProviderFullName)
+		{
+			foreach (var keptByAttribute in src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()))
+				VerifyKeptByAttribute (attributeProviderFullName, keptByAttribute);
+		}
+
+		void VerifyKeptByAttribute (string keptAttributeProviderName, CustomAttribute attribute)
+		{
+			// public KeptByAttribute (string dependencyProvider, string reason) { }
+			// public KeptByAttribute (Type dependencyProvider, string reason) { }
+			// public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+
+			Assert.AreEqual (nameof (KeptByAttribute), attribute.AttributeType.Name);
+
+			// Create the expected TestDependencyRecorder.Dependency that should be in the recorded dependencies
+			TestDependencyRecorder.Dependency expectedDependency = new ();
+			expectedDependency.Target = keptAttributeProviderName;
+			expectedDependency.Marked = true;
+			if (attribute.ConstructorArguments.Count == 2) {
+				// public KeptByAttribute (string dependencyProvider, string reason) { }
+				// public KeptByAttribute (Type dependencyProvider, string reason) { }
+				if (attribute.ConstructorArguments[0].Type.IsTypeOf<string> ())
+					expectedDependency.Source = (string) attribute.ConstructorArguments[0].Value;
+				else if (attribute.ConstructorArguments[0].Type.IsTypeOf<Type> ())
+					expectedDependency.Source = ((TypeDefinition) attribute.ConstructorArguments[0].Value).FullName;
+				else
+					throw new NotImplementedException ("Unexpected KeptByAttribute ctor variant");
+
+				expectedDependency.DependencyKind = (string) attribute.ConstructorArguments[1].Value;
+			} else if (attribute.ConstructorArguments.Count == 3) {
+				// public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+				if (!attribute.ConstructorArguments[0].Type.IsTypeOf<Type> ())
+					throw new NotImplementedException ("Unexpected KeptByAttribute ctor variant");
+				var type = (TypeDefinition) attribute.ConstructorArguments[0].Value;
+				string memberName = (string) attribute.ConstructorArguments[1].Value;
+				var memberDefinition = type.AllMembers ().Where (m => m.Name == memberName).Single ();
+				expectedDependency.Source = memberDefinition.FullName;
+				expectedDependency.DependencyKind = (string) attribute.ConstructorArguments[2].Value;
+			} else {
+				throw new NotImplementedException ("Unexpected KeptByAttribute ctor variant");
+			}
+
+			foreach (var dep in this.linkedTestCase.Customizations.DependencyRecorder.Dependencies) {
+				if (dep == expectedDependency) {
+					return;
+				}
+			}
+			string errorMessage = $"{keptAttributeProviderName} was expected to be kept by {expectedDependency.Source} with reason {expectedDependency.DependencyKind.ToString ()}.";
+			Assert.Fail (errorMessage);
+		}
+
 		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition linked)
 		{
 			if (linked == null)
 				Assert.Fail ($"Type `{original}' should have been kept");
 
+			VerifyKeptByAttributes (original, linked);
 			if (!original.IsInterface)
 				VerifyBaseType (original, linked);
 
@@ -313,6 +381,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Assert.AreEqual (src?.Constant, linked?.Constant, $"Field `{src}' value");
 
+			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
@@ -335,6 +404,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Assert.AreEqual (src?.Constant, linked?.Constant, $"Property `{src}' value");
 
+			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
@@ -367,6 +437,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
 
+			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
@@ -430,6 +501,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 			VerifyMethodBody (src, linked);
+			VerifyKeptByAttributes (src, linked);
 		}
 
 		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
@@ -989,7 +1061,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool ShouldBeKept<T> (T member, string signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
-			if (member.HasAttribute (nameof (KeptAttribute)))
+			if (member.HasAttribute (nameof (KeptAttribute)) || member.HasAttribute (nameof (KeptByAttribute)))
 				return true;
 
 			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
