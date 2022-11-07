@@ -18,4 +18,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 * Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Resources](../System.Private.CoreLib/src/System/Resources)
 
 ## Deployment
-[System.Resources.ResourceManager](https://www.nuget.org/packages/System.Resources.ResourceManager) is included in the shared framework.
+[System.Resources.ResourceManager](https://www.nuget.org/packages/System.Resources.ResourceManager) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

@@ -8,4 +8,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.code
 - [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
 
 ## Deployment
-[System.CodeDom](https://www.nuget.org/packages/System.CodeDom) is a NuGet package that get's shipped along with every release of .NET.
+[System.CodeDom](https://www.nuget.org/packages/System.CodeDom) is a NuGet package that gets shipped along with every release of .NET.

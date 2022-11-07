@@ -14,4 +14,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.runt
 * Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Runtime/CompilerServices](../System.Private.CoreLib/src/System/Runtime/CompilerServices)
 
 ## Deployment
-[System.Runtime.CompilerServices](https://www.nuget.org/packages/System.Runtime.CompilerServices.VisualC) is included in the shared framework.
+[System.Runtime.CompilerServices.VisualC](https://www.nuget.org/packages/System.Runtime.CompilerServices.VisualC) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

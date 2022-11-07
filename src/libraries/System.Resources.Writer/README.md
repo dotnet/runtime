@@ -9,4 +9,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reso
 - [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
 
 ## Deployment
-[System.Resources.Writer](https://www.nuget.org/packages/System.Resources.Writer) is included in the shared framework.
+[System.Resources.Writer](https://www.nuget.org/packages/System.Resources.Writer) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

@@ -12,4 +12,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.thre
 * The source of this project can found in [../System.Private.CoreLib/src/System/Threading/Tasks](../System.Private.CoreLib/src/System/Threading/Tasks)
 
 ## Deployment
-[System.Threading.Tasks.Extensions](https://www.nuget.org/packages/System.Threading.Tasks.Extensions) is included in the shared framework.
+[System.Threading.Tasks.Extensions](https://www.nuget.org/packages/System.Threading.Tasks.Extensions) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.1; it only needs to be installed when targeting .NET Standard 2.0 or .NET Framework.

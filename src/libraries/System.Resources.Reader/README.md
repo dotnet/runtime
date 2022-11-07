@@ -14,4 +14,4 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reso
 * The source of this project can found in [../System.Private.CoreLib/src/System/Resources](../System.Private.CoreLib/src/System/Resources)
 
 ## Deployment
-[System.Resources.Reader](https://www.nuget.org/packages/System.Resources.Reader) is included in the shared framework.
+[System.Resources.Reader](https://www.nuget.org/packages/System.Resources.Reader) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

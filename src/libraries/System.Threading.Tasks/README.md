@@ -14,4 +14,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 * The source of this project can found in [../System.Private.CoreLib/src/System/Threading/Tasks](../System.Private.CoreLib/src/System/Threading/Tasks)
 
 ## Deployment
-[System.Threading.Tasks](https://www.nuget.org/packages/System.Threading.Tasks) is included in the shared framework.
+[System.Threading.Tasks](https://www.nuget.org/packages/System.Threading.Tasks) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
