@@ -421,11 +421,14 @@ namespace ILCompiler
                 {
                     foreach (MetadataType type in module.GetAllTypes())
                     {
+                        if (type.IsGenericDefinition)
+                            continue;
+
                         foreach (MethodDesc method in type.GetMethods())
                         {
                             try
                             {
-                                if (!method.Signature.IsStatic && !method.IsAbstract)
+                                if (!method.Signature.IsStatic && !method.IsAbstract && !method.IsGenericMethodDefinition)
                                 {
                                     context.EnsureLoadableMethod(method);
 
