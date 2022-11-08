@@ -748,7 +748,7 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
     }
 }
 
-void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::string_t&)>& callback)
+void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback)
 {
     auto begin_iter = m_fx_deps.cbegin();
     auto end_iter = m_fx_deps.cend();

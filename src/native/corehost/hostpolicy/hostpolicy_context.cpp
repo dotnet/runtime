@@ -206,7 +206,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
 
     pal::string_t app_context_deps_str;
-    std::function<void(const pal::string_t&)> callback = [&](const pal::string_t& deps_file)
+    resolver.enum_app_context_deps_files([&](const pal::string_t& deps_file)
     {
         if (!app_context_deps_str.empty())
             app_context_deps_str += _X(';');
@@ -224,8 +224,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         {
             app_context_deps_str += deps_file;
         }
-    };
-    resolver.enum_app_context_deps_files(callback);
+    });
 
     // Build properties for CoreCLR instantiation
     pal::string_t app_base;
