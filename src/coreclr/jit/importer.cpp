@@ -4506,62 +4506,16 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the address of a static field?
-            //
-            if (access & CORINFO_ACCESS_ADDRESS)
+            assert(hasConstAddr);
+            assert(pFieldInfo->fieldLookup.addr != nullptr);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            size_t       fldAddr    = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
+            GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
+            op1                     = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
+            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
-                assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
-                void* fldAddr = pFieldInfo->fieldLookup.addr;
-                // We should always be able to access this static's address directly.
-
-                // Create the address node.
-                GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
-                op1 = gtNewIconHandleNode(reinterpret_cast<size_t>(fldAddr), handleKind, innerFldSeq);
-                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_ICON_INITCLASS;
-                }
-            }
-            else if (hasConstAddr && !isBoxedStatic)
-            {
-                assert(pFieldInfo->fieldLookup.addr != nullptr);
-                assert(!isSharedStatic);
-                assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
-                assert(!isBoxedStatic);
-                op1 = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL, innerFldSeq);
-                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
-                break;
-            }
-            else // We need the value of a static field
-            {
-                // In future, it may be better to just create the right tree here instead of folding it later.
-                op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_FLD_INITCLASS;
-                }
-
-                if (isBoxedStatic)
-                {
-                    op1->ChangeType(TYP_REF); // points at boxed object
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
-
-                    if (varTypeIsStruct(lclTyp))
-                    {
-                        // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-                        op1 = gtNewObjNode(pFieldInfo->structType, op1);
-                    }
-                    else
-                    {
-                        op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-                        op1->gtFlags |= (GTF_GLOB_REF | GTF_IND_NONFAULTING);
-                    }
-                }
-
-                return op1;
+                op1->gtFlags |= GTF_ICON_INITCLASS;
             }
             break;
         }
@@ -4571,7 +4525,6 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     {
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-
         op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
     }
 
