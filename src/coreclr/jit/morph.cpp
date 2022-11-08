@@ -11524,7 +11524,7 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
         return;
 
-    if (src->OperIs(GT_ADD, GT_SUB, GT_NEG, GT_NOT))
+    if (src->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_UDIV, GT_DIV, GT_MOD, GT_UMOD, GT_NEG, GT_NOT))
     {
         if (src->gtGetOp1()->OperIs(GT_CAST))
         {
