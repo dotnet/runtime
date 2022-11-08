@@ -2210,6 +2210,12 @@ public:
         return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
+    template <typename... T>
+    bool IsIconHandle(GenTreeFlags handleType, T... rest) const
+    {
+        return IsIconHandle(handleType) || IsIconHandle(rest...);
+    }
+
     // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
     // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const

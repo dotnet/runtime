@@ -1562,7 +1562,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
                 pResult->fieldLookup.accessType = IAT_VALUE;
 
-                if ((fieldFlags & (CORINFO_FLG_FIELD_STATIC_IN_HEAP | CORINFO_FLG_FIELD_INITCLASS)) == CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
                 {
                     Object* frozenObj = *(Object**)pResult->fieldLookup.addr;
 
