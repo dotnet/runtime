@@ -11414,6 +11414,11 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         return cast;
     }
 
+    if (src->OperIsSimple())
+    {
+        fgOptimizeCastOfSmpOp(cast);
+    }
+
     // See if we can discard the cast.
     if (varTypeIsIntegral(cast) && varTypeIsIntegral(src))
     {
@@ -11493,6 +11498,69 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
     }
 
     return cast;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeCastOfSmpOp: Optimizes the supplied GT_CAST tree of a GTK_SMPOP.
+//
+// Arguments:
+//    tree - the cast tree to optimize
+//
+void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
+{
+    GenTree* src = cast->CastOp();
+
+    assert(src->OperIsSimple());
+
+    if (gtIsActiveCSE_Candidate(cast) || gtIsActiveCSE_Candidate(src))
+        return;
+
+    var_types castToType = cast->CastToType();
+    var_types srcType    = src->TypeGet();
+
+    if (src->OperMayOverflow() && src->gtOverflow())
+        return;
+
+    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
+        return;
+
+    if (src->OperIs(GT_ADD, GT_SUB))
+    {
+        if (!src->gtGetOp1()->OperIs(GT_CAST) || !src->gtGetOp2()->OperIs(GT_CAST))
+            return;
+
+        GenTreeCast* op1 = src->gtGetOp1()->AsCast();
+        GenTreeCast* op2 = src->gtGetOp2()->AsCast();
+
+        if (gtIsActiveCSE_Candidate(op1) || gtIsActiveCSE_Candidate(op2))
+            return;
+
+        if (castToType == op1->CastToType() && castToType == op2->CastToType())
+        {
+            src->AsOp()->gtOp1 = op1->CastOp();
+            src->AsOp()->gtOp2 = op2->CastOp();
+
+            DEBUG_DESTROY_NODE(op1);
+            DEBUG_DESTROY_NODE(op2);
+        }
+    }
+    else if (src->OperIs(GT_NEG, GT_NOT))
+    {
+        if (!src->gtGetOp1()->OperIs(GT_CAST))
+            return;
+
+        GenTreeCast* op1 = src->gtGetOp1()->AsCast();
+
+        if (gtIsActiveCSE_Candidate(op1))
+            return;
+
+        if (castToType == op1->CastToType())
+        {
+            src->AsOp()->gtOp1 = op1->CastOp();
+
+            DEBUG_DESTROY_NODE(op1);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

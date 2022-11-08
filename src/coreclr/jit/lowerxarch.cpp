@@ -745,93 +745,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // TARGET_X86
 }
 
-//----------------------------------------------------------------------------------------------
-// Lowering::TryLowerCastOfSimpleOp:
-//
-// Arguments:
-//    node - A simple op node
-//
-// Return Value:
-//    Returns the replacement node if one is created else nullptr indicating no replacement
-//
-// Notes:
-//    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerCastOfSimpleOp(GenTreeCast* node)
-{
-    GenTree*  castOp     = node->CastOp();
-    var_types castToType = node->CastToType();
-    var_types srcType    = castOp->TypeGet();
-
-    // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (node->gtFlags & GTF_UNSIGNED)
-    {
-        srcType = varTypeToUnsigned(srcType);
-    }
-
-    assert(castOp->OperIsSimple());
-
-    if (castOp->OperMayOverflow() && castOp->gtOverflow())
-        return nullptr;
-
-    if (castOp->gtSetFlags())
-        return nullptr;
-
-    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
-        return nullptr;
-
-    if (castOp->OperIs(GT_ADD, GT_SUB))
-    {
-        if (!castOp->gtGetOp1()->OperIs(GT_CAST) || !castOp->gtGetOp2()->OperIs(GT_CAST))
-            return nullptr;
-
-        GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
-        GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
-
-        if (castToType == op1->CastToType() && castToType == op2->CastToType())
-        {
-            // This removes the casts as it prevents zero/sign-extended 'mov's before the simple op.
-
-            op1->CastOp()->ClearContainedAndRegOptional();
-            op2->CastOp()->ClearContainedAndRegOptional();
-
-            castOp->AsOp()->gtOp1 = op1->CastOp();
-            castOp->AsOp()->gtOp2 = op2->CastOp();
-
-            BlockRange().Remove(op2);
-            BlockRange().Remove(op1);
-
-            ContainCheckBinary(castOp->AsOp());
-            ContainCheckCast(node);
-
-            return node;
-        }
-    }
-    else if (castOp->OperIs(GT_NEG, GT_NOT))
-    {
-        if (!castOp->gtGetOp1()->OperIs(GT_CAST))
-            return nullptr;
-
-        GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
-
-        if (castToType == op1->CastToType())
-        {
-            // This removes the casts as it prevents zero/sign-extended 'mov's before the simple op.
-
-            op1->CastOp()->ClearContainedAndRegOptional();
-
-            castOp->AsOp()->gtOp1 = op1->CastOp();
-
-            BlockRange().Remove(op1);
-
-            ContainCheckCast(node);
-
-            return node;
-        }
-    }
-
-    return nullptr;
-}
-
 /* Lower GT_CAST(srcType, DstType) nodes.
  *
  * Casts from small int type to float/double are transformed as follows:
@@ -876,17 +789,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     var_types castToType = tree->CastToType();
     var_types srcType    = castOp->TypeGet();
     var_types tmpType    = TYP_UNDEF;
-
-#if TARGET_AMD64
-    if (castOp->OperIsSimple())
-    {
-        GenTree* replacementNode = TryLowerCastOfSimpleOp(tree->AsCast());
-        if (replacementNode != nullptr)
-        {
-            return replacementNode->gtNext;
-        }
-    }
-#endif // TARGET_AMD64
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
