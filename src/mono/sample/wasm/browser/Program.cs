@@ -11,7 +11,7 @@ namespace Sample
     {
         public static int Main(string[] args)
         {
-            Console.WriteLine("MF .NET");
+            Console.WriteLine($"MF .NET, args: {String.Join(", ", args)}");
             return 0;
         }
     }

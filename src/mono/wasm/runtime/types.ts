@@ -115,7 +115,7 @@ export type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number,
-    memory?: WebAssembly.Memory,
+    memory?: Int8Array,
 };
 
 export type MonoConfigInternal = MonoConfig & {

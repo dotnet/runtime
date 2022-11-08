@@ -185,6 +185,10 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
         originalUpdateGlobalBufferAndViews(buffer);
         afterUpdateGlobalBufferAndViews(buffer);
+
+        if (runtimeHelpers.config.memory) {
+            Module.HEAP8.set(runtimeHelpers.config.memory, 0);
+        }
     };
 }
 

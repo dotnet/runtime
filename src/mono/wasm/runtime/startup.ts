@@ -506,7 +506,10 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
                 debugLevel = 0 + debugLevel;
             }
         }
-        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+
+        if (!runtimeHelpers.config.memory) {
+            cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        }
         endMeasure(mark, MeasuredBlock.loadRuntime);
         runtimeHelpers.waitForDebugger = config.waitForDebugger;
 

@@ -31,7 +31,7 @@ const api2 = await dotnet2
             behavior: "dotnetwasm",
             name: "dotnet.wasm"
         }],
-        memory: api1.Module['asm']['memory']
+        memory: api1.Module.HEAP8
     })
     .withModuleConfig({
         configSrc: null
@@ -40,4 +40,4 @@ const api2 = await dotnet2
 
 globalThis.Module2 = api2.Module['asm']['memory'];
 
-await dotnet2.run();
+await dotnet2.run(["Runtime 2"]);
