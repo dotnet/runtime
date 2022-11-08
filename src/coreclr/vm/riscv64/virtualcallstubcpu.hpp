@@ -191,8 +191,12 @@ struct VTableCallHolder
 
     static size_t GetHolderSize(unsigned slot)
     {
-        _ASSERTE(!"RISCV64:NYI");
-        return 0;
+        STATIC_CONTRACT_WRAPPER;
+        unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+        unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+        int indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4) + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
+        int indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0) + (offsetAfterIndirection >= 0x1000 ? 4 : 0);
+        return 12 + indirectionsCodeSize + ((indirectionsDataSize > 0) ? (indirectionsDataSize + 4) : 0);
     }
 
     static VTableCallHolder* FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
@@ -222,7 +226,79 @@ ResolveHolder* ResolveHolder::FromResolveEntry(PCODE resolveEntry)
 
 void VTableCallHolder::Initialize(unsigned slot)
 {
-    _ASSERTE(!"RISCV64:NYI");
+    unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+    unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+
+    VTableCallStub* pStub = stub();
+    BYTE* p = (BYTE*)pStub->entryPoint();
+
+    // ld  t4,0(a0) : t4 = MethodTable pointer
+    *(UINT32*)p = 0x00053e83; // VTABLECALL_STUB_FIRST_DWORD
+    p += 4;
+
+    if ((offsetOfIndirection >= 0x1000) || (offsetAfterIndirection >= 0x1000))
+    {
+        *(UINT32*)p = 0x00000317; // auipc t1, 0
+        p += 4;
+    }
+
+    if (offsetOfIndirection >= 0x1000)
+    {
+        uint dataOffset = 20 + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
+
+        // lwu t3,dataOffset(t1)
+        *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
+        // add t4, t4, t3
+        *(DWORD*)p = 0x01ce8eb3; p += 4;
+        // ld t4, offsetOfIndirection(t4)
+        *(DWORD*)p = 0x000ebe83; p += 4;
+    }
+    else
+    {
+        // ld t4, offsetOfIndirection(t4)
+        *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetOfIndirection << 20); p += 4;
+    }
+
+    if (offsetAfterIndirection >= 0x1000)
+    {
+        uint indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4);
+        uint indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0);
+        uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
+
+        // ldw t3,dataOffset(t1)
+        *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
+        // add t4, t4, t3
+        *(DWORD*)p = 0x01ce8eb3; p += 4;
+        // ld t4, 0(t4)
+        *(DWORD*)p = 0x000ebe83; p += 4;
+    }
+    else
+    {
+        // ld t4, offsetOfIndirection(t4)
+        *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetAfterIndirection << 20); p += 4;
+    }
+
+    // jalr x0, t4, 0
+    *(UINT32*)p = 0x000e8067; p += 4;
+
+    // data labels:
+    if (offsetOfIndirection >= 0x1000)
+    {
+        *(UINT32*)p = (UINT32)offsetOfIndirection;
+        p += 4;
+    }
+    if (offsetAfterIndirection >= 0x1000)
+    {
+        *(UINT32*)p = (UINT32)offsetAfterIndirection;
+        p += 4;
+    }
+
+    // Store the slot value here for convenience. Not a real instruction (unreachable anyways)
+    // NOTE: Not counted in codeSize above.
+    *(UINT32*)p = slot; p += 4;
+
+    _ASSERT(p == (BYTE*)stub()->entryPoint() + VTableCallHolder::GetHolderSize(slot));
+    _ASSERT(stub()->size() == VTableCallHolder::GetHolderSize(slot));
 }
 
 #endif // DACCESS_COMPILE

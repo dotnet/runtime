@@ -6,10 +6,6 @@
 // Be sure to rebuild clr/src/vm/ceemain.cpp after changing this file, to
 // ensure that the constants match the expected C/C++ values
 
-// #ifndef HOST_RISCV64
-// #error this file should only be used on an ARM platform
-// #endif // HOST_RISCV64
-
 #include "../../inc/switches.h"
 
 //-----------------------------------------------------------------------------
@@ -162,18 +158,10 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame        == sizeof(FaultingExceptionFrame));
 ASMCONSTANTS_C_ASSERT(FaultingExceptionFrame__m_fFilterExecuted == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
 
-#define SIZEOF__FixupPrecode                 0 // TODO RISCV64
-//#define Offset_PrecodeChunkIndex             15
-//#define Offset_MethodDescChunkIndex          14
+#define SIZEOF__FixupPrecode                 40
 #define MethodDesc_ALIGNMENT_SHIFT           3
-//#define FixupPrecode_ALIGNMENT_SHIFT_1       3
-//#define FixupPrecode_ALIGNMENT_SHIFT_2       4
 
-// ASMCONSTANTS_C_ASSERT(SIZEOF__FixupPrecode == sizeof(FixupPrecode)); // TODO RISCV64
-//ASMCONSTANTS_C_ASSERT(Offset_PrecodeChunkIndex == offsetof(FixupPrecode, m_PrecodeChunkIndex));
-//ASMCONSTANTS_C_ASSERT(Offset_MethodDescChunkIndex == offsetof(FixupPrecode, m_MethodDescChunkIndex));
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
-//ASMCONSTANTS_C_ASSERT((1<<FixupPrecode_ALIGNMENT_SHIFT_1) + (1<<FixupPrecode_ALIGNMENT_SHIFT_2)  == sizeof(FixupPrecode));
 
 #define ResolveCacheElem__pMT         0x00
 #define ResolveCacheElem__token       0x08
