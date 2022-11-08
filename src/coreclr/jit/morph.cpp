@@ -8626,66 +8626,87 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     GenTree*   dest       = asg->gtGetOp1();
     GenTree*   src        = asg->gtGetOp2();
     LclVarDsc* destVarDsc = nullptr;
+    unsigned   blockSize  = 0;
     assert((src == src->gtEffectiveVal()) && (dest == dest->gtEffectiveVal()));
 
     if (dest->OperIs(GT_LCL_FLD))
     {
         destVarDsc = lvaGetDesc(dest->AsLclFld());
-        asgType    = destVarDsc->TypeGet();
 
-        // We will use the dest local directly.
-        if (!varTypeIsIntegralOrI(asgType) || (dest->AsLclFld()->GetSize() != genTypeSize(asgType)))
+        if (destVarDsc->lvPromoted)
         {
+            // Leave handling these to block morphing.
             return nullptr;
         }
+
+        blockSize = dest->AsLclFld()->GetSize();
+
+        // Can we use the LHS local directly?
+        if (blockSize == genTypeSize(destVarDsc))
+        {
+            asgType = destVarDsc->TypeGet();
+        }
+    }
+    else if (dest->OperIsIndir())
+    {
+        blockSize = dest->AsIndir()->Size();
     }
     else
     {
         return nullptr;
     }
 
-    if (!src->OperIsIndir() && !src->OperIsLocalRead())
+    LclVarDsc* srcVarDsc = nullptr;
+    if (src->OperIsLocalRead())
     {
-        // We cannot easily retype other nodes.
+        srcVarDsc = lvaGetDesc(src->AsLclVarCommon());
+
+        if (srcVarDsc->lvPromoted)
+        {
+            // Leave handling these to block morphing.
+            return nullptr;
+        }
+
+        if ((asgType == TYP_UNDEF) && (blockSize == genTypeSize(srcVarDsc)))
+        {
+            asgType = srcVarDsc->TypeGet();
+        }
+    }
+    else if (!src->OperIsIndir())
+    {
         return nullptr;
     }
 
-    if (src->OperIs(GT_LCL_FLD) && (lvaGetDesc(src->AsLclFld())->TypeGet() == asgType))
+    if (asgType == TYP_UNDEF)
     {
-        src->SetOper(GT_LCL_VAR);
-        src->ChangeType(asgType);
-    }
-    else if (src->OperIs(GT_LCL_VAR) && lvaGetDesc(src->AsLclVar())->lvPromoted)
-    {
-        // Leave handling these to block morphing.
         return nullptr;
     }
 
-    // If the block operation had been a write to a local var of a small int type,
-    // of the exact size of the small int type, and the var is NormalizeOnStore,
-    // we would have labeled it GTF_VAR_USEASG, because the block operation wouldn't
-    // have done that normalization.  If we're now making it into an assignment,
-    // the NormalizeOnStore will work, and it can be a full def.
-    dest->SetOper(GT_LCL_VAR);
-    dest->ChangeType(destVarDsc->lvNormalizeOnLoad() ? asgType : genActualType(asgType));
-    dest->gtFlags &= ~GTF_VAR_USEASG;
+    auto doRetypeNode = [this, asgType](GenTree* op, LclVarDsc* varDsc) {
+        if (op->OperIsIndir())
+        {
+            op->SetOper(GT_IND);
+            op->ChangeType(asgType);
+        }
+        else if (varDsc->TypeGet() == asgType)
+        {
+            op->SetOper(GT_LCL_VAR);
+            op->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+            op->gtFlags &= ~GTF_VAR_USEASG;
+        }
+        else
+        {
+            if (op->OperIs(GT_LCL_VAR))
+            {
+                op->SetOper(GT_LCL_FLD);
+                lvaSetVarDoNotEnregister(op->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::OneAsgRetyping));
+            }
+            op->ChangeType(asgType);
+        }
+    };
 
-    // Retype the RHS.
-    assert(varTypeIsIntegralOrI(asgType));
-    if (src->OperIsBlk())
-    {
-        src->SetOper(GT_IND);
-    }
-    else if (src->OperIs(GT_LCL_VAR) && !src->TypeIs(asgType))
-    {
-        lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::OneAsgRetyping));
-        src->SetOper(GT_LCL_FLD);
-    }
-    src->ChangeType(asgType);
-
-    // Set the lhs and rhs on the assignment.
-    asg->AsOp()->gtOp1 = dest;
-    asg->AsOp()->gtOp2 = src;
+    doRetypeNode(dest, destVarDsc);
+    doRetypeNode(src, srcVarDsc);
     asg->ChangeType(asgType);
 
     JITDUMP("fgMorphOneAsgBlock (after):\n");
