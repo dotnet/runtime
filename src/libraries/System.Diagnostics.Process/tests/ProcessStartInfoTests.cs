@@ -1356,11 +1356,13 @@ namespace System.Diagnostics.Tests
             string testFileContent = Guid.NewGuid().ToString();
             File.WriteAllText(testFilePath, testFileContent);
 
-            using Process p = CreateProcess((localPath, uncPath) =>
+            const string LocalPath = nameof(LocalPath);
+            const string UncPath = nameof(UncPath);
+            using Process p = CreateProcess(() =>
             {
                 try
                 {
-                    _ = File.ReadAllText(localPath);
+                    _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
                     Console.Write('1');
                 }
                 catch (SecurityException)
@@ -1372,10 +1374,12 @@ namespace System.Diagnostics.Tests
                     Console.Write('0');
                 }
 
-                Console.Write(';');
-                Console.Write(File.ReadAllText(uncPath));
+                Console.Write(ItemSeparator);
+                Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable(UncPath)));
                 return RemoteExecutor.SuccessExitCode;
-            }, testFilePath, testFileUncPath);
+            });
+            p.StartInfo.Environment[LocalPath] = testFilePath;
+            p.StartInfo.Environment[UncPath] = testFileUncPath;
             p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.UseCredentialsForNetworkingOnly = true;
@@ -1397,13 +1401,13 @@ namespace System.Diagnostics.Tests
                 }
             };
 
-            using var processInfo = CreateUserAndExecute(p, true, setup, cleanup);
+            using var processInfo = CreateUserAndExecute(p, false, setup, cleanup);
 
             string processUserName = Helpers.GetProcessUserName(p);
             string output = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
 
-            string[] splitOutput = output.Split(';', StringSplitOptions.None);
+            string[] splitOutput = output.Split(ItemSeparator, StringSplitOptions.None);
             Assert.Equal("0", splitOutput[0]);
             Assert.Equal(testFileContent, splitOutput[1]);
 
