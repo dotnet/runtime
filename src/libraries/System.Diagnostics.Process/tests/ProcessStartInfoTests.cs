@@ -1435,7 +1435,8 @@ namespace System.Diagnostics.Tests
 
             additionalSetup?.Invoke(processAccount.AccountName, impersonationAccount?.AccountName);
 
-            process.StartInfo.UserName = processAccount.AccountName;
+            process.StartInfo.UserName = processAccount.AccountName.Split('\\').Last();
+            process.StartInfo.Domain = processAccount.AccountName.Split('\\').First();
             process.StartInfo.PasswordInClearText = processAccount.Password;
 
             try
