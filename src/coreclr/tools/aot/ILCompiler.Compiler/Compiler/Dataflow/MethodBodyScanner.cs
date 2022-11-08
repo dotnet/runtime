@@ -510,7 +510,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldloc_s:
                     case ILOpcode.ldloca:
                     case ILOpcode.ldloca_s:
-                        ScanLdloc(opcode, opcode switch
+                        ScanLdloc(methodBody, opcode, opcode switch
                         {
                             ILOpcode.ldloc => reader.ReadILUInt16(),
                             ILOpcode.ldloca => reader.ReadILUInt16(),
@@ -894,6 +894,7 @@ namespace ILCompiler.Dataflow
         }
 
         private static void ScanLdloc(
+            MethodIL methodBody,
             ILOpcode operation,
             int index,
             Stack<StackSlot> currentStack,
