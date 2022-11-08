@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -205,7 +206,8 @@ namespace System.Reflection
                         if (!char.IsDigit(parts[i][j]))
                             ThrowInvalidAssemblyName();
                     }
-                    if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
+
+                    if (!ushort.TryParse(parts[i], NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
                     {
                         ThrowInvalidAssemblyName();
                     }
