@@ -476,6 +476,22 @@ namespace System.Text.RegularExpressions
                     return s1.Range is not null ? -1 : 1;
                 }
 
+                // If both have ranges, prefer the one that includes fewer characters.
+                if (s1.Range is not null)
+                {
+                    return
+                        GetRangeLength(s1.Range.GetValueOrDefault()).CompareTo(
+                        GetRangeLength(s2.Range.GetValueOrDefault()));
+
+                    static int GetRangeLength((char LowInclusive, char HighInclusive, bool Negated) range)
+                    {
+                        int length = range.HighInclusive - range.LowInclusive + 1;
+                        return range.Negated ?
+                            char.MaxValue + 1 - length :
+                            length;
+                    }
+                }
+
                 // As a tiebreaker, prioritize the earlier one.
                 return s1.Distance.CompareTo(s2.Distance);
             });
