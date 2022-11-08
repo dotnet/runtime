@@ -11524,41 +11524,36 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
         return;
 
-    if (src->OperIs(GT_ADD, GT_SUB))
+    if (src->OperIs(GT_ADD, GT_SUB, GT_NEG, GT_NOT))
     {
-        if (!src->gtGetOp1()->OperIs(GT_CAST) || !src->gtGetOp2()->OperIs(GT_CAST))
-            return;
-
-        GenTreeCast* op1 = src->gtGetOp1()->AsCast();
-        GenTreeCast* op2 = src->gtGetOp2()->AsCast();
-
-        if (gtIsActiveCSE_Candidate(op1) || gtIsActiveCSE_Candidate(op2))
-            return;
-
-        if (castToType == op1->CastToType() && castToType == op2->CastToType())
+        if (src->gtGetOp1()->OperIs(GT_CAST))
         {
-            src->AsOp()->gtOp1 = op1->CastOp();
-            src->AsOp()->gtOp2 = op2->CastOp();
+            GenTreeCast* op1 = src->gtGetOp1()->AsCast();
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(op2);
+            if (!gtIsActiveCSE_Candidate(op1))
+            {
+                if (castToType == op1->CastToType())
+                {
+                    src->AsOp()->gtOp1 = op1->CastOp();
+
+                    DEBUG_DESTROY_NODE(op1);
+                }
+            }
         }
-    }
-    else if (src->OperIs(GT_NEG, GT_NOT))
-    {
-        if (!src->gtGetOp1()->OperIs(GT_CAST))
-            return;
 
-        GenTreeCast* op1 = src->gtGetOp1()->AsCast();
-
-        if (gtIsActiveCSE_Candidate(op1))
-            return;
-
-        if (castToType == op1->CastToType())
+        if (src->OperIsBinary() && src->gtGetOp2()->OperIs(GT_CAST))
         {
-            src->AsOp()->gtOp1 = op1->CastOp();
+            GenTreeCast* op2 = src->gtGetOp2()->AsCast();
 
-            DEBUG_DESTROY_NODE(op1);
+            if (!gtIsActiveCSE_Candidate(op2))
+            {
+                if (castToType == op2->CastToType())
+                {
+                    src->AsOp()->gtOp2 = op2->CastOp();
+
+                    DEBUG_DESTROY_NODE(op2);
+                }
+            }
         }
     }
 }

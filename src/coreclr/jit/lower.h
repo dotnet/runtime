@@ -332,7 +332,7 @@ private:
     bool TryLowerSwitchToBitTest(
         BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
 
-    GenTree* LowerCast(GenTree* node);
+    void LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);

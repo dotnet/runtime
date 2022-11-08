@@ -144,8 +144,6 @@ namespace CodeGenTests
             if (UInt64_Add(15, UInt64.MaxValue) != 14)
                 return 0;
 
-            Console.Write("Succeeded");
-
             return 100;
         }
     }

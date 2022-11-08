@@ -780,8 +780,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
-
-GenTree* Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -846,8 +845,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
-
-    return tree->gtNext;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
