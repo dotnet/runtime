@@ -527,18 +527,10 @@ namespace System
         {
             // TODO: implement DivRem intrinsic for Mono
 #if !MONO
-#if TARGET_64BIT
-            if (X86Base.X64.IsSupported)
-            {
-                (long answer1, long answer2) = X86Base.X64.DivRem((nuint)left, left >> (IntPtr.Size * 8 - 1), right);
-                return ((nint)answer1, (nint)answer2);
-            }
-#else
             if (X86Base.IsSupported)
             {
                 return X86Base.DivRem((nuint)left, left >> (IntPtr.Size * 8 - 1), right);
             }
-#endif  // TARGET_64BIT
 #endif  // !MONO
 
             nint quotient = left / right;
@@ -556,18 +548,10 @@ namespace System
         {
             // TODO: implement DivRem intrinsic for Mono
 #if !MONO
-#if TARGET_64BIT
-            if (X86Base.X64.IsSupported)
-            {
-                (ulong answer1, ulong answer2) =  X86Base.X64.DivRem(left, (nuint)0, right);
-                return ((nuint)answer1, (nuint)answer2);
-            }
-#else
             if (X86Base.IsSupported)
             {
                 return X86Base.DivRem(left, (nuint)0, right);
             }
-#endif  // TARGET_64BIT
 #endif
 
             nuint quotient = left / right;
