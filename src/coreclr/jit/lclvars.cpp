@@ -2781,10 +2781,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("the local is used as store block src\n");
             break;
 
-        case DoNotEnregisterReason::OneAsgRetyping:
-            JITDUMP("OneAsg forbids enreg\n");
-            break;
-
         case DoNotEnregisterReason::SwizzleArg:
             JITDUMP("SwizzleArg\n");
             break;
