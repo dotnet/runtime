@@ -1360,8 +1360,14 @@ namespace System.Diagnostics.Tests
             const string UncPath = nameof(UncPath);
             using Process p = CreateProcess(() =>
             {
+                // Read file content using network credentials and output it for assertion comparison
+                Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable(UncPath)));
+                Console.Write(ItemSeparator);
+
                 try
                 {
+                    // Read file content using current user - should fail, because impersonated user
+                    // isn't explicitly authorized to access the file.
                     _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
                     Console.Write('1');
                 }
@@ -1374,8 +1380,6 @@ namespace System.Diagnostics.Tests
                     Console.Write('0');
                 }
 
-                Console.Write(ItemSeparator);
-                Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable(UncPath)));
                 return RemoteExecutor.SuccessExitCode;
             });
             p.StartInfo.Environment[LocalPath] = testFilePath;
@@ -1408,9 +1412,8 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(WaitInMS));
 
             string[] splitOutput = output.Split(ItemSeparator, StringSplitOptions.None);
-            Assert.Equal("0", splitOutput[0]);
-            Assert.Equal(testFileContent, splitOutput[1]);
-
+            Assert.Equal(testFileContent, splitOutput[0]);
+            Assert.Equal("0", splitOutput[1]);
             Assert.Equal(processInfo.ImpersonationAccountName?.Split('\\')?.LastOrDefault(), processUserName);
         }
 
