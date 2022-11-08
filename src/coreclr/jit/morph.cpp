@@ -13166,22 +13166,22 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    const var_types type = tree->TypeGet();
+    op2->AsIntConCommon()->SetIconValue(0);
+    fgUpdateConstTreeValueNumber(op2);
 
-    GenTree* zero = gtNewZeroConNode(type);
+    GenTree* const zero = op2;
 
     GenTree* op1SideEffects = nullptr;
     gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
     if (op1SideEffects != nullptr)
     {
-        GenTree* comma = gtNewOperNode(GT_COMMA, type, op1SideEffects, zero);
+        GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
 
 #ifdef DEBUG
         // op1 may already have been morphed, so unset this bit.
         op1SideEffects->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
 #endif // DEBUG
 
-        DEBUG_DESTROY_NODE(tree->gtOp2);
         DEBUG_DESTROY_NODE(tree);
 
         return fgMorphTree(comma);
@@ -13190,7 +13190,6 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     {
         INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-        DEBUG_DESTROY_NODE(tree->gtOp2);
         DEBUG_DESTROY_NODE(tree->gtOp1);
         DEBUG_DESTROY_NODE(tree);
 
