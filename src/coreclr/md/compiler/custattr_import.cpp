@@ -23,37 +23,6 @@
 #include <metamodelrw.h>
 
 //*****************************************************************************
-// Implementation of hash for custom attribute types.
-//*****************************************************************************
-unsigned int CCustAttrHash::Hash(const CCustAttrHashKey *pData)
-{
-    return static_cast<unsigned int>(pData->tkType);
-} // unsigned long CCustAttrHash::Hash()
-unsigned int CCustAttrHash::Compare(const CCustAttrHashKey *p1, CCustAttrHashKey *p2)
-{
-    if (p1->tkType == p2->tkType)
-        return 0;
-    return 1;
-} // unsigned long CCustAttrHash::Compare()
-CCustAttrHash::ELEMENTSTATUS CCustAttrHash::Status(CCustAttrHashKey *p)
-{
-    if (p->tkType == FREE)
-        return (FREE);
-    if (p->tkType == DELETED)
-        return (DELETED);
-    return (USED);
-} // CCustAttrHash::ELEMENTSTATUS CCustAttrHash::Status()
-void CCustAttrHash::SetStatus(CCustAttrHashKey *p, CCustAttrHash::ELEMENTSTATUS s)
-{
-    p->tkType = s;
-} // void CCustAttrHash::SetStatus()
-void* CCustAttrHash::GetKey(CCustAttrHashKey *p)
-{
-    return &p->tkType;
-} // void* CCustAttrHash::GetKey()
-
-
-//*****************************************************************************
 // Get the value of a CustomAttribute, using only TypeName for lookup.
 //*****************************************************************************
 STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
