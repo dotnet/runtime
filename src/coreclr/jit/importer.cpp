@@ -4414,6 +4414,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
+    bool isStaticReadOnlyInitedRef = false;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {
@@ -4506,12 +4507,36 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
+            // TODO-CQ: enable this optimization for 32 bit targets.
+#ifdef TARGET_64BIT
+            if (!isBoxedStatic && (lclTyp == TYP_REF))
+            {
+                bool isSpeculative = true;
+                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) != NO_CLASS_HANDLE))
+                {
+                    isStaticReadOnlyInitedRef = !isSpeculative;
+                }
+            }
+#endif // TARGET_64BIT
+
             assert(hasConstAddr);
             assert(pFieldInfo->fieldLookup.addr != nullptr);
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             size_t       fldAddr    = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
-            GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
-            op1                     = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
+            GenTreeFlags handleKind;
+            if (isBoxedStatic)
+            {
+                handleKind = GTF_ICON_STATIC_BOX_PTR;
+            }
+            else if (isStaticReadOnlyInitedRef)
+            {
+                handleKind = GTF_ICON_CONST_PTR;
+            }
+            else
+            {
+                handleKind = GTF_ICON_STATIC_HDL;
+            }
+            op1 = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -4539,6 +4564,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             op1 = gtNewOperNode(GT_IND, lclTyp, op1);
             op1->gtFlags |= GTF_GLOB_REF;
+        }
+        if (isStaticReadOnlyInitedRef)
+        {
+            op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
         }
     }
 
