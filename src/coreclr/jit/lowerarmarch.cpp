@@ -750,7 +750,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    don't expect to see them here.
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
-GenTree* Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -773,8 +773,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
-
-    return tree->gtNext;
 }
 
 //------------------------------------------------------------------------
