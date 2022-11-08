@@ -5297,6 +5297,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
+            // TODO: delete the boxed-static part (move to importer)
+
             // Normal static field reference
             //
             // If we can we access the static's address directly
@@ -5315,6 +5317,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             bool isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
             if (!isBoxedStatic)
             {
+                assert(!"unreachable!");
                 // Only simple statics get importred as GT_FIELDs.
                 fieldSeq = GetFieldSeqStore()->Create(symHnd, reinterpret_cast<size_t>(fldAddr),
                                                       FieldSeq::FieldKind::SimpleStatic);

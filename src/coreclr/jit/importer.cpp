@@ -4387,8 +4387,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     FieldSeq::FieldKind fieldKind =
         isSharedStatic ? FieldSeq::FieldKind::SharedStatic : FieldSeq::FieldKind::SimpleStatic;
 
-    bool hasKnownDirectAddress = !opts.IsReadyToRun() && pFieldInfo->fieldLookup.addr != nullptr &&
-                                 pFieldInfo->fieldLookup.accessType == IAT_VALUE;
+    bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
+                        (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
 
     FieldSeq* innerFldSeq;
     FieldSeq* outerFldSeq;
@@ -4399,21 +4399,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
     else
     {
-        bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
-                            (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
-
         ssize_t offset;
         if (hasConstAddr)
         {
-            if (hasKnownDirectAddress)
-            {
-                offset = reinterpret_cast<ssize_t>(pFieldInfo->fieldLookup.addr);
-            }
-            else
-            {
-                offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
-            }
-            assert(offset != 0);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            offset = reinterpret_cast<ssize_t>(pFieldInfo->fieldLookup.addr);
         }
         else
         {
@@ -4518,12 +4508,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             // Do we need the address of a static field?
             //
-            if (!hasKnownDirectAddress && (access & CORINFO_ACCESS_ADDRESS))
+            if (access & CORINFO_ACCESS_ADDRESS)
             {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
+                assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+                void* fldAddr = pFieldInfo->fieldLookup.addr;
                 // We should always be able to access this static's address directly.
-                assert(pFldAddr == nullptr);
 
                 // Create the address node.
                 GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
@@ -4535,8 +4524,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     op1->gtFlags |= GTF_ICON_INITCLASS;
                 }
             }
-            else if (hasKnownDirectAddress)
+            else if (hasConstAddr && !isBoxedStatic)
             {
+                assert(pFieldInfo->fieldLookup.addr != nullptr);
+                assert(!isSharedStatic);
+                assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
                 assert(!isBoxedStatic);
                 op1 = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL, innerFldSeq);
                 INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
@@ -4577,7 +4569,6 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (isBoxedStatic)
     {
-        assert(!hasKnownDirectAddress);
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 

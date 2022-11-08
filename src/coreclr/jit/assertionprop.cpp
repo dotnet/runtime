@@ -3197,8 +3197,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
         case TYP_SIMD32:
         {
-            simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
-
+            simd32_t       value  = vnStore->ConstantValue<simd32_t>(vnCns);
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd32Val   = value;
 

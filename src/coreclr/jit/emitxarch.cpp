@@ -12828,6 +12828,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else
         {
+            // Should not be ever called here?
+
             addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
             if (addr == nullptr)
             {

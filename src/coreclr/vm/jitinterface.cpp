@@ -1535,16 +1535,17 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Provide helper to use if the JIT is not able to emit the TLS access
                 // as intrinsic
                 pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR_TLS;
-
                 pResult->offset = module->GetFieldTlsOffset(pResult->offset);
             }
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_RVA_ADDRESS;
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle(NULL);
+                pResult->fieldLookup.accessType = IAT_VALUE;
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassPreInited())
+            if (!pFieldMT->IsClassInited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1553,20 +1554,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CORINFO_FIELD_ACCESSOR intrinsicAccessor;
 
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-            {
-                GCX_COOP();
-                Object* frozenBoxedStatic = OBJECTREFToObject(getFrozenBoxedStatic(pField));
-                if (frozenBoxedStatic != nullptr)
-                {
-                    // Skip pMT of the frozen object holding struct
-                    pResult->fieldLookup.addr = (uint8_t*)frozenBoxedStatic + sizeof(void*);
-                    pResult->fieldLookup.accessType = InfoAccessType::IAT_VALUE;
-                }
-                else
-                {
-                    fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                }
-            }
+                fieldFlags |= CORINFO_FLG_FIELD_STATIC_IN_HEAP;
 
             if (pFieldMT->IsSharedByGenericInstantiations())
             {
@@ -1597,9 +1585,33 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
 
+                // Allocate space for the local class if necessary, but don't trigger
+                // class construction.
+                DomainLocalModule* pLocalModule = pFieldMT->GetDomainLocalModule();
+                pLocalModule->PopulateClass(pFieldMT);
+
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassPreInited())
+                if (!pFieldMT->IsClassInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
+
+                GCX_COOP();
+
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
+                pResult->fieldLookup.accessType = IAT_VALUE;
+
+                if ((fieldFlags & (CORINFO_FLG_FIELD_STATIC_IN_HEAP | CORINFO_FLG_FIELD_INITCLASS)) == CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                {
+                    Object* frozenObj = *(Object**)pResult->fieldLookup.addr;
+
+                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                    // for structs containing gc handles
+                    if (frozenObj != nullptr && !frozenObj->GetMethodTable()->ContainsPointers() &&
+                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                    {
+                        pResult->fieldLookup.addr = frozenObj->GetData();
+                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                    }
+                }
             }
         }
 
