@@ -106,7 +106,7 @@ namespace System.Security.AccessControl
                     break;
 
                 case Interop.Errors.ERROR_INVALID_NAME:
-                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, "name");
+                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(name));
                     break;
 
                 case Interop.Errors.ERROR_INVALID_HANDLE:
