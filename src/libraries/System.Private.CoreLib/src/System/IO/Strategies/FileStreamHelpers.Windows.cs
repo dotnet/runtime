@@ -95,7 +95,7 @@ namespace System.IO.Strategies
             return errorCode;
         }
 
-        internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
+        internal static void Lock(SafeFileHandle handle, bool _ /*canWrite*/, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));

@@ -83,8 +83,8 @@ namespace System
 
                     SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
                                                 new StdInReader(
-                                                    encoding: Console.InputEncoding,
-                                                    bufferSize: InteractiveBufferSize));
+                                                    encoding: Console.InputEncoding
+                                                ));
 
                     // Don't overwrite a set reader.
                     // The reader doesn't own resources, so we don't need to dispose
@@ -219,11 +219,6 @@ namespace System
             }
         }
 
-        public static void Beep(int frequency, int duration)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static void Clear()
         {
             if (!Console.IsOutputRedirected)
@@ -312,11 +307,6 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
-        public static void SetBufferSize(int width, int height)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static int LargestWindowWidth
         {
             get { return WindowWidth; }
@@ -383,11 +373,6 @@ namespace System
                 width = s_windowWidth;
                 height = s_windowHeight;
             }
-        }
-
-        public static void SetWindowPosition(int left, int top)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public static void SetWindowSize(int width, int height)
@@ -683,16 +668,6 @@ namespace System
             }
         }
 
-        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
@@ -737,6 +712,27 @@ namespace System
                 Encoding.Default;
         }
 
+#pragma warning disable IDE0060
+        public static void Beep(int frequency, int duration)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void SetBufferSize(int width, int height)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static void SetConsoleInputEncoding(Encoding enc)
         {
             // No-op.
@@ -748,6 +744,13 @@ namespace System
             // No-op.
             // There is no good way to set the terminal console encoding.
         }
+
+        public static void SetWindowPosition(int left, int top)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Refreshes the foreground and background colors in use by the terminal by resetting

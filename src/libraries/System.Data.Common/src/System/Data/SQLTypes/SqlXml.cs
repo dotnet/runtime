@@ -33,7 +33,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlXml(bool fNull)
+        private SqlXml(bool _)
         {
             SetNull();
         }

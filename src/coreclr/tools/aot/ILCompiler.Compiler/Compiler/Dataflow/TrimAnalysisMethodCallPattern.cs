@@ -84,7 +84,7 @@ namespace ILCompiler.Dataflow
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger);
-            ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Offset, Instance, Arguments,
+            ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Instance, Arguments,
                 diagnosticContext,
                 reflectionMarker,
                 out MultiValue _);

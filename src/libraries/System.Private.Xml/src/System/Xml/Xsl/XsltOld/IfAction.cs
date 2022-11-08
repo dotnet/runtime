@@ -30,7 +30,7 @@ namespace System.Xml.Xsl.XsltOld
             CompileAttributes(compiler);
             if (_type != ConditionType.ConditionOtherwise)
             {
-                CheckRequiredAttribute(compiler, _testKey != Compiler.InvalidQueryKey, "test");
+                CheckRequiredAttribute(_testKey != Compiler.InvalidQueryKey, "test");
             }
 
             if (compiler.Recurse())
