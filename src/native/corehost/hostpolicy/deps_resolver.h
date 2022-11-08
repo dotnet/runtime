@@ -161,17 +161,7 @@ public:
         return *m_fx_deps[m_fx_definitions.size() - 1];
     }
 
-    const pal::string_t& get_root_deps_file() const
-    {
-        return m_fx_deps[m_fx_definitions.size() - 1]->get_deps_file();
-    }
-
     void enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback);
-
-    const fx_definition_vector_t& get_fx_definitions() const
-    {
-        return m_fx_definitions;
-    }
 
     bool is_framework_dependent() const
     {

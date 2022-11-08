@@ -195,15 +195,12 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         probe_paths.tpa.append(corelib_path);
     }
 
-    const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
-
     pal::string_t fx_deps_str;
     if (resolver.is_framework_dependent())
     {
         // Use the root fx to define FX_DEPS_FILE
         fx_deps_str = resolver.get_root_deps().get_deps_file();
     }
-
 
     pal::string_t app_context_deps_str;
     resolver.enum_app_context_deps_files([&](const pal::string_t& deps_file)
