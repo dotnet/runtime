@@ -4,7 +4,8 @@
     <!-- We need to set MajorVersion so that FileVersion is set correctly and is
     greater than the one in the previous release -->
     <MajorVersion>$([MSBuild]::Add($(MajorVersion), 5))</MajorVersion>
-    <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
+    <!-- TODO: Change back to $(MajorVersion) when assembly versions are updated. -->
+    <AssemblyVersion>12.$(MinorVersion).0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>

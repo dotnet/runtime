@@ -620,8 +620,13 @@ namespace Microsoft.Extensions.Configuration
                         setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
         }
@@ -653,8 +658,14 @@ namespace Microsoft.Extensions.Configuration
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
+
                 }
             }
         }
@@ -702,8 +713,13 @@ namespace Microsoft.Extensions.Configuration
                         list.Add(itemBindingPoint.Value);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 
@@ -761,8 +777,13 @@ namespace Microsoft.Extensions.Configuration
                         addMethod.Invoke(instance, arguments);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 
