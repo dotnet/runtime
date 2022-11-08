@@ -21,6 +21,7 @@ namespace System.IO.Hashing.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/78043", typeof(PlatformDetection), nameof(PlatformDetection.IsS390xProcess))]
         public void Hash_OneShot_Expected()
         {
             byte[] destination = new byte[8];
@@ -69,6 +70,7 @@ namespace System.IO.Hashing.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/78043", typeof(PlatformDetection), nameof(PlatformDetection.IsS390xProcess))]
         public void Hash_Streaming_Expected()
         {
             var rand = new Random(42);
