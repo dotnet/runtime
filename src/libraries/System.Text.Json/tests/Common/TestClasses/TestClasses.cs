@@ -1882,6 +1882,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             throw new NotImplementedException("Converter was called");
         }
+
+        // In source-gen, internal converters are not used as fallbacks when custom converters don't provide an implementation.
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        public override int ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => int.Parse(reader.GetString());
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            => writer.WritePropertyName(value.ToString());
+#endif
     }
 
     public class SimpleSnakeCasePolicy : JsonNamingPolicy

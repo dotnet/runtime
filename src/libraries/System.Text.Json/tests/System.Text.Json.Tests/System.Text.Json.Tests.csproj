@@ -47,9 +47,11 @@
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.Stream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
     <Compile Include="..\Common\ExtensionDataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ExtensionDataTests.cs" />
     <Compile Include="..\Common\StreamingJsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\StreamingJsonSerializerWrapper.cs" />
+    <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
+    <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
@@ -103,7 +105,6 @@
     <Compile Include="JsonNode\ParseTests.cs" />
     <Compile Include="JsonNode\ParentPathRootTests.cs" />
     <Compile Include="JsonNode\ToStringTests.cs" />
-    <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
     <Compile Include="JsonTestHelper.cs" />

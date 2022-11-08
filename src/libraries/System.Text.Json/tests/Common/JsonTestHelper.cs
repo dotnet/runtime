@@ -14,6 +14,34 @@ namespace System.Text.Json
 {
     internal static partial class JsonTestHelper
     {
+#if NETCOREAPP
+        public const string DoubleFormatString = null;
+        public const string SingleFormatString = null;
+#else
+        public const string DoubleFormatString = "G17";
+        public const string SingleFormatString = "G9";
+#endif
+
+        public static float NextFloat(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-126, 128));
+            float value = (float)(mantissa * exponent);
+            return value;
+        }
+
+        public static double NextDouble(Random random, double minValue, double maxValue)
+        {
+            double value = random.NextDouble() * (maxValue - minValue) + minValue;
+            return value;
+        }
+
+        public static decimal NextDecimal(Random random, double minValue, double maxValue)
+        {
+            double value = random.NextDouble() * (maxValue - minValue) + minValue;
+            return (decimal)value;
+        }
+
         public static void AssertJsonEqual(string expected, string actual)
         {
             using JsonDocument expectedDom = JsonDocument.Parse(expected);
