@@ -50,6 +50,35 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
+        private static unsafe void SetAlpn(ref InputSecurityBuffers inputBuffers, List<SslApplicationProtocol> alpn, Span<byte> localBuffer)
+        {
+            if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
+            {
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http1, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
+            else if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http2)
+            {
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http2, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
+            else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
+            {
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
+            else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
+            {
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http21, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
+            else
+            {
+                int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
+                int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
+
+                Span<byte> alpnBuffer = bufferLength <= localBuffer.Length ? localBuffer : new byte[bufferLength];
+                Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
+        }
+
         public static unsafe SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
@@ -57,43 +86,15 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            Span<byte> localBuffer = stackalloc byte[64];
-
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
-
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                List<SslApplicationProtocol> alpn = sslAuthenticationOptions.ApplicationProtocols;
-
-                if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http1, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http2)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http2, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http21, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else
-                {
-                    int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
-                    Span<byte> alpnBuffer = bufferLength <= localBuffer.Length ? localBuffer : new byte[bufferLength];
-
-                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
+                Span<byte> localBuffer = stackalloc byte[64];
+                SetAlpn(ref inputBuffers, sslAuthenticationOptions.ApplicationProtocols, localBuffer);
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
@@ -121,8 +122,6 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            Span<byte> localBuffer = stackalloc byte[64];
-
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
@@ -130,33 +129,8 @@ namespace System.Net.Security
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                List<SslApplicationProtocol> alpn = sslAuthenticationOptions.ApplicationProtocols;
-
-                if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http1, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http2)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http2, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
-                {
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http21, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
-                else
-                {
-                    int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
-                    Span<byte> alpnBuffer = localBuffer.Length <= 64 ? localBuffer : new byte[bufferLength];
-
-                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
-                    inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-                }
+                Span<byte> localBuffer = stackalloc byte[64];
+                SetAlpn(ref inputBuffers, sslAuthenticationOptions.ApplicationProtocols, localBuffer);
             }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
