@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
@@ -43,7 +42,10 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiDigitMethod = typeof(char).GetMethod("IsAsciiDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterLowerMethod = typeof(char).GetMethod("IsAsciiLetterLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterUpperMethod = typeof(char).GetMethod("IsAsciiLetterUpper", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
@@ -67,6 +69,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
@@ -76,6 +80,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
@@ -802,8 +808,8 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
 
-                List<(char[]? Chars, string Set, int Distance)>? sets = _regexTree.FindOptimizations.FixedDistanceSets;
-                (char[]? Chars, string Set, int Distance) primarySet = sets![0];
+                List<RegexFindOptimizations.FixedDistanceSet>? sets = _regexTree.FindOptimizations.FixedDistanceSets;
+                RegexFindOptimizations.FixedDistanceSet primarySet = sets![0];
                 const int MaxSets = 4;
                 int setsToUse = Math.Min(sets.Count, MaxSets);
 
@@ -819,7 +825,7 @@ namespace System.Text.RegularExpressions
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Chars is not null;
+                bool canUseIndexOf = primarySet.Chars is not null || primarySet.Range is not null;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 Label checkSpanLengthLabel = default;
@@ -867,34 +873,53 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
-                    switch (primarySet.Chars!.Length)
+                    if (primarySet.Chars is not null)
                     {
-                        case 1:
-                            // tmp = ...IndexOf(setChars[0]);
-                            Ldc(primarySet.Chars[0]);
-                            Call(s_spanIndexOfChar);
-                            break;
+                        switch (primarySet.Chars!.Length)
+                        {
+                            case 1:
+                                // tmp = ...IndexOf(setChars[0]);
+                                Ldc(primarySet.Chars[0]);
+                                Call(s_spanIndexOfChar);
+                                break;
 
-                        case 2:
-                            // tmp = ...IndexOfAny(setChars[0], setChars[1]);
-                            Ldc(primarySet.Chars[0]);
-                            Ldc(primarySet.Chars[1]);
-                            Call(s_spanIndexOfAnyCharChar);
-                            break;
+                            case 2:
+                                // tmp = ...IndexOfAny(setChars[0], setChars[1]);
+                                Ldc(primarySet.Chars[0]);
+                                Ldc(primarySet.Chars[1]);
+                                Call(s_spanIndexOfAnyCharChar);
+                                break;
 
-                        case 3:
-                            // tmp = ...IndexOfAny(setChars[0], setChars[1], setChars[2]});
-                            Ldc(primarySet.Chars[0]);
-                            Ldc(primarySet.Chars[1]);
-                            Ldc(primarySet.Chars[2]);
-                            Call(s_spanIndexOfAnyCharCharChar);
-                            break;
+                            case 3:
+                                // tmp = ...IndexOfAny(setChars[0], setChars[1], setChars[2]});
+                                Ldc(primarySet.Chars[0]);
+                                Ldc(primarySet.Chars[1]);
+                                Ldc(primarySet.Chars[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
 
-                        default:
-                            Ldstr(new string(primarySet.Chars));
-                            Call(s_stringAsSpanMethod);
-                            Call(s_spanIndexOfAnySpan);
-                            break;
+                            default:
+                                Ldstr(new string(primarySet.Chars));
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        if (primarySet.Range!.Value.LowInclusive == primarySet.Range.Value.HighInclusive)
+                        {
+                            // tmp = ...IndexOf{AnyExcept}(low);
+                            Ldc(primarySet.Range!.Value.LowInclusive);
+                            Call(primarySet.Range.Value.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // tmp = ...IndexOfAny{Except}InRange(low, high);
+                            Ldc(primarySet.Range!.Value.LowInclusive);
+                            Ldc(primarySet.Range.Value.HighInclusive);
+                            Call(primarySet.Range.Value.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
+                        }
                     }
 
                     if (needLoop)
@@ -1014,7 +1039,7 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
 
-                (char[]? Chars, string Set, int Distance) set = _regexTree.FindOptimizations.FixedDistanceSets![0];
+                RegexFindOptimizations.FixedDistanceSet set = _regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
                 if (set.Chars is { Length: 1 })
@@ -2767,7 +2792,7 @@ namespace System.Text.RegularExpressions
                 // if (loadedChar != ch) goto doneLabel;
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!);
+                    EmitMatchCharacterClass(node.Str);
                     BrfalseFar(doneLabel);
                 }
                 else
@@ -3151,69 +3176,40 @@ namespace System.Text.RegularExpressions
                     BleFar(doneLabel);
                 }
 
-                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal)
+                if (!rtl &&
+                    node.N > 1 &&
+                    subsequent?.FindStartingLiteralNode() is RegexNode literal &&
+                    CanEmitIndexOf(literal, out int literalLength))
                 {
                     // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
                     // {
                     //     goto doneLabel;
                     // }
-                    bool negated = literal.Item4;
                     Ldloca(inputSpan);
                     Ldloc(startingPos);
-                    if (literal.Item2 is not null)
+                    if (literalLength > 1)
                     {
-                        Debug.Assert(!negated, "strings should not be negated");
+                        // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
                         Ldloca(inputSpan);
                         Call(s_spanGetLengthMethod);
                         Ldloc(endingPos);
-                        Ldc(literal.Item2.Length - 1);
+                        Ldc(literalLength - 1);
                         Add();
                         Call(s_mathMinIntInt);
-                        Ldloc(startingPos);
-                        Sub();
-                        Call(s_spanSliceIntIntMethod);
-                        Ldstr(literal.Item2);
-                        Call(s_stringAsSpanMethod);
-                        Call(s_spanLastIndexOfSpan);
                     }
                     else
                     {
+                        // endingPos - startingPos
                         Ldloc(endingPos);
-                        Ldloc(startingPos);
-                        Sub();
-                        Call(s_spanSliceIntIntMethod);
-                        if (literal.Item3 is not null)
-                        {
-                            switch (literal.Item3.Length)
-                            {
-                                case 2:
-                                    Ldc(literal.Item3[0]);
-                                    Ldc(literal.Item3[1]);
-                                    Call(negated ? s_spanLastIndexOfAnyExceptCharChar : s_spanLastIndexOfAnyCharChar);
-                                    break;
-
-                                case 3:
-                                    Ldc(literal.Item3[0]);
-                                    Ldc(literal.Item3[1]);
-                                    Ldc(literal.Item3[2]);
-                                    Call(negated ? s_spanLastIndexOfAnyExceptCharCharChar : s_spanLastIndexOfAnyCharCharChar);
-                                    break;
-
-                                default:
-                                    Ldstr(literal.Item3);
-                                    Call(s_stringAsSpanMethod);
-                                    Call(negated ? s_spanLastIndexOfAnyExceptSpan : s_spanLastIndexOfAnySpan);
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            Ldc(literal.Item1);
-                            Call(negated ? s_spanLastIndexOfAnyExceptChar : s_spanLastIndexOfChar);
-                        }
                     }
+                    Ldloc(startingPos);
+                    Sub();
+                    Call(s_spanSliceIntIntMethod);
+
+                    EmitIndexOf(literal, useLast: true, negate: false);
                     Stloc(endingPos);
+
                     Ldloc(endingPos);
                     Ldc(0);
                     BltFar(doneLabel);
@@ -3381,8 +3377,12 @@ namespace System.Text.RegularExpressions
                 if (!rtl &&
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
-                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?, bool> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
-                    !literal.Item4) // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
+                    subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    !literal.Negated && // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
+                    (literal.String is not null ||
+                     literal.SetChars is not null ||
+                     literal.Range.LowInclusive == literal.Range.HighInclusive ||
+                     (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive))) // for ranges, only allow when the range overlaps with the target, since there's no accelerated way to search for the union
                 {
                     // e.g. "<[^>]*?>"
 
@@ -3393,9 +3393,9 @@ namespace System.Text.RegularExpressions
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
                     // We can implement it to search for either that char or the literal, whichever comes first.
                     Ldloc(slice);
-                    if (literal.Item2 is not null) // string literal
+                    if (literal.String is not null) // string literal
                     {
-                        overlap = literal.Item2[0] == node.Ch;
+                        overlap = literal.String[0] == node.Ch;
                         if (overlap)
                         {
                             // startingPos = slice.IndexOf(node.Ch);
@@ -3404,71 +3404,79 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item2[0]);
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.String[0]);
                             Ldc(node.Ch);
-                            Ldc(literal.Item2[0]);
+                            Ldc(literal.String[0]);
                             Call(s_spanIndexOfAnyCharChar);
                         }
                     }
-                    else if (literal.Item3 is null) // char literal
+                    else if (literal.SetChars is not null) // set literal
                     {
-                        overlap = literal.Item1 == node.Ch;
-                        if (overlap)
-                        {
-                            // startingPos = slice.IndexOf(node.Ch);
-                            Ldc(node.Ch);
-                            Call(s_spanIndexOfChar);
-                        }
-                        else
-                        {
-                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item1);
-                            Ldc(node.Ch);
-                            Ldc(literal.Item1);
-                            Call(s_spanIndexOfAnyCharChar);
-                        }
-                    }
-                    else // set literal
-                    {
-                        overlap = literal.Item3.Contains(node.Ch);
-                        switch ((overlap, literal.Item3.Length))
+                        overlap = literal.SetChars.Contains(node.Ch);
+                        switch ((overlap, literal.SetChars.Length))
                         {
                             case (true, 2):
-                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1]);
-                                Ldc(literal.Item3[0]);
-                                Ldc(literal.Item3[1]);
+                                // startingPos = slice.IndexOfAny(literal.SetChars[0], literal.SetChars[1]);
+                                Ldc(literal.SetChars[0]);
+                                Ldc(literal.SetChars[1]);
                                 Call(s_spanIndexOfAnyCharChar);
                                 break;
 
                             case (true, 3):
-                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1], literal.Item3[2]);
-                                Ldc(literal.Item3[0]);
-                                Ldc(literal.Item3[1]);
-                                Ldc(literal.Item3[2]);
+                                // startingPos = slice.IndexOfAny(literal.SetChars[0], literal.SetChars[1], literal.SetChars[2]);
+                                Ldc(literal.SetChars[0]);
+                                Ldc(literal.SetChars[1]);
+                                Ldc(literal.SetChars[2]);
                                 Call(s_spanIndexOfAnyCharCharChar);
                                 break;
 
                             case (true, _):
-                                // startingPos = slice.IndexOfAny(literal.Item3);
-                                Ldstr(literal.Item3);
+                                // startingPos = slice.IndexOfAny(literal.SetChars);
+                                Ldstr(literal.SetChars);
                                 Call(s_stringAsSpanMethod);
                                 Call(s_spanIndexOfAnySpan);
                                 break;
 
                             case (false, 2):
-                                // startingPos = slice.IndexOfAny(node.Ch, literal.Item3[0], literal.Item3[1]);
+                                // startingPos = slice.IndexOfAny(node.Ch, literal.SetChars[0], literal.SetChars[1]);
                                 Ldc(node.Ch);
-                                Ldc(literal.Item3[0]);
-                                Ldc(literal.Item3[1]);
+                                Ldc(literal.SetChars[0]);
+                                Ldc(literal.SetChars[1]);
                                 Call(s_spanIndexOfAnyCharCharChar);
                                 break;
 
                             case (false, _):
-                                // startingPos = slice.IndexOfAny($"{node.Ch}{literal.Item3}");
-                                Ldstr($"{node.Ch}{literal.Item3}");
+                                // startingPos = slice.IndexOfAny($"{node.Ch}{literal.SetChars}");
+                                Ldstr($"{node.Ch}{literal.SetChars}");
                                 Call(s_stringAsSpanMethod);
                                 Call(s_spanIndexOfAnySpan);
                                 break;
                         }
+                    }
+                    else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
+                    {
+                        overlap = literal.Range.LowInclusive == node.Ch;
+                        if (overlap)
+                        {
+                            // startingPos = slice.IndexOf(node.Ch);
+                            Ldc(node.Ch);
+                            Call(s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.Range.LowInclusive);
+                            Ldc(node.Ch);
+                            Ldc(literal.Range.LowInclusive);
+                            Call(s_spanIndexOfAnyCharChar);
+                        }
+                    }
+                    else // range literal
+                    {
+                        // startingPos = slice.IndexOfAnyInRange(literal.Range.LowInclusive, literal.Range.HighInclusive);
+                        overlap = true;
+                        Ldc(literal.Range.LowInclusive);
+                        Ldc(literal.Range.HighInclusive);
+                        Call(s_spanIndexOfAnyInRange);
                     }
                     Stloc(startingPos);
 
@@ -3515,51 +3523,16 @@ namespace System.Text.RegularExpressions
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
-                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal2)
+                    subsequent?.FindStartingLiteralNode() is RegexNode literal2 &&
+                    CanEmitIndexOf(literal2, out _))
                 {
                     // e.g. ".*?string" with RegexOptions.Singleline
                     // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
                     // isn't found, the loop fails. We can implement it to just search for that literal.
-                    bool negated = literal2.Item4;
 
                     // startingPos = slice.IndexOf(literal);
                     Ldloc(slice);
-                    if (literal2.Item2 is not null)
-                    {
-                        Debug.Assert(!negated, "strings should not be negated");
-                        Ldstr(literal2.Item2);
-                        Call(s_stringAsSpanMethod);
-                        Call(s_spanIndexOfSpan);
-                    }
-                    else if (literal2.Item3 is not null)
-                    {
-                        switch (literal2.Item3.Length)
-                        {
-                            case 2:
-                                Ldc(literal2.Item3[0]);
-                                Ldc(literal2.Item3[1]);
-                                Call(negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
-                                break;
-
-                            case 3:
-                                Ldc(literal2.Item3[0]);
-                                Ldc(literal2.Item3[1]);
-                                Ldc(literal2.Item3[2]);
-                                Call(negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
-                                break;
-
-                            default:
-                                Ldstr(literal2.Item3);
-                                Call(s_stringAsSpanMethod);
-                                Call(negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        Ldc(literal2.Item1);
-                        Call(negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
-                    }
+                    EmitIndexOf(node, useLast: false, negate: false);
                     Stloc(startingPos);
 
                     // if (startingPos < 0) goto doneLabel;
@@ -4065,6 +4038,13 @@ namespace System.Text.RegularExpressions
                     EmitSpanLengthCheck(iterations);
                 }
 
+                // If this is a repeater for anything,we only care about length and can jump past that length.
+                if (node.IsSetFamily && node.Str == RegexCharClass.AnyClass)
+                {
+                    sliceStaticPos += iterations;
+                    return;
+                }
+
                 // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
                 const int MaxUnrollSize = 16;
@@ -4083,48 +4063,61 @@ namespace System.Text.RegularExpressions
                 else
                 {
                     // ReadOnlySpan<char> tmp = slice.Slice(sliceStaticPos, iterations);
-                    // for (int i = 0; i < tmp.Length; i++)
-                    // {
-                    //     TimeoutCheck();
-                    //     if (tmp[i] != ch) goto Done;
-                    // }
-                    // sliceStaticPos += iterations;
-
-                    Label conditionLabel = DefineLabel();
-                    Label bodyLabel = DefineLabel();
-
-                    using RentedLocalBuilder spanLocal = RentReadOnlySpanCharLocal();
                     Ldloca(slice);
                     Ldc(sliceStaticPos);
                     Ldc(iterations);
                     Call(s_spanSliceIntIntMethod);
-                    Stloc(spanLocal);
 
-                    using RentedLocalBuilder iterationLocal = RentInt32Local();
-                    Ldc(0);
-                    Stloc(iterationLocal);
-                    BrFar(conditionLabel);
+                    // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
+                    // For the loop, we're validating that each char matches the target node.
+                    // For IndexOf, we're looking for the first thing that _doesn't_ match the target node,
+                    // and thus similarly validating that everything does.
+                    if (CanEmitIndexOf(node, out _))
+                    {
+                        // if (tmp.IndexOf(...) >= 0) goto doneLabel;
+                        EmitIndexOf(node, useLast: false, negate: true);
+                        Ldc(0);
+                        BgeFar(doneLabel);
+                    }
+                    else
+                    {
+                        using RentedLocalBuilder spanLocal = RentReadOnlySpanCharLocal();
+                        Stloc(spanLocal);
 
-                    MarkLabel(bodyLabel);
+                        // for (int i = 0; i < tmp.Length; i++)
+                        // {
+                        //     if (tmp[i] != ch) goto Done;
+                        // }
 
-                    LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
-                    int tmpTextSpanPos = sliceStaticPos;
-                    slice = spanLocal;
-                    sliceStaticPos = 0;
-                    EmitSingleChar(node, emitLengthCheck: false, offset: iterationLocal);
-                    slice = tmpTextSpanLocal;
-                    sliceStaticPos = tmpTextSpanPos;
+                        Label conditionLabel = DefineLabel();
+                        Label bodyLabel = DefineLabel();
 
-                    Ldloc(iterationLocal);
-                    Ldc(1);
-                    Add();
-                    Stloc(iterationLocal);
+                        using RentedLocalBuilder iterationLocal = RentInt32Local();
+                        Ldc(0);
+                        Stloc(iterationLocal);
+                        BrFar(conditionLabel);
 
-                    MarkLabel(conditionLabel);
-                    Ldloc(iterationLocal);
-                    Ldloca(spanLocal);
-                    Call(s_spanGetLengthMethod);
-                    BltFar(bodyLabel);
+                        MarkLabel(bodyLabel);
+
+                        LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
+                        int tmpTextSpanPos = sliceStaticPos;
+                        slice = spanLocal;
+                        sliceStaticPos = 0;
+                        EmitSingleChar(node, emitLengthCheck: false, offset: iterationLocal);
+                        slice = tmpTextSpanLocal;
+                        sliceStaticPos = tmpTextSpanPos;
+
+                        Ldloc(iterationLocal);
+                        Ldc(1);
+                        Add();
+                        Stloc(iterationLocal);
+
+                        MarkLabel(conditionLabel);
+                        Ldloc(iterationLocal);
+                        Ldloca(spanLocal);
+                        Call(s_spanGetLengthMethod);
+                        BltFar(bodyLabel);
+                    }
 
                     sliceStaticPos += iterations;
                 }
@@ -4153,13 +4146,8 @@ namespace System.Text.RegularExpressions
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-
                 using RentedLocalBuilder iterationLocal = RentInt32Local();
-
                 Label atomicLoopDoneLabel = DefineLabel();
-
-                Span<char> setChars = stackalloc char[5]; // max optimized by IndexOfAny today
-                int numSetChars = 0;
 
                 if (rtl)
                 {
@@ -4193,7 +4181,7 @@ namespace System.Text.RegularExpressions
                     LdindU2();
                     if (node.IsSetFamily)
                     {
-                        EmitMatchCharacterClass(node.Str!);
+                        EmitMatchCharacterClass(node.Str);
                         BrfalseFar(atomicLoopDoneLabel);
                     }
                     else
@@ -4228,103 +4216,6 @@ namespace System.Text.RegularExpressions
                         BrFar(bodyLabel);
                     }
                 }
-                else if ((node.IsOneFamily || node.IsNotoneFamily) && maxIterations == int.MaxValue)
-                {
-                    // For One or Notone, we're looking for a specific character, as everything until we find
-                    // it (or its negation in the case of One) is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
-                    // we can use the vectorized IndexOf{AnyExcept} to do the search, rather than open-coding it.  The unbounded
-                    // restriction is purely for simplicity; it could be removed in the future with additional code to
-                    // handle the unbounded case.
-
-                    // int i = slice.Slice(sliceStaticPos).IndexOf(char);
-                    if (sliceStaticPos > 0)
-                    {
-                        Ldloca(slice);
-                        Ldc(sliceStaticPos);
-                        Call(s_spanSliceIntMethod);
-                    }
-                    else
-                    {
-                        Ldloc(slice);
-                    }
-                    Ldc(node.Ch);
-                    Call(node.IsNotoneFamily ? s_spanIndexOfChar : s_spanIndexOfAnyExceptChar);
-                    Stloc(iterationLocal);
-
-                    // if (i >= 0) goto atomicLoopDoneLabel;
-                    Ldloc(iterationLocal);
-                    Ldc(0);
-                    BgeFar(atomicLoopDoneLabel);
-
-                    // i = slice.Length - sliceStaticPos;
-                    Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
-                    if (sliceStaticPos > 0)
-                    {
-                        Ldc(sliceStaticPos);
-                        Sub();
-                    }
-                    Stloc(iterationLocal);
-                }
-                else if (node.IsSetFamily &&
-                    maxIterations == int.MaxValue &&
-                    (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
-                {
-                    // If the set contains only a few characters (if it contained 1 and was negated, it should
-                    // have been reduced to a Notone), we can use an IndexOfAny{Except} to find any of the target characters.
-                    // As with the notoneloopatomic above, the unbounded constraint is purely for simplicity.
-                    Debug.Assert(numSetChars > 1);
-                    bool negated = RegexCharClass.IsNegated(node.Str!);
-
-                    // int i = slice.Slice(sliceStaticPos).IndexOfAny(ch1, ch2, ...);
-                    if (sliceStaticPos > 0)
-                    {
-                        Ldloca(slice);
-                        Ldc(sliceStaticPos);
-                        Call(s_spanSliceIntMethod);
-                    }
-                    else
-                    {
-                        Ldloc(slice);
-                    }
-                    switch (numSetChars)
-                    {
-                        case 2:
-                            Ldc(setChars[0]);
-                            Ldc(setChars[1]);
-                            Call(negated ? s_spanIndexOfAnyCharChar : s_spanIndexOfAnyExceptCharChar);
-                            break;
-
-                        case 3:
-                            Ldc(setChars[0]);
-                            Ldc(setChars[1]);
-                            Ldc(setChars[2]);
-                            Call(negated ? s_spanIndexOfAnyCharCharChar : s_spanIndexOfAnyExceptCharCharChar);
-                            break;
-
-                        default:
-                            Ldstr(setChars.Slice(0, numSetChars).ToString());
-                            Call(s_stringAsSpanMethod);
-                            Call(negated ? s_spanIndexOfAnySpan : s_spanIndexOfAnyExceptSpan);
-                            break;
-                    }
-                    Stloc(iterationLocal);
-
-                    // if (i >= 0) goto atomicLoopDoneLabel;
-                    Ldloc(iterationLocal);
-                    Ldc(0);
-                    BgeFar(atomicLoopDoneLabel);
-
-                    // i = slice.Length - sliceStaticPos;
-                    Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
-                    if (sliceStaticPos > 0)
-                    {
-                        Ldc(sliceStaticPos);
-                        Sub();
-                    }
-                    Stloc(iterationLocal);
-                }
                 else if (node.IsSetFamily && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
                 {
                     // .* was used with RegexOptions.Singleline, which means it'll consume everything.  Just jump to the end.
@@ -4336,6 +4227,41 @@ namespace System.Text.RegularExpressions
                     Call(s_spanGetLengthMethod);
                     Ldloc(pos);
                     Sub();
+                    Stloc(iterationLocal);
+                }
+                else if (maxIterations == int.MaxValue && CanEmitIndexOf(node, out _))
+                {
+                    // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
+                    // purely for simplicity; it could be removed in the future with additional code to handle that case.
+
+                    // int i = slice.Slice(sliceStaticPos).IndexOf(...);
+                    if (sliceStaticPos > 0)
+                    {
+                        Ldloca(slice);
+                        Ldc(sliceStaticPos);
+                        Call(s_spanSliceIntMethod);
+                    }
+                    else
+                    {
+                        Ldloc(slice);
+                    }
+
+                    EmitIndexOf(node, useLast: false, negate: true);
+                    Stloc(iterationLocal);
+
+                    // if (i >= 0) goto atomicLoopDoneLabel;
+                    Ldloc(iterationLocal);
+                    Ldc(0);
+                    BgeFar(atomicLoopDoneLabel);
+
+                    // i = slice.Length - sliceStaticPos;
+                    Ldloca(slice);
+                    Call(s_spanGetLengthMethod);
+                    if (sliceStaticPos > 0)
+                    {
+                        Ldc(sliceStaticPos);
+                        Sub();
+                    }
                     Stloc(iterationLocal);
                 }
                 else
@@ -4370,7 +4296,7 @@ namespace System.Text.RegularExpressions
                     LdindU2();
                     if (node.IsSetFamily)
                     {
-                        EmitMatchCharacterClass(node.Str!);
+                        EmitMatchCharacterClass(node.Str);
                         BrfalseFar(atomicLoopDoneLabel);
                     }
                     else
@@ -4492,7 +4418,7 @@ namespace System.Text.RegularExpressions
                 LdindU2();
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!);
+                    EmitMatchCharacterClass(node.Str);
                     BrfalseFar(skipUpdatesLabel);
                 }
                 else
@@ -4924,6 +4850,175 @@ namespace System.Text.RegularExpressions
                         MarkLabel(backtrackingEnd);
                     }
                 }
+            }
+
+            // <summary>Gets whether an IndexOf expression can be emitted for the node.</summary>
+            // <param name="node">The RegexNode. If it's a loop, only the one/notone/set aspect of the node is factored in.</param>
+            // <param name="literalLength">0 if returns false. If it returns true, string.Length for a multi, otherwise 1.</param>
+            // <returns>true if an IndexOf can be emitted; otherwise, false.</returns>
+            bool CanEmitIndexOf(RegexNode node, out int literalLength)
+            {
+                if (node.Kind == RegexNodeKind.Multi)
+                {
+                    literalLength = node.Str!.Length;
+                    return true;
+                }
+
+                if (node.IsOneFamily || node.IsNotoneFamily)
+                {
+                    literalLength = 1;
+                    return true;
+                }
+
+                if (node.IsSetFamily)
+                {
+                    Span<char> setChars = stackalloc char[5]; // current max that's vectorized
+                    int setCharsCount;
+                    if ((setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars)) > 0)
+                    {
+                        literalLength = 1;
+                        return true;
+                    }
+
+                    if (RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                    {
+                        literalLength = 1;
+                        return true;
+                    }
+                }
+
+                literalLength = 0;
+                return false;
+            }
+
+            // <summary>Emits the code for IndexOf call based on the node.</summary>
+            // <param name="node">The RegexNode. If it's a loop, only the one/notone/set aspect of the node is factored in.</param>
+            // <param name="useLast">true to use LastIndexOf variants; false to use IndexOf variants.</param>
+            // <param name="negate">true to search for the opposite of the node.</param>
+            void EmitIndexOf(RegexNode node, bool useLast, bool negate)
+            {
+                if (node.Kind == RegexNodeKind.Multi)
+                {
+                    // IndexOf(span)
+                    Debug.Assert(!negate, "Negation isn't appropriate for a multi");
+                    Ldstr(node.Str!);
+                    Call(s_stringAsSpanMethod);
+                    Call(useLast ? s_spanLastIndexOfSpan : s_spanIndexOfSpan);
+                    return;
+                }
+
+                if (node.IsOneFamily || node.IsNotoneFamily)
+                {
+                    // IndexOf{AnyExcept}(char)
+
+                    if (node.IsNotoneFamily)
+                    {
+                        negate = !negate;
+                    }
+
+                    Ldc(node.Ch);
+                    Call((useLast, negate) switch
+                    {
+                        (false, false) => s_spanIndexOfChar,
+                        (false, true) => s_spanIndexOfAnyExceptChar,
+                        (true, false) => s_spanLastIndexOfChar,
+                        (true, true) => s_spanLastIndexOfAnyExceptChar,
+                    });
+                    return;
+                }
+
+                if (node.IsSetFamily)
+                {
+                    bool negated = RegexCharClass.IsNegated(node.Str) ^ negate;
+
+                    // IndexOfAny{Except}(ch1, ...)
+                    Span<char> setChars = stackalloc char[5]; // current max that's vectorized
+                    int setCharsCount;
+                    if ((setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars)) > 0)
+                    {
+                        setChars = setChars.Slice(0, setCharsCount);
+                        switch (setChars.Length)
+                        {
+                            case 1:
+                                Ldc(setChars[0]);
+                                Call((useLast, negated) switch
+                                {
+                                    (false, false) => s_spanIndexOfChar,
+                                    (false, true) => s_spanIndexOfAnyExceptChar,
+                                    (true, false) => s_spanLastIndexOfChar,
+                                    (true, true) => s_spanLastIndexOfAnyExceptChar,
+                                });
+                                return;
+
+                            case 2:
+                                Ldc(setChars[0]);
+                                Ldc(setChars[1]);
+                                Call((useLast, negated) switch
+                                {
+                                    (false, false) => s_spanIndexOfAnyCharChar,
+                                    (false, true) => s_spanIndexOfAnyExceptCharChar,
+                                    (true, false) => s_spanLastIndexOfAnyCharChar,
+                                    (true, true) => s_spanLastIndexOfAnyExceptCharChar,
+                                });
+                                return;
+
+                            case 3:
+                                Ldc(setChars[0]);
+                                Ldc(setChars[1]);
+                                Ldc(setChars[2]);
+                                Call((useLast, negated) switch
+                                {
+                                    (false, false) => s_spanIndexOfAnyCharCharChar,
+                                    (false, true) => s_spanIndexOfAnyExceptCharCharChar,
+                                    (true, false) => s_spanLastIndexOfAnyCharCharChar,
+                                    (true, true) => s_spanLastIndexOfAnyExceptCharCharChar,
+                                });
+                                return;
+
+                            default:
+                                Ldstr(setChars.ToString());
+                                Call(s_stringAsSpanMethod);
+                                Call((useLast, negated) switch
+                                {
+                                    (false, false) => s_spanIndexOfAnySpan,
+                                    (false, true) => s_spanIndexOfAnyExceptSpan,
+                                    (true, false) => s_spanLastIndexOfAnySpan,
+                                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
+                                });
+                                return;
+                        }
+                    }
+
+                    // IndexOfAny{Except}InRange
+                    if (RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                    {
+                        if (lowInclusive == highInclusive)
+                        {
+                            Ldc(lowInclusive);
+                            Call((useLast, negated) switch
+                            {
+                                (false, false) => s_spanIndexOfChar,
+                                (false, true) => s_spanIndexOfAnyExceptChar,
+                                (true, false) => s_spanLastIndexOfChar,
+                                (true, true) => s_spanLastIndexOfAnyExceptChar,
+                            });
+                            return;
+                        }
+
+                        Ldc(lowInclusive);
+                        Ldc(highInclusive);
+                        Call((useLast, negated) switch
+                        {
+                            (false, false) => s_spanIndexOfAnyInRange,
+                            (false, true) => s_spanIndexOfAnyExceptInRange,
+                            (true, false) => s_spanLastIndexOfAnyInRange,
+                            (true, true) => s_spanLastIndexOfAnyExceptInRange,
+                        });
+                        return;
+                    }
+                }
+
+                Debug.Fail("We should never get here. This method should only be called if CanEmitIndexOf returned true, and all of the same cases should be covered.");
             }
 
             // <summary>
@@ -5359,8 +5454,8 @@ namespace System.Text.RegularExpressions
             // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [B-Db-d].
             // This can be implemented as if it were a single range, with an additional bitwise operation.
             if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
-                RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
-                RegexCharClass.IsAsciiLetter(rangeUpper.HighInclusive) &&
+                char.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                char.IsAsciiLetter(rangeUpper.HighInclusive) &&
                 (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
                 (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
             {
@@ -5602,32 +5697,92 @@ namespace System.Text.RegularExpressions
                     return;
             }
 
-            // We determined that the character class may contain ASCII, so we
-            // output the lookup against the lookup table.
+            // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
+            // characters other than that some might be included, for example if the character class
+            // were [\w\d], so if ch >= 128, we need to fall back to calling CharInClass. For ASCII, we
+            // can use a lookup table, but if it's a known set of ASCII characters we can also use a helper.
 
-            // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
+            // ch < 128 ?
             Ldloc(tempLocal);
             Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfOnlyRanges : 128);
             Bge(comparisonLabel);
-            Ldstr(bitVectorString);
-            Ldloc(tempLocal);
-            Ldc(4);
-            Shr();
-            Call(s_stringGetCharsMethod);
-            Ldc(1);
-            Ldloc(tempLocal);
-            Ldc(15);
-            And();
-            Ldc(31);
-            And();
-            Shl();
-            And();
-            Ldc(0);
-            CgtUn();
+
+            // ASCII
+            switch (bitVectorString)
+            {
+                case "\0\0\0\u03ff\ufffe\u07ff\ufffe\u07ff":
+                    // char.IsAsciiLetterOrDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    break;
+
+                case "\0\0\0\u03FF\0\0\0\0":
+                    // char.IsAsciiDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiDigitMethod);
+                    break;
+
+                case "\0\0\0\0\ufffe\u07FF\ufffe\u07ff":
+                    // char.IsAsciiLetter(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterMethod);
+                    break;
+
+                case "\0\0\0\0\0\0\ufffe\u07ff":
+                    // char.IsAsciiLetterLower(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterLowerMethod);
+                    break;
+
+                case "\0\0\0\0\ufffe\u07FF\0\0":
+                    // char.IsAsciiLetterUpper(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiLetterUpperMethod);
+                    break;
+
+                case "\0\0\0\u03FF\u007E\0\u007E\0":
+                    // char.IsAsciiHexDigit(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitMethod);
+                    break;
+
+                case "\0\0\0\u03FF\0\0\u007E\0":
+                    // char.IsAsciiHexDigitLower(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    break;
+
+                case "\0\0\0\u03FF\u007E\0\0\0":
+                    // char.IsAsciiHexDigitUpper(ch)
+                    Ldloc(tempLocal);
+                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    break;
+
+                default:
+                    // (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0
+                    Ldstr(bitVectorString);
+                    Ldloc(tempLocal);
+                    Ldc(4);
+                    Shr();
+                    Call(s_stringGetCharsMethod);
+                    Ldc(1);
+                    Ldloc(tempLocal);
+                    Ldc(15);
+                    And();
+                    Ldc(31);
+                    And();
+                    Shl();
+                    And();
+                    Ldc(0);
+                    CgtUn();
+                    break;
+            }
             Stloc(resultLocal);
             Br(doneLabel);
+
             MarkLabel(comparisonLabel);
 
+            // Non-ASCII
             if (analysis.ContainsOnlyAscii)
             {
                 // We know that all inputs that could match are ASCII, for example if the
@@ -5651,6 +5806,7 @@ namespace System.Text.RegularExpressions
                 // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
                 EmitCharInClass();
             }
+
             MarkLabel(doneLabel);
             Ldloc(resultLocal);
         }

@@ -75,13 +75,15 @@
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
       - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
-                                    Eg. <WasmExtraConfig Include="enableProfiler" Value="true" />
+                                    Eg. <WasmExtraConfig Include="xxx" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
 
                                     <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
                                     <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
                                     <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+      - @(EmccExportedRuntimeMethod) - Extra method for emcc flag EXPORTED_RUNTIME_METHODS
+      - @(EmccExportedFunction)      - Extra function for emcc flag EXPORTED_FUNCTIONS
   -->
 
   <PropertyGroup>
@@ -114,6 +116,14 @@
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Allow running/debugging from VS -->
+    <ProjectCapability Include="DotNetCoreWeb"/>
+
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Include="browser" />
+  </ItemGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
     <!-- Allow running from custom WasmAppDir -->

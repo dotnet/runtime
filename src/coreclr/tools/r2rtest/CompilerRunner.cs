@@ -207,7 +207,7 @@ namespace R2RTest
 
             if (!string.IsNullOrEmpty(_options.GCStress))
             {
-                processParameters.EnvironmentOverrides["COMPlus_GCStress"] = _options.GCStress;
+                processParameters.EnvironmentOverrides["DOTNET_GCStress"] = _options.GCStress;
             }
 
             if (_options.ExecutionTimeoutMinutes != 0)
@@ -224,7 +224,8 @@ namespace R2RTest
             }
 
             // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics
-            processParameters.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
+            processParameters.EnvironmentOverrides["DOTNET_TieredCompilation"] = "0";
+            processParameters.EnvironmentOverrides["COMPlus_TieredCompilation"] = "0";
 
             processParameters.CollectJittedMethods = !noEtw;
             if (!noEtw)

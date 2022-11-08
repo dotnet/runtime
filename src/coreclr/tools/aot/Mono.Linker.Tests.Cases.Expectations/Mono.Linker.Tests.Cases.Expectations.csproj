@@ -5,7 +5,6 @@
     <Nullable>disable</Nullable>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
 </Project>

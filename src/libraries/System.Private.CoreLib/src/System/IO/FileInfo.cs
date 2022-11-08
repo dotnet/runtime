@@ -84,10 +84,10 @@ namespace System.IO
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         public StreamWriter CreateText()
-            => new StreamWriter(NormalizedPath, append: false);
+            => CreateStreamWriter(append: false);
 
         public StreamWriter AppendText()
-            => new StreamWriter(NormalizedPath, append: true);
+            => CreateStreamWriter(append: true);
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
@@ -111,6 +111,21 @@ namespace System.IO
         {
             FileSystem.DeleteFile(FullPath);
             Invalidate();
+        }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         public FileStream Open(FileMode mode)
@@ -185,5 +200,12 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public void Encrypt() => File.Encrypt(FullPath);
+
+        private StreamWriter CreateStreamWriter(bool append)
+        {
+            StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
+            Invalidate();
+            return streamWriter;
+        }
     }
 }

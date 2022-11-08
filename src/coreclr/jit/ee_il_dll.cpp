@@ -693,9 +693,15 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
+    {
+        // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
+        // We also need to free the nonused memory.
+        info.compCompHnd->freeArray(eeVars);
+        eeVars = nullptr;
+    }
 
     info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
-
     eeVars = nullptr; // We give up ownership after setVars()
 }
 
@@ -842,8 +848,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
-           (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
@@ -1518,7 +1533,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
         printer.Truncate(0);
-        printer.Printf("hackishClassName");
+        printer.Append("hackishClassName");
     }
 
     return printer.GetBuffer();
@@ -1615,31 +1630,22 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
+void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
 {
-    const int maxStrSize = 64;
-    char      str[maxStrSize];
-    int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
-    if (realLength == -1)
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = 0;
+
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription(handle, str, maxStrSize); });
+
+    if (!success)
     {
-        printf("%s 'unknown frozen object'", prefix);
         return;
     }
-    else if (realLength >= maxStrSize)
-    {
-        // string is too long, trim it and null-terminate
-        str[maxStrSize - 4] = '.';
-        str[maxStrSize - 3] = '.';
-        str[maxStrSize - 2] = '.';
-        str[maxStrSize - 1] = 0;
-    }
-    else
-    {
-        // objectToString doesn't null-terminate buffer
-        str[realLength] = 0;
-    }
 
-    for (int i = 0; i < min(maxStrSize, realLength); i++)
+    for (size_t i = 0; i < actualLen; i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')

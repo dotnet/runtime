@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWithPreformatted($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                    .FailWith($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
             }
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWithPreformatted($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                    .FailWith($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
             }
@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWithPreformatted($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                    .FailWith($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
             }
@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWithPreformatted($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                    .FailWith($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
             }

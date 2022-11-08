@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
     public partial struct GCHandle
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalAlloc(object? value, GCHandleType type);
+        internal static extern IntPtr InternalAlloc(object? value, GCHandleType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InternalFree(IntPtr handle);

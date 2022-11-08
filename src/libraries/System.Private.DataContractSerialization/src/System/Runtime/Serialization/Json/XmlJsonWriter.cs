@@ -63,8 +63,6 @@ namespace System.Runtime.Serialization.Json
             "\\u001f"
         };
 
-        private static BinHexEncoding? s_binHexEncoding;
-
         private string? _attributeText;
         private JsonDataType _dataType;
         private int _depth;
@@ -165,9 +163,6 @@ namespace System.Runtime.Serialization.Json
         {
             get { return XmlSpace.None; }
         }
-
-        private static BinHexEncoding BinHexEncoding =>
-            s_binHexEncoding ??= new BinHexEncoding();
 
         private bool HasOpenAttribute => (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
 
@@ -401,7 +396,7 @@ namespace System.Runtime.Serialization.Json
             }
 
             StartText();
-            WriteEscapedJsonString(BinHexEncoding.GetString(buffer, index, count));
+            WriteEscapedJsonString(DataContractSerializer.BinHexEncoding.GetString(buffer, index, count));
         }
 
         public override void WriteCData(string? text)

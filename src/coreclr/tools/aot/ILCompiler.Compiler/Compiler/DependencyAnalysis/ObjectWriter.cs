@@ -713,6 +713,18 @@ namespace ILCompiler.DependencyAnalysis
                     // Internal compiler error
                     Debug.Assert(false);
                 }
+
+                if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+                {
+                    // Emit a symbol for beginning of the frame. This is workaround for ld64
+                    // linker bug which would produce DWARF with incorrect pcStart offsets for
+                    // exception handling blocks if there is no symbol present for them.
+                    //
+                    // To make things simple we just reuse blobSymbolName and change `_lsda`
+                    // prefix to `_fram`.
+                    "_fram"u8.CopyTo(blobSymbolName);
+                    EmitSymbolDef(blobSymbolName);
+                }
             }
 
             // Emit individual cfi blob for the given offset
@@ -801,48 +813,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset), flags);
-        }
-
-        public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
-        {
-            int nextRelocOffset = -1;
-            int nextRelocIndex = -1;
-            if (relocs.Length > 0)
-            {
-                nextRelocOffset = relocs[0].Offset;
-                nextRelocIndex = 0;
-            }
-
-            int i = 0;
-            while (i < blob.Length)
-            {
-                if (i == nextRelocOffset)
-                {
-                    Relocation reloc = relocs[nextRelocIndex];
-
-                    long delta;
-                    unsafe
-                    {
-                        fixed (void* location = &blob[i])
-                        {
-                            delta = Relocation.ReadValue(reloc.RelocType, location);
-                        }
-                    }
-                    int size = EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
-
-                    // Update nextRelocIndex/Offset
-                    if (++nextRelocIndex < relocs.Length)
-                    {
-                        nextRelocOffset = relocs[nextRelocIndex].Offset;
-                    }
-                    i += size;
-                }
-                else
-                {
-                    EmitIntValue(blob[i], 1);
-                    i++;
-                }
-            }
         }
 
         public void EmitSymbolDefinition(int currentOffset)
@@ -1272,7 +1242,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case TargetOS.OSX:
                     vendor = "apple";
-                    sys = "darwin";
+                    sys = "darwin16";
                     abi = "macho";
                     break;
                 case TargetOS.WebAssembly:
