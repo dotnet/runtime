@@ -271,11 +271,135 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="ConvertCountOfStressMarkersToListPhase1" BeforeTargets="ConvertCountOfStressMarkersToListPhase1">
+    <PropertyGroup>
+      <SequenceOfSemicolons>$([System.String]::new(';',10))</SequenceOfSemicolons>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="GenerateMarkerFiles" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup Condition="'$(NumberOfStripesToUseInStress)' == '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+      <NumberOfStripesToUseInStress>1</NumberOfStripesToUseInStress> <!-- Set a custom number of stripes in stress to allow very large merged groups to function in the presence of GCStress -->
+    </PropertyGroup>
+
+    <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
+    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+      <SequenceOfIntegers Include="0"/>
+      <SequenceOfIntegers Include="1"/>
+      <SequenceOfIntegers Include="2"/>
+      <SequenceOfIntegers Include="3"/>
+      <SequenceOfIntegers Include="4"/>
+      <SequenceOfIntegers Include="5"/>
+      <SequenceOfIntegers Include="6"/>
+      <SequenceOfIntegers Include="7"/>
+      <SequenceOfIntegers Include="8"/>
+      <SequenceOfIntegers Include="9"/>
+      <SequenceOfIntegers Include="10"/>
+      <SequenceOfIntegers Include="11"/>
+      <SequenceOfIntegers Include="12"/>
+      <SequenceOfIntegers Include="13"/>
+      <SequenceOfIntegers Include="14"/>
+      <SequenceOfIntegers Include="15"/>
+      <SequenceOfIntegers Include="16"/>
+      <SequenceOfIntegers Include="17"/>
+      <SequenceOfIntegers Include="18"/>
+      <SequenceOfIntegers Include="19"/>
+      <SequenceOfIntegers Include="20"/>
+      <SequenceOfIntegers Include="21"/>
+      <SequenceOfIntegers Include="22"/>
+      <SequenceOfIntegers Include="23"/>
+      <SequenceOfIntegers Include="24"/>
+      <SequenceOfIntegers Include="25"/>
+      <SequenceOfIntegers Include="26"/>
+      <SequenceOfIntegers Include="27"/>
+      <SequenceOfIntegers Include="28"/>
+      <SequenceOfIntegers Include="29"/>
+      <SequenceOfIntegers Include="20"/>
+      <SequenceOfIntegers Include="31"/>
+      <SequenceOfIntegers Include="32"/>
+      <SequenceOfIntegers Include="33"/>
+      <SequenceOfIntegers Include="34"/>
+      <SequenceOfIntegers Include="35"/>
+      <SequenceOfIntegers Include="36"/>
+      <SequenceOfIntegers Include="37"/>
+      <SequenceOfIntegers Include="38"/>
+      <SequenceOfIntegers Include="39"/>
+      <SequenceOfIntegers Include="40"/>
+      <SequenceOfIntegers Include="41"/>
+      <SequenceOfIntegers Include="42"/>
+      <SequenceOfIntegers Include="43"/>
+      <SequenceOfIntegers Include="44"/>
+      <SequenceOfIntegers Include="45"/>
+      <SequenceOfIntegers Include="46"/>
+      <SequenceOfIntegers Include="47"/>
+      <SequenceOfIntegers Include="48"/>
+      <SequenceOfIntegers Include="49"/>
+      <SequenceOfIntegers Include="50"/>
+      <SequenceOfIntegers Include="51"/>
+      <SequenceOfIntegers Include="52"/>
+      <SequenceOfIntegers Include="53"/>
+      <SequenceOfIntegers Include="54"/>
+      <SequenceOfIntegers Include="55"/>
+      <SequenceOfIntegers Include="56"/>
+      <SequenceOfIntegers Include="57"/>
+      <SequenceOfIntegers Include="58"/>
+      <SequenceOfIntegers Include="59"/>
+      <SequenceOfIntegers Include="60"/>
+      <SequenceOfIntegers Include="61"/>
+      <SequenceOfIntegers Include="62"/>
+      <SequenceOfIntegers Include="63"/>
+      <SequenceOfIntegers Include="64"/>
+      <SequenceOfIntegers Include="65"/>
+      <SequenceOfIntegers Include="66"/>
+      <SequenceOfIntegers Include="67"/>
+      <SequenceOfIntegers Include="68"/>
+      <SequenceOfIntegers Include="69"/>
+      <SequenceOfIntegers Include="70"/>
+      <SequenceOfIntegers Include="71"/>
+      <SequenceOfIntegers Include="72"/>
+      <SequenceOfIntegers Include="73"/>
+      <SequenceOfIntegers Include="74"/>
+      <SequenceOfIntegers Include="75"/>
+      <SequenceOfIntegers Include="76"/>
+      <SequenceOfIntegers Include="77"/>
+      <SequenceOfIntegers Include="78"/>
+      <SequenceOfIntegers Include="79"/>
+      <SequenceOfIntegers Include="80"/>
+      <SequenceOfIntegers Include="81"/>
+      <SequenceOfIntegers Include="82"/>
+      <SequenceOfIntegers Include="83"/>
+      <SequenceOfIntegers Include="84"/>
+      <SequenceOfIntegers Include="85"/>
+      <SequenceOfIntegers Include="86"/>
+      <SequenceOfIntegers Include="87"/>
+      <SequenceOfIntegers Include="88"/>
+      <SequenceOfIntegers Include="89"/>
+      <SequenceOfIntegers Include="90"/>
+      <SequenceOfIntegers Include="91"/>
+      <SequenceOfIntegers Include="92"/>
+      <SequenceOfIntegers Include="93"/>
+      <SequenceOfIntegers Include="94"/>
+      <SequenceOfIntegers Include="95"/>
+      <SequenceOfIntegers Include="96"/>
+      <SequenceOfIntegers Include="97"/>
+      <SequenceOfIntegers Include="98"/>
+      <SequenceOfIntegers Include="99"/>
+
+      <MarkerFileIntegerSequence Include="@(SequenceOfIntegers)" Condition="%(Identity)&lt;$(NumberOfStripesToUseInStress)" />
+      <MarkerFile Include="@(MarkerFileIntegerSequence->'$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly.%(Identity).$(NumberOfStripesToUseInStress).MergedTestAssemblyForStress')">
+        <Type>MergedStressTestAssembly</Type>
+      </MarkerFile>
+    </ItemGroup>
+    <Error Condition="'$(NumberOfStripesToUseInStress)' != '' and $(NumberOfStripesToUseInStress)&gt;99" Text="Attempt to split into too many stripes. Either reduce stripe count, or add more entries to SequenceOfIntegers" />
+
     <ItemGroup>
       <Content Include="$(AssemblyName).reflect.xml" Condition="Exists('$(AssemblyName).reflect.xml')" CopyToOutputDirectory="PreserveNewest" />
-      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
-      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'" />
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+        <Type>MergedTestAssembly</Type>
+      </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
+        <Type>NoMonoAot</Type>
+      </MarkerFile>
       <Content Include="@(MarkerFile)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
@@ -284,20 +408,12 @@
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
 
     <WriteLinesToFile
-        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
-        File="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly"
-        Lines="MergedTestAssembly"
+        Condition="'@(MarkerFile)' != ''"
+        File="%(Identity)"
+        Lines="%(Type)"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
 
-
-    <WriteLinesToFile
-        Condition="'$(MonoAotIncompatible)' == 'true'"
-        File="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot"
-        Lines="NoMonoAot"
-        Overwrite="true"
-        WriteOnlyWhenDifferent="true" />
-  
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
         Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
