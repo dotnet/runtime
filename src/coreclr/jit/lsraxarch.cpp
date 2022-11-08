@@ -2500,7 +2500,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         // Currently dstCount = 2 is only used for DivRem, which has special constriants and handled above
         assert((dstCount == 0) ||
-               (dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem)));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
     }
 
     *pDstCount = dstCount;
