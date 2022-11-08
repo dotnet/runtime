@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// The <see cref="JsonNumberHandling"/> option to apply to number collection elements.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public JsonNumberHandling NumberHandling { get; init; }
+        public JsonNumberHandling? NumberHandling { get; init; }
 
         /// <summary>
         /// An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.
