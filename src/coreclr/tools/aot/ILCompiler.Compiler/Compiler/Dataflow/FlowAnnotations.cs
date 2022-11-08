@@ -787,8 +787,8 @@ namespace ILLink.Shared.TrimAnalysis
                             DiagnosticUtilities.GetMethodSignatureDisplayName(parameter.Method.Method), DiagnosticUtilities.GetMethodSignatureDisplayName(baseParameter.Method.Method));
                     else
                         _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides,
-                            DiagnosticUtilities.GetParameterNameForErrorMessage(parameter.Method.Method, parameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(origin),
-                            DiagnosticUtilities.GetParameterNameForErrorMessage(baseParameter.Method.Method, baseParameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
+                            DiagnosticUtilities.GetParameterNameForErrorMessage(parameter.Method.Method, parameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(parameter.Method.Method),
+                            DiagnosticUtilities.GetParameterNameForErrorMessage(baseParameter.Method.Method, baseParameter.MetadataIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(baseParameter.Method.Method));
                     break;
                 case GenericParameterDesc genericParameterOverride:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
