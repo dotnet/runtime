@@ -20059,6 +20059,19 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
+                    ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                {
+                    assert(!varTypeIsFloating(simdBaseType));
+                    GenTree* op1Dup;
+                    op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
+
+                    return gtNewSimdCmpOpNode(GT_EQ, type, gtNewSimdMaxNode(type, op1, op2, simdBaseJitType, simdSize,
+                                                                            isSimdAsHWIntrinsic),
+                                              op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                }
+
                 // There is no direct support for doing a combined comparison and equality for integral types.
                 // These have to be implemented by performing both halves and combining their results.
                 //
@@ -20285,6 +20298,19 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
+                    ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                {
+                    assert(!varTypeIsFloating(simdBaseType));
+                    GenTree* op1Dup;
+                    op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
+
+                    return gtNewSimdCmpOpNode(GT_EQ, type, gtNewSimdMinNode(type, op1, op2, simdBaseJitType, simdSize,
+                                                                            isSimdAsHWIntrinsic),
+                                              op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                }
+
                 // There is no direct support for doing a combined comparison and equality for integral types.
                 // These have to be implemented by performing both halves and combining their results.
                 //
