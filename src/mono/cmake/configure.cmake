@@ -85,7 +85,7 @@ ac_check_funcs (
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
-if (HOST_LINUX OR HOST_BROWSER)
+if (HOST_LINUX OR HOST_BROWSER OR HOST_WASI)
   # sysctl is deprecated on Linux and doesn't work on Browser
   set(HAVE_SYS_SYSCTL_H 0)
 else ()
@@ -263,6 +263,8 @@ elseif(HOST_IOS)
 elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
 elseif(HOST_BROWSER)
+  set(HAVE_FORK 0)
+elseif(HOST_WASI)
   set(HAVE_FORK 0)
 elseif(HOST_SOLARIS)
   set(HAVE_GETPROTOBYNAME 1)

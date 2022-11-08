@@ -251,20 +251,16 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
-  add_definitions(-DGEN_PINVOKE)
+  # add_definitions(-DGEN_PINVOKE) TODOWASI
+  add_definitions(-DDISABLE_SOCKET_TRANSPORT)
+  add_definitions(-DDISABLE_EGD_SOCKET)
+  add_definitions(-DDISABLE_EVENTPIPE)
+  set(ENABLE_PERFTRACING 0)
+  add_compile_options(-Wl,--allow-undefined)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(STATIC_COMPONENTS 1)
-
-  set(WASI_DRIVER_SOURCES
-    wasi/mono-wasi-driver/driver.c
-    wasi/mono-wasi-driver/stubs.c
-    wasi/mono-wasi-driver/synthetic-pthread.c
-  )
-  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
-  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
-  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -336,6 +332,9 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
   set(TARGET_WASI 1)
+  if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-Os)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
@@ -358,7 +357,7 @@ if(NOT "${MSVC_C_ARCHITECTURE_ID}" STREQUAL "")
   set(CMAKE_SYSTEM_PROCESSOR "${MSVC_C_ARCHITECTURE_ID}")
 endif()
 
-if(HOST_BROWSER)
+if(HOST_BROWSER OR HOST_WASI)
   # CMAKE_SYSTEM_PROCESSOR is set to x86 by emscripten
   set(CMAKE_SYSTEM_PROCESSOR "wasm")
 endif()
@@ -744,6 +743,8 @@ elseif(GC_SUSPEND STREQUAL "default")
     # use preemptive
   elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
     # use preemptive
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Wasi")
+    # use preemptive
   else()
     set(ENABLE_HYBRID_SUSPEND 1)
   endif()
@@ -911,7 +912,7 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
   add_subdirectory(dlls/dbgshim)
 endif()
