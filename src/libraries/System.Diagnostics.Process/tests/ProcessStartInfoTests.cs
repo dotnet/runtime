@@ -1573,6 +1573,17 @@ namespace System.Diagnostics.Tests
                 Marshal.StructureToPtr(shareInfo, infoBuffer, false);
 
                 int shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
+                switch (shareResult)
+                {
+                    case 0:
+                        break;
+                    case 2118:
+                        NetShareDel(string.Empty, _shareName, 0);
+                        shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
+                        break;
+                    default:
+                        throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
+                }
 
                 if (shareResult != 0 && shareResult != 2118) // is a failure that is not a NERR_DuplicateShare
                 {
