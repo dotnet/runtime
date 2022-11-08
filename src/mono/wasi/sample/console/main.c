@@ -1,5 +1,5 @@
 #include <string.h>
-#include "../../mono-wasi-driver/driver.h"
+#include "../../runtime/driver.h"
 
 int main() {
     // Assume the runtime pack has been copied into the output directory as 'runtime'

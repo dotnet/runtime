@@ -33,7 +33,7 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
-#include "wasm/runtime/pinvoke.h"
+#include "pinvoke.h"
 
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
@@ -155,7 +155,7 @@ typedef struct
 } FileStatus;
 
 char* gai_strerror(int code) {
-    char result[256];
+    char* result = malloc(256);
     sprintf(result, "Error code %i", code);
     return result;
 }
@@ -278,6 +278,7 @@ int64_t SystemNative_GetTimestamp2() {
 		: 0;
 }
 
+// TODOWASI replace with native libs
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
 	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
@@ -780,7 +781,10 @@ void add_assembly(const char* base_dir, const char *name) {
     rewind(fileptr);
 
     buffer = (unsigned char *)malloc(filelen * sizeof(char));
-    fread(buffer, filelen, 1, fileptr);
+    if(!fread(buffer, filelen, 1, fileptr)) {
+        printf("Failed to load %s\n", filename);
+        fflush(stdout);
+    }
     fclose(fileptr);
 
     assert(mono_wasm_add_assembly(name, buffer, filelen));
