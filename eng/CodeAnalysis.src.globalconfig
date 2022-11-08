@@ -1485,7 +1485,7 @@ dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
-dotnet_diagnostic.IDE0060.severity = silent
+dotnet_diagnostic.IDE0060.severity = warning
 dotnet_code_quality_unused_parameters = non_public
 
 # IDE0061: Use expression body for local functions

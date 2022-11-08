@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void AddGenericVirtualMethodImplementation(NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod, DefaultInterfaceMethodResolution resolution)
+        private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod, DefaultInterfaceMethodResolution resolution)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
 
@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var typeGVMEntryInfo in interestingEntry.ScanForInterfaceGenericVirtualMethodEntries())
                 {
-                    AddGenericVirtualMethodImplementation(factory, typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationType, typeGVMEntryInfo.ImplementationMethod, typeGVMEntryInfo.DefaultResolution);
+                    AddGenericVirtualMethodImplementation(typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationType, typeGVMEntryInfo.ImplementationMethod, typeGVMEntryInfo.DefaultResolution);
                 }
             }
 

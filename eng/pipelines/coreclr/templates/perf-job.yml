@@ -55,7 +55,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
-    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
