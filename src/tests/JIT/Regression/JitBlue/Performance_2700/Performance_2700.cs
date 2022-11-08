@@ -12,6 +12,6 @@ public class Performance_2700
     public static int Main()
     {
         Vector<float> result = Vector.Multiply(Value1, Value2);
-        return (result == new Vector<float>(3.0f)) ? 100 : 0;
+        return (result == new Vector<float>(2.0f)) ? 100 : 0;
     }
 }
