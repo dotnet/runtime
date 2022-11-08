@@ -208,7 +208,12 @@ void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t off
 {
 #ifndef TARGET_OSX
     int fd = (int)(size_t)mapperHandle;
-    return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    void* result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    if (result == MAP_FAILED)
+    {
+        result = NULL;
+    }
+    return result;
 #else // TARGET_OSX
 #ifdef TARGET_AMD64
     vm_address_t startRW;
