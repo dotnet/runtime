@@ -175,7 +175,7 @@
         },
         {
           "labels": [
-            "area-tools-linker"
+            "area-Tools-ILLink"
           ],
           "mentionees": [
             "agocke",
@@ -2095,7 +2095,7 @@
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "area-tools-linker"
+                  "label": "area-Tools-ILLink"
                 }
               },
               {
