@@ -2712,6 +2712,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoQueryResult = E_FAIL;
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
+    fgPgoHaveWeights = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -2767,6 +2768,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (SUCCEEDED(fgPgoQueryResult))
         {
             assert(fgPgoSchema != nullptr);
+
+            for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
+            {
+                ICorJitInfo::PgoInstrumentationKind kind = fgPgoSchema[i].InstrumentationKind;
+                if (kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount)
+                {
+                    fgPgoHaveWeights = true;
+                    break;
+                }
+            }
         }
 
         // A failed result implies a NULL fgPgoSchema
@@ -6038,7 +6052,7 @@ void Compiler::compCompileFinish()
 
         printf("%08X | ", currentMethodToken);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             if (fgCalledCount < 1000)
             {
@@ -6491,7 +6505,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         InlineResult prejitResult(this, methodHnd, "prejit");
 
         // Profile data allows us to avoid early "too many IL bytes" outs.
-        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, fgHaveSufficientProfileWeights());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);

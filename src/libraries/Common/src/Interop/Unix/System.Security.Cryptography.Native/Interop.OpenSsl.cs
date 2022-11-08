@@ -134,7 +134,7 @@ internal static partial class Interop
                 }
             }
 
-            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy))
             {
                 if (!CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
@@ -662,6 +662,7 @@ internal static partial class Interop
             bindingHandle.SetCertHashLength(certHashLength);
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
         {
@@ -672,6 +673,7 @@ internal static partial class Interop
             const int OpenSslSuccess = 1;
             return OpenSslSuccess;
         }
+#pragma warning restore IDE0060
 
         [UnmanagedCallersOnly]
         private static unsafe int AlpnServerSelectCallback(IntPtr ssl, byte** outp, byte* outlen, byte* inp, uint inlen, IntPtr arg)
@@ -774,7 +776,7 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name, session);
+            ctxHandle.RemoveSession(name);
         }
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)

@@ -276,8 +276,8 @@ fi
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
-   <![CDATA[
+      <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
 # Build wasm app containing the test dll
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -292,7 +292,7 @@ export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
 $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
-      </BashCLRTestPreCommands>
+      </CLRTestBashPreCommands>
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' != 'arm64'">
     <![CDATA[
@@ -430,13 +430,8 @@ echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecuti
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
-
-      <BashCLRTestPostCommands><![CDATA[
-$(BashDisasmCheckPostCommands)
-$(CLRTestBashPostCommands)
-      ]]></BashCLRTestPostCommands>
-
     </PropertyGroup>
+
     <PropertyGroup>
       <BashEnvironmentVariables>
 @(CLRTestBashEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
@@ -548,11 +543,11 @@ ExePath=$(InputAssemblyName)
 export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
 $(BashEnvironmentVariables)
 # PreCommands
-$(BashCLRTestPreCommands)
+$(CLRTestBashPreCommands)
 # Launch
 $(BashCLRTestLaunchCmds)
 # PostCommands
-$(BashCLRTestPostCommands)
+$(CLRTestBashPostCommands)
 $(BashCLRTestExitCodeCheck)
       ]]>
       </_CLRTestExecutionScriptText>

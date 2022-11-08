@@ -39,6 +39,18 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 #endif
 }
 
+int32_t SystemNative_SetWindowSize(WinSize* windowSize)
+{
+    assert(windowSize != NULL);
+
+#if HAVE_IOCTL && HAVE_TIOCSWINSZ
+    return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
@@ -149,7 +161,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool distinguishNewLines)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
 {
     if (!g_hasTty)
     {
@@ -168,15 +180,7 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (!forChild)
     {
-        if (distinguishNewLines)
-        {
-            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
-        }
-        else
-        {
-            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
-        }
-
+        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
@@ -220,13 +224,13 @@ void UninitializeTerminal(void)
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(int32_t distinguishNewLines, uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, distinguishNewLines);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -264,7 +268,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
         // Avoid configuring the terminal: only change terminal settings when our process has changed them.
         if (g_terminalConfigured)
         {
-            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* distinguishNewLines */ false);
+            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
         }
 
         // Redo "Application mode" when there are no more children using the terminal.
@@ -372,9 +376,9 @@ void SystemNative_GetControlCharacters(
     }
 }
 
-int32_t SystemNative_StdinReady(int32_t distinguishNewLines)
+int32_t SystemNative_StdinReady(void)
 {
-    SystemNative_InitializeConsoleBeforeRead(distinguishNewLines, /* minChars */ 1, /* decisecondsTimeout */ 0);
+    SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -402,7 +406,7 @@ int32_t SystemNative_GetSignalForBreak(void)
     return g_signalForBreak;
 }
 
-int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distinguishNewLines)
+int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
@@ -410,7 +414,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distingui
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, distinguishNewLines))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

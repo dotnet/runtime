@@ -651,12 +651,12 @@ namespace System.IO
 
 #pragma warning disable IDE0060
         internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
-#pragma warning restore IDE0060
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path);
         }
+#pragma warning restore IDE0060
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {

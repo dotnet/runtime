@@ -4966,8 +4966,12 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                     // Avoid redundant bitcasts for the common case of a full definition.
                     fieldStoreType = fieldVarDsc->TypeGet();
                 }
+
+                // Calculate offset of this field's value, relative to the entire one.
+                ssize_t      fieldOffset      = fieldVarDsc->lvFldOffset;
+                ssize_t      fieldValueOffset = (fieldOffset < offset) ? 0 : (fieldOffset - offset);
                 ValueNumPair fieldStoreValue =
-                    vnStore->VNPairForLoad(value, storeSize, fieldStoreType, offset, fieldStoreSize);
+                    vnStore->VNPairForLoad(value, storeSize, fieldStoreType, fieldValueOffset, fieldStoreSize);
 
                 processDef(fieldLclNum, lclDefNode->GetSsaNum(this, index), fieldStoreOffset, fieldStoreSize,
                            fieldStoreValue);
@@ -8502,11 +8506,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             }
 
             rhsVNPair.SetBoth(initObjVN);
-        }
-        else if (lhs->OperIs(GT_LCL_VAR) && lhsVarDsc->CanBeReplacedWithItsField(this))
-        {
-            // TODO-CQ: remove this zero-diff quirk.
-            rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(lhsVarDsc->lvFieldLclStart)->TypeGet()));
         }
         else
         {

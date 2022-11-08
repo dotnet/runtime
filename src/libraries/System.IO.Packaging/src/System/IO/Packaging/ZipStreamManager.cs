@@ -22,7 +22,7 @@ namespace System.IO.Packaging
             _packageFileAccess = packageFileAccess;
         }
 
-        public Stream Open(ZipArchiveEntry zipArchiveEntry, FileMode streamFileMode, FileAccess streamFileAccess)
+        public Stream Open(ZipArchiveEntry zipArchiveEntry, FileAccess streamFileAccess)
         {
             bool canRead = true;
             bool canWrite = true;

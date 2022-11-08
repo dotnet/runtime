@@ -303,8 +303,8 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
 
-            CheckRequiredAttribute(compiler, namespace1, "stylesheet-prefix");
-            CheckRequiredAttribute(compiler, namespace2, "result-prefix");
+            CheckRequiredAttribute(namespace1, "stylesheet-prefix");
+            CheckRequiredAttribute(namespace2, "result-prefix");
             CheckEmpty(compiler);
 
             //String[] resultarray = { prefix2, namespace2 };
@@ -353,9 +353,9 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
 
-            CheckRequiredAttribute(compiler, MatchKey != Compiler.InvalidQueryKey, "match");
-            CheckRequiredAttribute(compiler, UseKey != Compiler.InvalidQueryKey, "use");
-            CheckRequiredAttribute(compiler, Name != null, "name");
+            CheckRequiredAttribute(MatchKey != Compiler.InvalidQueryKey, "match");
+            CheckRequiredAttribute(UseKey != Compiler.InvalidQueryKey, "use");
+            CheckRequiredAttribute(Name != null, "name");
             // It is a breaking change to check for emptiness, SQLBUDT 324364
             //CheckEmpty(compiler);
 
@@ -944,7 +944,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 throw XsltException.Create(SR.Xslt_ScriptEmpty);
             }
-            compiler.AddScript(input.Value, lang, implementsNamespace, input.BaseURI, input.LineNumber);
+            compiler.AddScript(lang, implementsNamespace);
             input.ToParent();
         }
 

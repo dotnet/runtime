@@ -8,9 +8,7 @@
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
-             Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"
-             Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
@@ -38,43 +36,28 @@
     <Compile Include="IndexOfTests.cs" />
     <Compile Include="SimpleElementImmutablesTestBase.cs" />
     <Compile Include="TestExtensionsMethods.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
-             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
-             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <!-- Frozen Collections Tests -->
+    <Compile Include="Frozen\FrozenSetTests.cs" />
+    <Compile Include="Frozen\FrozenDictionaryTest.cs" />
     <!-- Common Collections tests -->
-    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
-             Link="Common\System\Collections\CollectionAsserts.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\DelegateEqualityComparer.cs"
-             Link="Common\System\Collections\DelegateEqualityComparer.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs"
-             Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.Generic.Tests.cs"
-             Link="Common\System\Collections\IDictionary.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs"
-             Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs"
-             Link="Common\System\Collections\IList.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IGenericSharedAPI.Tests.cs"
-             Link="Common\System\Collections\IGenericSharedAPI.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\ISet.Generic.Tests.cs"
-             Link="Common\System\Collections\ISet.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
-             Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs"
-             Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs"
-             Link="Common\System\Collections\DebugView.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
-             Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DelegateEqualityComparer.cs" Link="Common\System\Collections\DelegateEqualityComparer.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs" Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.Generic.Tests.cs" Link="Common\System\Collections\IDictionary.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs" Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs" Link="Common\System\Collections\IList.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IGenericSharedAPI.Tests.cs" Link="Common\System\Collections\IGenericSharedAPI.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ISet.Generic.Tests.cs" Link="Common\System\Collections\ISet.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs" Link="Common\System\Collections\DebugView.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs" Link="Common\System\Collections\TestingTypes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />

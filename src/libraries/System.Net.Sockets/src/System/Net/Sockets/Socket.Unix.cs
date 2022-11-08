@@ -176,7 +176,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-#pragma warning disable CA1822
+#pragma warning disable IDE0060, CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
             if (acceptSocket != null)
@@ -195,7 +195,7 @@ namespace System.Net.Sockets
             handle = null;
             return acceptSocket;
         }
-#pragma warning restore CA1822
+#pragma warning restore IDE0060, CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {

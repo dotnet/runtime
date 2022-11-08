@@ -26,9 +26,9 @@ internal sealed class JSEngineHost
     }
 
     public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
-                                              ILoggerFactory loggerFactory,
+                                              ILoggerFactory _,
                                               ILogger logger,
-                                              CancellationToken token)
+                                              CancellationToken _1)
     {
         var args = new JSEngineArguments(commonArgs);
         args.Validate();

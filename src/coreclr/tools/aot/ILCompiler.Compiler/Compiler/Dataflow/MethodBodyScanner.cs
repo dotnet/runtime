@@ -510,7 +510,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldloc_s:
                     case ILOpcode.ldloca:
                     case ILOpcode.ldloca_s:
-                        ScanLdloc(methodBody, offset, opcode, opcode switch
+                        ScanLdloc(opcode, opcode switch
                         {
                             ILOpcode.ldloc => reader.ReadILUInt16(),
                             ILOpcode.ldloca => reader.ReadILUInt16(),
@@ -530,7 +530,7 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldtoken:
                         object obj = methodBody.GetObject(reader.ReadILToken());
-                        ScanLdtoken(methodBody, obj, currentStack);
+                        ScanLdtoken(obj, currentStack);
                         break;
 
                     case ILOpcode.ldind_i:
@@ -894,8 +894,6 @@ namespace ILCompiler.Dataflow
         }
 
         private static void ScanLdloc(
-            MethodIL methodBody,
-            int offset,
             ILOpcode operation,
             int index,
             Stack<StackSlot> currentStack,
@@ -916,7 +914,7 @@ namespace ILCompiler.Dataflow
             currentStack.Push(newSlot);
         }
 
-        private static void ScanLdtoken(MethodIL methodBody, object operand, Stack<StackSlot> currentStack)
+        private static void ScanLdtoken(object operand, Stack<StackSlot> currentStack)
         {
             if (operand is TypeDesc type)
             {

@@ -6636,7 +6636,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
             //
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, compiler->fgHaveSufficientProfileData());
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS,
+                                   compiler->fgHaveSufficientProfileWeights());
 
             bool const forceInline = (pParam->methAttr & CORINFO_FLG_FORCEINLINE) != 0;
 

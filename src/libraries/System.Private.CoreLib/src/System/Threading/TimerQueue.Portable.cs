@@ -73,7 +73,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// This method is executed on a dedicated a timer thread. Its purpose is
+        /// This method is executed on a dedicated timer thread. Its purpose is
         /// to handle timer requests and notify the TimerQueue when a timer expires.
         /// </summary>
         private static void TimerThread()
