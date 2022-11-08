@@ -1352,7 +1352,9 @@ namespace System.Diagnostics.Tests
             Assert.False(string.IsNullOrWhiteSpace(testFilePath), $"Path to test file should not be empty: {testFilePath}");
 
             string testFilePathRoot = Path.GetPathRoot(testFilePath);
-            string testFileUncPath = $"\\\\{Environment.MachineName}\\{testFilePath.Substring(0, testFilePathRoot.IndexOf(":"))}$\\{testFilePath.Replace(testFilePathRoot, "")}";
+            const string ShareName = "testForDotNet";
+            using TestFileShare fileShare = new TestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
+            string testFileUncPath = $"\\\\localhost\\{ShareName}\\{Path.GetFileName(testFilePath)}";
             string testFileContent = Guid.NewGuid().ToString();
             File.WriteAllText(testFilePath, testFileContent);
 
@@ -1537,6 +1539,93 @@ namespace System.Diagnostics.Tests
                 Dispose(disposing: true);
                 GC.SuppressFinalize(this);
             }
+        }
+    }
+
+    public partial class TestFileShare : IDisposable
+    {
+        private readonly string _shareName;
+
+        private readonly string _path;
+
+        private bool _disposedValue;
+
+        public TestFileShare(string shareName, string path)
+        {
+            _shareName = shareName;
+            _path = path;
+            Initialize();
+        }
+
+        private void Initialize()
+        {
+            SHARE_INFO_502 shareInfo = default;
+            shareInfo.shi502_netname = _shareName;
+            shareInfo.shi502_path = _path;
+            shareInfo.shi502_remark = "folder created to test UNC file paths";
+            shareInfo.shi502_max_uses = -1;
+
+            int infoSize = Marshal.SizeOf(shareInfo);
+            IntPtr infoBuffer = Marshal.AllocCoTaskMem(infoSize);
+
+            try
+            {
+                Marshal.StructureToPtr(shareInfo, infoBuffer, false);
+
+                int shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
+
+                if (shareResult != 0 && shareResult != 2118) // is a failure that is not a NERR_DuplicateShare
+                {
+                    throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
+                }
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(infoBuffer);
+            }
+        }
+
+        [LibraryImport(Interop.Libraries.Netapi32)]
+        private static partial int NetShareAdd([MarshalAs(UnmanagedType.LPWStr)] string servername, int level, IntPtr buf, IntPtr parm_err);
+
+        [LibraryImport(Interop.Libraries.Netapi32)]
+        private static partial int NetShareDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string netname, int reserved);
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    NetShareDel(string.Empty, _shareName, 0);
+                }
+
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct SHARE_INFO_502
+        {
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_netname;
+            public uint shi502_type;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_remark;
+            public int shi502_permissions;
+            public int shi502_max_uses;
+            public int shi502_current_uses;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_path;
+            public IntPtr shi502_passwd;
+            public int shi502_reserved;
+            public IntPtr shi502_security_descriptor;
         }
     }
 }
