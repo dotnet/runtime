@@ -99,7 +99,10 @@ if(NOT HOST_DARWIN)
   ac_check_funcs (getentropy)
 endif()
 
-find_package(Threads)
+if(NOT HOST_WASI)
+  # TODOWASI
+  find_package(Threads)
+endif()
 # Needed to find pthread_ symbols
 set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
 

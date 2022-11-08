@@ -31,7 +31,7 @@ set_target_properties(dotnet PROPERTIES
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-link.rsp ${CONFIGURATION_LINK_FLAGS} "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
-set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")  
+set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}${CMAKE_CXX_FLAGS}")  
 
 #TODOWASI wasm-opt
 
