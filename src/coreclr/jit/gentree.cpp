@@ -20070,10 +20070,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                         GenTree* op1Dup;
                         op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
-
-                        GenTreeHWIntrinsic* maxNode =
-                            gtNewSimdHWIntrinsicNode(type, op1, op2, simdSize == 16 ? NI_SSE41_Max : NI_AVX2_Max,
-                                                     simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        GenTree* maxNode =
+                            gtNewSimdMaxNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                         return gtNewSimdCmpOpNode(GT_EQ, type, maxNode, op1Dup, simdBaseJitType, simdSize,
                                                   isSimdAsHWIntrinsic);
                     }
@@ -20317,10 +20315,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                         op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
 
-                        GenTreeHWIntrinsic* minNode =
-                            gtNewSimdHWIntrinsicNode(type, op1, op2, simdSize == 16 ? NI_SSE41_Min : NI_AVX2_Min,
-                                                     simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-
+                        GenTree* minNode =
+                            gtNewSimdMinNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                         return gtNewSimdCmpOpNode(GT_EQ, type, minNode, op1Dup, simdBaseJitType, simdSize,
                                                   isSimdAsHWIntrinsic);
                     }
@@ -21159,6 +21155,12 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
             case TYP_BYTE:
             case TYP_USHORT:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Max;
+                    break;
+                }
+
                 GenTree*    constVal  = nullptr;
                 CorInfoType opJitType = simdBaseJitType;
                 var_types   opType    = simdBaseType;
@@ -21233,6 +21235,15 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
 
             case TYP_INT:
             case TYP_UINT:
+            {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Max;
+                    break;
+                }
+                break;
+            }
+
             case TYP_LONG:
             case TYP_ULONG:
             {
@@ -21343,6 +21354,12 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
             case TYP_BYTE:
             case TYP_USHORT:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Min;
+                    break;
+                }
+
                 GenTree*    constVal  = nullptr;
                 CorInfoType opJitType = simdBaseJitType;
                 var_types   opType    = simdBaseType;
@@ -21417,6 +21434,15 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
 
             case TYP_INT:
             case TYP_UINT:
+            {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Min;
+                    break;
+                }
+                break;
+            }
+
             case TYP_LONG:
             case TYP_ULONG:
             {
