@@ -7581,18 +7581,9 @@ PhaseStatus Compiler::fgValueNumber()
             // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
             // these are variables that are read before being initialized (at least on some control flow paths)
             // if they are not must-init, then they get VNF_InitVal(i), as with the param case.)
-
-            bool isZeroed = (info.compInitMem || varDsc->lvMustInit);
-
-            // For OSR, locals or promoted fields of locals may be missing the initial def
-            // because of partial importation. We can't assume they are zero.
-            if (lvaIsOSRLocal(lclNum))
-            {
-                isZeroed = false;
-            }
-
-            ValueNum  initVal = ValueNumStore::NoVN; // We must assign a new value to initVal
-            var_types typ     = varDsc->TypeGet();
+            bool      isZeroed = !fgVarNeedsExplicitZeroInit(lclNum, /* bbInALoop */ false, /* bbIsReturn */ false);
+            ValueNum  initVal  = ValueNumStore::NoVN; // We must assign a new value to initVal
+            var_types typ      = varDsc->TypeGet();
 
             switch (typ)
             {
