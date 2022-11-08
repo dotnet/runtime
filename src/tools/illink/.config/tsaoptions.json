@@ -2,7 +2,7 @@
     "instanceUrl": "https://devdiv.visualstudio.com/",
     "template": "TFSDEVDIV",
     "projectName": "DEVDIV",
-    "areaPath": "DevDiv\\mono",
+    "areaPath": "DevDiv\\NET Runtime\\Managed Linker",
     "iterationPath": "DevDiv",
     "notificationAliases": [ "runtimerepo-infra@microsoft.com" ],
     "repositoryName": "linker",
