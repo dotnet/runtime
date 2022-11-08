@@ -57,6 +57,8 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
+            Span<byte> localBuffer = stackalloc byte[64];
+
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
@@ -85,11 +87,11 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
-                    scoped Span<byte> alpnBuffer = bufferLength <= 64 ? stackalloc byte[bufferLength] : new byte[bufferLength];
+                    int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
+                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
+                    Span<byte> alpnBuffer = bufferLength <= localBuffer.Length ? localBuffer : new byte[bufferLength];
 
-                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
+                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
                 }
             }
@@ -119,6 +121,8 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
+            Span<byte> localBuffer = stackalloc byte[64];
+
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
@@ -146,11 +150,11 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    int protocolLenngth = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLenngth;
-                    scoped Span<byte> alpnBuffer = bufferLength <= 64 ? stackalloc byte[bufferLength] : new byte[bufferLength];
+                    int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
+                    int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
+                    Span<byte> alpnBuffer = localBuffer.Length <= 64 ? localBuffer : new byte[bufferLength];
 
-                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLenngth);
+                    Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(alpnBuffer, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
                 }
             }
