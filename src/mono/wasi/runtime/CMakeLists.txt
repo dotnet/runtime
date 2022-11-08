@@ -22,8 +22,9 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-ilgen.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
-    ${NATIVE_BIN_DIR}/libSystem.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
+#TODOWASI    ${NATIVE_BIN_DIR}/libSystem.Native.a
+#TODOWASI    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+)
 
 set_target_properties(dotnet PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/wasi-default.rsp;"
