@@ -59,7 +59,7 @@ The heuristics will discover types and members that satisfy _all_ of the followi
 
 - The type or member is attributed with a serializer-specific attribute.
 
-  See the sections below about the attributes you can use for each serializer. The attribute must be present on the root type or member, including fields/properties/methods/events, public or private, though the serializers may not define attributes that can be placed on all member kinds.   
+  See the sections below about the attributes you can use for each serializer. The attribute must be present on the root type or member, including fields/properties/methods/events, public or private, though the serializers may not define attributes that can be placed on all member kinds.
 
 Note that passing a type directly to a serializer constructor is _not_ enough to keep it. We do not use dataflow to discover types. For example:
 
