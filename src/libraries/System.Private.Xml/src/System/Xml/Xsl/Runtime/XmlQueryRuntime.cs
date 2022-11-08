@@ -1069,13 +1069,6 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static int OnCurrentNodeChanged(XPathNavigator currentNode)
         {
-            IXmlLineInfo? lineInfo = currentNode as IXmlLineInfo;
-
-            // In case of a namespace node, check whether it is inherited or locally defined
-            if (lineInfo != null && !(currentNode.NodeType == XPathNodeType.Namespace && IsInheritedNamespace(currentNode)))
-            {
-                OnCurrentNodeChanged2(currentNode.BaseURI, lineInfo.LineNumber, lineInfo.LinePosition);
-            }
             return 0;
         }
 
@@ -1099,8 +1092,5 @@ namespace System.Xml.Xsl.Runtime
             }
             return true;
         }
-
-
-        private static void OnCurrentNodeChanged2(string baseUri, int lineNumber, int linePosition) { }
     }
 }

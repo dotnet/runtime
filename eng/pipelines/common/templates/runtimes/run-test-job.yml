@@ -212,7 +212,7 @@ jobs:
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
       - name: timeoutPerTestInMinutes
         value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
       - name: timeoutPerTestInMinutes
@@ -268,7 +268,7 @@ jobs:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -525,6 +525,9 @@ jobs:
           - jitstress_isas_2_x86_nosse41
           - jitstress_isas_2_x86_nosse42
           - jitstress_isas_2_x86_nossse3
+        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
+          scenarios:
+          - jitstress_isas_avx512_forceevex
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx

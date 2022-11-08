@@ -72,8 +72,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
             scoped ref ReadStack state,
-            ref Utf8JsonReader reader,
-            JsonSerializerOptions options)
+            ref Utf8JsonReader reader)
         {
             ReadOnlySpan<byte> unescapedPropertyName;
             ReadOnlySpan<byte> propertyName = reader.GetSpan();
