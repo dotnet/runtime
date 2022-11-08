@@ -70,9 +70,6 @@ elif [[ "$__TargetOS" == Wasi ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_OS=Wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"
     echo !!!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!!!!
     exit 0
-elif [[ "$__TargetArch" == wasm ]]; then
-    echo !!!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!!!! unexpected4
-    exit 1
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
