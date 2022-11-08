@@ -84,6 +84,14 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22524.1">
+      <Uri>https://github.com/dotnet/cecil</Uri>
+      <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22524.1">
+      <Uri>https://github.com/dotnet/cecil</Uri>
+      <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.22554.2">
