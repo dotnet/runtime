@@ -59,7 +59,9 @@
     <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsMacCatalyst)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
+    <!-- TODOWASI
     <MonoAOTEnableLLVM Condition="'$(TargetsWasi)' == 'true'">true</MonoAOTEnableLLVM>
+    -->
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">true</_MonoUseLLVMPackage>
     <_MonoUseAOTLLVMPackage Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">true</_MonoUseAOTLLVMPackage>

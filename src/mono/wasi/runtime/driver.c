@@ -278,6 +278,7 @@ int64_t SystemNative_GetTimestamp2() {
 		: 0;
 }
 
+// TODOWASI replace with native libs
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
 	{"SystemNative_GetEnviron", SystemNative_GetEnviron },

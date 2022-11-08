@@ -151,6 +151,12 @@ initDistroRidGlobal()
         if [ "$targetOs" = "Browser" ]; then
             __DistroRid=browser-wasm
             export __DistroRid
+        elif [ "$targetOs" = "Wasi" ]; then
+            __DistroRid=wasi-wasm
+            export __DistroRid
+        else
+            echo "!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!! unexpected3"
+            exit 1
         fi
     fi
 

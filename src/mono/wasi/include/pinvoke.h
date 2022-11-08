@@ -1,3 +1,5 @@
+// TODOWASI deduplicate src/mono/wasm/runtime/pinvoke.h
+
 #ifndef __PINVOKE_H__
 #define __PINVOKE_H__
 

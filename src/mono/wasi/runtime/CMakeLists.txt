@@ -34,4 +34,4 @@ set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
 
 #TODOWASI wasm-opt
 
-configure_file(wasm-config.h.in include/wasm/wasm-config.h)
+configure_file(../include/wasm-config.h.in include/wasm/wasm-config.h)

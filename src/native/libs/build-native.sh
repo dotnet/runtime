@@ -49,6 +49,7 @@ if [[ "$__TargetOS" == Browser ]]; then
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
 
+    echo !!!!!!!!!!!!!!!!! browser-wasm !!!!!!!!!!!!!!!!!
     export CLR_CC=$(which emcc)
 elif [[ "$__TargetOS" == Wasi ]]; then
     export CLR_CC="$__RepoRootDir"/src/mono/wasi/wasi-sdk/bin/clang
@@ -56,6 +57,9 @@ elif [[ "$__TargetOS" == Wasi ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_OS=Wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$__RepoRootDir/src/mono/wasi/wasi-sdk/ -DCMAKE_TOOLCHAIN_FILE=$__RepoRootDir/src/mono/wasi/wasi-sdk/share/cmake/wasi-sdk.cmake"
     echo !!!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!!!!
     exit 0
+elif [[ "$__TargetArch" == wasm ]]; then
+    echo !!!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!!!! unexpected4
+    exit 1
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true

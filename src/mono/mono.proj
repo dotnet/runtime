@@ -42,6 +42,9 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsOSX)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <!-- TODOWASI
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsWasi)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    -->
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
@@ -385,17 +388,26 @@
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
-    <!-- TODO WASI?
-      -I$(WASI_OBJ_DIR)/mono/eglib 
-      -I$(WASI_OBJ_DIR) 
-      -I$(TOP)/artifacts/obj/wasm
-      -I$(TOP)/src/mono/wasm/runtime" \
-     -->
     </ItemGroup>
+    <!-- WASI specific options -->
+    <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+      <!-- TODOWASI use $(CrossToolchainFile) and eng/common/cross/toolchain.cmake ? 
+      <_MonoCMakeArgs Include="$(EscapedQuoteW)-DWASI_SDK_PREFIX=$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))$(EscapedQuoteW)" />
+      <_MonoCMakeArgs Include="$(EscapedQuoteW)-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share', 'cmake', 'wasi-sdk.cmake'))$(EscapedQuoteW)" />
+      <_MonoCMakeArgs Include="$(EscapedQuoteW)-DCMAKE_SYSROOT=$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share', 'wasi-sysroot'))$(EscapedQuoteW)" />
+      <_MonoCMakeArgs Include="-DCMAKE_CXX_FLAGS=$(EscapedQuoteW) - -sysroot=$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share', 'wasi-sysroot'))$(EscapedQuoteW)" />
+      -->
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=wasm" />
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
+      <!-- TODOWASI wasi-wasm nuget instead of browser-wasm -->
+      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
+    </ItemGroup>
+
+
     <!-- iOS/tvOS specific options -->
     <PropertyGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCCOption>CC="$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"</_MonoCCOption>
