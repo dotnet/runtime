@@ -1263,7 +1263,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 NamedIntrinsic moveMaskIntrinsic = NI_Illegal;
                 NamedIntrinsic shuffleIntrinsic  = NI_Illegal;
-                NamedIntrinsic createIntrinsic   = NI_Illegal;
 
                 switch (simdBaseType)
                 {
@@ -1278,55 +1277,31 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     case TYP_SHORT:
                     case TYP_USHORT:
                     {
-                        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+                        simd32_t simd32Val = {};
 
                         assert((simdSize == 16) || (simdSize == 32));
-                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), simdSize);
+                        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
                         // We want to tightly pack the most significant byte of each short/ushort
                         // and then zero the tightly packed least significant bytes
+                        //
+                        // The most significant bit being set means zero the value
 
-                        nodeBuilder.AddOperand(0x00, gtNewIconNode(0x01));
-                        nodeBuilder.AddOperand(0x01, gtNewIconNode(0x03));
-                        nodeBuilder.AddOperand(0x02, gtNewIconNode(0x05));
-                        nodeBuilder.AddOperand(0x03, gtNewIconNode(0x07));
-                        nodeBuilder.AddOperand(0x04, gtNewIconNode(0x09));
-                        nodeBuilder.AddOperand(0x05, gtNewIconNode(0x0B));
-                        nodeBuilder.AddOperand(0x06, gtNewIconNode(0x0D));
-                        nodeBuilder.AddOperand(0x07, gtNewIconNode(0x0F));
-
-                        for (unsigned i = 0x08; i < 0x10; i++)
-                        {
-                            // The most significant bit being set means zero the value
-                            nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
-                        }
+                        simd32Val.u64[0] = 0x0F0D0B09'07050301;
+                        simd32Val.u64[1] = 0x80808080'80808080;
 
                         if (simdSize == 32)
                         {
                             // Vector256 works on 2x128-bit lanes, so repeat the same indices for the upper lane
 
-                            nodeBuilder.AddOperand(0x10, gtNewIconNode(0x01));
-                            nodeBuilder.AddOperand(0x11, gtNewIconNode(0x03));
-                            nodeBuilder.AddOperand(0x12, gtNewIconNode(0x05));
-                            nodeBuilder.AddOperand(0x13, gtNewIconNode(0x07));
-                            nodeBuilder.AddOperand(0x14, gtNewIconNode(0x09));
-                            nodeBuilder.AddOperand(0x15, gtNewIconNode(0x0B));
-                            nodeBuilder.AddOperand(0x16, gtNewIconNode(0x0D));
-                            nodeBuilder.AddOperand(0x17, gtNewIconNode(0x0F));
+                            simd32Val.u64[2] = 0x0F0D0B09'07050301;
+                            simd32Val.u64[3] = 0x80808080'80808080;
 
-                            for (unsigned i = 0x18; i < 0x20; i++)
-                            {
-                                // The most significant bit being set means zero the value
-                                nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
-                            }
-
-                            createIntrinsic   = NI_Vector256_Create;
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
                             moveMaskIntrinsic = NI_AVX2_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
-                            createIntrinsic   = NI_Vector128_Create;
                             shuffleIntrinsic  = NI_SSSE3_Shuffle;
                             moveMaskIntrinsic = NI_SSE2_MoveMask;
                         }
@@ -1335,8 +1310,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             return nullptr;
                         }
 
-                        op2 = gtNewSimdHWIntrinsicNode(simdType, std::move(nodeBuilder), createIntrinsic,
-                                                       simdBaseJitType, simdSize);
+                        op2 = gtNewVconNode(simdType);
+                        op2->AsVecCon()->gtSimd32Val = simd32Val;
 
                         op1 = impSIMDPopStack(simdType);
                         op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, shuffleIntrinsic, simdBaseJitType, simdSize);

@@ -897,23 +897,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack(simdType);
 
-            GenTree*    vectorCreateOp1  = nullptr;
-            GenTree*    vectorCreateOp2  = nullptr;
-            CorInfoType vectorCreateType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+            GenTreeVecCon* vecCon2 = gtNewVconNode(retType);
+            GenTreeVecCon* vecCon3 = gtNewVconNode(retType);
 
             switch (simdBaseType)
             {
                 case TYP_BYTE:
                 case TYP_UBYTE:
                 {
-                    op2             = gtNewIconNode(0x80);
                     simdBaseType    = TYP_UBYTE;
                     simdBaseJitType = CORINFO_TYPE_UBYTE;
-                    vectorCreateOp1 = gtNewLconNode(0x00FFFEFDFCFBFAF9);
+
+                    vecCon2->gtSimd16Val.u64[0] = 0x80808080'80808080;
+                    vecCon3->gtSimd16Val.u64[0] = 0x00FFFEFD'FCFBFAF9;
 
                     if (simdSize == 16)
                     {
-                        vectorCreateOp2 = gtNewLconNode(0x00FFFEFDFCFBFAF9);
+                        vecCon2->gtSimd16Val.u64[1] = 0x80808080'80808080;
+                        vecCon3->gtSimd16Val.u64[1] = 0x00FFFEFD'FCFBFAF9;
                     }
                     break;
                 }
@@ -921,12 +922,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SHORT:
                 case TYP_USHORT:
                 {
-                    op2             = gtNewIconNode(0x8000);
-                    vectorCreateOp1 = gtNewLconNode(0xFFF4FFF3FFF2FFF1);
+                    simdBaseType    = TYP_USHORT;
+                    simdBaseJitType = CORINFO_TYPE_USHORT;
+
+                    vecCon2->gtSimd16Val.u64[0] = 0x80008000'80008000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFF4FFF3'FFF2FFF1;
 
                     if (simdSize == 16)
                     {
-                        vectorCreateOp2 = gtNewLconNode(0xFFF8FFF7FFF6FFF5);
+                        vecCon2->gtSimd16Val.u64[1] = 0x80008000'80008000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFF8FFF7'FFF6FFF5;
                     }
                     break;
                 }
@@ -935,14 +940,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UINT:
                 case TYP_FLOAT:
                 {
-                    op2             = gtNewIconNode(0x80000000);
                     simdBaseType    = TYP_INT;
                     simdBaseJitType = CORINFO_TYPE_INT;
-                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFE2FFFFFFE1);
+
+                    vecCon2->gtSimd16Val.u64[0] = 0x80000000'80000000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFE2'FFFFFFE1;
 
                     if (simdSize == 16)
                     {
-                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFE4FFFFFFE3);
+                        vecCon2->gtSimd16Val.u64[1] = 0x80000000'80000000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFE4'FFFFFFE3;
                     }
                     break;
                 }
@@ -951,14 +958,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_ULONG:
                 case TYP_DOUBLE:
                 {
-                    op2             = gtNewLconNode(0x8000000000000000);
                     simdBaseType    = TYP_LONG;
                     simdBaseJitType = CORINFO_TYPE_LONG;
-                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFFFFFFFFFC1);
+
+                    vecCon2->gtSimd16Val.u64[0] = 0x80000000'00000000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFFF'FFFFFFC1;
 
                     if (simdSize == 16)
                     {
-                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFFFFFFFFFC2);
+                        vecCon2->gtSimd16Val.u64[1] = 0x80000000'00000000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFFF'FFFFFFC2;
                     }
                     break;
                 }
@@ -969,20 +978,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            if (simdSize == 16)
-            {
-                op3 = gtNewSimdHWIntrinsicNode(simdType, vectorCreateOp1, vectorCreateOp2, NI_Vector128_Create,
-                                               vectorCreateType, simdSize);
-            }
-            else
-            {
-                op3 =
-                    gtNewSimdHWIntrinsicNode(simdType, vectorCreateOp1, NI_Vector64_Create, vectorCreateType, simdSize);
-            }
-
-            op2 =
-                gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
-
+            op3 = vecCon3;
+            op2 = vecCon2;
             op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_And, simdBaseJitType, simdSize,
                                            /* isSimdAsHWIntrinsic */ false);
 
