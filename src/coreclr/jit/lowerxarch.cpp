@@ -1756,12 +1756,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 case TYP_UBYTE:
                 {
                     // Types need to be explicitly zero-extended to ensure upper-bits are zero
-					//
+                    //
                     // We need to explicitly use TYP_UBYTE since unsigned is ignored for small types
                     // Explicitly handle both BYTE and UBYTE to account for reinterpret casts and the like
-					//
-					// The from type is INT since that is the input type tracked by IR, where-as the target
-					// type needs to be UBYTE so it implicitly zero-extends back to TYP_INT
+                    //
+                    // The from type is INT since that is the input type tracked by IR, where-as the target
+                    // type needs to be UBYTE so it implicitly zero-extends back to TYP_INT
 
                     tmp1 = comp->gtNewCastNode(TYP_INT, op1, /* unsigned */ true, TYP_UBYTE);
                     BlockRange().InsertAfter(op1, tmp1);
@@ -1776,12 +1776,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 case TYP_USHORT:
                 {
                     // Types need to be explicitly zero-extended to ensure upper-bits are zero
-					//
+                    //
                     // We need to explicitly use TYP_USHORT since unsigned is ignored for small types
                     // Explicitly handle both SHORT and USHORT to account for reinterpret casts and the like
-					//
-					// The from type is INT since that is the input type tracked by IR, where-as the target
-					// type needs to be USHORT so it implicitly zero-extends back to TYP_INT
+                    //
+                    // The from type is INT since that is the input type tracked by IR, where-as the target
+                    // type needs to be USHORT so it implicitly zero-extends back to TYP_INT
 
                     tmp1 = comp->gtNewCastNode(TYP_INT, op1, /* unsigned */ true, TYP_USHORT);
                     BlockRange().InsertAfter(op1, tmp1);
