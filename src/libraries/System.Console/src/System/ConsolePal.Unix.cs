@@ -894,7 +894,9 @@ namespace System
                     {
                         // Register a callback for signals that may invalidate our cached terminal settings.
                         // This includes: SIGCONT, SIGCHLD, SIGWINCH.
+#if !TARGET_WASI
                         Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
+#endif
 
                         // Load special control character codes used for input processing
                         var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]

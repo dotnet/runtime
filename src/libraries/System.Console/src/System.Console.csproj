@@ -8,6 +8,9 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_SystemConsole</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Wasi'">
+    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
@@ -50,22 +53,6 @@
   <!-- Browser WebAssembly -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ConsolePal.WebAssembly.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
-             Link="Common\Interop\Unix\Interop.Dup.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
-             Link="Common\Interop\Unix\Interop.Write.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
-             Link="Common\Interop\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileDescriptors.cs"
-             Link="Common\Interop\Unix\Interop.FileDescriptors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
-             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-  </ItemGroup>
-  <!-- Wasi WebAssembly -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Wasi'">
-    <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
              Link="Common\Interop\Unix\Interop.Dup.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
@@ -172,7 +159,7 @@
              Link="Common\System\IO\Win32Marshal.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Wasi'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
@@ -223,7 +210,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs"
-             Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" />
+             Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" 
+             Condition="'$(TargetPlatformIdentifier)' != 'Wasi'"
+             />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs"
              Link="Common\Interop\Unix\Interop.SetSignalForBreak.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SNPrintF.cs"
