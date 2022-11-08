@@ -1018,7 +1018,7 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber<byte, sbyte>(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref lowInclusive),
                         Unsafe.As<T, byte>(ref highInclusive),
@@ -1027,7 +1027,7 @@ namespace System
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber<ushort, short>(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ushort>(ref lowInclusive),
                         Unsafe.As<T, ushort>(ref highInclusive),
@@ -1036,7 +1036,7 @@ namespace System
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber<uint, int>(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, uint>(ref lowInclusive),
                         Unsafe.As<T, uint>(ref highInclusive),
@@ -1045,7 +1045,7 @@ namespace System
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber<ulong, long>(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ulong>(ref lowInclusive),
                         Unsafe.As<T, ulong>(ref highInclusive),
@@ -1084,7 +1084,7 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber<byte, sbyte>(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref lowInclusive),
                         Unsafe.As<T, byte>(ref highInclusive),
@@ -1093,7 +1093,7 @@ namespace System
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber<ushort, short>(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ushort>(ref lowInclusive),
                         Unsafe.As<T, ushort>(ref highInclusive),
@@ -1102,7 +1102,7 @@ namespace System
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber<uint, int>(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, uint>(ref lowInclusive),
                         Unsafe.As<T, uint>(ref highInclusive),
@@ -1111,7 +1111,7 @@ namespace System
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber<ulong, long>(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ulong>(ref lowInclusive),
                         Unsafe.As<T, ulong>(ref highInclusive),
@@ -1150,7 +1150,7 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber<byte, sbyte>(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref lowInclusive),
                         Unsafe.As<T, byte>(ref highInclusive),
@@ -1159,7 +1159,7 @@ namespace System
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber<ushort, short>(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ushort>(ref lowInclusive),
                         Unsafe.As<T, ushort>(ref highInclusive),
@@ -1168,7 +1168,7 @@ namespace System
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber<uint, int>(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, uint>(ref lowInclusive),
                         Unsafe.As<T, uint>(ref highInclusive),
@@ -1177,7 +1177,7 @@ namespace System
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber<ulong, long>(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ulong>(ref lowInclusive),
                         Unsafe.As<T, ulong>(ref highInclusive),
@@ -1216,7 +1216,7 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber<byte, sbyte>(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, byte>(ref lowInclusive),
                         Unsafe.As<T, byte>(ref highInclusive),
@@ -1225,7 +1225,7 @@ namespace System
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber<ushort, short>(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ushort>(ref lowInclusive),
                         Unsafe.As<T, ushort>(ref highInclusive),
@@ -1234,7 +1234,7 @@ namespace System
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber<uint, int>(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, uint>(ref lowInclusive),
                         Unsafe.As<T, uint>(ref highInclusive),
@@ -1243,7 +1243,7 @@ namespace System
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber<ulong, long>(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, ulong>(ref lowInclusive),
                         Unsafe.As<T, ulong>(ref highInclusive),

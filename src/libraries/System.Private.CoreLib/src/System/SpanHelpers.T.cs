@@ -2701,22 +2701,30 @@ namespace System
             return -1;
         }
 
-        internal static int IndexOfAnyInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
-            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
-            IndexOfAnyInRangeUnsignedNumber<T, DontNegate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
-
-        internal static int IndexOfAnyExceptInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
-            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
-            IndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
-
-        private static int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+        internal static int IndexOfAnyInRangeUnsignedNumber<T, TSigned>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned> =>
+            IndexOfAnyInRangeUnsignedNumber<T, TSigned, DontNegate<T>>(ref searchSpace, lowInclusive + IndexOfAnyInRangeMinOffset<T, TSigned>(), highInclusive, length);
+
+        internal static int IndexOfAnyExceptInRangeUnsignedNumber<T, TSigned>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned> =>
+            IndexOfAnyInRangeUnsignedNumber<T, TSigned, Negate<T>>(ref searchSpace, lowInclusive + IndexOfAnyInRangeMinOffset<T, TSigned>(), highInclusive, length);
+
+        private static int IndexOfAnyInRangeUnsignedNumber<T, TSigned, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned>
             where TNegator : struct, INegator<T>
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
+            Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TSigned>());
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
+                // The min value was offset by TSigned.MinValue for the vectorized path.
+                // Revert that offset for the scalar path.
+                lowInclusive -= IndexOfAnyInRangeMinOffset<T, TSigned>();
+
                 T rangeInclusive = highInclusive - lowInclusive;
                 for (int i = 0; i < length; i++)
                 {
@@ -2739,7 +2747,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref current) - lowVector, rangeVector));
+                    inRangeVector = CheckInRange128<T, TSigned, TNegator>(Vector128.LoadUnsafe(ref current) - lowVector, rangeVector);
                     if (inRangeVector != Vector128<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
@@ -2750,7 +2758,7 @@ namespace System
                 while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
 
                 // Process the last vector in the search space (which might overlap with already processed elements).
-                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
+                inRangeVector = CheckInRange128<T, TSigned, TNegator>(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector);
                 if (inRangeVector != Vector128<T>.Zero)
                 {
                     return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
@@ -2768,7 +2776,7 @@ namespace System
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref current) - lowVector, rangeVector));
+                    inRangeVector = CheckInRange256<T, TSigned, TNegator>(Vector256.LoadUnsafe(ref current) - lowVector, rangeVector);
                     if (inRangeVector != Vector256<T>.Zero)
                     {
                         return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
@@ -2779,7 +2787,7 @@ namespace System
                 while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
 
                 // Process the last vector in the search space (which might overlap with already processed elements).
-                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
+                inRangeVector = CheckInRange256<T, TSigned, TNegator>(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector);
                 if (inRangeVector != Vector256<T>.Zero)
                 {
                     return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
@@ -2819,22 +2827,30 @@ namespace System
             return -1;
         }
 
-        internal static int LastIndexOfAnyInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
-            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
-            LastIndexOfAnyInRangeUnsignedNumber<T, DontNegate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
-
-        internal static int LastIndexOfAnyExceptInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
-            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
-            LastIndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
-
-        private static int LastIndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+        internal static int LastIndexOfAnyInRangeUnsignedNumber<T, TSigned>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned> =>
+            LastIndexOfAnyInRangeUnsignedNumber<T, TSigned, DontNegate<T>>(ref searchSpace, lowInclusive + IndexOfAnyInRangeMinOffset<T, TSigned>(), highInclusive, length);
+
+        internal static int LastIndexOfAnyExceptInRangeUnsignedNumber<T, TSigned>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned> =>
+            LastIndexOfAnyInRangeUnsignedNumber<T, TSigned, Negate<T>>(ref searchSpace, lowInclusive + IndexOfAnyInRangeMinOffset<T, TSigned>(), highInclusive, length);
+
+        private static int LastIndexOfAnyInRangeUnsignedNumber<T, TSigned, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned>
             where TNegator : struct, INegator<T>
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
+            Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TSigned>());
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
+                // The min value was offset by TSigned.MinValue for the vectorized path.
+                // Revert that offset for the scalar path.
+                lowInclusive -= IndexOfAnyInRangeMinOffset<T, TSigned>();
+
                 T rangeInclusive = highInclusive - lowInclusive;
                 for (int i = length - 1; i >= 0; i--)
                 {
@@ -2856,7 +2872,7 @@ namespace System
                 // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
                 while (offset > 0)
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
+                    inRangeVector = CheckInRange128<T, TSigned, TNegator>(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector);
                     if (inRangeVector != Vector128<T>.Zero)
                     {
                         return ComputeLastIndex(offset, inRangeVector);
@@ -2866,7 +2882,7 @@ namespace System
                 }
 
                 // Process the first vector in the search space.
-                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
+                inRangeVector = CheckInRange128<T, TSigned, TNegator>(Vector128.LoadUnsafe(ref searchSpace) - lowVector, rangeVector);
                 if (inRangeVector != Vector128<T>.Zero)
                 {
                     return ComputeLastIndex(offset: 0, inRangeVector);
@@ -2883,7 +2899,7 @@ namespace System
                 // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
                 while (offset > 0)
                 {
-                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
+                    inRangeVector = CheckInRange256<T, TSigned, TNegator>(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector);
                     if (inRangeVector != Vector256<T>.Zero)
                     {
                         return ComputeLastIndex(offset, inRangeVector);
@@ -2893,7 +2909,7 @@ namespace System
                 }
 
                 // Process the first vector in the search space.
-                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
+                inRangeVector = CheckInRange256<T, TSigned, TNegator>(Vector256.LoadUnsafe(ref searchSpace) - lowVector, rangeVector);
                 if (inRangeVector != Vector256<T>.Zero)
                 {
                     return ComputeLastIndex(offset: 0, inRangeVector);
@@ -2901,6 +2917,41 @@ namespace System
             }
 
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T IndexOfAnyInRangeMinOffset<T, TSigned>()
+            where T : struct, IUnsignedNumber<T>
+            where TSigned : struct, ISignedNumber<TSigned>, IMinMaxValue<TSigned>
+        {
+            Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TSigned>());
+
+            // X86 is missing a full set of LessThan{OrEqual} instructions for unsigned values.
+            // We can use the instructions for signed values by shifting the range.
+            // sbyte.MinValue for byte, short.MinValue for ushort ...
+            return -(T.CreateChecked(TSigned.MaxValue) + T.One);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<T> CheckInRange128<T, TSigned, TNegator>(Vector128<T> sourceMinusMin, Vector128<T> maxMinusMin)
+            where T : struct, IUnsignedNumber<T>
+            where TSigned : struct, ISignedNumber<TSigned>
+            where TNegator : struct, INegator<T>
+        {
+            // Make sure the instruction for signed values is used by casting the inputs
+            Vector128<T> result = Vector128.GreaterThan(sourceMinusMin.As<T, TSigned>(), maxMinusMin.As<T, TSigned>()).As<TSigned, T>();
+            return typeof(TNegator) == typeof(Negate<T>) ? result : ~result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<T> CheckInRange256<T, TSigned, TNegator>(Vector256<T> sourceMinusMin, Vector256<T> maxMinusMin)
+            where T : struct, IUnsignedNumber<T>
+            where TSigned : struct, ISignedNumber<TSigned>
+            where TNegator : struct, INegator<T>
+        {
+            // Make sure the instruction for signed values is used by casting the inputs
+            Vector256<T> result = Vector256.GreaterThan(sourceMinusMin.As<T, TSigned>(), maxMinusMin.As<T, TSigned>()).As<TSigned, T>();
+            return typeof(TNegator) == typeof(Negate<T>) ? result : ~result;
         }
     }
 }
