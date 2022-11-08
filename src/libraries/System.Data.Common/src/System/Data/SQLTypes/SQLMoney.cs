@@ -37,7 +37,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlMoney(bool fNull)
+        private SqlMoney(bool _)
         {
             _fNotNull = false;
             _value = 0;
@@ -46,7 +46,7 @@ namespace System.Data.SqlTypes
         // Constructs from a long value without scaling. The ignored parameter exists
         // only to distinguish this constructor from the constructor that takes a long.
         // Used only internally.
-        internal SqlMoney(long value, int ignored)
+        internal SqlMoney(long value, int _)
         {
             _value = value;
             _fNotNull = true;

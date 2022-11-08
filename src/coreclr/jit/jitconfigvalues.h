@@ -297,9 +297,13 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the Alt
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
-CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)   // Enable the enregistration of locals that are
-                                                                     // defined or used in a multireg context.
-CONFIG_INTEGER(JitStressEVEXEncoding, W("JitStressEVEXEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable EVEX encoding for SIMD instructions when
+                                                                     // AVX-512VL is available.
+CONFIG_INTEGER(JitForceEVEXEncoding, W("JitForceEVEXEncoding"), 0)   // Force EVEX encoding for SIMD instructions.
+#endif
 
 // clang-format off
 

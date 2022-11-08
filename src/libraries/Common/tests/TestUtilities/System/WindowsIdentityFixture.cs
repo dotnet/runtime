@@ -34,78 +34,82 @@ namespace System
         private readonly string _userName;
         private SafeAccessTokenHandle _accountTokenHandle;
         public SafeAccessTokenHandle AccountTokenHandle => _accountTokenHandle;
-        public string AccountName { get; private set; }
+        public string AccountName { get; set; }
+        public string Password { get; }
 
         public WindowsTestAccount(string userName)
         {
             Assert.True(PlatformDetection.IsWindowsAndElevated);
 
             _userName = userName;
+            Password = GeneratePassword();
             CreateUser();
         }
 
-        private void CreateUser()
+        private static string GeneratePassword()
         {
-            string testAccountPassword;
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 byte[] randomBytes = new byte[33];
                 rng.GetBytes(randomBytes);
 
                 // Add special chars to ensure it satisfies password requirements.
-                testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
+                return Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
+            }
+        }
 
-                USER_INFO_1 userInfo = new USER_INFO_1
-                {
-                    usri1_name = _userName,
-                    usri1_password = testAccountPassword,
-                    usri1_priv = 1
-                };
+        private void CreateUser()
+        {
+            USER_INFO_1 userInfo = new USER_INFO_1
+            {
+                usri1_name = _userName,
+                usri1_password = Password,
+                usri1_priv = 1
+            };
 
-                // Create user and remove/create if already exists
-                uint result = NetUserAdd(null, 1, ref userInfo, out uint param_err);
+            // Create user and remove/create if already exists
+            uint result = NetUserAdd(null, 1, ref userInfo, out uint param_err);
 
-                // error codes https://docs.microsoft.com/en-us/windows/desktop/netmgmt/network-management-error-codes
-                // 0 == NERR_Success
-                if (result == 2224) // NERR_UserExists
-                {
-                    result = NetUserDel(null, userInfo.usri1_name);
-                    if (result != 0)
-                    {
-                        throw new Win32Exception((int)result);
-                    }
-                    result = NetUserAdd(null, 1, ref userInfo, out param_err);
-                    if (result != 0)
-                    {
-                        throw new Win32Exception((int)result);
-                    }
-                }
-                else if (result != 0)
+            // error codes https://docs.microsoft.com/en-us/windows/desktop/netmgmt/network-management-error-codes
+            // 0 == NERR_Success
+            if (result == 2224) // NERR_UserExists
+            {
+                result = NetUserDel(null, userInfo.usri1_name);
+                if (result != 0)
                 {
                     throw new Win32Exception((int)result);
                 }
-
-                const int LOGON32_PROVIDER_DEFAULT = 0;
-                const int LOGON32_LOGON_INTERACTIVE = 2;
-
-                if (!LogonUser(_userName, ".", testAccountPassword, LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, out _accountTokenHandle))
+                result = NetUserAdd(null, 1, ref userInfo, out param_err);
+                if (result != 0)
                 {
-                    _accountTokenHandle = null;
-                    throw new Exception($"Failed to get SafeAccessTokenHandle for test account {_userName}", new Win32Exception());
+                    throw new Win32Exception((int)result);
                 }
+            }
+            else if (result != 0)
+            {
+                throw new Win32Exception((int)result);
+            }
 
-                bool gotRef = false;
-                try
-                {
-                    _accountTokenHandle.DangerousAddRef(ref gotRef);
-                    IntPtr logonToken = _accountTokenHandle.DangerousGetHandle();
-                    AccountName = new WindowsIdentity(logonToken).Name;
-                }
-                finally
-                {
-                    if (gotRef)
-                        _accountTokenHandle.DangerousRelease();
-                }
+            const int LOGON32_PROVIDER_DEFAULT = 0;
+            const int LOGON32_LOGON_INTERACTIVE = 2;
+
+            if (!LogonUser(_userName, ".", Password, LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, out _accountTokenHandle))
+            {
+                _accountTokenHandle = null;
+                throw new Exception($"Failed to get SafeAccessTokenHandle for test account {_userName}", new Win32Exception());
+            }
+
+            bool gotRef = false;
+            try
+            {
+                _accountTokenHandle.DangerousAddRef(ref gotRef);
+                IntPtr logonToken = _accountTokenHandle.DangerousGetHandle();
+                AccountName = new WindowsIdentity(logonToken).Name;
+            }
+            finally
+            {
+                if (gotRef)
+                    _accountTokenHandle.DangerousRelease();
             }
         }
 
@@ -114,10 +118,10 @@ namespace System
         private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
 
         [LibraryImport("netapi32.dll", SetLastError = true)]
-        internal static partial uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
+        internal static partial uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)] string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
 
         [LibraryImport("netapi32.dll")]
-        internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)]string servername, [MarshalAs(UnmanagedType.LPWStr)]string username);
+        internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string username);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct USER_INFO_1
@@ -145,5 +149,5 @@ namespace System
             }
         }
     }
- }
+}
 

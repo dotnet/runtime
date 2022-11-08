@@ -3538,7 +3538,7 @@ class SsaNumInfo final
     static const int BITS_PER_SIMPLE_NUM     = 8;
     static const int MAX_SIMPLE_NUM          = (1 << (BITS_PER_SIMPLE_NUM - 1)) - 1;
     static const int SIMPLE_NUM_MASK         = MAX_SIMPLE_NUM;
-    static const int SIMPLE_NUM_COUNT        = sizeof(int) / BITS_PER_SIMPLE_NUM;
+    static const int SIMPLE_NUM_COUNT        = (sizeof(int) * BITS_PER_BYTE) / BITS_PER_SIMPLE_NUM;
     static const int COMPOSITE_ENCODING_BIT  = 1 << 31;
     static const int OUTLINED_ENCODING_BIT   = 1 << 15;
     static const int OUTLINED_INDEX_LOW_MASK = OUTLINED_ENCODING_BIT - 1;
@@ -4055,6 +4055,19 @@ struct GenTreeField : public GenTreeUnOp
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsInstance() const
+    {
+        return GetFldObj() != nullptr;
+    }
+
+    bool IsOffsetKnown() const
+    {
+#ifdef FEATURE_READYTORUN
+        return gtFieldLookup.addr == nullptr;
+#endif // FEATURE_READYTORUN
+        return true;
     }
 };
 

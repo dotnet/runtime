@@ -1256,7 +1256,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
-    memcpy(jitFlags, resultFlags, value.B);
+    memcpy((void*)jitFlags, (void*)resultFlags, value.B);
     return value.B;
 }
 

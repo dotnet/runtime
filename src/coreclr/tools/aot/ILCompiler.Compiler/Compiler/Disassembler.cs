@@ -123,11 +123,11 @@ namespace ILCompiler
 
             public void Dispose()
             {
-                Dispose(true);
+                DisposeThis();
                 GC.SuppressFinalize(this);
             }
 
-            private void Dispose(bool disposing)
+            private void DisposeThis()
             {
                 FinishDisasm(_handle);
                 _handle = IntPtr.Zero;
@@ -135,7 +135,7 @@ namespace ILCompiler
 
             ~CoreDisassembler()
             {
-                Dispose(false);
+                DisposeThis();
             }
         }
     }

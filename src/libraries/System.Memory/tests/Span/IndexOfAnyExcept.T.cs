@@ -53,6 +53,50 @@ namespace System.SpanTests
                     break;
             }
         }
+
+        [Fact]
+        [OuterLoop("Takes about a second to execute")]
+        public static void TestIndexOfAnyExcept_RandomInputs_Char()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: IndexOfAnyExceptReferenceImpl,
+                actual: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
+
+            static int IndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
+            {
+                for (int i = 0; i < searchSpace.Length; i++)
+                {
+                    if (!values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+
+        [Fact]
+        [OuterLoop("Takes about a second to execute")]
+        public static void TestLastIndexOfAnyExcept_RandomInputs_Char()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: LastIndexOfAnyExceptReferenceImpl,
+                actual: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
+
+            static int LastIndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
+            {
+                for (int i = searchSpace.Length - 1; i >= 0; i--)
+                {
+                    if (!values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
     }
 
     public record SimpleRecord(int Value);

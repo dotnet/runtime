@@ -1073,6 +1073,7 @@ namespace System.Numerics
             return Unsafe.ReadUnaligned<Vector<T>>(ref address);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>Loads a vector from the given source and element offset.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
@@ -1089,6 +1090,7 @@ namespace System.Numerics
             source = ref Unsafe.Add(ref source, (nint)elementOffset);
             return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref source));
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1649,6 +1651,7 @@ namespace System.Numerics
             Unsafe.WriteUnaligned(ref address, source);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -1665,6 +1668,7 @@ namespace System.Numerics
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>

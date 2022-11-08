@@ -44,10 +44,10 @@ namespace System.Xml.Xsl.Qil
                 QilNodeType.For => CheckFor((QilIterator)n),
                 QilNodeType.Let => CheckLet((QilIterator)n),
                 QilNodeType.Parameter => CheckParameter((QilParameter)n),
-                QilNodeType.PositionOf => CheckPositionOf((QilUnary)n),
+                QilNodeType.PositionOf => CheckPositionOf(),
 
-                QilNodeType.True => CheckTrue(n),
-                QilNodeType.False => CheckFalse(n),
+                QilNodeType.True => CheckTrue(),
+                QilNodeType.False => CheckFalse(),
                 QilNodeType.LiteralString => CheckLiteralString((QilLiteral)n),
                 QilNodeType.LiteralInt32 => CheckLiteralInt32((QilLiteral)n),
                 QilNodeType.LiteralInt64 => CheckLiteralInt64((QilLiteral)n),
@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Qil
                 QilNodeType.Conditional => CheckConditional((QilTernary)n),
                 QilNodeType.Choice => CheckChoice((QilChoice)n),
 
-                QilNodeType.Length => CheckLength((QilUnary)n),
+                QilNodeType.Length => CheckLength(),
                 QilNodeType.Sequence => CheckSequence((QilList)n),
                 QilNodeType.Union => CheckUnion((QilBinary)n),
                 QilNodeType.Intersection => CheckIntersection((QilBinary)n),
@@ -110,7 +110,7 @@ namespace System.Xml.Xsl.Qil
                 QilNodeType.Attribute => CheckAttribute((QilBinary)n),
                 QilNodeType.Parent => CheckParent((QilUnary)n),
                 QilNodeType.Root => CheckRoot((QilUnary)n),
-                QilNodeType.XmlContext => CheckXmlContext(n),
+                QilNodeType.XmlContext => CheckXmlContext(),
                 QilNodeType.Descendant => CheckDescendant((QilUnary)n),
                 QilNodeType.DescendantOrSelf => CheckDescendantOrSelf((QilUnary)n),
                 QilNodeType.Ancestor => CheckAncestor((QilUnary)n),
@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.Qil
 
                 QilNodeType.TypeAssert => CheckTypeAssert((QilTargetType)n),
                 QilNodeType.IsType => CheckIsType((QilTargetType)n),
-                QilNodeType.IsEmpty => CheckIsEmpty((QilUnary)n),
+                QilNodeType.IsEmpty => CheckIsEmpty(),
 
                 QilNodeType.XPathNodeValue => CheckXPathNodeValue((QilUnary)n),
                 QilNodeType.XPathFollowing => CheckXPathFollowing((QilUnary)n),
@@ -283,7 +283,7 @@ namespace System.Xml.Xsl.Qil
             return node.XmlType!;
         }
 
-        public static XmlQueryType CheckPositionOf(QilUnary node)
+        public static XmlQueryType CheckPositionOf()
         {
             return XmlQueryTypeFactory.IntX;
         }
@@ -294,12 +294,12 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         // literals
         //-----------------------------------------------
-        public static XmlQueryType CheckTrue(QilNode node)
+        public static XmlQueryType CheckTrue()
         {
             return XmlQueryTypeFactory.BooleanX;
         }
 
-        public static XmlQueryType CheckFalse(QilNode node)
+        public static XmlQueryType CheckFalse()
         {
             return XmlQueryTypeFactory.BooleanX;
         }
@@ -404,7 +404,7 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         // collection operators
         //-----------------------------------------------
-        public static XmlQueryType CheckLength(QilUnary node)
+        public static XmlQueryType CheckLength()
         {
             return XmlQueryTypeFactory.IntX;
         }
@@ -707,7 +707,7 @@ namespace System.Xml.Xsl.Qil
             return XmlQueryTypeFactory.NodeNotRtf;
         }
 
-        public static XmlQueryType CheckXmlContext(QilNode node)
+        public static XmlQueryType CheckXmlContext()
         {
             return XmlQueryTypeFactory.NodeNotRtf;
         }
@@ -884,7 +884,7 @@ namespace System.Xml.Xsl.Qil
             return XmlQueryTypeFactory.BooleanX;
         }
 
-        public static XmlQueryType CheckIsEmpty(QilUnary node)
+        public static XmlQueryType CheckIsEmpty()
         {
             return XmlQueryTypeFactory.BooleanX;
         }

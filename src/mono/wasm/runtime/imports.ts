@@ -67,5 +67,6 @@ const initialRuntimeHelpers: Partial<RuntimeHelpers> =
         environmentVariables: {},
     },
     diagnosticTracing: false,
+    enablePerfMeasure: true,
 };
 export const runtimeHelpers: RuntimeHelpers = initialRuntimeHelpers as any;

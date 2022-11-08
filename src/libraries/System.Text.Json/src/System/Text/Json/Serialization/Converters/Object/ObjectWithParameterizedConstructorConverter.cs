@@ -134,7 +134,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
                 if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
-                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                    ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
                     bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (state.Current.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref state);
                     }
 
                     if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    BeginRead(ref state, ref reader, options);
+                    BeginRead(ref state, options);
 
                     state.Current.ObjectState = StackFrameObjectState.ConstructorArguments;
                 }
@@ -258,7 +258,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReadConstructorArguments(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            BeginRead(ref state, ref reader, options);
+            BeginRead(ref state, options);
 
             while (true)
             {
@@ -294,7 +294,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
                         unescapedPropertyName,
@@ -386,7 +386,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
                             unescapedPropertyName,
@@ -537,7 +537,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void BeginRead(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private void BeginRead(scoped ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
@@ -569,7 +569,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(state.Current.JsonTypeInfo.Kind == JsonTypeInfoKind.Object);
 
-            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
 
             jsonParameterInfo = state.Current.JsonTypeInfo.GetParameter(
                 unescapedPropertyName,

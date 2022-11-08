@@ -21,6 +21,8 @@ using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
 using RyuJitCompilation = ILCompiler.Compilation;
 #endif
 
+#pragma warning disable IDE0060
+
 namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl

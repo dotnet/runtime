@@ -75,20 +75,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ISet<string> ISetNoSetter { get; } = new HashSet<string>();
 
             public HashSet<string> InstantiatedHashSetWithSomeValues { get; set; } =
-                new HashSet<string>(new[] {"existing1", "existing2"});
+                new HashSet<string>(new[] { "existing1", "existing2" });
 
             public SortedSet<string> InstantiatedSortedSetWithSomeValues { get; set; } =
-                new SortedSet<string>(new[] {"existing1", "existing2"});
+                new SortedSet<string>(new[] { "existing1", "existing2" });
 
             public SortedSet<string> NonInstantiatedSortedSetWithSomeValues { get; set; } = null!;
 
             public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] { "existing1", "existing2" });
-            
+
             public ISet<UnsupportedTypeInHashSet> HashSetWithUnsupportedKey { get; set; } =
                 new HashSet<UnsupportedTypeInHashSet>();
 
-            public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; } 
+            public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; }
 
 #if NETCOREAPP
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
@@ -348,7 +348,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             }
 
             public string Color { get; set; }
-            public int Length { get; set;  }
+            public int Length { get; set; }
         }
 
         public class ImmutableLengthAndColorClass
@@ -503,6 +503,113 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             Option1,
             Option2,
+        }
+
+        public class CollectionsBindingWithErrorOnUnknownConfiguration
+        {
+            public class MyModelContainingArray
+            {
+                public TestSettingsEnum[] Enums { get; set; }
+            }
+
+            public class MyModelContainingADictionary
+            {
+                public Dictionary<string, TestSettingsEnum> Enums { get; set; }
+            }
+
+            [Fact]
+            public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
+            {
+                var dic = new Dictionary<string, string>
+                    {
+                        {"Section:Enums:0", "Option1"},
+                        {"Section:Enums:1", "Option3"}, // invalid - ignored
+                        {"Section:Enums:2", "Option4"}, // invalid - ignored
+                        {"Section:Enums:3", "Option2"},
+                    };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var model = configSection.Get<MyModelContainingArray>(o => o.ErrorOnUnknownConfiguration = false);
+
+                Assert.Equal(2, model.Enums.Length);
+                Assert.Equal(TestSettingsEnum.Option1, model.Enums[0]);
+                Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
+            }
+
+            [Fact]
+            public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
+            {
+                var dic = new Dictionary<string, string>
+                    {
+                        {"Section:Enums:First", "Option1"},
+                        {"Section:Enums:Second", "Option3"}, // invalid - ignored
+                        {"Section:Enums:Third", "Option4"}, // invalid - ignored
+                        {"Section:Enums:Fourth", "Option2"},
+                    };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var model = configSection.Get<MyModelContainingADictionary>(o =>
+                    o.ErrorOnUnknownConfiguration = false);
+
+                Assert.Equal(2, model.Enums.Count);
+                Assert.Equal(TestSettingsEnum.Option1, model.Enums["First"]);
+                Assert.Equal(TestSettingsEnum.Option2, model.Enums["Fourth"]);
+            }
+
+            [Fact]
+            public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray()
+            {
+                var dic = new Dictionary<string, string>
+                    {
+                        {"Section:Enums:0", "Option1"},
+                        {"Section:Enums:1", "Option3"}, // invalid - exception thrown
+                        {"Section:Enums:2", "Option1"},
+                    };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var exception = Assert.Throws<InvalidOperationException>(
+                    () => configSection.Get<MyModelContainingArray>(o => o.ErrorOnUnknownConfiguration = true));
+
+                Assert.Equal(
+                    SR.Format(SR.Error_GeneralErrorWhenBinding, nameof(BinderOptions.ErrorOnUnknownConfiguration)),
+                    exception.Message);
+            }
+
+            [Fact]
+            public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary()
+            {
+                var dic = new Dictionary<string, string>
+                    {
+                        {"Section:Enums:First", "Option1"},
+                        {"Section:Enums:Second", "Option3"}, // invalid - exception thrown
+                        {"Section:Enums:Third", "Option1"},
+                    };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var exception = Assert.Throws<InvalidOperationException>(
+                    () => configSection.Get<MyModelContainingADictionary>(o =>
+                        o.ErrorOnUnknownConfiguration = true));
+
+                Assert.Equal(
+                    SR.Format(SR.Error_GeneralErrorWhenBinding, nameof(BinderOptions.ErrorOnUnknownConfiguration)),
+                    exception.Message);
+            }
         }
 
         public record RootConfig(NestedConfig Nested);
@@ -804,7 +911,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public class Foo
         {
             public IReadOnlyDictionary<string, int> Items { get; set; } =
-                new Dictionary<string, int> {{"existing-item1", 1}, {"existing-item2", 2}};
+                new Dictionary<string, int> { { "existing-item1", 1 }, { "existing-item2", 2 } };
 
         }
 
@@ -829,7 +936,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(3, options.Items["item3"]);
             Assert.Equal(4, options.Items["item4"]);
 
-            
+
         }
 
         [Fact]
@@ -944,7 +1051,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(3, options.NonInstantiatedReadOnlyDictionary["item3"]);
             Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
         }
-        
+
 
         [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
