@@ -155,7 +155,7 @@ typedef struct
 } FileStatus;
 
 char* gai_strerror(int code) {
-    char result[256];
+    char* result = malloc(256);
     sprintf(result, "Error code %i", code);
     return result;
 }
@@ -780,7 +780,10 @@ void add_assembly(const char* base_dir, const char *name) {
     rewind(fileptr);
 
     buffer = (unsigned char *)malloc(filelen * sizeof(char));
-    fread(buffer, filelen, 1, fileptr);
+    if(!fread(buffer, filelen, 1, fileptr)) {
+        printf("Failed to load %s\n", filename);
+        fflush(stdout);
+    }
     fclose(fileptr);
 
     assert(mono_wasm_add_assembly(name, buffer, filelen));

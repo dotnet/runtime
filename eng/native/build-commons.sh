@@ -163,7 +163,7 @@ build_native()
         popd
     else
         cmake_command=cmake
-        if [[ "$build_arch" == "wasm" ]]; then
+        if [[ "$__TargetOS" == "Browser" ]]; then
             cmake_command="emcmake cmake"
             echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
             $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
