@@ -2034,7 +2034,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_RISCV_X25, (unw_word_t *) &winContext->S9);
     unw_get_reg(cursor, UNW_RISCV_X26, (unw_word_t *) &winContext->S10);
     unw_get_reg(cursor, UNW_RISCV_X27, (unw_word_t *) &winContext->S11);
-    TRACE("sp %p gp %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Gp, winContext->FP, winContext->Tp, winContext->Ra);
+    TRACE("sp %p gp %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Gp, winContext->Fp, winContext->Tp, winContext->Ra);
 #else
 #error unsupported architecture
 #endif

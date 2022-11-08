@@ -333,6 +333,8 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
+#elif defined(TARGET_RISCV64)
+                _ASSERTE(!"TODO RISCV64 NYI");
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*

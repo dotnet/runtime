@@ -1487,6 +1487,12 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #elif defined(TARGET_RISCV64)
+    _ASSERTE(!"TODO RISCV64 NYI");
+    DWORD instrVal = *(DWORD *)instrPtr;
+    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
+
+    atCall = (instrVal == INTERRUPT_INSTR_CALL);
+    afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 // #error TODO RISCV64
 #endif // _TARGET_*
 
@@ -1663,6 +1669,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #elif defined(TARGET_LOONGARCH64)
                 *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #elif defined(TARGET_RISCV64)
+                _ASSERTE(!"TODO RISCV64 NYI");
                 *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #else
                 *nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
