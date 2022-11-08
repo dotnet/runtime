@@ -1,0 +1,4 @@
+# Autodetect text files
+* text=auto
+
+*.cs diff=csharp

@@ -1,0 +1,352 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.ILLink.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- These properties should be set even if PublishTrimmed != true, to allow SDK components to
+       set PublishTrimmed in targets which are imported after these targets. -->
+  <PropertyGroup>
+    <IntermediateLinkDir Condition=" '$(IntermediateLinkDir)' == '' ">$(IntermediateOutputPath)linked\</IntermediateLinkDir>
+    <IntermediateLinkDir Condition=" !HasTrailingSlash('$(IntermediateLinkDir)') ">$(IntermediateLinkDir)\</IntermediateLinkDir>
+    <!-- Used to enable incremental build for the linker target. -->
+    <_LinkSemaphore>$(IntermediateLinkDir)Link.semaphore</_LinkSemaphore>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Condition="'$(IsTrimmable)' == 'true'" Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>IsTrimmable</_Parameter1>
+      <_Parameter2>True</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- We disable features for trimmed apps here so that the feature
+      switches can flow to the runtimeconfig.json. Features are disabled
+      by default since they may require assemblies, types or members that
+      could be removed by the linker, causing a trimmed app to crash. -->
+  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' And
+                            $([MSBuild]::VersionGreaterThanOrEquals($(_TargetFrameworkVersionWithoutV), '6.0'))">
+    <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
+    <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
+    <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
+    <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <BuiltInComInteropSupport Condition="'$(BuiltInComInteropSupport)' == ''">false</BuiltInComInteropSupport>
+    <AutoreleasePoolSupport Condition="'$(AutoreleasePoolSupport)' == ''">false</AutoreleasePoolSupport>
+    <EnableCppCLIHostActivation Condition="'$(EnableCppCLIHostActivation)' == ''">false</EnableCppCLIHostActivation>
+    <!-- C++/CLI activation requires native hosting -->
+    <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(EnableCppCLIHostActivation)' == 'true'">true</_EnableConsumingManagedCodeFromNativeHosting>
+    <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(_EnableConsumingManagedCodeFromNativeHosting)' == ''">false</_EnableConsumingManagedCodeFromNativeHosting>
+    <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == '' And '$(PublishTrimmed)' == 'true' And '$(EnableTrimAnalyzer)' != 'true'">
+    <!-- Trim analysis warnings are suppressed for .NET < 6. -->
+    <SuppressTrimAnalysisWarnings Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">true</SuppressTrimAnalysisWarnings>
+    <!-- Suppress for WPF/WinForms -->
+    <SuppressTrimAnalysisWarnings Condition="'$(UseWpf)' == 'true' Or '$(UseWindowsForms)' == 'true'">true</SuppressTrimAnalysisWarnings>
+    <!-- Otherwise, for .NET 6+, warnings are on by default -->
+    <SuppressTrimAnalysisWarnings Condition="'$(SuppressTrimAnalysisWarnings)' == ''">false</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
+  <!-- Suppress warnings produced by the linker or by the ILLink Roslyn analyzer. -->
+  <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true'">
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --notrimwarn</_ExtraTrimmerArgs>
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <!-- Disable Redundant Warning Suppressions by default-->
+  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true'">
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    ============================================================
+                     ILLink
+
+    Replace the files to be published with versions that have been
+    passed through the linker. Also prevent removed files from being
+    included in the generated deps.json.
+    ============================================================
+    -->
+  <Target Name="ILLink"
+          Condition=" '$(PublishTrimmed)' == 'true' And
+                      '$(RunILLink)' != 'false' And
+                      '$(_TargetFrameworkVersionWithoutV)' >= '3.0' And '$(TargetFrameworkIdentifier)' == '.NETCoreApp' "
+          DependsOnTargets="_RunILLink">
+
+    <NETSdkError Condition="'$(_ILLinkExitCode)' != '' And '$(_ILLinkExitCode)' != '0'" ResourceName="ILLinkFailed" />
+
+    <ItemGroup>
+      <_LinkedResolvedFileToPublish Include="@(_LinkedResolvedFileToPublishCandidate)" Condition="Exists('%(Identity)')" />
+      <ResolvedFileToPublish Remove="@(ManagedAssemblyToLink)" />
+      <ResolvedFileToPublish Remove="@(_PDBToLink)" />
+      <ResolvedFileToPublish Include="@(_LinkedResolvedFileToPublish)" />
+    </ItemGroup>
+
+    <!-- Remove assemblies from inputs to GenerateDepsFile. See
+         https://github.com/dotnet/sdk/pull/3086 -->
+    <ItemGroup>
+      <_RemovedManagedAssembly Include="@(ManagedAssemblyToLink)" Condition="!Exists('$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+
+      <ResolvedCompileFileDefinitions Remove="@(_RemovedManagedAssembly)" />
+      <RuntimeCopyLocalItems Remove="@(_RemovedManagedAssembly)" />
+      <RuntimeTargetsCopyLocalItems Remove="@(_RemovedManagedAssembly)" />
+      <UserRuntimeAssembly Remove="@(_RemovedManagedAssembly)" />
+      <RuntimePackAsset Remove="@(_RemovedManagedAssembly)" />
+    </ItemGroup>
+
+  </Target>
+
+
+  <!--
+    ============================================================
+                     _RunILLink
+
+    Execute the linker. This target runs incrementally, only executing
+    if the output semaphore file is out of date with respect to the inputs.
+    ============================================================
+    -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <Target Name="_RunILLink"
+          DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
+          Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
+          Outputs="$(_LinkSemaphore)">
+    <NETSdkInformation ResourceName="ILLinkRunning" />
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+         In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>dotnet</_DotNetHostFileName>
+      <_DotNetHostFileName Condition="$([MSBuild]::IsOSPlatform(`Windows`))">dotnet.exe</_DotNetHostFileName>
+    </PropertyGroup>
+
+    <Delete Files="@(_LinkedResolvedFileToPublishCandidate)" />
+    <ILLink AssemblyPaths="@(ManagedAssemblyToLink)"
+            ReferenceAssemblyPaths="@(ReferencePath)"
+            RootAssemblyNames="@(TrimmerRootAssembly)"
+            TrimMode="$(TrimMode)"
+            DefaultAction="$(_TrimmerDefaultAction)"
+            RemoveSymbols="$(TrimmerRemoveSymbols)"
+            FeatureSettings="@(_TrimmerFeatureSettings)"
+            CustomData="@(_TrimmerCustomData)"
+
+            BeforeFieldInit="$(_TrimmerBeforeFieldInit)"
+            OverrideRemoval="$(_TrimmerOverrideRemoval)"
+            UnreachableBodies="$(_TrimmerUnreachableBodies)"
+            UnusedInterfaces="$(_TrimmerUnusedInterfaces)"
+            IPConstProp="$(_TrimmerIPConstProp)"
+            Sealer="$(_TrimmerSealer)"
+
+            Warn="$(ILLinkWarningLevel)"
+            NoWarn="$(NoWarn)"
+            TreatWarningsAsErrors="$(ILLinkTreatWarningsAsErrors)"
+            WarningsAsErrors="$(WarningsAsErrors)"
+            WarningsNotAsErrors="$(WarningsNotAsErrors)"
+            SingleWarn="$(TrimmerSingleWarn)"
+
+            CustomSteps="@(_TrimmerCustomSteps)"
+            RootDescriptorFiles="@(TrimmerRootDescriptor)"
+            OutputDirectory="$(IntermediateLinkDir)"
+            DumpDependencies="$(_TrimmerDumpDependencies)"
+            DependenciesFileFormat="$(_TrimmerDependenciesFileFormat)"
+            ExtraArgs="$(_ExtraTrimmerArgs)"
+            ToolExe="$(_DotNetHostFileName)"
+            ToolPath="$(_DotNetHostDirectory)"
+            ContinueOnError="ErrorAndContinue">
+        <Output TaskParameter="ExitCode" PropertyName="_ILLinkExitCode" />
+      </ILLink>
+
+     <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true" Condition=" '$(_ILLinkExitCode)' == '0' " />
+
+  </Target>
+
+  <!--
+    ============================================================
+                     PrepareForILLink
+
+    Set up the default options and inputs to ILLink. Other targets are expected to hook into
+    this extension point via BeforeTargets/AfterTargets to opt assemblies into or out of trimming
+    using global ILLink options, or per-assembly IsTrimmable and TrimMode metadata.
+
+    Note that adding items to or removing items from ManagedAssemblyToLink is unsupported. To change
+    the set of inputs to the linker, instead use a different extension point to
+    set PostprocessAssembly metadata on ResolvedFileToPublish.
+   -->
+   <Target Name="PrepareForILLink"
+           DependsOnTargets="_ComputeManagedAssemblyToLink">
+
+    <!-- We print a message to the user to explain that trimming is
+         potentially problematic when warnings are suppressed. -->
+    <NETSdkInformation Condition="'$(PublishTrimmed)' == 'true' And '$(SuppressTrimAnalysisWarnings)' == 'true'" ResourceName="ILLinkOptimizedAssemblies" />
+
+    <!-- The defaults currently root non-framework assemblies, which
+         is a no-op for portable apps. If we later support more ways
+         to customize the behavior we can allow linking portable apps
+         in some cases. If we're not running ILLink because e.g. this
+         is a NativeAOT app, value of SelfContained doesn't matter. -->
+    <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
+
+    <PropertyGroup Condition=" '$(ILLinkWarningLevel)' == '' ">
+      <ILLinkWarningLevel Condition=" '$(EffectiveAnalysisLevel)' != '' And
+                                       $([MSBuild]::VersionGreaterThanOrEquals($(EffectiveAnalysisLevel), '5.0')) ">5</ILLinkWarningLevel>
+      <ILLinkWarningLevel Condition=" '$(ILLinkWarningLevel)' == '' ">0</ILLinkWarningLevel>
+    </PropertyGroup>
+
+    <!-- In .NET 7, TrimmerDefaultAction is deprecated. TrimMode can be used for the supported configurations. -->
+    <Warning Condition="'$(TrimmerDefaultAction)' != '' And $([MSBuild]::VersionGreaterThan('$(TargetFrameworkVersion)', '6.0'))"
+             Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and will be ignored. Use TrimMode instead." />
+
+    <!-- Use a sidecar file to suppress warnings when targeting net6.0, for changes that added or changed warnings. -->
+    <ItemGroup Condition="$([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">
+      <_ILLinkSuppressions Include="$(MSBuildThisFileDirectory)6.0_suppressions.xml" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(_ILLinkSuppressions->Count())' != '0'">
+      <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --link-attributes "@(_ILLinkSuppressions->'%(Identity)', '" --link-attributes "')"</_ExtraTrimmerArgs>
+    </PropertyGroup>
+
+    <!-- Set up TrimMode and TrimmerDefaultAction. -->
+    <PropertyGroup>
+      <TrimMode Condition="'$(TrimMode)' == '' And $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">copyused</TrimMode>
+      <TrimMode Condition="'$(TrimMode)' == '' And $([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">partial</TrimMode>
+      <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
+
+      <!-- Set TrimmerDefaultAction for compat in < 7.0 -->
+      <_TrimmerDefaultAction Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '7.0'))">$(TrimmerDefaultAction)</_TrimmerDefaultAction>
+      <_TrimmerDefaultAction Condition="'$(_TrimmerDefaultAction)' == '' And $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">$(TrimMode)</_TrimmerDefaultAction>
+      <_TrimmerDefaultAction Condition="'$(_TrimmerDefaultAction)' == '' And $([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">copy</_TrimmerDefaultAction>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
+      <_ExtraTrimmerArgs>--skip-unresolved true $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+      <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
+    </PropertyGroup>
+
+   <!-- Suppressions to work around issues in previous versions of the framework. See https://github.com/dotnet/runtime/issues/40336 -->
+    <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true' And $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">
+      <!-- Framework embedded XML descriptors reference windows-only members. -->
+      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2008</NoWarn> <!-- Unresolved type referenced in XML. -->
+      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2009</NoWarn> <!-- Unresolved member on type referenced in XML. -->
+      <!-- Framework has DynamicDependencyAttributes that reference windows-only members. -->
+      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2037</NoWarn> <!-- Unresolved member for DynamicDependencyAttribute -->
+      <!-- Framework embedded XML descriptors reference 32-bit-only members. -->
+      <NoWarn Condition=" '$(PlatformTarget)' != 'x64' AND '$(PlatformTarget)' != 'arm64'">$(NoWarn);IL2009;IL2012</NoWarn> <!-- Unresolved field referenced in XML -->
+    </PropertyGroup>
+
+    <!-- Enable serialization discovery for compat in < 7.0 -->
+    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '7.0'))">
+      <_ExtraTrimmerArgs>--enable-serialization-discovery $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    </PropertyGroup>
+
+    <!-- Set a default value for TrimmerRemoveSymbols unless set explicitly. -->
+    <PropertyGroup Condition=" '$(TrimmerRemoveSymbols)' == '' ">
+      <!-- The default is to remove symbols when debugger support is disabled, and keep them otherwise. -->
+      <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' == 'false' ">true</TrimmerRemoveSymbols>
+      <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(_TrimmerUnreachableBodies)' == '' And
+                              '$(PublishTrimmed)' == 'true' And
+                              $([MSBuild]::VersionLessThan($(_TargetFrameworkVersionWithoutV), '6.0'))">
+      <_TrimmerUnreachableBodies>false</_TrimmerUnreachableBodies>
+    </PropertyGroup>
+
+    <!-- Set IsTrimmable for any assemblies that already have customized TrimMode. -->
+    <ItemGroup>
+      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.TrimMode)' != '' ">
+        <IsTrimmable>true</IsTrimmable>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+
+    <!-- SetIsTrimmable for any assemblies listed in TrimmableAssembly. -->
+    <JoinItems Left="@(ManagedAssemblyToLink)" LeftKey="FileName" LeftMetadata="*"
+               Right="@(TrimmableAssembly)"
+               ItemSpecToUse="Left">
+      <Output TaskParameter="JoinResult" ItemName="_TrimmableManagedAssemblyToLink" />
+    </JoinItems>
+    <ItemGroup>
+      <ManagedAssemblyToLink Remove="@(_TrimmableManagedAssemblyToLink)" />
+      <ManagedAssemblyToLink Include="@(_TrimmableManagedAssemblyToLink)" IsTrimmable="true" />
+    </ItemGroup>
+
+    <!-- Root the main assembly, whether or not it has IsTrimmable set. -->
+    <ItemGroup>
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
+    </ItemGroup>
+
+    <!-- For .NET < 6, root and copy assemblies without IsTrimmable=true MSBuild metadata. -->
+    <ItemGroup Condition=" $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0')) ">
+      <TrimmerRootAssembly Include="@(ManagedAssemblyToLink)" Condition=" '%(ManagedAssemblyToLink.IsTrimmable)' != 'true' " />
+      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.IsTrimmable)' != 'true' ">
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Don't collapse to a single warning for the intermediate assembly.
+           This just sets metadata on the items in ManagedAssemblyToLink that came from IntermediateAssembly. -->
+      <!-- Find ManagedAssemblyToLink _except_ IntermediateAssembly -->
+      <__SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
+      <__SingleWarnIntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <!-- Subtract these from ManagedAssemblyToLink, to get the intersection. -->
+      <_SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
+      <_SingleWarnIntermediateAssembly Remove="@(__SingleWarnIntermediateAssembly)" />
+      <!-- Set metadata on the intersection. -->
+      <_SingleWarnIntermediateAssembly>
+        <TrimmerSingleWarn Condition=" '%(_SingleWarnIntermediateAssembly.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
+      </_SingleWarnIntermediateAssembly>
+      <!-- Replace these items in ManagedAssemblyToLink. -->
+      <ManagedAssemblyToLink Remove="@(_SingleWarnIntermediateAssembly)" />
+      <ManagedAssemblyToLink Include="@(_SingleWarnIntermediateAssembly)" />
+
+      <!-- Don't collapse to a single warning for project references -->
+      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.ProjectReferenceOriginalItemSpec)' != '' ">
+        <TrimmerSingleWarn Condition=" '%(ManagedAssemblyToLink.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_TrimmerFeatureSettings Include="@(RuntimeHostConfigurationOption)" Condition="'%(RuntimeHostConfigurationOption.Trim)' == 'true'" />
+    </ItemGroup>
+
+   </Target>
+
+  <!--
+    ============================================================
+                     _ComputeManagedAssemblyToLink
+
+    Compute the set of inputs to the linker.
+    ============================================================
+    -->
+  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
+
+    <!-- NB: There should not be non-managed assemblies in this list, but we still give the linker a chance to
+         further refine this list. It currently drops C++/CLI assemblies in ComputeManageAssemblies. -->
+    <ComputeManagedAssemblies Assemblies="@(ResolvedFileToPublish->WithMetadataValue('PostprocessAssembly', 'true'))">
+      <Output TaskParameter="ManagedAssemblies" ItemName="ManagedAssemblyToLink" />
+    </ComputeManagedAssemblies>
+
+    <ItemGroup>
+      <!-- The linker implicitly picks up PDBs next to input assemblies. We will filter these out of the publish set. -->
+      <__PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(ManagedAssemblyToLink->'%(RelativeDir)%(Filename).pdb')" />
+      <_PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(__PDBToLink)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_LinkedResolvedFileToPublishCandidate Include="@(ManagedAssemblyToLink->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+      <_LinkedResolvedFileToPublishCandidate Include="@(_PDBToLink->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+
+</Project>

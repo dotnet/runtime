@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+    <TargetFramework>$(NetCoreAppTestsCurrent)</TargetFramework>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+</Project>

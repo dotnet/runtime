@@ -1,0 +1,74 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS;SUPPORTS_DEFAULT_INTERFACE_METHODS</DefineConstants>
+    <WarningLevel>0</WarningLevel>
+    <AnalysisLevel>0</AnalysisLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
+    <Compile Remove="CppCLI\Dependencies\CallCppCLIFromManaged.cs" />
+    <Compile Remove="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
+    <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKept_fwd.cs" />
+    <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\AnotherLibraryForwarder.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\AssemblyReferenceIsRemovedWhenUnused_Library.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary_2.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary_3.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ForwarderLibraryWithUnusedReference.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\ImplementationLibrary_3.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\MyEnumForwarder.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\TypeForwardedIsUpdatedForMissingTypeFwd.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\TypeForwardersModifiersLib*.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\TypeForwardersRewriteForwarders.cs" />
+    <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
+    <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
+    <Compile Remove="Logging\Dependencies\LogStep.cs" />
+    <Compile Remove="Extensibility\Dependencies\*.cs" />
+    <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
+    <Compile Remove="Warnings\Dependencies\CustomStep.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
+    <Content Include="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
+    <Content Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Content Include="TypeForwarding\Dependencies\MyEnumForwarder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TypeForwarding\Dependencies\TypeForwarderMissingReference.il" />
+    <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
+    <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnGenericParameter.il" />
+    <Content Include="CommandLine\Dependencies\ResponseFilesWork.rsp" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\Dependencies\NoInstanceCtorAndAssemblyPreserveAll_Lib.il" />
+    <Content Include="UnreachableBody\Dependencies\OtherAssemblyNoInstanceCtor.il" />
+    <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.txt" />
+    <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.log" />
+    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
+    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
+    <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Reflection\Dependencies\" />
+    <Folder Include="BCLFeatures\" />
+    <Folder Include="BCLFeatures\ETW\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>
