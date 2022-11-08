@@ -58,7 +58,7 @@ if [[ "$__TargetOS" == Browser ]]; then
 elif [[ "$__TargetOS" == Wasi ]]; then
     if [[ -z "$WASI_SDK_PATH" ]]; then
         if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk/ ]]; then
-            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasm/emsdk/
+            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk/
         else
             echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
             exit 1
@@ -68,8 +68,6 @@ elif [[ "$__TargetOS" == Wasi ]]; then
     export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
     __CMakeArgs="-DCLR_CMAKE_TARGET_OS=Wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"
-    echo !!!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!!!!
-    exit 0
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true

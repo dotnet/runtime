@@ -661,7 +661,10 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (NOT CLR_CMAKE_TARGET_WASI)
+    # TODOWASI
+    check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 check_symbol_exists(
     futimes
@@ -784,7 +787,7 @@ check_c_source_compiles(
     "
     HAVE_MKSTEMP)
 
-if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
+if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP AND NOT CLR_CMAKE_TARGET_WASI)
     message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
@@ -1092,14 +1095,16 @@ check_symbol_exists(
     sys/sysmacros.h
     HAVE_MAKEDEV_SYSMACROSH)
 
-if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 
-check_symbol_exists(
-    getgrgid_r
-    grp.h
-    HAVE_GETGRGID_R)
+if (NOT CLR_CMAKE_TARGET_WASI)
+    check_symbol_exists(
+        getgrgid_r
+        grp.h
+        HAVE_GETGRGID_R)
+endif()
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

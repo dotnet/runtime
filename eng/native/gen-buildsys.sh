@@ -94,12 +94,8 @@ fi
 
 if [[ "$host_arch" == "wasm" && "$2" =~ "-Browser-" ]]; then
     cmake_command="emcmake $cmake_command"
-    echo "!!!!!!!!!!!!!!! emcmake !!!!!!!!!!!!!!"
 elif [[ "$host_arch" == "wasm" && "$2" =~ "-Wasi-" ]]; then
     true
-elif [[ "$host_arch" == "wasm" ]]; then
-    echo "!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!! unexpected2"
-    exit 1
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options

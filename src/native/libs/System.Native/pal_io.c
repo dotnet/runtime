@@ -840,6 +840,8 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
     {
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
+#elif TARGET_WASI
+    // TODOWASI
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
 #endif
