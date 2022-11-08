@@ -4414,7 +4414,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
-    bool isStaticReadOnlyInitedRef = false;
+    bool     isStaticReadOnlyInitedRef = false;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {
@@ -4507,12 +4507,13 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // TODO-CQ: enable this optimization for 32 bit targets.
+// TODO-CQ: enable this optimization for 32 bit targets.
 #ifdef TARGET_64BIT
             if (!isBoxedStatic && (lclTyp == TYP_REF))
             {
                 bool isSpeculative = true;
-                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) != NO_CLASS_HANDLE))
+                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
+                     NO_CLASS_HANDLE))
                 {
                     isStaticReadOnlyInitedRef = !isSpeculative;
                 }
@@ -4522,7 +4523,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             assert(hasConstAddr);
             assert(pFieldInfo->fieldLookup.addr != nullptr);
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
-            size_t       fldAddr    = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
+            size_t       fldAddr = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
             GenTreeFlags handleKind;
             if (isBoxedStatic)
             {
