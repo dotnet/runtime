@@ -9691,7 +9691,7 @@ MONO_RESTORE_WARNING
 #endif /* defined(TARGET_X86) || defined(TARGET_AMD64) */
 
 // Shared between ARM64 and X86
-#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
 			IntrinsicId iid = ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;

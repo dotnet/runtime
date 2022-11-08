@@ -48,9 +48,6 @@ namespace System
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
-        // We will not use this in the classlibs, but we'll provide it for
-        // anyone that's really interested so they don't have to stick a bunch
-        // of printf's in their code.
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message)
             : base(message, paramName)
         {
@@ -87,9 +84,6 @@ namespace System
         }
 
         // Gets the value of the argument that caused the exception.
-        // Note - we don't set this anywhere in the class libraries in
-        // version 1, but it might come in handy for other developers who
-        // want to avoid sticking printf's in their code.
         public virtual object? ActualValue => _actualValue;
     }
 }
