@@ -155,18 +155,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
 		{
-#if DEBUG
-			var configDirectoryName = "Debug";
-#else
-			var configDirectoryName = "Release";
-#endif
+			var artifactsBinDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir")!;
+			var LinkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
+			var configuration = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.Configuration")!;
 
 			const string tfm = "net7.0";
 
-			// Working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
-			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
-			rootSourceDirectory = Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test", "Mono.Linker.Tests.Cases"));
-			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, "Mono.Linker.Tests.Cases"));
+			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));
 		}
 
 		// Accepts typeof expressions, with a format specifier
@@ -233,9 +229,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static string GetRepoRoot ()
 		{
-			return Directory.GetParent (ThisFile ())!.Parent!.Parent!.FullName;
-
-			string ThisFile ([CallerFilePath] string path = "") => path;
+			return (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.RepoRoot")!;
 		}
 	}
 }

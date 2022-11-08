@@ -65,8 +65,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NETCOREAPP
 			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
 
-			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
-			var toolsDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "..", "tools");
+			var toolsDir = Path.Combine((string)AppContext.GetData("Mono.Linker.Tests.ArtifactsDir")!, "tools");
 
 			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, "ilasm", $"ilasm{extension}")).ToNPath ();
 			if (ilasmPath.FileExists ())
