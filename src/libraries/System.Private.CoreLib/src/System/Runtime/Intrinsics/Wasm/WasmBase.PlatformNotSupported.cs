@@ -4,6 +4,8 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
+#pragma warning disable IDE0060 // Remove unused parameter
+
 namespace System.Runtime.Intrinsics.Wasm
 {
     internal abstract class WasmBase

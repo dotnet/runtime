@@ -98,7 +98,7 @@ namespace System.Net.Security
             return policy.Pal._tls13CipherSuites.Length == 1;
         }
 
-        internal static bool ShouldOptOutOfLowerThanTls13(CipherSuitesPolicy? policy, EncryptionPolicy encryptionPolicy)
+        internal static bool ShouldOptOutOfLowerThanTls13(CipherSuitesPolicy? policy)
         {
             if (policy == null)
             {

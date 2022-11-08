@@ -10,8 +10,6 @@
 **
 =============================================================================*/
 
-#pragma warning disable 0420
-
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -20,6 +18,7 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
+        [Conditional("unnecessary")]
         internal static void ReportThreadStatus(bool isWorking)
         {
         }

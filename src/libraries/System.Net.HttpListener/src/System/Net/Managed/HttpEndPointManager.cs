@@ -210,7 +210,7 @@ namespace System.Net
                 return;
 
             HttpEndPointListener epl = GetEPListener(lp.Host!, lp.Port, listener, lp.Secure);
-            epl.RemovePrefix(lp, listener);
+            epl.RemovePrefix(lp);
         }
     }
 }

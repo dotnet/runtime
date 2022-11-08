@@ -79,7 +79,7 @@ namespace System.Data.SqlTypes
         private const DateTimeStyles x_DateTimeStyle = DateTimeStyles.AllowWhiteSpaces;
 
         // construct a Null
-        private SqlDateTime(bool fNull)
+        private SqlDateTime(bool _)
         {
             m_fNotNull = false;
             m_day = 0;
