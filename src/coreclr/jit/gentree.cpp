@@ -20059,17 +20059,24 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                // If we don't have an intrinsic set for this, try "Min(op1, op2) == op1"
                 if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
                     ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
-                    assert(!varTypeIsFloating(simdBaseType));
-                    GenTree* op1Dup;
-                    op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
+                    // We can't use this trick for longs
+                    if (!varTypeIsLong(simdBaseType))
+                    {
+                        assert(!varTypeIsFloating(simdBaseType));
+                        GenTree* op1Dup;
+                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
 
-                    return gtNewSimdCmpOpNode(GT_EQ, type, gtNewSimdMaxNode(type, op1, op2, simdBaseJitType, simdSize,
-                                                                            isSimdAsHWIntrinsic),
-                                              op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        GenTreeHWIntrinsic* maxNode =
+                            gtNewSimdHWIntrinsicNode(type, op1, op2, simdSize == 16 ? NI_SSE41_Max : NI_AVX2_Max,
+                                                     simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        return gtNewSimdCmpOpNode(GT_EQ, type, maxNode, op1Dup, simdBaseJitType, simdSize,
+                                                  isSimdAsHWIntrinsic);
+                    }
                 }
 
                 // There is no direct support for doing a combined comparison and equality for integral types.
@@ -20298,17 +20305,25 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                // If we don't have an intrinsic set for this, try "Min(op1, op2) == op1"
                 if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
                     ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
-                    assert(!varTypeIsFloating(simdBaseType));
-                    GenTree* op1Dup;
-                    op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
+                    // We can't use this trick for longs
+                    if (!varTypeIsLong(simdBaseType))
+                    {
+                        assert(!varTypeIsFloating(simdBaseType));
+                        GenTree* op1Dup;
+                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
 
-                    return gtNewSimdCmpOpNode(GT_EQ, type, gtNewSimdMinNode(type, op1, op2, simdBaseJitType, simdSize,
-                                                                            isSimdAsHWIntrinsic),
-                                              op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        GenTreeHWIntrinsic* minNode =
+                            gtNewSimdHWIntrinsicNode(type, op1, op2, simdSize == 16 ? NI_SSE41_Min : NI_AVX2_Min,
+                                                     simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+                        return gtNewSimdCmpOpNode(GT_EQ, type, minNode, op1Dup, simdBaseJitType, simdSize,
+                                                  isSimdAsHWIntrinsic);
+                    }
                 }
 
                 // There is no direct support for doing a combined comparison and equality for integral types.
