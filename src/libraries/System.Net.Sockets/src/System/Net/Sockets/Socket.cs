@@ -169,7 +169,7 @@ namespace System.Net.Sockets
                             break;
 
                         case AddressFamily.Unix:
-                            socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                            socketAddress = new Internals.SocketAddress(AddressFamily.Unix, buffer.Slice(0, bufferLength));
                             _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
                             break;
                     }
@@ -202,7 +202,7 @@ namespace System.Net.Sockets
                                             break;
 
                                         case AddressFamily.Unix:
-                                            socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                                            socketAddress = new Internals.SocketAddress(AddressFamily.Unix, buffer.Slice(0, bufferLength));
                                             _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
                                             break;
                                     }
@@ -2739,7 +2739,7 @@ namespace System.Net.Sockets
                     bool canUseConnectEx = _socketType == SocketType.Stream && endPointSnapshot.AddressFamily != AddressFamily.Unix;
                     SocketError socketError = canUseConnectEx ?
                         e.DoOperationConnectEx(this, _handle) :
-                        e.DoOperationConnect(this, _handle); // For connectionless protocols, Connect is not an I/O call.
+                        e.DoOperationConnect(_handle); // For connectionless protocols, Connect is not an I/O call.
                     pending = socketError == SocketError.IOPending;
                 }
                 catch (Exception ex)

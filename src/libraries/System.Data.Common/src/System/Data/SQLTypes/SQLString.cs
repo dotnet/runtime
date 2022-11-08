@@ -87,7 +87,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlString(bool fNull)
+        private SqlString(bool _)
         {
             m_value = null;
             m_cmpInfo = null;

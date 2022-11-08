@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Wasm;
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -95,7 +96,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static uint RoundUpToPowerOf2(uint value)
         {
-            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
+            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported || WasmBase.IsSupported)
             {
 #if TARGET_64BIT
                 return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
@@ -127,7 +128,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static ulong RoundUpToPowerOf2(ulong value)
         {
-            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported || WasmBase.IsSupported)
             {
                 int shift = 64 - LeadingZeroCount(value - 1);
                 return (1ul ^ (ulong)(shift >> 6)) << shift;
@@ -195,6 +196,11 @@ namespace System.Numerics
                 return ArmBase.LeadingZeroCount(value);
             }
 
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.LeadingZeroCount(value);
+            }
+
             // Unguarded fallback contract is 0->31, BSR contract is 0->undefined
             if (value == 0)
             {
@@ -230,6 +236,11 @@ namespace System.Numerics
             if (ArmBase.Arm64.IsSupported)
             {
                 return ArmBase.Arm64.LeadingZeroCount(value);
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.LeadingZeroCount(value);
             }
 
             if (X86Base.X64.IsSupported)
@@ -305,6 +316,11 @@ namespace System.Numerics
                 return 31 ^ ArmBase.LeadingZeroCount(value);
             }
 
+            if (WasmBase.IsSupported)
+            {
+                return 31 ^ WasmBase.LeadingZeroCount(value);
+            }
+
             // BSR returns the log2 result directly. However BSR is slower than LZCNT
             // on AMD processors, so we leave it as a fallback only.
             if (X86Base.IsSupported)
@@ -340,6 +356,11 @@ namespace System.Numerics
             if (X86Base.X64.IsSupported)
             {
                 return (int)X86Base.X64.BitScanReverse(value);
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return 63 ^ WasmBase.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -551,6 +572,11 @@ namespace System.Numerics
                 return ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
             }
 
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.TrailingZeroCount(value);
+            }
+
             // Unguarded fallback contract is 0->0, BSF contract is 0->undefined
             if (value == 0)
             {
@@ -597,6 +623,11 @@ namespace System.Numerics
             if (ArmBase.Arm64.IsSupported)
             {
                 return ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.TrailingZeroCount(value);
             }
 
             if (X86Base.X64.IsSupported)

@@ -685,11 +685,11 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [NonEvent]
-        internal void CachingIntermediateFailed(X509Certificate2 certificate)
+        internal void CachingIntermediateFailedMessage()
         {
             if (IsEnabled())
             {
-                CachingIntermediateFailed(certificate.Subject);
+                CachingIntermediateFailed();
             }
         }
 
@@ -697,7 +697,7 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CachingIntermediateFailed,
             Level = EventLevel.Warning,
             Message = "Adding the downloaded intermediate '{0}' to the CurrentUser\\CA store failed.")]
-        private void CachingIntermediateFailed(string subjectName)
+        private void CachingIntermediateFailed()
         {
             WriteEvent(EventId_CachingIntermediateFailed);
         }

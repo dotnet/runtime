@@ -417,11 +417,11 @@ namespace System.Xml.Xsl.Xslt
                                 }
                                 else if (_input.IsKeyword(_atoms.Variable))
                                 {
-                                    LoadGlobalVariableOrParameter(ctxInfo.nsList, XslNodeType.Variable);
+                                    LoadGlobalVariableOrParameter(ctxInfo.nsList);
                                 }
                                 else if (_input.IsKeyword(_atoms.Param))
                                 {
-                                    LoadGlobalVariableOrParameter(ctxInfo.nsList, XslNodeType.Param);
+                                    LoadGlobalVariableOrParameter(ctxInfo.nsList);
                                 }
                                 else if (_input.IsKeyword(_atoms.Template))
                                 {
@@ -1118,7 +1118,7 @@ namespace System.Xml.Xsl.Xslt
             set.AddContent(SetInfo(F.List(), LoadEndTag(content), ctxInfo));
         }
 
-        private void LoadGlobalVariableOrParameter(NsDecl? stylesheetNsList, XslNodeType nodeType)
+        private void LoadGlobalVariableOrParameter(NsDecl? stylesheetNsList)
         {
             Debug.Assert(_curTemplate == null);
             Debug.Assert(_input.CanHaveApplyImports == false);

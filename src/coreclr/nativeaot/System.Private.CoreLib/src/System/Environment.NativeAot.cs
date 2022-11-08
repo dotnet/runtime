@@ -43,7 +43,7 @@ namespace System
         public static void FailFast(string message, Exception exception) =>
             RuntimeExceptionHelpers.FailFast(message, exception);
 
-        internal static void FailFast(string message, Exception exception, string errorSource)
+        internal static void FailFast(string message, Exception exception, string _ /*errorSource*/)
         {
             // TODO: errorSource originates from CoreCLR (See: https://github.com/dotnet/coreclr/pull/15895)
             // For now, we ignore errorSource but we should distinguish the way FailFast prints exception message using errorSource
