@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Wasi</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\IWebProxyScript.cs" />
     <Compile Include="System\Net\WebProxy.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Browser'" Include="System\Net\WebProxy.Browser.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'Wasi'" Include="System\Net\WebProxy.Browser.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'Wasi'" Include="System\Net\WebProxy.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
