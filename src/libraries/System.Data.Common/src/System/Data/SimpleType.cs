@@ -296,7 +296,7 @@ namespace System.Data
             return enumType;
         }
 
-        internal static SimpleType CreateByteArrayType(string encoding)
+        internal static SimpleType CreateByteArrayType()
         {
             SimpleType byteArrayType = new SimpleType("base64Binary");
             return byteArrayType;

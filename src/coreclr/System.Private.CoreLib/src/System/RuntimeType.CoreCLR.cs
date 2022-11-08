@@ -3774,7 +3774,7 @@ namespace System
                     CorElementType dstElementType = GetUnderlyingType(this);
                     if (dstElementType != srcElementType)
                     {
-                        value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, this, dstElementType);
+                        value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
                     }
                 }
 
@@ -3929,7 +3929,7 @@ namespace System
                     }
 
                     // fast path??
-                    instance = CreateInstanceLocal(this, nonPublic: true, wrapExceptions: wrapExceptions);
+                    instance = CreateInstanceLocal(wrapExceptions: wrapExceptions);
                 }
                 else
                 {
@@ -3943,7 +3943,7 @@ namespace System
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
                 Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-            object? CreateInstanceLocal(Type type, bool nonPublic, bool wrapExceptions)
+            object? CreateInstanceLocal(bool wrapExceptions)
             {
                 return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
             }

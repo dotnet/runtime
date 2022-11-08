@@ -108,6 +108,11 @@ inline bool IsRegionGCEnabled()
     return (g_gcDacGlobals->minor_version_number & 1) != 0;
 }
 
+inline bool IsBackgroundGCEnabled()
+{
+    return (g_gcDacGlobals->minor_version_number & 2) == 0;
+}
+
 // Load an instance of dac_gc_heap for the heap pointed by heap.
 // Fields that does not exist in the current gc_heap instance is zero initialized.
 // Return the dac_gc_heap object.

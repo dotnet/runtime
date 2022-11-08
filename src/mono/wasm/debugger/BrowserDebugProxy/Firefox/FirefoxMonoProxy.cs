@@ -478,7 +478,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         from = args["to"].Value<string>()
                     });
                     if (args["type"].Value<string>() == "prototypeAndProperties")
-                        o.Add("prototype", GetPrototype(objectId, args));
+                        o.Add("prototype", GetPrototype(args));
                     await SendEvent(sessionId, "", o, token);
                     return true;
                 }
@@ -488,7 +488,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         return false;
                     var o = JObject.FromObject(new
                     {
-                        prototype = GetPrototype(objectId, args),
+                        prototype = GetPrototype(args),
                         from = args["to"].Value<string>()
                     });
                     await SendEvent(sessionId, "", o, token);
@@ -726,7 +726,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return true;
     }
 
-    private static JObject GetPrototype(DotnetObjectId objectId, JObject args)
+    private static JObject GetPrototype(JObject args)
     {
         var o = JObject.FromObject(new
         {

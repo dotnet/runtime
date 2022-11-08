@@ -64,12 +64,12 @@ namespace Microsoft.Interop
         UseSiteAttributeData IUseSiteAttributeParser.ParseAttribute(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             ImmutableDictionary<string, TypedConstant> namedArgs = ImmutableDictionary.CreateRange(attributeData.NamedArguments);
-            CountInfo countInfo = ParseCountInfo(attributeData, namedArgs, elementInfoProvider, marshallingInfoCallback);
+            CountInfo countInfo = ParseCountInfo(attributeData, elementInfoProvider, marshallingInfoCallback);
             int elementIndirectionDepth = namedArgs.TryGetValue(ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth, out TypedConstant value) ? (int)value.Value! : 0;
             return new UseSiteAttributeData(elementIndirectionDepth, countInfo, attributeData);
         }
 
-        private CountInfo ParseCountInfo(AttributeData attributeData, ImmutableDictionary<string, TypedConstant> namedArguments, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
+        private CountInfo ParseCountInfo(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             int? constSize = null;
             string? elementName = null;

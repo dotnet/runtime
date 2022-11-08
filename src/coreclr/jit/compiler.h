@@ -2815,7 +2815,7 @@ public:
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
     bool gtStoreDefinesField(
-        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize);
+        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -8999,6 +8999,14 @@ private:
     bool canUseEvexEncoding() const
     {
 #ifdef TARGET_XARCH
+
+#ifdef DEBUG
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
 #else
         return false;
@@ -9013,17 +9021,22 @@ private:
     //
     bool DoJitStressEvexEncoding() const
     {
-#ifdef TARGET_XARCH
-// Using JitStressEvexEncoding flag will force instructions which would
-// otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-// This requires AVX512VL support.
-#ifdef DEBUG
+#if defined(TARGET_XARCH) && defined(DEBUG)
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
+
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
         if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             return true;
         }
-#endif // DEBUG
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && DEBUG
+
         return false;
     }
 
