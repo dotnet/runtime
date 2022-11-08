@@ -2179,6 +2179,13 @@ private:
 
     instrDesc* emitLastIns;
 
+    // Check if a peephole opt involving emitLastIns is unsafe
+    // emitForceNewIG here prevents peepholes from crossing nogc boundaries.
+    bool emitCannotPeepholeLastIns()
+    {
+        return emitForceNewIG || ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0));
+    }
+
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
 #endif

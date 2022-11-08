@@ -317,7 +317,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     // If there are no instructions in this IG, we can look back at
     // the previous IG's instructions if this IG is an extension.
     //
-    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    if (emitCannotPeepholeLastIns())
     {
         return false;
     }
@@ -398,7 +398,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
     }
 
     // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    if (emitCannotPeepholeLastIns())
     {
         return false;
     }
@@ -480,8 +480,7 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    if (emitCannotPeepholeLastIns())
     {
         return false;
     }
@@ -4698,12 +4697,10 @@ bool emitter::IsRedundantMov(
         return true;
     }
 
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (isFirstInstrInBlock ||               // Don't optimize if instruction is the first instruction in IG.
+    if (emitCannotPeepholeLastIns() ||       // Don't optimize if instruction is the first instruction in IG.
         (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
         (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
@@ -7343,13 +7340,10 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
         return false;
     }
 
-    bool hasSideEffect = HasSideEffect(ins, size);
-
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (isFirstInstrInBlock ||             // Don't optimize if instruction is the first instruction in IG.
+    if (emitCannotPeepholeLastIns() ||     // Don't optimize if instruction is the first instruction in IG.
         (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
         (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
@@ -7366,6 +7360,8 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     regNumber lastReg1 = emitLastIns->idReg1();
     int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
     int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+
+    const bool hasSideEffect = HasSideEffect(ins, size);
 
     // Check if the last instruction and current instructions use the same register and local memory.
     if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
