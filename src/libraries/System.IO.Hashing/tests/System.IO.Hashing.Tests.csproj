@@ -10,6 +10,7 @@
     <Compile Include="NonCryptoHashTestDriver.cs" />
     <Compile Include="XxHash3Tests.cs" />
     <Compile Include="XxHash32Tests.cs" />
+    <Compile Include="XxHash32Tests.007.cs" />
     <Compile Include="XxHash32Tests.f00d.cs" />
     <Compile Include="XxHash64Tests.cs" />
     <Compile Include="XxHash64Tests.007.cs" />

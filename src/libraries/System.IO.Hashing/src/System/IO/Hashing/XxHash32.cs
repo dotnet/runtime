@@ -110,6 +110,15 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
+            uint hash = GetCurrentHashAsUInt32();
+            BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
+        }
+
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public uint GetCurrentHashAsUInt32()
+        {
             int remainingLength = _length & 0x0F;
             ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
 
@@ -118,8 +127,7 @@ namespace System.IO.Hashing
                 remaining = new ReadOnlySpan<byte>(_holdback, 0, remainingLength);
             }
 
-            uint acc = _state.Complete(_length, remaining);
-            BinaryPrimitives.WriteUInt32BigEndian(destination, acc);
+            return _state.Complete(_length, remaining);
         }
 
         /// <summary>
@@ -168,7 +176,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source, int seed = 0)
         {
             byte[] ret = new byte[HashSize];
-            StaticHash(source, ret, seed);
+            uint hash = HashToUInt32(source, seed);
+            BinaryPrimitives.WriteUInt32BigEndian(ret, hash);
             return ret;
         }
 
@@ -193,7 +202,9 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination, seed);
+            uint hash = HashToUInt32(source, seed);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
+            bytesWritten = HashSize;
             return true;
         }
 
@@ -213,10 +224,17 @@ namespace System.IO.Hashing
                 ThrowDestinationTooShort();
             }
 
-            return StaticHash(source, destination, seed);
+            uint hash = HashToUInt32(source, seed);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
+            return HashSize;
         }
 
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination, int seed)
+        /// <summary>Computes the XxHash32 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
+        /// <returns>The computed XxHash32 hash.</returns>
+        [CLSCompliant(false)]
+        public static uint HashToUInt32(ReadOnlySpan<byte> source, int seed = 0)
         {
             int totalLength = source.Length;
             State state = new State((uint)seed);
@@ -227,9 +245,7 @@ namespace System.IO.Hashing
                 source = source.Slice(StripeSize);
             }
 
-            uint val = state.Complete(totalLength, source);
-            BinaryPrimitives.WriteUInt32BigEndian(destination, val);
-            return HashSize;
+            return state.Complete(totalLength, source);
         }
     }
 }

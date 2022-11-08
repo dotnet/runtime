@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
@@ -292,6 +293,24 @@ namespace System.IO.Hashing.Tests
                     _emptyHashHex ??= TestCase.ToHexString(_emptyHash),
                     TestCase.ToHexString(result));
             }
+        }
+
+        protected static void AssertEqualHashNumber(string hex, uint hash, bool littleEndian = false)
+        {
+            if (littleEndian == BitConverter.IsLittleEndian)
+            {
+                hash = BinaryPrimitives.ReverseEndianness(hash);
+            }
+            Assert.Equal(hex, hash.ToString("X8"));
+        }
+
+        protected static void AssertEqualHashNumber(string hex, ulong hash, bool littleEndian = false)
+        {
+            if (littleEndian == BitConverter.IsLittleEndian)
+            {
+                hash = BinaryPrimitives.ReverseEndianness(hash);
+            }
+            Assert.Equal(hex, hash.ToString("X16"));
         }
 
         public abstract class TestCaseBase

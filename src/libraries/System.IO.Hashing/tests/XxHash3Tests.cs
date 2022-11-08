@@ -39,6 +39,9 @@ namespace System.IO.Hashing.Tests
                 Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash(input, test.Seed)));
                 Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(XxHash3.Hash((ReadOnlySpan<byte>)input, test.Seed)));
 
+                // Validate `XxHash3.HashToUInt64`
+                Assert.Equal(test.Hash, XxHash3.HashToUInt64(input, test.Seed));
+
                 Assert.False(XxHash3.TryHash(input, destination.AsSpan(0, destination.Length - 1), out int bytesWritten, test.Seed));
                 Assert.Equal(0, bytesWritten);
 
@@ -102,6 +105,7 @@ namespace System.IO.Hashing.Tests
 
                             // Validate that the hash we get from doing a one-shot of all the data up to this point
                             // matches the incremental hash for the data appended until now.
+                            Assert.Equal(XxHash3.HashToUInt64(asciiBytes.AsSpan(0, processed), test.Seed), hash.GetCurrentHashAsUInt64());
                             Assert.True(hash.TryGetCurrentHash(destination, out int bytesWritten));
                             Assert.Equal(8, XxHash3.Hash(asciiBytes.AsSpan(0, processed), destination2, test.Seed));
                             AssertExtensions.SequenceEqual(destination, destination2);
@@ -109,6 +113,7 @@ namespace System.IO.Hashing.Tests
                         }
 
                         // Validate the final hash code.
+                        Assert.Equal(test.Hash, hash.GetCurrentHashAsUInt64());
                         Array.Clear(destination, 0, destination.Length);
                         Assert.Equal(8, hash.GetHashAndReset(destination));
                         Assert.Equal(test.Hash, BinaryPrimitives.ReadUInt64BigEndian(destination));

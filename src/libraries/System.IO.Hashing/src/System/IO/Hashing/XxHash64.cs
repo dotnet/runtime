@@ -110,6 +110,15 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
+            ulong hash = GetCurrentHashAsUInt64();
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+        }
+
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public ulong GetCurrentHashAsUInt64()
+        {
             int remainingLength = (int)_length & 0x1F;
             ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
 
@@ -118,8 +127,7 @@ namespace System.IO.Hashing
                 remaining = new ReadOnlySpan<byte>(_holdback, 0, remainingLength);
             }
 
-            ulong acc = _state.Complete(_length, remaining);
-            BinaryPrimitives.WriteUInt64BigEndian(destination, acc);
+            return _state.Complete(_length, remaining);
         }
 
         /// <summary>
@@ -168,7 +176,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source, long seed = 0)
         {
             byte[] ret = new byte[HashSize];
-            StaticHash(source, ret, seed);
+            ulong hash = HashToUInt64(source, seed);
+            BinaryPrimitives.WriteUInt64BigEndian(ret, hash);
             return ret;
         }
 
@@ -193,7 +202,9 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination, seed);
+            ulong hash = HashToUInt64(source, seed);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+            bytesWritten = HashSize;
             return true;
         }
 
@@ -213,10 +224,17 @@ namespace System.IO.Hashing
                 ThrowDestinationTooShort();
             }
 
-            return StaticHash(source, destination, seed);
+            ulong hash = HashToUInt64(source, seed);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+            return HashSize;
         }
 
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination, long seed)
+        /// <summary>Computes the XxHash64 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation.</param>
+        /// <returns>The computed XxHash64 hash.</returns>
+        [CLSCompliant(false)]
+        public static ulong HashToUInt64(ReadOnlySpan<byte> source, long seed = 0)
         {
             int totalLength = source.Length;
             State state = new State((ulong)seed);
@@ -227,9 +245,7 @@ namespace System.IO.Hashing
                 source = source.Slice(StripeSize);
             }
 
-            ulong val = state.Complete((uint)totalLength, source);
-            BinaryPrimitives.WriteUInt64BigEndian(destination, val);
-            return HashSize;
+            return state.Complete((uint)totalLength, source);
         }
     }
 }

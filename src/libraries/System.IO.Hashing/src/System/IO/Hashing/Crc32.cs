@@ -77,6 +77,11 @@ namespace System.IO.Hashing
             _crc = InitialState;
         }
 
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public uint GetCurrentHashAsUInt32() => ~_crc;
+
         /// <summary>
         ///   Computes the CRC-32 hash of the provided data.
         /// </summary>
@@ -103,7 +108,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source)
         {
             byte[] ret = new byte[Size];
-            StaticHash(source, ret);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(ret, hash);
             return ret;
         }
 
@@ -127,7 +133,9 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
+            bytesWritten = Size;
             return true;
         }
 
@@ -146,16 +154,17 @@ namespace System.IO.Hashing
                 ThrowDestinationTooShort();
             }
 
-            return StaticHash(source, destination);
-        }
-
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            uint crc = InitialState;
-            crc = Update(crc, source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, ~crc);
+            uint hash = HashToUInt32(source);
+            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
             return Size;
         }
+
+        /// <summary>Computes the CRC-32 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <returns>The computed CRC-32 hash.</returns>
+        [CLSCompliant(false)]
+        public static uint HashToUInt32(ReadOnlySpan<byte> source) =>
+            ~Update(InitialState, source);
 
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
