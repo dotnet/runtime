@@ -357,11 +357,6 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else
                     {
-                        // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
-                        // on a new instance of the interface over populating the existing instance implementing the interface.
-                        // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
-                        // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
-
                         bindingPoint.SetValue(CreateInstance(type, config, options));
                     }
                 }
@@ -594,10 +589,12 @@ namespace Microsoft.Extensions.Configuration
 
             Debug.Assert(dictionary is not null);
 
-            MethodInfo tryGetValue = dictionary.GetType().GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
+            Type dictionaryObjectType = dictionary.GetType();
+
+            MethodInfo tryGetValue = dictionaryObjectType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
 
             // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo? setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo? setter = dictionaryObjectType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
             if (setter is null || !setter.CanWrite)
             {
                 // Cannot set any item on the dictionary object.
