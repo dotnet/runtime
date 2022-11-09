@@ -54,6 +54,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DUNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
 
