@@ -486,10 +486,9 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // If there are no instructions in this IG, we can look back at
-    // the previous IG's instructions if this IG is an extension.
+    // Only consider if safe
     //
-    if (emitCannotPeepholeLastIns())
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -569,7 +568,9 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    if (emitCannotPeepholeLastIns())
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -651,8 +652,9 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCannotPeepholeLastIns())
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -5719,8 +5721,7 @@ bool emitter::IsRedundantMov(
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (emitCannotPeepholeLastIns() ||       // Don't optimize if instruction is the first instruction in IG.
-        (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
+    if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
         (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
         (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
@@ -8410,8 +8411,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (emitCannotPeepholeLastIns() ||     // Don't optimize if instruction is the first instruction in IG.
-        (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
+    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
         (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
     {
