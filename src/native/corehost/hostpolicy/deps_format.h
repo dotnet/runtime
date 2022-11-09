@@ -26,31 +26,11 @@ class deps_json_t
 public:
     typedef str_to_vector_map_t rid_fallback_graph_t;
 
-    deps_json_t()
+    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t* graph)
         : m_file_exists(false)
         , m_valid(false)
     {
-    }
-
-    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path)
-        : deps_json_t(is_framework_dependent, deps_path, m_rid_fallback_graph /* dummy */)
-    {
-    }
-
-    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
-        : deps_json_t()
-    {
-        m_valid = load(is_framework_dependent, deps_path, graph);
-    }
-
-    void parse(bool is_framework_dependent, const pal::string_t& deps_path)
-    {
-        m_valid = load(is_framework_dependent, deps_path, m_rid_fallback_graph /* dummy */);
-    }
-
-    void parse(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
-    {
-        m_valid = load(is_framework_dependent, deps_path, graph);
+        m_valid = load(is_framework_dependent, deps_path, graph == nullptr ? m_rid_fallback_graph : *graph);
     }
 
     const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type) const

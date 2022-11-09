@@ -735,16 +735,8 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
 
     for (pal::string_t json_file : m_additional_deps_files)
     {
-        if (rid_fallback_graph != nullptr)
-        {
-            m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                new deps_json_t(true, json_file, *rid_fallback_graph)));
-        }
-        else
-        {
-            m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                new deps_json_t(true, json_file)));
-        }
+        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
+            new deps_json_t(true, json_file, rid_fallback_graph)));
     }
 }
 

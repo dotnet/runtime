@@ -69,7 +69,7 @@ public:
 
             if (root_framework_rid_fallback_graph == nullptr && i == lowest_framework)
             {
-                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(false, deps_file));
+                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(false, deps_file, nullptr));
 
                 // The fx_definitions contains the root framework, so set the
                 // rid fallback graph that will be used for other frameworks.
@@ -78,7 +78,7 @@ public:
             else
             {
                 // The rid graph is obtained from the root framework
-                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(true, deps_file, *root_framework_rid_fallback_graph));
+                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(true, deps_file, root_framework_rid_fallback_graph));
             }
         }
 
