@@ -761,42 +761,29 @@ namespace System.IO.Strategies
 
         internal override void Flush(bool flushToDisk)
         {
-            EnsureNotClosed();
+            Debug.Assert(!_strategy.IsClosed, "FileStream responsibility");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen),
+                "We're either reading or writing, but not both.");
 
-            // Has write data in the buffer:
             if (_writePos > 0)
             {
-                // EnsureNotClosed does not guarantee that the Stream has not been closed
-                // an example could be a call to fileStream.SafeFileHandle.Dispose()
-                // so to avoid getting exception here, we just ensure that we can Write before doing it
-                if (_strategy.CanWrite)
-                {
-                    FlushWrite();
-                    Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
-                    return;
-                }
+                FlushWrite();
             }
-
-            // Has read data in the buffer:
-            if (_readPos < _readLen)
+            else if (_readLen > 0)
             {
                 // If the underlying strategy is not seekable AND we have something in the read buffer, then FlushRead would throw.
                 // We can either throw away the buffer resulting in data loss (!) or ignore the Flush.
-                // (We cannot throw because it would be a breaking change.) We opt into ignoring the Flush in that situation.
+                // We cannot throw because it would be a breaking change. We opt into ignoring the Flush in that situation.
                 if (_strategy.CanSeek)
                 {
                     FlushRead();
                 }
-
-                // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
-                Debug.Assert(_writePos == 0 && (!_strategy.CanSeek || (_readPos == 0 && _readLen == 0)));
-                return;
             }
 
-            // We had no data in the buffer, but we still need to tell the underlying strategy to flush.
+            // We still need to tell the underlying strategy to flush. It's NOP for !flushToDisk or !CanWrite.
             _strategy.Flush(flushToDisk);
-
-            _writePos = _readPos = _readLen = 0;
+            // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
+            Debug.Assert(_writePos == 0 && (!_strategy.CanSeek || (_readPos == 0 && _readLen == 0)));
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

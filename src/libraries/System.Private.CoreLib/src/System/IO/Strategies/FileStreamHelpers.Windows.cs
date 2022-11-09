@@ -95,7 +95,7 @@ namespace System.IO.Strategies
             return errorCode;
         }
 
-        internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
+        internal static void Lock(SafeFileHandle handle, bool _ /*canWrite*/, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -225,40 +225,34 @@ namespace System.IO.Strategies
                         }
 
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
-                        if (!synchronousSuccess)
+                        if (!synchronousSuccess && errorCode != Interop.Errors.ERROR_IO_PENDING)
                         {
-                            switch (errorCode)
+                            if (!RandomAccess.IsEndOfFile(errorCode, handle, readAwaitable._position))
                             {
-                                case Interop.Errors.ERROR_IO_PENDING:
-                                    // Async operation in progress.
-                                    break;
-                                case Interop.Errors.ERROR_BROKEN_PIPE:
-                                case Interop.Errors.ERROR_HANDLE_EOF:
-                                    // We're at or past the end of the file, and the overlapped callback
-                                    // won't be raised in these cases. Mark it as completed so that the await
-                                    // below will see it as such.
-                                    readAwaitable.MarkCompleted();
-                                    break;
-                                default:
-                                    // Everything else is an error (and there won't be a callback).
-                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                             }
+
+                            // We're at or past the end of the file, and the overlapped callback
+                            // won't be raised in these cases. Mark it as completed so that the await
+                            // below will see it as such.
+                            readAwaitable.MarkCompleted();
                         }
 
                         // Wait for the async operation (which may or may not have already completed), then throw if it failed.
                         await readAwaitable;
-                        switch (readAwaitable._errorCode)
+
+                        if (readAwaitable._errorCode != Interop.Errors.ERROR_SUCCESS)
                         {
-                            case 0: // success
-                                break;
-                            case Interop.Errors.ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
-                            case Interop.Errors.ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
-                                Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
-                                break;
-                            case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
+                            if (readAwaitable._errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
+                            {
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
-                            default: // error
+                            }
+                            else if (!RandomAccess.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
+                            {
                                 throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, handle.Path);
+                            }
+
+                            Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
                         }
 
                         // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.

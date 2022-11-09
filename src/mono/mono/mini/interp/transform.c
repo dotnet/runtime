@@ -2134,16 +2134,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
 				g_assert (length_field);
 				int offset_length = m_field_get_offset (length_field) - sizeof (MonoObject);
+				g_assert (offset_length == TARGET_SIZEOF_VOID_P);
 
 				MonoClassField *ptr_field = mono_class_get_field_from_name_full (target_method->klass, "_reference", NULL);
 				g_assert (ptr_field);
 				int offset_pointer = m_field_get_offset (ptr_field) - sizeof (MonoObject);
+				g_assert (offset_pointer == 0);
 
 				int size = mono_class_array_element_size (param_class);
 				interp_add_ins (td, MINT_GETITEM_SPAN);
 				td->last_ins->data [0] = GINT_TO_UINT16 (size);
-				td->last_ins->data [1] = GINT_TO_UINT16 (offset_length);
-				td->last_ins->data [2] = GINT_TO_UINT16 (offset_pointer);
 
 				td->sp -= 2;
 				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
@@ -6034,12 +6034,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
 					g_assert (!m_field_is_from_update (field));
 					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
-					if (td->sp->type == STACK_TYPE_O) {
+					if (td->sp->type == STACK_TYPE_O || td->sp->type == STACK_TYPE_I) {
 						interp_add_ins (td, MINT_LDFLDA);
 						td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
 					} else {
 						int sp_type = td->sp->type;
-						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
+						g_assert (sp_type == STACK_TYPE_MP);
 						if (foffset) {
 							interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 							td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
@@ -8994,6 +8994,17 @@ retry:
 						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);
 						dump_interp_inst (ins);
 					}
+					needs_retry = TRUE;
+				}
+			} else if (opcode == MINT_GETITEM_SPAN) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					// Allow ldloca instruction to be killed
+					local_ref_count [sregs [0]]--;
+					// Instead of loading from the indirect pointer pass directly the vt var
+					ins->opcode = MINT_GETITEM_LOCALSPAN;
+					sregs [0] = local;
 					needs_retry = TRUE;
 				}
 			}

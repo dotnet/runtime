@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Xml
             set { _relDecryptor = value; }
         }
 
-        private void DecryptEncryptedGrants(XmlNodeList encryptedGrantList, IRelDecryptor decryptor)
+        private void DecryptEncryptedGrants(XmlNodeList encryptedGrantList)
         {
             XmlElement? encryptionMethod;
             XmlElement? keyInfo;
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Xml
                 if (_relDecryptor == null)
                     throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingIRelDecryptor);
 
-                DecryptEncryptedGrants(encryptedGrantList, _relDecryptor);
+                DecryptEncryptedGrants(encryptedGrantList);
             }
 
             _license.InnerXml = currentLicenseContext.OuterXml;

@@ -5,12 +5,14 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <PackageDescription>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageDescription>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read configuration parameters from environment variables. You can use EnvironmentVariablesExtensions.AddEnvironmentVariables extension method on IConfigurationBuilder to add the environment variables configuration provider to the configuration builder.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
   
 </Project>

@@ -13,21 +13,20 @@
 #include "stdafx.h"
 #include "winwrap.h"
 #include "utilcode.h"
-#include "sstring.h"
-
 
 /***
-*SplitPath() - split a path name into its individual components
+*SplitPathInterior()
 *
 *Purpose:
-*       to split a path name into its individual components
+*       Split a path name into its individual components
+*       Just points to each section of the string.
 *
 *Entry:
 *       path  - pointer to path name to be parsed
-*       drive - pointer to buffer for drive component, if any
-*       dir   - pointer to buffer for subdirectory component, if any
-*       fname - pointer to buffer for file base name component, if any
-*       ext   - pointer to buffer for file name extension component, if any
+*       drive - pointer to set to drive component, if any
+*       dir   - pointer to set to subdirectory component, if any
+*       fname - pointer to set to file base name component, if any
+*       ext   - pointer to set to file name extension component, if any
 *
 *Exit:
 *       drive - pointer to drive string.  Includes ':' if a drive was given.
@@ -39,41 +38,6 @@
 *Exceptions:
 *
 *******************************************************************************/
-
-void SplitPath(
-        const WCHAR *path,
-        __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-        __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-        __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-        __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords)
-{
-    WRAPPER_NO_CONTRACT;
-
-    LPCWSTR _wszDrive, _wszDir, _wszFileName, _wszExt;
-    size_t _cchDrive, _cchDir, _cchFileName, _cchExt;
-
-    SplitPathInterior(path,
-                      &_wszDrive, &_cchDrive,
-                      &_wszDir, &_cchDir,
-                      &_wszFileName, &_cchFileName,
-                      &_wszExt, &_cchExt);
-
-    if (drive && _wszDrive)
-        wcsncpy_s(drive, driveSizeInWords, _wszDrive, min(_cchDrive, _MAX_DRIVE));
-
-    if (dir && _wszDir)
-        wcsncpy_s(dir, dirSizeInWords, _wszDir, min(_cchDir, _MAX_DIR));
-
-    if (fname && _wszFileName)
-        wcsncpy_s(fname, fnameSizeInWords, _wszFileName, min(_cchFileName, _MAX_FNAME));
-
-    if (ext && _wszExt)
-        wcsncpy_s(ext, extSizeInWords, _wszExt, min(_cchExt, _MAX_EXT));
-}
-
-//*******************************************************************************
-// A much more sensible version that just points to each section of the string.
-//*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
     _Out_opt_ LPCWSTR *pwszDrive,    _Out_opt_ size_t *pcchDrive,
@@ -203,56 +167,3 @@ void    SplitPathInterior(
         }
     }
 }
-
-/***
-*SplitPath() - split a path name into its individual components
-*
-*Purpose:
-*       to split a path name into its individual components
-*
-*Entry:
-*       path  - SString representing the path name to be parsed
-*       drive - Out SString for drive component
-*       dir   - Out SString for subdirectory component
-*       fname - Out SString for file base name component
-*       ext   - Out SString for file name extension component
-*
-*Exit:
-*       drive - Drive string.  Includes ':' if a drive was given.
-*       dir   - Subdirectory string.  Includes leading and trailing
-*           '/' or '\', if any.
-*       fname - File base name
-*       ext   - File extension, if any.  Includes leading '.'.
-*
-*Exceptions:
-*
-*******************************************************************************/
-
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext)
-{
-    LPCWSTR wzDrive, wzDir, wzFname, wzExt;
-    size_t cchDrive, cchDir, cchFname, cchExt;
-
-    SplitPathInterior(path,
-            &wzDrive, &cchDrive,
-            &wzDir, &cchDir,
-            &wzFname, &cchFname,
-            &wzExt, &cchExt);
-
-    if (drive != NULL)
-        drive->Set(wzDrive, (COUNT_T)cchDrive);
-
-    if (dir != NULL)
-        dir->Set(wzDir, (COUNT_T)cchDir);
-
-    if (fname != NULL)
-        fname->Set(wzFname, (COUNT_T)cchFname);
-
-    if (ext != NULL)
-        ext->Set(wzExt, (COUNT_T)cchExt);
-}
-

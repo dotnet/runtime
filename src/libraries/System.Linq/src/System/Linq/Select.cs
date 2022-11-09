@@ -58,8 +58,10 @@ namespace System.Linq
             return new SelectEnumerableIterator<TSource, TResult>(source, selector);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6177
         static partial void CreateSelectIPartitionIterator<TResult, TSource>(
             Func<TSource, TResult> selector, IPartition<TSource> partition, [NotNull] ref IEnumerable<TResult>? result);
+#pragma warning restore IDE0060
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
         {

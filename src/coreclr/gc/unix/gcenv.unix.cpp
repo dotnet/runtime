@@ -641,7 +641,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
-    if (pRetVal != NULL)
+    if (pRetVal != MAP_FAILED)
     {
         void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
         size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
@@ -659,9 +659,14 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
+#ifdef MADV_DONTDUMP
+        // Do not include reserved memory in coredump.
+        madvise(pRetVal, size, MADV_DONTDUMP);
+#endif
+        return pRetVal;
     }
 
-    return pRetVal;
+    return NULL; // return NULL if mmap failed
 }
 
 // Reserve virtual memory range.
@@ -724,6 +729,14 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
+#ifdef MADV_DODUMP
+    if (success)
+    {
+        // Include committed memory in coredump.
+        madvise(address, size, MADV_DODUMP);
+    }
+#endif
+
 #if HAVE_NUMA_H
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
@@ -760,7 +773,17 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // that much more clear to the operating system that we no
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
+    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
+
+#ifdef MADV_DONTDUMP
+    if (bRetVal)
+    {
+        // Do not include freed memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
+
+    return  bRetVal;
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
@@ -790,6 +813,14 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
         st = EINVAL;
 #endif
     }
+
+#ifdef MADV_DONTDUMP
+    if (st == 0)
+    {
+        // Do not include reset memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
 
     return (st == 0);
 }

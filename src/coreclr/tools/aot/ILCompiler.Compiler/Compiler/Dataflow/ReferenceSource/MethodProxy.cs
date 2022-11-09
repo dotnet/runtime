@@ -22,13 +22,25 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsDeclaredOnType (string fullTypeName) => Method.IsDeclaredOnType (fullTypeName);
 
-		internal partial bool HasParameters () => Method.HasParameters;
+		internal partial bool HasMetadataParameters () => Method.HasMetadataParameters ();
 
-		internal partial int GetParametersCount () => Method.Parameters.Count;
+		/// <summary>
+		/// Gets the number of entries in the 'Parameters' section of a method's metadata (i.e. excludes the implicit 'this' from the count)
+		/// </summary>
+		internal partial int GetMetadataParametersCount () => Method.GetMetadataParametersCount ();
 
-		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName) => Method.HasParameterOfType (parameterIndex, fullTypeName);
+		/// <summary>
+		/// Returns the number of parameters that are passed to the method in IL (including the implicit 'this' parameter).
+		/// In pseudocode: <code>method.HasImplicitThis() ? 1 + MetadataParametersCount : MetadataParametersCount;</code>
+		/// </summary>
+		internal partial int GetParametersCount () => Method.GetParametersCount ();
 
-		internal partial string GetParameterDisplayName (int parameterIndex) => Method.Parameters[parameterIndex].Name;
+		/// <summary>
+		/// Use only when iterating over all parameters. When wanting to index, use GetParameters(ParameterIndex)
+		/// </summary>
+		internal partial ParameterProxyEnumerable GetParameters () => Method.GetParameters ();
+
+		internal partial ParameterProxy GetParameter (ParameterIndex index) => Method.GetParameter (index);
 
 		internal partial bool HasGenericParameters () => Method.HasGenericParameters;
 
@@ -49,11 +61,11 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsStatic () => Method.IsStatic;
 
+		internal partial bool HasImplicitThis () => Method.HasImplicitThis ();
+
 		internal partial bool ReturnsVoid () => Method.ReturnsVoid ();
 
 		public override string ToString () => Method.ToString ();
-
-		public ReferenceKind ParameterReferenceKind (int index) => Method.HasImplicitThis () ? Method.ParameterReferenceKind (index + 1) : Method.ParameterReferenceKind (index);
 
 		public bool Equals (MethodProxy other) => Method.Equals (other.Method);
 

@@ -125,7 +125,7 @@ namespace System.Linq.Expressions
             ReadOnlyCollection<Expression> initializerlist = initializers.ToReadOnly();
             if (initializerlist.Count == 0)
             {
-                return new ListInitExpression(newExpression, EmptyReadOnlyCollection<ElementInit>.Instance);
+                return new ListInitExpression(newExpression, ReadOnlyCollection<ElementInit>.Empty);
             }
 
             MethodInfo? addMethod = FindMethod(newExpression.Type, "Add", null, new Expression[] { initializerlist[0] }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);

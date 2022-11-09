@@ -560,12 +560,22 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.Boolean:
-                case ElementType.Char:
                 case ElementType.U1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.Char:
+                    int intCharVal = (int)value;
+                    if (value.GetType() == typeof(char))
+                        intCharVal = (int)(char)value;
+                    Write((ElementType)type, intCharVal);
+                    return true;
+                case ElementType.Boolean:
+                    int intBoolVal = (int)value;
+                    if (value.GetType() == typeof(bool))
+                        intBoolVal = (bool)value ? 1 : 0;
+                    Write((ElementType)type, intBoolVal);
                     return true;
                 case ElementType.I1:
                 case ElementType.U2:
@@ -684,7 +694,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "number":
                 {
+                    // FixMe: what if the number is not int but single/double?
                     Write(ElementType.I4, objValue["value"].Value<int>());
+                    return true;
+                }
+                case "symbol":
+                {
+                    Write(ElementType.Char, (int)objValue["value"].Value<char>());
                     return true;
                 }
                 case "string":
@@ -833,7 +849,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    asm = new AssemblyInfo(assemblyName, logger);
+                    asm = new AssemblyInfo(logger);
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
@@ -2105,8 +2121,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        // FIXME: support valuetypes
-        public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttribute(int objectId, int typeId, CancellationToken token)
+        public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttributeForObject(int objectId, int typeId, CancellationToken token)
         {
             try
             {
@@ -2116,25 +2131,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 using var ctorArgsWriter = new MonoBinaryWriter();
                 ctorArgsWriter.Write((byte)ValueTypeId.Null);
-
-                // FIXME: move method invocation to valueTypeclass?
-                if (ValueCreator.TryGetValueTypeById(objectId, out var valueType))
-                {
-                    //FIXME: Issue #68390
-                    //ctorArgsWriter.Write((byte)0); //not used but needed
-                    //ctorArgsWriter.Write(0); //not used but needed
-                    //ctorArgsWriter.Write((int)1); // num args
-                    //ctorArgsWriter.Write(valueType.Buffer);
-                    return null;
-                }
-                else
-                {
-                    ctorArgsWriter.Write((byte)0); //not used
-                    ctorArgsWriter.Write(0); //not used
-                    ctorArgsWriter.Write((int)1); // num args
-                    ctorArgsWriter.Write((byte)ElementType.Object);
-                    ctorArgsWriter.Write(objectId);
-                }
+                ctorArgsWriter.Write((byte)0); //not used
+                ctorArgsWriter.Write(0); //not used
+                ctorArgsWriter.Write((int)1); // num args
+                ctorArgsWriter.Write((byte)ElementType.Object);
+                ctorArgsWriter.Write(objectId);
 
                 var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
                 if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
@@ -2154,6 +2155,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
+        public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttributeForValueTypes(int valueTypeId, int typeId, CancellationToken token)
+        {
+            try
+            {
+                var typeName = await GetTypeName(typeId, token);
+                int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
+                if (methodId == -1)
+                   return null;
+
+                using var ctorArgsWriter = new MonoBinaryWriter();
+                ctorArgsWriter.Write((byte)ValueTypeId.Null);
+
+                if (!ValueCreator.TryGetValueTypeById(valueTypeId, out var valueType))
+                    return null;
+                ctorArgsWriter.Write((byte)0); //not used but needed
+                ctorArgsWriter.Write(0); //not used but needed
+                ctorArgsWriter.Write((int)1); // num args
+                ctorArgsWriter.Write(valueType.Buffer);
+                var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
+                if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
+                    throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
+                GetMembersResult members = await GetTypeMemberValues(dotnetObjectId,
+                                                                            GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute,
+                                                                            token);
+                return members;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
+                return null;
+            }
+        }
+
         private async Task<int> FindDebuggerProxyConstructorIdFor(int typeId, CancellationToken token)
         {
             try
@@ -2162,59 +2196,79 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (getCAttrsRetReader == null)
                     return -1;
 
-                var methodId = -1;
                 var parmCount = getCAttrsRetReader.ReadInt32();
-                for (int j = 0; j < parmCount; j++)
-                {
-                    var monoTypeId = getCAttrsRetReader.ReadByte();
-                    // FIXME: DebuggerTypeProxyAttribute(string) - not supported
-                    if ((ValueTypeId)monoTypeId != ValueTypeId.Type)
-                        continue;
+                if (parmCount != 1)
+                    throw new InternalErrorException($"Expected to find custom attribute with only one argument, but it has {parmCount} parameters.");
 
-                    var cAttrTypeId = getCAttrsRetReader.ReadInt32();
-                    using var commandParamsWriter = new MonoBinaryWriter();
-                    commandParamsWriter.Write(cAttrTypeId);
-                    var className = await GetTypeNameOriginal(cAttrTypeId, token);
-                    if (className.IndexOf('[') > 0)
-                    {
-                        className = className.Remove(className.IndexOf('['));
-                        var assemblyId = await GetAssemblyIdFromType(cAttrTypeId, token);
-                        var assemblyName = await GetFullAssemblyName(assemblyId, token);
-                        var typeToSearch = className;
-                        typeToSearch += "[["; //System.Collections.Generic.List`1[[System.Int32,mscorlib,Version=4.0.0.0,Culture=neutral,PublicKeyToken=b77a5c561934e089]],mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
-                        List<int> genericTypeArgs = await GetTypeParamsOrArgsForGenericType(typeId, token);
-                        for (int k = 0; k < genericTypeArgs.Count; k++)
-                        {
-                            var assemblyIdArg = await GetAssemblyIdFromType(genericTypeArgs[k], token);
-                            var assemblyNameArg = await GetFullAssemblyName(assemblyIdArg, token);
-                            var classNameArg = await GetTypeNameOriginal(genericTypeArgs[k], token);
-                            typeToSearch += classNameArg + ", " + assemblyNameArg;
-                            if (k + 1 < genericTypeArgs.Count)
-                                typeToSearch += "], [";
-                            else
-                                typeToSearch += "]";
-                        }
-                        typeToSearch += "]";
-                        typeToSearch += ", " + assemblyName;
-                        var genericTypeId = await GetTypeByName(typeToSearch, token);
-                        if (genericTypeId < 0)
-                            break;
-                        cAttrTypeId = genericTypeId;
-                    }
-                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", BindingFlags.Default, token);
-                    if (methodIds != null)
-                        methodId = methodIds[0];
-                    break;
+                byte monoParamTypeId = getCAttrsRetReader.ReadByte();
+                // FIXME: DebuggerTypeProxyAttribute(string) - not supported
+                if ((ValueTypeId)monoParamTypeId != ValueTypeId.Type)
+                {
+                    logger.LogDebug($"DebuggerTypeProxy attribute is only supported with a System.Type parameter type. Got {(ValueTypeId)monoParamTypeId}");
+                    return -1;
                 }
 
-                return methodId;
+                var typeProxyTypeId = getCAttrsRetReader.ReadInt32();
+
+                using var commandParamsWriter = new MonoBinaryWriter();
+                commandParamsWriter.Write(typeProxyTypeId);
+                var originalClassName = await GetTypeNameOriginal(typeProxyTypeId, token);
+
+                if (originalClassName.IndexOf('[') > 0)
+                {
+                    string className = originalClassName;
+                    className = className.Remove(className.IndexOf('['));
+                    var assemblyId = await GetAssemblyIdFromType(typeProxyTypeId, token);
+                    var assemblyName = await GetFullAssemblyName(assemblyId, token);
+
+                    StringBuilder typeToSearch = new(className);
+                    typeToSearch.Append('[');
+                    List<int> genericTypeArgs = await GetTypeParamsOrArgsForGenericType(typeId, token);
+                    for (int k = 0; k < genericTypeArgs.Count; k++)
+                    {
+                        // typeToSearch += '[';
+                        var assemblyIdArg = await GetAssemblyIdFromType(genericTypeArgs[k], token);
+                        var assemblyNameArg = await GetFullAssemblyName(assemblyIdArg, token);
+                        var classNameArg = await GetTypeNameOriginal(genericTypeArgs[k], token);
+                        typeToSearch.Append($"{(k == 0 ? "" : ",")}[{classNameArg}, {assemblyNameArg}]");
+                    }
+                typeToSearch.Append($"], {assemblyName}");
+                var genericTypeId = await GetTypeByName(typeToSearch.ToString(), token);
+                    if (genericTypeId < 0)
+                    {
+                        logger.LogDebug($"Could not find instantiated generic type id for {typeToSearch}.");
+                        return -1;
+                    }
+                    typeProxyTypeId = genericTypeId;
+                }
+                int[] constructorIds = await GetMethodIdsByName(typeProxyTypeId, ".ctor", BindingFlags.DeclaredOnly, token);
+                if (constructorIds is null)
+                    throw new InternalErrorException($"Could not find any constructor for DebuggerProxy type: {originalClassName}");
+
+                if (constructorIds.Length == 1)
+                    return constructorIds[0];
+
+                string expectedConstructorParamType = await GetTypeName(typeId, token);
+                foreach (var methodId in constructorIds)
+                {
+                    var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
+                    // avoid calling to runtime if possible
+                    var ps = methodInfoFromRuntime.Info.GetParametersInfo();
+                    if (ps.Length != 1)
+                        continue;
+                    string parameters = await GetParameters(methodId, token);
+                    if (string.IsNullOrEmpty(parameters))
+                        throw new InternalErrorException($"Could not get method's parameter types. MethodId = {methodId}.");
+                    if (parameters == $"({expectedConstructorParamType})")
+                        return methodId;
+                }
+                throw new InternalErrorException($"Could not find a matching constructor for DebuggerProxy type: {originalClassName}");
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
+                return -1;
             }
-
-            return -1;
         }
 
         public ValueTypeClass GetValueTypeClass(int valueTypeId)
@@ -2224,7 +2278,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             throw new ArgumentException($"Could not find any valuetype with id: {valueTypeId}", nameof(valueTypeId));
         }
 
-        public Task<GetMembersResult> GetTypeMemberValues(DotnetObjectId dotnetObjectId, GetObjectCommandOptions getObjectOptions, CancellationToken token, bool sortByAccessLevel = false)
+        public Task<GetMembersResult> GetTypeMemberValues(DotnetObjectId dotnetObjectId, GetObjectCommandOptions getObjectOptions, CancellationToken token)
             => dotnetObjectId.IsValueType
                     ? MemberObjectsExplorer.GetValueTypeMemberValues(this, dotnetObjectId.Value, getObjectOptions, token)
                     : MemberObjectsExplorer.GetObjectMemberValues(this, dotnetObjectId.Value, getObjectOptions, token);

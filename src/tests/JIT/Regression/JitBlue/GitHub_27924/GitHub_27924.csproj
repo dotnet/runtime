@@ -6,7 +6,9 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
     <!-- This test requires GCStress to trigger the regression. Set DOTNET_GCStress here. However,
          not all CI platforms support GCStress. In particular, macOS and Alpine do not (currently).
          All Windows support GCStress. We don't have any way (currently) to determine if we're
@@ -14,12 +16,6 @@
          The test will run under GCStress in normal, scheduled GCStress runs, when only the supported
          platforms are run with GCStress.
     -->
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set DOTNET_GCStress=0xc
-]]></CLRTestBatchPreCommands>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_GCStress" Value="0xc" />
   </ItemGroup>
 </Project>

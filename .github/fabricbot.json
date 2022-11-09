@@ -175,6 +175,26 @@
         },
         {
           "labels": [
+            "area-Tools-ILLink"
+          ],
+          "mentionees": [
+            "agocke",
+            "sbomer",
+            "vitek-karas",
+          ]
+        },
+        {
+          "labels": [
+            "area-NativeAOT-coreclr"
+          ],
+          "mentionees": [
+            "agocke",
+            "MichalStrehovsky",
+            "jkotas"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Buffers"
           ],
           "mentionees": [
@@ -1411,7 +1431,7 @@
         {
           "name": "noActivitySince",
           "parameters": {
-            "days": 1827
+            "days": 1644
           }
         },
         {
@@ -2075,6 +2095,12 @@
                 }
               },
               {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Tools-ILLink"
+                }
+              },
+              {
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-AssemblyLoader-coreclr"
@@ -2102,6 +2128,12 @@
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-Single-File"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Tools-ILLink"
                 }
               }
             ]

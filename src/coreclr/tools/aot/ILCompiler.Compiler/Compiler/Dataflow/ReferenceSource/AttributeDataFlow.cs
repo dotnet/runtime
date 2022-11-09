@@ -26,10 +26,10 @@ namespace Mono.Linker.Dataflow
 
 		public void ProcessAttributeDataflow (MethodDefinition method, IList<CustomAttributeArgument> arguments)
 		{
-			for (int i = 0; i < method.Parameters.Count; i++) {
-				var parameterValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (method, i);
+			foreach (var parameter in method.GetMetadataParameters ()) {
+				var parameterValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (parameter);
 				if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-					MultiValue value = GetValueForCustomAttributeArgument (arguments[i]);
+					MultiValue value = GetValueForCustomAttributeArgument (arguments[parameter.MetadataIndex]);
 					var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: true, _context);
 					RequireDynamicallyAccessedMembers (diagnosticContext, value, parameterValue);
 				}

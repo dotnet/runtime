@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 

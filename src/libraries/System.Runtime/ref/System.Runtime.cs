@@ -2384,6 +2384,7 @@ namespace System
         public static bool HasShutdownStarted { get { throw null; } }
         public static bool Is64BitOperatingSystem { get { throw null; } }
         public static bool Is64BitProcess { get { throw null; } }
+        public static bool IsPrivilegedProcess { get { throw null; } }
         public static string MachineName { get { throw null; } }
         public static string NewLine { get { throw null; } }
         public static System.OperatingSystem OSVersion { get { throw null; } }
@@ -7531,6 +7532,7 @@ namespace System.Collections.ObjectModel
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
         public int Count { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> Empty { get { throw null; } }
         public T this[int index] { get { throw null; } }
         protected System.Collections.Generic.IList<T> Items { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
@@ -7564,6 +7566,7 @@ namespace System.Collections.ObjectModel
         public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
         public int Count { get { throw null; } }
         protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> Empty { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }

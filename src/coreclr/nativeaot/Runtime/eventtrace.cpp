@@ -3576,9 +3576,9 @@ INT32 WideCharToMultiByte(LPCWSTR wszSrcStr, LPSTR szDstStr);
 
 #include <rotor_pal.h>
 
-// The possible value of COMPlus_ETWEnabled should be '0' or '1'
+// The possible value of DOTNET_ETWEnabled or COMPlus_ETWEnabled should be '0' or '1'
 #define SIZE_ETWEnabled 2
-// The possible value of COMPlus_EventInfo should be a string in the following format:
+// The possible value of DOTNET_ETWEnabled or COMPlus_EventInfo should be a string in the following format:
 // GUID:HexNumfer:Level
 // GUID: For example e13c0d23-ccbc-4e12-931b-d9cc2eee27e4 (36 bytes)
 // HewNumber: 0xffffffff (10 bytes)
@@ -3588,21 +3588,24 @@ INT32 WideCharToMultiByte(LPCWSTR wszSrcStr, LPSTR szDstStr);
 
 ULONG ETW::CEtwTracer::Register()
 {
-    // Get Env Var COMPlus_ETWEnabled
-    char szETWEnabled[SIZE_ETWEnabled];
-    DWORD newLen = GetEnvironmentVariableA("COMPlus_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
+    // Get Env Var DOTNET_ETWEnabled or COMPlus_ETWEnabled
+    char szETWEnabled[SIZE_ETWEnabled] = { '\0' };
+    DWORD newLen = GetEnvironmentVariableA("DOTNET_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
+    newLen = szETWEnabled[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
     if (newLen == 0 || newLen >= SIZE_ETWEnabled || strcmp(szETWEnabled, "1") != 0)
         return 0;
 
-    // Get Env Var COMPlus_EventInfo
-    char szEventInfo[SIZE_EventInfo];
-    newLen = GetEnvironmentVariableA("COMPlus_EventInfo", szEventInfo, SIZE_EventInfo);
+    // Get Env Var DOTNET_EventInfo or COMPlus_EventInfo
+    char szEventInfo[SIZE_EventInfo] = { '\0' };
+    newLen = GetEnvironmentVariableA("DOTNET_EventInfo", szEventInfo, SIZE_EventInfo);
+    newLen = szEventInfo[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_EventInfo", szEventInfo, SIZE_EventInfo);
     if (newLen == 0 || newLen >= SIZE_EventInfo || strchr(szEventInfo, ' ') != NULL)
         return 0;
 
-    // Get Env Var COMPlus_EventLogFileName
-    char szEventLogFN[_MAX_FNAME];
-    newLen = GetEnvironmentVariableA("COMPlus_EventLogFileName", szEventLogFN, _MAX_FNAME);
+    // Get Env Var DOTNET_EventLogFileName or COMPlus_EventLogFileName
+    char szEventLogFN[_MAX_FNAME] = { '\0' };
+    newLen = GetEnvironmentVariableA("DOTNET_EventLogFileName", szEventLogFN, _MAX_FNAME);
+    newLen = szEventLogFN[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_EventLogFileName", szEventLogFN, _MAX_FNAME);
     if (newLen == 0 || newLen >= _MAX_FNAME || strchr(szEventLogFN, '|') != NULL)
         return 0;
     char szEventLogFullPath[_MAX_PATH];

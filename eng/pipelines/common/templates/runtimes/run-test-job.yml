@@ -212,7 +212,7 @@ jobs:
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
       - name: timeoutPerTestInMinutes
         value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
       - name: timeoutPerTestInMinutes
@@ -238,7 +238,7 @@ jobs:
         value: 180
       - name: timeoutPerTestInMinutes
         value: 30
-    - ${{ if in(parameters.testGroup, 'pgo') }}:
+    - ${{ if in(parameters.testGroup, 'pgo', 'pgostress') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
     - ${{ if in(parameters.testGroup, 'jit-cfg') }}:
@@ -260,15 +260,15 @@ jobs:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'jit-cfg') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -525,6 +525,9 @@ jobs:
           - jitstress_isas_2_x86_nosse41
           - jitstress_isas_2_x86_nosse42
           - jitstress_isas_2_x86_nossse3
+        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
+          scenarios:
+          - jitstress_isas_avx512_forceevex
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -588,15 +591,21 @@ jobs:
           - gcstress0xc
         ${{ if in(parameters.testGroup, 'pgo') }}:
           scenarios:
-          - nopgo
           - defaultpgo
-          - dynamicpgo
-          - fullpgo
-          - fullpgo_methodprofiling
-          - fullpgo_random_gdv
-          - fullpgo_random_gdv_methodprofiling_only
-          - fullpgo_random_edge
-          - fullpgo_random_gdv_edge
+        ${{ if in(parameters.testGroup, 'pgostress') }}:
+          # We run a limited number of scenarios on the win-arm64 queues as we hit frequent timeouts on those queues otherwise.
+          # The loss of coverage is not critical as win-arm64/win-arm32 are practically equivalent to linux-arm64/linux-arm32 to the JIT.
+          ${{ if and(eq(parameters.osGroup, 'windows'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))) }}:
+            scenarios:
+            - fullpgo
+            - fullpgo_random_gdv_edge
+          ${{ else }}:
+            scenarios:
+            - fullpgo
+            - fullpgo_methodprofiling
+            - fullpgo_random_gdv
+            - fullpgo_random_gdv_methodprofiling_only
+            - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -616,15 +625,19 @@ jobs:
           - jitelthookenabled
           - jitelthookenabled_tiered
         ${{ if in(parameters.testGroup, 'jit-experimental') }}:
-          scenarios:
-          - jitosr_stress
-          - jitosr_pgo
-          - jitosr_stress_random
-          - jit_stress_splitting
-          - jitpartialcompilation
-          - jitpartialcompilation_osr
-          - jitpartialcompilation_osr_pgo
-          - jitobjectstackallocation
+          ${{ if and(eq(parameters.osGroup, 'windows'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))) }}:
+            scenarios:
+            - jitosr_stress
+            - jitpartialcompilation_pgo
+          ${{ else }}:
+            scenarios:
+            - jitosr_stress
+            - jitosr_stress_random
+            - jit_stress_splitting
+            - jitpartialcompilation
+            - jitpartialcompilation_pgo
+            - jitobjectstackallocation
+
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg

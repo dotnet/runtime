@@ -176,6 +176,8 @@ namespace ILCompiler
             new(new[] { "--callchain-profile" }, SR.CallChainProfileFile);
         public Option<string> MakeReproPath { get; } =
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+        public Option<bool> HotColdSplitting { get; } =
+            new(new[] { "--hot-cold-splitting" }, SR.HotColdSplittingOption);
 
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
@@ -240,6 +242,7 @@ namespace ILCompiler
             AddOption(VerifyTypeAndFieldLayout);
             AddOption(CallChainProfileFile);
             AddOption(MakeReproPath);
+            AddOption(HotColdSplitting);
 
             this.SetHandler(context =>
             {
