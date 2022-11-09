@@ -1587,6 +1587,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             fldAddr.frozen = true;
                         }
                     }
+
+                    m_fieldHandleAddressMap->Add(pResolvedToken->hField, fldAddr);
                 }
 
                 pResult->fieldLookup.addr = fldAddr.address;
