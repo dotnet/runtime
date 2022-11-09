@@ -31,26 +31,10 @@ async function runtime2() {
     const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withConfig({
             mainAssemblyName: "Wasm.Browser.Sample.dll",
-            assets: [
-                {
-                    virtualPath: "runtimeconfig.bin",
-                    behavior: "vfs",
-                    name: "supportFiles/0_runtimeconfig.bin"
-                },
-                {
-                    loadRemote: false,
-                    behavior: "icu",
-                    name: "icudt.dat"
-                },
-                {
-                    virtualPath: "/usr/share/zoneinfo/",
-                    behavior: "vfs",
-                    name: "dotnet.timezones.blat"
-                },
-                {
-                    behavior: "dotnetwasm",
-                    name: "dotnet.wasm"
-                }],
+            assets: [{
+                behavior: "dotnetwasm",
+                name: "dotnet.wasm"
+            }],
             memory: memory
         })
         .withModuleConfig({
