@@ -33,7 +33,7 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
     // boolean foundAndReplaced = false;
     // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new RemoteCertificateVerificationProxyTrustManager(dotnetHandle, trustManagers[i]);
+    //     trustManagers[i] = new RemoteCertificateVerificationProxyTrustManager(dotnetHandle);
     //     foundAndReplaced = true;
     //     break;
     //   }

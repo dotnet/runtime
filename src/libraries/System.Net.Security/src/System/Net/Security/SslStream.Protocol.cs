@@ -19,7 +19,6 @@ namespace System.Net.Security
     {
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
-        private RemoteCertificateVerification? _remoteCertificateVerifier;
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -818,12 +817,9 @@ namespace System.Net.Security
                     }
                     else
                     {
-#if TARGET_ANDROID
-                        _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
-#endif
                         status = SslStreamPal.InitializeSecurityContext(
 #if TARGET_ANDROID
-                                       _remoteCertificateVerifier,
+                                       verifier: new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions),
 #endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,
@@ -980,9 +976,9 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
-                _remoteCertificateVerifier ??= new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
 
-                success = _remoteCertificateVerifier.Verify(_remoteCertificate, _securityContext!, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
+                success = remoteCertificateVerifier.Verify(_remoteCertificate, _securityContext!, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
                 if (!success)
                 {
                     alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);
