@@ -161,7 +161,7 @@ public class TestFilter
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
             {
-                throw new ArgumentException("Complex test filter expressions ar e not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
+                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
             }
             _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
         }
