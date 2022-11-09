@@ -201,7 +201,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         return QUIC_STATUS_SUCCESS;
 
     }
-    private unsafe int HandleEventStopComplete(ref STOP_COMPLETE_DATA data)
+    private unsafe int HandleEventStopComplete()
     {
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
@@ -211,7 +211,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         => listenerEvent.Type switch
         {
             QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION => HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION),
-            QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE => HandleEventStopComplete(ref listenerEvent.STOP_COMPLETE),
+            QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE => HandleEventStopComplete(),
             _ => QUIC_STATUS_SUCCESS
         };
 

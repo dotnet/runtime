@@ -12,11 +12,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private uint[] _mapping;
 
-        public HotColdMapNode(NodeFactory nodeFactory)
-            : base(nodeFactory.Target)
-        {
-        }
-
         public uint[] Mapping
         {
             get => _mapping;

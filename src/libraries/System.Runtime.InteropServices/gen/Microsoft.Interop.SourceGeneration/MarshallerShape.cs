@@ -143,7 +143,7 @@ namespace Microsoft.Interop
 
                 // Unmanaged -> Managed
                 IMethodSymbol? allocateManaged = LinearCollection.AllocateContainerForManagedElements(marshallerType, managedType);
-                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsFinally(marshallerType, managedType, spanOfT);
+                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsFinally(marshallerType, managedType);
                 IMethodSymbol? managedDestination = LinearCollection.GetManagedValuesDestination(marshallerType, managedType, spanOfT);
                 IMethodSymbol? unmanagedSource = LinearCollection.GetUnmanagedValuesSource(marshallerType, readOnlySpanOfT);
                 if ((allocateManaged is not null || allocateManagedGuaranteed is not null)
@@ -368,7 +368,7 @@ namespace Microsoft.Interop
                         && managedType.IsConstructedFromEqualTypes(m.ReturnType));
             }
 
-            internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
+            internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType)
             {
                 // static TCollection AllocateContainerForManagedElementsFinally(TNative unmanaged, int length);
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)
@@ -498,7 +498,7 @@ namespace Microsoft.Interop
             IMethodSymbol? unmanagedSource = null;
             if (isLinearCollectionMarshaller)
             {
-                managedDestination = LinearCollection.GetManagedValuesDestination(marshallerType, managedType, spanOfT);
+                managedDestination = LinearCollection.GetManagedValuesDestination(marshallerType, spanOfT);
                 unmanagedSource = LinearCollection.GetUnmanagedValuesSource(marshallerType, readOnlySpanOfT);
             }
 
@@ -700,7 +700,7 @@ namespace Microsoft.Interop
                         && SymbolEqualityComparer.Default.Equals(spanOfT, returnType.ConstructedFrom));
             }
 
-            internal static IMethodSymbol? GetManagedValuesDestination(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
+            internal static IMethodSymbol? GetManagedValuesDestination(ITypeSymbol type, ITypeSymbol spanOfT)
             {
                 // static Span<TManagedElement> GetManagedValuesDestination(int numElements)
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination)

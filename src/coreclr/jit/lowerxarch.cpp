@@ -106,7 +106,9 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerMulToLshSubOrLshAdd:
+// Lowering::TryLowerMulWithConstant:
+//    Lowers a tree MUL(X, CNS) to LSH(X, CNS_SHIFT)
+//    or
 //    Lowers a tree MUL(X, CNS) to SUB(LSH(X, CNS_SHIFT), X)
 //    or
 //    Lowers a tree MUL(X, CNS) to ADD(LSH(X, CNS_SHIFT), X)
@@ -119,14 +121,14 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 // Notes:
 //    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
+GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MUL));
 
-// We do not do this optimization in X86 as it is not recommended.
-#if TARGET_X86
-    return nullptr;
-#endif // TARGET_X86
+    // Do not do these optimizations when min-opts enabled.
+    if (comp->opts.MinOpts())
+        return nullptr;
+
     if (!varTypeIsIntegral(node))
         return nullptr;
 
@@ -139,24 +141,35 @@ GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
     if (op1->isContained() || op2->isContained())
         return nullptr;
 
-    if (!op1->OperIs(GT_LCL_VAR))
-        return nullptr;
-
     if (!op2->IsCnsIntOrI())
         return nullptr;
 
     GenTreeIntConCommon* cns    = op2->AsIntConCommon();
     ssize_t              cnsVal = cns->IconValue();
 
-    // Use GT_LSH if cnsVal is a power of two.
-    // This is handled in codegen.
-    if (isPow2(cnsVal))
-        return nullptr;
-
     // Use GT_LEA if cnsVal is 3, 5, or 9.
-    // This is handled in codegen.
+    // These are handled in codegen.
     if (cnsVal == 3 || cnsVal == 5 || cnsVal == 9)
         return nullptr;
+
+    // Use GT_LSH if cnsVal is a power of two.
+    if (isPow2(cnsVal))
+    {
+        // Use shift for constant multiply when legal
+        unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(cnsVal)));
+
+        cns->SetIconValue(shiftAmount);
+        node->ChangeOper(GT_LSH);
+
+        ContainCheckShiftRotate(node);
+
+        return node;
+    }
+
+// We do not do this optimization in X86 as it is not recommended.
+#if TARGET_X86
+    return nullptr;
+#endif // TARGET_X86
 
     ssize_t cnsValPlusOne  = cnsVal + 1;
     ssize_t cnsValMinusOne = cnsVal - 1;
@@ -165,6 +178,9 @@ GenTree* Lowering::TryLowerMulToLshSubOrLshAdd(GenTreeOp* node)
 
     if (!useSub && !isPow2(cnsValMinusOne))
         return nullptr;
+
+    LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+    op1 = ReplaceWithLclVar(op1Use);
 
     if (useSub)
     {
@@ -213,7 +229,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
     if (mul->OperIs(GT_MUL))
     {
-        GenTree* replacementNode = TryLowerMulToLshSubOrLshAdd(mul);
+        GenTree* replacementNode = TryLowerMulWithConstant(mul);
         if (replacementNode != nullptr)
         {
             return replacementNode->gtNext;
@@ -588,6 +604,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                     // than spilling, but this situation is not all that common, as most cases of FIELD_LIST
                     // are promoted structs, which do not not have a large number of fields, and of those
                     // most are lclVars or copy-propagated constants.
+
                     fieldNode->SetRegOptional();
                 }
             }
@@ -720,17 +737,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         MakeSrcContained(putArgStk, src);
     }
 #ifdef TARGET_X86
-    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsSafeToContainMem(putArgStk, src))
+    else if (genTypeSize(src) == TARGET_POINTER_SIZE)
     {
         // We can use "src" directly from memory with "push [mem]".
-        if (IsContainableMemoryOp(src))
-        {
-            MakeSrcContained(putArgStk, src);
-        }
-        else
-        {
-            src->SetRegOptional();
-        }
+        TryMakeSrcContainedOrRegOptional(putArgStk, src);
     }
 #endif // TARGET_X86
 }
@@ -5305,18 +5315,12 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
             }
         }
 
-        if (srcIsContainable && IsSafeToContainMem(node, castOp))
+        if (srcIsContainable)
         {
-            if (IsContainableMemoryOp(castOp))
-            {
-                MakeSrcContained(node, castOp);
-            }
-            else
-            {
-                castOp->SetRegOptional();
-            }
+            TryMakeSrcContainedOrRegOptional(node, castOp);
         }
     }
+
 #if !defined(TARGET_64BIT)
     if (varTypeIsLong(srcType))
     {
@@ -5386,7 +5390,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             // IsSafeToContainMem is expensive so we call it at most once for otherOp.
             // If we already called IsSafeToContainMem, it must have returned false;
             // otherwise, otherOp would be contained.
-            otherOp->SetRegOptional();
+            MakeSrcRegOptional(cmp, otherOp);
         }
 
         return;
@@ -5401,14 +5405,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // we can treat the MemoryOp as contained.
         if (op1Type == op2Type)
         {
-            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(cmp, op1))
-            {
-                MakeSrcContained(cmp, op1);
-            }
-            else
-            {
-                op1->SetRegOptional();
-            }
+            TryMakeSrcContainedOrRegOptional(cmp, op1);
         }
     }
     else if (op1Type == op2Type)
@@ -5452,7 +5449,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
                                                                 : isSafeToContainOp2 && IsSafeToContainMem(cmp, op2);
             if (setRegOptional)
             {
-                regOptionalCandidate->SetRegOptional();
+                MakeSrcRegOptional(cmp, regOptionalCandidate);
             }
         }
     }
@@ -5702,15 +5699,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 
     if (node->GetIndex()->TypeGet() == node->GetArrayLength()->TypeGet())
     {
-        if (IsContainableMemoryOp(other) && IsSafeToContainMem(node, other))
-        {
-            MakeSrcContained(node, other);
-        }
-        else
-        {
-            // We can mark 'other' as reg optional, since it is not contained.
-            other->SetRegOptional();
-        }
+        TryMakeSrcContainedOrRegOptional(node, other);
     }
 }
 
@@ -5732,15 +5721,13 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     {
         GenTree* op1 = node->gtGetOp1();
 
-        if ((IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)) || op1->IsCnsNonZeroFltOrDbl())
+        if (op1->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, op1);
         }
         else
         {
-            // Mark the operand as reg optional since codegen can still
-            // generate code if op1 is on stack.
-            op1->SetRegOptional();
+            TryMakeSrcContainedOrRegOptional(node, op1);
         }
     }
 }
@@ -6251,7 +6238,20 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
         }
     }
 
-    *supportsRegOptional = supportsGeneralLoads;
+    bool isSafeToContainMem;
+
+    // Code motion safety checks
+    //
+    if (transparentParentNode != nullptr)
+    {
+        isSafeToContainMem = IsSafeToContainMem(containingNode, transparentParentNode, node);
+    }
+    else
+    {
+        isSafeToContainMem = IsSafeToContainMem(containingNode, node);
+    }
+
+    *supportsRegOptional = isSafeToContainMem && supportsGeneralLoads;
 
     if (!node->OperIsHWIntrinsic())
     {
@@ -6261,16 +6261,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
         {
             if (IsContainableMemoryOp(node))
             {
-                // Code motion safety checks
-                //
-                if (transparentParentNode != nullptr)
-                {
-                    canBeContained = IsSafeToContainMem(containingNode, transparentParentNode, node);
-                }
-                else
-                {
-                    canBeContained = IsSafeToContainMem(containingNode, node);
-                }
+                canBeContained = isSafeToContainMem;
             }
             else if (node->IsCnsNonZeroFltOrDbl())
             {
@@ -6538,7 +6529,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (supportsRegOptional)
                 {
-                    op1->SetRegOptional();
+                    MakeSrcRegOptional(node, op1);
                 }
                 break;
             }
@@ -6604,7 +6595,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else if (supportsRegOptional)
                     {
-                        op2->SetRegOptional();
+                        MakeSrcRegOptional(node, op2);
 
                         // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
                         //                https://github.com/dotnet/runtime/issues/6358
@@ -6646,7 +6637,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op2->SetRegOptional();
+                                    MakeSrcRegOptional(node, op2);
                                 }
                             }
                             break;
@@ -6668,7 +6659,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else if (supportsRegOptional)
                             {
-                                op1->SetRegOptional();
+                                MakeSrcRegOptional(node, op1);
                             }
                             break;
                         }
@@ -6696,7 +6687,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op1->SetRegOptional();
+                                    MakeSrcRegOptional(node, op1);
                                 }
                             }
                             else if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
@@ -6705,7 +6696,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else if (supportsRegOptional)
                             {
-                                op2->SetRegOptional();
+                                MakeSrcRegOptional(node, op2);
                             }
                             break;
                         }
@@ -6718,7 +6709,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else if (supportsRegOptional)
                             {
-                                op1->SetRegOptional();
+                                MakeSrcRegOptional(node, op1);
                             }
                             break;
                         }
@@ -6860,16 +6851,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         else if (supportsOp3RegOptional)
                         {
                             assert(resultOpNum != 3);
-                            op3->SetRegOptional();
+                            MakeSrcRegOptional(node, op3);
                         }
                         else if (supportsOp2RegOptional)
                         {
                             assert(resultOpNum != 2);
-                            op2->SetRegOptional();
+                            MakeSrcRegOptional(node, op2);
                         }
                         else if (supportsOp1RegOptional)
                         {
-                            op1->SetRegOptional();
+                            MakeSrcRegOptional(node, op1);
                         }
                     }
                     else
@@ -6888,7 +6879,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op2->SetRegOptional();
+                                    MakeSrcRegOptional(node, op2);
                                 }
                                 break;
                             }
@@ -6901,7 +6892,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op3->SetRegOptional();
+                                    MakeSrcRegOptional(node, op3);
                                 }
                                 break;
                             }
@@ -6922,7 +6913,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op2->SetRegOptional();
+                                    MakeSrcRegOptional(node, op2);
                                 }
                                 break;
                             }
@@ -6972,7 +6963,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else if (supportsRegOptional)
                             {
-                                op2->SetRegOptional();
+                                MakeSrcRegOptional(node, op2);
                             }
                             break;
                         }

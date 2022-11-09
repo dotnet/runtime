@@ -17,7 +17,6 @@ namespace System.Security.Cryptography
         {
             _cipherLite = new BasicSymmetricCipherLiteBCrypt(
                 algorithm,
-                cipherMode,
                 blockSizeInBytes,
                 paddingSizeInBytes,
                 key,

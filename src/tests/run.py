@@ -867,12 +867,12 @@ def run_tests(args,
 
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
-        print("Setting RunCrossGen2=true")
-        os.environ["RunCrossGen2"] = "true"
+        print("Setting RunCrossGen2=1")
+        os.environ["RunCrossGen2"] = "1"
 
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
-        os.environ["LargeVersionBubble"] = "true"
+        os.environ["LargeVersionBubble"] = "1"
 
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)

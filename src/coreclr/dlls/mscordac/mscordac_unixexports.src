@@ -49,7 +49,6 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_memcpy
 #PAL_malloc
 #PAL_realloc
 #PAL_printf
@@ -75,9 +74,7 @@ nativeStringResourceTable_mscorrc
 #sprintf_s
 #vsprintf_s
 #_snprintf_s
-#_snwprintf_s
 #_vsnprintf_s
-#_vsnwprintf_s
 #_itow_s
 #_i64tow_s
 #memcpy_s
