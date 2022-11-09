@@ -11,27 +11,6 @@ namespace ILCompiler.Dataflow
 {
     internal static class DiagnosticUtilities
     {
-        internal static Origin GetMethodParameterFromIndex(MethodDesc method, int parameterIndex)
-        {
-            int declaredParameterIndex;
-            if (!method.Signature.IsStatic)
-            {
-                if (parameterIndex == 0)
-                    return new MethodOrigin(method);
-
-                declaredParameterIndex = parameterIndex - 1;
-            }
-            else
-                declaredParameterIndex = parameterIndex;
-
-            return new ParameterOrigin(method, declaredParameterIndex);
-        }
-
-        internal static string GetParameterNameForErrorMessage(ParameterOrigin origin)
-        {
-            return GetParameterNameForErrorMessage(origin.Method, origin.Index);
-        }
-
         internal static string GetParameterNameForErrorMessage(MethodDesc method, int parameterIndex)
         {
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)

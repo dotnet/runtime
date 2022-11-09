@@ -19,7 +19,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILCompiler.Dataflow
 {
-    // Wrapper that implements IEquatable for MethodBody.
+    // Wrapper that implements IEquatable for MethodIL.
     internal readonly record struct MethodBodyValue(MethodIL MethodBody) : IEquatable<MethodBodyValue>
     {
         bool IEquatable<MethodBodyValue>.Equals(ILCompiler.Dataflow.MethodBodyValue other)
@@ -44,6 +44,11 @@ namespace ILCompiler.Dataflow
 
         public bool Equals(InterproceduralState other)
             => MethodBodies.Equals(other.MethodBodies) && HoistedLocals.Equals(other.HoistedLocals);
+
+        public override bool Equals(object? obj)
+            => obj is InterproceduralState state && Equals(state);
+
+        public override int GetHashCode() => base.GetHashCode();
 
         public InterproceduralState Clone()
             => new(_ilProvider, MethodBodies.Clone(), HoistedLocals.Clone(), lattice);

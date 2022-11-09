@@ -39,15 +39,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_type.Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

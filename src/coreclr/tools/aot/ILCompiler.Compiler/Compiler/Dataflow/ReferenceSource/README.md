@@ -1,1 +1,1 @@
-Sources taken from https://github.com/dotnet/linker/tree/9eb23e4a61c59b8dd12078e50fce3147b41171da/src/linker/Linker.Dataflow.
+Sources taken from https://github.com/dotnet/linker/tree/e502e7255030dde029e984e397924338485d1079/src/linker/Linker.Dataflow.

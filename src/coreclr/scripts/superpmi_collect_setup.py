@@ -405,7 +405,7 @@ def setup_microbenchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "8.0.100-alpha.1.22558.2", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
