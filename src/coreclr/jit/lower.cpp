@@ -40,6 +40,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
+
     childNode->SetContained();
     assert(childNode->isContained());
 
@@ -58,6 +59,60 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// MakeSrcRegOptional: Make "childNode" a regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can regOptional its 'childNode'
+//    childNode  - is an op that will now be regOptional to its parent.
+//
+void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    assert(!parentNode->OperIsLeaf());
+
+    childNode->SetRegOptional();
+    assert(childNode->IsRegOptional());
+
+#ifdef DEBUG
+    // Verify caller of this method checked safety.
+    //
+    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+    if (!isSafeToContainMem)
+    {
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
+        assert(isSafeToContainMem);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can contain or regOptional its 'childNode'
+//    childNode  - is an op that will now be contained or regOptional to its parent.
+//
+void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
+    assert(!parentNode->OperIsHWIntrinsic());
+
+    if (!IsSafeToContainMem(parentNode, childNode))
+    {
+        return;
+    }
+
+    if (IsContainableMemoryOp(childNode))
+    {
+        MakeSrcContained(parentNode, childNode);
+    }
+    else
+    {
+        MakeSrcRegOptional(parentNode, childNode);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -5399,28 +5454,19 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         GenTree* unused = unusedStack.Pop();
 
-        // Use a loop to process some of the nodes iteratively
-        // instead of pushing them on the stack.
-        while ((unused != base) && (unused != index))
+        if ((unused != base) && (unused != index))
         {
             JITDUMP("Removing unused node:\n  ");
             DISPNODE(unused);
 
             BlockRange().Remove(unused);
 
-            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH))
+            for (GenTree* operand : unused->Operands())
             {
-                // Push the first operand and loop back to process the second one.
-                // This minimizes the stack depth because the second one tends to be
-                // a constant so it gets processed and then the first one gets popped.
-                unusedStack.Push(unused->AsOp()->gtGetOp1());
-                unused = unused->AsOp()->gtGetOp2();
+                unusedStack.Push(operand);
             }
-            else
-            {
-                assert(unused->OperIs(GT_CNS_INT));
-                break;
-            }
+
+            DEBUG_DESTROY_NODE(unused);
         }
     }
 
@@ -7180,7 +7226,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
         {
             const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
+            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
             {
                 // On platforms with weaker memory model we need to make sure we use a store with the release semantic
                 // when we publish a potentially mutable object

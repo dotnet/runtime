@@ -180,7 +180,7 @@ namespace System.IO
             data.nFileSizeLow = fileInformationData.nFileSizeLow;
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool _ /*isCaseSensitiveRename*/)
         {
             // Source and destination must have the same root.
             ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);

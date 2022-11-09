@@ -1716,6 +1716,7 @@ namespace ILCompiler
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
             bool IsKnownImmutable { get; }
+            int ArrayLength { get; }
         }
 
         /// <summary>
@@ -2137,6 +2138,8 @@ namespace ILCompiler
             }
 
             public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
 #pragma warning disable CA1852
@@ -2227,6 +2230,8 @@ namespace ILCompiler
             }
 
             public bool IsKnownImmutable => _elementCount == 0;
+
+            public int ArrayLength => Length;
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -2348,6 +2353,8 @@ namespace ILCompiler
             }
 
             public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
         private struct FieldAccessor

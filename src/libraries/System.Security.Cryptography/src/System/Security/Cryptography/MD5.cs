@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeInBytes, source, destination);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, source, destination);
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, HashSizeInBytes, source, cancellationToken);
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, source, cancellationToken);
         }
 
         /// <summary>
@@ -239,7 +239,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HashStreamAsync(
                 HashAlgorithmNames.MD5,
-                HashSizeInBytes,
                 source,
                 destination,
                 cancellationToken);

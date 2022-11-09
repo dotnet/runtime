@@ -14,13 +14,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public abstract class HeaderTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        public TargetDetails Target { get; private set; }
-        
-        public HeaderTableNode(TargetDetails target)
-        {
-            Target = target;
-        }
-
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
 
         public int Offset => 0;
@@ -31,15 +24,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
     }
 
@@ -60,12 +50,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
-        private readonly TargetDetails _target;
         private readonly ReadyToRunFlags _flags;
 
-        public HeaderNode(TargetDetails target, ReadyToRunFlags flags)
+        public HeaderNode(ReadyToRunFlags flags)
         {
-            _target = target;
             _flags = flags;
         }
 
@@ -85,15 +73,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -152,8 +137,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class GlobalHeaderNode : HeaderNode
     {
-        public GlobalHeaderNode(TargetDetails target, ReadyToRunFlags flags)
-            : base(target, flags)
+        public GlobalHeaderNode(ReadyToRunFlags flags)
+            : base(flags)
         {
         }
 
@@ -180,8 +165,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly int _index;
 
-        public AssemblyHeaderNode(TargetDetails target, ReadyToRunFlags flags, int index)
-            : base(target, flags)
+        public AssemblyHeaderNode(ReadyToRunFlags flags, int index)
+            : base(flags)
         {
             _index = index;
         }

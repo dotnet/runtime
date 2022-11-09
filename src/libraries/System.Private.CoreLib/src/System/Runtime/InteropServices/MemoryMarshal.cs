@@ -85,6 +85,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
@@ -98,6 +99,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -428,8 +430,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Reads a structure of type T out of a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
@@ -467,8 +469,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Writes a structure of type T into a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -8,8 +8,8 @@
     <Compile Include="Crc64Tests.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />
     <Compile Include="NonCryptoHashTestDriver.cs" />
+    <Compile Include="XxHash3Tests.cs" />
     <Compile Include="XxHash32Tests.cs" />
-    <Compile Include="XxHash32Tests.007.cs" />
     <Compile Include="XxHash32Tests.f00d.cs" />
     <Compile Include="XxHash64Tests.cs" />
     <Compile Include="XxHash64Tests.007.cs" />
@@ -20,5 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.IO.Hashing.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>

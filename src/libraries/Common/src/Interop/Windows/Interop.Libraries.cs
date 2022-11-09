@@ -47,5 +47,9 @@ internal static partial class Interop
         internal const string HostPolicy = "hostpolicy";
         internal const string Ucrtbase = "ucrtbase.dll";
         internal const string Xolehlp = "xolehlp.dll";
+        internal const string Comdlg32 = "comdlg32.dll";
+        internal const string Gdiplus = "gdiplus.dll";
+        internal const string Oleaut32 = "oleaut32.dll";
+        internal const string Winspool = "winspool.drv";
     }
 }

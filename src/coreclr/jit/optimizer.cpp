@@ -4594,6 +4594,358 @@ PhaseStatus Compiler::optUnrollLoops()
 #pragma warning(pop)
 #endif
 
+//-----------------------------------------------------------------------------
+// optIfConvert
+//
+// Find blocks representing simple if statements represented by conditional jumps
+// over another block. Try to replace the jumps by use of SELECT nodes.
+//
+// Arguments:
+//   block -- block that may represent the conditional jump in an if statement.
+//
+// Returns:
+//   true if any IR changes possibly made.
+//
+// Notes:
+//
+// Example of simple if conversion:
+//
+// This is optimising a simple if statement. There is a single condition being
+// tested, and a single assignment inside the body. There must be no else
+// statement. For example:
+// if (x < 7) { a = 5; }
+//
+// This is represented in IR by two basic blocks. The first block (block) ends with
+// a JTRUE statement which conditionally jumps to the second block (asgBlock).
+// The second block just contains a single assign statement. Both blocks then jump
+// to the same destination (finalBlock).  Note that the first block may contain
+// additional statements prior to the JTRUE statement.
+//
+// For example:
+//
+// ------------ BB03 [009..00D) -> BB05 (cond), preds={BB02} succs={BB04,BB05}
+// STMT00004
+//   *  JTRUE     void   $VN.Void
+//   \--*  GE        int    $102
+//      +--*  LCL_VAR   int    V02
+//      \--*  CNS_INT   int    7 $46
+//
+// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
+// STMT00005
+//   *  ASG       int    $VN.Void
+// +--*  LCL_VAR   int    V00 arg0
+// \--*  CNS_INT   int    5 $47
+//
+//
+// This is optimised by conditionally executing the store and removing the conditional
+// jumps. First the JTRUE is replaced with a NOP. The assignment is updated so that
+// the source of the store is a SELECT node with the condition set to the inverse of
+// the original JTRUE condition. If the condition passes the original assign happens,
+// otherwise the existing source value is used.
+//
+// In the example above, local var 0 is set to 5 if the LT returns true, otherwise
+// the existing value of local var 0 is used:
+//
+// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
+// STMT00004
+//   *  NOP       void
+//
+// STMT00005
+//   *  ASG       int    $VN.Void
+//   +--*  LCL_VAR   int    V00 arg0
+//   \--*  SELECT    int
+//      +--*  LT        int    $102
+//      |  +--*  LCL_VAR   int    V02
+//      |  \--*  CNS_INT   int    7 $46
+//      +--*  CNS_INT   int    5 $47
+//      \--*  LCL_VAR   int    V00
+//
+// ------------ BB04 [00D..010), preds={} succs={BB05}
+//
+bool Compiler::optIfConvert(BasicBlock* block)
+{
+#ifndef TARGET_ARM64
+    return false;
+#else
+
+    // Don't optimise the block if it is inside a loop
+    // When inside a loop, branches are quicker than selects.
+    // Detect via the block weight as that will be high when inside a loop.
+    if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    {
+        return false;
+    }
+
+    // Does the block end by branching via a JTRUE after a compare?
+    if (block->bbJumpKind != BBJ_COND || block->NumSucc() != 2)
+    {
+        return false;
+    }
+
+    // Verify the test block ends with a condition that we can manipulate.
+    GenTree* last = block->lastStmt()->GetRootNode();
+    noway_assert(last->OperIs(GT_JTRUE));
+    GenTree* cond = last->gtGetOp1();
+    if (!cond->OperIsCompare())
+    {
+        return false;
+    }
+
+    // Block where the flows merge.
+    BasicBlock* finalBlock = block->bbNext;
+    // The node, statement and block of the assignment.
+    GenTree*    asgNode  = nullptr;
+    Statement*  asgStmt  = nullptr;
+    BasicBlock* asgBlock = nullptr;
+
+    // Check the block is followed by a block or chain of blocks that only contain NOPs and
+    // a single ASG statement. The destination of the final block must point to the same as the
+    // true path of the JTRUE block.
+    bool foundMiddle = false;
+    while (!foundMiddle)
+    {
+        BasicBlock* middleBlock = finalBlock;
+        noway_assert(middleBlock != nullptr);
+
+        // middleBlock should have a single successor.
+        finalBlock = middleBlock->GetUniqueSucc();
+        if (finalBlock == nullptr)
+        {
+            return false;
+        }
+
+        if (finalBlock == block->bbJumpDest)
+        {
+            // This is our final middle block.
+            foundMiddle = true;
+        }
+
+        // Check that we have linear flow and are still in the same EH region
+
+        if (middleBlock->GetUniquePred(this) == nullptr)
+        {
+            return false;
+        }
+
+        if (!BasicBlock::sameEHRegion(middleBlock, block))
+        {
+            return false;
+        }
+
+        // Can all the nodes within the middle block be made to conditionally execute?
+        for (Statement* const stmt : middleBlock->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            switch (tree->gtOper)
+            {
+                case GT_ASG:
+                {
+                    GenTree* op1 = tree->gtGetOp1();
+                    GenTree* op2 = tree->gtGetOp2();
+
+                    // Only one per assignment per block can be conditionally executed.
+                    if (asgNode != nullptr || op2->OperIs(GT_SELECT))
+                    {
+                        return false;
+                    }
+
+                    // Ensure the destination of the assign is a local variable with integer type.
+                    if (!op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1))
+                    {
+                        return false;
+                    }
+
+                    // Ensure the nodes of the assign won't cause any additional side effects.
+                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
+                        (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    {
+                        return false;
+                    }
+
+                    // Ensure the source isn't a phi.
+                    if (op2->OperIs(GT_PHI))
+                    {
+                        return false;
+                    }
+
+                    asgNode  = tree;
+                    asgStmt  = stmt;
+                    asgBlock = middleBlock;
+                    break;
+                }
+
+                // These do not need conditional execution.
+                case GT_NOP:
+                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    {
+                        return false;
+                    }
+                    break;
+
+                // Cannot optimise this block.
+                default:
+                    return false;
+            }
+        }
+    }
+    if (asgNode == nullptr)
+    {
+        // The blocks checked didn't contain any ASG nodes.
+        return false;
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", asgBlock->bbNum, block->bbNum);
+        fgDumpBlock(block);
+        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        {
+            fgDumpBlock(dumpBlock);
+        }
+        JITDUMP("\n");
+    }
+#endif
+
+    // Using SELECT nodes means that full assignment is always evaluated.
+    // Put a limit on the original source and destination of the assignment.
+    if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
+    {
+        int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
+
+        // Cost to allow for "x = cond ? a + b : x".
+        if (cost > 7)
+        {
+            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d", cost);
+            return false;
+        }
+    }
+
+    // Duplicate the destination of the assign.
+    // This will be used as the false result of the select node.
+    assert(asgNode->AsOp()->gtOp1->IsLocal());
+    GenTreeLclVarCommon* destination = asgNode->AsOp()->gtOp1->AsLclVarCommon();
+    GenTree*             falseInput  = gtCloneExpr(destination);
+    falseInput->gtFlags &= GTF_EMPTY;
+
+    // Create a new SSA entry for the false result.
+    if (destination->HasSsaName())
+    {
+        unsigned      lclNum            = destination->GetLclNum();
+        unsigned      destinationSsaNum = destination->GetSsaNum();
+        LclSsaVarDsc* destinationSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
+
+        // Create a new SSA num.
+        unsigned newSsaNum = lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(getAllocator(CMK_SSA));
+        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
+        LclSsaVarDsc* newSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(newSsaNum);
+
+        // Copy across the SSA data.
+        newSsaDef->SetBlock(destinationSsaDef->GetBlock());
+        newSsaDef->SetAssignment(destinationSsaDef->GetAssignment());
+        newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
+        falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
+
+        if (newSsaDef->m_vnPair.BothDefined())
+        {
+            fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
+        }
+    }
+
+    // Invert the condition.
+    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+
+    // Create a select node.
+    GenTreeConditional* select =
+        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, asgNode->TypeGet());
+
+    // Use the select as the source of the assignment.
+    asgNode->AsOp()->gtOp2 = select;
+    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+    gtSetEvalOrder(asgNode);
+    fgSetStmtSeq(asgStmt);
+
+    // Remove the JTRUE statement.
+    last->ReplaceWith(gtNewNothingNode(), this);
+    gtSetEvalOrder(last);
+    fgSetStmtSeq(block->lastStmt());
+
+    // Before moving anything, fix up any SSAs in the asgBlock
+    for (Statement* const stmt : asgBlock->Statements())
+    {
+        for (GenTree* const node : stmt->TreeList())
+        {
+            if (node->IsLocal())
+            {
+                GenTreeLclVarCommon* lclVar = node->AsLclVarCommon();
+                unsigned             lclNum = lclVar->GetLclNum();
+                unsigned             ssaNum = lclVar->GetSsaNum();
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+                    if (ssaDef->GetBlock() == asgBlock)
+                    {
+                        JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum,
+                                ssaDef->GetBlock()->bbNum, block->bbNum);
+                        ssaDef->SetBlock(block);
+                    }
+                }
+            }
+        }
+    }
+
+    // Move the Asg to the end of the original block
+    Statement* stmtList1 = block->firstStmt();
+    Statement* stmtList2 = asgBlock->firstStmt();
+    Statement* stmtLast1 = block->lastStmt();
+    Statement* stmtLast2 = asgBlock->lastStmt();
+    stmtLast1->SetNextStmt(stmtList2);
+    stmtList2->SetPrevStmt(stmtLast1);
+    stmtList1->SetPrevStmt(stmtLast2);
+    asgBlock->bbStmtList = nullptr;
+
+    // Update the flow from the original block.
+    fgRemoveAllRefPreds(block->bbNext, block);
+    block->bbJumpKind = BBJ_ALWAYS;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("\nAfter if conversion\n");
+        fgDumpBlock(block);
+        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        {
+            fgDumpBlock(dumpBlock);
+        }
+        JITDUMP("\n");
+    }
+#endif
+
+    return true;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// optIfConversion: If conversion
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::optIfConversion()
+{
+    bool madeChanges = false;
+
+    // Reverse iterate through the blocks.
+    BasicBlock* block = fgLastBB;
+    while (block != nullptr)
+    {
+        madeChanges |= optIfConvert(block);
+        block = block->bbPrev;
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 /*****************************************************************************
  *
  *  Return false if there is a code path from 'topBB' to 'botBB' that might
@@ -6300,6 +6652,80 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
     return false;
 }
 
+//------------------------------------------------------------------------
+// optRecordSsaUses: note any SSA uses within tree
+//
+// Arguments:
+//   tree     - tree to examine
+//   block    - block that does (or will) contain tree
+//
+// Notes:
+//   Ignores SSA defs. We assume optimizations that modify trees with
+//   SSA defs are introducing new defs for locals that do not require PHIs
+//   or updating existing defs in place.
+//
+//   Currently does not examine PHI_ARG nodes as no opt phases introduce new PHIs.
+//
+//   Assumes block is a block that was rewritten by SSA or introduced post-SSA
+//   (in particular, block is not unreachable).
+//
+void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
+{
+    class SsaRecordingVisitor : public GenTreeVisitor<SsaRecordingVisitor>
+    {
+    private:
+        BasicBlock* const m_block;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true
+        };
+
+        SsaRecordingVisitor(Compiler* compiler, BasicBlock* block)
+            : GenTreeVisitor<SsaRecordingVisitor>(compiler), m_block(block)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* const tree  = (*use)->AsLclVarCommon();
+            const bool                 isUse = (tree->gtFlags & GTF_VAR_DEF) == 0;
+
+            if (isUse)
+            {
+                if (tree->HasSsaName())
+                {
+                    unsigned const      lclNum    = tree->GetLclNum();
+                    unsigned const      ssaNum    = tree->GetSsaNum();
+                    LclVarDsc* const    varDsc    = m_compiler->lvaGetDesc(lclNum);
+                    LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+                    ssaVarDsc->AddUse(m_block);
+                }
+                else
+                {
+                    assert(!m_compiler->lvaInSsa(tree->GetLclNum()));
+                    assert(!tree->HasCompositeSsaName());
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    SsaRecordingVisitor srv(this, block);
+    srv.WalkTree(&tree, nullptr);
+}
+
+//------------------------------------------------------------------------
+// optPerformHoistExpr: hoist an expression into the preheader of a loop
+//
+// Arguments:
+//   origExpr - tree to hoist
+//   exprBb   - block containing the tree
+//   lnum     - loop that we're hoisting origExpr out of
+//
 void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
 {
     assert(exprBb != nullptr);
@@ -6349,6 +6775,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
+
+    // Scan the tree for any new SSA uses.
+    //
+    optRecordSsaUses(hoist, preHead);
 
     preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
@@ -9049,7 +9479,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         foldType = TYP_I_IMPL;
     }
 
-    assert(m_testInfo1.compTree->gtOper == GT_EQ || m_testInfo1.compTree->gtOper == GT_NE);
+    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE));
 
     if (m_sameTarget)
     {
@@ -9068,6 +9498,18 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_EQ;
         }
+        else if (m_testInfo1.compTree->gtOper == GT_LT)
+        {
+            // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
+            // So we will branch to BX if (c1|c2)<0
+
+            foldOp = GT_OR;
+            cmpOp  = GT_LT;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
         else
         {
             // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
@@ -9079,15 +9521,12 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     }
     else
     {
-        // The m_b1 condition must be the reverse of the m_b2 condition because the only operators
-        // that we will see here are GT_EQ and GT_NE. So, if they are not the same, we have one of each.
-
         if (m_testInfo1.compTree->gtOper == m_testInfo2.compTree->gtOper)
         {
             return false;
         }
 
-        if (m_testInfo1.compTree->gtOper == GT_EQ)
+        if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
         {
             // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
             // So we will branch to BX if (c1&c2)!=0
@@ -9095,13 +9534,29 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_NE;
         }
-        else
+        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE)
+        {
+            // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
+            // So we will branch to BX if (c1|c2)>=0
+
+            foldOp = GT_OR;
+            cmpOp  = GT_GE;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
         {
             // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
             // So we will branch to BX if (c1|c2)==0
 
             foldOp = GT_OR;
             cmpOp  = GT_EQ;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -9244,8 +9699,8 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 //
 bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 {
-    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
-    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
+    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
+    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
 
     //
     // Leave out floats where the bit-representation is more complicated
@@ -9516,7 +9971,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     }
 
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
-    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE)
+    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
     var_types foldType = m_c1->TypeGet();
     if (varTypeIsGC(foldType))
@@ -9553,6 +10008,16 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_AND;
         cmpOp  = GT_NE;
     }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
+             (it1val == 0 && it2val == 0 && it3val == 0))
+    {
+        // Case: x >= 0 && y >= 0
+        //      t1:c1<0 t2:c2>=0 t3:c3==0
+        //      ==> true if (c1|c2)>=0
+
+        foldOp = GT_OR;
+        cmpOp  = GT_GE;
+    }
     else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
              (it1val == 0 && it2val == 0 && it3val == 1))
     {
@@ -9571,13 +10036,23 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_OR;
         cmpOp  = GT_NE;
     }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
+             (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x < 0 || y < 0
+        //      t1:c1<0 t2:c2<0 t3:c3==1
+        //      ==> true if (c1|c2)<0
+
+        foldOp = GT_OR;
+        cmpOp  = GT_LT;
+    }
     else
     {
         // Require NOT operation for operand(s). Do Not fold.
         return false;
     }
 
-    if ((foldOp == GT_AND || cmpOp == GT_NE) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
+    if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
         // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
@@ -9676,15 +10151,15 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 //
 // Notes:
 //      On entry, testTree is set.
-//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE) of the testTree.
+//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE or GT_LT or GT_GE) of the testTree.
 //      isBool is set to true if the comparand (i.e., operand 1 of compTree is boolean. Otherwise, false.
 //
 //      Given a GT_JTRUE or GT_RETURN node, this method checks if it is a boolean comparison
-//      of the form "if (boolVal ==/!=  0/1)".This is translated into
-//      a GT_EQ/GT_NE node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
+//      of the form "if (boolVal ==/!=/>=/<  0/1)".This is translated into
+//      a GT_EQ/GT_NE/GT_GE/GT_LT node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
 //
 //      When isBool == true, if the comparison was against a 1 (i.e true)
-//      then we morph the tree by reversing the GT_EQ/GT_NE and change the 1 to 0.
+//      then we morph the tree by reversing the GT_EQ/GT_NE/GT_GE/GT_LT and change the 1 to 0.
 //
 GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 {
@@ -9693,9 +10168,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     assert(pOptTest->testTree->gtOper == GT_JTRUE || pOptTest->testTree->gtOper == GT_RETURN);
     GenTree* cond = pOptTest->testTree->AsOp()->gtOp1;
 
-    // The condition must be "!= 0" or "== 0"
-
-    if ((cond->gtOper != GT_EQ) && (cond->gtOper != GT_NE))
+    // The condition must be "!= 0" or "== 0" or >=0 or <0
+    // we don't optimize unsigned < and >= operations
+    if (!cond->OperIs(GT_EQ, GT_NE) && (!cond->OperIs(GT_LT, GT_GE) || cond->IsUnsigned()))
     {
         return nullptr;
     }
@@ -9772,9 +10247,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //    suitable phase status
 //
 // Notes:
-//      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE of the form
-//      "if (boolVal ==/!=  0/1)", the GT_EQ/GT_NE nodes are translated into a
-//      GT_EQ/GT_NE node with
+//      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE/GT_GE/GT_LT of the form
+//      "if (boolVal ==/!=/>=/<  0/1)", the GT_EQ/GT_NE/GT_GE/GT_LT nodes are translated into a
+//      GT_EQ/GT_NE/GT_GE/GT_LT node with
 //          "op1" being a boolean GT_OR/GT_AND lclVar and
 //          "op2" the const 0/1.
 //      For example, the folded tree for the below boolean optimization is shown below:
@@ -9815,6 +10290,30 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //              |  |  \--*  LCL_VAR   int    V02 arg2
 //              |  \--*  LCL_VAR   int    V03 arg3
 //              \--*  CNS_INT   int    0
+//
+//      Case 5:     (x != 0 && y != 0) => (x | y) != 0
+//          *  RETURN   int
+//          \--*  NE        int
+//             +--*  OR         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
+//
+//      Case 6:     (x >= 0 && y >= 0) => (x | y) >= 0
+//          *  RETURN   int
+//          \--*  GE        int
+//             +--*  OR         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
+//
+//      Case 7:     (x < 0 || y < 0) => (x & y) < 0
+//          *  RETURN   int
+//          \--*  LT        int
+//             +--*  AND         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
 //
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.

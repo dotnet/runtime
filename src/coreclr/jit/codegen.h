@@ -1430,13 +1430,16 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#ifdef TARGET_XARCH
+    void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
+#else  // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
-
-#if defined(TARGET_XARCH)
-    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp);
-#endif // defined(TARGET_XARCH)
+#endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
 
@@ -1643,7 +1646,7 @@ public:
             if (m_indir == nullptr)
             {
                 GenTreeIndir indirForm = CodeGen::indirForm(m_indirType, m_addr);
-                memcpy(pIndirForm, &indirForm, sizeof(GenTreeIndir));
+                memcpy((void*)pIndirForm, (void*)&indirForm, sizeof(GenTreeIndir));
             }
             else
             {
@@ -1697,7 +1700,11 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
+#if defined(TARGET_XARCH)
+    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
+#elif defined(TARGET_ARM)
     instruction ins_FloatConv(var_types to, var_types from);
+#endif
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);

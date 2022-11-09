@@ -3538,7 +3538,7 @@ class SsaNumInfo final
     static const int BITS_PER_SIMPLE_NUM     = 8;
     static const int MAX_SIMPLE_NUM          = (1 << (BITS_PER_SIMPLE_NUM - 1)) - 1;
     static const int SIMPLE_NUM_MASK         = MAX_SIMPLE_NUM;
-    static const int SIMPLE_NUM_COUNT        = sizeof(int) / BITS_PER_SIMPLE_NUM;
+    static const int SIMPLE_NUM_COUNT        = (sizeof(int) * BITS_PER_BYTE) / BITS_PER_SIMPLE_NUM;
     static const int COMPOSITE_ENCODING_BIT  = 1 << 31;
     static const int OUTLINED_ENCODING_BIT   = 1 << 15;
     static const int OUTLINED_INDEX_LOW_MASK = OUTLINED_ENCODING_BIT - 1;
@@ -4056,6 +4056,19 @@ struct GenTreeField : public GenTreeUnOp
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
+
+    bool IsInstance() const
+    {
+        return GetFldObj() != nullptr;
+    }
+
+    bool IsOffsetKnown() const
+    {
+#ifdef FEATURE_READYTORUN
+        return gtFieldLookup.addr == nullptr;
+#endif // FEATURE_READYTORUN
+        return true;
+    }
 };
 
 // There was quite a bit of confusion in the code base about which of gtOp1 and gtOp2 was the
@@ -4494,8 +4507,6 @@ public:
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
-    // TODO-ARGS: Reconsider whether we need this, it does not make much sense
-    // to have this instead of using just the type of the arg node.
     var_types ArgType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.

@@ -1283,6 +1283,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(TripleBoolValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77474", TestPlatforms.Android)]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
@@ -3680,8 +3681,16 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task ResponseHeaders_ExtraWhitespace_Trimmed()
+        [Theory]
+        [InlineData("foo ", "bar ")]
+        [InlineData("foo", " bar")]
+        [InlineData("foo", "bar\t")]
+        [InlineData("foo", "\tbar")]
+        [InlineData("foo ", " bar ")]
+        [InlineData("foo", "\tbar\t")]
+        [InlineData("foo", "\t bar \t")]
+        [InlineData("foo  ", " \t bar  \r\n ")]
+        public async Task ResponseHeaders_ExtraWhitespace_Trimmed(string name, string value)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -3689,12 +3698,12 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await client.GetAsync(uri);
 
-                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues value));
-                Assert.Equal("bar", Assert.Single(value));
+                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues values));
+                Assert.Equal("bar", Assert.Single(values));
             },
             async server =>
             {
-                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("foo  ", " \t bar  \r\n ") });
+                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData(name, value) });
             });
         }
     }

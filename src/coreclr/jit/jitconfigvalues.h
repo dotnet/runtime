@@ -297,9 +297,13 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the Alt
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
-CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)   // Enable the enregistration of locals that are
-                                                                     // defined or used in a multireg context.
-CONFIG_INTEGER(JitStressEVEXEncoding, W("JitStressEVEXEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable EVEX encoding for SIMD instructions when
+                                                                     // AVX-512VL is available.
+CONFIG_INTEGER(JitForceEVEXEncoding, W("JitForceEVEXEncoding"), 0)   // Force EVEX encoding for SIMD instructions.
+#endif
 
 // clang-format off
 
@@ -426,6 +430,7 @@ CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numb
 
 CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))            // Runs optimizer multiple times on the method
 CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
+CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 #endif                                                       // defined(OPT_CONFIG)
 
 CONFIG_INTEGER(JitTelemetry, W("JitTelemetry"), 1) // If non-zero, gather JIT telemetry data

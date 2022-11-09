@@ -548,6 +548,7 @@ namespace System.Security.Cryptography.X509Certificates
 
     internal sealed partial class ChainPal
     {
+#pragma warning disable IDE0060
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
             // This is possible to do on Apple's platform, but is tricky in execution.
@@ -637,5 +638,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             return chainPal;
         }
+#pragma warning restore IDE0060
     }
 }

@@ -163,7 +163,7 @@ namespace System.Text.Json.Serialization
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
                 if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
-                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                    ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
                     bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);

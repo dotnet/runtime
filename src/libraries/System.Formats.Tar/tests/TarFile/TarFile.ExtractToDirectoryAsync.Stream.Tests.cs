@@ -102,7 +102,7 @@ namespace System.Formats.Tar.Tests
         {
             using (TempDirectory root = new TempDirectory())
             {
-                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "docker-hello-world");
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "docker-hello-world");
                 await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
 
                 Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));

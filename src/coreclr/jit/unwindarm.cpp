@@ -572,14 +572,28 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif // DEBUG
 
+#ifdef FEATURE_EH_FUNCLETS
+    // If hot/cold splitting occurred at fgFirstFuncletBB, then the main body is not split.
+    const bool splitAtFirstFunclet = (funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB));
+
+    if (!isFunclet && splitAtFirstFunclet)
+    {
+        funcHasColdSection = false;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
+        // Report zero-sized unwind info for cold part of main function
+        // so the EE chains unwind info.
+        // TODO: Support cold EH funclets.
         DWORD unwindCodeBytes = 0;
         if (funcHasColdSection)
         {
             eeReserveUnwindInfo(isFunclet, true /*isColdCode*/, unwindCodeBytes);
         }
+
         unwindCodeBytes = (DWORD)(func->cfiCodes->size() * sizeof(CFI_CODE));
         eeReserveUnwindInfo(isFunclet, false /*isColdCode*/, unwindCodeBytes);
 
@@ -607,7 +621,11 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     // The ARM Exception Data specification "Function Fragments" section describes this.
     func->uwi.Split();
 
-    func->uwi.Reserve(isFunclet, true);
+    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    if (!isFunclet || !funcHasColdSection)
+    {
+        func->uwi.Reserve(isFunclet, true);
+    }
 
     // After the hot section, split and reserve the cold section
 
@@ -644,12 +662,17 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
+        // TODO: Support cold EH funclets.
         unwindEmitFuncCFI(func, pHotCode, pColdCode);
         return;
     }
 #endif // FEATURE_CFI_SUPPORT
 
-    func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    if ((func->funKind == FUNC_ROOT) || (func->uwiCold == NULL))
+    {
+        func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+    }
 
     if (func->uwiCold != NULL)
     {
@@ -1572,8 +1595,6 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
 void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
 {
-    assert(isHotCode || !isFunclet); // TODO-CQ: support hot/cold splitting in functions with EH
-
     MergeCodes();
 
     bool isColdCode = !isHotCode;
@@ -1925,7 +1946,6 @@ void UnwindInfo::Split()
 void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
 {
     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
-    assert(isHotCode || !isFunclet);
 
     for (UnwindFragmentInfo* pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
     {

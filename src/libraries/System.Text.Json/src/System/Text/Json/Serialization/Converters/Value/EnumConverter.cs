@@ -10,7 +10,7 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonConverter<T>
+    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
@@ -378,7 +378,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 #else
-        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
             // Try parsing case sensitive first
             bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);

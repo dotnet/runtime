@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
+#pragma warning disable IDE0060
+
 namespace System.Net.Security
 {
     internal static class SslStreamPal
@@ -212,7 +214,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyAlertToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
@@ -223,7 +224,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteSslContext securityContext)
         {
             SafeSslHandle sslHandle = securityContext.SslContext;

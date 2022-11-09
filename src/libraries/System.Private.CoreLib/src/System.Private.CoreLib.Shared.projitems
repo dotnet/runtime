@@ -103,6 +103,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\BinaryPrimitives.ReverseEndianness.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\Reader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderLittleEndian.cs" />
@@ -414,6 +415,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyAsciiSearcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
@@ -1192,6 +1194,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
@@ -1422,8 +1425,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.OpenProcessToken.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.RegCloseKey.cs</Link>
@@ -1457,6 +1466,15 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.RegSetValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ACCESS_LEVELS.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ACCESS_LEVELS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -1889,6 +1907,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
       <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
@@ -2384,9 +2405,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">

@@ -34,6 +34,7 @@
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
+    <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -106,6 +107,7 @@
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_WasmBrowserPathForTests)' != ''" >$(_XHarnessArgs) &quot;--browser-path=$(_WasmBrowserPathForTests)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
@@ -136,8 +138,9 @@
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup>
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
-    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+    <!-- non-library tests have IsWasmProject==false -->
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
 
     <RunCommand>$(WasmAppHostDir)/WasmAppHost</RunCommand>
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
@@ -149,7 +152,7 @@
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
+  <PropertyGroup Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
 
     <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->

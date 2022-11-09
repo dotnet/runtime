@@ -4577,8 +4577,6 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 
     BEGIN_PRESERVE_LAST_ERROR;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     if (pModuleBase)
         *pModuleBase = NULL;
     if (pFuncEntry)
@@ -4604,8 +4602,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     }
 
 Exit:
-    END_ENTRYPOINT_VOIDRET;
-
+    ;
     END_PRESERVE_LAST_ERROR;
 }
 #endif // FEATURE_EH_FUNCLETS
@@ -5912,6 +5909,86 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     return -1;
 }
 
+int HotColdMappingLookupTable::LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (pInfo->m_nHotColdMap == 0)
+    {
+        return -1;
+    }
+
+    // Casting the lookup table size to an int is safe:
+    // We index the RUNTIME_FUNCTION table with ints, and the lookup table
+    // contains a subset of the indices in the RUNTIME_FUNCTION table.
+    // Thus, |lookup table| <= |RUNTIME_FUNCTION table|.
+    _ASSERTE(pInfo->m_nHotColdMap <= pInfo->m_nRuntimeFunctions);
+    const int nLookupTable = (int)(pInfo->m_nHotColdMap);
+
+    // The lookup table contains pairs of hot/cold indices, and thus should have an even size.
+    _ASSERTE((nLookupTable % 2) == 0);
+    int high = ((nLookupTable - 1) / 2);
+    int low  = 0;
+
+    const int indexCorrection = (int)(MethodIndex < pInfo->m_pHotColdMap[0]);
+
+    // Binary search the lookup table.
+    // Use linear search once we get down to a small number of elements
+    // to avoid binary search overhead.
+    while (high - low > 10)
+    {
+        const int middle = low + (high - low) / 2;
+        const int index = (middle * 2) + indexCorrection;
+
+        if (MethodIndex < pInfo->m_pHotColdMap[index])
+        {
+            high = middle - 1;
+        }
+        else
+        {
+            low = middle;
+        }
+    }
+
+    // In each pair of indices in lookup table, the first index is of the cold fragment.
+    const bool isColdCode = (indexCorrection == 0);
+
+    for (int i = low; i <= high; ++i)
+    {
+        const int index = (i * 2);
+
+        if (pInfo->m_pHotColdMap[index + indexCorrection] == MethodIndex)
+        {
+            if (isColdCode)
+            {
+                return index + 1;
+            }
+
+            return index;
+        }
+        else if (isColdCode && (MethodIndex > pInfo->m_pHotColdMap[index]))
+        {
+            // If MethodIndex is a cold funclet from a cold block, the above search will fail.
+            // To get its corresponding hot block, find the cold block containing the funclet,
+            // then use the lookup table.
+            // The cold funclet's MethodIndex will be greater than its cold block's MethodIndex,
+            // but less than the next cold block's MethodIndex in the lookup table.
+            const bool isFuncletIndex = ((index + 2) == nLookupTable) || (MethodIndex < pInfo->m_pHotColdMap[index + 2]);
+
+            if (isFuncletIndex)
+            {
+                return index + 1;
+            }
+        }
+    }
+
+    return -1;
+}
+
 
 //***************************************************************************************
 //***************************************************************************************
@@ -5991,7 +6068,7 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     SIZE_T nUnwindDataSize;
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
 
-    // GCInfo immediatelly follows unwind data
+    // GCInfo immediately follows unwind data
     PTR_BYTE gcInfo = dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
     UINT32 gcInfoVersion = JitTokenToGCInfoVersion(MethodToken);
 
@@ -6214,8 +6291,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // READYTORUN: FUTURE: Hot-cold spliting
-
     // If the address is in a thunk, return NULL.
     if (GetStubCodeBlockKind(pRangeSection, currentPC) != STUB_CODE_BLOCK_UNKNOWN)
     {
@@ -6254,6 +6329,15 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;
 
+    ULONG UMethodIndex = (ULONG)MethodIndex;
+
+    const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
+    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
+    {
+        // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
+        MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
+    }
+
     MethodDesc *pMethodDesc;
     while ((pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
         MethodIndex--;
@@ -6273,9 +6357,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     if (pCodeInfo)
     {
-        pCodeInfo->m_relOffset = (DWORD)
-            (RelativePc - RUNTIME_FUNCTION__BeginAddress(FunctionEntry));
-
         // We are using RUNTIME_FUNCTION as METHODTOKEN
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
 
@@ -6283,6 +6364,17 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
         pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
 #endif
+        MethodRegionInfo methodRegionInfo;
+        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
+        if ((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress))
+        {
+            pCodeInfo->m_relOffset = (DWORD)
+                (methodRegionInfo.hotSize + (currentInstr - methodRegionInfo.coldStartAddress));
+        }
+        else
+        {
+            pCodeInfo->m_relOffset = (DWORD)(currentInstr - methodRegionInfo.hotStartAddress);
+        }
     }
 
     return TRUE;
@@ -6312,8 +6404,6 @@ TADDR ReadyToRunJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // READYTORUN: FUTURE: Hot-cold spliting
-
     return IJitManager::GetFuncletStartAddress(pCodeInfo);
 }
 
@@ -6335,9 +6425,71 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
         pFirstFuncletFunctionEntry, moduleBase,
         &nFunclets, pStartFuncletOffsets, dwLength);
 
-    // READYTORUN: FUTURE: Hot/cold splitting
+    // Technically, the cold code is not a funclet, but it looks like the debugger wants it
+    if (regionInfo.coldSize > 0)
+    {
+        ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(MethodToken);
+        PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
+        int i = 0;
+        while (true)
+        {
+            pFirstFuncletFunctionEntry = pRuntimeFunctions + i;
+            if (regionInfo.coldStartAddress == moduleBase + RUNTIME_FUNCTION__BeginAddress(pFirstFuncletFunctionEntry))
+            {
+                break;
+            }
+            i++;
+        }
+
+        GetFuncletStartOffsetsHelper(regionInfo.coldStartAddress, regionInfo.coldSize, 0,
+            pFirstFuncletFunctionEntry, moduleBase,
+            &nFunclets, pStartFuncletOffsets, dwLength);
+    }
 
     return nFunclets;
+}
+
+BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        HOST_NOCALLS;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(pCodeInfo->GetMethodToken());
+
+    COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
+    PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
+
+    ULONG methodIndex = (ULONG)(pCodeInfo->GetFunctionEntry() - pRuntimeFunctions);
+
+    const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, methodIndex);
+
+    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
+    {
+        // This maps to a hot entry in the lookup table, so check its unwind info
+        SIZE_T unwindSize;
+        PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &unwindSize);
+        _ASSERTE(pUnwindData != NULL);
+
+#ifdef TARGET_AMD64
+        // Chained unwind info is used only for cold part of the main code
+        const UCHAR chainedUnwindFlag = (((PTR_UNWIND_INFO)pUnwindData)->Flags & UNW_FLAG_CHAININFO);
+        return (chainedUnwindFlag == 0);
+#else
+        // TODO: We need a solution for arm64 here
+        return false;
+#endif
+    }
+
+    // Fall back to existing logic if it is not cold
+
+    TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
+    TADDR methodStartAddress = pCodeInfo->GetStartAddress();
+
+    return (funcletStartAddress != methodStartAddress);
 }
 
 BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
@@ -6391,12 +6543,50 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;
 
-    // READYTORUN: FUTURE: Hot-cold spliting
-
     methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
     methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
+
+    ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(MethodToken);
+    COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
+    PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
+
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader);
+
+    ULONG methodIndex = (ULONG)(pRuntimeFunction - pRuntimeFunctions);
+
+    const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, methodIndex);
+
+    // If true, this method has no cold code
+    if (lookupIndex == -1)
+    {
+        return;
+    }
+#ifdef TARGET_X86
+    _ASSERTE(!"hot cold splitting is not supported for x86");
+#else
+    _ASSERTE((lookupIndex & 1) == 0);
+    ULONG coldMethodIndex = pInfo->m_pHotColdMap[lookupIndex];
+    PTR_RUNTIME_FUNCTION pColdRuntimeFunction = pRuntimeFunctions + coldMethodIndex;
+    methodRegionInfo->coldStartAddress = JitTokenToModuleBase(MethodToken)
+        + RUNTIME_FUNCTION__BeginAddress(pColdRuntimeFunction);
+
+    ULONG coldMethodIndexNext;
+    if ((ULONG)(lookupIndex) == (pInfo->m_nHotColdMap - 2))
+    {
+        coldMethodIndexNext = nRuntimeFunctions - 1;
+    }
+    else
+    {
+        coldMethodIndexNext = pInfo->m_pHotColdMap[lookupIndex + 2] - 1;
+    }
+
+    PTR_RUNTIME_FUNCTION pLastRuntimeFunction = pRuntimeFunctions + coldMethodIndexNext;
+    methodRegionInfo->coldSize = RUNTIME_FUNCTION__EndAddress(pLastRuntimeFunction, 0)
+        - RUNTIME_FUNCTION__BeginAddress(pColdRuntimeFunction);
+    methodRegionInfo->hotSize -= methodRegionInfo->coldSize;
+#endif //TARGET_X86
 }
 
 #ifdef DACCESS_COMPILE

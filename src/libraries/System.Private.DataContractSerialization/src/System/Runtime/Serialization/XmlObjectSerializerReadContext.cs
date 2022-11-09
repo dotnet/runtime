@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected bool TryHandleNullOrRef(XmlReaderDelegator reader, Type declaredType, string? name, string? ns, ref object? retObj)
+        protected bool TryHandleNullOrRef(XmlReaderDelegator reader, string? name, string? ns, Type declaredType, ref object? retObj)
         {
             ReadAttributes(reader);
 
@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
         protected object? InternalDeserialize(XmlReaderDelegator reader, string? name, string? ns, Type declaredType, ref DataContract dataContract)
         {
             object? retObj = null;
-            if (TryHandleNullOrRef(reader, dataContract.UnderlyingType, name, ns, ref retObj))
+            if (TryHandleNullOrRef(reader, name, ns, dataContract.UnderlyingType, ref retObj))
                 return retObj;
 
             bool knownTypesAddedInCurrentScope = false;

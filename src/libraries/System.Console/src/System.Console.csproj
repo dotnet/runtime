@@ -169,7 +169,6 @@
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="System\IO\KeyParser.cs" />
-    <Compile Include="System\IO\Net6KeyParser.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"

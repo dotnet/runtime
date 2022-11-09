@@ -8416,6 +8416,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "dotprod"))
 		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
+	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
 #else
