@@ -1015,8 +1015,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree*     dest      = nullptr;
-    GenTreeFlags destFlags = GTF_EMPTY;
+    GenTree* dest = nullptr;
 
     DebugInfo usedDI = di;
     if (!usedDI.IsValid())
@@ -1350,9 +1349,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
-
-    dest->gtFlags |= destFlags;
-    destFlags = dest->gtFlags;
 
     // return an assignment node, to be appended
     GenTree* asgNode = gtNewAssignNode(dest, src);
@@ -4154,6 +4150,8 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         return nullptr;
     }
 
+    JITDUMP("\nChecking if we can import 'static readonly' as a jit-time constant... ")
+
     CORINFO_CLASS_HANDLE fieldClsHnd;
     var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(field, &fieldClsHnd, ownerCls));
 
@@ -4167,19 +4165,63 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
             if (cnsValue != nullptr)
             {
+                JITDUMP("... success! The value is:\n");
+                DISPTREE(cnsValue);
                 return cnsValue;
             }
         }
     }
     else if (fieldType == TYP_STRUCT)
     {
+        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
+        unsigned fieldsCnt = info.compCompHnd->getClassNumInstanceFields(fieldClsHnd);
 
-        if (info.compCompHnd->getClassNumInstanceFields(fieldClsHnd) != 1)
+        // For large structs we only want to handle "initialized with zero" case
+        // e.g. Guid.Empty and decimal.Zero static readonly fields.
+        if ((totalSize > TARGET_POINTER_SIZE) || (fieldsCnt != 1))
         {
-            // Only single-field structs are supported here to avoid potential regressions where
-            // Metadata-driven struct promotion leads to regressions.
+            JITDUMP("checking if we can do anything for a large struct ...");
+            const int MaxStructSize = 64;
+            if ((totalSize == 0) || (totalSize > MaxStructSize))
+            {
+                // Limit to 64 bytes for better throughput
+                JITDUMP("struct is larger than 64 bytes - bail out.");
+                return nullptr;
+            }
+
+            uint8_t buffer[MaxStructSize] = {0};
+            if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+            {
+                for (unsigned i = 0; i < totalSize; i++)
+                {
+                    if (buffer[i] != 0)
+                    {
+                        // Value is not all zeroes - bail out.
+                        // Although, We might eventually support that too.
+                        JITDUMP("value is not all zeros - bail out.");
+                        return nullptr;
+                    }
+                }
+
+                JITDUMP("success! Optimizing to ASG(struct, 0).");
+                unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld empty struct"));
+                lvaSetStruct(structTempNum, fieldClsHnd, false);
+
+                // realType is either struct or SIMD
+                var_types      realType  = lvaGetRealType(structTempNum);
+                GenTreeLclVar* structLcl = gtNewLclvNode(structTempNum, realType);
+                impAppendTree(gtNewBlkOpNode(structLcl, gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
+                              impCurStmtDI);
+
+                return gtNewLclvNode(structTempNum, realType);
+            }
+
+            JITDUMP("getReadonlyStaticFieldValue returned false - bail out.");
             return nullptr;
         }
+
+        // Only single-field structs are supported here to avoid potential regressions where
+        // Metadata-driven struct promotion leads to regressions.
 
         CORINFO_FIELD_HANDLE innerField = info.compCompHnd->getFieldInClass(fieldClsHnd, 0);
         CORINFO_CLASS_HANDLE innerFieldClsHnd;
@@ -4189,15 +4231,16 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         // Technically, we can support frozen gc refs here and maybe floating point in future
         if (!varTypeIsIntegral(fieldVarType))
         {
+            JITDUMP("struct has non-primitive fields - bail out.");
             return nullptr;
         }
 
-        unsigned totalSize = info.compCompHnd->getClassSize(fieldClsHnd);
         unsigned fldOffset = info.compCompHnd->getFieldOffset(innerField);
 
-        if ((fldOffset != 0) || (totalSize != info.compCompHnd->getClassSize(fieldClsHnd)) || (totalSize == 0))
+        if ((fldOffset != 0) || (totalSize != genTypeSize(fieldVarType)) || (totalSize == 0))
         {
             // The field is expected to be of the exact size as the struct with 0 offset
+            JITDUMP("struct has complex layout - bail out.");
             return nullptr;
         }
 
@@ -4297,7 +4340,7 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
         }
         case TYP_REF:
         {
-            void* ptr;
+            size_t ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
 
             if (ptr == 0)
@@ -4307,9 +4350,9 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
             else
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
             }
             break;
         }
@@ -5639,33 +5682,6 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
         BADCODE("Invalid opcode for unaligned. or volatile. prefix");
     }
 }
-
-/*****************************************************************************/
-
-#ifdef DEBUG
-
-#undef RETURN // undef contracts RETURN macro
-
-enum controlFlow_t
-{
-    NEXT,
-    CALL,
-    RETURN,
-    THROW,
-    BRANCH,
-    COND_BRANCH,
-    BREAK,
-    PHI,
-    META,
-};
-
-const static controlFlow_t controlFlow[] = {
-#define OPDEF(c, s, pop, push, args, type, l, s1, s2, flow) flow,
-#include "opcode.def"
-#undef OPDEF
-};
-
-#endif // DEBUG
 
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
@@ -8021,8 +8037,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                // Create the comparison node.
+                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
+                {
+                    op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+                    op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+                }
 
+                // Create the comparison node.
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
                 // TODO: setting both flags when only one is appropriate.
@@ -11384,13 +11405,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 #endif
 
+            InlineCandidateInfo* inlCandInfo = impInlineInfo->inlineCandidateInfo;
+            GenTreeRetExpr*      inlRetExpr  = inlCandInfo->retExpr;
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = impInlineInfo->inlineCandidateInfo->fncRetType;
+            var_types originalCallType = inlCandInfo->fncRetType;
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
-                originalCallType = impNormStructType(impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass);
+                originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
             }
 
             if (returnType != originalCallType)
@@ -11460,7 +11483,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         bool                 isNonNull    = false;
                         CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
 
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // This is the first return, so best known type is the type
                             // of this return value.
@@ -11484,12 +11507,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     op2 = tmpOp2;
 #ifdef DEBUG
-                    if (impInlineInfo->retExpr)
+                    if (inlRetExpr->gtSubstExpr != nullptr)
                     {
                         // Some other block(s) have seen the CEE_RET first.
                         // Better they spilled to the same temp.
-                        assert(impInlineInfo->retExpr->gtOper == GT_LCL_VAR);
-                        assert(impInlineInfo->retExpr->AsLclVarCommon()->GetLclNum() ==
+                        assert(inlRetExpr->gtSubstExpr->gtOper == GT_LCL_VAR);
+                        assert(inlRetExpr->gtSubstExpr->AsLclVarCommon()->GetLclNum() ==
                                op2->AsLclVarCommon()->GetLclNum());
                     }
 #endif
@@ -11504,7 +11527,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
 
                 // Report the return expression
-                impInlineInfo->retExpr = op2;
+                inlRetExpr->gtSubstExpr = op2;
             }
             else
             {
@@ -11530,16 +11553,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = op2;
+                        inlRetExpr->gtSubstExpr = op2;
                     }
                 }
                 else // The struct was to be returned via a return buffer.
@@ -11550,24 +11573,24 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     if (fgNeedReturnSpillTemp())
                     {
                         // If this is the first return we have seen set the retExpr.
-                        if (impInlineInfo->retExpr == nullptr)
+                        if (inlRetExpr->gtSubstExpr == nullptr)
                         {
-                            impInlineInfo->retExpr =
+                            inlRetExpr->gtSubstExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
                                                    retClsHnd, CHECK_SPILL_ALL);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
+                        inlRetExpr->gtSubstExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
                     }
                 }
             }
 
-            if (impInlineInfo->retExpr != nullptr)
-            {
-                impInlineInfo->retBB = compCurBB;
-            }
+            // If gtSubstExpr is an arbitrary tree then we may need to
+            // propagate mandatory "IR presence" flags (e.g. BBF_HAS_IDX_LEN)
+            // to the BB it ends up in.
+            inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }
 
@@ -13180,7 +13203,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileWeights())
     {
         const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
@@ -13197,7 +13220,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         profileFreq = 1.0;
     }
 
-    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, hasProfile);
     inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 

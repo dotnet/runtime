@@ -7,6 +7,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
+
 namespace System
 {
     internal static partial class SpanHelpers // .T
@@ -1382,7 +1384,7 @@ namespace System
             {
                 Vector256<T> equals, values = Vector256.Create(value);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -1412,7 +1414,7 @@ namespace System
             {
                 Vector128<T> equals, values = Vector128.Create(value);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2032,7 +2034,7 @@ namespace System
                 Vector256<T> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1),
                     values2 = Vector256.Create(value2), values3 = Vector256.Create(value3), values4 = Vector256.Create(value4);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector256<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2067,7 +2069,7 @@ namespace System
                 Vector128<T> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1),
                     values2 = Vector128.Create(value2), values3 = Vector128.Create(value3), values4 = Vector128.Create(value4);
                 ref T currentSearchSpace = ref searchSpace;
-                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -2650,25 +2652,257 @@ namespace System
             return (int)offset + index;
         }
 
-        private interface INegator<T> where T : struct
+        internal interface INegator<T> where T : struct
         {
             static abstract bool NegateIfNeeded(bool equals);
             static abstract Vector128<T> NegateIfNeeded(Vector128<T> equals);
             static abstract Vector256<T> NegateIfNeeded(Vector256<T> equals);
         }
 
-        private readonly struct DontNegate<T> : INegator<T> where T : struct
+        internal readonly struct DontNegate<T> : INegator<T> where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
         }
 
-        private readonly struct Negate<T> : INegator<T> where T : struct
+        internal readonly struct Negate<T> : INegator<T> where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => !equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
+        }
+
+        internal static int IndexOfAnyInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : IComparable<T>
+        {
+            for (int i = 0; i < length; i++)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if ((lowInclusive.CompareTo(current) <= 0) && (highInclusive.CompareTo(current) >= 0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int IndexOfAnyExceptInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : IComparable<T>
+        {
+            for (int i = 0; i < length; i++)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if ((lowInclusive.CompareTo(current) > 0) || (highInclusive.CompareTo(current) < 0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int IndexOfAnyInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
+            IndexOfAnyInRangeUnsignedNumber<T, DontNegate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
+
+        internal static int IndexOfAnyExceptInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
+            IndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
+
+        private static int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TNegator : struct, INegator<T>
+        {
+            // T must be a type whose comparison operator semantics match that of Vector128/256.
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                T rangeInclusive = highInclusive - lowInclusive;
+                for (int i = 0; i < length; i++)
+                {
+                    ref T current = ref Unsafe.Add(ref searchSpace, i);
+                    if (TNegator.NegateIfNeeded((current - lowInclusive) <= rangeInclusive))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (!Vector256.IsHardwareAccelerated || length < Vector256<T>.Count)
+            {
+                Vector128<T> lowVector = Vector128.Create(lowInclusive);
+                Vector128<T> rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> inRangeVector;
+
+                ref T current = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector128<T>.Count));
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref current) - lowVector, rangeVector));
+                    if (inRangeVector != Vector128<T>.Zero)
+                    {
+                        return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
+                    }
+
+                    current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                }
+                while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
+
+                // Process the last vector in the search space (which might overlap with already processed elements).
+                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
+                if (inRangeVector != Vector128<T>.Zero)
+                {
+                    return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
+                }
+            }
+            else
+            {
+                Vector256<T> lowVector = Vector256.Create(lowInclusive);
+                Vector256<T> rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> inRangeVector;
+
+                ref T current = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, (uint)(length - Vector256<T>.Count));
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref current) - lowVector, rangeVector));
+                    if (inRangeVector != Vector256<T>.Zero)
+                    {
+                        return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
+                    }
+
+                    current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                }
+                while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
+
+                // Process the last vector in the search space (which might overlap with already processed elements).
+                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd) - lowVector, rangeVector));
+                if (inRangeVector != Vector256<T>.Zero)
+                {
+                    return ComputeFirstIndex(ref searchSpace, ref oneVectorAwayFromEnd, inRangeVector);
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : IComparable<T>
+        {
+            for (int i = length - 1; i >= 0; i--)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if ((lowInclusive.CompareTo(current) <= 0) && (highInclusive.CompareTo(current) >= 0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyExceptInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : IComparable<T>
+        {
+            for (int i = length - 1; i >= 0; i--)
+            {
+                ref T current = ref Unsafe.Add(ref searchSpace, i);
+                if ((lowInclusive.CompareTo(current) > 0) || (highInclusive.CompareTo(current) < 0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        internal static int LastIndexOfAnyInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
+            LastIndexOfAnyInRangeUnsignedNumber<T, DontNegate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
+
+        internal static int LastIndexOfAnyExceptInRangeUnsignedNumber<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
+            LastIndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
+
+        private static int LastIndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TNegator : struct, INegator<T>
+        {
+            // T must be a type whose comparison operator semantics match that of Vector128/256.
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                T rangeInclusive = highInclusive - lowInclusive;
+                for (int i = length - 1; i >= 0; i--)
+                {
+                    ref T current = ref Unsafe.Add(ref searchSpace, i);
+                    if (TNegator.NegateIfNeeded((current - lowInclusive) <= rangeInclusive))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (!Vector256.IsHardwareAccelerated || length < Vector256<T>.Count)
+            {
+                Vector128<T> lowVector = Vector128.Create(lowInclusive);
+                Vector128<T> rangeVector = Vector128.Create(highInclusive - lowInclusive);
+                Vector128<T> inRangeVector;
+
+                nint offset = length - Vector128<T>.Count;
+
+                // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
+                while (offset > 0)
+                {
+                    inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
+                    if (inRangeVector != Vector128<T>.Zero)
+                    {
+                        return ComputeLastIndex(offset, inRangeVector);
+                    }
+
+                    offset -= Vector128<T>.Count;
+                }
+
+                // Process the first vector in the search space.
+                inRangeVector = TNegator.NegateIfNeeded(Vector128.LessThanOrEqual(Vector128.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
+                if (inRangeVector != Vector128<T>.Zero)
+                {
+                    return ComputeLastIndex(offset: 0, inRangeVector);
+                }
+            }
+            else
+            {
+                Vector256<T> lowVector = Vector256.Create(lowInclusive);
+                Vector256<T> rangeVector = Vector256.Create(highInclusive - lowInclusive);
+                Vector256<T> inRangeVector;
+
+                nint offset = length - Vector256<T>.Count;
+
+                // Loop until either we've finished all elements or there's a vector's-worth or less remaining.
+                while (offset > 0)
+                {
+                    inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset) - lowVector, rangeVector));
+                    if (inRangeVector != Vector256<T>.Zero)
+                    {
+                        return ComputeLastIndex(offset, inRangeVector);
+                    }
+
+                    offset -= Vector256<T>.Count;
+                }
+
+                // Process the first vector in the search space.
+                inRangeVector = TNegator.NegateIfNeeded(Vector256.LessThanOrEqual(Vector256.LoadUnsafe(ref searchSpace) - lowVector, rangeVector));
+                if (inRangeVector != Vector256<T>.Zero)
+                {
+                    return ComputeLastIndex(offset: 0, inRangeVector);
+                }
+            }
+
+            return -1;
         }
     }
 }

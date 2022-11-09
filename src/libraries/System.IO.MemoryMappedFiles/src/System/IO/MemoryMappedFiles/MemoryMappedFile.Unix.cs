@@ -122,6 +122,7 @@ namespace System.IO.MemoryMappedFiles
             return CreateCore(null, mapName, inheritability, access, options, capacity, -1);
         }
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
         /// We'll throw an ArgumentException if the file mapping object didn't exist and the
@@ -143,6 +144,7 @@ namespace System.IO.MemoryMappedFiles
         {
             throw CreateNamedMapsNotSupportedException();
         }
+#pragma warning restore IDE0060
 
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
         private static Exception CreateNamedMapsNotSupportedException()

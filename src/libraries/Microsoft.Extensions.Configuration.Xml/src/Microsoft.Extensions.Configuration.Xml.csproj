@@ -5,7 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <PackageDescription>XML configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageDescription>XML configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read configuration parameters from XML files. You can use XmlConfigurationExtensions.AddXmlFile extension method on IConfigurationBuilder to add XML configuration provider to the configuration builder.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

@@ -77,6 +77,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool MarkingComplete => _markingComplete;
 
+        public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
+        {
+            if (HotColdMap == null)
+            {
+                HotColdMap = new HotColdMapNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
+            }
+        }
+
         public void SetMarkingComplete()
         {
             _markingComplete = true;
@@ -188,7 +198,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
-            Header = new GlobalHeaderNode(Target, flags);
+            Header = new GlobalHeaderNode(flags);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
@@ -337,6 +347,8 @@ namespace ILCompiler.DependencyAnalysis
         public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
+
+        public HotColdMapNode HotColdMap;
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
@@ -681,7 +693,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
-                assemblyTable = new AssemblyTableNode(Target);
+                assemblyTable = new AssemblyTableNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
             }
 
@@ -693,20 +705,20 @@ namespace ILCompiler.DependencyAnalysis
                 HeaderNode tableHeader = Header;
                 if (assemblyTable != null)
                 {
-                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(Target, ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
+                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
                     assemblyTable.Add(perAssemblyHeader);
                     tableHeader = perAssemblyHeader;
                 }
 
-                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule, Target);
+                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
 
-                TypesTableNode typesTable = new TypesTableNode(Target, inputModule);
+                TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
 
                 if (CompilationModuleGroup.IsCompositeBuildMode)
                 {
-                    InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule, InliningInfoNode.InfoType.InliningInfo2);
+                    InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
                 }
 
@@ -721,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(Target, null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
@@ -732,7 +744,7 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
 
-            DebugInfoTable = new DebugInfoTableNode(Target);
+            DebugInfoTable = new DebugInfoTableNode();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
 
             EagerImports = new ImportSectionNode(

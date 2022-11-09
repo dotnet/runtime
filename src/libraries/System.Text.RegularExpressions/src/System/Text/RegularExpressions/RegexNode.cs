@@ -1381,10 +1381,8 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public (char Char, string? String, string? SetChars, bool Negated)? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
+        public RegexNode? FindStartingLiteralNode()
         {
-            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
-
             RegexNode? node = this;
             while (true)
             {
@@ -1394,25 +1392,12 @@ namespace System.Text.RegularExpressions
                     {
                         case RegexNodeKind.One:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when node.M > 0:
-                            return (node.Ch, null, null, false);
-
                         case RegexNodeKind.Notone:
                         case RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy when node.M > 0:
-                            return (node.Ch, null, null, true);
-
-                        case RegexNodeKind.Multi:
-                            return ('\0', node.Str, null, false);
-
                         case RegexNodeKind.Set:
                         case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy when node.M > 0:
-                            Span<char> setChars = stackalloc char[maxSetCharacters];
-                            int numChars;
-                            if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
-                            {
-                                setChars = setChars.Slice(0, numChars);
-                                return ('\0', null, setChars.ToString(), RegexCharClass.IsNegated(node.Str!));
-                            }
-                            break;
+                        case RegexNodeKind.Multi:
+                            return node;
 
                         case RegexNodeKind.Atomic:
                         case RegexNodeKind.Concatenate:
@@ -1426,6 +1411,66 @@ namespace System.Text.RegularExpressions
                 }
 
                 return null;
+            }
+        }
+
+        /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
+        /// <returns>
+        /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
+        /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
+        /// </returns>
+        public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
+        {
+            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
+
+            if (FindStartingLiteralNode() is RegexNode node)
+            {
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
+                        return new StartingLiteralData(range: (node.Ch, node.Ch), @string: null, setChars: null, negated: false);
+
+                    case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
+                        return new StartingLiteralData(range: (node.Ch, node.Ch), @string: null, setChars: null, negated: true);
+
+                    case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy:
+                        Span<char> setChars = stackalloc char[maxSetCharacters];
+                        int numChars;
+                        if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
+                        {
+                            setChars = setChars.Slice(0, numChars);
+                            return new StartingLiteralData(range: default, @string: null, setChars: setChars.ToString(), negated: RegexCharClass.IsNegated(node.Str!));
+                        }
+
+                        if (RegexCharClass.TryGetSingleRange(node.Str!, out char lowInclusive, out char highInclusive))
+                        {
+                            Debug.Assert(lowInclusive < highInclusive);
+                            return new StartingLiteralData(range: (lowInclusive, highInclusive), @string: null, setChars: null, negated: RegexCharClass.IsNegated(node.Str!));
+                        }
+                        break;
+
+                    case RegexNodeKind.Multi:
+                        return new StartingLiteralData(range: default, @string: node.Str, setChars: null, negated: false);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Data about a starting literal as returned by <see cref="FindStartingLiteral"/>.</summary>
+        public readonly struct StartingLiteralData
+        {
+            public readonly (char LowInclusive, char HighInclusive) Range;
+            public readonly string? String;
+            public readonly string? SetChars;
+            public readonly bool Negated;
+
+            public StartingLiteralData((char LowInclusive, char HighInclusive) range, string? @string, string? setChars, bool negated)
+            {
+                Range = range;
+                String = @string;
+                SetChars = setChars;
+                Negated = negated;
             }
         }
 
@@ -2744,6 +2789,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the node is a Set/Setloop/Setloopatomic/Setlazy node.</summary>
+        [MemberNotNullWhen(true, nameof(Str))]
         public bool IsSetFamily => Kind is RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy;
 
         /// <summary>Gets whether the node is a One/Oneloop/Oneloopatomic/Onelazy node.</summary>

@@ -71,6 +71,9 @@ GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
 
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
+GPTR_IMPL(MethodTable,      g_pWeakReferenceClass);
+GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
+
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif

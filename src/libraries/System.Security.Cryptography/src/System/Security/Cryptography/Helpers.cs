@@ -245,10 +245,10 @@ namespace Internal.Cryptography
 
         private static bool IsValidMonth(this Calendar calendar, int year, int month, int era)
         {
-            return (calendar.IsValidYear(year, era) && month >= 1 && month <= calendar.GetMonthsInYear(year, era));
+            return (calendar.IsValidYear(year) && month >= 1 && month <= calendar.GetMonthsInYear(year, era));
         }
 
-        private static bool IsValidYear(this Calendar calendar, int year, int era)
+        private static bool IsValidYear(this Calendar calendar, int year)
         {
             return (year >= calendar.GetYear(calendar.MinSupportedDateTime) && year <= calendar.GetYear(calendar.MaxSupportedDateTime));
         }

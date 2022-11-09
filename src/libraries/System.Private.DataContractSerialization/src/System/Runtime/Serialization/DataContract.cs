@@ -34,8 +34,6 @@ namespace System.Runtime.Serialization.DataContracts
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicProperties;
 
-        internal static ReadOnlyCollection<DataMember> s_emptyDataMemberList = new List<DataMember>().AsReadOnly();
-
         private XmlDictionaryString _name;
         private XmlDictionaryString _ns;
         private readonly DataContractCriticalHelper _helper;
@@ -55,12 +53,12 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContract(Type type)
         {
-            return GetDataContract(type.TypeHandle, type);
+            return GetDataContract(type.TypeHandle);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
+        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle)
         {
             int id = GetId(typeHandle);
             DataContract dataContract = GetDataContractSkipValidation(id, typeHandle, null);
@@ -270,7 +268,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        public virtual ReadOnlyCollection<DataMember> DataMembers => s_emptyDataMemberList;
+        public virtual ReadOnlyCollection<DataMember> DataMembers => ReadOnlyCollection<DataMember>.Empty;
 
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString? ns)
         {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -72,23 +73,155 @@ namespace System
         private static unsafe void SetCharBit(uint* charMap, byte value) =>
             charMap[(uint)value & IndexMask] |= 1u << (value >> IndexShift);
 
-        /// <summary>Determines whether <paramref name="searchChar"/> is in <paramref name="span"/>.</summary>
-        /// <remarks>
-        /// <see cref="MemoryExtensions.Contains{T}(ReadOnlySpan{T}, T)"/> could be used, but it's optimized
-        /// for longer spans, whereas typical usage here expects a relatively small number of items in the span.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SpanContains(ReadOnlySpan<char> span, char searchChar)
+        private static bool ShouldUseSimpleLoop(int searchSpaceLength, int valuesLength)
         {
-            for (int i = 0; i < span.Length; i++)
+            // We can perform either
+            // - a simple O(haystack * needle) search or
+            // - compute a character map of the values in O(needle), followed by an O(haystack) search
+            // As the constant factor to compute the character map is relatively high, it's more efficient
+            // to perform a simple loop search for short inputs.
+            //
+            // The following check does an educated guess as to whether computing the bitmap is more expensive.
+            // The limit of 20 on the haystack length is arbitrary, determined by experimentation.
+            return searchSpaceLength < Vector128<short>.Count
+                || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1));
+        }
+
+        public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
+            IndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+
+        public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
+            IndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+
+        public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
+            LastIndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+
+        public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
+            LastIndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+
+        private static int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+            where TNegator : struct, SpanHelpers.INegator<char>
+        {
+            ReadOnlySpan<char> valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
+            if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
-                if (span[i] == searchChar)
+                ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+                ref char cur = ref searchSpace;
+
+                while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
                 {
-                    return true;
+                    if (TNegator.NegateIfNeeded(valuesSpan.Contains(cur)))
+                    {
+                        return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                    }
+
+                    cur = ref Unsafe.Add(ref cur, 1);
+                }
+
+                return -1;
+            }
+
+            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
+                ? IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
+                : IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            {
+                return index;
+            }
+
+            return ProbabilisticIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+        }
+
+        private static int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+            where TNegator : struct, SpanHelpers.INegator<char>
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
+            if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
+            {
+                ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+                while (!Unsafe.AreSame(ref searchSpace, ref cur))
+                {
+                    cur = ref Unsafe.Subtract(ref cur, 1);
+
+                    if (TNegator.NegateIfNeeded(valuesSpan.Contains(cur)))
+                    {
+                        return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                    }
+                }
+
+                return -1;
+            }
+
+            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
+                ? IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
+                : IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            {
+                return index;
+            }
+
+            return ProbabilisticLastIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+        }
+
+        private static unsafe int ProbabilisticIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+            where TNegator : struct, SpanHelpers.INegator<char>
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            ProbabilisticMap map = default;
+            uint* charMap = (uint*)&map;
+            Initialize(charMap, valuesSpan);
+
+            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref char cur = ref searchSpace;
+
+            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            {
+                int ch = cur;
+                if (TNegator.NegateIfNeeded(
+                        IsCharBitSet(charMap, (byte)ch) &&
+                        IsCharBitSet(charMap, (byte)(ch >> 8)) &&
+                        valuesSpan.Contains((char)ch)))
+                {
+                    return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                }
+
+                cur = ref Unsafe.Add(ref cur, 1);
+            }
+
+            return -1;
+        }
+
+        private static unsafe int ProbabilisticLastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+            where TNegator : struct, SpanHelpers.INegator<char>
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            ProbabilisticMap map = default;
+            uint* charMap = (uint*)&map;
+            Initialize(charMap, valuesSpan);
+
+            ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+
+            while (!Unsafe.AreSame(ref searchSpace, ref cur))
+            {
+                cur = ref Unsafe.Subtract(ref cur, 1);
+
+                int ch = cur;
+                if (TNegator.NegateIfNeeded(
+                        IsCharBitSet(charMap, (byte)ch) &&
+                        IsCharBitSet(charMap, (byte)(ch >> 8)) &&
+                        valuesSpan.Contains((char)ch)))
+                {
+                    return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                 }
             }
 
-            return false;
+            return -1;
         }
     }
 }

@@ -273,7 +273,7 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            Assembly? callingAssembly,
+            Assembly? _ /*callingAssembly*/,
             AssemblyLoadContext? assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {

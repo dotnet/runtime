@@ -48,13 +48,8 @@ HRESULT
 RegMeta::GetStringHeapSize(
     _Out_ ULONG *pcbStringsHeapSize)    // [OUT] Size of the string heap.
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     *pcbStringsHeapSize = m_pStgdb->m_MiniMd.m_StringHeap.GetUnalignedSize();
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return S_OK;
 } // RegMeta::GetStringHeapSize
 
 // --------------------------------------------------------------------------------------
@@ -67,13 +62,8 @@ HRESULT
 RegMeta::GetBlobHeapSize(
     _Out_ ULONG *pcbBlobsHeapSize)  // [OUT] Size of the blob heap.
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     *pcbBlobsHeapSize = m_pStgdb->m_MiniMd.m_BlobHeap.GetUnalignedSize();
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return S_OK;
 } // RegMeta::GetBlobHeapSize
 
 // --------------------------------------------------------------------------------------
@@ -86,13 +76,8 @@ HRESULT
 RegMeta::GetGuidHeapSize(
     _Out_ ULONG *pcbGuidsHeapSize)      // [OUT] Size of the Guid heap.
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     *pcbGuidsHeapSize = m_pStgdb->m_MiniMd.m_GuidHeap.GetSize();
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return S_OK;
 } // RegMeta::GetGuidHeapSize
 
 // --------------------------------------------------------------------------------------
@@ -105,13 +90,8 @@ HRESULT
 RegMeta::GetUserStringHeapSize(
     _Out_ ULONG *pcbUserStringsHeapSize)    // [OUT] Size of the user string heap.
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     *pcbUserStringsHeapSize = m_pStgdb->m_MiniMd.m_UserStringHeap.GetUnalignedSize();
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return S_OK;
 } // RegMeta::GetUserStringHeapSize
 
 // --------------------------------------------------------------------------------------
@@ -127,7 +107,6 @@ HRESULT RegMeta::GetString(
     const char **pszString)     // [OUT] Put a pointer to the string here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     IfFailGo(m_pStgdb->m_MiniMd.getString(
         ixString,
@@ -138,7 +117,6 @@ HRESULT RegMeta::GetString(
 ErrExit:
     *pszString = NULL;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetString
 
@@ -156,7 +134,6 @@ HRESULT RegMeta::GetBlob(
     _Outptr_ const void **ppvData)       // [OUT] Put a pointer to the blob here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     MetaData::DataBlob dataBlob;
     IfFailGo(m_pStgdb->m_MiniMd.getBlob(ixBlob, &dataBlob));
@@ -170,7 +147,6 @@ ErrExit:
     *ppvData = NULL;
     *pcbDataSize = 0;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetBlob
 
@@ -192,7 +168,6 @@ HRESULT RegMeta::GetGuid(
     const GUID **ppGuid)    // [OUT] Put a pointer to the GUID here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
@@ -210,7 +185,6 @@ HRESULT RegMeta::GetGuid(
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetGuid
 
@@ -229,7 +203,6 @@ RegMeta::GetUserString(
     _Outptr_opt_ const void **ppvData)           // [OUT] Put a pointer to the UserString here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     MetaData::DataBlob userString;
     IfFailGo(m_pStgdb->m_MiniMd.GetUserString(ixUserString, &userString));
@@ -243,7 +216,6 @@ ErrExit:
     *ppvData = NULL;
     *pcbDataSize = 0;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetUserString
 
@@ -262,7 +234,6 @@ RegMeta::GetNextString(
     _Out_ ULONG *pixNextString)   // [OUT] Put the index of the next string here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
@@ -292,7 +263,6 @@ ErrExit:
     // Return S_FALSE if either of the string indexes is invalid (backward API compatibility)
     hr = S_FALSE;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetNextString
 
@@ -310,7 +280,6 @@ RegMeta::GetNextBlob(
     _Out_ ULONG *pixNextBlob)   // [OUT] Put the index of the next blob here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
@@ -340,7 +309,6 @@ ErrExit:
     // Return S_FALSE if either of the string indexes is invalid (backward API compatibility)
     hr = S_FALSE;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetNextBlob
 
@@ -361,7 +329,6 @@ RegMeta::GetNextGuid(
     _Out_ ULONG *pixNextGuid)       // [OUT] Put the index of the next guid here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     S_UINT32 ixNextGuid = S_UINT32(ixGuid) + S_UINT32(1);
     if (ixNextGuid.IsOverflow())
@@ -383,7 +350,6 @@ ErrExit:
     // Return S_FALSE if next guid index is invalid (backward API compatibility)
     hr = S_FALSE;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetNextGuid
 
@@ -405,7 +371,6 @@ RegMeta::GetNextUserString(
     _Out_ ULONG *pixNextUserString)     // [OUT] Put the index of the next user string here.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
@@ -435,7 +400,6 @@ ErrExit:
     // Return S_FALSE if either of the string indexes is invalid (backward API compatibility)
     hr = S_FALSE;
 Exit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetNextUserString
 
@@ -447,14 +411,10 @@ HRESULT
 RegMeta::GetNumTables(
     _Out_ ULONG *pcTables)  // [OUT] Count of tables.
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
 
     *pcTables = m_pStgdb->m_MiniMd.GetCountTables();
-    END_ENTRYPOINT_NOTHROW;
-
     return S_OK;
 } // RegMeta::GetNumTables
 
@@ -467,14 +427,10 @@ RegMeta::GetTableIndex(
           ULONG  token,     // [IN] Token for which to get table index.
     _Out_ ULONG *pixTbl)    // [OUT] Put table index here.
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
 
     *pixTbl = CMiniMdRW::GetTableForToken(token);
-    END_ENTRYPOINT_NOTHROW;
-
     return S_OK;
 } // RegMeta::GetTableIndex
 
@@ -494,7 +450,6 @@ RegMeta::GetTableInfo(
     HRESULT        hr = S_OK;
     CMiniTableDef *pTbl = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
@@ -514,7 +469,6 @@ RegMeta::GetTableInfo(
         *ppName = g_Tables[ixTbl].m_pName;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetTableInfo
 
@@ -535,8 +489,6 @@ RegMeta::GetColumnInfo(
     CMiniTableDef *pTbl = NULL;
     CMiniColDef   *pCol = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
 
@@ -556,7 +508,6 @@ RegMeta::GetColumnInfo(
         *ppName = g_Tables[ixTbl].m_pColNames[ixCol];
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetColumnInfo
 
@@ -573,8 +524,6 @@ RegMeta::GetCodedTokenInfo(
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
 
@@ -590,7 +539,6 @@ RegMeta::GetCodedTokenInfo(
         *ppName = g_CodedTokens[ixCdTkn].m_pName;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetCodedTokenInfo
 
@@ -606,8 +554,6 @@ RegMeta::GetRow(
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
 
@@ -621,7 +567,6 @@ RegMeta::GetRow(
     IfFailGo(m_pStgdb->m_MiniMd.getRow(ixTbl, rid, ppRow));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetRow
 
@@ -639,8 +584,6 @@ RegMeta::GetColumn(
     HRESULT        hr = S_OK;
     CMiniColDef   *pCol = NULL;
     CMiniTableDef *pTbl = NULL;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // These are for dumping metadata information.
     // We probably don't need to do any lock here.
@@ -671,7 +614,6 @@ RegMeta::GetColumn(
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetColumn
 
@@ -684,15 +626,9 @@ RegMeta::GetMetaDataStorage(
     const void **ppvMd,     // [OUT] put pointer to MD section here (aka, 'BSJB').
     ULONG       *pcbMd)     // [OUT] put size of the stream here.
 {
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
-    hr = m_pStgdb->GetRawData(ppvMd, pcbMd);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return m_pStgdb->GetRawData(ppvMd, pcbMd);
 } // RegMeta::GetMetaDataStorage
 
 // --------------------------------------------------------------------------------------
@@ -706,13 +642,7 @@ RegMeta::GetMetaDataStreamInfo(
     const void **ppv,           // [OUT] put pointer to MD stream here.
     ULONG       *pcb)           // [OUT] put size of the stream here.
 {
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
-    hr = m_pStgdb->GetRawStreamInfo(ix, ppchName, ppv, pcb);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return m_pStgdb->GetRawStreamInfo(ix, ppchName, ppv, pcb);
 } // RegMeta::GetMetaDataStreamInfo

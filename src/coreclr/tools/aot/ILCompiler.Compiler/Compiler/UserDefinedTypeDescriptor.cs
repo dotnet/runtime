@@ -286,14 +286,12 @@ namespace ILCompiler
                 }
                 else if (type.IsEnum)
                 {
-                    // Enum's use the LF_ENUM record as the variable type index, but it is required to also emit a regular structure record for them.
+                    // Enum's use the LF_ENUM record as the variable type index.
 
                     if (_enumTypes.TryGetValue(type, out variableTypeIndex))
                         return variableTypeIndex;
 
                     variableTypeIndex = GetEnumTypeIndex(type);
-
-                    GetTypeIndex(type, false); // Ensure regular structure record created
 
                     _enumTypes[type] = variableTypeIndex;
 

@@ -233,12 +233,12 @@ inline unsigned genLog2(unsigned __int64 value)
 #endif
 }
 
-#if defined(HOST_UNIX) && defined(HOST_64BIT)
+#ifdef __APPLE__
 inline unsigned genLog2(size_t value)
 {
     return genLog2((unsigned __int64)value);
 }
-#endif // HOST_UNIX && HOST_BIT64
+#endif // __APPLE__
 
 /*****************************************************************************
  *

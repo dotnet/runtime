@@ -2005,7 +2005,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         {
         }
 
-        static bool Equals(const ThrowHelper x, const ThrowHelper& y)
+        static bool Equals(const ThrowHelper& x, const ThrowHelper& y)
         {
             return BasicBlock::sameEHRegion(x.m_block, y.m_block) && GenTreeCall::Equals(x.m_call, y.m_call);
         }
