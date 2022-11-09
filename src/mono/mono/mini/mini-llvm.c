@@ -9582,7 +9582,7 @@ MONO_RESTORE_WARNING
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
-		case OP_SSE_ANDN: {
+		case OP_VECTOR_ANDN: {
 			LLVMValueRef minus_one [2];
 			minus_one [0] = const_int64 (-1);
 			minus_one [1] = const_int64 (-1);
