@@ -12,7 +12,7 @@ namespace System.DirectoryServices.Protocols
         internal static int AddDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_add(ldapHandle, dn, attrs, servercontrol, clientcontrol, ref messageNumber);
 
-        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
+        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string _ /*strValue*/, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_compare(ldapHandle, dn, attributeName, binaryValue, servercontrol, clientcontrol, ref messageNumber);
 
         internal static void FreeDirectoryControl(IntPtr control) => Interop.Ldap.ldap_control_free(control);
@@ -167,7 +167,7 @@ namespace System.DirectoryServices.Protocols
         }
 
         // openldap doesn't have a ldap_stop_tls function. Returning true as no-op for Linux.
-        internal static byte StopTls(ConnectionHandle ldapHandle) => 1;
+        internal static byte StopTls(ConnectionHandle _/*ldapHandle*/) => 1;
 
         internal static void FreeValue(IntPtr referral) => Interop.Ldap.ldap_value_free(referral);
 
@@ -177,12 +177,13 @@ namespace System.DirectoryServices.Protocols
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
         /// that get passed in by using the defaults that we get passed in.
         /// </summary>
         /// <param name="ldapHandle">The connection handle to the LDAP server.</param>
-        /// <param name="flags">Flags that control the interaction used to retrieve any necessary Sasl authentication parameters</param>
+        /// <param name="flags"></param>
         /// <param name="defaultsPtr">Pointer to the defaults structure that was sent to sasl_interactive_bind</param>
         /// <param name="interactPtr">Pointer to the challenge we need to resolve</param>
         /// <returns></returns>
@@ -231,5 +232,6 @@ namespace System.DirectoryServices.Protocols
 
             return 0;
         }
+#pragma warning restore IDE0060
     }
 }

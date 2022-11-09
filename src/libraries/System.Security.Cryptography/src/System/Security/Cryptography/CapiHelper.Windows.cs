@@ -1156,7 +1156,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Helper for RSACryptoServiceProvider.SignData/SignHash apis.
         /// </summary>
-        public static byte[] SignValue(SafeProvHandle hProv, SafeCapiKeyHandle hKey, int keyNumber, int calgKey, int calgHash, byte[] hash)
+        public static byte[] SignValue(SafeProvHandle hProv, int keyNumber, int calgKey, int calgHash, byte[] hash)
         {
             using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
             {

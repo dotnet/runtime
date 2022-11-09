@@ -26,6 +26,36 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/mscorlib.dll</Left>
+    <Right>net7.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/mscorlib.dll</Left>
+    <Right>net7.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowHeight(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/mscorlib.dll</Left>
+    <Right>net7.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowWidth(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/mscorlib.dll</Left>
+    <Right>net7.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/mscorlib.dll</Left>
+    <Right>net7.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.RandomNumberGenerator.Create(System.String):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net6.0/mscorlib.dll</Left>
     <Right>net7.0/mscorlib.dll</Right>
@@ -213,6 +243,36 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>F:System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces:[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowHeight(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowWidth(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
     <Left>net6.0/netstandard.dll</Left>
     <Right>net7.0/netstandard.dll</Right>
   </Suppression>
@@ -449,6 +509,36 @@
     <Target>T:System.Security.Cryptography.TripleDES:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net6.0/netstandard.dll</Left>
     <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/System.Console.dll</Left>
+    <Right>net7.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.get_WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/System.Console.dll</Left>
+    <Right>net7.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowHeight(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/System.Console.dll</Left>
+    <Right>net7.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.set_WindowWidth(System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/System.Console.dll</Left>
+    <Right>net7.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.SupportedOSPlatformAttribute]</Target>
+    <Left>net6.0/System.Console.dll</Left>
+    <Right>net7.0/System.Console.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>

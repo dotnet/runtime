@@ -710,15 +710,6 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Returns true if this is a clickonce deployed app.
-        /// </summary>
-        internal static bool IsClickOnceDeployed(AppDomain appDomain)
-        {
-            // Always false for .NET Core
-            return false;
-        }
-
-        /// <summary>
         /// Only those settings class properties that have a SettingAttribute on them are
         /// treated as settings. This routine filters out other properties.
         /// </summary>

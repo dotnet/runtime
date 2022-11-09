@@ -75,6 +75,7 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
+#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
             // TODO: niche APIs that we probably shouldn't even have added
@@ -84,6 +85,7 @@ namespace ILLink.Shared.TrimAnalysis
             resolvedType = default;
             return false;
         }
+#pragma warning restore IDE0060
 
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);

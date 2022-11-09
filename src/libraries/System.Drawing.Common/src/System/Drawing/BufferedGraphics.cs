@@ -38,7 +38,7 @@ namespace System.Drawing
         {
             if (_context != null)
             {
-                _context.ReleaseBuffer(this);
+                _context.ReleaseBuffer();
 
                 if (DisposeContext)
                 {

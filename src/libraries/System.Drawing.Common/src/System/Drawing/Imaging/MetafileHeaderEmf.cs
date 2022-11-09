@@ -44,7 +44,7 @@ namespace System.Drawing.Imaging
             public static ref byte GetPinnableReference(MetafileHeaderEmf managed) => ref (managed is null ? ref Unsafe.NullRef<byte>() : ref managed.GetPinnableReference());
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
-            public static byte* ConvertToUnmanaged(MetafileHeaderEmf managed) => throw new UnreachableException();
+            public static byte* ConvertToUnmanaged(MetafileHeaderEmf _) => throw new UnreachableException();
         }
 #endif
     }

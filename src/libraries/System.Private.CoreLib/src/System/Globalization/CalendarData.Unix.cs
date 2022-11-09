@@ -13,7 +13,6 @@ namespace System.Globalization
 #pragma warning disable IDE0060
         internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars) =>
             IcuGetCalendars(localeName, calendars);
-#pragma warning restore IDE0060
 
         internal static int GetTwoDigitYearMax(CalendarId calendarId)
         {
@@ -23,5 +22,6 @@ namespace System.Globalization
             // So just return -1 to use the hard-coded defaults.
             return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax : -1;
         }
+#pragma warning restore IDE0060
     }
 }

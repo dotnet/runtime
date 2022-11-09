@@ -22,6 +22,7 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.Specific.cs" />
     <Compile Include="PipeStream.ProtectedMethods.Tests.cs" />
     <Compile Include="PipeStreamConformanceTests.cs" />
+    <Compile Include="UnifiedErrorHandlingTests.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
