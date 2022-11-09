@@ -2373,8 +2373,6 @@ public:
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
     GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
 
-    GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,

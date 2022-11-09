@@ -7692,42 +7692,6 @@ GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
     return blkNode;
 }
 
-// Creates a new assignment node for a CpObj.
-// Parameters (exactly the same as MSIL CpObj):
-//
-//  dstAddr    - The target to copy the struct to
-//  srcAddr    - The source to copy the struct from
-//  structHnd  - A class token that represents the type of object being copied. May be null
-//               if FEATURE_SIMD is enabled and the source has a SIMD type.
-//  isVolatile - Is this marked as volatile memory?
-
-GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
-{
-    ClassLayout* layout = typGetObjLayout(structHnd);
-    GenTree*     lhs    = gtNewStructVal(layout, dstAddr);
-    GenTree*     src    = gtNewStructVal(layout, srcAddr);
-
-    if (lhs->OperIs(GT_OBJ))
-    {
-        GenTreeObj* lhsObj = lhs->AsObj();
-#if DEBUG
-        // Codegen for CpObj assumes that we cannot have a struct with GC pointers whose size is not a multiple
-        // of the register size. The EE currently does not allow this to ensure that GC pointers are aligned
-        // if the struct is stored in an array. Note that this restriction doesn't apply to stack-allocated objects:
-        // they are never stored in arrays. We should never get to this method with stack-allocated objects since they
-        // are never copied so we don't need to exclude them from the assert below.
-        // Let's assert it just to be safe.
-        ClassLayout* layout = lhsObj->GetLayout();
-        unsigned     size   = layout->GetSize();
-        assert((layout->GetGCPtrCount() == 0) || (roundUp(size, REGSIZE_BYTES) == size));
-#endif
-        gtSetObjGcInfo(lhsObj);
-    }
-
-    GenTree* result = gtNewBlkOpNode(lhs, src, isVolatile, true);
-    return result;
-}
-
 //------------------------------------------------------------------------
 // FixupInitBlkValue: Fixup the init value for an initBlk operation
 //
