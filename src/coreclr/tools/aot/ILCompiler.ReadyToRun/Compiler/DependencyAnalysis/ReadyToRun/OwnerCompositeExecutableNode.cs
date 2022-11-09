@@ -16,14 +16,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     internal class OwnerCompositeExecutableNode : HeaderTableNode
     {
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override int ClassCode => 240420333;
 
         private readonly string _ownerExecutableName;
 
-        public OwnerCompositeExecutableNode(TargetDetails target, string ownerExecutableName)
-            : base(target)
+        public OwnerCompositeExecutableNode(string ownerExecutableName)
         {
             _ownerExecutableName = ownerExecutableName;
         }

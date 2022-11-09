@@ -293,7 +293,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     string name = GetDependencyNodeName(depNode);
 
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                     lastWrittenObjectNode = node;
 
                     if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
@@ -315,7 +315,7 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectData nodeContents = node.GetData(_nodeFactory);
                     string name = GetDependencyNodeName(node);
 
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
