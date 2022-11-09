@@ -96,7 +96,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: client certificate isn't sent to the server
+        [ActiveIssue("TODO", TestPlatforms.Android)] // only one test case is failing - the one with hostname 'żółć gęślą jaźń. 红烧. 照り焼き'
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();

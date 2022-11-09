@@ -95,7 +95,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: Exception of type 'Interop+AndroidCrypto+SslException' was thrown.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", TestPlatforms.OSX)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {

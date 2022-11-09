@@ -753,7 +753,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: Exception of type 'Interop+AndroidCrypto+SslException' was thrown.
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
