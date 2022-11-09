@@ -25,7 +25,7 @@ To enable aggressive trimming instead of assembly-level trimming, we provide a p
 ### `PrepareForILLink`
 There is a public target `PrepareForILLink` that runs before the `ILLink` target, and provides a convenient place to hook into the pipeline to modify metadata for trimming. SDK components can use this as an extension point via `BeforeTargets` and `AfterTargets`.
 
-The global `TrimMode` may be set any time before `PrepareForILLink` runs, which sets it to a default value if not set previously. 
+The global `TrimMode` may be set any time before `PrepareForILLink` runs, which sets it to a default value if not set previously.
 
 ### `ManagedAssemblyToLink`
 The `PrepareForILLink` has a dependency that creates the ItemGroup `ManagedAssemblyToLink`, which represents the set of assemblies that will be passed to the linker. Custom targets may modify `IsTrimmable` and `TrimMode` metadata on these assemblies before `PrepareForILLink`, which sets the assembly action based on this metadata, or they may modify the metadata after `PrepareForILLink` has run.

@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
+	[IgnoreTestCase ("Test relies on checked-in binaries: https://github.com/dotnet/runtime/issues/78344")]
 	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "mdb files are not supported with .NET Core")]
 	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]

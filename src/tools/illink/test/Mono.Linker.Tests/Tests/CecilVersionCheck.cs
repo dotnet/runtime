@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -23,7 +24,7 @@ namespace Mono.Linker.Tests
 				.GetReferencedAssemblies ()
 				.Where (an => an.Name == "Mono.Cecil")
 				.Single ().Version;
-			Assert.AreEqual (cecilPackageVersion, cecilAssemblyVersion.ToString (3));
+			Assert.AreEqual(cecilPackageVersion.AsSpan(0,6).ToString(), cecilAssemblyVersion.ToString(3));
 		}
 	}
 }

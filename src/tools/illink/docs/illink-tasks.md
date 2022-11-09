@@ -16,7 +16,7 @@ To enable ILLink set `PublishTrimmed` property to `true` in your project and pub
 dotnet publish -r <rid> -c Release -p:PublishTrimmed=true
 ```
 
-alternatively you can edit your .csproj file to include 
+alternatively you can edit your .csproj file to include
 
 ```xml
   <PropertyGroup>

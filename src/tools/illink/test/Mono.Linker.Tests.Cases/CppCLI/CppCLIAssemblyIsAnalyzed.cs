@@ -10,6 +10,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CppCLI
 {
+	[IgnoreTestCase ("Test relies on checked-in binaries: https://github.com/dotnet/runtime/issues/78344")]
 	[ReferenceDependency ("Dependencies/TestLibrary.dll")]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 

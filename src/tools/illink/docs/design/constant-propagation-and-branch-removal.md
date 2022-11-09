@@ -12,7 +12,7 @@ Method can return constant value if its code will always return the same value (
     public bool Is32Bit { get => false; }
 ```
 
-On 64bit platforms the property is compiled with constant value, and ILLInk can determine this. It's also possible to use substitutions to overwrite method's return value to a constant via the [substitutions XML file](../data-formats.md#substitution-format). 
+On 64bit platforms the property is compiled with constant value, and ILLInk can determine this. It's also possible to use substitutions to overwrite method's return value to a constant via the [substitutions XML file](../data-formats.md#substitution-format).
 
 If such method is used in another method and it influences its return value, it can mean that the caller method will itself always return the same value. For example:
 
@@ -77,7 +77,7 @@ Processing the stack is a loop where:
 * Loop until stack is empty
 * The top of the stack is peeked (not actually popped) and the method there is processed
   1. The last attempt version of the method is set to the current version of the stack (for loop detection, see below)
-  2. The method's body is scanned and all callees which can be used for constant propagation are detected  
+  2. The method's body is scanned and all callees which can be used for constant propagation are detected
       * If the called method is already processed its value is used (if it has one)
         * There's an optimization here where methods are only marked as processed without analyzing for their return value. If such method is encountered here, the return value analyzer will run in-place to determine the value of the method (and the result is stored)
       * If the called method is not yet processed and is not on the stack, it's added to the top of the stack

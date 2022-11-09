@@ -3,11 +3,12 @@
     <!-- Keep these in sync with ILLinkTasksAssembly in Microsoft.NET.ILLInk.Tasks.props. -->
     <!-- Keep the net#.0 TFM in sync with the Mono.Linker.csproj condition below. -->
     <!-- Keep the net#.0 TFM in sync with the code in LinkTask.cs in method ILLink.ILLinkPath. -->
-    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>MSBuild tasks for running the IL Linker</Description>
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
+    <!-- Removing the package id to be able to build the linker inside runtime 
+         This will become unnecessary once we use live bits -->
+    <!-- PackageId>Microsoft.NET.ILLink.Tasks</PackageId -->
     <!-- We want to package the tasks package together with its
          transitive dependencies and the linker, without marking them
          as dependencies in the tasks package. -->
@@ -16,7 +17,8 @@
     <IncludeJsonFilesInPackage>true</IncludeJsonFilesInPackage>
     <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
     <!-- Recommended by arcade for tools projects. generates an assembly version that includes patch number derived from date and build revision -->
-    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- Set AutoGenerateAssemblyVersion to false until runtime uses illink live bits and removes dependencies https://github.com/dotnet/runtime/issues/78076 -->
+    <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
     <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>disable</Nullable>
@@ -36,7 +38,7 @@
     <Content Include="sdk/Sdk.props" PackagePath="Sdk/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="build/$(PackageId).props" PackagePath="build/">
+    <Content Include="build/Microsoft.NET.ILLink.Tasks.props" PackagePath="build/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- Note: this should not match the package name, because we don't want the targets
@@ -51,12 +53,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == '$(NetCoreAppToolCurrent)' " />
-    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" PrivateAssets="All" Publish="True" />
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All">
-      <!-- https://github.com/dotnet/sdk/issues/2280#issuecomment-392815466 -->
-      <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
-    </ProjectReference>
-    <ProjectReference Condition="('$(UseCecilPackage)' != 'true') And ('$(TargetFramework)' != 'net472')" Include="../../external/cecil/symbols/pdb/Mono.Cecil.Pdb.csproj" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
   </ItemGroup>
 
   <ItemGroup>
