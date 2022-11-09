@@ -60,7 +60,7 @@ async function runtime2() {
 
     setModuleImports("main.js", { location: { href: () => window.location.href } });
 
-    await dotnet.run(["Runtime 2"]);
+    await dotnet.withApplicationArguments("Runtime 2").run();
 
     const exports = await getAssemblyExports(getConfig().mainAssemblyName);
     console.log(exports.Sample.Test.Greet());

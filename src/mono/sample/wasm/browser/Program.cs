@@ -11,7 +11,7 @@ namespace Sample
     {
         public static int Main(string[] args)
         {
-            Console.WriteLine($"MF .NET, args: {String.Join(", ", args)}, location: '{GetLocation()}'");
+            Console.WriteLine($"MF .NET, args({args.Length}): {String.Join(", ", args)}, location: '{GetLocation()}'");
             return 0;
         }
 
