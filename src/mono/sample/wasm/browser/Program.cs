@@ -11,8 +11,14 @@ namespace Sample
     {
         public static int Main(string[] args)
         {
-            Console.WriteLine($"MF .NET, args: {String.Join(", ", args)}");
+            Console.WriteLine($"MF .NET, args: {String.Join(", ", args)}, location: '{GetLocation()}'");
             return 0;
         }
+
+        [JSImport("location.href", "main.js")]
+        internal static partial string GetLocation();
+
+        [JSExport]
+        internal static string Greet() => "MF JSExport";
     }
 }

@@ -18,16 +18,17 @@ async function importMemory() {
 }
 
 async function runtime1() {
+    console.log("Runtime 1");
     const dotnet1 = (await import("./dotnet.js?1")).dotnet;
     const api1 = await dotnet1.create();
-    globalThis.Module1 = api1.Module['asm']['memory'];
     exportMemory(api1.Module.HEAP8);
 }
 
 async function runtime2() {
-    const dotnet2 = (await import("./dotnet.js?2")).dotnet;
+    console.log("Runtime 2");
+    const dotnet = (await import("./dotnet.js?2")).dotnet;
     const memory = await importMemory();
-    const api2 = await dotnet2
+    const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withConfig({
             mainAssemblyName: "Wasm.Browser.Sample.dll",
             assets: [
@@ -57,10 +58,17 @@ async function runtime2() {
         })
         .create();
 
-    globalThis.Module2 = api2.Module['asm']['memory'];
+    setModuleImports("main.js", { location: { href: () => window.location.href } });
 
-    await dotnet2.run(["Runtime 2"]);
+    await dotnet.run(["Runtime 2"]);
+
+    const exports = await getAssemblyExports(getConfig().mainAssemblyName);
+    console.log(exports.Sample.Test.Greet());
 }
 
-// runtime1();
-runtime2();
+const runtimeParam = new URLSearchParams(location.search).get("runtime");
+if (runtimeParam === "1") {
+    runtime1();
+} else {
+    runtime2();
+}
