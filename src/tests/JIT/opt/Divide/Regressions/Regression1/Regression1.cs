@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 public class Program
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
+[MethodImpl(MethodImplOptions.NoInlining)]
     public static ushort GetUShortValue()
     {
         return 24648;
@@ -118,6 +118,57 @@ public class Program
         return (ushort)((ushort)v / 2);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ushort Test14(int v1, int v2)
+    {
+        return (ushort)((ushort)v1 / (ushort)v2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test15()
+    {
+        short y = short.MinValue;
+        return unchecked((short)(y / -1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test16(short y)
+    {
+        return unchecked((short)(y / -1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test17()
+    {
+        try
+        {
+            short y = short.MinValue;
+            return checked((short)(y / -1));
+        }
+        catch (ArithmeticException)
+        {
+            return 456;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test18(int v)
+    {
+        return (short)((short)v / 2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test19(int x, int y)
+    {
+        return (short)((short)x / (short)y);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test20(short x, short y)
+    {
+        return (short)(x / y);
+    }
+
     public static int Main()
     {
         var result1 = Test1(24648);
@@ -133,6 +184,13 @@ public class Program
         var result11 = Test11(0x10001);
         var result12 = Test12(0x10001);
         var result13 = Test13(0x10000);
+        var result14 = Test14(1, 0x10001);
+        var result15 = Test15();
+        var result16 = Test16(short.MinValue);
+        var result17 = Test17();
+        var result18 = Test18(0x10000);
+        var result19 = Test19(0x10000, 2);
+        var result20 = Test20(unchecked((short)0x10000), 2);
 
         if (result1 != 0)
             return 0;
@@ -173,5 +231,27 @@ public class Program
         if (result13 != 0)
             return 0;
 
+        if (result14 != 1)
+            return 0;
+
+        if (result15 != -32768)
+            return 0;
+
+        if (result16 != -32768)
+            return 0;
+
+        if (result17 != 456)
+            return 0;
+
+        if (result18 != 0)
+            return 0;
+
+        if (result19 != 0)
+            return 0;
+
+        if (result20 != 0)
+            return 0;
+
         return 100;
     }
+}

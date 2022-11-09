@@ -11530,8 +11530,8 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
         {
             GenTreeCast* op1 = src->gtGetOp1()->AsCast();
 
-            if ((genActualType(op1) == genActualType(srcType)) && !gtIsActiveCSE_Candidate(op1) &&
-                (castToType == op1->CastToType()))
+            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
+                !gtIsActiveCSE_Candidate(op1) && (castToType == op1->CastToType()))
             {
                 src->AsOp()->gtOp1 = op1->CastOp();
 
@@ -11543,8 +11543,8 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
         {
             GenTreeCast* op2 = src->gtGetOp2()->AsCast();
 
-            if ((genActualType(op2) == genActualType(srcType)) && !gtIsActiveCSE_Candidate(op2) &&
-                (castToType == op2->CastToType()))
+            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
+                !gtIsActiveCSE_Candidate(op2) && (castToType == op2->CastToType()))
             {
                 src->AsOp()->gtOp2 = op2->CastOp();
 
