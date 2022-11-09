@@ -330,7 +330,7 @@ namespace System.Resources
         private unsafe bool CompareStringEqualsName(string name)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             int byteLen = _store.Read7BitEncodedInt();
             if (byteLen < 0)
@@ -531,7 +531,7 @@ namespace System.Resources
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             Debug.Assert(_version == 1, ".resources file was not a V1 .resources file!");
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             try
             {
@@ -551,7 +551,7 @@ namespace System.Resources
 
         private object? _LoadObjectV1(int pos)
         {
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
             int typeIndex = _store.Read7BitEncodedInt();
@@ -613,7 +613,7 @@ namespace System.Resources
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             Debug.Assert(_version >= 2, ".resources file was not a V2 (or higher) .resources file!");
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             try
             {
@@ -633,7 +633,7 @@ namespace System.Resources
 
         private object? _LoadObjectV2(int pos, out ResourceTypeCode typeCode)
         {
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
             typeCode = (ResourceTypeCode)_store.Read7BitEncodedInt();
@@ -964,8 +964,6 @@ namespace System.Resources
             "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
-            Debug.Assert(Monitor.IsEntered(this));
-
             if (!AllowCustomResourceTypes)
             {
                 throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
@@ -983,7 +981,7 @@ namespace System.Resources
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private Type UseReflectionToGetType(int typeIndex)
         {
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             long oldPos = _store.BaseStream.Position;
             try
@@ -1023,7 +1021,7 @@ namespace System.Resources
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)
         {
             Debug.Assert(typeCode >= 0, "can't be negative");
-            Debug.Assert(Monitor.IsEntered(this));
+            Debug.Assert(Monitor.IsEntered(this)); // uses _store
 
             if (typeCode < ResourceTypeCode.StartOfUserTypes)
             {
