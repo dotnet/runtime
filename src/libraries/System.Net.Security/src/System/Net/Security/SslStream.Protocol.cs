@@ -811,14 +811,6 @@ namespace System.Net.Security
 
                     if (_sslAuthenticationOptions.IsServer)
                     {
-// #if TARGET_ANDROID
-//                         // TODO remove
-//                         _sslAuthenticationOptions.CertValidationDelegate = (sender, cert, chain, errors) => {
-//                             Console.WriteLine($"server's CertValidationDelegate: {errors}, {cert}");
-//                             if (errors == SslPolicyErrors.RemoteCertificateNotAvailable) return false;
-//                             else return true;
-//                         };
-// #endif
                         status = SslStreamPal.AcceptSecurityContext(
 #if TARGET_ANDROID
                                       new SslStream.JavaProxy(this),
