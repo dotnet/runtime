@@ -4457,23 +4457,13 @@ void DacDbiInterfaceImpl::EnumerateAppDomains(
 
     _ASSERTE(fpCallback != NULL);
 
-    // Only include active appdomains in the enumeration.
-    // This includes appdomains sent before the AD load event,
-    // and does not include appdomains that are in shutdown after the AD exit event.
-    const BOOL bOnlyActive = TRUE;
-    AppDomainIterator iterator(bOnlyActive);
+    // It's critical that we don't yield appdomains after the unload event has been sent.
+    // See code:IDacDbiInterface#Enumeration for details.
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-    while(iterator.Next())
-    {
-        // It's critical that we don't yield appdomains after the unload event has been sent.
-        // See code:IDacDbiInterface#Enumeration for details.
-        AppDomain * pAppDomain = iterator.GetDomain();
-
-        VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-        vmAppDomain.SetHostPtr(pAppDomain);
-
-        fpCallback(vmAppDomain, pUserData);
-    }
+    VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
+    vmAppDomain.SetHostPtr(pAppDomain);
+    fpCallback(vmAppDomain, pUserData);
 }
 
 // Enumerate all Assemblies in an appdomain.
