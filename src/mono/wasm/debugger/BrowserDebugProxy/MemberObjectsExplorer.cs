@@ -150,10 +150,10 @@ namespace BrowserDebugProxy
                 {
                     // a collection - expose elements to be of array scheme
                     var memberNamedItems = members
-                        .Where(m => m["name"]?.Value<string>() == "Items" || m["name"]?.Value<string>() == "_items")
+                        .Where(m => m["name"]?.Value<string>() == "Items")
                         .FirstOrDefault();
                     if (memberNamedItems is not null &&
-                        (DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId)) &&
+                        DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) &&
                         itemsObjectId.Scheme == "array")
                     {
                         rootObjectId = itemsObjectId;
@@ -550,7 +550,8 @@ namespace BrowserDebugProxy
             // 2
             if (!getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
-                GetMembersResult debuggerProxy = await sdbHelper.GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParents[0], token);
+                GetMembersResult debuggerProxy = await sdbHelper.GetValuesFromDebuggerProxyAttributeForObject(
+                    objectId, typeIdsIncludingParents[0], token);
                 if (debuggerProxy != null)
                     return debuggerProxy;
             }

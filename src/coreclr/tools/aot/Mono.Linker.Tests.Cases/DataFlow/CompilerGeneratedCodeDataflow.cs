@@ -93,6 +93,113 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
+			static IEnumerable<object[]> ReturnManyObjects ()
+			{
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				Type t = GetWithPublicMethods ();
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				yield return new object[] { 1, 2, new object[] { 1, 2 }, new object[] { 1, 2 } };
+				t.RequiresAll ();
+			}
+
 			public static void Test ()
 			{
 				FlowAcrossYieldReturn ().GetEnumerator ().MoveNext (); // Has to call MoveNext otherwise AOT will actually remove it
@@ -103,6 +210,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				FlowParameterAcrossYieldReturn ();
 				FlowUnannotatedParameterAcrossYieldReturn ();
 				FlowAcrossYieldReturnWithBackwardsBranch ();
+
+				foreach (var o in ReturnManyObjects ()) ;
 			}
 		}
 

@@ -1813,6 +1813,7 @@ protected:
         PCCOR_SIGNATURE pvNativeType,       // [IN] native type specification
         ULONG       cbNativeType);          // [IN] count of bytes of pvNativeType
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
     HRESULT _IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
         mdToken     tkType,                 // [IN] Token of custom attribute's type.
         int         *pca);                  // [OUT] Put value from KnownCustAttr enum here.
@@ -1833,6 +1834,7 @@ protected:
         CaArg       *pArgs,                 // Pointer to args.
         CaNamedArg  *pNamedArgs,            // Pointer to named args.
         CQuickArray<BYTE> &qNativeType);    // Native type is built here.
+#endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER
 
     // Find a given param of a Method.
     HRESULT _FindParamOfMethod(             // S_OK or error.
@@ -2040,7 +2042,10 @@ private:
     SetAPICallerType m_SetAPICaller;
 
     CorValidatorModuleType      m_ModuleType;
+
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
     SHash<CustAttrHashTraits>   m_caHash;   // Hashed list of custom attribute types seen.
+#endif
 
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?
 

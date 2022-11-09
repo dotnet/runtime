@@ -20,12 +20,12 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter);
 
-		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method);
+		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex);
+		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param);
 	}
 }

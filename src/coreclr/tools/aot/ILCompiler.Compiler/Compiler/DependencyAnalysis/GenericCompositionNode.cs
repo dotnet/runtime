@@ -53,15 +53,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_details.Instantiation[0].Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool IsShareable => true;
