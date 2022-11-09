@@ -89,14 +89,14 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal RegistrySecurity(SafeRegistryHandle hKey, string name, AccessControlSections includeSections)
+        internal RegistrySecurity(SafeRegistryHandle hKey, AccessControlSections includeSections)
             : base(true, ResourceType.RegistryKey, hKey, includeSections, _HandleErrorCode, null)
         {
         }
 
         private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            return _HandleErrorCodeCore(errorCode, name, handle, context);
+            return _HandleErrorCodeCore(errorCode);
         }
 
         public override AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)
@@ -135,7 +135,7 @@ namespace System.Security.AccessControl
             return persistRules;
         }
 
-        internal void Persist(SafeRegistryHandle hKey, string keyName)
+        internal void Persist(SafeRegistryHandle hKey)
         {
             WriteLock();
 

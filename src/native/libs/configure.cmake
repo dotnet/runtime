@@ -255,6 +255,11 @@ check_symbol_exists(
     HAVE_TIOCGWINSZ)
 
 check_symbol_exists(
+    TIOCSWINSZ
+    "sys/ioctl.h"
+    HAVE_TIOCSWINSZ)
+
+check_symbol_exists(
     tcgetattr
     termios.h
     HAVE_TCGETATTR)

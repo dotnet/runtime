@@ -95,11 +95,11 @@ namespace System.Data.OleDb
                     // of an InfoMessageEvent.
                     if ((0 <= hr) && !_sessionwrp.IsInvalid)
                     { // process infonessage events
-                        OleDbConnection.ProcessResults(hr, connection, connection);
+                        OleDbConnection.ProcessResults(hr, connection);
                     }
                     else
                     {
-                        Exception? e = OleDbConnection.ProcessResults(hr, null, null);
+                        Exception? e = OleDbConnection.ProcessResults(hr, null);
                         Debug.Assert(null != e, "CreateSessionError");
                         throw e;
                     }
@@ -182,7 +182,7 @@ namespace System.Data.OleDb
         internal IDBPropertiesWrapper IDBProperties()
         {
             Debug.Assert(null != _datasrcwrp, "IDBProperties: null datasource");
-            return _datasrcwrp.IDBProperties(this);
+            return _datasrcwrp.IDBProperties();
         }
 
         // required interface, safe cast
@@ -190,14 +190,14 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != _datasrcwrp, "IOpenRowset: null datasource");
             Debug.Assert(null != _sessionwrp, "IOpenRowset: null session");
-            return _sessionwrp.IOpenRowset(this);
+            return _sessionwrp.IOpenRowset();
         }
 
         // optional interface, unsafe cast
         private IDBInfoWrapper IDBInfo()
         {
             Debug.Assert(null != _datasrcwrp, "IDBInfo: null datasource");
-            return _datasrcwrp.IDBInfo(this);
+            return _datasrcwrp.IDBInfo();
         }
 
         // optional interface, unsafe cast
@@ -205,7 +205,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != _datasrcwrp, "IDBSchemaRowset: null datasource");
             Debug.Assert(null != _sessionwrp, "IDBSchemaRowset: null session");
-            return _sessionwrp.IDBSchemaRowset(this);
+            return _sessionwrp.IDBSchemaRowset();
         }
 
         // optional interface, unsafe cast
@@ -213,7 +213,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != _datasrcwrp, "ITransactionJoin: null datasource");
             Debug.Assert(null != _sessionwrp, "ITransactionJoin: null session");
-            return _sessionwrp.ITransactionJoin(this);
+            return _sessionwrp.ITransactionJoin();
         }
 
         // optional interface, unsafe cast
@@ -663,7 +663,7 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             OleDbConnection? connection = Connection; // get value from weakref only once
-            Exception? e = OleDbConnection.ProcessResults(hr, connection, connection);
+            Exception? e = OleDbConnection.ProcessResults(hr, connection);
             if (null != e)
             { throw e; }
         }

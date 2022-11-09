@@ -78,12 +78,6 @@ namespace System.Data
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
             return e;
         }
-        private static EvaluateException _Eval(string error, Exception? innerException)
-        {
-            EvaluateException e = new EvaluateException(error/*, innerException*/);
-            ExceptionBuilder.TraceExceptionAsReturnValue(e);
-            return e;
-        }
 
         public static Exception InvokeArgument()
         {
@@ -167,9 +161,9 @@ namespace System.Data
             return _Eval(SR.Format(SR.Expr_DatatypeConversion, type1.ToString(), type2.ToString()));
         }
 
-        public static Exception DatavalueConversion(object value, Type type, Exception? innerException)
+        public static Exception DatavalueConversion(object value, Type type)
         {
-            return _Eval(SR.Format(SR.Expr_DatavalueConversion, value.ToString(), type.ToString()), innerException);
+            return _Eval(SR.Format(SR.Expr_DatavalueConversion, value.ToString(), type.ToString()));
         }
 
         public static Exception InvalidName(string name)

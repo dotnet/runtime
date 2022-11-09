@@ -194,6 +194,9 @@
   <data name="InvalidOperation_ConsoleReadKeyOnFile" xml:space="preserve">
     <value>Cannot read keys when either application does not have a console or when console input has been redirected. Try Console.Read.</value>
   </data>
+  <data name="InvalidOperation_SetWindowSize" xml:space="preserve">
+    <value>Cannot set window size when console output has been redirected.</value>
+  </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
