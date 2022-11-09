@@ -453,7 +453,7 @@ void ExecutableAllocator::Release(void* pRX)
 
         if (pBlock != NULL)
         {
-            if (VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size) == false)
+            if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
             {
                 g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
             }
