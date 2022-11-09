@@ -18028,7 +18028,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                     {
                         CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
-                        objClass = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
+                        objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                     }
                 }
             }
