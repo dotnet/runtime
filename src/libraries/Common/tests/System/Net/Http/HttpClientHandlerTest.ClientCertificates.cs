@@ -113,12 +113,9 @@ namespace System.Net.Http.Functional.Tests
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
                         if (serverExpectsClientCertificate)
                         {
-                            if (sslStream.RemoteCertificate is not null) {
-                                _output.WriteLine(
-                                    "Client cert: {0}",
-                                    new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
-                            }
-
+                            _output.WriteLine(
+                                "Client cert: {0}",
+                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
                             Assert.Equal(cert, sslStream.RemoteCertificate);
                         }
                         else

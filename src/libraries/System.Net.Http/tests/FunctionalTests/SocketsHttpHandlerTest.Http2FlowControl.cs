@@ -228,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
             bool pingReceivedAfterReachingMaxWindow = false;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
-
+            
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
             byte[] buffer = new byte[16384];
@@ -315,7 +315,7 @@ namespace System.Net.Http.Functional.Tests
                 catch (OperationCanceledException)
                 {
                 }
-
+                
 
                 output?.WriteLine("ProcessIncomingFramesAsync finished");
             }

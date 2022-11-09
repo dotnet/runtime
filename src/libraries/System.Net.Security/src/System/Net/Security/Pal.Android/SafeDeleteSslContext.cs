@@ -69,7 +69,6 @@ namespace System.Net
                     sslContext.Dispose();
                 }
 
-
                 _sslStreamProxy?.Dispose();
             }
 
