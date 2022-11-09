@@ -126,13 +126,13 @@ namespace System.Text.RegularExpressions.Generator
             if (rm.Tree.CaptureNumberSparseMapping is not null)
             {
                 writer.Write("        base.Caps = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping.Cast<DictionaryEntry>());
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNameToNumberMapping is not null)
             {
                 writer.Write("        base.CapNames = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as string, StringComparer.Ordinal));
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNames is not null)
@@ -152,11 +152,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine(runnerFactoryImplementation);
             writer.WriteLine($"}}");
 
-            static void AppendHashtableContents(IndentedTextWriter writer, Hashtable ht)
+            static void AppendHashtableContents(IndentedTextWriter writer, IEnumerable<DictionaryEntry> contents)
             {
-                IDictionaryEnumerator en = ht.GetEnumerator();
                 string separator = "";
-                while (en.MoveNext())
+                foreach (DictionaryEntry en in contents)
                 {
                     writer.Write(separator);
                     separator = ", ";
