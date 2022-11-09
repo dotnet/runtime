@@ -138,7 +138,7 @@ namespace
 
         // & indicates an accelerator key when in hyperlink text.
         // Replace & with && such that the single ampersand is shown.
-        for (int i = 0; i < pal::strlen(url); ++i)
+        for (size_t i = 0; i < pal::strlen(url); ++i)
         {
             str.push_back(url[i]);
             if (url[i] == _X('&'))
