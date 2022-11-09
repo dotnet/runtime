@@ -432,6 +432,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 Assert.Equal(curve.Oid.Value, exportedParameters.Curve.Oid.Value);
 
                 exportedParameters.Curve = miscasedCurve;
+
+                // Assert.NoThrow. Make sure we can import the mis-cased curve.
                 ecdh.ImportParameters(exportedParameters);
             }
         }
