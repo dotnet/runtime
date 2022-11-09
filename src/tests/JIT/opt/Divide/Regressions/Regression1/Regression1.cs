@@ -92,6 +92,32 @@ public class Program
         return (sbyte)((sbyte)vr1 / GetSByteMaxValue());
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Test10(ushort vr6)
+    {
+        ushort vr3 = 1;
+        ushort vr4 = (ushort)~vr3;
+        return (sbyte)((sbyte)vr6 / (sbyte)((sbyte)vr4 | 1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ushort Test11(int v)
+    {
+        return (ushort)((ushort)1 / (ushort)v);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static short Test12(int v)
+    {
+        return (short)((short)1 / (short)v);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ushort Test13(int v)
+    {
+        return (ushort)((ushort)v / 2);
+    }
+
     public static int Main()
     {
         var result1 = Test1(24648);
@@ -103,6 +129,10 @@ public class Program
         var result7 = Test7();
         var result8 = Test8();
         var result9 = Test9();
+        var result10 = Test10(24648);
+        var result11 = Test11(0x10001);
+        var result12 = Test12(0x10001);
+        var result13 = Test13(0x10000);
 
         if (result1 != 0)
             return 0;
@@ -131,6 +161,17 @@ public class Program
         if (result9 != 0)
             return 0;
 
+        if (result10 != -72)
+            return 0;
+
+        if (result11 != 1)
+            return 0;
+
+        if (result12 != 1)
+            return 0;
+
+        if (result13 != 0)
+            return 0;
+
         return 100;
     }
-}

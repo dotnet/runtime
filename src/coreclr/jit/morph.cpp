@@ -11524,23 +11524,14 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
         return;
 
-    if (src->OperIs(GT_UMOD, GT_UDIV))
-        return;
-
-    if (src->OperIsArithmetic() || src->OperIs(GT_NOT, GT_NEG))
+    if (src->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
     {
         if (src->gtGetOp1()->OperIs(GT_CAST))
         {
             GenTreeCast* op1 = src->gtGetOp1()->AsCast();
 
-            GenTree* op1src = op1->CastOp();
-            if (opts.OptimizationEnabled())
-            {
-                op1src = op1src->gtEffectiveVal();
-            }
-
-            if (op1src->OperIsLocal() && (genActualType(op1) == genActualType(srcType)) &&
-                !gtIsActiveCSE_Candidate(op1) && (castToType == op1->CastToType()))
+            if ((genActualType(op1) == genActualType(srcType)) && !gtIsActiveCSE_Candidate(op1) &&
+                (castToType == op1->CastToType()))
             {
                 src->AsOp()->gtOp1 = op1->CastOp();
 
@@ -11552,14 +11543,8 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
         {
             GenTreeCast* op2 = src->gtGetOp2()->AsCast();
 
-            GenTree* op2src = op2->CastOp();
-            if (opts.OptimizationEnabled())
-            {
-                op2src = op2src->gtEffectiveVal();
-            }
-
-            if (op2src->OperIsLocal() && (genActualType(op2) == genActualType(srcType)) &&
-                !gtIsActiveCSE_Candidate(op2) && (castToType == op2->CastToType()))
+            if ((genActualType(op2) == genActualType(srcType)) && !gtIsActiveCSE_Candidate(op2) &&
+                (castToType == op2->CastToType()))
             {
                 src->AsOp()->gtOp2 = op2->CastOp();
 

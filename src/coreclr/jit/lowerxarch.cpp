@@ -745,6 +745,69 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // TARGET_X86
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerCastOfSmpOp:
+//
+// Arguments:
+//    node - A cast node that is of a simple op node
+//
+void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
+{
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+    var_types srcType    = castOp->TypeGet();
+
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (node->gtFlags & GTF_UNSIGNED)
+    {
+        srcType = varTypeToUnsigned(srcType);
+    }
+
+    assert(castOp->OperIsSimple());
+
+    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+        return;
+
+    if (castOp->gtSetFlags())
+        return;
+
+    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
+        return;
+
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+    {
+        // This removes the casts as it prevents zero/sign-extended 'mov's before the simple op.
+
+        if (castOp->gtGetOp1()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+            if (castToType == op1->CastToType())
+            {
+                op1->CastOp()->ClearContainedAndRegOptional();
+
+                castOp->AsOp()->gtOp1 = op1->CastOp();
+
+                BlockRange().Remove(op1);
+            }
+        }
+
+        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+            if (castToType == op2->CastToType())
+            {
+                op2->CastOp()->ClearContainedAndRegOptional();
+
+                castOp->AsOp()->gtOp2 = op2->CastOp();
+
+                BlockRange().Remove(op2);
+            }
+        }
+    }
+}
+
 /* Lower GT_CAST(srcType, DstType) nodes.
  *
  * Casts from small int type to float/double are transformed as follows:
@@ -784,7 +847,13 @@ void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
-    GenTree*  castOp     = tree->AsCast()->CastOp();
+    GenTree* castOp = tree->AsCast()->CastOp();
+
+//    if (castOp->OperIsSimple())
+//    {
+//        LowerCastOfSmpOp(tree->AsCast());
+//    }
+
     var_types castToType = tree->CastToType();
     var_types srcType    = castOp->TypeGet();
     var_types tmpType    = TYP_UNDEF;
