@@ -74,8 +74,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName!, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
-			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName!, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments));
+			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName!, sourceFiles, commonReferences, mainAssemblyReferences, new string[] { "NATIVEAOT" }, resources, additionalArguments));
+			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName!, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS", "NATIVEAOT" }, resources, additionalArguments));
 
 			NPath? inputAssemblyPath = null;
 			NPath? expectationsAssemblyPath = null;
