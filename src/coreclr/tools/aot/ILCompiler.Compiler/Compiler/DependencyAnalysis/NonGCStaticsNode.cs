@@ -31,21 +31,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
+            if (_preinitializationManager.HasLazyStaticConstructor(_type)
+                || _preinitializationManager.IsPreinitialized(_type))
             {
-                if (_preinitializationManager.HasLazyStaticConstructor(_type)
-                    || _preinitializationManager.IsPreinitialized(_type))
-                {
-                    // We have data to be emitted so this needs to be in an initialized data section
-                    return ObjectNodeSection.DataSection;
-                }
-                else
-                {
-                    // This is all zeros; place this to the BSS section
-                    return ObjectNodeSection.BssSection;
-                }
+                // We have data to be emitted so this needs to be in an initialized data section
+                return ObjectNodeSection.DataSection;
+            }
+            else
+            {
+                // This is all zeros; place this to the BSS section
+                return ObjectNodeSection.BssSection;
             }
         }
 
