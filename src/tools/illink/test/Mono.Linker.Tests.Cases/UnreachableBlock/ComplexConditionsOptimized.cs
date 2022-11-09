@@ -14,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		public static void Main ()
 		{
 			TestSwitch.Test ();
+			TestSwitch.TestOffset ();
+			TestSwitch2.TestFallThrough ();
+			TestSwitchZero.Test ();
 		}
 
 		[Kept]
@@ -24,7 +27,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 
 			[Kept]
-			[ExpectBodyModified]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.2",
+				"stloc.0",
+				"ldloc.0",
+				"brtrue il_8",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditionsOptimized/TestSwitch::Reached()",
+				"ret",
+			})]
 			public static void Test ()
 			{
 				switch (KnownInteger) {
@@ -37,13 +47,117 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				case 2:
 					Reached ();
 					break;
-				default: throw new ApplicationException ();
+				default:
+					throw new ApplicationException ();
 				}
 			}
 
-			// https://github.com/dotnet/linker/issues/2888
-			// Should be removed
 			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.2",
+				"stloc.0",
+				"ldloc.0",
+				"ldc.i4.1",
+				"sub",
+				"brtrue il_10",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditionsOptimized/TestSwitch::Reached()",
+				"ret",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditionsOptimized/TestSwitch::Reached()",
+				"br.s il_a",
+			})]
+			public static void TestOffset ()
+			{
+				switch (KnownInteger) {
+				case 1:
+					Reached ();
+					break;
+				case 2:
+					Reached ();
+					goto case 1;
+				case 3:
+					Unreached ();
+					break;
+				default:
+					throw new ApplicationException ();
+				}
+			}
+
+			static void Unreached () { }
+
+			[Kept]
+			static void Reached () { }
+		}
+
+		[Kept]
+		class TestSwitch2
+		{
+			static int KnownInteger {
+				get => 9;
+			}
+
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.s 0x9",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"br.s il_7",
+				"newobj System.Void System.ApplicationException::.ctor()",
+				"throw",
+			})]
+			public static void TestFallThrough ()
+			{
+				switch (KnownInteger) {
+				case 0:
+					Unreached ();
+					break;
+				case 1:
+					Unreached ();
+					break;
+				case 2:
+					Unreached ();
+					break;
+				default:
+					throw new ApplicationException ();
+				}
+			}
+
+			static void Unreached () { }
+		}
+
+		[Kept]
+		class TestSwitchZero
+		{
+			static int KnownInteger {
+				get => 0;
+			}
+
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.0",
+				"stloc.0",
+				"ldloc.0",
+				"brfalse il_8",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditionsOptimized/TestSwitchZero::Reached()",
+				"ret",
+			})]
+			public static void Test ()
+			{
+				switch (KnownInteger) {
+				case 0:
+					Reached ();
+					break;
+				case 1:
+					Unreached ();
+					break;
+				case 2:
+					Unreached ();
+					break;
+				default:
+					throw new ApplicationException ();
+				}
+			}
+
 			static void Unreached () { }
 
 			[Kept]

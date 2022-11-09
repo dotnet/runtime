@@ -535,8 +535,14 @@ namespace Mono.Linker.Steps
 			//
 			// Sorted list of body instruction indexes which were
 			// replaced pass-through nop
-			// 
+			//
 			List<int>? conditionInstrsToRemove;
+
+			//
+			// Sorted list of body instruction indexes which were
+			// set to be replaced with different intstruction
+			//
+			List<(int, Instruction)>? conditionInstrsToReplace;
 
 			public BodyReducer (MethodBody body, LinkContext context)
 			{
@@ -546,6 +552,7 @@ namespace Mono.Linker.Steps
 				FoldedInstructions = null;
 				mapping = null;
 				conditionInstrsToRemove = null;
+				conditionInstrsToReplace = null;
 				InstructionsReplaced = 0;
 			}
 
@@ -582,12 +589,56 @@ namespace Mono.Linker.Steps
 				FoldedInstructions[index] = newInstruction;
 			}
 
+			void RewriteCondition (int index, Instruction instr, int operand)
+			{
+				switch (instr.OpCode.Code) {
+				case Code.Brfalse:
+				case Code.Brfalse_S:
+					if (operand == 0) {
+						Rewrite (index, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+				case Code.Brtrue:
+				case Code.Brtrue_S:
+					if (operand != 0) {
+						Rewrite (index, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+
+				case Code.Switch:
+					var targets = (Instruction[]) instr.Operand;
+					if (operand <= targets.Length) {
+						// It does not need to be conditional but existing logic in BodySweeper would
+						// need to be updated to deal with 1->2 instruction replacement
+						RewriteConditionTo (index, Instruction.Create (operand == 0 ? OpCodes.Brfalse : OpCodes.Brtrue, targets[operand]));
+						Rewrite (index, Instruction.Create (OpCodes.Br, targets[operand]));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+				}
+			}
+
 			void RewriteConditionToNop (int index)
 			{
 				conditionInstrsToRemove ??= new List<int> ();
 
 				conditionInstrsToRemove.Add (index);
 				RewriteToNop (index);
+			}
+
+			void RewriteConditionTo (int index, Instruction instruction)
+			{
+				conditionInstrsToReplace ??= new List<(int, Instruction)> ();
+
+				conditionInstrsToReplace.Add ((index, instruction));
 			}
 
 			public void RewriteToNop (int index, int stackDepth)
@@ -718,7 +769,7 @@ namespace Mono.Linker.Steps
 				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
 				bodySweeper.Initialize ();
 
-				bodySweeper.Process (conditionInstrsToRemove, out var nopInstructions);
+				bodySweeper.Process (conditionInstrsToRemove, conditionInstrsToReplace, out var nopInstructions);
 				InstructionsReplaced = bodySweeper.InstructionsReplaced;
 				if (InstructionsReplaced == 0)
 					return false;
@@ -859,10 +910,6 @@ namespace Mono.Linker.Steps
 					var opcode = instr.OpCode;
 
 					if (opcode.FlowControl == FlowControl.Cond_Branch) {
-						// No support for removing branches from switch instruction
-						if (opcode == OpCodes.Switch)
-							continue;
-
 						if (opcode.StackBehaviourPop == StackBehaviour.Pop1_pop1) {
 							if (!GetOperandsConstantValues (i, out left, out right))
 								continue;
@@ -894,12 +941,7 @@ namespace Mono.Linker.Steps
 										continue;
 
 									RewriteToNop (i - 1);
-
-									if (IsConstantBranch (opcode, opint)) {
-										Rewrite (i, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
-									} else {
-										RewriteConditionToNop (i);
-									}
+									RewriteCondition (i, instr, opint);
 
 									changed = true;
 									continue;
@@ -924,12 +966,27 @@ namespace Mono.Linker.Steps
 								RewriteToNop (i - 3);
 								RewriteToNop (i - 2);
 								RewriteToNop (i - 1);
+								RewriteCondition (i, instr, opint2);
 
-								if (IsConstantBranch (opcode, opint2)) {
-									Rewrite (i, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
-								} else {
-									RewriteConditionToNop (i);
-								}
+								changed = true;
+								continue;
+							}
+
+							// Pattern for non-zero based switch with constant input
+							if (i >= 5 && opcode == OpCodes.Switch && GetConstantValue (FoldedInstructions[i - 5], out operand) && operand is int opint3 && IsPairedStlocLdloc (FoldedInstructions[i - 4], FoldedInstructions[i - 3])) {
+								if (IsJumpTargetRange (i - 4, i))
+									continue;
+
+								if (!GetConstantValue (FoldedInstructions[i - 2], out operand) || operand is not int offset)
+									continue;
+
+								if (FoldedInstructions[i - 1].OpCode != OpCodes.Sub)
+									continue;
+
+								RewriteToNop (i - 5);
+								RewriteToNop (i - 4);
+								RewriteToNop (i - 3);
+								RewriteCondition (i, instr, opint3 - offset);
 
 								changed = true;
 								continue;
@@ -1137,20 +1194,6 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			static bool IsConstantBranch (OpCode opCode, int operand)
-			{
-				switch (opCode.Code) {
-				case Code.Brfalse:
-				case Code.Brfalse_S:
-					return operand == 0;
-				case Code.Brtrue:
-				case Code.Brtrue_S:
-					return operand != 0;
-				}
-
-				throw new NotImplementedException (opCode.ToString ());
-			}
-
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
 				Debug.Assert (FoldedInstructions != null);
@@ -1219,15 +1262,34 @@ namespace Mono.Linker.Steps
 				ilprocessor = body.GetLinkerILProcessor ();
 			}
 
-			public void Process (List<int>? conditionInstrsToRemove, out List<Instruction>? sentinelNops)
+			public void Process (List<int>? conditionInstrsToRemove, List<(int, Instruction)>? conditionInstrsToReplace, out List<Instruction>? sentinelNops)
 			{
 				List<VariableDefinition>? removedVariablesReferences = null;
+				var instrs = Instructions;
+
+				//
+				// Process list of conditional instructions that were set to be replaced and not removed
+				//
+				if (conditionInstrsToReplace != null) {
+					foreach (var pair in conditionInstrsToReplace) {
+						var instr = instrs[pair.Item1];
+						switch (instr.OpCode.StackBehaviourPop) {
+						case StackBehaviour.Popi:
+							ILProcessor.Replace (pair.Item1, pair.Item2);
+							InstructionsReplaced++;
+							break;
+						default:
+							Debug.Fail ("not supported");
+							break;
+						}
+					}
+
+				}
 
 				//
 				// Initial pass which replaces unreachable instructions with nops or
 				// ret to keep the body verifiable
 				//
-				var instrs = Instructions;
 				for (int i = 0; i < instrs.Count; ++i) {
 					if (reachable[i])
 						continue;
