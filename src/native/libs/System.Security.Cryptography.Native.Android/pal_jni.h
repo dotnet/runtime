@@ -15,9 +15,6 @@
 
 extern JavaVM* gJvm;
 
-// byte[]
-extern jclass g_ByteArray;
-
 // java/io/ByteArrayInputStream
 extern jclass    g_ByteArrayInputStreamClass;
 extern jmethodID g_ByteArrayInputStreamCtor;
@@ -497,10 +494,6 @@ extern jmethodID g_TrustManagerFactoryGetTrustManagers;
 
 // javax/net/ssl/X509TrustManager
 extern jclass g_X509TrustManager;
-
-// java/security/cert/Certificate
-extern jclass    g_Certificate;
-extern jmethodID g_CertificateGetEncoded;
 
 // net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager
 extern jclass    g_RemoteCertificateVerificationProxyTrustManager;

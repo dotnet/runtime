@@ -6,9 +6,6 @@
 
 JavaVM* gJvm;
 
-// byte[]
-jclass    g_ByteArray;
-
 // java/io/ByteArrayInputStream
 jclass    g_ByteArrayInputStreamClass;
 jmethodID g_ByteArrayInputStreamCtor;
@@ -483,10 +480,6 @@ jmethodID g_TrustManagerFactoryGetTrustManagers;
 // javax/net/ssl/X509TrustManager
 jclass g_X509TrustManager;
 
-// java/security/cert/Certificate
-jclass    g_Certificate;
-jmethodID g_CertificateGetEncoded;
-
 // net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager
 jclass    g_RemoteCertificateVerificationProxyTrustManager;
 jmethodID g_RemoteCertificateVerificationProxyTrustManagerCtor;
@@ -679,8 +672,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     JNIEnv* env = GetJNIEnv();
 
     // cache some classes and methods while we're in the thread-safe JNI_OnLoad
-    g_ByteArray =   GetClassGRef(env, "[B");
-
     g_ByteArrayInputStreamClass =   GetClassGRef(env, "java/io/ByteArrayInputStream");
     g_ByteArrayInputStreamCtor =    GetMethod(env, false, g_ByteArrayInputStreamClass, "<init>", "([B)V");
     g_ByteArrayInputStreamReset =    GetMethod(env, false, g_ByteArrayInputStreamClass, "reset", "()V");
@@ -1078,9 +1069,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_TrustManagerFactoryGetTrustManagers =    GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
 
     g_X509TrustManager = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
-
-    g_Certificate =           GetClassGRef(env, "java/security/cert/Certificate");
-    g_CertificateGetEncoded = GetMethod(env, false, g_Certificate, "getEncoded", "()[B");
 
     g_RemoteCertificateVerificationProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager");
     g_RemoteCertificateVerificationProxyTrustManagerCtor = GetMethod(env, false, g_RemoteCertificateVerificationProxyTrustManager, "<init>", "(I)V");
