@@ -579,5 +579,5 @@ Crst PgoData
 End
 
 Crst StaticBoxInit
-    Unordered
+    AcquiredBefore LoaderHeap FrozenObjectHeap
 End

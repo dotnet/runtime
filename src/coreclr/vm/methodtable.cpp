@@ -3493,7 +3493,7 @@ void MethodTable::AllocateRegularStaticBoxes()
         {
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                AllocateRegularStaticBox(pField, pStaticBase);
+                AllocateRegularStaticBox(pField, pStaticBase + pField->GetOffset());
             }
             pField++;
         }
@@ -3501,7 +3501,7 @@ void MethodTable::AllocateRegularStaticBoxes()
     GCPROTECT_END();
 }
 
-void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* pStaticBase)
+void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress)
 {
     CONTRACTL
     {
@@ -3512,13 +3512,16 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* pStaticBase)
     }
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
-    Object** boxedStaticHandle = (Object**)(pStaticBase + pField->GetOffset());
+    Object** boxedStaticHandle = reinterpret_cast<Object**>(fieldAddress);
 
     if (VolatileLoad(boxedStaticHandle) != nullptr)
     {
         // Boxed static is already initialized
         return;
     }
+
+    // Grab field's type handle before we enter lock
+    TypeHandle th = pField->GetFieldTypeHandleThrowing();
 
     // Taking a lock since we might come here from multiple threads/places
     CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
@@ -3530,7 +3533,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* pStaticBase)
         return;
     }
 
-    TypeHandle  th = pField->GetFieldTypeHandleThrowing();
     MethodTable* pFieldMT = th.GetMethodTable();
     LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
     bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
