@@ -42,7 +42,6 @@
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.IO.cs" />
-    <Compile Include="System\Net\Security\RemoteCertificateVerification.cs" />
     <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
@@ -382,9 +381,9 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
-    <Compile Include="System\Net\Security\Pal.Android\TrustManagerProxy.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
+    <Compile Include="System\Net\Security\SslStream.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Android.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />

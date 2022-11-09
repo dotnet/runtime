@@ -4,16 +4,17 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
-class RemoteCertificateVerificationProxyTrustManager implements X509TrustManager {
+class DotnetProxyTrustManager implements X509TrustManager {
     private int dotnetHandle;
 
-    public RemoteCertificateVerificationProxyTrustManager(int dotnetHandle)
+    public DotnetProxyTrustManager(int dotnetHandle)
     {
         this.dotnetHandle = dotnetHandle;
     }
 
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        if (!verifyRemoteCertificate(dotnetHandle, chain)) {
+        android.util.Log.d("DOTNET", "checkClientTrusted");
+        if (!verifyRemoteCertificate(dotnetHandle)) {
             throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
         }
     }
@@ -21,7 +22,7 @@ class RemoteCertificateVerificationProxyTrustManager implements X509TrustManager
     public void checkServerTrusted(X509Certificate[] chain, String authType)
         throws CertificateException
     {
-        if (!verifyRemoteCertificate(dotnetHandle, chain)) {
+        if (!verifyRemoteCertificate(dotnetHandle)) {
             throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
         }
     }
@@ -30,5 +31,5 @@ class RemoteCertificateVerificationProxyTrustManager implements X509TrustManager
         return new X509Certificate[0];
     }
 
-    static native boolean verifyRemoteCertificate(int dotnetHandle, X509Certificate[] chain);
+    static native boolean verifyRemoteCertificate(int dotnetHandle);
 }

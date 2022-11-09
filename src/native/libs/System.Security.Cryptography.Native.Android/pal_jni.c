@@ -480,9 +480,9 @@ jmethodID g_TrustManagerFactoryGetTrustManagers;
 // javax/net/ssl/X509TrustManager
 jclass g_X509TrustManager;
 
-// net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager
-jclass    g_RemoteCertificateVerificationProxyTrustManager;
-jmethodID g_RemoteCertificateVerificationProxyTrustManagerCtor;
+// net/dot/android/crypto/DotnetProxyTrustManager
+jclass    g_DotnetProxyTrustManager;
+jmethodID g_DotnetProxyTrustManagerCtor;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -1070,8 +1070,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_X509TrustManager = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
 
-    g_RemoteCertificateVerificationProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager");
-    g_RemoteCertificateVerificationProxyTrustManagerCtor = GetMethod(env, false, g_RemoteCertificateVerificationProxyTrustManager, "<init>", "(I)V");
+    g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
+    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(I)V");
 
     return JNI_VERSION_1_6;
 }

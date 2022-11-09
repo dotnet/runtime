@@ -495,9 +495,9 @@ extern jmethodID g_TrustManagerFactoryGetTrustManagers;
 // javax/net/ssl/X509TrustManager
 extern jclass g_X509TrustManager;
 
-// net/dot/android/crypto/RemoteCertificateVerificationProxyTrustManager
-extern jclass    g_RemoteCertificateVerificationProxyTrustManager;
-extern jmethodID g_RemoteCertificateVerificationProxyTrustManagerCtor;
+// net/dot/android/crypto/DotnetProxyTrustManager
+extern jclass    g_DotnetProxyTrustManager;
+extern jmethodID g_DotnetProxyTrustManagerCtor;
 
 // Compatibility macros
 #if !defined (__mallocfunc)

@@ -27,17 +27,18 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
+            SslStream.JavaProxy? sslStreamProxy,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(verifier: null, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(sslStreamProxy, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            RemoteCertificateVerification verifier,
+            SslStream.JavaProxy? sslStreamProxy,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -46,7 +47,7 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(verifier, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(sslStreamProxy, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal Renegotiate(
@@ -171,7 +172,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            RemoteCertificateVerification? verifier,
+            SslStream.JavaProxy? sslStreamProxy,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -184,7 +185,7 @@ namespace System.Net.Security
 
                 if ((context == null) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(verifier, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(sslStreamProxy, sslAuthenticationOptions);
                     sslContext = context;
                 }
 

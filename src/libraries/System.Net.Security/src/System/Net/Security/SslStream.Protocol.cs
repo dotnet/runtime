@@ -32,6 +32,9 @@ namespace System.Net.Security
 
         private bool _refreshCredentialNeeded = true;
 
+        private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
+
         //
         // Protocol properties
         //
@@ -808,7 +811,18 @@ namespace System.Net.Security
 
                     if (_sslAuthenticationOptions.IsServer)
                     {
+// #if TARGET_ANDROID
+//                         // TODO remove
+//                         _sslAuthenticationOptions.CertValidationDelegate = (sender, cert, chain, errors) => {
+//                             Console.WriteLine($"server's CertValidationDelegate: {errors}, {cert}");
+//                             if (errors == SslPolicyErrors.RemoteCertificateNotAvailable) return false;
+//                             else return true;
+//                         };
+// #endif
                         status = SslStreamPal.AcceptSecurityContext(
+#if TARGET_ANDROID
+                                      new SslStream.JavaProxy(this),
+#endif
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -819,7 +833,7 @@ namespace System.Net.Security
                     {
                         status = SslStreamPal.InitializeSecurityContext(
 #if TARGET_ANDROID
-                                       verifier: new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions),
+                                       new SslStream.JavaProxy(this),
 #endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,
@@ -954,10 +968,10 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatusFlags)
+        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
-            chainStatusFlags = X509ChainStatusFlags.NoError;
+            chainStatus = X509ChainStatusFlags.NoError;
 
             bool success = false;
             X509Chain? chain = null;
@@ -977,14 +991,83 @@ namespace System.Net.Security
 
                 _remoteCertificate = certificate;
 
-                var remoteCertificateVerifier = new RemoteCertificateVerification(sslStream: this, _sslAuthenticationOptions);
-                success = remoteCertificateVerifier.Verify(_remoteCertificate, _securityContext!, _sslAuthenticationOptions.CertificateContext?.Trust, ref chain, out sslPolicyErrors, out X509ChainStatus[] chainStatus);
+                if (_remoteCertificate == null)
+                {
+                    if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+                else
+                {
+                    chain ??= new X509Chain();
+
+                    if (_sslAuthenticationOptions.CertificateChainPolicy != null)
+                    {
+                        chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
+                    }
+                    else
+                    {
+                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        if (trust != null)
+                        {
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            if (trust._store != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                            }
+                            if (trust._trustList != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            }
+                        }
+                    }
+
+                    // set ApplicationPolicy unless already provided.
+                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+                    {
+                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
+                    }
+
+                    sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                        _securityContext!,
+                        chain,
+                        _remoteCertificate,
+                        _sslAuthenticationOptions.CheckCertName,
+                        _sslAuthenticationOptions.IsServer,
+                        _sslAuthenticationOptions.TargetHost);
+                }
+
+                if (remoteCertValidationCallback != null)
+                {
+                    success = remoteCertValidationCallback(this, _remoteCertificate, chain, sslPolicyErrors);
+                }
+                else
+                {
+                    if (!RemoteCertRequired)
+                    {
+                        sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
+                    }
+
+                    success = (sslPolicyErrors == SslPolicyErrors.None);
+                }
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
+                    NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
+                }
+
                 if (!success)
                 {
-                    alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chainStatus);
-                    foreach (X509ChainStatus status in chainStatus)
+                    alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!);
+                    if (chain != null)
                     {
-                        chainStatusFlags |= status.Status;
+                        foreach (X509ChainStatus status in chain.ChainStatus)
+                        {
+                            chainStatus |= status.Status;
+                        }
                     }
                 }
             }
@@ -1008,14 +1091,14 @@ namespace System.Net.Security
             return success;
         }
 
-        private ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509ChainStatus[] chainStatus)
+        private ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
         {
             TlsAlertMessage alertMessage;
 
             switch (sslPolicyErrors)
             {
                 case SslPolicyErrors.RemoteCertificateChainErrors:
-                    alertMessage = GetAlertMessageFromChain(chainStatus);
+                    alertMessage = GetAlertMessageFromChain(chain);
                     break;
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
                     alertMessage = TlsAlertMessage.BadCertificate;
@@ -1079,9 +1162,9 @@ namespace System.Net.Security
             return new ProtocolToken(nextmsg, status);
         }
 
-        private static TlsAlertMessage GetAlertMessageFromChain(X509ChainStatus[] chainStates)
+        private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
         {
-            foreach (X509ChainStatus chainStatus in chainStates)
+            foreach (X509ChainStatus chainStatus in chain.ChainStatus)
             {
                 if (chainStatus.Status == X509ChainStatusFlags.NoError)
                 {
@@ -1126,6 +1209,55 @@ namespace System.Net.Security
             }
 
             return TlsAlertMessage.BadCertificate;
+        }
+
+        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain chain)
+        {
+            if (!NetEventSource.Log.IsEnabled())
+                return;
+
+            if (sslPolicyErrors != SslPolicyErrors.None)
+            {
+                NetEventSource.Log.RemoteCertificateError(this, SR.net_log_remote_cert_has_errors);
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
+                {
+                    NetEventSource.Log.RemoteCertificateError(this, SR.net_log_remote_cert_not_available);
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+                {
+                    NetEventSource.Log.RemoteCertificateError(this, SR.net_log_remote_cert_name_mismatch);
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+                {
+                    string chainStatusString = "ChainStatus: ";
+                    foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+                    {
+                        chainStatusString += "\t" + chainStatus.StatusInformation;
+                    }
+                    NetEventSource.Log.RemoteCertificateError(this, chainStatusString);
+                }
+            }
+
+            if (success)
+            {
+                if (remoteCertValidationCallback != null)
+                {
+                    NetEventSource.Log.RemoteCertDeclaredValid(this);
+                }
+                else
+                {
+                    NetEventSource.Log.RemoteCertHasNoErrors(this);
+                }
+            }
+            else
+            {
+                if (remoteCertValidationCallback != null)
+                {
+                    NetEventSource.Log.RemoteCertUserDeclaredInvalid(this);
+                }
+            }
         }
     }
 

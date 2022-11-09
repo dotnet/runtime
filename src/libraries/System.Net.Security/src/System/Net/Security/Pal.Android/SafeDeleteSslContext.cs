@@ -30,25 +30,21 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly TrustManagerProxy? _trustManagerProxy;
+        private readonly SslStream.JavaProxy? _sslStreamProxy;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
-        public Exception? CaughtException => _trustManagerProxy?.CaughtException;
+        public Exception? CaughtException => _sslStreamProxy?.CaughtException;
 
-        public SafeDeleteSslContext(RemoteCertificateVerification? verifier, SslAuthenticationOptions authOptions)
+        public SafeDeleteSslContext(SslStream.JavaProxy? sslStreamProxy, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            if (verifier is not null)
-            {
-                _trustManagerProxy = new TrustManagerProxy(verifier, securityContext: this);
-            }
-
+            _sslStreamProxy = sslStreamProxy;
             try
             {
-                _sslContext = CreateSslContext(_trustManagerProxy?.Handle, authOptions);
+                _sslContext = CreateSslContext(_sslStreamProxy?.Handle, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -73,7 +69,8 @@ namespace System.Net
                     sslContext.Dispose();
                 }
 
-                _trustManagerProxy?.Dispose();
+
+                _sslStreamProxy?.Dispose();
             }
 
             base.Dispose(disposing);

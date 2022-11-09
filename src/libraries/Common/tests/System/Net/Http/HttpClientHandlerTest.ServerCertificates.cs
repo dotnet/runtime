@@ -141,7 +141,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: Exception of type 'Interop+AndroidCrypto+SslException' was thrown.
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Configuration.Http.RemoteServer remoteServer, Uri url, bool checkRevocation)
         {
             HttpClientHandler handler = CreateHttpClientHandler();

@@ -12,7 +12,7 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
     abort_unless(dotnetHandle != 0, "invalid pointer to the .NET remote certificate validator");
 
     jobjectArray trustManagers = NULL;
-    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, trustManagerProxy);
+    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, dotnetProxyTrustManager);
 
     // string defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
     loc[defaultAlgorithm] = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetDefaultAlgorithm);
@@ -33,7 +33,7 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
     // boolean foundAndReplaced = false;
     // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new RemoteCertificateVerificationProxyTrustManager(dotnetHandle);
+    //     trustManagers[i] = new DotnetProxyTrustManager(dotnetHandle);
     //     foundAndReplaced = true;
     //     break;
     //   }
@@ -47,10 +47,10 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[trustManagerProxy] = (*env)->NewObject(env, g_RemoteCertificateVerificationProxyTrustManager, g_RemoteCertificateVerificationProxyTrustManagerCtor, (int)dotnetHandle);
+            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)dotnetHandle);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-            (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[trustManagerProxy]);
+            (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[dotnetProxyTrustManager]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             foundAndReplaced = true;
@@ -67,19 +67,9 @@ cleanup:
     return trustManagers;
 }
 
-jboolean Java_net_dot_android_crypto_RemoteCertificateVerificationProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, intptr_t dotnetHandle, jobjectArray certificates)
+jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
+    JNIEnv* env, jobject thisHandle, intptr_t dotnetHandle)
 {
     abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");
-
-    size_t count = (size_t)(*env)->GetArrayLength(env, certificates);
-    jobject* ptrs = xcalloc(count, sizeof(jobject));
-
-    for (size_t i = 0; i < count; i++)
-        ptrs[i] = ToGRef(env, (*env)->GetObjectArrayElement(env, certificates, (jsize)i));
-
-    bool isAccepted = verifyRemoteCertificate(dotnetHandle, (int32_t)count, ptrs);
-
-    free(ptrs);
-    return isAccepted ? JNI_TRUE : JNI_FALSE;
+    return verifyRemoteCertificate(dotnetHandle);
 }
