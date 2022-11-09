@@ -196,7 +196,7 @@ namespace System.Security.Cryptography
                 // has been observed in Windows 10 and most recently observed in Windows 11 22H2.
                 // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
                 // What does work is the ECCCurveName.
-                CngAlgorithmGroup algorithmGroup = AlgorithmGroup;
+                CngAlgorithmGroup? algorithmGroup = AlgorithmGroup;
 
                 if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
                     (algorithmGroup == CngAlgorithmGroup.ECDiffieHellman || algorithmGroup == CngAlgorithmGroup.ECDsa))
