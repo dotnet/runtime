@@ -18022,16 +18022,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         }
                     }
                 }
-                else if (tree->TypeIs(TYP_REF) && base->IsCnsIntOrI())
+                else if (tree->TypeIs(TYP_REF) && base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
                 {
-                    if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL) &&
-                        (base->AsIntCon()->gtFieldSeq != nullptr))
+                    FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
+                    if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                     {
                         CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
-                        if (fldHandle != nullptr)
-                        {
-                            objClass = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
-                        }
+                        objClass = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                     }
                 }
             }

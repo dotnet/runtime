@@ -494,6 +494,7 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
+        m_fieldHandleAddressMap(nullptr),
         m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
         m_pThread(GetThreadNULLOk()),
@@ -523,6 +524,11 @@ public:
             }
             delete m_pJitHandles;
             m_pJitHandles = nullptr;
+        }
+
+        if (m_fieldHandleAddressMap != nullptr)
+        {
+            delete m_fieldHandleAddressMap;
         }
 #endif
     }
@@ -585,6 +591,13 @@ public:
 #endif
 
 protected:
+    struct FieldAddress
+    {
+        void* address;
+        bool  frozen;
+    };
+    typedef MapSHash<CORINFO_FIELD_HANDLE, FieldAddress> FieldHandleAddressMap;
+    FieldHandleAddressMap*  m_fieldHandleAddressMap;
     SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions

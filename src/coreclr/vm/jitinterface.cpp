@@ -1557,23 +1557,43 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 if (!pFieldMT->IsClassInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
 
-                GCX_COOP();
-
-                pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
-                pResult->fieldLookup.accessType = IAT_VALUE;
-
-                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                if (m_fieldHandleAddressMap == nullptr)
                 {
-                    Object* frozenObj = *(Object**)pResult->fieldLookup.addr;
+                    m_fieldHandleAddressMap = new FieldHandleAddressMap();
+                }
 
-                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
-                    // for structs containing gc handles
-                    if (frozenObj != nullptr && !frozenObj->GetMethodTable()->ContainsPointers() &&
-                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                // For boxed statics, depending on field's owning type's initialization state, we return either
+                // address of its pinned handle or direct address of the object holding the boxed struct
+                // in case if it's frozen. However, we don't want to confuse JIT and send it different addresses
+                // for the same field as part of the same JIT compilation, hence, the cache.
+                FieldAddress fldAddr;
+                if (!m_fieldHandleAddressMap->Lookup(pResolvedToken->hField, &fldAddr))
+                {
+                    GCX_COOP();
+
+                    fldAddr.address = pField->GetStaticAddressHandle((void*)pField->GetBase());
+                    fldAddr.frozen = false;
+
+                    if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
                     {
-                        pResult->fieldLookup.addr = frozenObj->GetData();
-                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                        Object* frozenObj = VolatileLoad((Object**)fldAddr.address);
+
+                        // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                        // for structs containing gc handles
+                        if (frozenObj != nullptr && !frozenObj->GetMethodTable()->ContainsPointers() &&
+                            GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                        {
+                            fldAddr.address = frozenObj->GetData();
+                            fldAddr.frozen = true;
+                        }
                     }
+                }
+
+                pResult->fieldLookup.addr = fldAddr.address;
+                pResult->fieldLookup.accessType = IAT_VALUE;
+                if (fldAddr.frozen)
+                {
+                    fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
                 }
             }
         }
