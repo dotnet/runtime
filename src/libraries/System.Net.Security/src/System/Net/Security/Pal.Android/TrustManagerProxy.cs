@@ -58,14 +58,13 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe bool VerifyRemoteCertificate(
             IntPtr trustManagerProxyHandle,
-            int certificatesCount,
-            int* certificateLengths,
-            byte* rawCertificates)
+            int certificateCount,
+            IntPtr* certificatePtrs)
         {
             var proxy = (TrustManagerProxy?)GCHandle.FromIntPtr(trustManagerProxyHandle).Target;
             Debug.Assert(proxy is not null);
 
-            X509Certificate2[] certificates = ConvertCertificates(certificatesCount, certificateLengths, rawCertificates);
+            X509Certificate2[] certificates = ConvertCertificates(certificateCount, certificatePtrs);
             try
             {
                 return proxy.Verify(certificates);
@@ -114,17 +113,13 @@ namespace System.Net
             }
         }
 
-        private static unsafe X509Certificate2[] ConvertCertificates(int count, int* lengths, byte* rawData)
+        private static unsafe X509Certificate2[] ConvertCertificates(int count, IntPtr* certificatePtrs)
         {
             var certificates = new X509Certificate2[count];
-
-            int offset = 0;
             for (int i = 0; i < count; i++)
             {
-                var rawCertificate = new ReadOnlySpan<byte>(rawData, offset + lengths[i]).Slice(offset);
-                offset += lengths[i];
-
-                certificates[i] = new X509Certificate2(rawCertificate);
+                using var handle = new SafeX509Handle(certificatePtrs[i]);
+                certificates[i] = new X509Certificate2(handle.DangerousGetHandle());
             }
 
             return certificates;

@@ -72,78 +72,14 @@ jboolean Java_net_dot_android_crypto_RemoteCertificateVerificationProxyTrustMana
 {
     abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");
 
-    INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, trustManagerProxy, certificate, encodedCertificate, encodedCertificates);
+    size_t count = (size_t)(*env)->GetArrayLength(env, certificates);
+    jobject* ptrs = xcalloc(count, sizeof(jobject));
 
-    bool isAccepted = false;
-    uint8_t* rawData = NULL;
-    int32_t* lengths = NULL;
+    for (size_t i = 0; i < count; i++)
+        ptrs[i] = ToGRef(env, (*env)->GetObjectArrayElement(env, certificates, (jsize)i));
 
-    size_t certificateCount = (size_t)(*env)->GetArrayLength(env, certificates);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    bool isAccepted = verifyRemoteCertificate(dotnetHandle, (int32_t)count, ptrs);
 
-    lengths = (int*)xcalloc(certificateCount, sizeof(int32_t));
-    size_t totalLength = 0;
-
-    loc[encodedCertificates] = make_java_object_array(env, (int32_t)certificateCount, g_ByteArray, NULL);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    for (size_t i = 0; i < certificateCount; i++)
-    {
-        // X509Certificate certificate = certificates[i];
-        // byte[] encodedCertificate = certificate.getEncoded();
-        // int length = encodedCertificate.length;
-        // lengths[i] = length;
-        // totalLength += length;
-        // encodedCertificates[i] = encodedCertificate;
-
-        loc[certificate] = (*env)->GetObjectArrayElement(env, certificates, (jsize)i);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        loc[encodedCertificate] = (*env)->CallObjectMethod(env, loc[certificate], g_CertificateGetEncoded);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        jsize length = (*env)->GetArrayLength(env, loc[encodedCertificate]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        lengths[i] = (int32_t)length;
-        totalLength += (size_t)lengths[i];
-
-        (*env)->SetObjectArrayElement(env, loc[encodedCertificates], (jsize)i, loc[encodedCertificate]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        ReleaseLRef(env, loc[certificate]);
-        ReleaseLRef(env, loc[encodedCertificate]);
-        loc[certificate] = NULL;
-        loc[encodedCertificate] = NULL;
-    }
-
-    rawData = (uint8_t*)xmalloc(totalLength * sizeof(uint8_t));
-    int32_t offset = 0;
-
-    for (size_t i = 0; i < certificateCount; i++)
-    {
-        loc[encodedCertificate] = (*env)->GetObjectArrayElement(env, loc[encodedCertificates], (jsize)i);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        (*env)->GetByteArrayRegion(env, loc[encodedCertificate], 0, lengths[i], (jbyte*)&rawData[offset]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        offset += lengths[i];
-
-        ReleaseLRef(env, loc[encodedCertificate]);
-        loc[encodedCertificate] = NULL;
-    }
-
-    isAccepted = verifyRemoteCertificate(dotnetHandle, (int32_t)certificateCount, lengths, rawData);
-
-cleanup:
-    if (rawData != NULL)
-        free(rawData);
-
-    if (lengths != NULL)
-        free(lengths);
-
-    RELEASE_LOCALS(loc, env);
-
+    free(ptrs);
     return isAccepted ? JNI_TRUE : JNI_FALSE;
 }
