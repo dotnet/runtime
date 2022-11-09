@@ -37,21 +37,9 @@ namespace Microsoft.Interop.JavaScript
         {
             // Collect all methods adorned with JSImportAttribute
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == Constants.JSImportAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
-                .Where(
-                    static modelData => modelData is not null);
+                .ForAttributeWithMetadataName(Constants.JSImportAttribute,
+                   static (node, ct) => node is MethodDeclarationSyntax,
+                   static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol });
 
             // Validate if attributed methods can have source generated
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
