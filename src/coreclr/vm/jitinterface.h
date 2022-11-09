@@ -585,13 +585,6 @@ public:
 #endif
 
 protected:
-    struct FieldAddress
-    {
-        void* address;
-        bool  frozen;
-    };
-    typedef MapSHash<CORINFO_FIELD_HANDLE, FieldAddress> FieldHandleAddressMap;
-    FieldHandleAddressMap*  m_fieldHandleAddressMap;
     SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
