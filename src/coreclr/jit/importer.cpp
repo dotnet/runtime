@@ -4509,7 +4509,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
 // TODO-CQ: enable this optimization for 32 bit targets.
 #ifdef TARGET_64BIT
-            if (!isBoxedStatic && (lclTyp == TYP_REF))
+            if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_ADDRESS) == 0))
             {
                 bool isSpeculative = true;
                 if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=

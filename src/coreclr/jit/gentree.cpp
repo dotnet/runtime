@@ -18022,8 +18022,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         }
                     }
                 }
-                else if (tree->TypeIs(TYP_REF) && base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+                else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
                 {
+                    // Check if we have IND(ICON_HANDLE) that represents a static field
                     FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
                     if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                     {
