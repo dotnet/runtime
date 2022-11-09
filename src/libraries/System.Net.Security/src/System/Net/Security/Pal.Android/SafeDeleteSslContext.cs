@@ -36,7 +36,7 @@ namespace System.Net
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
-        public Exception? CaughtException => _sslStreamProxy?.CaughtException;
+        public SslStream.JavaProxy.RemoteCertificateValidationResult? ValidationResult => _sslStreamProxy?.ValidationResult;
 
         public SafeDeleteSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)

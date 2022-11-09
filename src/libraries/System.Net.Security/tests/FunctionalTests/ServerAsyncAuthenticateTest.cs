@@ -197,7 +197,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_VerificationDelegate_Success()
         {
             bool validationCallbackCalled = false;
@@ -230,7 +229,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_ConstructorVerificationDelegate_Success()
         {
             bool validationCallbackCalled = false;

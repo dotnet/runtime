@@ -314,7 +314,7 @@ namespace System.Net.Security
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, message.Status);
 
 #if TARGET_ANDROID
-                        if (_securityContext?.CaughtException is Exception caughtException)
+                        if (_securityContext?.ValidationResult?.CaughtException is Exception caughtException)
                         {
                             throw new AuthenticationException(SR.net_auth_SSPI, caughtException);
                         }
@@ -510,17 +510,27 @@ namespace System.Net.Security
                 return true;
             }
 
-#if !TARGET_ANDROID
+#if TARGET_ANDROID
+            // If the remote certificate verification has already been invoked from Java TrustManager's callback
+            // we shouldn't run it repeatedly and honor the existing validation result.
+            // It's possible that the validation result isn't set (for example the client didn't send a certificate)
+            // in which case we still need to run the verification.
+            if (_securityContext?.ValidationResult is SslStream.JavaProxy.RemoteCertificateValidationResult result)
+            {
+                sslPolicyErrors = result.SslPolicyErrors;
+                chainStatus = result.ChainStatus;
+
+                _handshakeCompleted = result.IsValid;
+                return result.IsValid;
+            }
+#endif
+
             if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
             }
-#else
-            // on Android, the verification has already been called from Java's TrustManager callbacks
-            sslPolicyErrors = SslPolicyErrors.None;
-            chainStatus = X509ChainStatusFlags.NoError;
-#endif
+
             _handshakeCompleted = true;
             return true;
         }
@@ -831,6 +841,7 @@ namespace System.Net.Security
                     }
 
                     SecurityStatusPal status = DecryptData(payloadBytes);
+                    Console.WriteLine($"status.ErrorCode = {status.ErrorCode}");
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
