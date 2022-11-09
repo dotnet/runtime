@@ -5325,6 +5325,18 @@ bool OptIfConversionDsc::optIfConvert()
 //
 PhaseStatus Compiler::optIfConversion()
 {
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+#if defined(DEBUG)
+    if (JitConfig.JitDoIfConversion() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
     bool madeChanges = false;
 
     // This phase does not repect SSA: assignments are deleted/moved.

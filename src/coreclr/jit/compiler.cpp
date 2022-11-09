@@ -4888,22 +4888,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        bool doIfConversion = true;
-
-#if defined(OPT_CONFIG)
-        doIfConversion = (JitConfig.JitDoIfConversion() != 0);
-#endif
-
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
 
-        if (doIfConversion)
-        {
-            // If conversion
-            //
-            DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-        }
+        // If conversion
+        //
+        DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
         // Optimize block order
         //
