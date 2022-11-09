@@ -12,7 +12,7 @@ function exportMemory(memory) {
 }
 
 async function importMemory() {
-    const response = await fetch("/memory.data");
+    const response = await fetch("/memory.dat");
     const buffer = await response.arrayBuffer();
     return new Int8Array(buffer);
 }
