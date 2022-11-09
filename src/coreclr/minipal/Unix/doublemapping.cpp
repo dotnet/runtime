@@ -200,8 +200,9 @@ bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart
     int fd = (int)(size_t)mapperHandle;
     if (mmap(pStart, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, offset) != MAP_FAILED)
     {
-        memset(pStart, 0, size);
+        return false;
     }
+    memset(pStart, 0, size);
 #endif // TARGET_OSX
     return munmap(pStart, size) != -1;
 }
