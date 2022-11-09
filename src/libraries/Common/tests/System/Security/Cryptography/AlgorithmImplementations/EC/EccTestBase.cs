@@ -256,12 +256,8 @@ namespace System.Security.Cryptography.Tests
             {
                 for (int i = 0; i < str.Length; i++)
                 {
-                    destination[i] = str[i] switch
-                    {
-                        char c and >= 'A' and <= 'Z' => char.ToLowerInvariant(c),
-                        char c and >= 'a' and <= 'z' => char.ToUpperInvariant(c),
-                        char c => c
-                    };
+                    char c = str[i];
+                    destination[i] = char.IsAsciiLetter(c) ? (char)(c ^ 0b0100000) : c;
                 }
             });
         }

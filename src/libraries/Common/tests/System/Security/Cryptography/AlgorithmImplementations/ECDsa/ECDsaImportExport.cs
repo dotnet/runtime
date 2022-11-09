@@ -384,12 +384,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P384") };
                 yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P521") };
 
-                if (ECDiffieHellmanFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160r1.Oid))
+                if (ECDsaFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160r1.Oid))
                 {
                     yield return new object[] { ECCurve.NamedCurves.brainpoolP160r1 };
                 }
 
-                if (ECDiffieHellmanFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160t1.Oid))
+                if (ECDsaFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160t1.Oid))
                 {
                     yield return new object[] { ECCurve.NamedCurves.brainpoolP160t1 };
                 }
