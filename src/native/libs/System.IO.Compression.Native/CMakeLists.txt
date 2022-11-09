@@ -44,7 +44,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    if (NOT CLR_CMAKE_TARGET_WASI)
+        # TODOWASI
+        set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    endif ()
 
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
