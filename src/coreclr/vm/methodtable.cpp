@@ -3511,7 +3511,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* pStaticBase)
         CONTRACTL_END;
     }
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
-    _ASSERT(pStaticBase == GetGCStaticsBasePointer());
 
     Object** boxedStaticHandle = (Object**)(pStaticBase + pField->GetOffset());
 
