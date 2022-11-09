@@ -2,14 +2,14 @@
 
 static RemoteCertificateValidationCallback verifyRemoteCertificate;
 
-void AndroidCryptoNative_RegisterTrustManagerCallback(RemoteCertificateValidationCallback callback)
+void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
     verifyRemoteCertificate = callback;
 }
 
-jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dotnetHandle)
+jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamProxyHandle)
 {
-    abort_unless(dotnetHandle != 0, "invalid pointer to the .NET remote certificate validator");
+    abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET remote certificate validator");
 
     jobjectArray trustManagers = NULL;
     INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, dotnetProxyTrustManager);
@@ -33,7 +33,7 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
     // boolean foundAndReplaced = false;
     // for (int i = 0; i < trustManagers.length; i++) {
     //   if (trustManagers[i] instanceof X509TrustManager) {
-    //     trustManagers[i] = new DotnetProxyTrustManager(dotnetHandle);
+    //     trustManagers[i] = new DotnetProxyTrustManager(sslStreamProxyHandle);
     //     foundAndReplaced = true;
     //     break;
     //   }
@@ -47,7 +47,7 @@ jobjectArray InitTrustManagersWithCustomValidatorProxy(JNIEnv* env, intptr_t dot
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)dotnetHandle);
+            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)sslStreamProxyHandle);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[dotnetProxyTrustManager]);
@@ -68,8 +68,8 @@ cleanup:
 }
 
 jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, intptr_t dotnetHandle)
+    JNIEnv* env, jobject thisHandle, intptr_t sslStreamProxyHandle)
 {
     abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");
-    return verifyRemoteCertificate(dotnetHandle);
+    return verifyRemoteCertificate(sslStreamProxyHandle);
 }

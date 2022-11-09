@@ -27,7 +27,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
-            SslStream.JavaProxy? sslStreamProxy,
+            SslStream.JavaProxy sslStreamProxy,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -38,7 +38,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            SslStream.JavaProxy? sslStreamProxy,
+            SslStream.JavaProxy sslStreamProxy,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -172,7 +172,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            SslStream.JavaProxy? sslStreamProxy,
+            SslStream.JavaProxy sslStreamProxy,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,

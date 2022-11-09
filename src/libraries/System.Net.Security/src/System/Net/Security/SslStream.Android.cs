@@ -22,7 +22,7 @@ namespace System.Net.Security
 
             public unsafe JavaProxy(SslStream sslStream)
             {
-                RegisterTrustManagerCallback();
+                RegisterRemoteCertificateValidationCallback();
 
                 _sslStream = sslStream;
                 _handle = GCHandle.Alloc(this);
@@ -35,13 +35,13 @@ namespace System.Net.Security
 
             public Exception? CaughtException { get; private set; }
 
-            private static unsafe void RegisterTrustManagerCallback()
+            private static unsafe void RegisterRemoteCertificateValidationCallback()
             {
                 lock (s_initializationLock)
                 {
                     if (!s_initialized)
                     {
-                        Interop.AndroidCrypto.RegisterTrustManagerCallback(&VerifyRemoteCertificate);
+                        Interop.AndroidCrypto.RegisterRemoteCertificateValidationCallback(&VerifyRemoteCertificate);
                         s_initialized = true;
                     }
                 }

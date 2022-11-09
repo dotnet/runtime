@@ -325,7 +325,7 @@ cleanup:
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t trustManagerProxyHandle)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
 {
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
@@ -336,10 +336,10 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t trustManagerProxyHandle)
     if (!loc[sslContext])
         goto cleanup;
 
-    if (trustManagerProxyHandle != 0)
+    if (sslStreamProxyHandle != 0)
     {
         // Init trust managers
-        loc[trustManagers] = InitTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
+        loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
         if (!loc[trustManagers])
             goto cleanup;
     }
@@ -420,7 +420,7 @@ cleanup:
     return ret;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t trustManagerProxyHandle,
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStreamProxyHandle,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -460,10 +460,10 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t trustMan
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (trustManagerProxyHandle != 0)
+    if (sslStreamProxyHandle != 0)
     {
-        // TrustManager[] trustMangers = InitTrustManagersWithCustomValidatorProxy(trustManagerProxyHandle);
-        loc[trustManagers] = InitTrustManagersWithCustomValidatorProxy(env, trustManagerProxyHandle);
+        // TrustManager[] trustMangers = InitTrustManagersWithDotnetProxy(sslStreamProxyHandle);
+        loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
         if (!loc[trustManagers])
             goto cleanup;
     }

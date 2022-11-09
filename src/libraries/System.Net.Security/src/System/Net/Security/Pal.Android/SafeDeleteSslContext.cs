@@ -38,13 +38,13 @@ namespace System.Net
         public SafeSslHandle SslContext => _sslContext;
         public Exception? CaughtException => _sslStreamProxy?.CaughtException;
 
-        public SafeDeleteSslContext(SslStream.JavaProxy? sslStreamProxy, SslAuthenticationOptions authOptions)
+        public SafeDeleteSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
             _sslStreamProxy = sslStreamProxy;
             try
             {
-                _sslContext = CreateSslContext(_sslStreamProxy?.Handle, authOptions);
+                _sslContext = CreateSslContext(_sslStreamProxy, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -151,11 +151,11 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(IntPtr? trustManagerProxyHandle, SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(trustManagerProxyHandle ?? IntPtr.Zero);
+                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -175,8 +175,7 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(
-                trustManagerProxyHandle ?? IntPtr.Zero, keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
