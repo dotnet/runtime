@@ -60,7 +60,7 @@ extends:
       - template: /eng/pipelines/common/evaluate-default-paths.yml
 
     #
-    # Build Release config vertical for Windows, Linux, Linux musl and OSX
+    # Build Release config vertical for Windows, Linux and OSX
     #
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:

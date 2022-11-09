@@ -17,6 +17,7 @@
     <IncludeJsonFilesInPackage>true</IncludeJsonFilesInPackage>
     <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
     <!-- Recommended by arcade for tools projects. generates an assembly version that includes patch number derived from date and build revision -->
+    <!-- Set AutoGenerateAssemblyVersion to false until runtime uses illink live bits and removes dependencies https://github.com/dotnet/runtime/issues/78076 -->
     <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
     <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
