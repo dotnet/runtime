@@ -494,7 +494,6 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
-        m_fieldHandleAddressMap(nullptr),
         m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
         m_pThread(GetThreadNULLOk()),
@@ -524,11 +523,6 @@ public:
             }
             delete m_pJitHandles;
             m_pJitHandles = nullptr;
-        }
-
-        if (m_fieldHandleAddressMap != nullptr)
-        {
-            delete m_fieldHandleAddressMap;
         }
 #endif
     }

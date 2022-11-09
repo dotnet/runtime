@@ -3484,7 +3484,6 @@ void MethodTable::AllocateRegularStaticBoxes()
     PTR_BYTE pStaticBase = GetGCStaticsBasePointer();
 
     GCPROTECT_BEGININTERIOR(pStaticBase);
-
     {
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
@@ -3492,34 +3491,59 @@ void MethodTable::AllocateRegularStaticBoxes()
 
         while (pField < pFieldEnd)
         {
-            _ASSERTE(pField->IsStatic());
-
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                TypeHandle  th = pField->GetFieldTypeHandleThrowing();
-                MethodTable* pFieldMT = th.GetMethodTable();
-
-                LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-
-                bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-                if (pFieldMT->RequiresAlign8())
-                {
-                    // 64bit alignment is not yet supported in FOH for 32bit targets
-                    canBeFrozen = false;
-                }
-#endif
-
-                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
-
-                SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
+                AllocateRegularStaticBox(pField, pStaticBase);
             }
-
             pField++;
         }
     }
     GCPROTECT_END();
+}
+
+void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* pStaticBase)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        CONTRACTL_END;
+    }
+    _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
+    _ASSERT(pStaticBase == GetGCStaticsBasePointer());
+
+    Object** boxedStaticHandle = (Object**)(pStaticBase + pField->GetOffset());
+
+    if (VolatileLoad(boxedStaticHandle) != nullptr)
+    {
+        // Boxed static is already initialized
+        return;
+    }
+
+    // Taking a lock since we might come here from multiple threads/places
+    CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
+
+    // double-checked locking
+    if (VolatileLoad(boxedStaticHandle) != nullptr)
+    {
+        // Boxed static is already initialized
+        return;
+    }
+
+    TypeHandle  th = pField->GetFieldTypeHandleThrowing();
+    MethodTable* pFieldMT = th.GetMethodTable();
+    LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+    bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (pFieldMT->RequiresAlign8())
+    {
+        // 64bit alignment is not yet supported in FOH for 32bit targets
+        canBeFrozen = false;
+    }
+#endif
+    OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
+    SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
 }
 
 //==========================================================================================

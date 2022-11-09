@@ -577,3 +577,7 @@ End
 Crst PgoData
     AcquiredBefore LoaderHeap
 End
+
+Crst StaticBoxInit
+    Unordered
+End
