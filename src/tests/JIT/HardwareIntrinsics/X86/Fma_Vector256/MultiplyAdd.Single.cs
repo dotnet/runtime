@@ -19,6 +19,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
 {
     public static partial class Program
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/78079", TestPlatforms.OSX)]
         [Fact]
         public static void MultiplyAddSingle()
         {
