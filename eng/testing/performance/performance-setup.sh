@@ -255,7 +255,7 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
-cleaned_branch_name="main"
+cleaned_branch_name="release/6.0"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
 fi

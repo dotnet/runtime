@@ -97,7 +97,7 @@ if ($iOSMono) {
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CleanedBranchName = "main"
+$CleanedBranchName = "release/6.0"
 if($Branch.Contains("refs/heads/release"))
 {
     $CleanedBranchName = $Branch.replace('refs/heads/', '')
