@@ -26,8 +26,12 @@
 #include <sys/sysmacros.h>
 #endif
 #include <sys/uio.h>
+#if HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
+#if HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 #include <unistd.h>
 #include <limits.h>
 #if HAVE_FCOPYFILE
@@ -42,7 +46,7 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
-#elif !HAVE_NON_LEGACY_STATFS // SunOS
+#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
 #include <sys/vfs.h>
@@ -70,7 +74,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 // Ensure FICLONE is defined for all Linux builds.
 #ifndef FICLONE
 #define FICLONE _IOW(0x94, 9, int)
-#endif
+#endif /* __linux__ */
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
@@ -93,15 +97,16 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 
 #endif
 
+#if !defined(TARGET_WASI)
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
 #define lstat_ lstat64
-#else
+#else /* HAVE_STAT64 */
 #define stat_ stat
 #define fstat_ fstat
 #define lstat_ lstat
-#endif
+#endif  /* HAVE_STAT64 */
 
 // These numeric values are specified by POSIX.
 // Validate that our definitions match.
@@ -132,6 +137,7 @@ c_static_assert(PAL_S_IFDIR == S_IFDIR);
 c_static_assert(PAL_S_IFREG == S_IFREG);
 c_static_assert(PAL_S_IFLNK == S_IFLNK);
 c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
+#endif /* TARGET_WASI */
 
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
@@ -139,7 +145,7 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // WebAssembly (BROWSER) has dirent d_type but is not correct
 // by returning UNKNOWN the managed code properly stats the file
 // to detect if entry is directory or not.
-#if defined(DT_UNKNOWN) || defined(TARGET_WASM)
+#if (defined(DT_UNKNOWN) || defined(TARGET_WASM)) && !defined(TARGET_WASI)
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -187,6 +193,7 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
+#if !defined(TARGET_WASI)
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
@@ -1857,3 +1864,345 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     assert(count >= -1);
     return count;
 }
+
+#else /* TARGET_WASI */
+
+int32_t SystemNative_Stat(const char* path, FileStatus* output)
+{
+    return -1;
+}
+
+int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
+{
+    return -1;
+}
+
+int32_t SystemNative_LStat(const char* path, FileStatus* output)
+{
+    return -1;
+}
+
+intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+{
+    return -1;
+}
+
+int32_t SystemNative_Close(intptr_t fd)
+{
+    return -1;
+}
+
+intptr_t SystemNative_Dup(intptr_t oldfd)
+{
+    return -1;
+}
+
+int32_t SystemNative_Unlink(const char* path)
+{
+    return -1;
+}
+
+intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
+{
+    return -1;
+}
+
+int32_t SystemNative_ShmUnlink(const char* name)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetReadDirRBufferSize(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+{
+    return -1;
+}
+
+DIR* SystemNative_OpenDir(const char* path)
+{
+    return NULL;
+}
+
+int32_t SystemNative_CloseDir(DIR* dir)
+{
+    return -1;
+}
+
+int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlGetFD(intptr_t fd)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlCanGetSetPipeSz(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlGetPipeSz(intptr_t fd)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
+{
+    return -1;
+}
+
+int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
+{
+    return -1;
+}
+
+int32_t SystemNative_MkDir(const char* path, int32_t mode)
+{
+    return -1;
+}
+
+int32_t SystemNative_ChMod(const char* path, int32_t mode)
+{
+    return -1;
+}
+
+int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
+{
+    return -1;
+}
+
+int32_t SystemNative_FSync(intptr_t fd)
+{
+    return -1;
+}
+
+int32_t SystemNative_FLock(intptr_t fd, int32_t operation)
+{
+    return -1;
+}
+
+int32_t SystemNative_ChDir(const char* path)
+{
+    return -1;
+}
+
+int32_t SystemNative_Access(const char* path, int32_t mode)
+{
+    return -1;
+}
+
+int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
+{
+    return -1;
+}
+
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    return -1;
+}
+
+void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
+{
+}
+
+int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
+{
+    return -1;
+}
+
+int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
+{
+    return -1;
+}
+
+char* SystemNative_MkdTemp(char* pathTemplate)
+{
+    return NULL;
+}
+
+intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
+{
+    return -1;
+}
+
+void* SystemNative_MMap(void* address,
+                      uint64_t length,
+                      int32_t protection, // bitwise OR of PAL_PROT_*
+                      int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+                      intptr_t fd,
+                      int64_t offset)
+{
+    return NULL;
+}
+
+int32_t SystemNative_MUnmap(void* address, uint64_t length)
+{
+    return -1;
+}
+
+int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
+{
+    return -1;
+}
+
+int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
+{
+    return -1;
+}
+
+int64_t SystemNative_SysConf(int32_t name)
+{
+    return -1;
+}
+
+int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
+{
+    return -1;
+}
+
+int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
+{
+    return -1;
+}
+
+int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice)
+{
+    return -1;
+}
+
+int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
+{
+    return -1;
+}
+
+int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
+{
+    return -1;
+}
+
+int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
+{
+    return -1;
+}
+
+int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
+{
+    return -1;
+}
+
+int32_t SystemNative_RmDir(const char* path)
+{
+    return -1;
+}
+
+void SystemNative_Sync(void)
+{
+}
+
+int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
+{
+    return -1;
+}
+
+int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
+{
+    return -1;
+}
+
+intptr_t SystemNative_INotifyInit(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
+{
+    return -1;
+}
+
+int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
+{
+    return -1;
+}
+
+char* SystemNative_RealPath(const char* path)
+{
+    return NULL;
+}
+
+uint32_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+    return 0xFFFFFFFF;
+}
+
+int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
+{
+    return -1;
+}
+
+int32_t SystemNative_LChflags(const char* path, uint32_t flags)
+{
+    return -1;
+}
+
+int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
+{
+    return -1;
+}
+
+int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
+{
+    return false;
+}
+
+int32_t SystemNative_CanGetHiddenFlag(void)
+{
+    return false;
+}
+
+int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+{
+    return -1;
+}
+
+int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    return -1;
+}
+
+int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    return -1;
+}
+
+int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    return -1;
+}
+
+int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    return -1;
+}
+
+#endif /* TARGET_WASI */

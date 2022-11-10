@@ -5,6 +5,7 @@ project(mono-wasi-runtime C)
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
 option(DISABLE_WASM_USER_THREADS "defined if the build does not allow user threads to be created in a multithreaded build" OFF)
 
+set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 add_executable(dotnet driver.c stubs.c synthetic-pthread.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
@@ -12,7 +13,7 @@ target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${
 
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLAGS})
 
-target_link_libraries(dotnet.wasm
+target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
@@ -35,4 +36,4 @@ set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}${CMAKE_CXX_FLAGS}")
 
 #TODOWASI wasm-opt
 
-configure_file(../include/wasm-config.h.in include/wasm/wasm-config.h)
+configure_file(../mono-include/wasm-config.h.in include/wasm/wasm-config.h)

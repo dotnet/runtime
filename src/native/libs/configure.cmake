@@ -875,6 +875,38 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
+check_include_files(
+    "syslog.h"
+    HAVE_SYSLOG_H)
+
+check_include_files(
+    "pwd.h"
+    HAVE_PWD_H)
+
+check_include_files(
+    "termios.h"
+    HAVE_TERMIOS_H)
+
+check_include_files(
+    "dlfcn.h"
+    HAVE_DLFCN_H)
+
+check_include_files(
+    "sys/wait.h"
+    HAVE_SYS_WAIT_H)
+
+check_include_files(
+    "sys/statvfs.h"
+    HAVE_SYS_STATVFS_H)
+
+check_include_files(
+    "net/if.h"
+    HAVE_NET_IF_H)
+
+check_include_files(
+    "pthread.h"
+    HAVE_PTHREAD_H)
+
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)

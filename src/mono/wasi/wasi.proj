@@ -90,11 +90,14 @@
 
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
-      <_WasiCompileFlags Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
-      <_WasiCompileFlags Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
-      <_WasiCompileFlags Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
-      <_WasiCompileFlags Condition="'$(TargetsWasi)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
-
+      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
+      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include'))$(EscapedQuoteW)"/>
+      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
+      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
+      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
+      <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
+      <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
+      <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -212,7 +215,7 @@
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
-      <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
+      <WasmHeaderFiles Include="$(NativeBinDir)include\wasi\*.h" />
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.wasm;

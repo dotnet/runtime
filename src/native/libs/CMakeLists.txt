@@ -55,6 +55,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_WASI)
         add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/include/)
+        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/libs-include/)
+        add_compile_options(-Wno-unused-variable)
+        add_compile_options(-Wno-unused-parameter)
+        add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
+        add_compile_options(-D_WASI_EMULATED_SIGNAL)
+        add_compile_options(-D_WASI_EMULATED_MMAN)
     endif ()
 
     if (CLR_CMAKE_TARGET_TVOS)

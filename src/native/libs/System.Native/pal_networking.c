@@ -10,7 +10,9 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <arpa/inet.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -30,7 +32,9 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#if HAVE_NET_IF_H
 #include <net/if.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -47,7 +51,9 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if HAVE_PWD_H
 #include <pwd.h>
+#endif
 #if HAVE_SENDFILE_4
 #include <sys/sendfile.h>
 #elif HAVE_SENDFILE_6
@@ -111,6 +117,8 @@ static uint16_t GetKeventFlags(uint32_t flags)
 }
 #endif
 #endif
+
+#if !defined(TARGET_WASI)
 
 #if !HAVE_IN_PKTINFO
 // On platforms, such as FreeBSD, where in_pktinfo
@@ -288,19 +296,29 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
     {
         case 0:
             return 0;
+#ifdef EAI_AGAIN
         case EAI_AGAIN:
             return GetAddrInfoErrorFlags_EAI_AGAIN;
+#endif
+#ifdef EAI_BADFLAGS
         case EAI_BADFLAGS:
             return GetAddrInfoErrorFlags_EAI_BADFLAGS;
+#endif
 #ifdef EAI_FAIL
         case EAI_FAIL:
             return GetAddrInfoErrorFlags_EAI_FAIL;
 #endif
+#ifdef EAI_FAMILY
         case EAI_FAMILY:
             return GetAddrInfoErrorFlags_EAI_FAMILY;
+#endif
+#ifdef EAI_MEMORY
         case EAI_MEMORY:
             return GetAddrInfoErrorFlags_EAI_MEMORY;
+#endif
+#ifdef EAI_NONAME
         case EAI_NONAME:
+#endif
 #ifdef EAI_NODATA
         case EAI_NODATA:
 #endif
@@ -3266,3 +3284,317 @@ uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
         interfaceName++;
     return if_nametoindex(interfaceName);
 }
+#else /* TARGET_WASI */
+
+int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
+{
+    return Error_EFAULT;
+}
+
+void SystemNative_FreeHostEntry(HostEntry* entry)
+{
+    if (entry != NULL)
+    {
+        free(entry->CanonicalName);
+        free(entry->IPAddressList);
+
+        entry->CanonicalName = NULL;
+        entry->IPAddressList = NULL;
+        entry->IPAddressCount = 0;
+    }
+}
+
+int32_t SystemNative_GetNameInfo(const uint8_t* address,
+                                 int32_t addressLength,
+                                 int8_t isIPv6,
+                                 uint8_t* host,
+                                 int32_t hostLength,
+                                 uint8_t* service,
+                                 int32_t serviceLength,
+                                 int32_t flags)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressLen, int32_t addressFamily)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetPort(const uint8_t* socketAddress, int32_t socketAddressLen, uint16_t* port)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetPort(uint8_t* socketAddress, int32_t socketAddressLen, uint16_t port)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetIPv4Address(const uint8_t* socketAddress, int32_t socketAddressLen, uint32_t* address)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen, uint32_t address)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetIPv6Address(
+    const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId)
+{
+    return Error_EFAULT;
+}
+
+int32_t
+SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
+{
+    return Error_EFAULT;
+}
+
+int32_t
+SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Listen(intptr_t socket, int32_t backlog)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t
+SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_SetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_CloseSocketEventPort(intptr_t port)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
+{
+    free(buffer);
+    return Error_SUCCESS;
+}
+
+int32_t
+SystemNative_TryChangeSocketEventRegistration(intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count)
+{
+    return Error_EFAULT;
+}
+
+int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
+{
+    return 0;
+}
+
+char* SystemNative_GetPeerUserName(intptr_t socket)
+{
+    return NULL;
+}
+
+void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
+{
+    *pathOffset = 0;
+    *pathSize = 0;
+    *addressSize = 0;
+}
+
+int32_t SystemNative_GetMaximumAddressSize(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_Disconnect(intptr_t socket)
+{
+    return -1;
+}
+
+int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)
+{
+    return -1;
+}
+
+uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
+{
+    return 0xFFFFFFFF;
+}
+
+#endif /* TARGET_WASI */

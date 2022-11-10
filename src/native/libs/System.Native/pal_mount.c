@@ -10,6 +10,7 @@
 #include <limits.h>
 
 // Check if we should use getmntinfo or /proc/mounts
+#if !defined(TARGET_WASI)
 #if HAVE_MNTINFO
 #include <sys/mount.h>
 #else
@@ -17,7 +18,9 @@
 #if HAVE_SYS_MNTENT_H
 #include <sys/mntent.h>
 #include <sys/mnttab.h>
+#if HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
+#endif
 #else
 #include <mntent.h>
 #endif
@@ -177,3 +180,24 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 
     return result;
 }
+else /* TARGET_WASI */
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
+{
+    // TODOWASI
+    return 0;
+}
+
+int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
+{
+    // TODOWASI
+    memset(mpi, 0, sizeof(MountPointInformation));
+    return -1;
+}
+
+int32_t
+SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
+{
+    // TODOWASI
+    return -1;
+}
+#endif /* TARGET_WASI */
