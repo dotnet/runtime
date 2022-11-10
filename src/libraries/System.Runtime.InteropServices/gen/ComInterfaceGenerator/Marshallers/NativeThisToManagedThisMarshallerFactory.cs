@@ -28,7 +28,7 @@ namespace Microsoft.Interop
 
             public Marshaller(ManagedTypeInfo typeKeyType) => _typeKeyType = typeKeyType;
 
-            public TypeSyntax AsNativeType(TypePositionInfo info) => MarshallerHelpers.SystemIntPtrType;
+            public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
