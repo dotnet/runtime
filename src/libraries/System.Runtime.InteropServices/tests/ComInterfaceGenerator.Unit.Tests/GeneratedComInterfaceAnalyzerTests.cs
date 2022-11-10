@@ -1,11 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.Interop;
-using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.GeneratedComInterfaceAttributeAnalyzer>;
@@ -20,15 +17,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices;
             #pragma warning restore CS8019
             """;
-
-        public static async Task<ImmutableArray<Diagnostic>> CompileAndRunAnalyzer(params string[] codeSnippets)
-        {
-            Compilation comp = await TestUtils.CreateCompilation(codeSnippets);
-            // Ensure no compiler errors
-            Assert.Empty(comp.GetDiagnostics());
-            // Ensure no analyzer erros
-            return await TestUtils.RunAnalyzers(comp, new GeneratedComInterfaceAttributeAnalyzer());
-        }
 
         [Fact]
         public async Task BasicWithBothAttributesUsesIUnknown()

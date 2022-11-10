@@ -19,11 +19,11 @@
             Link="Common\CustomStructMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
             Link="ICustomMarshallingSignatureTestProvider.cs" />
-    <Compile Include="..\LibraryImportGenerator.UnitTests\Verifiers\CSharpAnalyzerVerifier.cs"
+    <Compile Include="..\Common\Verifiers\CSharpAnalyzerVerifier.cs"
             Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
-    <Compile Include="..\LibraryImportGenerator.UnitTests\Verifiers\CSharpCodeFixVerifier.cs"
+    <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
             Link="Verifiers\CSharpCodeFixVerifier.cs"/>
-    <Compile Include="..\LibraryImportGenerator.UnitTests\Verifiers\CSharpVerifierHelper.cs"
+    <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
             Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
 
