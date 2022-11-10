@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
@@ -436,6 +437,16 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
             }
+        }
+
+        public static int GetSize(RelocType relocType)
+        {
+            return relocType switch
+            {
+                RelocType.IMAGE_REL_BASED_DIR64 => 8,
+                RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                _ => throw new NotSupportedException(),
+            };
         }
 
         public static unsafe long ReadValue(RelocType relocType, void* location)

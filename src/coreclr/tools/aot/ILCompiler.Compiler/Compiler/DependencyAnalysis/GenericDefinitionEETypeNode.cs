@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 

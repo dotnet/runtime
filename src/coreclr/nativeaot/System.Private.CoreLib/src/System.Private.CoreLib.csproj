@@ -40,6 +40,9 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
+      <Link>Internal\Runtime\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
