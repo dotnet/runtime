@@ -14,10 +14,11 @@ NESTED_ENTRY ActivationHandlerWrapper, _TEXT, NoHandler
 
     // Should never actually run
     EMIT_BREAKPOINT
+    call  EXTERNAL_C_FUNC(ActivationHandler)
 LOCAL_LABEL(ActivationHandlerReturn):
     // Should never return
     EMIT_BREAKPOINT
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, (16 + CONTEXT_Size) 
-    ret
+    jalr x0, ra, 0
 NESTED_END ActivationHandler, _TEXT
     
