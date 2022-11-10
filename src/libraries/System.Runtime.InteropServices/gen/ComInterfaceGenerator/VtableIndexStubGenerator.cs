@@ -27,6 +27,8 @@ namespace Microsoft.Interop
             SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> GeneratorFactory,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
             ManagedTypeInfo TypeKeyType,
             ManagedTypeInfo TypeKeyOwner,
             SequenceEqualImmutableArray<Diagnostic> Diagnostics);
@@ -313,6 +315,8 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 typeKeyType,
                 typeKeyOwner,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -325,8 +329,8 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
-                methodStub.GeneratorFactory.Key.TargetFramework,
-                methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
+                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFramework,
+                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFrameworkVersion,
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
@@ -334,7 +338,7 @@ namespace Microsoft.Interop
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.GeneratorFactory.GeneratorFactory);
+                methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,
@@ -382,14 +386,14 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new UnmanagedToManagedStubGenerator(
-                methodStub.GeneratorFactory.Key.TargetFramework,
-                methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
+                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
+                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 elements.MoveToImmutable(),
                 (elementInfo, ex) =>
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.GeneratorFactory.GeneratorFactory);
+                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             // TODO: Implement our EH design based on the additional property on the attribute.
             BlockSyntax code = stubGenerator.GenerateStubBody(
