@@ -12,6 +12,37 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
+        {
+            try
+            {
+                ProtocolToken? alertToken = null;
+                var isValid = VerifyRemoteCertificate(
+                    _sslAuthenticationOptions.CertValidationDelegate,
+                    _sslAuthenticationOptions.CertificateContext?.Trust,
+                    ref alertToken,
+                    out SslPolicyErrors sslPolicyErrors,
+                    out X509ChainStatusFlags chainStatus);
+
+                return new JavaProxy.RemoteCertificateValidationResult
+                {
+                    IsValid = isValid,
+                    SslPolicyErrors = sslPolicyErrors,
+                    ChainStatus = chainStatus,
+                };
+            }
+            catch (Exception exception)
+            {
+                return new JavaProxy.RemoteCertificateValidationResult
+                {
+                    IsValid = false,
+                    CaughtException = exception,
+                    SslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors,
+                    ChainStatus = X509ChainStatusFlags.NoError,
+                };
+            }
+        }
+
         internal sealed class JavaProxy : IDisposable
         {
             private static object s_initializationLock = new();
@@ -58,44 +89,10 @@ namespace System.Net.Security
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
+                Debug.Assert(proxy.ValidationResult is null);
 
-                return proxy.VerifyRemoteCertificate();
-            }
-
-            private bool VerifyRemoteCertificate()
-            {
-                try
-                {
-                    ProtocolToken? alertToken = null;
-                    var isValid = _sslStream.VerifyRemoteCertificate(
-                        _sslStream._sslAuthenticationOptions.CertValidationDelegate,
-                        _sslStream._sslAuthenticationOptions.CertificateContext?.Trust,
-                        ref alertToken,
-                        out SslPolicyErrors sslPolicyErrors,
-                        out X509ChainStatusFlags chainStatus);
-
-                    ValidationResult = new()
-                    {
-                        IsValid = isValid,
-                        SslPolicyErrors = sslPolicyErrors,
-                        ChainStatus = chainStatus,
-                    };
-                }
-                catch (Exception exception)
-                {
-                    Debug.WriteLine($"Remote certificate verification has thrown an exception: {exception}");
-                    Debug.WriteLine(exception.StackTrace);
-
-                    ValidationResult = new()
-                    {
-                        IsValid = false,
-                        CaughtException = exception,
-                        SslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors,
-                        ChainStatus = X509ChainStatusFlags.NoError,
-                    };
-                }
-
-                return ValidationResult.IsValid;
+                proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate();
+                return proxy.ValidationResult.IsValid;
             }
 
             internal sealed class RemoteCertificateValidationResult

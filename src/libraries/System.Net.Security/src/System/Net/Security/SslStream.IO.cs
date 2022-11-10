@@ -841,7 +841,6 @@ namespace System.Net.Security
                     }
 
                     SecurityStatusPal status = DecryptData(payloadBytes);
-                    Console.WriteLine($"status.ErrorCode = {status.ErrorCode}");
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;

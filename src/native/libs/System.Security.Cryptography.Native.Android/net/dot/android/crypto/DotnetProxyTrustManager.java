@@ -7,23 +7,19 @@ import javax.net.ssl.X509TrustManager;
 class DotnetProxyTrustManager implements X509TrustManager {
     private int sslStreamProxyHandle;
 
-    public DotnetProxyTrustManager(int sslStreamProxyHandle)
-    {
+    public DotnetProxyTrustManager(int sslStreamProxyHandle) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
     }
 
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        android.util.Log.d("DOTNET", "checkClientTrusted");
         if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
-            throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
+            throw new CertificateException();
         }
     }
 
-    public void checkServerTrusted(X509Certificate[] chain, String authType)
-        throws CertificateException
-    {
+    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
-            throw new CertificateException("The remote certificate was rejected by the provided RemoteCertificateValidationCallback.");
+            throw new CertificateException();
         }
     }
 
