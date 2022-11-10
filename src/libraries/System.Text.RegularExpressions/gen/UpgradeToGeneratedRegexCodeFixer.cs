@@ -274,9 +274,13 @@ namespace System.Text.RegularExpressions.Generator
                     string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
                     return SyntaxFactory.ParseExpression(optionsLiteral);
                 }
+                else if (argument.Value is ILiteralOperation literalOperation)
+                {
+                    return literalOperation.Syntax;
+                }
                 else
                 {
-                    return argument.Value.Syntax;
+                    return generator.LiteralExpression(argument.Value.ConstantValue.Value);
                 }
             }
 

@@ -862,6 +862,41 @@ static partial class Class
         }
 
         [Fact]
+        public async Task InterpolatedStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        const string pattern = @""a|b\s\n"";
+        const string pattern2 = $""{pattern}2"";
+
+        Regex regex = [|new Regex(pattern2)|];
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        const string pattern = @""a|b\s\n"";
+        const string pattern2 = $""{pattern}2"";
+
+        Regex regex = MyRegex();
+    }
+
+    [GeneratedRegex(""a|b\\s\\n2"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
         public async Task TestAsArgument()
         {
             string test = @"using System.Text.RegularExpressions;
