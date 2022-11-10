@@ -3473,10 +3473,18 @@ void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newI
 {
     // If either of the new interval (being assigned) or existing interval (being unassigned)
     // has consecutive registers, make sure to unassign both.
-    int newRegCount = max(regRec->regCount, newInterval->regCount);
-    regNumber currReg     = regRec->regNum;
-
     RegRecord* regRecToUnassign = regRec;
+    int        regCountToUnassign     = regRec->regCount;
+    if (regCountToUnassign > 1)
+    {
+        regRecToUnassign = getFirstRegRec(regRec);
+    }
+    else if (newInterval->regCount > 1)
+    {
+        regCountToUnassign = newInterval->regCount;
+    }
+
+    regNumber currReg = regRecToUnassign->regNum;
     do
     {
         if (regRecToUnassign->assignedInterval != nullptr)
@@ -3486,7 +3494,7 @@ void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newI
 
         currReg = REG_NEXT(currReg);
         regRecToUnassign = getRegisterRecord(currReg);
-    } while (--newRegCount > 0);
+    } while (--regCountToUnassign > 0);
 }
 
 //------------------------------------------------------------------------
@@ -5827,7 +5835,7 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
 //    reg      -    register to be updated
 //    interval -    interval to be assigned
 //
-// Return Value:
+// Return Value:Z
 //    None
 //
 // Note:
