@@ -232,19 +232,6 @@ namespace Microsoft.Interop.JavaScript
             return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
-        }
-
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
         {
             // Verify the method has no generic types or defined implementation
