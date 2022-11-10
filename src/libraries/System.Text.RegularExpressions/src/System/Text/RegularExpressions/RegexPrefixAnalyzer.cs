@@ -170,19 +170,14 @@ namespace System.Text.RegularExpressions
             TryFindFixedSets(root, results, ref distance, thorough);
 
             // Remove any sets that match everything; they're not helpful.  (This check exists primarily to weed
-            // out use of . in Singleline mode.)
-            bool hasAny = false;
+            // out use of . in Singleline mode, but also filters out explicit sets like [\s\S].)
             for (int i = 0; i < results.Count; i++)
             {
                 if (results[i].Set == RegexCharClass.AnyClass)
                 {
-                    hasAny = true;
+                    results.RemoveAll(s => s.Set == RegexCharClass.AnyClass);
                     break;
                 }
-            }
-            if (hasAny)
-            {
-                results.RemoveAll(s => s.Set == RegexCharClass.AnyClass);
             }
 
             // If we don't have any results, try harder to compute one for the starting character.
@@ -190,16 +185,13 @@ namespace System.Text.RegularExpressions
             // doesn't.
             if (results.Count == 0)
             {
-                string? charClass = FindFirstCharClass(root);
-                if (charClass is not null)
-                {
-                    results.Add(new RegexFindOptimizations.FixedDistanceSet(null, charClass, 0));
-                }
-
-                if (results.Count == 0)
+                if (FindFirstCharClass(root) is not string charClass ||
+                    charClass == RegexCharClass.AnyClass) // weed out match-all, same as above
                 {
                     return null;
                 }
+
+                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, charClass, 0));
             }
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
@@ -482,6 +474,22 @@ namespace System.Text.RegularExpressions
                 if ((s1.Range is not null) != (s2.Range is not null))
                 {
                     return s1.Range is not null ? -1 : 1;
+                }
+
+                // If both have ranges, prefer the one that includes fewer characters.
+                if (s1.Range is not null)
+                {
+                    return
+                        GetRangeLength(s1.Range.GetValueOrDefault()).CompareTo(
+                        GetRangeLength(s2.Range.GetValueOrDefault()));
+
+                    static int GetRangeLength((char LowInclusive, char HighInclusive, bool Negated) range)
+                    {
+                        int length = range.HighInclusive - range.LowInclusive + 1;
+                        return range.Negated ?
+                            char.MaxValue + 1 - length :
+                            length;
+                    }
                 }
 
                 // As a tiebreaker, prioritize the earlier one.
