@@ -11584,9 +11584,6 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
     if (op2->gtOverflow())
         return asg;
 
-    if (op2->AsCast()->CastOp()->gtEffectiveVal()->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
-        return asg;
-
     if (gtIsActiveCSE_Candidate(op2))
         return asg;
 
