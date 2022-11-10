@@ -404,7 +404,6 @@
     <!-- iOS/tvOS device specific options -->
     <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true')">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,logging" />
-      <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCFLAGS Include="-Werror=partial-availability" />
