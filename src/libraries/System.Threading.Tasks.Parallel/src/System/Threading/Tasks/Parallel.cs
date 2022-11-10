@@ -14,14 +14,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
-    internal sealed class Box<T> where T: class
-    {
-        public T? Value { get; set; }
-    }
-
     /// <summary>
     /// Stores options that configure the operation of methods on the
     /// <see cref="System.Threading.Tasks.Parallel">Parallel</see> class.
@@ -866,7 +862,7 @@ namespace System.Threading.Tasks
             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
             // Keep track of any cancellations
-            Box<OperationCanceledException> oce = ParallelHelpers.RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
+            StrongBox<OperationCanceledException> oce = ParallelHelpers.RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
             int forkJoinContextID = ParallelHelpers.LogEtwEventParallelLoopBegin(
                 operationType, TWorker.GetStartIndex(source), TWorker.GetEndIndex(source));
@@ -2647,10 +2643,10 @@ namespace System.Threading.Tasks
 
     internal static class ParallelHelpers
     {
-        public static Box<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
+        public static StrongBox<OperationCanceledException> RegisterCallbackForLoopTermination(ParallelOptions parallelOptions,
             ParallelLoopStateFlags sharedPStateFlags, out CancellationTokenRegistration ctr)
         {
-            Box<OperationCanceledException> oce = new() { Value = null };
+            StrongBox<OperationCanceledException> oce = new();
 
             // if cancellation is enabled, we need to register a callback to stop the loop when it gets signaled
             ctr = (!parallelOptions.CancellationToken.CanBeCanceled)
