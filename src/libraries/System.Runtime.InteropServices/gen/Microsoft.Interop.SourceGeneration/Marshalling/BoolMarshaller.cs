@@ -52,6 +52,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             switch (context.CurrentStage)
             {
@@ -59,7 +60,7 @@ namespace Microsoft.Interop
                     break;
                 case StubCodeContext.Stage.Marshal:
                     // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? _trueValue : _falseValue);
-                    if (info.RefKind != RefKind.Out)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
@@ -75,7 +76,7 @@ namespace Microsoft.Interop
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         // <managedIdentifier> = <nativeIdentifier> == _trueValue;
                         //   or

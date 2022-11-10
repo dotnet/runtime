@@ -12,7 +12,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, MarshalMode InMode, MarshalMode RefMode, MarshalMode OutMode);
+    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, MarshalMode ManagedToUnmanagedMode, MarshalMode BidirectionalMode, MarshalMode UnmanagedToManagedMode);
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
@@ -126,7 +126,7 @@ namespace Microsoft.Interop
                 {
                     if (marshallingInfo is NativeLinearCollectionMarshallingInfo collectionInfo)
                     {
-                        CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(collectionInfo.Marshallers, info);
+                        CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(collectionInfo.Marshallers, info, context);
                         type = marshallerData.CollectionElementType;
                         marshallingInfo = marshallerData.CollectionElementMarshallingInfo;
                     }
@@ -200,16 +200,15 @@ namespace Microsoft.Interop
             return false;
         }
 
-        private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info)
+        private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info, StubCodeContext context)
         {
-            if (info.IsManagedReturnPosition)
-                return marshallers.GetModeOrDefault(Options.OutMode);
+            MarshalDirection elementDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
 
-            return info.RefKind switch
+            return elementDirection switch
             {
-                RefKind.None or RefKind.In => marshallers.GetModeOrDefault(Options.InMode),
-                RefKind.Ref => marshallers.GetModeOrDefault(Options.RefMode),
-                RefKind.Out => marshallers.GetModeOrDefault(Options.OutMode),
+                MarshalDirection.ManagedToUnmanaged => marshallers.GetModeOrDefault(Options.ManagedToUnmanagedMode),
+                MarshalDirection.Bidirectional => marshallers.GetModeOrDefault(Options.BidirectionalMode),
+                MarshalDirection.UnmanagedToManaged => marshallers.GetModeOrDefault(Options.UnmanagedToManagedMode),
                 _ => throw new UnreachableException()
             };
         }
@@ -218,7 +217,7 @@ namespace Microsoft.Interop
         {
             ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo);
 
-            CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info);
+            CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info, context);
             if (!ValidateRuntimeMarshallingOptions(marshallerData))
             {
                 throw new MarshallingNotSupportedException(info, context)
@@ -373,9 +372,10 @@ namespace Microsoft.Interop
 
         private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
+            MarshalDirection elementDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
             // Marshalling out or return parameter, but no out marshaller is specified
-            if ((info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.OutMode))
+            if (elementDirection == MarshalDirection.UnmanagedToManaged
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.UnmanagedToManagedMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -384,7 +384,7 @@ namespace Microsoft.Interop
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.RefMode))
+            if (elementDirection == MarshalDirection.Bidirectional && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.BidirectionalMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -393,20 +393,8 @@ namespace Microsoft.Interop
             }
 
             // Marshalling in parameter, but no in marshaller is specified
-            if (info.RefKind == RefKind.In
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
-            {
-                throw new MarshallingNotSupportedException(info, context)
-                {
-                    NotSupportedDetails = SR.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
-                };
-            }
-
-            // Marshalling by value, but no in marshaller is specified
-            if (!info.IsByRef
-                && !info.IsManagedReturnPosition
-                && context.SingleFrameSpansNativeContext
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
+            if (elementDirection == MarshalDirection.ManagedToUnmanaged
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.ManagedToUnmanagedMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
