@@ -3,14 +3,34 @@
 
 #include "unixasmmacros.inc"
 
-// #error "TODO-RISCV64: missing implementation"
-
+// JIT_MemSet/JIT_MemCpy
+//
+// It is IMPORTANT that the exception handling code is able to find these guys
+// on the stack, but on non-windows platforms we can just defer to the platform
+// implementation.
+//
 LEAF_ENTRY JIT_MemSet, _TEXT
-// TODO RISCV NYI
-    sw ra, 0(zero)
+    beq  a2, zero, LOCAL_LABEL(JIT_MemSet_ret)
+
+    lb  zero, 0(a0) // Is this really needed ?
+
+    tail memset
+
+LOCAL_LABEL(JIT_MemSet_ret):
+    jalr  x0, 0(ra)
 LEAF_END_MARKED JIT_MemSet, _TEXT
 
+////NOTE: Here must use LEAF_END_MARKED!  not LEAF_END !!!
 LEAF_ENTRY JIT_MemCpy, _TEXT
-// TODO RISCV NYI
-    sw ra, 0(zero)
+    beq  a2, zero, LOCAL_LABEL(JIT_MemCpy_ret)
+
+    lb  zero, 0(a0)
+    lb  zero, 0(a1) // Is this really needed ?
+
+    tail memcpy 
+
+LOCAL_LABEL(JIT_MemCpy_ret):
+    jalr  x0, 0(ra)
+
+////NOTE: Here must use LEAF_END_MARKED!  not LEAF_END !!!
 LEAF_END_MARKED JIT_MemCpy, _TEXT
