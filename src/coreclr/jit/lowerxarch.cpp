@@ -785,7 +785,7 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
             if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
                 castToType == op1->CastToType())
             {
-                op1->CastOp()->ClearContainedAndRegOptional();
+                op1->CastOp()->ClearContained();
 
                 castOp->AsOp()->gtOp1 = op1->CastOp();
 
@@ -800,7 +800,7 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
             if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
                 castToType == op2->CastToType())
             {
-                op2->CastOp()->ClearContainedAndRegOptional();
+                op2->CastOp()->ClearContained();
 
                 castOp->AsOp()->gtOp2 = op2->CastOp();
 

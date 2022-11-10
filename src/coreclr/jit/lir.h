@@ -337,10 +337,4 @@ inline bool GenTree::IsRegOptional() const
     return (gtLIRFlags & LIR::Flags::RegOptional) != 0;
 }
 
-inline void GenTree::ClearContainedAndRegOptional()
-{
-    ClearContained();
-    ClearRegOptional();
-}
-
 #endif // _LIR_H_

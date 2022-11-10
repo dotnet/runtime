@@ -1114,7 +1114,6 @@ public:
     inline bool IsRegOptional() const;
     inline void SetRegOptional();
     inline void ClearRegOptional();
-    inline void ClearContainedAndRegOptional();
 #ifdef DEBUG
     void dumpLIRFlags();
 #endif
