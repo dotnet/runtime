@@ -276,7 +276,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    return generator.LiteralExpression(argument.Value.ConstantValue.Value);
+                    SyntaxNode syntax = argument.Syntax;
+                    return syntax is ArgumentSyntax { NameColon: not null } argumentSyntax ?
+                        argumentSyntax.WithNameColon(null) :
+                        syntax;
                 }
             }
 

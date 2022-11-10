@@ -792,7 +792,7 @@ partial class Program
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        [|Regex.Replace(text, @"" \s+"" , ""  "")|];
+        [|Regex.Replace(text, "" \\s+"" , ""  "")|];
 }";
 
             string expectedFixedCode = @"using System.Text.RegularExpressions;
@@ -802,6 +802,59 @@ static partial class Class
     public static string CollapseWhitespace(this string text) =>
         MyRegex().Replace(text, ""  "");
     [GeneratedRegex("" \\s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task VerbatimStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        [|Regex.Replace(text, @"" \s+"" , @""  "")|];
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, @""  "");
+    [GeneratedRegex(@"" \s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task RawStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        [|Regex.Replace(text, """"""
+                              \s+
+                              """""",
+                              """""""" hello """""" world """""""")|];
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, """""""" hello """""" world """""""");
+    [GeneratedRegex(""""""
+                              \s+
+                              """""")]
     private static partial Regex MyRegex();
 }";
 
