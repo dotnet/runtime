@@ -37,7 +37,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 """;
             await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
-
         }
 
         [Fact]
