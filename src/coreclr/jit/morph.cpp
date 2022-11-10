@@ -4592,7 +4592,7 @@ GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
 
     if (lclNode->OperIs(GT_LCL_VAR))
     {
-        return fgMorphLocalVar(lclNode, /* forceRemorph */ false);
+        return fgMorphLocalVar(lclNode);
     }
 
     if (lvaGetDesc(lclNode)->IsAddressExposed())
@@ -4771,7 +4771,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
  *  Transform the given GT_LCL_VAR tree for code generation.
  */
 
-GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
+GenTree* Compiler::fgMorphLocalVar(GenTree* tree)
 {
     assert(tree->OperIs(GT_LCL_VAR));
 
@@ -4783,7 +4783,7 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
     }
 
     // If not during the global morphing phase bail.
-    if (!fgGlobalMorph && !forceRemorph)
+    if (!fgGlobalMorph)
     {
         return tree;
     }
@@ -10241,7 +10241,6 @@ DONE_MORPHING_CHILDREN:
      * Perform the required oper-specific postorder morphing
      */
 
-    GenTree* temp;
     GenTree* lclVarTree;
 
     switch (oper)
@@ -10602,125 +10601,27 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            // Can not remove a GT_IND if it is currently a CSE candidate.
-            if (gtIsActiveCSE_Candidate(tree))
+            if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                break;
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
-            bool foldAndReturnTemp = false;
-            temp                   = nullptr;
-
-            // Don't remove a volatile GT_IND, even if the address points to a local variable.
-            //
-            if (!tree->AsIndir()->IsVolatile())
-            {
-                if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
-                {
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                }
-
-                /* Try to Fold *(&X) into X */
-                if (op1->gtOper == GT_ADDR)
-                {
-                    if (gtIsActiveCSE_Candidate(op1))
-                    {
-                        break;
-                    }
-
-                    temp = op1->AsOp()->gtOp1; // X
-
-                    if ((typ == temp->TypeGet()) && (typ != TYP_STRUCT))
-                    {
-                        foldAndReturnTemp = true;
-                    }
-                }
-                else
-                {
 #ifdef TARGET_ARM
-                    GenTree* effOp1 = op1->gtEffectiveVal(true);
-                    // Check for a misalignment floating point indirection.
-                    if (effOp1->OperIs(GT_ADD) && varTypeIsFloating(typ))
+            GenTree* effOp1 = op1->gtEffectiveVal(true);
+            // Check for a misalignment floating point indirection.
+            if (effOp1->OperIs(GT_ADD) && varTypeIsFloating(typ))
+            {
+                GenTree* addOp2 = effOp1->gtGetOp2();
+                if (addOp2->IsCnsIntOrI())
+                {
+                    ssize_t offset = addOp2->AsIntCon()->gtIconVal;
+                    if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
                     {
-                        GenTree* addOp2 = effOp1->gtGetOp2();
-                        if (addOp2->IsCnsIntOrI())
-                        {
-                            ssize_t offset = addOp2->AsIntCon()->gtIconVal;
-                            if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
-                            {
-                                tree->gtFlags |= GTF_IND_UNALIGNED;
-                            }
-                        }
+                        tree->gtFlags |= GTF_IND_UNALIGNED;
                     }
+                }
+            }
 #endif // TARGET_ARM
-                }
-            }
-
-            // At this point we may have a lclVar or lclFld of some mismatched type. In this case, we will change
-            // the lclVar or lclFld into a lclFld of the appropriate type if doing so is legal. The only cases in
-            // which this transformation is illegal is when we have a STRUCT indirection, as we do not have the
-            // necessary layout information, or if the load would extend beyond the local.
-            if ((temp != nullptr) && !foldAndReturnTemp)
-            {
-                assert(temp->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
-                unsigned lclNum  = temp->AsLclVarCommon()->GetLclNum();
-                unsigned lclOffs = temp->AsLclVarCommon()->GetLclOffs();
-
-                // Make sure we do not enregister this lclVar.
-                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-
-                if ((typ != TYP_STRUCT) && ((lclOffs + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
-                {
-                    // We will change the type of the node to match the original GT_IND type.
-                    //
-                    temp->gtType = typ;
-
-                    if (temp->OperIs(GT_LCL_VAR))
-                    {
-                        temp->ChangeOper(GT_LCL_FLD);
-                    }
-
-                    foldAndReturnTemp = true;
-                }
-            }
-
-            if (foldAndReturnTemp)
-            {
-                assert(temp != nullptr);
-                assert(temp->TypeGet() == typ);
-                assert(op1->OperIs(GT_ADDR));
-
-                // Copy the value of GTF_DONT_CSE from the original tree to `temp`: it can be set for
-                // 'temp' because a GT_ADDR always marks it for its operand.
-                temp->gtFlags &= ~GTF_DONT_CSE;
-                temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
-                temp->SetVNsFromNode(tree);
-
-                DEBUG_DESTROY_NODE(op1);  // GT_ADDR
-                DEBUG_DESTROY_NODE(tree); // GT_IND
-
-                // If the result of the fold is a local var, we may need to perform further adjustments e.g. for
-                // normalization.
-                if (temp->OperIs(GT_LCL_VAR))
-                {
-#ifdef DEBUG
-                    // We clear this flag on `temp` because `fgMorphLocalVar` may assert that this bit is clear
-                    // and the node in question must have this bit set (as it has already been morphed).
-                    temp->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-                    const bool forceRemorph = true;
-                    temp                    = fgMorphLocalVar(temp, forceRemorph);
-#ifdef DEBUG
-                    // We then set this flag on `temp` because `fgMorhpLocalVar` may not set it itself, and the
-                    // caller of `fgMorphSmpOp` may assert that this flag is set on `temp` once this function
-                    // returns.
-                    temp->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-                }
-
-                return temp;
-            }
 
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
@@ -10781,9 +10682,8 @@ DONE_MORPHING_CHILDREN:
                 commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
                 return tree;
             }
-
-            break;
         }
+        break;
 
         case GT_ADDR:
             // Can not remove a GT_ADDR if it is currently a CSE candidate.
