@@ -7692,42 +7692,6 @@ GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
     return blkNode;
 }
 
-// Creates a new assignment node for a CpObj.
-// Parameters (exactly the same as MSIL CpObj):
-//
-//  dstAddr    - The target to copy the struct to
-//  srcAddr    - The source to copy the struct from
-//  structHnd  - A class token that represents the type of object being copied. May be null
-//               if FEATURE_SIMD is enabled and the source has a SIMD type.
-//  isVolatile - Is this marked as volatile memory?
-
-GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
-{
-    ClassLayout* layout = typGetObjLayout(structHnd);
-    GenTree*     lhs    = gtNewStructVal(layout, dstAddr);
-    GenTree*     src    = gtNewStructVal(layout, srcAddr);
-
-    if (lhs->OperIs(GT_OBJ))
-    {
-        GenTreeObj* lhsObj = lhs->AsObj();
-#if DEBUG
-        // Codegen for CpObj assumes that we cannot have a struct with GC pointers whose size is not a multiple
-        // of the register size. The EE currently does not allow this to ensure that GC pointers are aligned
-        // if the struct is stored in an array. Note that this restriction doesn't apply to stack-allocated objects:
-        // they are never stored in arrays. We should never get to this method with stack-allocated objects since they
-        // are never copied so we don't need to exclude them from the assert below.
-        // Let's assert it just to be safe.
-        ClassLayout* layout = lhsObj->GetLayout();
-        unsigned     size   = layout->GetSize();
-        assert((layout->GetGCPtrCount() == 0) || (roundUp(size, REGSIZE_BYTES) == size));
-#endif
-        gtSetObjGcInfo(lhsObj);
-    }
-
-    GenTree* result = gtNewBlkOpNode(lhs, src, isVolatile, true);
-    return result;
-}
-
 //------------------------------------------------------------------------
 // FixupInitBlkValue: Fixup the init value for an initBlk operation
 //
@@ -20069,6 +20033,28 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                // If we don't have an intrinsic set for this, try "Max(op1, op2) == op1"
+                // NOTE: technically, we can special case byte type to only require SSE2, but it
+                // complicates the test matrix for little gains.
+                if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
+                    ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                {
+                    // TODO-AVX512: We can use this trick for longs only with AVX-512
+                    if (!varTypeIsLong(simdBaseType))
+                    {
+                        assert(!varTypeIsFloating(simdBaseType));
+                        GenTree* op1Dup;
+                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
+
+                        // EQ(Max(op1, op2), op1)
+                        GenTree* maxNode =
+                            gtNewSimdMaxNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        return gtNewSimdCmpOpNode(GT_EQ, type, maxNode, op1Dup, simdBaseJitType, simdSize,
+                                                  isSimdAsHWIntrinsic);
+                    }
+                }
+
                 // There is no direct support for doing a combined comparison and equality for integral types.
                 // These have to be implemented by performing both halves and combining their results.
                 //
@@ -20295,6 +20281,28 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
+                // If we don't have an intrinsic set for this, try "Min(op1, op2) == op1"
+                // NOTE: technically, we can special case byte type to only require SSE2, but it
+                // complicates the test matrix for little gains.
+                if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
+                    ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                {
+                    // TODO-AVX512: We can use this trick for longs only with AVX-512
+                    if (!varTypeIsLong(simdBaseType))
+                    {
+                        assert(!varTypeIsFloating(simdBaseType));
+                        GenTree* op1Dup;
+                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
+
+                        // EQ(Min(op1, op2), op1)
+                        GenTree* minNode =
+                            gtNewSimdMinNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        return gtNewSimdCmpOpNode(GT_EQ, type, minNode, op1Dup, simdBaseJitType, simdSize,
+                                                  isSimdAsHWIntrinsic);
+                    }
+                }
+
                 // There is no direct support for doing a combined comparison and equality for integral types.
                 // These have to be implemented by performing both halves and combining their results.
                 //
@@ -21128,6 +21136,12 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
             case TYP_BYTE:
             case TYP_USHORT:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Max;
+                    break;
+                }
+
                 GenTree*    constVal  = nullptr;
                 CorInfoType opJitType = simdBaseJitType;
                 var_types   opType    = simdBaseType;
@@ -21202,6 +21216,15 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
 
             case TYP_INT:
             case TYP_UINT:
+            {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Max;
+                    break;
+                }
+                break;
+            }
+
             case TYP_LONG:
             case TYP_ULONG:
             {
@@ -21312,6 +21335,12 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
             case TYP_BYTE:
             case TYP_USHORT:
             {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Min;
+                    break;
+                }
+
                 GenTree*    constVal  = nullptr;
                 CorInfoType opJitType = simdBaseJitType;
                 var_types   opType    = simdBaseType;
@@ -21386,6 +21415,15 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
 
             case TYP_INT:
             case TYP_UINT:
+            {
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    intrinsic = NI_SSE41_Min;
+                    break;
+                }
+                break;
+            }
+
             case TYP_LONG:
             case TYP_ULONG:
             {

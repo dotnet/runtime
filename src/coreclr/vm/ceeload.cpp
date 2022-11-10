@@ -2491,17 +2491,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     // the assembly was loaded in.</REVISIT_TODO>
     if (CORDebuggerAttached())
     {
-        AppDomainIterator i(FALSE);
-
-        while (i.Next())
+        AppDomain *pDomain = AppDomain::GetCurrentDomain();
+        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
+                                                pDomain->ContainsAssembly(m_pAssembly)))
         {
-            AppDomain *pDomain = i.GetDomain();
-
-            if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                  pDomain->ContainsAssembly(m_pAssembly)))
-            {
-                g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
-            }
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }
     }
 }

@@ -1467,16 +1467,11 @@ void MulticoreJitManager::StopProfileAll()
     }
     CONTRACTL_END;
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().StopProfile(true);
-        }
+        pDomain->GetMulticoreJitManager().StopProfile(true);
     }
 }
 
@@ -1508,16 +1503,11 @@ void MulticoreJitManager::DisableMulticoreJit()
 
 #ifdef PROFILING_SUPPORTED
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().AbortProfile();
-        }
+        pDomain->GetMulticoreJitManager().AbortProfile();
     }
 
 #endif

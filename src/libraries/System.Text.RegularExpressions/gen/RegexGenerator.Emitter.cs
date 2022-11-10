@@ -123,13 +123,13 @@ namespace System.Text.RegularExpressions.Generator
             if (rm.Tree.CaptureNumberSparseMapping is not null)
             {
                 writer.Write("        base.Caps = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as int?));
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNameToNumberMapping is not null)
             {
                 writer.Write("        base.CapNames = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as string, StringComparer.Ordinal));
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNames is not null)
@@ -149,11 +149,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine(runnerFactoryImplementation);
             writer.WriteLine($"}}");
 
-            static void AppendHashtableContents(IndentedTextWriter writer, Hashtable ht)
+            static void AppendHashtableContents(IndentedTextWriter writer, IEnumerable<DictionaryEntry> contents)
             {
-                IDictionaryEnumerator en = ht.GetEnumerator();
                 string separator = "";
-                while (en.MoveNext())
+                foreach (DictionaryEntry en in contents)
                 {
                     writer.Write(separator);
                     separator = ", ";
@@ -780,8 +779,12 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
+                // We avoid using it for the relatively common case of the starting set being '.', aka anything other than
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Chars is not null || primarySet.Range is not null;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    (primarySet.Chars is not null || primarySet.Range is not null);
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;

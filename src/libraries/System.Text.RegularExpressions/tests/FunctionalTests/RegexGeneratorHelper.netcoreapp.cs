@@ -67,8 +67,8 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
+        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+            string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
@@ -87,7 +87,13 @@ namespace System.Text.RegularExpressions.Tests
             var generator = new RegexGenerator();
             CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: CSharpParseOptions.Default.WithLanguageVersion(langVersion));
             GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
-            GeneratorDriverRunResult generatorResults = gd.GetRunResult();
+            return (comp, gd.GetRunResult());
+        }
+
+        internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
+        {
+            (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, cancellationToken);
             if (!compile)
             {
                 return generatorResults.Diagnostics;
@@ -105,6 +111,20 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
+        }
+
+        internal static async Task<string> GenerateSourceText(
+            string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
+        {
+            (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, cancellationToken);
+            string generatedSource = string.Concat(generatorResults.GeneratedTrees.Select(t => t.ToString()));
+
+            if (generatorResults.Diagnostics.Length != 0)
+            {
+                throw new ArgumentException(string.Join(Environment.NewLine, generatorResults.Diagnostics) + Environment.NewLine + generatedSource);
+            }
+
+            return generatedSource;
         }
 
         internal static async Task<Regex> SourceGenRegexAsync(

@@ -1115,7 +1115,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::BuildSharedFilesPath(lockFilePath, SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME);
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */, false /* hasCurrentUserAccessOnly */, true /* setStickyFlag */);
         }
 
         // Create the session directory
@@ -1124,7 +1124,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(lockFilePath));
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */, id->IsSessionScope(), false /* setStickyFlag */);
             autoCleanup.m_lockFilePath = &lockFilePath;
             autoCleanup.m_sessionDirectoryPathCharCount = lockFilePath.GetCount();
         }
@@ -1132,7 +1132,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         // Create or open the lock file
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/'));
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append(id->GetName(), id->GetNameCharCount()));
-        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(lockFilePath, created);
+        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(lockFilePath, created, id->IsSessionScope());
         if (lockFileDescriptor == -1)
         {
             _ASSERTE(!created);

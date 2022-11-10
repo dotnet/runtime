@@ -1316,11 +1316,8 @@ static void ReleaseRCWsInCaches(LPVOID pCtxCookie)
     }
     CONTRACTL_END;
 
-    // Go through all the app domains and for each one release all the
-    // RCW's that live in the current context.
-    AppDomainIterator i(TRUE);
-    while (i.Next())
-        i.GetDomain()->ReleaseRCWs(pCtxCookie);
+    // Release all the RCW's that live in the AppDomain.
+    AppDomain::GetCurrentDomain()->ReleaseRCWs(pCtxCookie);
 
     if (!g_fEEShutDown)
     {
