@@ -6,8 +6,8 @@ Note that `System.ServiceProcess.ServiceController` supports Windows only.
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.serviceprocess.
 
 ## Contribution Bar
-- [ ] [We consider new features, new APIs and performance changes](../README.md#primary-bar)
-- [ ] [We consider PRs that target this library for new source code analyzers](../README.md#secondary-bars)
+- [x] [We consider new features, new APIs and performance changes](../README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](../README.md#secondary-bars)
 
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.ServiceProcess+label%3A%22help+wanted%22) issues.
 
