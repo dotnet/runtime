@@ -57,18 +57,16 @@ namespace Microsoft.Interop
             // We can't use ReturnIdentifier or ReturnNativeIdentifier since that will be used by the return value of the stub itself.
             // Additionally, we don't have a name that we can use from source.
             // As a result, we generate another name for the native return value.
-            else if (info.IsManagedReturnPosition)
+            if (info.IsManagedReturnPosition)
             {
                 Debug.Assert(info.NativeIndex == TypePositionInfo.UnsetIndex);
                 return (InvokeReturnIdentifier, InvokeReturnIdentifierNative);
             }
-            else
-            {
-                // If the info isn't in either the managed or native return position,
-                // then we can use the base implementation since we have an identifier name provided
-                // in the original metadata.
-                return base.GetIdentifiers(info);
-            }
+
+            // If the info isn't in either the managed or native return position,
+            // then we can use the base implementation since we have an identifier name provided
+            // in the original metadata.
+            return base.GetIdentifiers(info);
         }
     }
 }
