@@ -2168,9 +2168,19 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			mono_field_static_set_value_internal (vtable, cf, v);
 	} else {
 
-		if (isref)
-			MONO_HANDLE_SET_FIELD_REF (obj, cf, value);
-		else
+		if (isref) {
+			MonoObject *obj_ptr = MONO_HANDLE_RAW (obj);
+			MonoObject *value_ptr = MONO_HANDLE_RAW (value);
+			gpointer *dest;
+			if (G_LIKELY (!m_field_is_from_update (cf))) {
+				dest = (gpointer*)(((char *)obj_ptr) + m_field_get_offset (cf));
+			} else {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (cf));
+				dest = mono_metadata_update_added_field_ldflda (obj_ptr, cf->type, token, error);
+				mono_error_assert_ok (error);
+			}
+			mono_gc_wbarrier_generic_store_internal (dest, value_ptr);
+		} else
 			mono_field_set_value_internal (MONO_HANDLE_RAW (obj), cf, v); /* FIXME: make mono_field_set_value take a handle for obj */
 	}
 leave:
