@@ -855,8 +855,8 @@ namespace ILCompiler
                 }
             }
 
-            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
-            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
+            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(baseMethod);
+            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
                 FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);

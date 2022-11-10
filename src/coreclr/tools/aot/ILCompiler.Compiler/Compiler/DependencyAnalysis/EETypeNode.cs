@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
@@ -333,21 +332,21 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {
+                    MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                    if (impl.OwningType == defType)
+                    {
+                        factory.MetadataManager.NoteOverridingMethod(decl, impl);
+                    }
+
                     // Generic virtual methods are tracked by an orthogonal mechanism.
                     if (decl.HasInstantiation)
                         continue;
 
-                    MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                     if (impl.OwningType == defType && !impl.IsAbstract)
                     {
                         MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
                         IMethodNode implNode = factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
                         result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
-                    }
-
-                    if (impl.OwningType == defType)
-                    {
-                        factory.MetadataManager.NoteOverridingMethod(decl, impl);
                     }
 
                     factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
@@ -372,10 +371,6 @@ namespace ILCompiler.DependencyAnalysis
 
                     foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                     {
-                        // Generic virtual methods are tracked by an orthogonal mechanism.
-                        if (interfaceMethod.HasInstantiation)
-                            continue;
-
                         bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
 
                         MethodDesc implMethod = isStaticInterfaceMethod ?
@@ -383,6 +378,12 @@ namespace ILCompiler.DependencyAnalysis
                             defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                         if (implMethod != null)
                         {
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                            // Generic virtual methods are tracked by an orthogonal mechanism.
+                            if (interfaceMethod.HasInstantiation)
+                                continue;
+
                             if (isStaticInterfaceMethod)
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
@@ -432,6 +433,12 @@ namespace ILCompiler.DependencyAnalysis
                                 DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
                                 implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
 
+                                factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                                // Generic virtual methods are tracked by an orthogonal mechanism.
+                                if (interfaceMethod.HasInstantiation)
+                                    continue;
+
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
@@ -439,8 +446,6 @@ namespace ILCompiler.DependencyAnalysis
                                     defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, _type.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
-
-                                factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
                                 factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                             }
