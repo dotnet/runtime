@@ -11420,6 +11420,10 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
                 rshiftOp->SetAllEffectsFlags(rshiftOp->gtGetOp1(), rshiftOp->gtGetOp2());
                 rshiftOp->SetOper(GT_LSH);
+                if (rshiftOp->OperRequiresCallFlag(this))
+                {
+                    rshiftOp->gtFlags |= GTF_CALL;
+                }
             }
 
             // Reverse the condition if necessary.
