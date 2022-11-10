@@ -11,7 +11,6 @@ EXTERN_C __thread ThreadBuffer tls_CurrentThread;
 // static
 inline Thread * ThreadStore::RawGetCurrentThread()
 {
-    fprintf(stderr, "[CLAMP] tls_CurrentThread.m_pTransitionFrame\n");
     return (Thread *) &tls_CurrentThread;
 }
 

@@ -335,6 +335,8 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
 } // ResumeAllThreads
 
+#ifndef DACCESS_COMPILE
+
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
 {
     SuspendAllThreads(/* waitForGCEvent = */ false);
@@ -406,6 +408,8 @@ COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
 {
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
+
+#endif // DACCESS_COMPILE
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
