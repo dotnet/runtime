@@ -1278,13 +1278,13 @@
       <Link>Common\System\SR.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\IProducerConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\IProducerConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>

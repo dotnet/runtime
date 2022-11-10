@@ -8,6 +8,8 @@ using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
+using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.GeneratedComInterfaceAttributeAnalyzer>;
+
 namespace ComInterfaceGenerator.Unit.Tests
 {
     public class GeneratedComInterfaceAnalyzerTests
@@ -46,7 +48,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Empty(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
+
         }
 
         [Fact]
@@ -55,7 +58,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string snippet =
                 $$$"""
 
-                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface(typeof(MyComWrappers))]
                 interface IFoo
                 {
                     void Bar() {}
@@ -66,7 +69,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Empty(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
         }
 
         [Fact]
@@ -75,7 +78,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string snippet =
                 $$$"""
 
-                [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+                [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
                 interface IFoo
                 {
                     void Bar() {}
@@ -86,7 +89,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Empty(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
         }
 
         [Fact]
@@ -95,7 +98,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string snippet =
                 $$$"""
 
-                [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIDispatch)]
+                [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)]
                 interface IFoo
                 {
                     void Bar() {}
@@ -106,7 +109,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Empty(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
         }
 
         [Fact]
@@ -115,13 +118,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string snippet =
                 $$$"""
 
-                [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+                [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
                 partial interface IFoo
                 {
                     void Bar() {}
                 }
 
-                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface(typeof(MyComWrappers))]
                 partial interface IFoo
                 {
                     void Lorem() {}
@@ -132,17 +135,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Empty(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
         }
 
         [Fact]
         public async Task BasicWithBothAttributesUsesIDispatch()
         {
-            string snippet =
-                $$$"""
+            string snippet = $$$"""
 
-                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface(typeof(MyComWrappers))]
-                [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIDispatch)]
+                [GeneratedComInterface(typeof(MyComWrappers))]
+                [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)|}]
                 interface IFoo
                 {
                     void Bar() {}
@@ -151,9 +153,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                 public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
                 {
                 }
-
                 """;
-            Assert.Single(await CompileAndRunAnalyzer(_usings + snippet));
+
+            await VerifyCS.VerifyAnalyzerAsync(
+                _usings + snippet,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("InterfaceTypeAttribute", "InterfaceIsIDispatch"));
         }
 
         [Fact]
@@ -162,13 +168,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string snippet =
                 $$$"""
 
-                [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIDispatch)]
+                [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)|}]
                 partial interface IFoo
                 {
                     void Bar() {}
                 }
 
-                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface(typeof(MyComWrappers))]
                 partial interface IFoo
                 {
                     void Lorem() {}
@@ -179,7 +185,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 """;
-            Assert.Single(await CompileAndRunAnalyzer(_usings + snippet));
+            await VerifyCS.VerifyAnalyzerAsync(
+                _usings + snippet,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("InterfaceTypeAttribute", "InterfaceIsIDispatch"));
         }
     }
 }

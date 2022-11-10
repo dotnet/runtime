@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -169,7 +169,7 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
                     new CompilationWithAnalyzersOptions(
                         options,
                         onAnalyzerException: null,
-                        concurrentAnalysis: true,
+                        concurrentAnalysis: !Debugger.IsAttached,
                         logAnalyzerExecutionTime: true,
                         reportSuppressedDiagnostics: false,
                         analyzerExceptionFilter: ex =>
