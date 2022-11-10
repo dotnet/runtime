@@ -81,7 +81,7 @@ namespace System.Reflection.PortableExecutable
         DynamicBase = 0x0040,
 
         /// <summary>
-        /// The image requires to be signed before it runs.
+        /// Code integrity checks are enforced.
         /// </summary>
         ForceIntegrity = 0x0080,
 
