@@ -8739,58 +8739,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     return tree;
 }
 
-//------------------------------------------------------------------------
-// fgMorphBlockOperand: Retype an operand of a block assignment
-//
-// Arguments:
-//    tree    - The block operand
-//    asgType - The (new) scalar type of the assignment
-//
-// Return Value:
-//    Returns the morphed block operand
-//
-GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType)
-{
-    assert(asgType != TYP_STRUCT);
-
-    GenTree* effectiveVal = tree->gtEffectiveVal();
-    unsigned blockWidth   = genTypeSize(asgType);
-
-    if (effectiveVal->OperIsIndir())
-    {
-        GenTree* addr = effectiveVal->AsIndir()->Addr();
-        if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == asgType))
-        {
-            effectiveVal = addr->gtGetOp1();
-        }
-        else if (effectiveVal->OperIsBlk())
-        {
-            effectiveVal->SetOper(GT_IND);
-        }
-
-        effectiveVal->gtType = asgType;
-    }
-    else if (effectiveVal->TypeGet() != asgType)
-    {
-        if (effectiveVal->IsCall())
-        {
-#ifdef DEBUG
-            GenTreeCall* call = effectiveVal->AsCall();
-            assert(call->TypeGet() == TYP_STRUCT);
-            assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
-#endif
-        }
-        else
-        {
-            GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-            effectiveVal  = gtNewIndir(asgType, addr);
-        }
-    }
-
-    assert(effectiveVal->TypeIs(asgType));
-    return effectiveVal;
-}
-
 #ifdef FEATURE_SIMD
 
 //--------------------------------------------------------------------------------------------------------------
