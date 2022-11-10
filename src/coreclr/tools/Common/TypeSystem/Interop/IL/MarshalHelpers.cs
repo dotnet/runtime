@@ -940,13 +940,13 @@ namespace Internal.TypeSystem.Interop
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
         }
 
-        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, PInvokeMetadata metadata)
+        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
-            if (!target.IsOSX || metadata.Module != ObjectiveCLibrary)
+            if (!target.IsOSX || pinvokeModule != ObjectiveCLibrary)
                 return null;
 
 #pragma warning disable CA1416
-            return metadata.Name switch
+            return pinvokeFunction switch
             {
                 "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
                 "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,

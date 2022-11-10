@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Internal.IL.Stubs;
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -17,11 +19,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class PInvokeMethodFixupNode : ObjectNode, ISymbolDefinitionNode
     {
-        private const int CharSetMask = 0x7;
-        private const int IsObjectiveCMessageSendMask = 0x8;
-        private const int ObjectiveCMessageSendFunctionMask = 0x70;
-        private const int ObjectiveCMessageSendFunctionShift = 4;
-
         private readonly PInvokeMethodData _pInvokeMethodData;
 
         public PInvokeMethodFixupNode(PInvokeMethodData pInvokeMethodData)
@@ -79,12 +76,22 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_pInvokeMethodData.ModuleData));
 
-            int flags = (int)_pInvokeMethodData.CharSetMangling & CharSetMask;
+            int flags = 0;
 
-            if (_pInvokeMethodData.ObjectiveCMessageSendFunction.HasValue)
+            int charsetFlags = (int)_pInvokeMethodData.CharSetMangling;
+            Debug.Assert((charsetFlags & MethodFixupCellFlagsConstants.CharSetMask) == charsetFlags);
+            charsetFlags &= MethodFixupCellFlagsConstants.CharSetMask;
+            flags |= charsetFlags;
+
+            int? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
+            if (objcFunction.HasValue)
             {
-                flags |= IsObjectiveCMessageSendMask;
-                flags |= (_pInvokeMethodData.ObjectiveCMessageSendFunction.Value << ObjectiveCMessageSendFunctionShift) & ObjectiveCMessageSendFunctionMask;
+                flags |= MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask;
+
+                int objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+                Debug.Assert((objcFunctionFlags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) == objcFunctionFlags);
+                objcFunctionFlags &= MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask;
+                flags |= objcFunctionFlags;
             }
 
             builder.EmitInt(flags);
@@ -105,9 +112,8 @@ namespace ILCompiler.DependencyAnalysis
         public readonly PInvokeModuleData ModuleData;
         public readonly string EntryPointName;
         public readonly CharSet CharSetMangling;
-        public readonly int? ObjectiveCMessageSendFunction;
 
-        public PInvokeMethodData(TargetDetails target, PInvokeLazyFixupField pInvokeLazyFixupField)
+        public PInvokeMethodData(PInvokeLazyFixupField pInvokeLazyFixupField)
         {
             PInvokeMetadata metadata = pInvokeLazyFixupField.PInvokeMetadata;
             ModuleDesc declaringModule = ((MetadataType)pInvokeLazyFixupField.TargetMethod.OwningType).Module;
@@ -148,8 +154,6 @@ namespace ILCompiler.DependencyAnalysis
                 charSetMangling = isAnsi ? CharSet.Ansi : CharSet.Unicode;
             }
             CharSetMangling = charSetMangling;
-
-            ObjectiveCMessageSendFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(target, metadata);
         }
 
         public bool Equals(PInvokeMethodData other)
