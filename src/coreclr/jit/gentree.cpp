@@ -20023,17 +20023,21 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
             if (intrinsic == NI_Illegal)
             {
-                // If we don't have an intrinsic set for this, try "Min(op1, op2) == op1"
+                // If we don't have an intrinsic set for this, try "Max(op1, op2) == op1"
+                // NOTE: technically, we can special case byte type to only require SSE2, but it
+                // complicates the test matrix for little gains.
                 if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
                     ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
-                    // We can't use this trick for longs
+                    // TODO-AVX512: We can use this trick for longs only with AVX-512
                     if (!varTypeIsLong(simdBaseType))
                     {
                         assert(!varTypeIsFloating(simdBaseType));
                         GenTree* op1Dup;
                         op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector GreaterThanOrEqual"));
+
+                        // EQ(Max(op1, op2), op1)
                         GenTree* maxNode =
                             gtNewSimdMaxNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                         return gtNewSimdCmpOpNode(GT_EQ, type, maxNode, op1Dup, simdBaseJitType, simdSize,
@@ -20268,10 +20272,12 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
             if (intrinsic == NI_Illegal)
             {
                 // If we don't have an intrinsic set for this, try "Min(op1, op2) == op1"
+                // NOTE: technically, we can special case byte type to only require SSE2, but it
+                // complicates the test matrix for little gains.
                 if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
                     ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
-                    // We can't use this trick for longs
+                    // TODO-AVX512: We can use this trick for longs only with AVX-512
                     if (!varTypeIsLong(simdBaseType))
                     {
                         assert(!varTypeIsFloating(simdBaseType));
@@ -20279,6 +20285,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                         op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector LessThanOrEqual"));
 
+                        // EQ(Min(op1, op2), op1)
                         GenTree* minNode =
                             gtNewSimdMinNode(type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
                         return gtNewSimdCmpOpNode(GT_EQ, type, minNode, op1Dup, simdBaseJitType, simdSize,
