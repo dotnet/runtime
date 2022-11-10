@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     // Implements an IL scanner that scans method bodies to be compiled by the code generation

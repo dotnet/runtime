@@ -222,7 +222,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
-            Assembly assembly = LoadAssembly(assemblyName, true);
+            Assembly assembly = LoadAssembly(assemblyName);
             Type[] types;
 
             if (typeNames == null || typeNames.Count == 0)
@@ -473,7 +473,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
         }
 
-        private static Assembly LoadAssembly(string assemblyName, bool throwOnFail)
+        private static Assembly LoadAssembly(string assemblyName)
         {
             Assembly assembly;
             string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);

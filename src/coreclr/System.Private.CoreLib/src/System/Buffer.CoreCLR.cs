@@ -38,6 +38,7 @@ namespace System
                 _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Non-inlinable wrapper around the loop for copying large blocks in chunks
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
@@ -72,6 +73,7 @@ namespace System
             }
             __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);

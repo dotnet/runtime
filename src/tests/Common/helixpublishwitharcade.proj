@@ -391,6 +391,8 @@
 
     <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
@@ -652,6 +654,8 @@
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
     <HelixPreCommand Include="cat $__TestEnv" />
+
+    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
@@ -738,18 +742,60 @@
     </MergedPayloads>
   </ItemGroup>
 
+  <PropertyGroup>
+    <!-- Enable stress work item striping on GCstress only -->
+    <StripeMergedStressWorkItems Condition="$(Scenario.Contains('gcstress'))">true</StripeMergedStressWorkItems>
+    <!-- Striping is only enabled for the desktop version of the test harness, disable it regardless of scenario on
+         other systems. -->
+    <StripeMergedStressWorkItems Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true' or '$(TargetsMobile)' == 'true'">false</StripeMergedStressWorkItems>
+  </PropertyGroup>
+
+  <Target Name="FindStressMarkers" BeforeTargets="PrepareMergedStressHelixWorkItems">
+    <ItemGroup>
+      <_MergedStressWrapperMarker Condition="'$(StripeMergedStressWorkItems)'=='true'" Include="$(TestBinDir)**\*.MergedTestAssemblyForStress"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedStressHelixWorkItems" 
+          BeforeTargets="PrepareMergedHelixWorkItems" 
+          Condition="'$(StripeMergedStressWorkItems)'=='true'"
+          Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
+    <PropertyGroup>
+      <WithoutFinalExt>%(_MergedStressWrapperMarker.Filename)</WithoutFinalExt>
+      <TotalStripes>$([System.IO.Path]::GetExtension('$(WithoutFinalExt)'))</TotalStripes>
+      <WithoutFinalExt2>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt)'))</WithoutFinalExt2>
+      <ActiveStripe>$([System.IO.Path]::GetExtension('$(WithoutFinalExt2)'))</ActiveStripe>
+      <WithoutFinalExt3>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt2)'))</WithoutFinalExt3>
+      <MergedWrapperPayloadGroup>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt3)'))</MergedWrapperPayloadGroup>
+      <StripePayloadGroup>$(MergedWrapperPayloadGroup)$(ActiveStripe)$(TotalStripes)</StripePayloadGroup>
+      <FullName>%(_MergedStressWrapperMarker.Identity)</FullName>
+    </PropertyGroup>
+    <ItemGroup>
+      <HelixWorkItem Include="$(StripePayloadGroup)" Condition="'%(MergedPayloads.PayloadGroup)'=='$(MergedWrapperPayloadGroup)' and ! $(FullName.Contains('MergedPayloads'))">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>$([System.String]::Copy('%(MergedPayloads.MergedTestHelixCommand)').Replace('TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1','TEST_HARNESS_STRIPE_TO_EXECUTE=$(ActiveStripe)$(TotalStripes)'))</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedHelixWorkItems" BeforeTargets="CoreTest">
+    <ItemGroup>
+      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StripeMergedStressWorkItems)'!= 'true'">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>%(MergedPayloads.MergedTestHelixCommand)</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
-      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-
-    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
-      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>

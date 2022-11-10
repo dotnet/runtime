@@ -10,12 +10,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal class CompilerIdentifierNode : HeaderTableNode
     {
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override int ClassCode => 230053202;
 
         public CompilerIdentifierNode(TargetDetails target)
-            : base(target)
         {
         }
 

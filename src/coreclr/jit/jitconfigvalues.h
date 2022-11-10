@@ -300,8 +300,10 @@ CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the regis
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
 #if defined(DEBUG)
-CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
-#endif // DEBUG                                                               // DEBUG
+CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable EVEX encoding for SIMD instructions when
+                                                                     // AVX-512VL is available.
+CONFIG_INTEGER(JitForceEVEXEncoding, W("JitForceEVEXEncoding"), 0)   // Force EVEX encoding for SIMD instructions.
+#endif
 
 // clang-format off
 

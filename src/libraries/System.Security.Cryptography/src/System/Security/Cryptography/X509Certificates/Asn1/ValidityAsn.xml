@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="ValidityAsn"
-  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+  namespace="System.Security.Cryptography.X509Certificates.Asn1"
+  rebind="false">
 
   <!--
     https://tools.ietf.org/html/rfc5280#section-4.1
@@ -12,6 +13,6 @@
         notAfter       Time
     }
   -->
-  <asn:AsnType name="NotBefore" typeName="System.Security.Cryptography.X509Certificates.Asn1.TimeAsn" />
-  <asn:AsnType name="NotAfter" typeName="System.Security.Cryptography.X509Certificates.Asn1.TimeAsn" />
+  <asn:AsnType name="NotBefore" typeName="System.Security.Cryptography.X509Certificates.Asn1.TimeAsn" rebind="false" />
+  <asn:AsnType name="NotAfter" typeName="System.Security.Cryptography.X509Certificates.Asn1.TimeAsn" rebind="false" />
 </asn:Sequence>

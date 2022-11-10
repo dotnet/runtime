@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
-  framework: net7.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
+  framework: net8.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   runtimeType: 'coreclr'
@@ -55,7 +55,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
-    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'

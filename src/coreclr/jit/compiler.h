@@ -2373,8 +2373,6 @@ public:
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
     GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
 
-    GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -5722,6 +5720,7 @@ private:
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
+    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
@@ -5773,7 +5772,6 @@ private:
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
                                            methodPointerInfo*      ldftnToken);
     GenTree* fgMorphLeaf(GenTree* tree);
-    void fgAssignSetVarDef(GenTree* tree);
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
@@ -8999,6 +8997,14 @@ private:
     bool canUseEvexEncoding() const
     {
 #ifdef TARGET_XARCH
+
+#ifdef DEBUG
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
 #else
         return false;
@@ -9013,17 +9019,22 @@ private:
     //
     bool DoJitStressEvexEncoding() const
     {
-#ifdef TARGET_XARCH
-// Using JitStressEvexEncoding flag will force instructions which would
-// otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-// This requires AVX512VL support.
-#ifdef DEBUG
+#if defined(TARGET_XARCH) && defined(DEBUG)
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
+
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
         if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             return true;
         }
-#endif // DEBUG
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && DEBUG
+
         return false;
     }
 

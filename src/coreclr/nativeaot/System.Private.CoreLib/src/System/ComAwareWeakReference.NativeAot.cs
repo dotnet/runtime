@@ -4,6 +4,9 @@
 using System;
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+#pragma warning disable IDE0060
+
 namespace System
 {
     internal sealed partial class ComAwareWeakReference

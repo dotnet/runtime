@@ -8648,9 +8648,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STIND_R8:
                 lclTyp = TYP_DOUBLE;
                 goto STIND;
-            STIND:
 
+            STIND:
                 op2 = impPopStack().val; // value to store
+
+            STIND_VALUE:
                 op1 = impPopStack().val; // address to store to
 
                 // you can indirect off of a TYP_I_IMPL (if we are in C) or a BYREF
@@ -10861,23 +10863,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                op2 = gtNewIconNode(0);  // Value
-                op1 = impPopStack().val; // Dest
+                lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
+                if (lclTyp != TYP_STRUCT)
+                {
+                    op2 = gtNewZeroConNode(genActualType(lclTyp));
+                    goto STIND_VALUE;
+                }
 
-                if (eeIsValueClass(resolvedToken.hClass))
-                {
-                    op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
-                    if (op1->OperIs(GT_OBJ))
-                    {
-                        gtSetObjGcInfo(op1->AsObj());
-                    }
-                }
-                else
-                {
-                    size = info.compCompHnd->getClassSize(resolvedToken.hClass);
-                    assert(size == TARGET_POINTER_SIZE);
-                    op1 = gtNewBlockVal(op1, size);
-                }
+                op1 = impPopStack().val;
+                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
+                op2 = gtNewIconNode(0);
 
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 goto SPILL_APPEND;
@@ -10909,7 +10904,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= GTF_BLK_VOLATILE;
                     }
                 }
-
                 goto SPILL_APPEND;
 
             case CEE_CPBLK:
@@ -10936,11 +10930,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= GTF_BLK_VOLATILE;
                     }
                 }
-
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:
-
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10960,10 +10953,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND;
                 }
 
-                op2 = impPopStack().val; // Src
-                op1 = impPopStack().val; // Dest
-                op1 = gtNewCpObjNode(op1, op2, resolvedToken.hClass, ((prefixFlags & PREFIX_VOLATILE) != 0));
+                op2 = impPopStack().val; // Src addr
+                op1 = impPopStack().val; // Dest addr
+
+                ClassLayout* layout = typGetObjLayout(resolvedToken.hClass);
+                op1                 = gtNewStructVal(layout, op1);
+                op2                 = gtNewStructVal(layout, op2);
+                if (op1->OperIs(GT_OBJ))
+                {
+                    gtSetObjGcInfo(op1->AsObj());
+                }
+                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0), /* isCopyBlock */ true);
                 goto SPILL_APPEND;
+            }
 
             case CEE_STOBJ:
             {

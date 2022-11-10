@@ -2180,6 +2180,20 @@ private:
 
     instrDesc* emitLastIns;
 
+    // Check if a peephole optimization involving emitLastIns is safe.
+    //
+    // We must have a lastInstr to consult.
+    // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
+    // The final check prevents looking across an IG boundary unless we're in an extension IG.
+    bool emitCanPeepholeLastIns()
+    {
+        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
+               !emitForceNewIG &&                          // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
+                                                           //    and it's an extension IG
+    }
+
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
 #endif

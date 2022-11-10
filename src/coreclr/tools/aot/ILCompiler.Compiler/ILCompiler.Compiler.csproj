@@ -358,8 +358,8 @@
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodProxy.cs" />
     <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
-    <Compile Include="Compiler\Dataflow\MethodThisParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\Origin.cs" />
+    <Compile Include="Compiler\Dataflow\ParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />

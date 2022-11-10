@@ -208,7 +208,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteAttributes(XmlAttribute[]? a, XmlSchemaObject o)
+        private void WriteAttributes(XmlAttribute[]? a)
         {
             if (a == null) return;
             ArrayList attrs = new ArrayList();
@@ -299,7 +299,7 @@ namespace System.Xml.Serialization
             if (o is null) return;
             WriteStartElement("attribute");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             WriteAttribute(@"default", @"", ((string?)o.@DefaultValue));
             WriteAttribute(@"fixed", @"", ((string?)o.@FixedValue));
             if (o.Parent != null && !(o.Parent is XmlSchema))
@@ -372,7 +372,7 @@ namespace System.Xml.Serialization
             }
             else if (t == typeof(XmlSchemaXPath))
             {
-                Write49_XmlSchemaXPath("xpath", "", (XmlSchemaXPath)o);
+                Write49_XmlSchemaXPath("xpath", (XmlSchemaXPath)o);
                 return;
             }
             else if (t == typeof(XmlSchemaIdentityConstraint))
@@ -493,7 +493,7 @@ namespace System.Xml.Serialization
             WriteStartElement("annotation");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             System.Xml.Schema.XmlSchemaObjectCollection a = (System.Xml.Schema.XmlSchemaObjectCollection)o.@Items;
             if (a != null)
             {
@@ -558,7 +558,7 @@ namespace System.Xml.Serialization
             WriteStartElement("simpleType");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             WriteAttribute(@"name", @"", ((string?)o.@Name));
             WriteAttribute(@"final", @"", Write11_XmlSchemaDerivationMethod(o.FinalResolved));
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
@@ -588,7 +588,7 @@ namespace System.Xml.Serialization
             WriteStartElement("union");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
 
             if (o.MemberTypes != null)
             {
@@ -620,7 +620,7 @@ namespace System.Xml.Serialization
             WriteStartElement("list");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             if (!o.@ItemTypeName.IsEmpty)
             {
                 WriteAttribute(@"itemType", @"", o.@ItemTypeName);
@@ -635,7 +635,7 @@ namespace System.Xml.Serialization
             if (o is null) return;
             WriteStartElement("restriction");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             if (!o.@BaseTypeName.IsEmpty)
             {
                 WriteAttribute(@"base", @"", o.@BaseTypeName);
@@ -721,7 +721,7 @@ namespace System.Xml.Serialization
             {
                 WriteAttribute(@"fixed", @"", XmlConvert.ToString(o.IsFixed));
             }
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -746,7 +746,7 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteSortedItems(o.Attributes);
             Write33_XmlSchemaAnyAttribute((XmlSchemaAnyAttribute?)o.@AnyAttribute);
@@ -764,7 +764,7 @@ namespace System.Xml.Serialization
             {
                 WriteAttribute("ref", "", o.RefName);
             }
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -778,7 +778,7 @@ namespace System.Xml.Serialization
             WriteAttribute("namespace", "", ToString(o.NamespaceList));
             XmlSchemaContentProcessing process = o.@ProcessContents == XmlSchemaContentProcessing.@None ? XmlSchemaContentProcessing.Strict : o.@ProcessContents;
             WriteAttribute(@"processContents", @"", Write34_XmlSchemaContentProcessing(process));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -813,7 +813,7 @@ namespace System.Xml.Serialization
             {
                 WriteAttribute(@"mixed", @"", XmlConvert.ToString((bool)(bool)o.@IsMixed));
             }
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             if (o.@ContentModel is XmlSchemaComplexContent)
             {
@@ -850,7 +850,7 @@ namespace System.Xml.Serialization
             WriteStartElement("simpleContent");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             if (o.@Content is XmlSchemaSimpleContentRestriction)
             {
@@ -869,7 +869,7 @@ namespace System.Xml.Serialization
             WriteStartElement("extension");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             if (!o.@BaseTypeName.IsEmpty)
             {
                 WriteAttribute(@"base", @"", o.@BaseTypeName);
@@ -885,7 +885,7 @@ namespace System.Xml.Serialization
             if (o is null) return;
             WriteStartElement("restriction");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             if (!o.@BaseTypeName.IsEmpty)
             {
                 WriteAttribute(@"base", @"", o.@BaseTypeName);
@@ -905,7 +905,7 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"mixed", @"", XmlConvert.ToString((bool)((bool)o.@IsMixed)));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             if (o.@Content is XmlSchemaComplexContentRestriction)
             {
@@ -924,7 +924,7 @@ namespace System.Xml.Serialization
             WriteStartElement("extension");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             if (!o.@BaseTypeName.IsEmpty)
             {
                 WriteAttribute(@"base", @"", o.@BaseTypeName);
@@ -959,7 +959,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
             WriteAttribute("maxOccurs", "", o.MaxOccurs == decimal.MaxValue ? "unbounded" : XmlConvert.ToString(o.MaxOccurs));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteSortedItems(o.@Items);
             WriteEndElement();
@@ -1012,7 +1012,7 @@ namespace System.Xml.Serialization
                 WriteAttribute("type", "", o.SchemaTypeName);
             }
 
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation(o.Annotation);
             if (o.SchemaType is XmlSchemaComplexType)
             {
@@ -1032,16 +1032,16 @@ namespace System.Xml.Serialization
             WriteStartElement("key");
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            Write49_XmlSchemaXPath(@"selector", @"", (XmlSchemaXPath?)o.@Selector);
+            Write49_XmlSchemaXPath(@"selector", (XmlSchemaXPath?)o.@Selector);
             {
                 XmlSchemaObjectCollection a = (XmlSchemaObjectCollection)o.@Fields;
                 if (a != null)
                 {
                     for (int ia = 0; ia < a.Count; ia++)
                     {
-                        Write49_XmlSchemaXPath(@"field", @"", (XmlSchemaXPath)a[ia]);
+                        Write49_XmlSchemaXPath(@"field", (XmlSchemaXPath)a[ia]);
                     }
                 }
             }
@@ -1069,13 +1069,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void Write49_XmlSchemaXPath(string name, string ns, XmlSchemaXPath? o)
+        private void Write49_XmlSchemaXPath(string name, XmlSchemaXPath? o)
         {
             if (o is null) return;
             WriteStartElement(name);
             WriteAttribute(@"id", @"", o.@Id);
             WriteAttribute(@"xpath", @"", o.@XPath);
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -1087,18 +1087,18 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             // UNDONE compare reference here
             WriteAttribute(@"refer", @"", o.@Refer);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            Write49_XmlSchemaXPath(@"selector", @"", (XmlSchemaXPath?)o.@Selector);
+            Write49_XmlSchemaXPath(@"selector", (XmlSchemaXPath?)o.@Selector);
             {
                 XmlSchemaObjectCollection a = (XmlSchemaObjectCollection)o.@Fields;
                 if (a != null)
                 {
                     for (int ia = 0; ia < a.Count; ia++)
                     {
-                        Write49_XmlSchemaXPath(@"field", @"", (XmlSchemaXPath)a[ia]);
+                        Write49_XmlSchemaXPath(@"field", (XmlSchemaXPath)a[ia]);
                     }
                 }
             }
@@ -1112,15 +1112,15 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            Write49_XmlSchemaXPath("selector", "", (XmlSchemaXPath?)o.@Selector);
+            Write49_XmlSchemaXPath("selector", (XmlSchemaXPath?)o.@Selector);
             XmlSchemaObjectCollection a = (XmlSchemaObjectCollection)o.@Fields;
             if (a != null)
             {
                 for (int ia = 0; ia < a.Count; ia++)
                 {
-                    Write49_XmlSchemaXPath("field", "", (XmlSchemaXPath)a[ia]);
+                    Write49_XmlSchemaXPath("field", (XmlSchemaXPath)a[ia]);
                 }
             }
             WriteEndElement();
@@ -1134,7 +1134,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
             WriteAttribute(@"maxOccurs", @"", o.MaxOccurs == decimal.MaxValue ? "unbounded" : XmlConvert.ToString(o.MaxOccurs));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteSortedItems(o.@Items);
             WriteEndElement();
@@ -1151,7 +1151,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"namespace", @"", ToString(o.NamespaceList));
             XmlSchemaContentProcessing process = o.@ProcessContents == XmlSchemaContentProcessing.@None ? XmlSchemaContentProcessing.Strict : o.@ProcessContents;
             WriteAttribute(@"processContents", @"", Write34_XmlSchemaContentProcessing(process));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -1164,7 +1164,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
             WriteAttribute("maxOccurs", "", o.MaxOccurs == decimal.MaxValue ? "unbounded" : XmlConvert.ToString(o.MaxOccurs));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             XmlSchemaObjectCollection a = (XmlSchemaObjectCollection)o.@Items;
             if (a != null)
@@ -1210,7 +1210,7 @@ namespace System.Xml.Serialization
             {
                 WriteAttribute("ref", "", o.RefName);
             }
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             WriteEndElement();
         }
@@ -1221,7 +1221,7 @@ namespace System.Xml.Serialization
             WriteStartElement("restriction");
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
 
             if (!o.@BaseTypeName.IsEmpty)
             {
@@ -1257,7 +1257,7 @@ namespace System.Xml.Serialization
 
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
-            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
+            WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
             if (o.@Particle is XmlSchemaSequence)
             {

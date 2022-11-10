@@ -288,6 +288,7 @@ private:
         const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
 
         GenTree* regOptionalOperand = nullptr;
+
         if (op1Legal)
         {
             regOptionalOperand = op2Legal ? PreferredRegOptionalOperand(tree) : op1;
@@ -296,9 +297,10 @@ private:
         {
             regOptionalOperand = op2;
         }
+
         if (regOptionalOperand != nullptr)
         {
-            regOptionalOperand->SetRegOptional();
+            MakeSrcRegOptional(tree, regOptionalOperand);
         }
     }
 #endif // defined(TARGET_XARCH)
@@ -325,6 +327,8 @@ private:
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
+
+    void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
@@ -447,7 +451,7 @@ public:
     bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
     // Tries to get a containable node for a given HWIntrinsic
     bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
                                         GenTree**           pNode,
@@ -464,6 +468,17 @@ private:
 
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTree* parentNode, GenTree* childNode) const;
+
+    // Makes 'childNode' regOptional in the 'parentNode'
+    void MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+#if defined(FEATURE_HW_INTRINSICS)
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+#endif
 
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);

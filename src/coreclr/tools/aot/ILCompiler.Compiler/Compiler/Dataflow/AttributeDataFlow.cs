@@ -82,12 +82,12 @@ namespace ILCompiler.Dataflow
 
         private void ProcessAttributeDataflow(MethodDesc method, ImmutableArray<object?> arguments, ref DependencyList? result)
         {
-            for (int i = 0; i < method.Signature.Length; i++)
+            foreach (var parameter in method.GetMetadataParameters())
             {
-                var parameterValue = _annotations.GetMethodParameterValue(method, i);
+                var parameterValue = _annotations.GetMethodParameterValue(parameter);
                 if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
-                    MultiValue value = GetValueForCustomAttributeArgument(arguments[i]);
+                    MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
                     var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
                     RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin, ref result);
                 }
