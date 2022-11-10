@@ -2373,8 +2373,6 @@ public:
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
     GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
 
-    GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -5722,6 +5720,7 @@ private:
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
+    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
@@ -5773,7 +5772,6 @@ private:
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
                                            methodPointerInfo*      ldftnToken);
     GenTree* fgMorphLeaf(GenTree* tree);
-    void fgAssignSetVarDef(GenTree* tree);
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);

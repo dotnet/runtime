@@ -145,7 +145,7 @@ namespace Mono.Linker.Dataflow
 				// Discover calls or references to lambdas or local functions. This includes
 				// calls to local functions, and lambda assignments (which use ldftn).
 				if (method.Body != null) {
-					foreach (var instruction in method.Body.Instructions) {
+					foreach (var instruction in _context.GetMethodIL (method).Instructions) {
 						switch (instruction.OpCode.OperandType) {
 						case OperandType.InlineMethod: {
 								MethodDefinition? referencedMethod = _context.TryResolve ((MethodReference) instruction.Operand);
@@ -354,7 +354,7 @@ namespace Mono.Linker.Dataflow
 
 			GenericInstanceType? ScanForInit (TypeDefinition compilerGeneratedType, MethodBody body)
 			{
-				foreach (var instr in body.Instructions) {
+				foreach (var instr in _context.GetMethodIL (body).Instructions) {
 					bool handled = false;
 					switch (instr.OpCode.Code) {
 					case Code.Initobj:

@@ -1812,6 +1812,8 @@ public:
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
 
+    inline GenTree*& Data();
+
     bool TryGetUse(GenTree* operand, GenTree*** pUse);
 
     bool TryGetUse(GenTree* operand)
@@ -8935,6 +8937,12 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;
+}
+
+inline GenTree*& GenTree::Data()
+{
+    assert(OperIsStore() && (OperIsIndir() || OperIsLocal()));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
