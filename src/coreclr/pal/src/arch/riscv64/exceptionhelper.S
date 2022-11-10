@@ -21,6 +21,8 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     // loading the FP from the context, but before loading the SP from the context.
     sd  fp, 0(sp)
     sd  ra, 8(sp)
+    .cfi_rel_offset fp, 0
+    .cfi_rel_offset ra, 8
 
     ld  tp, CONTEXT_Tp(a0)
     ld  gp, CONTEXT_Gp(a0)
@@ -41,6 +43,6 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     ld  sp, CONTEXT_Sp(a0)
 
     // The PAL_SEHException pointer
-    ori  a0, a1, 0
-    j ThrowExceptionHelper
+    addi a0, a1, 0
+    jal  x0, ThrowExceptionHelper
 LEAF_END ThrowExceptionFromContextInternal, _TEXT

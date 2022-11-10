@@ -16,7 +16,7 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
 
     lwu a1, CallDescrData__numStackSlots(a0)
 
-    ori s1, a0, 0 // save pCallDescrData in s1
+    addi s1, a0, 0 // save pCallDescrData in s1
     beq a1, zero, LOCAL_LABEL(donestack)
 
     slli a2, a1, 3
