@@ -453,7 +453,10 @@ void ExecutableAllocator::Release(void* pRX)
 
         if (pBlock != NULL)
         {
-            VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size);
+            if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+            {
+                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+            }
             // Put the released block into the free block list
             pBlock->baseRX = NULL;
             pBlock->next = m_pFirstFreeBlockRX;
