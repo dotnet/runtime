@@ -56,6 +56,8 @@
 #include "excep.h"
 #endif
 
+#include "exinfo.h"
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -4214,6 +4216,39 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void ThrowNew(OBJECTREF oref)
+{
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
+    {
+        GCPROTECT_BEGIN(oref);
+
+        WrapNonCompliantException(&oref);
+
+        GCPROTECT_END();
+    }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref);
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -4232,6 +4267,13 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        ThrowNew(oref);
+        UNREACHABLE();
+    }
+#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -4267,6 +4309,31 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void RethrowNew()
+{
+    CONTEXT ctx = {};
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    REGDISPLAY rd;
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+
+    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
@@ -4274,6 +4341,14 @@ HCIMPL0(void, IL_Rethrow)
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        RethrowNew();
+        UNREACHABLE();
+    }
+#endif
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -4934,8 +5009,6 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
     thread->HandleThreadAbort();
     HELPER_METHOD_FRAME_END();
-
-    InlinedCallFrame* frame = (InlinedCallFrame*)thread->m_pFrame;
 
     thread->m_pFrame->Pop(thread);
 

@@ -8233,13 +8233,13 @@ void Thread::InitializeSpecialUserModeApc()
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
     __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);

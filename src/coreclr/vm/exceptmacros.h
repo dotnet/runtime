@@ -116,10 +116,16 @@ struct _EXCEPTION_REGISTRATION_RECORD;
 class Thread;
 class Frame;
 class Exception;
+struct REGDISPLAY;
+
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+#endif
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #include <excepcpu.h>
+#include <runtimeexceptionkind.h>
 
 //==========================================================================
 // Macros to allow catching exceptions from within the EE. These are lightweight
@@ -310,6 +316,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 
