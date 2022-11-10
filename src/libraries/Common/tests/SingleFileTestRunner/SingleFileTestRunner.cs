@@ -24,6 +24,14 @@ public class SingleFileTestRunner : XunitTestFramework
 
     public static int Main(string[] args)
     {
+#if SINGLE_FILE_REMOTE_EXECUTOR
+        int? maybeExitCode = Microsoft.DotNet.RemoteExecutor.Program.TryExecute(args);
+        if (maybeExitCode.HasValue)
+        {
+            return maybeExitCode.Value;
+        }
+#endif // SINGLE_FILE_REMOTE_EXECUTOR
+
         var asm = typeof(SingleFileTestRunner).Assembly;
         Console.WriteLine("Running assembly:" + asm.FullName);
 
