@@ -276,10 +276,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    SyntaxNode syntax = argument.Syntax;
-                    return syntax is ArgumentSyntax { NameColon: not null } argumentSyntax ?
-                        argumentSyntax.WithNameColon(null) :
-                        syntax;
+                    return argument.Value.Syntax;
                 }
             }
 
