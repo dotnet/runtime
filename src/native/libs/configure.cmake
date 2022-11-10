@@ -876,6 +876,10 @@ check_symbol_exists(
     HAVE_GETGROUPLIST)
 
 check_include_files(
+    "grp.h"
+    HAVE_GRP_H)
+
+check_include_files(
     "syslog.h"
     HAVE_SYSLOG_H)
 

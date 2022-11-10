@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#if HAVE_GETGROUPLIST
+#if HAVE_GRP_H
 #include <grp.h>
 #endif
 #if HAVE_PWD_H

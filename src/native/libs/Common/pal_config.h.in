@@ -128,6 +128,7 @@
 #cmakedefine01 HAVE_GETGROUPLIST
 #cmakedefine01 HAVE_SYSLOG_H
 #cmakedefine01 HAVE_PWD_H
+#cmakedefine01 HAVE_GRP_H
 #cmakedefine01 HAVE_TERMIOS_H
 #cmakedefine01 HAVE_DLFCN_H
 #cmakedefine01 HAVE_PTHREAD_H

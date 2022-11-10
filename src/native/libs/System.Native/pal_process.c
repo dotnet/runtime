@@ -8,7 +8,7 @@
 
 #include <assert.h>
 #include <errno.h>
-#if HAVE_GETGROUPLIST
+#if HAVE_GRP_H
 #include <grp.h>
 #endif
 #include <limits.h>
