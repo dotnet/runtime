@@ -29,9 +29,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     public class ParallelOptions
     {
-        private TaskScheduler? _scheduler;
         private int _maxDegreeOfParallelism;
-        private CancellationToken _cancellationToken;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ParallelOptions"/> class.
@@ -45,9 +43,9 @@ namespace System.Threading.Tasks
         /// </remarks>
         public ParallelOptions()
         {
-            _scheduler = TaskScheduler.Default;
+            TaskScheduler = TaskScheduler.Default;
             _maxDegreeOfParallelism = -1;
-            _cancellationToken = CancellationToken.None;
+            CancellationToken = CancellationToken.None;
         }
 
         /// <summary>
@@ -55,14 +53,10 @@ namespace System.Threading.Tasks
         /// associated with this <see cref="ParallelOptions"/> instance. Setting this property to null
         /// indicates that the current scheduler should be used.
         /// </summary>
-        public TaskScheduler? TaskScheduler
-        {
-            get { return _scheduler; }
-            set { _scheduler = value; }
-        }
+        public TaskScheduler? TaskScheduler { get; set; }
 
         // Convenience property used by TPL logic
-        internal TaskScheduler EffectiveTaskScheduler => _scheduler ?? TaskScheduler.Current;
+        internal TaskScheduler EffectiveTaskScheduler => TaskScheduler ?? TaskScheduler.Current;
 
         /// <summary>
         /// Gets or sets the maximum degree of parallelism enabled by this ParallelOptions instance.
@@ -83,7 +77,7 @@ namespace System.Threading.Tasks
             get { return _maxDegreeOfParallelism; }
             set
             {
-                if ((value == 0) || (value < -1))
+                if (value == 0 || (value < -1))
                     throw new ArgumentOutOfRangeException(nameof(MaxDegreeOfParallelism));
                 _maxDegreeOfParallelism = value;
             }
@@ -100,11 +94,7 @@ namespace System.Threading.Tasks
         /// token being set, it may exit early by throwing an
         /// <see cref="System.OperationCanceledException"/>.
         /// </remarks>
-        public CancellationToken CancellationToken
-        {
-            get { return _cancellationToken; }
-            set { _cancellationToken = value; }
-        }
+        public CancellationToken CancellationToken { get; set; }
 
         internal int EffectiveMaxConcurrencyLevel
         {
@@ -119,7 +109,7 @@ namespace System.Threading.Tasks
                 return rval;
             }
         }
-    }  // class ParallelOptions
+    }
 
     #region Worker Bodies
 
@@ -130,7 +120,7 @@ namespace System.Threading.Tasks
         virtual void Finally() { }
     }
 
-    internal  interface IWorkerBodyWithIndex<in TValue, in TIndex> : IWorkerBody<TValue>
+    internal interface IWorkerBodyWithIndex<in TValue, in TIndex> : IWorkerBody<TValue>
         where TIndex: INumber<TIndex>
     {
         void SetIteration(TIndex index);
@@ -611,7 +601,7 @@ namespace System.Threading.Tasks
 
         public static long GetStartIndex(IEnumerable<TValue> source) => 0;
 
-        public static long GetEndIndex(IEnumerable<TValue> source)  => 0;
+        public static long GetEndIndex(IEnumerable<TValue> source) => 0;
 
         public static long GetTotalIterations(IEnumerable<TValue> source, ParallelLoopStateFlags sharedPStateFlags) => 0;
     }
@@ -628,10 +618,10 @@ namespace System.Threading.Tasks
     public static partial class Parallel
     {
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
-        internal static int s_forkJoinContextID;
+        internal static int s_forkJoinContextId;
 
         // We use a stride for loops to amortize the frequency of interlocked operations.
-        internal const int DEFAULT_LOOP_STRIDE = 16;
+        internal const int DefaultLoopStride = 16;
 
         // Static variable to hold default parallel options
         internal static readonly ParallelOptions s_defaultParallelOptions = new ParallelOptions();
@@ -704,7 +694,7 @@ namespace System.Threading.Tasks
             Action[] actionsCopy = ParallelHelpers.CopyActionArray(actions);
 
             // ETW event for Parallel Invoke Begin
-            int forkJoinContextID = ParallelHelpers.LogEtwEventInvokeBegin(actionsCopy);
+            int forkJoinContextId = ParallelHelpers.LogEtwEventInvokeBegin(actionsCopy);
 
 #if DEBUG
             actions = null!; // Ensure we don't accidentally use this below.
@@ -715,7 +705,7 @@ namespace System.Threading.Tasks
 
             // In the algorithm below, if the number of actions is greater than this, we automatically
             // use Parallel.For() to handle the actions, rather than the Task-per-Action strategy.
-            const int SMALL_ACTIONCOUNT_LIMIT = 10;
+            const int SmallActionCountLimit = 10;
 
             try
             {
@@ -724,7 +714,7 @@ namespace System.Threading.Tasks
                 // Web browsers need special treatment that is implemented in TaskReplicator
                 if (OperatingSystem.IsBrowser() ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
-                    (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
+                    (actionsCopy.Length > SmallActionCountLimit) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
                    )
                 {
@@ -758,7 +748,7 @@ namespace System.Threading.Tasks
                                     }
                                     catch (Exception e)
                                     {
-                                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
+                                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => new ConcurrentQueue<Exception>());
                                         exceptionQ.Enqueue(e);
                                     }
 
@@ -774,7 +764,7 @@ namespace System.Threading.Tasks
                     }
                     catch (Exception e)
                     {
-                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => { return new ConcurrentQueue<Exception>(); });
+                        LazyInitializer.EnsureInitialized(ref exceptionQ, () => new ConcurrentQueue<Exception>());
 
                         // Since we're consuming all action exceptions, there are very few reasons that
                         // we would see an exception here.  Two that come to mind:
@@ -799,7 +789,7 @@ namespace System.Threading.Tasks
                     }
 
                     // If we have encountered any exceptions, then throw.
-                    if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
+                    if (exceptionQ is { IsEmpty: false })
                     {
                         ParallelHelpers.ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken, new AggregateException(exceptionQ));
                     }
@@ -840,7 +830,7 @@ namespace System.Threading.Tasks
             finally
             {
                 // ETW event for Parallel Invoke End
-                ParallelHelpers.LogEtwEventForParallelInvokeEnd(forkJoinContextID);
+                ParallelHelpers.LogEtwEventForParallelInvokeEnd(forkJoinContextId);
             }
         }
 
@@ -864,7 +854,7 @@ namespace System.Threading.Tasks
             // Keep track of any cancellations
             StrongBox<OperationCanceledException> oce = ParallelHelpers.RegisterCallbackForLoopTermination(parallelOptions, sharedPStateFlags, out CancellationTokenRegistration ctr);
 
-            int forkJoinContextID = ParallelHelpers.LogEtwEventParallelLoopBegin(
+            int forkJoinContextId = ParallelHelpers.LogEtwEventParallelLoopBegin(
                 operationType, TWorker.GetStartIndex(source), TWorker.GetEndIndex(source));
 
             try
@@ -872,7 +862,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     TaskReplicator.ReplicatableUserAction<TInput> worker =
-                        TWorker.CreateWorker(forkJoinContextID, sharedPStateFlags, source, workerBodyFactory).Work;
+                        TWorker.CreateWorker(forkJoinContextId, sharedPStateFlags, source, workerBodyFactory).Work;
                     TaskReplicator.Run(worker, parallelOptions, stopOnFirstFailure: true);
                 }
                 finally
@@ -898,7 +888,7 @@ namespace System.Threading.Tasks
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())
                 {
-                    ParallelHelpers.LogEtwEventParallelLoopEnd(forkJoinContextID, TWorker.GetTotalIterations(source, sharedPStateFlags));
+                    ParallelHelpers.LogEtwEventParallelLoopEnd(forkJoinContextId, TWorker.GetTotalIterations(source, sharedPStateFlags));
                 }
 
                 IDisposable? d = source as IDisposable;
@@ -2690,7 +2680,7 @@ namespace System.Threading.Tasks
         /// If all exceptions in the specified collection are OperationCanceledExceptions with the specified token,
         /// then get one such exception (the first one). Otherwise, return null.
         /// </summary>
-        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection exceptions,
+        private static OperationCanceledException? ReduceToSingleCancellationException(ICollection? exceptions,
             CancellationToken cancelToken)
         {
             // If collection is empty - no match:
@@ -2711,8 +2701,7 @@ namespace System.Threading.Tasks
                 first ??= ex;
 
                 // If mismatch found, fail-fast:
-                OperationCanceledException? ocEx = ex as OperationCanceledException;
-                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
+                if (ex is not OperationCanceledException ocEx || !cancelToken.Equals(ocEx.CancellationToken))
                     return null;
             }
 
@@ -2736,15 +2725,15 @@ namespace System.Threading.Tasks
 
         public static int LogEtwEventInvokeBegin(Action[] actions)
         {
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+            int forkJoinContextId = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextId;
 
-            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
+            forkJoinContextId = Interlocked.Increment(ref Parallel.s_forkJoinContextId);
             ParallelEtwProvider.Log.ParallelInvokeBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
+                forkJoinContextId, ParallelEtwProvider.ForkJoinOperationType.ParallelInvoke,
                 actions.Length);
 
-            return forkJoinContextID;
+            return forkJoinContextId;
         }
 
         public static int LogEtwEventParallelLoopBegin<TIndex>(
@@ -2752,42 +2741,42 @@ namespace System.Threading.Tasks
             where TIndex: INumber<TIndex>
         {
             // ETW event for Parallel For begin
-            int forkJoinContextID = 0;
-            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextID;
+            int forkJoinContextId = 0;
+            if (!ParallelEtwProvider.Log.IsEnabled()) return forkJoinContextId;
 
-            forkJoinContextID = Interlocked.Increment(ref Parallel.s_forkJoinContextID);
+            forkJoinContextId = Interlocked.Increment(ref Parallel.s_forkJoinContextId);
             ParallelEtwProvider.Log.ParallelLoopBegin(TaskScheduler.Current.Id, Task.CurrentId ?? 0,
-                forkJoinContextID, operationType,
+                forkJoinContextId, operationType,
                 fromInclusive, toExclusive);
 
-            return forkJoinContextID;
+            return forkJoinContextId;
         }
 
-        public static void LogEtwEventParallelFork(int forkJoinContextID)
+        public static void LogEtwEventParallelFork(int forkJoinContextId)
         {
             if (!ParallelEtwProvider.Log.IsEnabled()) return;
 
-            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelFork(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
         }
 
-        public static void LogEtwEventParallelJoin(int forkJoinContextID)
+        public static void LogEtwEventParallelJoin(int forkJoinContextId)
         {
             if (!ParallelEtwProvider.Log.IsEnabled()) return;
 
-            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelJoin(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
         }
 
-        public static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextID, TIndex nTotalIterations)
+        public static void LogEtwEventParallelLoopEnd<TIndex>(int forkJoinContextId, TIndex nTotalIterations)
             where TIndex: INumber<TIndex>
         {
-            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
+            ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId, nTotalIterations);
         }
 
-        public static void LogEtwEventForParallelInvokeEnd(int forkJoinContextID)
+        public static void LogEtwEventForParallelInvokeEnd(int forkJoinContextId)
         {
             if (!ParallelEtwProvider.Log.IsEnabled()) return;
 
-            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID);
+            ParallelEtwProvider.Log.ParallelInvokeEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextId);
         }
 
         public static Action[] CopyActionArray(Action[] actions)
@@ -2808,9 +2797,9 @@ namespace System.Threading.Tasks
 
         public static void SetLoopResultEndState(ParallelLoopStateFlags sharedPStateFlags, ref ParallelLoopResult result)
         {
-            int sb_status = sharedPStateFlags.LoopStateFlags;
-            result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
-            if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
+            int sbStatus = sharedPStateFlags.LoopStateFlags;
+            result._completed = (sbStatus == ParallelLoopStateFlags.ParallelLoopStateNone);
+            if ((sbStatus & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
             {
                 result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
             }
