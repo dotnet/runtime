@@ -105,6 +105,8 @@ namespace ILCompiler.DependencyAnalysis
             return string.CompareOrdinal(_data, ((FrozenStringNode)other)._data);
         }
 
+        public string Data => _data;
+
         public override string ToString() => $"\"{_data}\"";
     }
 }

@@ -134,7 +134,6 @@ namespace Internal.IL.Stubs
                 {
                     marshallers[i] = Marshaller.CreateDisabledMarshaller(
                         parameterType,
-                        parameterIndex,
                         MarshallerType.Argument,
                         direction,
                         marshallers,

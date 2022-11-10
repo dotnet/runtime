@@ -939,11 +939,12 @@ DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,          
 DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
 DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
 
-DEFINE_CLASS_U(System,                 WeakReference,          WeakReferenceObject)
-DEFINE_FIELD_U(m_handle,               WeakReferenceObject,    m_Handle)
+DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
+DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
+DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
-DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
+DEFINE_CLASS_U(Threading,           WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)

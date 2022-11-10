@@ -1139,10 +1139,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
+            ReadyToRunHeader = new ReadyToRunHeaderNode();
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
+            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");

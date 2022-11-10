@@ -591,9 +591,6 @@ STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface ISt
 
 #define STGM_NOSNAPSHOT         0x00200000L
 
-STDAPI IIDFromString(LPOLESTR lpsz, IID* lpiid);
-STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lpsz, int cchMax);
-
 /******************* CRYPT **************************************/
 
 #define PUBLICKEYBLOB           0x6
@@ -637,25 +634,6 @@ typedef unsigned int ALG_ID;
 #define CSTR_EQUAL                2
 #define CSTR_GREATER_THAN         3
 
-/******************* shlwapi ************************************/
-
-// note: diff in NULL handing and calling convetion
-#define StrChrW                 (WCHAR*)PAL_wcschr
-
-STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
-
-#define lstrcmpW                PAL_wcscmp
-#define lstrcmpiW               _wcsicmp
-
-#ifdef UNICODE
-#define StrChr                  StrChrW
-
-#define StrRChr                 StrRChrW
-
-#define lstrcmp                 lstrcmpW
-#define lstrcmpi                lstrcmpiW
-#endif
-
 
 #ifdef __cplusplus
 /*
@@ -674,8 +652,6 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
 The wrappers below are simple implementations that may not be as robust as complete functions in the Secure CRT library.
 Remember to fix the errcode definition in safecrt.h.
 */
-
-#define swscanf_s swscanf
 
 #define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
@@ -733,15 +709,6 @@ inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const
 
 }
 #endif /* __cplusplus */
-
-STDAPI_(BOOL) PathIsUNCW(LPCWSTR pszPath);
-STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc);
-
-#ifdef UNICODE
-#define PathIsUNC           PathIsUNCW
-#define PathCanonicalize    PathCanonicalizeW
-
-#endif // UNICODE
 
 /******************* misc ***************************************/
 

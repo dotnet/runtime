@@ -33,7 +33,7 @@ There are 2 types of namespace collisions that must be handled.
    about the multiple declarations.
 
    To avoid this, the inclusion of pal.h must be wrapped in a
-   #define/#undef pair, which will effectiveily "hide" the pal.h
+   #define/#undef pair, which will effectively "hide" the pal.h
    declaration by renaming it to something else. this is done by palinternal.h
    in this way :
 
@@ -163,9 +163,7 @@ function_name() to call the system's implementation
 
 /* C runtime functions needed to be renamed to avoid duplicate definition
    of those functions when including standard C header files */
-#if !defined(_DEBUG)
 #define memcpy DUMMY_memcpy
-#endif //!defined(_DEBUG)
 #define memcmp DUMMY_memcmp
 #define memset DUMMY_memset
 #define memmove DUMMY_memmove
@@ -231,6 +229,7 @@ function_name() to call the system's implementation
 #define tanf DUMMY_tanf
 #define tanhf DUMMY_tanhf
 #define truncf DUMMY_truncf
+#define remove DUMMY_remove
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -494,7 +493,7 @@ function_name() to call the system's implementation
 #undef getenv
 #undef open
 #undef glob
-
+#undef remove
 #undef ptrdiff_t
 #undef intptr_t
 #undef uintptr_t
@@ -503,11 +502,8 @@ function_name() to call the system's implementation
 
 #undef printf
 #undef fprintf
-#undef fwprintf
 #undef vfprintf
-#undef vfwprintf
 #undef vprintf
-#undef wprintf
 #undef wcstod
 #undef wcstoul
 #undef _wcstoui64
@@ -517,7 +513,6 @@ function_name() to call the system's implementation
 #undef wcsncmp
 #undef wcschr
 #undef wcsrchr
-#undef swscanf
 #undef wcspbrk
 #undef wcsstr
 #undef wcscmp
@@ -526,7 +521,6 @@ function_name() to call the system's implementation
 #undef iswspace
 #undef towlower
 #undef towupper
-#undef wvsnprintf
 
 #ifdef HOST_AMD64
 #undef _mm_getcsr
@@ -652,7 +646,7 @@ typedef enum _TimeConversionConstants
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, uint64_t* val);
+PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
 #ifdef __APPLE__
 bool
@@ -729,5 +723,7 @@ const char StackOverflowMessage[] = "Stack overflow.\n";
 #else
 #define FALLTHROUGH
 #endif
+
+DWORD PALAPI GetCurrentSessionId();
 
 #endif /* _PAL_INTERNAL_H_ */

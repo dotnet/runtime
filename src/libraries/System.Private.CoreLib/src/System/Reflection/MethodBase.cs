@@ -236,6 +236,7 @@ namespace System.Reflection
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 
+#pragma warning disable 8500
                 if (isValueType)
                 {
 #if !MONO // Temporary until Mono is updated.
@@ -254,6 +255,7 @@ namespace System.Reflection
                     ByReference objRef = ByReference.Create(ref copyOfParameters[i]);
                     *(ByReference*)(byrefParameters + i) = objRef;
                 }
+#pragma warning restore 8500
             }
         }
 

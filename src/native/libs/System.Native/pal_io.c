@@ -1215,7 +1215,7 @@ static ssize_t CopyFileRange(int inFd, int outFd, size_t len)
     return syscall(__NR_copy_file_range, inFd, NULL, outFd, NULL, len, 0);
 }
 
-static bool SupportsCopyFileRange()
+static bool SupportsCopyFileRange(void)
 {
     static volatile int s_isSupported = 0;
 

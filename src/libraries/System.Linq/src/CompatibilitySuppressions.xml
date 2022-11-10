@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- Exposed publicly in the implementation to enable reflection for data-binding scenarios. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Grouping`2</Target>
+    <Left>ref/net7.0/System.Linq.dll</Left>
+    <Right>lib/net7.0/System.Linq.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Grouping`2</Target>
+    <Left>ref/net7.0/System.Linq.dll</Left>
+    <Right>runtimes/android/lib/net7.0/System.Linq.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Grouping`2</Target>
+    <Left>ref/net7.0/System.Linq.dll</Left>
+    <Right>runtimes/browser/lib/net7.0/System.Linq.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Grouping`2</Target>
+    <Left>ref/net7.0/System.Linq.dll</Left>
+    <Right>runtimes/ios/lib/net7.0/System.Linq.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Linq.Grouping`2</Target>
+    <Left>ref/net7.0/System.Linq.dll</Left>
+    <Right>runtimes/tvos/lib/net7.0/System.Linq.dll</Right>
+  </Suppression>
+</Suppressions>

@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "pal_evp_pkey.h"
 
-EVP_PKEY* CryptoNative_EvpPkeyCreate()
+EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
 {
     ERR_clear_error();
     return EVP_PKEY_new();

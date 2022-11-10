@@ -38,7 +38,7 @@ All builds are
   - Linux arm32 Release
   - Linux arm32 musl Release
   - FreeBSD x64 (build only)
-- MacOS 11.6.4 x64
+- macOS 11.6.4 x64
   - x64 Release
   - arm64 Release
 

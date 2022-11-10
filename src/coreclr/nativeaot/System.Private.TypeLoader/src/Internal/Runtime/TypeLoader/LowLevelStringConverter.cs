@@ -41,12 +41,12 @@ namespace System
             return arg.LowLevelToString();
         }
 
-        public static string ToStringInvariant(this float arg)
+        public static string ToStringInvariant(this float _)
         {
             return "FLOAT";
         }
 
-        public static string ToStringInvariant(this double arg)
+        public static string ToStringInvariant(this double _)
         {
             return "DOUBLE";
         }

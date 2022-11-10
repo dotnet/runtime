@@ -1,5 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.Serialization;
@@ -146,12 +148,16 @@ namespace System.Runtime.CompilerServices
         // Mono uses a conservative GC so there is no need for this API to be full implemented.
         internal unsafe ref struct GCFrameRegistration
         {
+#pragma warning disable IDE0060
             public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
             {
             }
+#pragma warning restore IDE0060
         }
 
+        [Conditional("unnecessary")]
         internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+        [Conditional("unnecessary")]
         internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
 
         public static object GetUninitializedObject(

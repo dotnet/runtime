@@ -32,7 +32,7 @@ internal static partial class Interop
 
         private static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
         {
-            IntPtr bytesLength = (IntPtr)len;
+            nint bytesLength = len;
             int ret = -1;
             bool autoSize = (value == null && len == 0);
 
@@ -60,11 +60,11 @@ internal static partial class Interop
                 }
                 if ((int)bytesLength >= int.MaxValue / 2)
                 {
-                    bytesLength = (IntPtr)int.MaxValue;
+                    bytesLength = int.MaxValue;
                 }
                 else
                 {
-                    bytesLength = (IntPtr)((int)bytesLength * 2);
+                    bytesLength = (int)bytesLength * 2;
                 }
                 value = (byte*)Marshal.AllocHGlobal(bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);

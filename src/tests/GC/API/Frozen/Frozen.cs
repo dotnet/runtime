@@ -134,20 +134,9 @@ namespace HelloFrozenSegment
 
     internal static class Program
     {
-        private static unsafe IntPtr GetMethodTablePointer(object obj)
-        {
-            GCHandle gch = GCHandle.Alloc(obj);
-            IntPtr pointerToPointerToObject = GCHandle.ToIntPtr(gch);
-            IntPtr pointerToObject = *((IntPtr*)pointerToPointerToObject);
-            IntPtr methodTable = *((IntPtr*)pointerToObject);
-            gch.Free();
-            return methodTable;
-        }
-
         private static unsafe int Main(string[] args)
         {
-            Node template = new Node();
-            IntPtr methodTable = GetMethodTablePointer(template);
+            IntPtr methodTable = typeof(Node).TypeHandle.Value;
 
             FrozenSegmentBuilder frozenSegmentBuilder = new FrozenSegmentBuilder(1000);
             IntPtr node1Ptr = frozenSegmentBuilder.Allocate(methodTable);

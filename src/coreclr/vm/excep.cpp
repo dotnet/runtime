@@ -6526,24 +6526,6 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-static void FixContextForFaultingExceptionFrame(
-    EXCEPTION_POINTERS* ep,
-    EXCEPTION_RECORD* pOriginalExceptionRecord,
-    CONTEXT* pOriginalExceptionContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // don't copy param args as have already supplied them on the throw
-    memcpy((void*) ep->ExceptionRecord,
-           (void*) pOriginalExceptionRecord,
-           offsetof(EXCEPTION_RECORD, ExceptionInformation)
-          );
-
-    ReplaceExceptionContextRecord(ep->ContextRecord, pOriginalExceptionContext);
-
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-}
-
 struct HandleManagedFaultFilterParam
 {
     // It's possible for our filter to be called more than once if some other first-pass
@@ -6551,7 +6533,6 @@ struct HandleManagedFaultFilterParam
     // the first exception we see.  This flag takes care of that.
     BOOL fFilterExecuted;
     EXCEPTION_RECORD *pOriginalExceptionRecord;
-    CONTEXT *pOriginalExceptionContext;
 };
 
 static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
@@ -6562,7 +6543,8 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
 
     if (!pParam->fFilterExecuted)
     {
-        FixContextForFaultingExceptionFrame(ep, pParam->pOriginalExceptionRecord, pParam->pOriginalExceptionContext);
+        ep->ExceptionRecord->ExceptionAddress = pParam->pOriginalExceptionRecord->ExceptionAddress;
+        GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
         pParam->fFilterExecuted = TRUE;
     }
 
@@ -6584,7 +6566,6 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     HandleManagedFaultFilterParam param;
     param.fFilterExecuted = FALSE;
     param.pOriginalExceptionRecord = pExceptionRecord;
-    param.pOriginalExceptionContext = pContext;
 
     PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
     {
@@ -6592,7 +6573,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 
         EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
 
-        RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
+        RaiseException(pRecord->ExceptionCode, 0,
             pRecord->NumberParameters, pRecord->ExceptionInformation);
     }
     PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
@@ -11654,30 +11635,27 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    StackSString sFormat;
-    StackSString sAlcName;
+    SString detailsUtf8;
 
+    SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-
     if (pPEAssembly->GetPath().IsEmpty())
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_BYTE);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8());
     }
     else
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_PATH);
-
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
-                                   sAlcName.GetUnicode(),
-                                   pPEAssembly->GetPath().GetUnicode());
+        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
+                                   sType.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8(),
+                                   pPEAssembly->GetPath().GetUTF8());
     }
+
+    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
 }
 
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,

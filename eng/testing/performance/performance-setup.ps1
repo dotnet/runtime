@@ -26,7 +26,8 @@ Param(
     [switch] $DynamicPGO,
     [switch] $FullPGO,
     [switch] $iOSLlvmBuild,
-    [string] $MauiVersion
+    [string] $MauiVersion,
+    [switch] $UseLocalCommitTime
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -118,6 +119,12 @@ elseif($DynamicPGO)
 elseif($FullPGO)
 {
     $SetupArguments = "$SetupArguments --full-pgo"
+}
+
+if($UseLocalCommitTime)
+{
+    $LocalCommitTime = (git show -s --format=%ci $CommitSha)
+    $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
 }
 
 if ($RunFromPerformanceRepo) {

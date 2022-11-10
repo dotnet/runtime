@@ -13,14 +13,12 @@
 
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
-    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
 
     <!-- don't run any wasm build steps -->
     <IsWasmProject>false</IsWasmProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
@@ -38,10 +36,13 @@
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
+  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
+    <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''"
+           Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
+
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -49,8 +50,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
@@ -70,6 +71,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />

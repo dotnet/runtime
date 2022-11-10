@@ -16,9 +16,9 @@ namespace ILCompiler
     internal sealed class ILCompilerRootCommand : RootCommand
     {
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
-            new("input-file-path", result => Helpers.BuildPathDictionay(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
+            new("input-file-path", result => Helpers.BuildPathDictionary(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
         public Option<Dictionary<string, string>> ReferenceFiles { get; } =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, "Reference file(s) for compilation");
+            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, "Reference file(s) for compilation");
         public Option<string> OutputFilePath { get; } =
             new(new[] { "--out", "-o" }, "Output file path");
         public Option<bool> Optimize { get; } =
@@ -138,9 +138,9 @@ namespace ILCompiler
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
-            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens, true), true, "Fully generate given assembly if it's used");
+            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens), true, "Fully generate given assembly if it's used");
         public Option<IEnumerable<string>> TrimmedAssemblies { get; } =
-            new(new[] { "--trim" }, result => ILLinkify(result.Tokens, true), true, "Trim the specified assembly");
+            new(new[] { "--trim" }, result => ILLinkify(result.Tokens), true, "Trim the specified assembly");
         public Option<bool> RootDefaultAssemblies { get; } =
             new(new[] { "--defaultrooting" }, "Root assemblies that are not marked [IsTrimmable]");
         public Option<TargetArchitecture> TargetArchitecture { get; } =
@@ -334,9 +334,9 @@ namespace ILCompiler
                             }
                             Console.Write(instructionSet.Name);
                         }
-
-                        Console.WriteLine();
                     }
+
+                    Console.WriteLine();
                 }
 
                 Console.WriteLine();
@@ -345,7 +345,7 @@ namespace ILCompiler
             };
         }
 
-        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens, bool setDefaultToEmpty)
+        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens)
         {
             if (tokens.Count == 0)
             {

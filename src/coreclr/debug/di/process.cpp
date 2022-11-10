@@ -10952,7 +10952,7 @@ HRESULT CordbWin32EventThread::Init()
     if (m_actionTakenEvent == NULL)
         return HRESULT_FROM_GetLastError();
 
-    m_pNativePipeline = NewPipelineWithDebugChecks();
+    m_pNativePipeline = NewPipelineForThisPlatform();
     if (m_pNativePipeline == NULL)
     {
         return E_OUTOFMEMORY;

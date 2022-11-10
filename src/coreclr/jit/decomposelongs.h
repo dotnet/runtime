@@ -34,6 +34,7 @@ private:
     }
 
     void PromoteLongVars();
+    void TryPromoteLongVar(unsigned lclNum);
 
     // Driver functions
     void     DecomposeRangeHelper();

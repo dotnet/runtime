@@ -6313,8 +6313,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cinfo->ret.storage == RegTypeStructByAddr) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst = cfg->vret_addr;
-		g_assert (arm_is_imm12 (inst->inst_offset));
-		ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+		if (arm_is_imm12 (inst->inst_offset)) {
+			ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+		} else {
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, inst->inst_offset);
+			ARM_STR_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_LR);
+		}
 	}
 
 	if (sig->call_convention == MONO_CALL_VARARG) {

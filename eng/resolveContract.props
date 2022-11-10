@@ -1,9 +1,10 @@
 <Project>
   <!-- ApiCompat setting -->
   <PropertyGroup>
-    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
-    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
-    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
+    <ApiCompatValidateAssemblies Condition="'$(IsSourceProject)' == 'true'">true</ApiCompatValidateAssemblies>
+    <!-- Optional rules -->
+    <ApiCompatEnableRuleAttributesMustMatch>true</ApiCompatEnableRuleAttributesMustMatch>
+    <ApiCompatEnableRuleCannotChangeParameterName>true</ApiCompatEnableRuleCannotChangeParameterName>
   </PropertyGroup>
 
   <ItemGroup>

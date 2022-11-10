@@ -25,7 +25,7 @@ namespace System.Reflection.Internal.Tests
                 p--;
             }
 
-            return BlobUtilities.ReadBytes(buffer, (int)(p + 1 - buffer));
+            return new ReadOnlySpan<byte>(buffer, (int)(p + 1 - buffer)).ToArray();
         }
 
         [Fact]

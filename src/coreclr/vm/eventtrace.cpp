@@ -7668,14 +7668,10 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
         }
         else
         {
-            AppDomainIterator appDomainIterator(FALSE);
-            while(appDomainIterator.Next())
+            AppDomain *pDomain = AppDomain::GetCurrentDomain();
+            if (pDomain != NULL)
             {
-                AppDomain *pDomain = appDomainIterator.GetDomain();
-                if (pDomain != NULL)
-                {
-                    ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
-                }
+                ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
             }
         }
     }
