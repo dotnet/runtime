@@ -3,8 +3,6 @@ Contains fundamental classes and base classes that define commonly-used value an
 
 Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/system?view=net-7.0.
 
-TODO regarding System.Private.CoreLib "We probably should explain the split here a bit and that many parts live in S.P.Corelib. Same potentially with the other readme's."
-
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
 
