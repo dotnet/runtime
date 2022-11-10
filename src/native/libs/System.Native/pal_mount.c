@@ -180,7 +180,7 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 
     return result;
 }
-else /* TARGET_WASI */
+#else /* TARGET_WASI */
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
     // TODOWASI
