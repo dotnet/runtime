@@ -20,7 +20,7 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
-            public const string InterfaceTypeNotSupported = "1053";
+            public const string InterfaceTypeNotSupported = Prefix + "1053";
         }
 
         private const string Category = "ComInterfaceGenerator";
