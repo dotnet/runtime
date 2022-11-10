@@ -11535,8 +11535,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
             {
                 src->AsOp()->gtOp1 = op1->CastOp();
 
-                cast->gtFlags |= GTF_DONT_REMOVE_CAST;
-
                 DEBUG_DESTROY_NODE(op1);
             }
         }
@@ -11549,8 +11547,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 !gtIsActiveCSE_Candidate(op2) && (castToType == op2->CastToType()))
             {
                 src->AsOp()->gtOp2 = op2->CastOp();
-
-                cast->gtFlags |= GTF_DONT_REMOVE_CAST;
 
                 DEBUG_DESTROY_NODE(op2);
             }
@@ -11588,7 +11584,7 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
     if (op2->gtOverflow())
         return asg;
 
-    if ((op2->gtFlags & GTF_DONT_REMOVE_CAST))
+    if (op2->AsCast()->CastOp()->gtEffectiveVal()->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
         return asg;
 
     if (gtIsActiveCSE_Candidate(op2))
