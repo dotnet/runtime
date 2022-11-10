@@ -543,32 +543,13 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
         return NextToken(token, NULL, NULL);
     }
 
-    //
-    // Splay tokens across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a token.
+    if ((status = NextToken(token, NULL, NULL)) != S_OK)
     {
-        if (m_lastToken == mdTokenNil)
-        {
-            // Need to fetch a token.
-            if ((status = NextToken(token, NULL, NULL)) != S_OK)
-            {
-                return status;
-            }
-
-            m_domainIter.Init();
-        }
-
-        if (m_domainIter.Next())
-        {
-            break;
-        }
-
-        m_lastToken = mdTokenNil;
+        return status;
     }
 
-    *appDomain = m_domainIter.GetDomain();
+    *appDomain = AppDomain::GetCurrentDomain();
     *token = m_lastToken;
 
     return S_OK;
@@ -622,33 +603,14 @@ MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
         return NextTokenByName(namespaceName, name, nameFlags, token);
     }
 
-    //
-    // Splay tokens across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a token.
+    if ((status = NextTokenByName(namespaceName, name, nameFlags,
+                                    token)) != S_OK)
     {
-        if (m_lastToken == mdTokenNil)
-        {
-            // Need to fetch a token.
-            if ((status = NextTokenByName(namespaceName, name, nameFlags,
-                                          token)) != S_OK)
-            {
-                return status;
-            }
-
-            m_domainIter.Init();
-        }
-
-        if (m_domainIter.Next())
-        {
-            break;
-        }
-
-        m_lastToken = mdTokenNil;
+        return status;
     }
 
-    *appDomain = m_domainIter.GetDomain();
+    *appDomain = AppDomain::GetCurrentDomain();
     *token = m_lastToken;
 
     return S_OK;
@@ -1366,35 +1328,16 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
                            0, NULL, NULL, NULL, NULL);
     }
 
-    //
-    // Splay fields across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a field.
+    if ((status = CdNextField(dac, handle, NULL, NULL, NULL,
+                                0, NULL, NULL, NULL, NULL)) != S_OK)
     {
-        if (!split->m_lastField)
-        {
-            // Need to fetch a field.
-            if ((status = CdNextField(dac, handle, NULL, NULL, NULL,
-                                      0, NULL, NULL, NULL, NULL)) != S_OK)
-            {
-                return status;
-            }
-
-            split->m_metaEnum.m_domainIter.Init();
-        }
-
-        if (split->m_metaEnum.m_domainIter.Next())
-        {
-            break;
-        }
-
-        split->m_lastField = NULL;
+        return status;
     }
 
     return ClrDataValue::
         NewFromFieldDesc(dac,
-                         split->m_metaEnum.m_domainIter.GetDomain(),
+                         AppDomain::GetCurrentDomain(),
                          split->m_fieldEnum.IsFieldFromParentClass() ?
                          CLRDATA_VALUE_IS_INHERITED : 0,
                          split->m_lastField,
@@ -3730,16 +3673,9 @@ ClrDataAccess::StartEnumAppDomains(
 
     EX_TRY
     {
-        AppDomainIterator* iter = new (nothrow) AppDomainIterator(FALSE);
-        if (iter)
-        {
-            *handle = TO_CDENUM(iter);
-            status = S_OK;
-        }
-        else
-        {
-            status = E_OUTOFMEMORY;
-        }
+        // Only one app domain - use 1 to indicate there there is a next value
+        *handle = 1;
+        status = S_OK;
     }
     EX_CATCH
     {
@@ -3765,12 +3701,12 @@ ClrDataAccess::EnumAppDomain(
 
     EX_TRY
     {
-        AppDomainIterator* iter = FROM_CDENUM(AppDomainIterator, *handle);
-        if (iter->Next())
+        if (*handle == 1)
         {
             *appDomain = new (nothrow)
-                ClrDataAppDomain(this, iter->GetDomain());
+                ClrDataAppDomain(this, AppDomain::GetCurrentDomain());
             status = *appDomain ? S_OK : E_OUTOFMEMORY;
+            *handle = 0;
         }
         else
         {
@@ -3800,8 +3736,7 @@ ClrDataAccess::EndEnumAppDomains(
 
     EX_TRY
     {
-        AppDomainIterator* iter = FROM_CDENUM(AppDomainIterator, handle);
-        delete iter;
+        // Nothing to do - we don't actually create an iterator for app domains
         status = S_OK;
     }
     EX_CATCH
@@ -4462,8 +4397,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
                 else
                 {
                     // Find a likely domain, because it's the shared domain.
-                    AppDomainIterator adi(FALSE);
-                    appDomain = adi.GetDomain();
+                    appDomain = AppDomain::GetCurrentDomain();
                 }
 
                 pubMethodInst =
@@ -4527,8 +4461,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
                 else
                 {
                     // Find a likely domain, because it's the shared domain.
-                    AppDomainIterator adi(FALSE);
-                    appDomain = adi.GetDomain();
+                    appDomain = AppDomain::GetCurrentDomain();
                 }
 
                 pubMethodInst =

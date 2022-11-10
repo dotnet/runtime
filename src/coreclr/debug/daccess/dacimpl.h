@@ -279,7 +279,6 @@ class MetaEnum
 {
 public:
     MetaEnum(void)
-        : m_domainIter(FALSE)
     {
         Clear();
         m_appDomain = NULL;
@@ -355,7 +354,6 @@ public:
     ULONG32 m_kind;
     HENUMInternal m_enum;
     AppDomain* m_appDomain;
-    AppDomainIterator m_domainIter;
     mdToken m_lastToken;
 
     static HRESULT New(Module* mod,
@@ -502,13 +500,11 @@ public:
 
 struct ProcessModIter
 {
-    AppDomainIterator m_domainIter;
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
 
     ProcessModIter(void)
-        : m_domainIter(FALSE)
     {
         SUPPORTS_DAC;
         m_nextDomain = true;
@@ -518,33 +514,24 @@ struct ProcessModIter
     Assembly * NextAssem()
     {
         SUPPORTS_DAC;
-        for (;;)
+
+        if (m_nextDomain)
         {
-            if (m_nextDomain)
-            {
-                if (!m_domainIter.Next())
-                {
-                    break;
-                }
+            m_nextDomain = false;
 
-                m_nextDomain = false;
-
-                m_assemIter = m_domainIter.GetDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
-                    kIncludeLoaded | kIncludeExecution));
-            }
-
-            CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-            if (!m_assemIter.Next(pDomainAssembly.This()))
-            {
-                m_nextDomain = true;
-                continue;
-            }
-
-            // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            return pAssembly;
+            m_assemIter = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
+                kIncludeLoaded | kIncludeExecution));
         }
-        return NULL;
+
+        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        if (!m_assemIter.Next(pDomainAssembly.This()))
+        {
+            return NULL;
+        }
+
+        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
+        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
+        return pAssembly;
     }
 
     Module* NextModule(void)
@@ -3948,9 +3935,7 @@ public:
     static HRESULT CdEnd(CLRDATA_ENUM handle);
 
     MethodDesc* m_methodDesc;
-    AppDomain* m_givenAppDomain;
-    bool m_givenAppDomainUsed;
-    AppDomainIterator m_domainIter;
+    bool m_appDomainUsed;
     AppDomain* m_appDomain;
     LoadedMethodDescIterator m_methodIter;
 };
