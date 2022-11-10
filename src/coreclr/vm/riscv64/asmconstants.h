@@ -38,7 +38,7 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
-#define METHODDESC_REGISTER            t2 // TODO RISCV64
+#define METHODDESC_REGISTER            t2
 
 #define SIZEOF__ArgumentRegisters 0x40
 ASMCONSTANTS_C_ASSERT(SIZEOF__ArgumentRegisters == sizeof(ArgumentRegisters))
@@ -65,6 +65,36 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pFloatArgumentRegisters == offsetof(CallDes
 ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
+
+#define CallDescrData__flagOneFloat             0x1
+#define CallDescrData__flagOneDouble            0x11
+#define CallDescrData__flagFloatInt             0x2
+#define CallDescrData__flagFloatLong            0x22
+#define CallDescrData__flagDoubleInt            0x12
+#define CallDescrData__flagDoubleLong           0x32
+#define CallDescrData__flagIntFloat             0x4
+#define CallDescrData__flagIntDouble            0x24
+#define CallDescrData__flagLongFloat            0x14
+#define CallDescrData__flagLongDouble           0x34
+#define CallDescrData__flagFloatFloat           0x8
+#define CallDescrData__flagFloatDouble          0x28
+#define CallDescrData__flagDoubleFloat          0x18
+#define CallDescrData__flagDoubleDouble         0x38
+
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagOneFloat         == (int)STRUCT_FLOAT_FIELD_ONLY_ONE)
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagOneDouble        == (int)(STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatInt         == (int)STRUCT_FLOAT_FIELD_FIRST)
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatLong        == (int)(STRUCT_FLOAT_FIELD_FIRST | STRUCT_SECOND_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleInt        == (int)(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleLong       == (int)(CallDescrData__flagDoubleInt | STRUCT_SECOND_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagIntFloat         == (int)STRUCT_FLOAT_FIELD_SECOND)
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagIntDouble        == (int)(STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagLongFloat        == (int)(STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagLongDouble       == (int)(CallDescrData__flagLongFloat | STRUCT_SECOND_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatFloat       == (int)STRUCT_FLOAT_FIELD_ONLY_TWO)
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatDouble      == (int)(STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleFloat      == (int)(STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FIRST_FIELD_SIZE_IS8))
+ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleDouble     == (int)(CallDescrData__flagDoubleFloat | STRUCT_SECOND_FIELD_SIZE_IS8))
 
 #define                  CORINFO_NullReferenceException_ASM 0
 ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM

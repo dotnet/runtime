@@ -237,23 +237,7 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     LIMITED_METHOD_CONTRACT;
     UINT32* pCode = (UINT32*)pBufferRW;
 
-#if 0 // TODO RISCV64
-    // We require 8-byte alignment so the LDR instruction is aligned properly
-    _ASSERTE(((UINT_PTR)pCode & 7) == 0);
-
-    // +0:   ldr x16, [pc, #8]
-    // +4:   br  x16
-    // +8:   [target address]
-
-    pCode[0] = 0x58000050UL;   // ldr x16, [pc, #8]
-    pCode[1] = 0xD61F0200UL;   // br  x16
-
-    // Ensure that the updated instructions get updated in the I-Cache
-    ClrFlushInstructionCache(pBufferRX, 8);
-
-    *((LPVOID *)(pCode + 2)) = target;   // 64-bit target address
-#endif
-
+    _ASSERTE(!"TODO RISCV64 NYI");
 }
 
 //------------------------------------------------------------------------

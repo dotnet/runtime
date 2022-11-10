@@ -11,10 +11,16 @@
 
 // #error "TODO RISCV64: missing implementation"
 LEAF_ENTRY RtlRestoreContext, _TEXT
+// TODO RISCV64 NYI
+    sw ra, 0(zero)
 LEAF_END RtlRestoreContext, _TEXT
 
 LEAF_ENTRY RtlCaptureContext, _TEXT
+// TODO RISCV64 NYI
+    sw ra, 0(zero)
 LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
+// TODO RISCV64 NYI
+    sw ra, 0(zero)
 LEAF_END CONTEXT_CaptureContext, _TEXT

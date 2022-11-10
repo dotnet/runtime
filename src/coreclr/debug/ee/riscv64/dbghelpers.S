@@ -13,10 +13,12 @@
 // @dbgtodo- once we port Funceval, use the ExceptionHijack stub instead of this func-eval stub.
 NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
 // TODO RISCV64 NYI
+  sw ra, 0(zero)
 NESTED_END FuncEvalHijack
 
 // This is the general purpose hijacking stub. The DacDbi Hijack primitive will
 // set up the stack and then set the IP here, and so this just makes the call.
 NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
 // TODO RISCV64 NYI
+  sw ra, 0(zero)
 NESTED_END ExceptionHijack, _TEXT

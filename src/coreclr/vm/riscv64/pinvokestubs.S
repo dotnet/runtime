@@ -22,11 +22,13 @@
 
         NESTED_ENTRY \__PInvokeStubFuncName, _TEXT, NoHandler
         // TODO RISCV64 NYI
+            sw ra, 0(zero)
         NESTED_END \__PInvokeStubFuncName, _TEXT
 
 
         NESTED_ENTRY \__PInvokeGenStubFuncName, _TEXT, NoHandler
         // TODO RISCV64 NYI
+            sw ra, 0(zero)
         NESTED_END \__PInvokeGenStubFuncName, _TEXT
 .endm
 
@@ -38,6 +40,7 @@
 //
     NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
     // TODO RISCV64 NYI
+        sw ra, 0(zero)
     NESTED_END JIT_PInvokeBegin, _TEXT
 
 // ------------------------------------------------------------------
@@ -48,6 +51,7 @@
 //
     LEAF_ENTRY JIT_PInvokeEnd, _TEXT
     // TODO RISCV64 NYI
+        sw ra, 0(zero)
     LEAF_END JIT_PInvokeEnd, _TEXT
 
 // ------------------------------------------------------------------

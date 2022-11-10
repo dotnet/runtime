@@ -31,7 +31,7 @@ LEAF_ENTRY CallCountingStubCode
     lh t1, 0(t3)
     addiw t1, t1, -1
     sh t1, 0(t3)
-    beq t1, x0, LOCAL_LABEL(CountReachedZero)
+    beq t1, zero, LOCAL_LABEL(CountReachedZero)
     ld t1, (CallCountingStubData__TargetForMethod)(t2)
     jalr x0, 0(t1)
 LOCAL_LABEL(CountReachedZero):

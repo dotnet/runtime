@@ -909,6 +909,7 @@ public:
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
     {
         // TODO RISCV64
+        _ASSERTE(!"TODO RISCV64 NYI");
     }
 #endif // TARGET_RISCV64
 protected:
@@ -1798,6 +1799,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     return argOfs;
 #elif defined(TARGET_RISCV64)
 // #error TODO RISCV64
+    _ASSERTE(!"TODO RISCV64 NYI");
     return TransitionBlock::InvalidOffset;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");

@@ -43,45 +43,64 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_STACK_FREE Size
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_STACK_RESTORE
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
-////NOTE: reg must be the number and GPR type !!!
 .macro PROLOG_SAVE_REG reg, ofs
-// TODO RISCV NYI
+    sd \reg, \ofs(sp)
+    .cfi_rel_offset \reg, \ofs
 .endm
 
-////NOTE: reg1 and reg2 must be the number and GPR type !!!
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
-// TODO RISCV NYI
+.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
+    sd \reg1, \ofs(sp)
+    sd \reg2, (\ofs+8)(sp)
+    .cfi_rel_offset \reg1, \ofs
+    .cfi_rel_offset \reg1, \ofs + 8
+    .ifc \reg1, fp
+        addi fp, sp, 0
+        .cfi_def_cfa_register fp
+    .endif
 .endm
 
-////NOTE: reg1 and reg2 must be the number and GPR type !!!
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-// TODO RISCV NYI
+    addi sp, sp, -\ssize
+    .cfi_adjust_cfa_offset -\ssize
+    .cfi_rel_offset \reg1, 0
+    .cfi_rel_offset \reg2, 8
+    .ifc \reg1, fp
+        addi fp, sp, 0
+        .cfi_def_cfa_register fp
+    .endif
 .endm
 
 .macro EPILOG_RESTORE_REG reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_RETURN
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -90,10 +109,12 @@ C_FUNC(\Name\()_End):
 
 .macro EPILOG_BRANCH Target
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_BRANCH_REG reg
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 //-----------------------------------------------------------------------------
@@ -104,37 +125,45 @@ C_FUNC(\Name\()_End):
 // Reserve 64 bytes of memory before calling  SAVE_CALLEESAVED_REGISTERS
 .macro SAVE_CALLEESAVED_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
 .macro SAVE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 //-----------------------------------------------------------------------------
@@ -182,10 +211,12 @@ C_FUNC(\Name\()_End):
 //
 .macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 
@@ -195,6 +226,7 @@ C_FUNC(\Name\()_End):
 //
 .macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
 
 // ------------------------------------------------------------------
@@ -206,4 +238,5 @@ C_FUNC(\Name\()_End):
 // This function is used by both the personality routine and the debugger to retrieve the original CONTEXT.
 .macro GenerateRedirectedHandledJITCaseStub reason
 // TODO RISCV NYI
+    sw  ra, 0(zero)
 .endm
