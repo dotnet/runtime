@@ -58,19 +58,30 @@ namespace Regression.UnitTests
             var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             foreach (var typedef in typedefs)
             {
+                Assert.Equal(IsGlobal(baselineImport, typedef), IsGlobal(currentImport, typedef));
                 Assert.Equal(EnumInterfaceImpls(baselineImport, typedef), EnumInterfaceImpls(currentImport, typedef));
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
+                    Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                 }
-                Assert.Equal(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
-                Assert.Equal(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
+                var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
+                foreach (var eventdef in events)
+                {
+                    Assert.Equal(IsGlobal(baselineImport, eventdef), IsGlobal(currentImport, eventdef));
+                }
+                var props = AssertAndReturn(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
+                foreach (var propdef in props)
+                {
+                    Assert.Equal(IsGlobal(baselineImport, propdef), IsGlobal(currentImport, propdef));
+                }
                 var fields = AssertAndReturn(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
                 foreach (var fielddef in fields)
                 {
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
+                    Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
                 }
                 Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
@@ -358,6 +369,17 @@ namespace Regression.UnitTests
             return values;
         }
 
+        private static uint IsGlobal(IMetaDataImport import, uint tk)
+        {
+            int hr = import.IsGlobal(tk, out uint pbGlobal);
+            if (hr != 0)
+            {
+                return (uint)hr;
+            }
+
+            return pbGlobal;
+        }
+
         private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)
         {
             List<uint> values = new();
@@ -377,7 +399,8 @@ namespace Regression.UnitTests
                 values.Add(pdwPackSize);
                 values.Add(pulClassSize);
 
-                for (int i = 0; i < fieldOffsetCount; ++i)
+                var retLen = Math.Min(offsets.Length, fieldOffsetCount);
+                for (int i = 0; i < retLen; ++i)
                 {
                     values.Add(offsets[i].ridOfField);
                     values.Add(offsets[i].ulOffset);

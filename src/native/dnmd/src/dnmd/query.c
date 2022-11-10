@@ -343,6 +343,9 @@ int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_
     return get_column_value_as_token_or_cursor(&c, col_idx, out_length, NULL, cursor);
 }
 
+// Forward declaration
+static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcursor_t begin, uint32_t count);
+
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count)
 {
     assert(cursor != NULL);
@@ -387,6 +390,13 @@ bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t*
         }
         break;
     }
+
+    // Use the results of this function to validate md_find_token_of_range_element()
+//#define DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
+#ifdef DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
+    (void)_validate_md_find_token_of_range_element(c, *cursor, *count);
+#endif
+
     return true;
 }
 
@@ -443,7 +453,7 @@ int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings)
+int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings)
 {
     if (out_length == 0)
         return 0;
@@ -719,4 +729,171 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     // Compute the row delta
     *count = CursorRow(&end) - CursorRow(start);
     return true;
+}
+
+// Modeled after C11's bsearch_s. This API performs a binary search
+// and instead of returning NULL if the value isn't found, a cursor
+// to the last element checked and compare result are returned.
+static mdcursor_t mdtable_bsearch_closest(
+    void const* key,
+    mdtable_t* table,
+    find_cxt_t* fcxt,
+    int32_t* last_result)
+{
+    assert(table != NULL && last_result != NULL);
+    void const* base = table->data.ptr;
+    rsize_t count = table->row_count;
+    rsize_t element_size = table->row_size_bytes;
+
+    int32_t res = 0;
+    void const* row = base;
+    while (count > 0)
+    {
+        row = (uint8_t const*)base + (element_size * (count / 2));
+        res = col_compare(key, row, fcxt);
+        if (res == 0 || count == 1)
+            break;
+
+        if (res < 0)
+        {
+            count /= 2;
+        }
+        else
+        {
+            base = row;
+            count -= count / 2;
+        }
+    }
+
+    *last_result = res;
+
+    // Compute the found row.
+    // Indices into tables begin at 1 - see II.22.
+    uint32_t idx = (uint32_t)(((intptr_t)row - (intptr_t)table->data.ptr) / element_size) + 1;
+    return create_cursor(table, idx);
+}
+
+// This function is used to validate the mapping logic between
+// md_find_token_of_range_element() and md_get_column_value_as_range().
+static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcursor_t begin, uint32_t count)
+{
+#define IF_FALSE_RETURN(exp) { if (!(exp)) assert(false && #exp); return false; }
+    mdToken expected_tk = 0;
+
+    // The expected token is often just where the cursor presently points.
+    // The Event and Property tables need to be queryed for the expected value.
+    switch (CursorTable(&begin)->table_id)
+    {
+    case mdtid_Field:
+    case mdtid_MethodDef:
+    case mdtid_Param:
+        IF_FALSE_RETURN(md_cursor_to_token(expected, &expected_tk));
+        break;
+    case mdtid_Event:
+        IF_FALSE_RETURN(md_get_column_value_as_token(expected, mdtEventMap_Parent, 1, &expected_tk));
+        break;
+    case mdtid_Property:
+        IF_FALSE_RETURN(md_get_column_value_as_token(expected, mdtPropertyMap_Parent, 1, &expected_tk));
+        break;
+    default:
+        IF_FALSE_RETURN(!"Invalid table ID");
+        break;
+    }
+
+    mdToken actual;
+    mdcursor_t curr = begin;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        IF_FALSE_RETURN(md_find_token_of_range_element(curr, &actual));
+        IF_FALSE_RETURN(expected_tk == actual);
+        IF_FALSE_RETURN(md_cursor_next(&curr));
+    }
+#undef IF_FALSE_RETURN
+
+    return true;
+}
+
+bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk)
+{
+    mdtable_t* table = CursorTable(&element);
+    if (table == NULL || tk == NULL)
+        return false;
+
+    uint32_t row = CursorRow(&element);
+    mdtable_t* tgt_table;
+    col_index_t tgt_col;
+    switch (table->table_id)
+    {
+    case mdtid_Field:
+        tgt_table = type_to_table(table->cxt, mdtid_TypeDef);
+        tgt_col = mdtTypeDef_FieldList;
+        break;
+    case mdtid_MethodDef:
+        tgt_table = type_to_table(table->cxt, mdtid_TypeDef);
+        tgt_col = mdtTypeDef_MethodList;
+        break;
+    case mdtid_Param:
+        tgt_table = type_to_table(table->cxt, mdtid_MethodDef);
+        tgt_col = mdtMethodDef_ParamList;
+        break;
+    case mdtid_Event:
+        tgt_table = type_to_table(table->cxt, mdtid_EventMap);
+        tgt_col = mdtEventMap_EventList;
+        break;
+    case mdtid_Property:
+        tgt_table = type_to_table(table->cxt, mdtid_PropertyMap);
+        tgt_col = mdtPropertyMap_PropertyList;
+        break;
+    default:
+        return false;
+    }
+
+    find_cxt_t fcxt;
+    if (!create_find_context(tgt_table, tgt_col, &fcxt))
+        return false;
+
+    int32_t last_cmp;
+    mdcursor_t pos = mdtable_bsearch_closest(&row, tgt_table, &fcxt, &last_cmp);
+
+    // The three result cases are handled as follows.
+    // If last < 0, then the cursor is greater than the value so we must move back one.
+    // If last == 0, then the cursor matches the value. This could be the first
+    //    instance of the value in a run of rows. We are only interested in the
+    //    last row with this value.
+    // If last > 0, then the cursor is less than the value and begins the list, use it.
+    mdcursor_t tmp;
+    mdToken tmp_tk;
+    if (last_cmp < 0)
+    {
+        (void)cursor_move_no_checks(&pos, -1);
+    }
+    else if (last_cmp == 0)
+    {
+        tmp = pos;
+        tmp_tk = row;
+        while (RidFromToken(tmp_tk) == row)
+        {
+            pos = tmp;
+            if (!cursor_move_no_checks(&tmp, 1)
+                || 1 != md_get_column_value_as_token(tmp, tgt_col, 1, &tmp_tk))
+            {
+                break;
+            }
+        }
+    }
+
+    switch (table->table_id)
+    {
+    case mdtid_Field:
+    case mdtid_MethodDef:
+    case mdtid_Param:
+        return md_cursor_to_token(pos, tk);
+    case mdtid_Event:
+        return md_get_column_value_as_token(pos, mdtEventMap_Parent, 1, tk);
+    case mdtid_Property:
+        return md_get_column_value_as_token(pos, mdtPropertyMap_Parent, 1, tk);
+    default:
+        assert(!"Invalid table ID");
+        return false;
+    }
 }

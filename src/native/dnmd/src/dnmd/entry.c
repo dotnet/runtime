@@ -223,7 +223,7 @@ static bool dump_table_rows(mdtable_t* table)
             }
             else if (table->column_details[j] & mdtc_hus)
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_wchar(cursor, IDX(j), 1, &user_string));
+                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_userstring(cursor, IDX(j), 1, &user_string));
                 printf("UTF-16 string (%u bytes)|", user_string.str_bytes);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))

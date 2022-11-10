@@ -2,6 +2,8 @@
 
 #include "impl.hpp"
 
+#define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
+
 #define RETURN_IF_FAILED(exp) \
 { \
     hr = (exp); \
@@ -1204,7 +1206,31 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::IsGlobal(
     mdToken     pd,
     int* pbGlobal)
 {
-    return E_NOTIMPL;
+    if (IsValidToken(pd) != TRUE)
+        return E_INVALIDARG;
+
+    mdToken parent;
+    mdcursor_t cursor;
+    switch (TypeFromToken(pd))
+    {
+    case mdtTypeDef:
+        *pbGlobal = (pd == MD_GLOBAL_PARENT_TOKEN);
+        break;
+    case mdtFieldDef:
+    case mdtMethodDef:
+    case mdtEvent:
+    case mdtProperty:
+        if (!md_token_to_cursor(_md_ptr.get(), pd, &cursor))
+            return CLDB_E_RECORD_NOTFOUND;
+        if (!md_find_token_of_range_element(cursor, &parent))
+            return CLDB_E_FILE_CORRUPT;
+        *pbGlobal = (parent == MD_GLOBAL_PARENT_TOKEN);
+        break;
+    default:
+        *pbGlobal = FALSE;
+    }
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParams(

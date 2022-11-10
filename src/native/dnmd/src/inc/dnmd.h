@@ -328,20 +328,29 @@ typedef enum
 int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
 // The returned number represents the number of valid cursor(s) for indexing.
 int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor);
-// Resolve the column to a cursor and a range based on the "run" pattern in tables.
+// Resolve the column to a cursor and a range based on the run/list pattern in tables.
 // The run continues to the smaller of:
 //   * the last row of the target table
 //   * the next run in the target table, found by inspecting the column value of the next row in the current table.
+// See md_find_token_of_range_element() for mapping elements back.
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count);
 int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
-int32_t md_get_column_value_as_wchar(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
+int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
 int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
 // Find a row or range of rows where the supplied column has the expected value.
 bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
 bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count);
+
+// Given a value into a supported table, find the associated parent token.
+//  - mdtid_Field
+//  - mdtid_MethodDef
+//  - mdtid_Event
+//  - mdtid_Property
+// See md_get_column_value_as_range() for getting complete range.
+bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk);
 
 #ifdef __cplusplus
 }
