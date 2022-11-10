@@ -212,13 +212,21 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
+        public static IEnumerable<object[]> CompilationObjectLivenessSources()
+        {
+            // Basic stub
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
+            // Stub with custom string marshaller
+            // TODO: Compilation is held alive by the CustomStringMarshallingType property in LibraryImportData
+            // yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() }; 
+        }
+
         // This test requires precise GC to ensure that we're accurately testing that we aren't
         // keeping the Compilation alive.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive()
+        [MemberData(nameof(CompilationObjectLivenessSources))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive(string source)
         {
-            string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
-
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
 
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
