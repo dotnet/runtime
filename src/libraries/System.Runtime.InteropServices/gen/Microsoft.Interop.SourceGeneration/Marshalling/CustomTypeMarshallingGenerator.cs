@@ -33,7 +33,7 @@ namespace Microsoft.Interop
             return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return _nativeTypeMarshaller.AsNativeType(info);
         }
