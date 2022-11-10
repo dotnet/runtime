@@ -15,6 +15,7 @@ namespace Microsoft.Interop
         private readonly Version _frameworkVersion;
 
         private const string InvokeReturnIdentifier = "__invokeRetVal";
+        private const string InvokeReturnIdentifierNative = "__invokeRetValUnmanaged";
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
 
@@ -36,24 +37,30 @@ namespace Microsoft.Interop
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            // If the info is in the managed return position, then we need to generate a name to use
+            // If the info is in the native return position, then we need to generate a name to use
             // for both the managed and native values since there is no name in the signature for the return value.
-            if (info.IsManagedReturnPosition)
+            if (info.IsNativeReturnPosition)
             {
+                // If the info is in the native exception position,
+                // then we're going to return using name of the native return identifier.
+                // We use the provided instance identifier as that represents
+                // the name of the exception variable specified in the catch clause.
+                if (info.IsManagedExceptionPosition)
+                {
+                    return (info.InstanceIdentifier, _nativeReturnIdentifier);
+                }
                 return (_returnIdentifier, _nativeReturnIdentifier);
             }
-            // If the info is in the native return position but is not in the managed return position,
+            // If the info is in the managed return position but is not in the native return position,
             // then that means that the stub is introducing an additional info for the return position.
             // This means that there is no name in source for this info, so we must provide one here.
-            // We can't use ReturnIdentifier or ReturnNativeIdentifier since that will be used by the managed return value.
-            // Additionally, since all use cases today of a TypePositionInfo in the native position but not the managed
-            // are for infos that aren't in the managed signature at all (PreserveSig scenario), we don't have a name
-            // that we can use from source. As a result, we generate another name for the native return value
-            // and use the same name for native and managed.
-            else if (info.IsNativeReturnPosition)
+            // We can't use ReturnIdentifier or ReturnNativeIdentifier since that will be used by the return value of the stub itself.
+            // Additionally, we don't have a name that we can use from source.
+            // As a result, we generate another name for the native return value.
+            else if (info.IsManagedReturnPosition)
             {
-                Debug.Assert(info.ManagedIndex == TypePositionInfo.UnsetIndex);
-                return (InvokeReturnIdentifier, InvokeReturnIdentifier);
+                Debug.Assert(info.NativeIndex == TypePositionInfo.UnsetIndex);
+                return (InvokeReturnIdentifier, InvokeReturnIdentifierNative);
             }
             else
             {

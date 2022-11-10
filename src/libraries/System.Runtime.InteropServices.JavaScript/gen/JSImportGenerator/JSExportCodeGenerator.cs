@@ -28,16 +28,18 @@ namespace Microsoft.Interop.JavaScript
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
+            Action<TypePositionInfo, string> extendedInvariantViolationsCallback = (info, details) =>
+                marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details });
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
+            NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSExportCodeContext(attributeData, innerContext);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = new BoundGenerators(argTypes, CreateGenerator, extendedInvariantViolationsCallback);
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
+                innerContext = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSExportCodeContext(attributeData, innerContext);
-                _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+                _marshallers = new BoundGenerators(argTypes, CreateGenerator, extendedInvariantViolationsCallback);
             }
 
             // validate task + span mix
@@ -72,7 +74,7 @@ namespace Microsoft.Interop.JavaScript
             StatementSyntax invoke = InvokeSyntax();
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
             SetupSyntax(setupStatements);
@@ -222,7 +224,7 @@ namespace Microsoft.Interop.JavaScript
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

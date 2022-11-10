@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal static class CustomMarshallingInfoHelper
+    public static class CustomMarshallingInfoHelper
     {
-        public static MarshallingInfo CreateNativeMarshallingInfo(
+        internal static MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
             INamedTypeSymbol entryPointType,
             AttributeData attrData,
@@ -105,6 +105,43 @@ namespace Microsoft.Interop
             {
                 return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
             }
+            return NoMarshallingInfo.Instance;
+        }
+
+        public static MarshallingInfo CreateNativeMarshallingInfoForNonSignatureElement(
+            ITypeSymbol type,
+            INamedTypeSymbol entryPointType,
+            AttributeData attrData,
+            Compilation compilation,
+            IGeneratorDiagnostics diagnostics)
+        {
+            if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
+            {
+                return NoMarshallingInfo.Instance;
+            }
+
+            if (!(entryPointType.IsStatic && entryPointType.TypeKind == TypeKind.Class)
+                && entryPointType.TypeKind != TypeKind.Struct)
+            {
+                diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStaticClassOrStruct), entryPointType.ToDisplayString(), type.ToDisplayString());
+                return NoMarshallingInfo.Instance;
+            }
+
+            ManagedTypeInfo entryPointTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType);
+
+            if (ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType))
+            {
+                // We can't provide collection marshalling info like count information for non-signature elements,
+                // so we disallow linear collection marshallers here.
+                // TODO: Add diagnostic
+                return NoMarshallingInfo.Instance;
+            }
+
+            if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, compilation, out CustomTypeMarshallers? marshallers))
+            {
+                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
+            }
+
             return NoMarshallingInfo.Instance;
         }
     }

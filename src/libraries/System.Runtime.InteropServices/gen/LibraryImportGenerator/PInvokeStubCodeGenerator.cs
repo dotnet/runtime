@@ -68,7 +68,7 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = new BoundGenerators(argTypes, CreateGenerator, (info, details) => marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details }));
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {

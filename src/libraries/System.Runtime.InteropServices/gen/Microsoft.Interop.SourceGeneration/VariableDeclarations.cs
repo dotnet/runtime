@@ -118,21 +118,78 @@ namespace Microsoft.Interop
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 
                 // Declare variable for return value
-                if (marshaller.TypeInfo.IsManagedReturnPosition || marshaller.TypeInfo.IsNativeReturnPosition)
+                if (marshaller.TypeInfo.IsNativeReturnPosition)
                 {
+                    bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context);
+
+                    // Always initialize the return value.
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
-                        native,
-                        false));
-                }
+                        managed,
+                        initializeToDefault || !nativeReturnUsesNativeIdentifier));
 
-                // Declare variable with native type for parameter or return value
-                if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
+                    if (nativeReturnUsesNativeIdentifier)
+                    {
+                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                            native,
+                            initializeToDefault: true));
+                    }
+                }
+                else if (marshaller.TypeInfo.IsManagedReturnPosition)
                 {
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
                         managed,
                         initializeToDefault));
+
+                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
+                    {
+                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                            native,
+                            initializeToDefault));
+                    }
+                }
+                else
+                {
+                    ValueBoundaryBehavior boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(marshaller.TypeInfo, context);
+
+                    // Declare variable with native type for parameter
+                    // if the marshaller uses the native identifier and the signature uses a different identifier
+                    // than the native identifier.
+                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                        && boundaryBehavior is not
+                            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
+                    {
+                        TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
+                        if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
+                        {
+                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                                localType,
+                                native,
+                                false));
+                        }
+                        else
+                        {
+                            // To simplify propogating back the value to the "byref" parameter,
+                            // we'll just declare the native identifier as a ref to its type.
+                            // The rest of the code we generate will work as expected, and we don't need
+                            // to manually propogate back the updated values after the call.
+                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                                RefType(localType),
+                                native,
+                                marshaller.Generator.GenerateNativeByRefInitialization(marshaller.TypeInfo, context)));
+                        }
+                    }
+
+                    if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier)
+                    {
+                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            marshaller.TypeInfo.ManagedType.Syntax,
+                            managed,
+                            initializeToDefault));
+                    }
                 }
             }
         }

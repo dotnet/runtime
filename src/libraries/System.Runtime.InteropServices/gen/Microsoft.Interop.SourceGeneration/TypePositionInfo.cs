@@ -47,6 +47,7 @@ namespace Microsoft.Interop
     {
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
+        public const int ExceptionIndex = UnsetIndex + 2;
 
         private static bool IsSpecialIndex(int index)
         {
@@ -69,6 +70,7 @@ namespace Microsoft.Interop
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
+        public bool IsManagedExceptionPosition { get => ManagedIndex == ExceptionIndex; }
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;

@@ -37,14 +37,13 @@ namespace System.Runtime.InteropServices.Marshalling;
 public class VirtualMethodTableIndexAttribute
 {
 +     public ExceptionMarshalling ExceptionMarshalling { get; }
-+     public Type ExceptionMarshallingType { get; }
++     public Type? ExceptionMarshallingType { get; } // When set to null or not set, equivalent to option 1
 }
 
 + public enum ExceptionMarshalling
 + {
-+     None, // No exception handling (equivalent to Option 1)
++     Custom,
 +     Com, // Match the COM-focused model described in Option 2
-+     Custom
 + }
 ```
 

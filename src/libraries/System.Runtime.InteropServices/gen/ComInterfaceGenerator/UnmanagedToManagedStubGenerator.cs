@@ -30,7 +30,7 @@ namespace Microsoft.Interop
             IMarshallingGeneratorFactory generatorFactory)
         {
             _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = new BoundGenerators(argTypes, CreateGenerator, (info, details) => marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details }));
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
@@ -60,14 +60,17 @@ namespace Microsoft.Interop
         /// <remarks>
         /// The generated code assumes it will be in an unsafe context.
         /// </remarks>
-        public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke, CatchClauseSyntax? catchClause)
+        public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
         {
             List<StatementSyntax> setupStatements = new();
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
                 _context,
                 methodToInvoke);
-            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
+            bool shouldInitializeVariables =
+                !statements.GuaranteedUnmarshal.IsEmpty
+                || !statements.Cleanup.IsEmpty
+                || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
             if (!statements.GuaranteedUnmarshal.IsEmpty)
@@ -102,7 +105,7 @@ namespace Microsoft.Interop
                 finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
             }
 
-            SyntaxList<CatchClauseSyntax> catchClauses = catchClause is not null ? SingletonList(catchClause) : default;
+            SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
             finallyStatements.AddRange(statements.Cleanup);
             if (finallyStatements.Count > 0)
@@ -110,15 +113,19 @@ namespace Microsoft.Interop
                 allStatements.Add(
                     TryStatement(Block(tryStatements), catchClauses, FinallyClause(Block(finallyStatements))));
             }
-            else
+            else if (catchClauses.Count > 0)
             {
                 allStatements.Add(
                     TryStatement(Block(tryStatements), catchClauses, @finally: null));
             }
+            else
+            {
+                allStatements.AddRange(tryStatements);
+            }
 
             // Return
             if (!_marshallers.IsUnmanagedVoidReturn)
-                allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));
+                allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.NativeReturnMarshaller.TypeInfo).native)));
 
             return Block(allStatements);
         }

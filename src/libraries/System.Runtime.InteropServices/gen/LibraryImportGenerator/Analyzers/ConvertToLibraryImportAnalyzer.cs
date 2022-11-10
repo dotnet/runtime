@@ -120,7 +120,7 @@ namespace Microsoft.Interop.Analyzers
                     mayRequireAdditionalWork = true;
                     return forwarder;
                 }
-            });
+            }, (info, details) => mayRequireAdditionalWork = true);
 
             if (anyExplicitlyUnsupportedInfo)
             {

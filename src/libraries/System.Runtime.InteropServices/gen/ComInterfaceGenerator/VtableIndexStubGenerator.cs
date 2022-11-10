@@ -26,7 +26,7 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> GeneratorFactory,
+            MarshallingInfo ExceptionMarshallingInfo,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
             ManagedTypeInfo TypeKeyType,
@@ -182,6 +182,8 @@ namespace Microsoft.Interop
 
             MarshalDirection direction = MarshalDirection.Bidirectional;
             bool implicitThis = true;
+            ExceptionMarshalling exceptionMarshalling = ExceptionMarshalling.Custom;
+            INamedTypeSymbol? exceptionMarshallingCustomType = null;
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
             {
                 // TypedConstant's Value property only contains primitive values.
@@ -200,11 +202,31 @@ namespace Microsoft.Interop
                 }
                 implicitThis = (bool)implicitThisValue.Value!;
             }
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ExceptionMarshalling), out TypedConstant exceptionMarshallingValue))
+            {
+                // TypedConstant's Value property only contains primitive values.
+                if (exceptionMarshallingValue.Value is not int)
+                {
+                    return null;
+                }
+                // A boxed primitive can be unboxed to an enum with the same underlying type.
+                exceptionMarshalling = (ExceptionMarshalling)exceptionMarshallingValue.Value!;
+            }
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ExceptionMarshallingCustomType), out TypedConstant exceptionMarshallingCustomTypeValue))
+            {
+                if (exceptionMarshallingCustomTypeValue.Value is not INamedTypeSymbol)
+                {
+                    return null;
+                }
+                exceptionMarshallingCustomType = (INamedTypeSymbol)exceptionMarshallingCustomTypeValue.Value;
+            }
 
             return new VirtualMethodIndexData((int)attrData.ConstructorArguments[0].Value).WithValuesFromNamedArguments(namedArguments) with
             {
                 Direction = direction,
-                ImplicitThisParameter = implicitThis
+                ImplicitThisParameter = implicitThis,
+                ExceptionMarshalling = exceptionMarshalling,
+                ExceptionMarshallingCustomType = exceptionMarshallingCustomType,
             };
         }
 
@@ -307,6 +329,8 @@ namespace Microsoft.Interop
                 typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[1]);
             }
 
+            MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, environment.Compilation, generatorDiagnostics, virtualMethodIndexData.ExceptionMarshalling, virtualMethodIndexData.ExceptionMarshallingCustomType);
+
             return new IncrementalStubGenerationContext(
                 signatureContext,
                 containingSyntaxContext,
@@ -314,12 +338,30 @@ namespace Microsoft.Interop
                 new MethodSignatureDiagnosticLocations(syntax),
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment),
+                exceptionMarshallingInfo,
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 typeKeyType,
                 typeKeyOwner,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+        }
+
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData triggerAttribute, Compilation compilation, IGeneratorDiagnostics diagnostics, ExceptionMarshalling marshalling, INamedTypeSymbol? exceptionMarshallingCustomType)
+        {
+            if (marshalling == ExceptionMarshalling.Com)
+            {
+                return new ComExceptionMarshalling();
+            }
+            if (exceptionMarshallingCustomType is null)
+            {
+                return NoMarshallingInfo.Instance;
+            }
+            return CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                    compilation.GetTypeByMetadataName(TypeNames.System_Exception),
+                    exceptionMarshallingCustomType,
+                    triggerAttribute,
+                    compilation,
+                    diagnostics);
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
@@ -395,12 +437,10 @@ namespace Microsoft.Interop
                 },
                 methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
-            // TODO: Implement our EH design based on the additional property on the attribute.
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(thisParameterIdentifier),
-                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)),
-                catchClause: null);
+                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
 
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
 
@@ -414,7 +454,7 @@ namespace Microsoft.Interop
                         ImplicitArrayCreationExpression(
                             InitializerExpression(SyntaxKind.CollectionInitializerExpression,
                                 SeparatedList<ExpressionSyntax>(
-                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"CallConv{callConv.Name.ValueText}")))))))
+                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"System.Runtime.CompilerServices.CallConv{callConv.Name.ValueText}")))))))
                     .WithNameEquals(NameEquals(IdentifierName("CallConvs"))));
             }
 

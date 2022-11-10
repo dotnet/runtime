@@ -47,6 +47,8 @@ namespace Microsoft.Interop
             return AttributeList(SingletonSeparatedList(marshalAsAttribute));
         }
 
+        private const string ParameterIdentifierSuffix = "param";
+
         /// <summary>
         /// Gets a parameter for the unmanaged signature that represents the provided <paramref name="info"/>.
         /// </summary>
@@ -59,7 +61,37 @@ namespace Microsoft.Interop
             {
                 return GenerateForwardingParameter(info);
             }
-            return Parameter(Identifier(context.GetIdentifiers(info).native))
+            string identifierName;
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                // This name doesn't get introduced into the stub's scope, so we can make it pretty
+                // and reuse the native identifier
+                identifierName = context.GetIdentifiers(info).native;
+            }
+            else if (context.Direction == MarshalDirection.UnmanagedToManaged)
+            {
+                // This name is introduced into the stub's scope.
+                // When we are passing the managed identifier as-is, we can just use that name everywhere.
+                // When we're passing the native identifier as-is or casting the value to the native type in managed->unmanaged cases,
+                // we can use the native identifier.
+                // When we're passing the address of the native identifier, we need to introduce a new name to hold this value
+                // before we assign it to the managed value.
+                (string managed, string native) = context.GetIdentifiers(info);
+                string param = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
+                identifierName = generator.GetValueBoundaryBehavior(info, context) switch
+                {
+                    ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => managed,
+                    ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => param,
+                    ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier => native,
+                    ValueBoundaryBehavior.AddressOfNativeIdentifier => param,
+                    _ => throw new UnreachableException()
+                };
+            }
+            else
+            {
+                throw new ArgumentException("Context direction must be ManagedToUnmanaged or UnmanagedToManaged");
+            }
+            return Parameter(Identifier(identifierName))
                 .WithType(behavior switch
                 {
                     SignatureBehavior.NativeType => generator.AsNativeType(info).Syntax,
@@ -212,6 +244,22 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info, context).Type, IdentifierName(nativeIdentifier))),
                 _ => throw new InvalidOperationException()
             };
+        }
+
+        public static ArgumentSyntax AsManagedArgument(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        {
+            var (managedIdentifier, _) = context.GetIdentifiers(info);
+            if (info.IsByRef)
+            {
+                return Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax));
+            }
+            return Argument(IdentifierName(managedIdentifier));
+        }
+
+        public static ExpressionSyntax GenerateNativeByRefInitialization(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        {
+            string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
+            return RefExpression(PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier)));
         }
     }
 }
