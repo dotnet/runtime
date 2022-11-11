@@ -71,7 +71,7 @@ namespace System.Formats.Tar.Tests
             TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
-            Exception exception = Record.Exception(() => TarFile.ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true));
+            Exception exception = Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true));
 
             Assert.Equal(SR.Format(SR.TarExtractingResultsLinkOutside, symlinkTargetPath, destinationDirectoryName), exception.Message);
         }
