@@ -12902,29 +12902,6 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
-    if (opts.OptimizationEnabled() && multiOp->IsVectorCreate())
-    {
-        bool allArgsAreConst = true;
-        for (GenTree* arg : multiOp->Operands())
-        {
-            if (!arg->OperIsConst())
-            {
-                allArgsAreConst = false;
-                break;
-            }
-        }
-
-        // Avoid unexpected CSE for constant arguments for Vector_.Create
-        // but only if all arguments are constants.
-        if (allArgsAreConst)
-        {
-            for (GenTree* arg : multiOp->Operands())
-            {
-                arg->SetDoNotCSE();
-            }
-        }
-    }
-
 #ifdef FEATURE_HW_INTRINSICS
     if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
     {
