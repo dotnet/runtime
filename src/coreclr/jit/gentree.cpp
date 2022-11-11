@@ -7983,31 +7983,32 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
     }
 }
 
-//
 //------------------------------------------------------------------------
-// gtBlockOpInit: Initializes a BlkOp GenTree
+// gtNewBlkOpNode: Creates a GenTree for a block (struct) assignment.
 //
 // Arguments:
-//    result     - an assignment node that is to be initialized.
-//    dst        - the target (destination) we want to either initialize or copy to.
-//    src        - the init value for InitBlk or the source struct for CpBlk/CpObj.
-//    isVolatile - specifies whether this node is a volatile memory operation.
+//    dst           - The destination node: local var / block node.
+//    srcOrFillVall - The value to assign for CopyBlk, the integer "fill" for InitBlk
+//    isVolatile    - Whether this is a volatile memory operation or not.
+//    isCopyBlock   - True if this is a block copy (rather than a block init).
 //
-// Assumptions:
-//    'result' is an assignment that is newly constructed.
-//    If 'dst' is TYP_STRUCT, then it must be a block node or lclVar.
+// Return Value:
+//    Returns the newly constructed and initialized block operation.
 //
-// Notes:
-//    This procedure centralizes all the logic to both enforce proper structure and
-//    to properly construct any InitBlk/CpBlk node.
-
-void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
+GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
 {
-    if (!result->OperIsBlkOp())
+    assert(varTypeIsStruct(dst) && (dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
+
+    if (!isCopyBlock) // InitBlk
     {
-        assert(dst->TypeGet() != TYP_STRUCT);
-        return;
+        assert(varTypeIsIntegral(srcOrFillVal));
+        if (!srcOrFillVal->IsIntegralConst(0))
+        {
+            srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);
+        }
     }
+
+    GenTree* result = gtNewAssignNode(dst, srcOrFillVal);
 
     /* In the case of CpBlk, we want to avoid generating
     * nodes where the source and destination are the same
@@ -8027,7 +8028,7 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
     * surface if struct promotion is ON (which is the case on x86/arm).  But still the
     * fundamental issue exists that needs to be addressed.
     */
-    if (result->OperIsCopyBlkOp())
+    if (isCopyBlock)
     {
         GenTree* currSrc = srcOrFillVal;
         GenTree* currDst = dst;
@@ -8044,18 +8045,10 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
         if (currSrc->OperGet() == GT_LCL_VAR && currDst->OperGet() == GT_LCL_VAR &&
             currSrc->AsLclVarCommon()->GetLclNum() == currDst->AsLclVarCommon()->GetLclNum())
         {
-            // Make this a NOP
-            // TODO-Cleanup: probably doesn't matter, but could do this earlier and avoid creating a GT_ASG
-            result->gtBashToNOP();
-            return;
+            result->gtBashToNOP(); // Make this a NOP.
+            return result;
         }
     }
-
-    // Propagate all effect flags from children
-    result->gtFlags |= dst->gtFlags & GTF_ALL_EFFECT;
-    result->gtFlags |= result->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT;
-
-    result->gtFlags |= (dst->gtFlags & GTF_EXCEPT) | (srcOrFillVal->gtFlags & GTF_EXCEPT);
 
     if (isVolatile)
     {
@@ -8063,69 +8056,26 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
     }
 
 #ifdef FEATURE_SIMD
-    if (result->OperIsCopyBlkOp() && varTypeIsSIMD(srcOrFillVal))
+    // If the source is a SIMD/HWI node of SIMD type, then the dst lclvar struct
+    // should be labeled as simd intrinsic related struct. This is done so that
+    // we do not promote the local, thus avoiding conflicting access methods
+    // (fields vs. whole-register).
+    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIsSimdOrHWintrinsic())
     {
-        // If the source is a GT_SIMD node of SIMD type, then the dst lclvar struct
-        // should be labeled as simd intrinsic related struct.
-        // This is done so that the morpher can transform any field accesses into
-        // intrinsics, thus avoiding conflicting access methods (fields vs. whole-register).
-
-        GenTree* src = srcOrFillVal;
-        if (src->OperIsIndir() && (src->AsIndir()->Addr()->OperGet() == GT_ADDR))
+        // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
+        // however, it is not enabled for x86. Fix that and delete this code.
+        if (dst->OperIsBlk() && (dst->AsIndir()->Addr()->OperGet() == GT_ADDR))
         {
-            src = src->AsIndir()->Addr()->gtGetOp1();
+            dst = dst->AsIndir()->Addr()->gtGetOp1();
         }
-#ifdef FEATURE_HW_INTRINSICS
-        if ((src->OperGet() == GT_SIMD) || (src->OperGet() == GT_HWINTRINSIC))
-#else
-        if (src->OperGet() == GT_SIMD)
-#endif // FEATURE_HW_INTRINSICS
-        {
-            if (dst->OperIsBlk() && (dst->AsIndir()->Addr()->OperGet() == GT_ADDR))
-            {
-                dst = dst->AsIndir()->Addr()->gtGetOp1();
-            }
 
-            if (dst->OperIsLocal() && varTypeIsStruct(dst))
-            {
-                setLclRelatedToSIMDIntrinsic(dst);
-            }
+        if (dst->OperIsLocal() && varTypeIsStruct(dst))
+        {
+            setLclRelatedToSIMDIntrinsic(dst);
         }
     }
 #endif // FEATURE_SIMD
-}
 
-//------------------------------------------------------------------------
-// gtNewBlkOpNode: Creates a GenTree for a block (struct) assignment.
-//
-// Arguments:
-//    dst           - The destination node: local var / block node.
-//    srcOrFillVall - The value to assign for CopyBlk, the integer "fill" for InitBlk
-//    isVolatile    - Whether this is a volatile memory operation or not.
-//    isCopyBlock   - True if this is a block copy (rather than a block init).
-//
-// Return Value:
-//    Returns the newly constructed and initialized block operation.
-//
-GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
-{
-    assert(dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD));
-
-    if (!isCopyBlock)
-    {
-        // InitBlk
-        assert(varTypeIsIntegral(srcOrFillVal));
-        if (varTypeIsStruct(dst))
-        {
-            if (!srcOrFillVal->IsIntegralConst(0))
-            {
-                srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);
-            }
-        }
-    }
-
-    GenTree* result = gtNewAssignNode(dst, srcOrFillVal);
-    gtBlockOpInit(result, dst, srcOrFillVal, isVolatile);
     return result;
 }
 
