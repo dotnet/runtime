@@ -375,6 +375,18 @@ private:
     void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+    GenTree* InsertNewSimdCreateScalarNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
+    {
+        GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
+        BlockRange().InsertAfter(op1, result);
+
+        if (result->IsVectorConst())
+        {
+            BlockRange().Remove(op1);
+        }
+        return result;
+    }
 #endif // FEATURE_HW_INTRINSICS
 
     //----------------------------------------------------------------------------------------------
