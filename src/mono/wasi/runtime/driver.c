@@ -414,7 +414,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
@@ -797,11 +797,6 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
 }
 
 int main() {
-	printf("monoeg_g_setenv\n");
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
-
-	printf("mono_set_assemblies_path\n");
     // Assume the runtime pack has been copied into the output directory as 'runtime'
     // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
     mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
