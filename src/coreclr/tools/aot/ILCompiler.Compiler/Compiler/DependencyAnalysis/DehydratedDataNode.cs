@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int Phase => (int)ObjectNodePhase.Late;
 
-        public override int ClassCode => (int)ObjectNodeOrder.DehydratedDataNode;
+        public override int ClassCode => 0xbd80526;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -86,6 +86,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (firstSymbol != null)
                 builder.EmitReloc(firstSymbol, RelocType.IMAGE_REL_BASED_RELPTR32, -firstSymbol.Offset);
+            else
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
 
             // Sort the reloc targets and create reloc lookup table.
             KeyValuePair<ISymbolNode, int>[] relocSort = new List<KeyValuePair<ISymbolNode, int>>(relocOccurences).ToArray();
@@ -99,8 +101,6 @@ namespace ILCompiler.DependencyAnalysis
             int dehydratedSegmentPosition = 0;
             foreach (ObjectData o in factory.MetadataManager.GetDehydratableData())
             {
-                Debug.Assert(o.Data.Length != 0);
-
                 if (o.Alignment > 1)
                 {
                     // Might need to emit a ZeroFill to align the data.
@@ -231,6 +231,7 @@ namespace ILCompiler.DependencyAnalysis
             _endSymbol.SetSymbolOffset(builder.CountBytes);
             builder.AddSymbol(_endSymbol);
 
+            // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)
                 builder.EmitReloc(relocSort[i].Key, RelocType.IMAGE_REL_BASED_RELPTR32);
 

@@ -36,6 +36,8 @@ namespace ILCompiler
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
+        protected readonly MetadataManagerOptions _options;
+
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
@@ -65,15 +67,17 @@ namespace ILCompiler
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
-            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
+            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
+            MetadataManagerOptions options)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
             _resourceBlockingPolicy = resourceBlockingPolicy;
             _dynamicInvokeThunkGenerationPolicy = dynamicInvokeThunkGenerationPolicy;
+            _options = options;
         }
 
-        public bool IsDataDehydrated => true;
+        public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
 
         internal ObjectNode.ObjectData PrepareForDehydration(DehydratableObjectNode node, ObjectNode.ObjectData hydratedData)
         {
@@ -871,5 +875,11 @@ namespace ILCompiler
         None = 0x00,
         Description = 0x01,
         RuntimeMapping = 0x02,
+    }
+
+    [Flags]
+    public enum MetadataManagerOptions
+    {
+        DehydrateData = 0x01,
     }
 }
