@@ -7,12 +7,14 @@
 // #error "TODO-RISCV64: missing implementation"
 
 LEAF_ENTRY GetCurrentIP, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+sw ra, 0(x0)
 LEAF_END GetCurrentIP, _TEXT
 
 // LPVOID __stdcall GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+sw ra, 0(x0)
 LEAF_END GetCurrentSP, _TEXT
 
 //-----------------------------------------------------------------------------
@@ -46,13 +48,15 @@ LEAF_END GetCurrentSP, _TEXT
 // and each entry can be written atomically
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 
 // ----------------------------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
 LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 
@@ -60,12 +64,14 @@ LEAF_END JIT_WriteBarrier_Callable, _TEXT
 // ------------------------------------------------------------------
 // Start of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
 // void JIT_ByRefWriteBarrier
 WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 WRITE_BARRIER_END JIT_ByRefWriteBarrier
 
 //-----------------------------------------------------------------------------
@@ -73,24 +79,28 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 // void JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 WRITE_BARRIER_END JIT_WriteBarrier
 
 
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 // ------------------------------------------------------------------
 // End of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
 
@@ -110,11 +120,13 @@ LEAF_END JIT_PatchedCodeLast, _TEXT
 // the register here.  That's what this macro does.
 //
 .macro RestoreRegMS regIndex, reg
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 .endm
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------\
@@ -124,7 +136,8 @@ NESTED_END ThePreStub, _TEXT
 // MachState *pState
 // )
 LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END HelperMethodFrameRestoreState, _TEXT
 
 //-----------------------------------------------------------------------------
@@ -132,13 +145,15 @@ LEAF_END HelperMethodFrameRestoreState, _TEXT
 //-----------------------------------------------------------------------------
 //void LazyMachStateCaptureState(struct LazyMachState *pState)//
 LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END LazyMachStateCaptureState, _TEXT
 
 // ------------------------------------------------------------------
 // The call in ndirect import precode points to this function.
 NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END NDirectImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
@@ -159,13 +174,14 @@ NESTED_END NDirectImportThunk, _TEXT
 // $t2 = Address of thunk
 
 NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END VirtualMethodFixupStub, _TEXT
 #endif // FEATURE_PREJIT
 
 // void SinglecastDelegateInvokeStub(Delegate *pThis)
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 // ------------------------------------------------------------------
@@ -173,7 +189,8 @@ LEAF_END SinglecastDelegateInvokeStub, _TEXT
 LEAF_ENTRY ThePreStubPatch, _TEXT
 .globl C_FUNC(ThePreStubPatchLabel)
 C_FUNC(ThePreStubPatchLabel):
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END ThePreStubPatch, _TEXT
 
 #ifdef FEATURE_PREJIT
@@ -182,19 +199,22 @@ LEAF_END ThePreStubPatch, _TEXT
 //
 // The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
 NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END TheUMEntryPrestub, _TEXT
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
 LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -205,7 +225,8 @@ LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 //
 
 NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
 // ------------------------------------------------------------------
@@ -213,21 +234,24 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
 LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
 LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 
@@ -235,7 +259,8 @@ LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
@@ -258,13 +283,15 @@ GenerateRedirectedHandledJITCaseStub GCStress
 // ------------------------------------------------------------------
 // This helper enables us to call into a funclet after restoring Fp register
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END CallEHFunclet, _TEXT
 
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END CallEHFilterFunclet, _TEXT
 
 #ifdef FEATURE_COMINTEROP
@@ -279,7 +306,8 @@ NESTED_END CallEHFilterFunclet, _TEXT
 //   buffer pointed to by $a1 on entry contains the float or double argument as appropriate
 //
 LEAF_ENTRY getFPReturn, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END getFPReturn, _TEXT
 
 // ------------------------------------------------------------------
@@ -287,7 +315,8 @@ LEAF_END getFPReturn, _TEXT
 // register(s) as non-floating point values).
 //
 LEAF_ENTRY setFPReturn, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
@@ -300,7 +329,8 @@ LEAF_END setFPReturn, _TEXT
 // void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
 LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
@@ -308,9 +338,11 @@ LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
 C_FUNC(DelayLoad_MethodCall):
     .global C_FUNC(DelayLoad_MethodCall)
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
     PATCH_LABEL ExternalMethodFixupPatchLabel
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
 
@@ -318,7 +350,8 @@ NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
 DelayLoad_Helper\suffix:
     .global DelayLoad_Helper\suffix
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
 .endm
 
@@ -332,7 +365,8 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Object
 
 // ------------------------------------------------------------------
 LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
@@ -344,7 +378,8 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 // ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END \helper\()Naked, _TEXT
 .endm
 
@@ -358,7 +393,8 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 #ifdef FEATURE_TIERED_COMPILATION
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
-// TOOD RISCV64 NYI
+// TODO RISCV64 NYI
+    sw ra, 0(x0)
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
