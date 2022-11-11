@@ -11476,8 +11476,8 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                 rshiftOp->gtOp1 = andOp->gtGetOp2();
                 andOp->gtOp2    = rshiftOp;
 
-                rshiftOp->SetAllEffectsFlags(rshiftOp->gtGetOp1(), rshiftOp->gtGetOp2());
                 rshiftOp->SetOper(GT_LSH);
+                gtUpdateNodeSideEffects(rshiftOp);
             }
 
             // Reverse the condition if necessary.
