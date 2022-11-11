@@ -348,7 +348,7 @@ namespace Internal.IL.Stubs
 
             if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _pInvokeMetadata))
             {
-                MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
+                MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCMarshal");
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
                     .GetKnownMethod("ThrowPendingExceptionObject", null)));
             }

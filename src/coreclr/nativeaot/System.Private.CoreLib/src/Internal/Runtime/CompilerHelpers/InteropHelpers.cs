@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
@@ -344,14 +345,11 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if FEATURE_OBJCMARSHAL
 #pragma warning disable CA1416
-            if (pCell->IsObjectiveCMessageSend)
+            if (pCell->IsObjectiveCMessageSend && ObjectiveCMarshal.TryGetGlobalMessageSendCallback(pCell->ObjectiveCMessageSendFunction, out pTarget))
             {
-                pTarget = s_ObjcMessageSendFunctions[pCell->ObjectiveCMessageSendFunction];
-                if (pTarget != IntPtr.Zero)
-                {
-                    pCell->Target = pTarget;
-                    return;
-                }
+                Debug.Assert(pTarget != IntPtr.Zero);
+                pCell->Target = pTarget;
+                return;
             }
 #pragma warning restore CA1416
 #endif
