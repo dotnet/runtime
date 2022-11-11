@@ -825,8 +825,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack(simdType);
 
-            GenTreeVecCon* vecCon2 = gtNewVconNode(retType);
-            GenTreeVecCon* vecCon3 = gtNewVconNode(retType);
+            GenTreeVecCon* vecCon2 = gtNewVconNode(simdType);
+            GenTreeVecCon* vecCon3 = gtNewVconNode(simdType);
 
             switch (simdBaseType)
             {
