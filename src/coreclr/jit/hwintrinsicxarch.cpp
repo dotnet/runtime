@@ -1253,15 +1253,15 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                         //
                         // The most significant bit being set means zero the value
 
-                        simd32Val.u64[0] = 0x0F0D0B09'07050301;
-                        simd32Val.u64[1] = 0x80808080'80808080;
+                        simd32Val.u64[0] = 0x0F0D0B0907050301;
+                        simd32Val.u64[1] = 0x8080808080808080;
 
                         if (simdSize == 32)
                         {
                             // Vector256 works on 2x128-bit lanes, so repeat the same indices for the upper lane
 
-                            simd32Val.u64[2] = 0x0F0D0B09'07050301;
-                            simd32Val.u64[3] = 0x80808080'80808080;
+                            simd32Val.u64[2] = 0x0F0D0B0907050301;
+                            simd32Val.u64[3] = 0x8080808080808080;
 
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
                             moveMaskIntrinsic = NI_AVX2_MoveMask;

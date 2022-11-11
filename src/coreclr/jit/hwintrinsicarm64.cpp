@@ -836,13 +836,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_UBYTE;
                     simdBaseJitType = CORINFO_TYPE_UBYTE;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x80808080'80808080;
-                    vecCon3->gtSimd16Val.u64[0] = 0x00FFFEFD'FCFBFAF9;
+                    vecCon2->gtSimd16Val.u64[0] = 0x8080808080808080;
+                    vecCon3->gtSimd16Val.u64[0] = 0x00FFFEFDFCFBFAF9;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x80808080'80808080;
-                        vecCon3->gtSimd16Val.u64[1] = 0x00FFFEFD'FCFBFAF9;
+                        vecCon2->gtSimd16Val.u64[1] = 0x8080808080808080;
+                        vecCon3->gtSimd16Val.u64[1] = 0x00FFFEFDFCFBFAF9;
                     }
                     break;
                 }
@@ -853,13 +853,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_USHORT;
                     simdBaseJitType = CORINFO_TYPE_USHORT;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x80008000'80008000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFF4FFF3'FFF2FFF1;
+                    vecCon2->gtSimd16Val.u64[0] = 0x8000800080008000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFF4FFF3FFF2FFF1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x80008000'80008000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFF8FFF7'FFF6FFF5;
+                        vecCon2->gtSimd16Val.u64[1] = 0x8000800080008000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFF8FFF7FFF6FFF5;
                     }
                     break;
                 }
@@ -871,13 +871,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_INT;
                     simdBaseJitType = CORINFO_TYPE_INT;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x80000000'80000000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFE2'FFFFFFE1;
+                    vecCon2->gtSimd16Val.u64[0] = 0x8000000080000000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFE2FFFFFFE1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x80000000'80000000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFE4'FFFFFFE3;
+                        vecCon2->gtSimd16Val.u64[1] = 0x8000000080000000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFE4FFFFFFE3;
                     }
                     break;
                 }
@@ -889,13 +889,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_LONG;
                     simdBaseJitType = CORINFO_TYPE_LONG;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x80000000'00000000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFFF'FFFFFFC1;
+                    vecCon2->gtSimd16Val.u64[0] = 0x8000000000000000;
+                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFFFFFFFFFC1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x80000000'00000000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFFF'FFFFFFC2;
+                        vecCon2->gtSimd16Val.u64[1] = 0x8000000000000000;
+                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFFFFFFFFFC2;
                     }
                     break;
                 }
