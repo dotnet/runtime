@@ -452,7 +452,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
             return nullptr;
         }
 
-        secondIndir = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_ULONG);
+        secondIndir = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_LONG);
         return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
                              gtNewIconNode(0, TYP_LONG));
     }
