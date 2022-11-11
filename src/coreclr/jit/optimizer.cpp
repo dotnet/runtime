@@ -4853,7 +4853,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 
     // Invert the condition.
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+    GenTree* revCond = gtReverseCond(cond);
+    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
 
     // Create a select node.
     GenTreeConditional* select =
