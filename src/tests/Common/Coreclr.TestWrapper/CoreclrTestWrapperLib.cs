@@ -205,7 +205,7 @@ namespace CoreclrTestLib
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
 
-        static bool CollectCrashDump(Process process, string path)
+        static bool CollectCrashDump(Process process, string path, StreamWriter outputWriter)
         {
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
@@ -250,7 +250,7 @@ namespace CoreclrTestLib
 
                 if (crashReportPresent)
                 {
-                    TryPrintStackTraceFromCrashReport(path);
+                    TryPrintStackTraceFromCrashReport(path, outputWriter);
                 }
             }
             else
@@ -272,13 +272,15 @@ namespace CoreclrTestLib
         /// </summary>
         /// <param name="crashdump">crash dump path</param>
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
-        static bool TryPrintStackTraceFromCrashReport(string crashdump)
+        static bool TryPrintStackTraceFromCrashReport(string crashdump, StreamWriter outputWriter)
         {
             string crashReportJsonFile = crashdump + ".crashreport.json";
             if (!File.Exists(crashReportJsonFile))
             {
                 return false;
             }
+            outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
+
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string contents = File.ReadAllText(crashReportJsonFile);
 
@@ -362,7 +364,7 @@ namespace CoreclrTestLib
             }
             };
 
-            Console.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
+            outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
             llvmSymbolizer.Start();
 
             using (var symbolizerWriter = llvmSymbolizer.StandardInput)
@@ -372,8 +374,8 @@ namespace CoreclrTestLib
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
-                Console.WriteLine("Errors while running llvm-symbolizer");
-                Console.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                outputWriter.WriteLine("Errors while running llvm-symbolizer");
+                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
                 llvmSymbolizer.Kill(true);
                 return false;
             }
@@ -396,8 +398,8 @@ namespace CoreclrTestLib
                 }
                 finalBuilder.AppendLine(line);
             }
-            Console.WriteLine("Stack trace:");
-            Console.WriteLine(finalBuilder.ToString());
+            outputWriter.WriteLine("Stack trace:");
+            outputWriter.WriteLine(finalBuilder.ToString());
             return true;
         }
 
@@ -513,9 +515,10 @@ namespace CoreclrTestLib
                             {
                                 // Search for dump, if created.
                                 string possibleDmpFile = Path.Combine(crashDumpFolder, $"coredump.{pid}.dmp");
+                                outputWriter.WriteLine($"Test failed. Trying to load dump file: '{possibleDmpFile}'");
                                 if (File.Exists(possibleDmpFile))
                                 {
-                                    TryPrintStackTraceFromCrashReport(possibleDmpFile);
+                                    TryPrintStackTraceFromCrashReport(possibleDmpFile, outputWriter);
                                 }
                             }
                         }
@@ -546,7 +549,7 @@ namespace CoreclrTestLib
                                 {
                                     string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
                                     Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
-                                    if (CollectCrashDump(child, crashDumpPath))
+                                    if (CollectCrashDump(child, crashDumpPath, outputWriter))
                                     {
                                         Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
                                     }
