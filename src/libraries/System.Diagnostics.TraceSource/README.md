@@ -14,4 +14,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Deployment
 
-`System.Diagnostics.TraceSource` is provided as part of the `Microsoft.WindowsDesktop.App` shared framework.
+`System.Diagnostics.TraceSource` is provided as part of the `Microsoft.NETCore.App` shared framework.
