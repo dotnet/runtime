@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Generator
             "#pragma warning disable CS0219 // Variable assigned but never used",
         };
 
-        private sealed record CompilationData(bool AllowUnsafe = false, bool CheckOverflow = false);
+        private record struct CompilationData(bool AllowUnsafe, bool CheckOverflow);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions.Generator
                 .Select((x, _) =>
                     x.Options is CSharpCompilationOptions options ?
                         new CompilationData(options.AllowUnsafe, options.CheckOverflow) :
-                        new CompilationData());
+                        default);
 
             // Produces one entry per generated regex.  This may be:
             // - Diagnostic in the case of a failure that should end the compilation
