@@ -12,7 +12,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
     - '**.md'
