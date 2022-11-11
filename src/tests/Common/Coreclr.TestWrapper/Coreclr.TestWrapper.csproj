@@ -12,4 +12,8 @@
     <Compile Include="MobileAppHandler.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+  </ItemGroup>
+
 </Project>

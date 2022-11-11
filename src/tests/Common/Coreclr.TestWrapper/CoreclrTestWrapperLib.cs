@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using Newtonsoft.Json;
 
 namespace CoreclrTestLib
 {
@@ -210,6 +211,7 @@ namespace CoreclrTestLib
             string createdumpPath = Path.Combine(coreRoot, "createdump");
             string arguments = $"--name \"{path}\" {process.Id} --withheap";
             Process createdump = new Process();
+            bool crashReportPresent = false;
 
             if (OperatingSystem.IsWindows())
             {
@@ -221,6 +223,7 @@ namespace CoreclrTestLib
                 createdump.StartInfo.FileName = "sudo";
                 createdump.StartInfo.Arguments = $"{createdumpPath} --crashreport " + arguments;
                 createdump.StartInfo.EnvironmentVariables.Add("DOTNET_DbgEnableElfDumpOnMacOS", "1");
+                crashReportPresent = true;
             }
 
             createdump.StartInfo.UseShellExecute = false;
@@ -244,6 +247,11 @@ namespace CoreclrTestLib
                 Console.WriteLine(output);
                 Console.WriteLine("createdump stderr:");
                 Console.WriteLine(error);
+
+                if (crashReportPresent)
+                {
+                    TryPrintStackTraceFromCrashReport(coreRoot, path);
+                }
             }
             else
             {
@@ -251,6 +259,159 @@ namespace CoreclrTestLib
             }
 
             return fSuccess && createdump.ExitCode == 0;
+        }
+
+        private static List<string> knownNativeModules = new List<string>() { "libcoreclr.so" };
+        private static string TO_BE_CONTINUE_TAG = "<TO_BE_CONTINUE>";
+        private static string SKIP_LINE_TAG = "<SKIP_LINE>";
+
+
+        /// <summary>
+        ///     Parse crashreport.json file, use llvm-symbolizer to extract symbols
+        ///     and recreate the stacktrace that is printed on the console.
+        /// </summary>
+        /// <param name="coreRoot">Path to CORE_ROOT</param>
+        /// <param name="crashdump">crash dump path</param>
+        /// <returns></returns>
+        static bool TryPrintStackTraceFromCrashReport(string coreRoot, string crashdump)
+        {
+            string crashReportJsonFile = crashdump + ".crashreport.json";
+            if (!File.Exists(crashReportJsonFile))
+            {
+                return false;
+            }
+            string contents = File.ReadAllText(crashReportJsonFile);
+
+            dynamic crashReport = JsonConvert.DeserializeObject(contents);
+            var threads = crashReport.payload.threads;
+            StringBuilder addrBuilder = new StringBuilder();
+            foreach (var thread in threads)
+            {
+
+                if (thread.native_thread_id == null)
+                {
+                    continue;
+                }
+
+                addrBuilder.AppendLine();
+                addrBuilder.AppendLine("----------------------------------");
+                addrBuilder.AppendLine($"Thread Id: {thread.native_thread_id}");
+                addrBuilder.AppendLine("      Child SP               IP Call Site");
+                var stack_frames = thread.stack_frames;
+                foreach (var frame in stack_frames)
+                {
+                    addrBuilder.Append($"{SKIP_LINE_TAG} {frame.stack_pointer} {frame.native_address} ");
+                    bool isNative = frame.is_managed == "false";
+
+                    if (isNative)
+                    {
+                        if ((frame.native_module != null) && (knownNativeModules.Contains(frame.native_module.Value)))
+                        {
+                            // Need to use llvm-symbolizer (only if module_address != 0)
+                            AppendAddress(addrBuilder, frame.native_address.Value, frame.module_address.Value);
+                        }
+                        else if ((frame.native_module != null) || (frame.unmanaged_name != null))
+                        {
+                            // Some native symbols were found, print them as it is.
+                            if (frame.native_module != null)
+                            {
+                                addrBuilder.Append($"{frame.native_module}!");
+                            }
+                            if (frame.unmanaged_name != null)
+                            {
+                                addrBuilder.Append($"{frame.unmanaged_name}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if ((frame.filename != null) || (frame.method_name != null))
+                        {
+                            // found the managed method name, print them as it is.
+                            if (frame.filename != null)
+                            {
+                                addrBuilder.Append($"{frame.filename}!");
+                            }
+                            if (frame.method_name != null)
+                            {
+                                addrBuilder.Append($"{frame.method_name}");
+                            }
+
+                        }
+                        else
+                        {
+                            // Possibly JIT code or system call, print the address as it is.
+                            addrBuilder.Append($"{frame.native_address}");
+                        }
+                    }
+                    addrBuilder.AppendLine();
+                }
+            }
+
+            string symbolizerOutput = null;
+
+            Process llvmSymbolizer = new Process()
+            {
+                StartInfo = {
+                FileName = "llvm-symbolizer",
+                Arguments = $"--obj={coreRoot}/libcoreclr.so -p",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+            }
+            };
+
+            Console.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
+            llvmSymbolizer.Start();
+
+            using (var symbolizerWriter = llvmSymbolizer.StandardInput)
+            {
+                symbolizerWriter.WriteLine(addrBuilder.ToString());
+            }
+
+            if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
+            {
+                Console.WriteLine("Errors while running llvm-symbolizer");
+                Console.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                llvmSymbolizer.Kill(true);
+                return false;
+            }
+            else
+            {
+                symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
+            }
+
+            string[] contentsToSantize = symbolizerOutput.Split(Environment.NewLine);
+            StringBuilder finalBuilder = new StringBuilder();
+            for (int lineNum = 0; lineNum < contentsToSantize.Length; lineNum++)
+            {
+                string line = contentsToSantize[lineNum].Replace(SKIP_LINE_TAG, string.Empty);
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                if (line.EndsWith(TO_BE_CONTINUE_TAG))
+                {
+                    finalBuilder.Append(line.Replace(TO_BE_CONTINUE_TAG, string.Empty));
+                    continue;
+                }
+                finalBuilder.AppendLine(line);
+            }
+            Console.WriteLine("Stack trace:");
+            Console.WriteLine(finalBuilder.ToString());
+            return true;
+        }
+
+        private static void AppendAddress(StringBuilder sb, string native_address, string module_address)
+        {
+            if (module_address != "0x0")
+            {
+                sb.Append(TO_BE_CONTINUE_TAG);
+                sb.AppendLine();
+                //addrBuilder.AppendLine(frame.native_image_offset);
+                ulong nativeAddress = ulong.Parse(native_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                ulong moduleAddress = ulong.Parse(module_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                sb.AppendFormat("0x{0:x}", nativeAddress - moduleAddress);
+            }
         }
 
         // Finds all children processes starting with a process named childName
