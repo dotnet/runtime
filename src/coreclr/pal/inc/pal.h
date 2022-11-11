@@ -2103,7 +2103,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // #error "TODO-RISCV64: review this when src/coreclr/pal/src/arch/riscv64/asmconstants.h is ported"
 
 // Please refer to src/coreclr/pal/src/arch/riscv64/asmconstants.h
-#define CONTEXT_RISCV64 0x04000000L
+#define CONTEXT_RISCV64 0x01000000L
 
 #define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1)
 #define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2)
