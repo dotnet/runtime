@@ -32,6 +32,7 @@ protected:
 
 private:
     void TryInitFieldByField();
+    void TryPrimitiveInit();
 
 protected:
     Compiler* m_comp;
@@ -134,7 +135,7 @@ GenTree* MorphInitBlockHelper::Morph()
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
         GenTree* oneAsgTree = nullptr;
-        if (m_dst != m_dstLclNode)
+        if (!m_initBlock && (m_dst != m_dstLclNode))
         {
             oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
         }
@@ -351,6 +352,11 @@ void MorphInitBlockHelper::MorphStructCases()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
+        TryPrimitiveInit();
+    }
+
+    if (m_transformationDecision == BlockTransformation::Undefined)
+    {
         // For an InitBlock we always require a block operand.
         m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, true /*isBlkReqd*/);
         m_transformationDecision = BlockTransformation::StructBlock;
@@ -358,15 +364,6 @@ void MorphInitBlockHelper::MorphStructCases()
         m_result                = m_asg;
         m_result->AsOp()->gtOp1 = m_dst;
         m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
-
-#if FEATURE_SIMD
-        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
-        {
-            assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet());
-            m_result->AsOp()->gtOp2 = m_src;
-        }
-#endif // FEATURE_SIMD
 
         if (m_dstVarDsc != nullptr)
         {
@@ -687,6 +684,46 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
     m_result                 = tree;
     m_transformationDecision = BlockTransformation::FieldByField;
+}
+
+//------------------------------------------------------------------------
+// TryPrimitiveInit: Replace block zero-initialization with a primitive store.
+//
+// Transforms patterns like "ASG(BLK(ADDR(LCL_VAR int)), 0)" into simple
+// assignments: "ASG(LCL_VAR int, 0)".
+//
+// If successful, will set "m_transformationDecision" to "OneAsgBlock".
+//
+void MorphInitBlockHelper::TryPrimitiveInit()
+{
+    if (m_blockSize == 0)
+    {
+        return;
+    }
+
+    if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
+    {
+        var_types lclVarType = m_dstVarDsc->TypeGet();
+        if (varTypeIsSIMD(lclVarType))
+        {
+            m_src = m_comp->gtNewZeroConNode(lclVarType);
+        }
+        else
+        {
+            m_src->BashToZeroConst(lclVarType);
+        }
+
+        m_dst->ChangeType(m_dstVarDsc->lvNormalizeOnLoad() ? lclVarType : genActualType(lclVarType));
+        m_dst->ChangeOper(GT_LCL_VAR);
+        m_dst->AsLclVar()->SetLclNum(m_dstLclNum);
+        m_dst->gtFlags |= GTF_VAR_DEF;
+
+        m_asg->ChangeType(m_dst->TypeGet());
+        m_asg->gtOp1             = m_dst;
+        m_asg->gtOp2             = m_src;
+        m_result                 = m_asg;
+        m_transformationDecision = BlockTransformation::OneAsgBlock;
+    }
 }
 
 class MorphCopyBlockHelper : public MorphInitBlockHelper
