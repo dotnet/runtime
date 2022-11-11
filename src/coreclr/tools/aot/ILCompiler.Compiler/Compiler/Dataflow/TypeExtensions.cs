@@ -50,10 +50,5 @@ namespace ILCompiler.Dataflow
         {
             return method.OwningType.IsTypeOf(fullTypeName);
         }
-
-        public static bool HasParameterOfType(this MethodDesc method, int index, string fullTypeName)
-        {
-            return index < method.Signature.Length && method.Signature[index].IsTypeOf(fullTypeName);
-        }
     }
 }
