@@ -1094,6 +1094,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Equal(ExpectedPem, output);
         }
 
+        [Theory]
+        [InlineData("NISTP256", "SHA256")]
+        [InlineData("NISTP384", "SHA384")]
+        [InlineData("NISTP521", "SHA512")]
+        [InlineData("EcDsA_p256", "SHA256")]
+        [InlineData("EcDsA_p384", "SHA384")]
+        [InlineData("EcDsA_p521", "SHA512")]
+        public static void CreateSelfSigned_CurveNameIsCaseInsensitive(string curveName, string hashName)
+        {
+            ECCurve ecCurve = ECCurve.CreateFromFriendlyName(curveName);
+
+            using (ECDsa ecdsa = ECDsa.Create(ecCurve))
+            {
+                CertificateRequest request = new("CN=blah", ecdsa, new HashAlgorithmName(hashName));
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+
+                using (X509Certificate2 selfSignedCert = request.CreateSelfSigned(notBefore, notAfter))
+                using (ECDsa publicKey = selfSignedCert.GetECDsaPublicKey())
+                {
+                    Assert.NotNull(publicKey);
+                }
+            }
+        }
+
         private class InvalidSignatureGenerator : X509SignatureGenerator
         {
             private readonly byte[] _signatureAlgBytes;
