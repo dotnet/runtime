@@ -794,22 +794,22 @@ int doParallelSuperPMI(CommandLine::Options& o)
             PerWorkerData& wd = perWorkerData[i];
             if (wd.failingMCListPath != nullptr)
             {
-                DeleteFile(wd.failingMCListPath);
+                remove(wd.failingMCListPath);
             }
             if (wd.diffsInfoPath != nullptr)
             {
-                DeleteFile(wd.diffsInfoPath);
+                remove(wd.diffsInfoPath);
             }
             if (wd.baseMetricsSummaryPath != nullptr)
             {
-                DeleteFile(wd.baseMetricsSummaryPath);
+                remove(wd.baseMetricsSummaryPath);
             }
             if (wd.diffMetricsSummaryPath != nullptr)
             {
-                DeleteFile(wd.diffMetricsSummaryPath);
+                remove(wd.diffMetricsSummaryPath);
             }
-            DeleteFile(wd.stdOutputPath);
-            DeleteFile(wd.stdErrorPath);
+            remove(wd.stdOutputPath);
+            remove(wd.stdErrorPath);
         }
     }
 

@@ -9,14 +9,16 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private byte[] _key;
+        private byte[]? _key;
 
         public static bool IsSupported => true;
 
         [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _key = key.ToArray();
+            // Pin the array on the POH so that the GC doesn't move it around to allow zeroing to be more effective.
+            _key = GC.AllocateArray<byte>(key.Length, pinned: true);
+            key.CopyTo(_key);
         }
 
         private void EncryptCore(
@@ -26,6 +28,8 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
+            CheckDisposed();
+
             // Convert key length to bits.
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
@@ -109,6 +113,8 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
+            CheckDisposed();
+
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
                 if (ctx.IsInvalid)
@@ -180,9 +186,16 @@ namespace System.Security.Cryptography
             };
         }
 
+        [MemberNotNull(nameof(_key))]
+        private void CheckDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_key is null, this);
+        }
+
         public void Dispose()
         {
             CryptographicOperations.ZeroMemory(_key);
+            _key = null;
         }
     }
 }

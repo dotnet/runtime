@@ -47,5 +47,14 @@ namespace System.Collections.Tests
             Assert.Equal(12, list.Count);
             Assert.Equal(new[] { 6, 5, 4, 100, 99, 98, 3, 2, 1, 0, -1, -2 }, list);
         }
+
+        [Fact]
+        public void InsertRange_CollectionWithLargeCount_ThrowsOverflowException()
+        {
+            List<T> list = GenericListFactory(count: 1);
+            ICollection<T> collection = new CollectionWithLargeCount();
+
+            Assert.Throws<OverflowException>(() => list.InsertRange(0, collection));
+        }
     }
 }

@@ -141,11 +141,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
     internal sealed class Program
     {
-        private static Logger s_logger = new Logger();
+        private static readonly Logger s_logger = new Logger();
 
         private readonly PgoRootCommand _command;
-        private List<string> _inputFilesToMerge;
-        private string[] _inputFilesToCompare;
+        private readonly List<string> _inputFilesToMerge;
+        private readonly string[] _inputFilesToCompare;
 
         public Program(PgoRootCommand command)
         {
@@ -156,7 +156,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         }
 
         private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
-        private T Get<T>(Argument<T> option) => _command.Result.GetValueForArgument(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValueForArgument(argument);
         private bool IsSet<T>(Option<T> option) => _command.Result.FindResultFor(option) != null;
 
         private static int Main(string[] args) =>
@@ -256,11 +256,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerDumpMain();
             }
-            if (_inputFilesToMerge != null)
+            if (_inputFilesToMerge.Count > 0)
             {
                 return InnerMergeMain();
             }
-            if (_inputFilesToCompare != null)
+            if (_inputFilesToCompare.Length > 0)
             {
                 return InnerCompareMibcMain();
             }
@@ -1026,18 +1026,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 if (etlFileName.EndsWith(nettraceExtension))
                 {
-                    etlFileName = Path.ChangeExtension(etlFileName, ".etlx");
-                    PrintError($"Creating ETLX file {etlFileName} from {etlFileName}");
-                    TraceLog.CreateFromEventPipeDataFile(etlFileName, etlFileName);
+                    string etlxFileName = Path.ChangeExtension(etlFileName, ".etlx");
+                    PrintMessage($"Creating ETLX file {etlxFileName} from {etlFileName}");
+                    TraceLog.CreateFromEventPipeDataFile(etlFileName, etlxFileName);
+                    etlFileName = etlxFileName;
                 }
             }
 
             string lttngExtension = ".trace.zip";
             if (etlFileName.EndsWith(lttngExtension))
             {
-                etlFileName = Path.ChangeExtension(etlFileName, ".etlx");
-                PrintError($"Creating ETLX file {etlFileName} from {etlFileName}");
-                TraceLog.CreateFromLttngTextDataFile(etlFileName, etlFileName);
+                string etlxFileName = Path.ChangeExtension(etlFileName, ".etlx");
+                PrintMessage($"Creating ETLX file {etlxFileName} from {etlFileName}");
+                TraceLog.CreateFromLttngTextDataFile(etlFileName, etlxFileName);
+                etlFileName = etlxFileName;
             }
 
             UnZipIfNecessary(ref etlFileName, _command.BasicProgressMessages ? Console.Out : new StringWriter());
@@ -1449,7 +1451,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             tsc,
                             idParser,
                             clrInstanceId,
-                            new FileInfo(Get(_command.PreciseDebugInfoFile)),
+                            Get(_command.PreciseDebugInfoFile),
                             s_logger);
                     }
 

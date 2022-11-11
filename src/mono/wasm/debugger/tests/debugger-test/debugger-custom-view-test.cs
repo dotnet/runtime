@@ -32,17 +32,30 @@ namespace DebuggerTests
         }
     }
 
+    [DebuggerTypeProxy(typeof(TheProxy))]
+    struct WithProxyStruct
+    {
+        public string Val1 => "one struct";
+    }
+
     class TheProxy
     {
-        WithProxy wp;
+        string message;
 
-        public TheProxy (WithProxy wp)
+        public TheProxy () { }
+
+        public TheProxy (string text, int num)
         {
-            this.wp = wp;
+            Console.WriteLine($"I'm an empty TheProxy constructor with two params: 1: {text}, 2: {num}");
         }
 
+        public TheProxy(WithProxy wp) => message = wp.Val1;
+
+        public TheProxy(WithProxyStruct wp) => message = wp.Val1;
+
+
         public string Val2 {
-            get { return wp.Val1; }
+            get { return message; }
         }
     }
 
@@ -71,6 +84,7 @@ namespace DebuggerTests
         {
             var a = new WithDisplayString();
             var b = new WithProxy();
+            var bs = new WithProxyStruct();
             var c = new DebuggerDisplayMethodTest();
             List<int> myList = new List<int>{ 1, 2, 3, 4 };
             var listToTestToList = System.Linq.Enumerable.Range(1, 11);
@@ -95,7 +109,7 @@ namespace DebuggerTests
         {
             List<int> myList = new List<int> ();
             List<int> myList2 = new List<int> ();
-            
+
             myList.Add(1);
             myList.Add(2);
             myList.Add(3);

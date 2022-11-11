@@ -6,6 +6,7 @@ import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { MONO } from "./net6-legacy/imports";
+import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
 import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
@@ -346,6 +347,7 @@ function download_resource(request: ResourceRequest): LoadingResource {
 function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     if (runtimeHelpers.diagnosticTracing)
         console.debug(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+    const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
         ? asset.virtualPath
@@ -422,6 +424,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
     }
+    endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
 }
 

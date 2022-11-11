@@ -1029,10 +1029,6 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
-#endif
-
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
@@ -1181,10 +1177,15 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     // Managed code should not be running.
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
 
+    // the lowermost 1 bit is reserved for storing additional info about the handle
+    const uintptr_t HandleTagBits = 1;
+
     WeakReference* weakRefObj = (WeakReference*)obj;
-    OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_HandleAndKind & ~(uintptr_t)1);
-    HandleType handleType = (weakRefObj->m_HandleAndKind & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
-    weakRefObj->m_HandleAndKind &= (uintptr_t)1;
+    OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
+    _ASSERTE((weakRefObj->m_taggedHandle & 2) == 0);
+    HandleType handleType = (weakRefObj->m_taggedHandle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+    weakRefObj->m_taggedHandle &= HandleTagBits;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
     return true;
 }

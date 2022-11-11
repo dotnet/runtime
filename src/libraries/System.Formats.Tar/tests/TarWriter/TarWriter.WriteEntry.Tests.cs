@@ -490,5 +490,28 @@ namespace System.Formats.Tar.Tests
 
             AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
         }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public void WriteEntry_FileSizeOverLegacyLimit_Throws(TarEntryFormat entryFormat, bool unseekableStream)
+        {
+            const long FileSizeOverLimit = LegacyMaxFileSize + 1;
+
+            MemoryStream ms = new();
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using TarWriter writer = new(s);
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
+
+            Assert.Equal(FileSizeOverLimit, writeEntry.Length);
+
+            Assert.Throws<ArgumentException>(() => writer.WriteEntry(writeEntry));
+        }
     }
 }

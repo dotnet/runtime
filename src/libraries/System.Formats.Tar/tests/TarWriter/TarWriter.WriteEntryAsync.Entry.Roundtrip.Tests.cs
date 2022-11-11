@@ -109,6 +109,7 @@ namespace System.Formats.Tar.Tests
             extendedAttributes[PaxEaGName] = "ea_gname";
             extendedAttributes[PaxEaUName] = "ea_uname";
             extendedAttributes[PaxEaMTime] = GetTimestampStringFromDateTimeOffset(TestModificationTime);
+            extendedAttributes[PaxEaSize] = 42.ToString();
 
             if (entryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
             {
@@ -144,6 +145,9 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(writeEntry.UserName, readEntry.UserName);
             Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
             Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
+
+            Assert.Equal(0, writeEntry.Length);
+            Assert.Equal(0, readEntry.Length);
         }
 
         [Theory]

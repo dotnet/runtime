@@ -7,10 +7,12 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-    isRollingBuild: ${{ variables.isRollingBuild }}
+    jobs:
+    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+      parameters:
+        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+        isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+        isRollingBuild: ${{ variables.isRollingBuild }}

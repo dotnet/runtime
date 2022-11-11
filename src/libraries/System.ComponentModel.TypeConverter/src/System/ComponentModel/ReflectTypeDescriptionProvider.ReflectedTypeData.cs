@@ -149,7 +149,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the class name for our type.
             /// </summary>
-            internal string? GetClassName(object? instance) => _type.FullName;
+            internal string? GetClassName() => _type.FullName;
 
             /// <summary>
             /// Retrieves the component name from the site.

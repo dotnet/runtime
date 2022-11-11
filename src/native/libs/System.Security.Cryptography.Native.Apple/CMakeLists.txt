@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_random.c
     pal_rsa.c
     pal_sec.c
@@ -32,7 +33,6 @@ else()
         ${NATIVECRYPTO_SOURCES}
         pal_swiftbindings.o
         pal_keychain_macos.c
-        pal_keyderivation_macos.c
         pal_seckey_macos.c
         pal_trust_macos.c
         pal_x509_macos.c

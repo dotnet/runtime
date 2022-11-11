@@ -1,7 +1,7 @@
 # This contains only Bionic-specific jobs
 # These are run as part of runtime-extra-platforms by default.
-# But can also be triggered manually via `runtime-bionic` name
-#   /azp run runtime-bionic
+# But can also be triggered manually via `runtime-linuxbionic` name
+#   /azp run runtime-linuxbionic
 
 parameters:
   isExtraPlatformsBuild: false

@@ -1035,12 +1035,7 @@ namespace System
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
                 Span<char> slashSpan = result.AsSpan(0, count);
-                int slashPos;
-                while ((slashPos = slashSpan.IndexOf('/')) >= 0)
-                {
-                    slashSpan[slashPos] = '\\';
-                    slashSpan = slashSpan.Slice(slashPos + 1);
-                }
+                slashSpan.Replace('/', '\\');
 
                 return new string(result, 0, count);
             }

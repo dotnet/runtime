@@ -1,7 +1,7 @@
 # This contains only iOS/tvOS-specific jobs
 # These are run as part of runtime-extra-platforms by default.
-# But can also be triggered manually via `runtime-ios` name
-#   /azp run runtime-ios
+# But can also be triggered manually via `runtime-ioslike` name
+#   /azp run runtime-ioslike
 
 parameters:
   isExtraPlatformsBuild: false

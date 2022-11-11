@@ -18,6 +18,8 @@ namespace System.Security.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
+#pragma warning disable IDE0060
+
         public static class OneShotHashProvider
         {
             public static unsafe int MacData(
@@ -51,5 +53,8 @@ namespace System.Security.Cryptography
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
+
+#pragma warning restore IDE0060
+
     }
 }

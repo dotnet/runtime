@@ -20,7 +20,7 @@ namespace System.CommandLine
     //
     // Helpers for command line processing
     //
-    internal static class Helpers
+    internal static partial class Helpers
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
@@ -39,14 +39,16 @@ namespace System.CommandLine
         public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
         {
             List<string> paths = new();
+            Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
             foreach (Token token in tokens)
             {
-                Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
                 AppendExpandedPaths(dictionary, token.Value, false);
                 foreach (string file in dictionary.Values)
                 {
                     paths.Add(file);
                 }
+
+                dictionary.Clear();
             }
 
             return paths;
@@ -97,7 +99,7 @@ namespace System.CommandLine
                 return TargetArchitecture.X86;
             else if (token.Equals("x64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.X64;
-            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase))
+            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase) || token.Equals("armel", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM;
             else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
@@ -257,7 +259,7 @@ namespace System.CommandLine
         }
 
         // Helper to create a collection of paths unique in their simple names.
-        internal static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
+        private static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
         {
             bool empty = true;
             string directoryName = Path.GetDirectoryName(pattern);

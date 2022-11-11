@@ -316,6 +316,22 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void UseAfterDispose()
+        {
+            byte[] key = new byte[32];
+            byte[] nonce = new byte[12];
+            byte[] plaintext = Array.Empty<byte>();
+            byte[] ciphertext = Array.Empty<byte>();
+            byte[] tag = "4eb972c9a8fb3a1b382bb4d36f5ffad1".HexToByteArray();
+
+            ChaCha20Poly1305 chaChaPoly = new ChaCha20Poly1305(key);
+            chaChaPoly.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => chaChaPoly.Encrypt(nonce, plaintext, ciphertext, new byte[tag.Length]));
+            Assert.Throws<ObjectDisposedException>(() => chaChaPoly.Decrypt(nonce, ciphertext, tag, plaintext));
+        }
+
         public static IEnumerable<object[]> GetInvalidNonceSizes()
         {
             yield return new object[] { 0 };

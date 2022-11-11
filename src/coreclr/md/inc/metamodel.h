@@ -16,7 +16,6 @@
 #include <cor.h>
 #include <stgpool.h>
 #include <metamodelpub.h>
-#include "metadatatracker.h"
 
 #include "../datablob.h"
 #include "../debug_metadata.h"
@@ -317,13 +316,7 @@ public:
 // Direct getter for a field.  Defines an inline function like:
 //    getSomeFieldOfXyz(XyzRec *pRec) { return pRec->m_SomeField;}
 //  Note that the returned value declaration is NOT included.
-#if METADATATRACKER_ENABLED
-#define _GETFLD(tbl,fld) _GETTER(tbl,fld){ PVOID pVal = (BYTE*)pRec + offsetof(tbl##Rec, m_##fld); \
-    pVal = MetaDataTracker::NoteAccess(pVal); \
-    return ((tbl##Rec*)((BYTE*)pVal - offsetof(tbl##Rec, m_##fld)))->Get##fld(); }
-#else
 #define _GETFLD(tbl,fld) _GETTER(tbl,fld){  return pRec->Get##fld();}
-#endif
 
 // These functions call the helper function getIX to get a two or four byte value from a record,
 //  and then use that value as an index into the appropriate pool.
@@ -477,12 +470,10 @@ public:
         PVOID pVal = (BYTE *)pRec + def.m_oColumn;
         if (def.m_cbColumn == 2)
         {
-            METADATATRACKER_ONLY(pVal = MetaDataTracker::NoteAccess(pVal));
             ULONG ix = GET_UNALIGNED_VAL16(pVal);
             return ix;
         }
         _ASSERTE(def.m_cbColumn == 4);
-        METADATATRACKER_ONLY(pVal = MetaDataTracker::NoteAccess(pVal));
         return GET_UNALIGNED_VAL32(pVal);
     }
 
@@ -502,7 +493,6 @@ public:
     FORCEINLINE static ULONG getI1(const void *pRec, CMiniColDef &def)
     {
         PVOID pVal = (BYTE *)pRec + def.m_oColumn;
-        METADATATRACKER_ONLY(pVal = MetaDataTracker::NoteAccess(pVal));
         return *(BYTE*)pVal;
     }
 
@@ -510,7 +500,6 @@ public:
     FORCEINLINE static ULONG getI4(const void *pRec, CMiniColDef &def)
     {
         PVOID pVal = (BYTE *)pRec + def.m_oColumn;
-        METADATATRACKER_ONLY(pVal = MetaDataTracker::NoteAccess(pVal));
         return GET_UNALIGNED_VAL32(pVal);
     }
 

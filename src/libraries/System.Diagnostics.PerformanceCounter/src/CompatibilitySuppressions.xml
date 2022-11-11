@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>F:System.Diagnostics.PerformanceCounter.DefaultFileMappingSize:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.InstanceDataCollection.#ctor(System.String):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.InstanceDataCollectionCollection.#ctor:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.PerformanceCounterCategory.Create(System.String,System.String,System.Diagnostics.CounterCreationDataCollection):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.PerformanceCounterCategory.Create(System.String,System.String,System.String,System.String):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.PerformanceCounterManager.#ctor:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
+    <Right>lib/net462/System.Diagnostics.PerformanceCounter.dll</Right>
+  </Suppression>
+</Suppressions>

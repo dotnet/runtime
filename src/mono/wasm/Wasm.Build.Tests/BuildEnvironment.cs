@@ -119,12 +119,6 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
             DefaultBuildArgs += " /nr:false";
 
-            if (OperatingSystem.IsWindows())
-            {
-                EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                                        ".emscripten-cache");
-            }
-
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";

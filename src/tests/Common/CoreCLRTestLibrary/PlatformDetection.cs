@@ -20,5 +20,11 @@ namespace TestLibrary
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
+
+        static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
+
+        public static bool IsMonoLLVMAOT => _variant == "llvmaot";
+        public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
+        public static bool IsMonoInterpreter => _variant == "monointerpreter";
     }
 }

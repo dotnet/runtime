@@ -1,7 +1,7 @@
 # This contains only iOS/tvOS-simulator-specific jobs
 # These are run as part of runtime-extra-platforms by default.
-# But can also be triggered manually via `runtime-iossimulator` name
-#   /azp run runtime-iossimulator
+# But can also be triggered manually via `runtime-ioslikesimulator` name
+#   /azp run runtime-ioslikesimulator
 
 parameters:
   isExtraPlatformsBuild: false

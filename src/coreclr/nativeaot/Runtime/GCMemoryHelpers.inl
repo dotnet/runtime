@@ -238,7 +238,7 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
             // heap validation.
 
             uintptr_t* realSlot = (uintptr_t*)pMemStart;
-            uintptr_t slotCount = cbMemSize / sizeof(uintptr_t);
+            ptrdiff_t slotCount = (ptrdiff_t)(cbMemSize / sizeof(uintptr_t));
             ASSERT(slotCount < (uintptr_t*)g_GCShadowEnd - shadowSlot);
             do
             {

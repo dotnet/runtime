@@ -107,12 +107,26 @@ namespace System
                 throw new NotSupportedException(SR.NotSupported_OpenType);
         }
 
-        public void Initialize()
+        public unsafe void Initialize()
         {
-            // This api is a nop unless the array element type is a value type with an explicit nullary constructor.
-            // Such a type could not be expressed in C# up until recently.
-            // TODO: Implement this
-            return;
+            EETypePtr pElementEEType = ElementEEType;
+            if (!pElementEEType.IsValueType)
+                return;
+
+            IntPtr constructorEntryPoint = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(pElementEEType));
+            if (constructorEntryPoint == IntPtr.Zero)
+                return;
+
+            var constructorFtn = (delegate*<ref byte, void>)RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
+
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            nuint elementSize = ElementSize;
+
+            for (int i = 0; i < Length; i++)
+            {
+                constructorFtn(ref arrayRef);
+                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

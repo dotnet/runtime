@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -96,6 +96,8 @@ namespace System.Text.RegularExpressions
         internal const string NotECMAWordClass = "\x01\x0A\x00" + ECMAWordRanges;
         internal const string ECMADigitClass = "\x00\x02\x00" + ECMADigitRanges;
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitRanges;
+
+        internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
 
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";
@@ -990,10 +992,6 @@ namespace System.Text.RegularExpressions
             return true;
         }
 
-        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        public static bool IsAsciiLetter(char c) =>
-            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
-
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.  This will return false if the set has subtraction.</remarks>
         private static bool CanEasilyEnumerateSetContents(string set) =>
@@ -1196,7 +1194,7 @@ namespace System.Text.RegularExpressions
         public static bool DifferByOneBit(char a, char b, out int mask)
         {
             mask = a ^ b;
-            return mask != 0 && (mask & (mask - 1)) == 0;
+            return BitOperations.IsPow2(mask);
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>

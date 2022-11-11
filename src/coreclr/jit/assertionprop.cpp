@@ -1657,38 +1657,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     goto DONE_ASSERTION;
                 }
 
-                //
-                //  Copy Assertions
-                //
-                case GT_OBJ:
-                case GT_BLK:
-                {
-                    // TODO-ADDR: delete once local morph folds SIMD-typed indirections.
-                    //
-                    GenTree* const addr = op2->AsIndir()->Addr();
-
-                    if (addr->OperIs(GT_ADDR))
-                    {
-                        GenTree* const base = addr->AsOp()->gtOp1;
-
-                        if (base->OperIs(GT_LCL_VAR) && varTypeIsStruct(base))
-                        {
-                            ClassLayout* const varLayout = base->GetLayout(this);
-                            ClassLayout* const objLayout = op2->GetLayout(this);
-                            if (ClassLayout::AreCompatible(varLayout, objLayout))
-                            {
-                                op2 = base;
-                                goto IS_COPY;
-                            }
-                        }
-                    }
-
-                    goto DONE_ASSERTION;
-                }
-
                 case GT_LCL_VAR:
                 {
-                IS_COPY:
                     //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     //
@@ -2134,7 +2104,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
@@ -3408,7 +3378,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     if (tree->TypeIs(TYP_BYREF))
                     {
@@ -6127,7 +6097,18 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_NEG:
         case GT_CAST:
         case GT_INTRINSIC:
+        case GT_ARR_LENGTH:
             break;
+
+        case GT_IND:
+        {
+            const ValueNum vn = tree->GetVN(VNK_Conservative);
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) || (vnStore->VNNormalValue(vn) != vn))
+            {
+                return WALK_CONTINUE;
+            }
+        }
+        break;
 
         case GT_JTRUE:
             break;

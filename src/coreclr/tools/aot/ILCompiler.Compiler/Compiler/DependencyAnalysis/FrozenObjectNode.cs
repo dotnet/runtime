@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -34,6 +34,16 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override bool StaticDependenciesAreComputed => true;
+
+        public TypeDesc ObjectType => _data.Type;
+
+        public bool IsKnownImmutable => _data.IsKnownImmutable;
+
+        public int GetArrayLength()
+        {
+            Debug.Assert(ObjectType.IsArray);
+            return _data.ArrayLength;
+        }
 
         int ISymbolNode.Offset => 0;
 
@@ -101,5 +111,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
+
+        public override string ToString() => $"Frozen {_data.Type.GetDisplayNameWithoutNamespace()} object";
     }
 }
