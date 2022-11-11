@@ -204,7 +204,6 @@ namespace CoreclrTestLib
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
-        public const string HELIX_DUMP_FOLDER_ENVIRONMENT_VAR = "HELIX_DUMP_FOLDER";
 
         static bool CollectCrashDump(Process process, string path)
         {
@@ -513,14 +512,10 @@ namespace CoreclrTestLib
                             if (exitCode != 0)
                             {
                                 // Search for dump, if created.
-                                string helixDumpFolder = Environment.GetEnvironmentVariable(HELIX_DUMP_FOLDER_ENVIRONMENT_VAR);
-                                if (helixDumpFolder != null)
+                                string possibleDmpFile = Path.Combine(crashDumpFolder, $"coredump.{pid}.dmp");
+                                if (File.Exists(possibleDmpFile))
                                 {
-                                    string possibleDmpFile = Path.Combine(helixDumpFolder, $"coredump.{pid}.dmp");
-                                    if (File.Exists(possibleDmpFile))
-                                    {
-                                        TryPrintStackTraceFromCrashReport(possibleDmpFile);
-                                    }
+                                    TryPrintStackTraceFromCrashReport(possibleDmpFile);
                                 }
                             }
                         }
