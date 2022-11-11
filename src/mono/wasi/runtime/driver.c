@@ -39,6 +39,14 @@
 #include "wasm_m2n_invoke.g.h"
 #endif
 
+#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
+#define NEED_INTERP 1
+#ifndef LINK_ICALLS
+// FIXME: llvm+interp mode needs this to call icalls
+#define NEED_NORMAL_ICALL_TABLES 1
+#endif
+#endif
+
 void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
@@ -477,6 +485,12 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
+#ifdef LINK_ICALLS
+	#error /* TODOWASI */
+#endif
+#ifdef NEED_NORMAL_ICALL_TABLES
+	mono_icall_table_init ();
+#endif
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();

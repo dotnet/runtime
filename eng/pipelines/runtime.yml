@@ -454,6 +454,14 @@ extends:
         extraBuildArgs: /p:WasmEnablePerfTracing=true
         alwaysRun: ${{ variables.isRollingBuild }}
 
+    # BUILD ONLY - Wasi/Wasm
+    - template: /eng/pipelines/common/templates/wasi-build-only.yml
+      parameters:
+        platforms:
+          - Wasi_wasm
+        extraBuildArgs: /p:WasmEnableThreads=true
+        alwaysRun: ${{ variables.isRollingBuild }}
+
     #
     # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
     # Build the whole product using Mono and run libraries tests
