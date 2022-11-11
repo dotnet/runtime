@@ -915,7 +915,7 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 //    structHnd    - handle representing the struct type
 //    curLevel     - stack level for which a spill may be being done
 //    pAfterStmt   - statement to insert any additional statements after
-//    ilOffset     - il offset for new statements
+//    di           - debug info for new statements
 //    block        - block to insert any additional statements in
 //
 // Return Value:
@@ -923,7 +923,7 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 //
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
-
+//
 GenTree* Compiler::impAssignStruct(GenTree*             dest,
                                    GenTree*             src,
                                    CORINFO_CLASS_HANDLE structHnd,
@@ -933,59 +933,12 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
                                    BasicBlock*          block       /* = nullptr */
                                    )
 {
-    assert(varTypeIsStruct(dest));
+    assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir()));
 
-    DebugInfo usedDI = di;
-    if (!usedDI.IsValid())
-    {
-        usedDI = impCurStmtDI;
-    }
+    // TODO-1stClassStructs: Avoid creating an address if it is not needed, or re-creating a Blk node if it is.
+    GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
 
-    while (dest->gtOper == GT_COMMA)
-    {
-        // Second thing is the struct.
-        assert(varTypeIsStruct(dest->AsOp()->gtOp2));
-
-        // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
-        if (pAfterStmt)
-        {
-            Statement* newStmt = gtNewStmt(dest->AsOp()->gtOp1, usedDI);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(dest->AsOp()->gtOp1, curLevel, usedDI); // do the side effect
-        }
-
-        // set dest to the second thing
-        dest = dest->AsOp()->gtOp2;
-    }
-
-    assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN || dest->gtOper == GT_FIELD ||
-           dest->gtOper == GT_IND || dest->gtOper == GT_OBJ);
-
-    // Return a NOP if this is a self-assignment.
-    if (dest->OperGet() == GT_LCL_VAR && src->OperGet() == GT_LCL_VAR &&
-        src->AsLclVarCommon()->GetLclNum() == dest->AsLclVarCommon()->GetLclNum())
-    {
-        return gtNewNothingNode();
-    }
-
-    // TODO-1stClassStructs: Avoid creating an address if it is not needed,
-    // or re-creating a Blk node if it is.
-    GenTree* destAddr;
-
-    if (dest->gtOper == GT_IND || dest->OperIsBlk())
-    {
-        destAddr = dest->AsOp()->gtOp1;
-    }
-    else
-    {
-        destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
-    }
-
-    return (impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, usedDI, block));
+    return impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, di, block);
 }
 
 //------------------------------------------------------------------------
@@ -9969,7 +9922,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
-                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), helperNode, op1);
+                        impAppendTree(helperNode, CHECK_SPILL_ALL, impCurStmtDI);
                     }
                 }
 
