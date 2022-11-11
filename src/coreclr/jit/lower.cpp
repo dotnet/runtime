@@ -3555,7 +3555,7 @@ void Lowering::LowerStoreLocOrIndirOfCast(GenTree* node)
 
         BlockRange().Remove(cast);
 
-        if (castOp->OperIsSimple() || castOp->OperIs(GT_IND))
+        if (!castOp->OperIs(GT_CALL))
         {
             for (GenTree* op : castOp->Operands())
             {
@@ -7292,12 +7292,12 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
+    TryRetypingFloatingPointStoreToIntegerStore(ind);
+
     if (ind->gtGetOp2()->OperIs(GT_CAST))
     {
         LowerStoreLocOrIndirOfCast(ind);
     }
-
-    TryRetypingFloatingPointStoreToIntegerStore(ind);
 
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
