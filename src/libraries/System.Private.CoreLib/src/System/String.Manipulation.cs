@@ -1008,55 +1008,20 @@ namespace System
             // Copy the remaining characters, doing the replacement as we go.
             ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
             ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
-            nuint i = 0;
 
-            if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
+            // If the string is long enough for vectorization to kick in, we'd like to
+            // process the remaining elements vectorized too.
+            // Thus we adjust the pointers so that at least one full vector from the end can be processed.
+            nuint length = (uint)Length;
+            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<ushort>.Count)
             {
-                Vector<ushort> oldChars = new(oldChar);
-                Vector<ushort> newChars = new(newChar);
-
-                Vector<ushort> original;
-                Vector<ushort> equals;
-                Vector<ushort> results;
-
-                if (remainingLength > (nuint)Vector<ushort>.Count)
-                {
-                    nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
-
-                    do
-                    {
-                        original = Vector.LoadUnsafe(ref pSrc, i);
-                        equals = Vector.Equals(original, oldChars);
-                        results = Vector.ConditionalSelect(equals, newChars, original);
-                        results.StoreUnsafe(ref pDst, i);
-
-                        i += (nuint)Vector<ushort>.Count;
-                    }
-                    while (i < lengthToExamine);
-                }
-
-                // There are [0, Vector<ushort>.Count) elements remaining now.
-                // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
-                // elements available, we read a vector from the very end of the string, perform the replace
-                // and write to the destination at the very end.
-                // Thus we can eliminate the scalar processing of the remaining elements.
-                // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
-                // additional check which would introduce a branch here.
-
-                i = (uint)(Length - Vector<ushort>.Count);
-                original = Vector.LoadUnsafe(ref GetRawStringDataAsUInt16(), i);
-                equals = Vector.Equals(original, oldChars);
-                results = Vector.ConditionalSelect(equals, newChars, original);
-                results.StoreUnsafe(ref result.GetRawStringDataAsUInt16(), i);
+                nuint adjust = (length - remainingLength) & ((uint)Vector128<ushort>.Count - 1);
+                pSrc = ref Unsafe.Subtract(ref pSrc, adjust);
+                pDst = ref Unsafe.Subtract(ref pDst, adjust);
+                remainingLength += adjust;
             }
-            else
-            {
-                for (; i < remainingLength; ++i)
-                {
-                    ushort currentChar = Unsafe.Add(ref pSrc, i);
-                    Unsafe.Add(ref pDst, i) = currentChar == oldChar ? newChar : currentChar;
-                }
-            }
+
+            SpanHelpers.ReplaceValueType(ref pSrc, ref pDst, oldChar, newChar, remainingLength);
 
             return result;
         }
