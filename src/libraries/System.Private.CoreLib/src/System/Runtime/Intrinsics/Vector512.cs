@@ -1162,6 +1162,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector512{UIntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<nuint> Create(Vector256<nuint> lower, Vector256<nuint> upper) => Create<nuint>(lower, upper);
 
