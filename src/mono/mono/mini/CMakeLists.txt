@@ -325,7 +325,7 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-if(HOST_WASM AND MONO_CROSS_COMPILE)
+if(HOST_BROWSER AND MONO_CROSS_COMPILE)
 set(profiler_sources ../profiler/browser.c)
 else()
 set(profiler_sources "")

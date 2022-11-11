@@ -251,7 +251,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
-  # add_definitions(-DGEN_PINVOKE) TODOWASI
   add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
