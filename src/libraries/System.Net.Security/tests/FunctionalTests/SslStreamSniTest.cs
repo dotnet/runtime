@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [SkipOnPlatform(TestPlatforms.Android, "SNI isn't set for localhost communication")]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -96,7 +96,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // only one test case is failing - the one with hostname 'żółć gęślą jaźń. 红烧. 照り焼き'
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();

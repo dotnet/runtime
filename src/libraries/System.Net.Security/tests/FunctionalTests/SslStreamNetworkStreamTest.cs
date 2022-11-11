@@ -694,7 +694,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
@@ -810,7 +810,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("TODO", TestPlatforms.Android)] // TODO: `await t2` blocks indefinitely
+        [ActiveIssue("TODO", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -829,12 +829,17 @@ namespace System.Net.Security.Tests
                         return false;
                     };
 
-                errorMessage = "RemoteCertificateValidationCallback";
+                errorMessage = PlatformDetection.IsAndroid ? "Authentication failed, see inner exception." : "RemoteCertificateValidationCallback";
             }
             else
             {
                 // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
+                errorMessage =
+                    PlatformDetection.IsWindows
+                        ? "UntrustedRoot"
+                        : PlatformDetection.IsAndroid
+                            ? "Authentication failed, see inner exception."
+                            : "PartialChain";
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
@@ -852,7 +857,7 @@ namespace System.Net.Security.Tests
                 var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
                 Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
-                await t2;
+                await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
             }
         }
 
