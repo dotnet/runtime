@@ -15940,7 +15940,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return false;
     }
 
-    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    const bool canOptimize = emitCanPeepholeLastIns();
 
     if (dst == src)
     {
@@ -15960,8 +15960,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
         {
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if (!isFirstInstrInBlock && (emitLastIns != nullptr) && (emitLastIns->idReg1() == dst) &&
-                (emitLastIns->idOpSize() == size) && emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
+            if (canOptimize && (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == size) &&
+                emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
             {
                 JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
                 return true;
@@ -15969,8 +15969,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
-        (emitLastIns != nullptr) &&
+    if (canOptimize &&                       // Don't optimize if unsafe.
         (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
         (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
@@ -16048,9 +16047,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
+    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
     {
         return false;
     }
