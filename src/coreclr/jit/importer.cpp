@@ -779,7 +779,7 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
         // calls that may not actually be required - e.g. if we only access a field of a struct.
 
         GenTree* dst = gtNewLclvNode(tmpNum, varType);
-        asg          = impAssignStruct(dst, val, structType, curLevel, pAfterStmt, di, block);
+        asg          = impAssignStruct(dst, val, curLevel, pAfterStmt, di, block);
     }
     else
     {
@@ -912,7 +912,6 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 // Arguments:
 //    dest         - the destination of the assignment
 //    src          - the value to be assigned
-//    structHnd    - handle representing the struct type
 //    curLevel     - stack level for which a spill may be being done
 //    pAfterStmt   - statement to insert any additional statements after
 //    di           - debug info for new statements
@@ -926,7 +925,6 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 //
 GenTree* Compiler::impAssignStruct(GenTree*             dest,
                                    GenTree*             src,
-                                   CORINFO_CLASS_HANDLE structHnd,
                                    unsigned             curLevel,
                                    Statement**          pAfterStmt, /* = nullptr */
                                    const DebugInfo&     di,         /* = DebugInfo() */
@@ -940,7 +938,6 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     if (dest->TypeIs(TYP_STRUCT) && !src->gtEffectiveVal()->OperIs(GT_IND))
     {
         assert(ClassLayout::AreCompatible(dest->GetLayout(this), src->GetLayout(this)));
-        assert(ClassLayout::AreCompatible(dest->GetLayout(this), typGetObjLayout(structHnd)));
     }
 
     if (dest->OperIs(GT_FIELD) && dest->TypeIs(TYP_STRUCT))
@@ -1089,8 +1086,8 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
         GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
         GenTree* destAddrClone;
-        destAddr =
-            impCloneExpr(destAddr, &destAddrClone, structHnd, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
+        destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel, pAfterStmt
+                                    DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
@@ -1137,14 +1134,14 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
             // in the importer where we can append the side effect.
             // Instead, we're going to sink the assignment below the COMMA.
             src->AsOp()->gtOp2 =
-                impAssignStruct(dest, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, usedDI, block);
+                impAssignStruct(dest, src->AsOp()->gtOp2, curLevel, pAfterStmt, usedDI, block);
             src->AddAllEffectsFlags(src->AsOp()->gtOp2);
 
             return src;
         }
 
         // Evaluate the second thing using recursion.
-        return impAssignStruct(dest, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, usedDI, block);
+        return impAssignStruct(dest, src->AsOp()->gtOp2, curLevel, pAfterStmt, usedDI, block);
     }
 
     if (dest->OperIs(GT_LCL_VAR) && src->IsMultiRegNode())
@@ -1186,7 +1183,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       )
 {
     GenTree* dst = gtNewStructVal(typGetObjLayout(structHnd), destAddr);
-    return impAssignStruct(dst, src, structHnd, curLevel, pAfterStmt, di, block);
+    return impAssignStruct(dst, src, curLevel, pAfterStmt, di, block);
 }
 
 /*****************************************************************************
@@ -6930,7 +6927,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsStruct(lclTyp))
                 {
-                    op1 = impAssignStruct(op2, op1, clsHnd, CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
                 }
                 else
                 {
@@ -7418,7 +7415,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Create the assignment node and append it.
                 if (varTypeIsStruct(op1))
                 {
-                    op1 = impAssignStruct(op1, op2, stelemClsHnd, CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
                 }
                 else
                 {
@@ -9807,7 +9804,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (lclTyp == TYP_STRUCT)
                 {
-                    op1 = impAssignStruct(op1, op2, clsHnd, CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
                 }
                 goto SPILL_APPEND;
             }
@@ -10410,7 +10407,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -10448,7 +10445,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);

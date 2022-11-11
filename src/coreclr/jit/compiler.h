@@ -3878,7 +3878,6 @@ public:
                           Statement** pAfterStmt DEBUGARG(const char* reason));
     GenTree* impAssignStruct(GenTree*             dest,
                              GenTree*             src,
-                             CORINFO_CLASS_HANDLE structHnd,
                              unsigned             curLevel,
                              Statement**          pAfterStmt = nullptr,
                              const DebugInfo&     di         = DebugInfo(),

@@ -15753,7 +15753,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
 
         valx->gtFlags |= GTF_DONT_CSE;
-        asg = impAssignStruct(dest, val, valStructHnd, CHECK_SPILL_NONE, pAfterStmt, di, block);
+        asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
     {
