@@ -1022,6 +1022,26 @@ extends:
               eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
               eq(variables['isRollingBuild'], true))
 
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+        buildConfig: release
+        runtimeFlavor: mono
+        platforms:
+        - windows_x64
+        helixQueueGroup: pr
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+        jobParameters:
+          testGroup: innerloop
+          liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          liveRuntimeBuildConfig: release
+          runtimeVariant: minijit
+          condition: >-
+            or(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
     #
     # Build the whole product using Mono and run runtime tests
     #
@@ -1033,7 +1053,6 @@ extends:
         runtimeFlavor: mono
         platforms:
           - OSX_x64
-          - windows_x64
         variables:
           - name: timeoutPerTestInMinutes
             value: 60
