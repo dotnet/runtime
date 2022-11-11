@@ -1210,7 +1210,7 @@ namespace DebuggerTests
                     }, "testCollapsedProps#1");
             });
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        // [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("EvaluateBrowsableClass", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
@@ -1235,47 +1235,18 @@ namespace DebuggerTests
                 await CheckValue(testRootHidden, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testRootHidden));
                 var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
 
-                var (refList, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.list");
-                var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
-                var list = refListProp.First(v => v["name"]?.Value<string>() is "Items" or "_items");
-                var refListElementsProp = await GetProperties(list["value"]["objectId"]?.Value<string>());
-
-                var (refArray, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.array");
-                var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
-
-                var (refStruct, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleStruct");
-                var refStructProp = await GetProperties(refStruct["objectId"]?.Value<string>());
-
-                var (refClass, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleClass");
-                var refClassProp = await GetProperties(refClass["objectId"]?.Value<string>());
-
-                int refItemsCnt = refListElementsProp.Count() + refArrayProp.Count() + refStructProp.Count() + refClassProp.Count();
-                Assert.Equal(refItemsCnt, testRootHiddenProps.Count());
-
-                //in Console App names are in []
-                //adding variable name to make elements unique
-                foreach (var item in refListElementsProp)
+                JObject[] expectedTestRootHiddenProps = new[]
                 {
-                    item["name"] = string.Concat("listRootHidden[", item["name"], "]");
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
-                }
-                foreach (var item in refArrayProp)
-                {
-                    item["name"] = string.Concat("arrayRootHidden[", item["name"], "]");
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
-                }
-
-                // valuetype/class members unique names are created by concatenation with a dot
-                foreach (var item in refStructProp)
-                {
-                    item["name"] = string.Concat("sampleStructRootHidden.", item["name"]);
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
-                }
-                foreach (var item in refClassProp)
-                {
-                    item["name"] = string.Concat("sampleClassRootHidden.", item["name"]);
-                    CheckContainsJObject(testRootHiddenProps, item, item["name"].Value<string>());
-                }
+                    JObject.FromObject(new { value = TNumber(1), name = "listRootHidden[0]"}),
+                    JObject.FromObject(new { value = TNumber(2), name = "listRootHidden[1]"}),
+                    JObject.FromObject(new { value = TNumber(11), name = "arrayRootHidden[0]"}),
+                    JObject.FromObject(new { value = TNumber(22), name = "arrayRootHidden[1]"}),
+                    JObject.FromObject(new { value = TNumber(100), name = "sampleStructRootHidden.Id"}),
+                    JObject.FromObject(new { value = TBool(true), name = "sampleStructRootHidden.IsStruct"}),
+                    JObject.FromObject(new { value = TNumber(200), name = "sampleClassRootHidden.ClassId"}),
+                    JObject.FromObject(new { value = TObject("System.Collections.Generic.List<string>", description: "Count = 1"), name = "sampleClassRootHidden.Items"})
+                };
+                await CheckProps(testRootHiddenProps, expectedTestRootHiddenProps, "listRootHidden");
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]

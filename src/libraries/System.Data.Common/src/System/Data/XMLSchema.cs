@@ -410,7 +410,7 @@ namespace System.Data
         }// SetExtProperties
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void HandleRefTableProperties(ArrayList RefTables, XmlSchemaElement element)
+        internal void HandleRefTableProperties(XmlSchemaElement element)
         {
             string typeName = GetInstanceName(element);
             DataTable? table = _ds!.Tables.GetTable(XmlConvert.DecodeName(typeName), element.QualifiedName.Namespace);
@@ -782,7 +782,7 @@ namespace System.Data
                 string typeName = GetInstanceName(element);
                 if (_refTables.Contains(element.QualifiedName.Namespace + ":" + typeName))
                 {
-                    HandleRefTableProperties(_refTables, element);
+                    HandleRefTableProperties(element);
                     continue;
                 }
 

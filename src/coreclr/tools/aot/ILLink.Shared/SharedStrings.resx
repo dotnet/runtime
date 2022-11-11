@@ -613,7 +613,7 @@
     <value>The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type.</value>
   </data>
   <data name="NoMembersResolvedForMemberSignatureOrTypeMessage" xml:space="preserve">
-    <value>No members were resolved for '{0}'.</value>
+    <value>No members were resolved for '{0}' on type '{1}'.</value>
   </data>
   <data name="XmlMissingNameAttributeInResourceTitle" xml:space="preserve">
     <value>The resource element in a substitution file did not have a 'name' attribute.</value>
