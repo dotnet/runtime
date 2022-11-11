@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -1223,6 +1224,12 @@ mono_wasm_array_length (MonoArray *array)
 	return mono_array_length (array);
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_array_length_ref (MonoArray **array)
+{
+	return mono_array_length (*array);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_array_get (MonoArray *array, int idx)
 {
@@ -1230,10 +1237,10 @@ mono_wasm_array_get (MonoArray *array, int idx)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+mono_wasm_array_get_ref (PPVOLATILE(MonoArray) array, int idx, PPVOLATILE(MonoObject) result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
+	mono_gc_wbarrier_generic_store_atomic((void*)result, mono_array_get ((MonoArray*)*array, MonoObject*, idx));
 	MONO_EXIT_GC_UNSAFE;
 }
 

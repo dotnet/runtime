@@ -2145,6 +2145,12 @@ typedef struct {
 	gpointer *many_args;
 } InterpEntryData;
 
+static gboolean
+mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method)
+{
+	return m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke");
+}
+
 /* Main function for entering the interpreter from compiled code */
 // Do not inline in case order of frame addresses matters.
 static MONO_NEVER_INLINE void
@@ -2174,7 +2180,7 @@ interp_entry (InterpEntryData *data)
 
 	method = rmethod->method;
 
-	if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke")) {
+	if (mono_interp_is_method_multicastdelegate_invoke(method)) {
 		/*
 		 * This happens when AOT code for the invoke wrapper is not found.
 		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
@@ -3529,6 +3535,56 @@ static long total_executed_opcodes;
 #endif
 
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
+
+/*
+ * Custom C implementations of the min/max operations for float and double.
+ * We cannot directly use the C stdlib functions because their semantics do not match
+ *  the C# methods in System.Math, but having interpreter opcodes for these operations
+ *  improves performance for FP math a lot in some cases.
+ */
+static float min_f (float lhs, float rhs) {
+	if (isnan(lhs))
+		return lhs;
+	else if (isnan(rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return signbit(lhs) ? lhs : rhs;
+	else
+		return fminf(lhs, rhs);
+}
+
+static float max_f (float lhs, float rhs) {
+	if (isnan(lhs))
+		return lhs;
+	else if (isnan(rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return signbit(rhs) ? lhs : rhs;
+	else
+		return fmaxf(lhs, rhs);
+}
+
+static double min_d (double lhs, double rhs) {
+	if (isnan(lhs))
+		return lhs;
+	else if (isnan(rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return signbit(lhs) ? lhs : rhs;
+	else
+		return fmin(lhs, rhs);
+}
+
+static double max_d (double lhs, double rhs) {
+	if (isnan(lhs))
+		return lhs;
+	else if (isnan(rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return signbit(rhs) ? lhs : rhs;
+	else
+		return fmax(lhs, rhs);
+}
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -7268,9 +7324,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SINH) MATH_UNOP(sinh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2) MATH_BINOP(atan2); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POW) MATH_BINOP(pow); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MIN) MATH_BINOP(min_d); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MAX) MATH_BINOP(max_d); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMA)
 			LOCAL_VAR (ip [1], double) = fma (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double), LOCAL_VAR (ip [4], double));
 			ip += 5;
@@ -7307,9 +7366,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SINHF) MATH_UNOPF(sinhf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANF) MATH_UNOPF(tanf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANHF) MATH_UNOPF(tanhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2F) MATH_BINOPF(atan2f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POWF) MATH_BINOPF(powf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MINF) MATH_BINOPF(min_f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MAXF) MATH_BINOPF(max_f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMAF)
 			LOCAL_VAR (ip [1], float) = fmaf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], float), LOCAL_VAR (ip [4], float));
 			ip += 5;
