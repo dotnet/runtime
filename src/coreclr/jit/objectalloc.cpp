@@ -525,10 +525,8 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         //   \--*  CNS_INT   int    0
         //------------------------------------------------------------------------
 
-        GenTree*   tree        = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
-        const bool isVolatile  = false;
-        const bool isCopyBlock = false;
-        tree                   = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0), isVolatile, isCopyBlock);
+        GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
+        tree          = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0));
 
         Statement* newStmt = comp->gtNewStmt(tree);
 

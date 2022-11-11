@@ -7785,7 +7785,7 @@ GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
 //    extended to the size of the assignment when an initBlk is transformed
 //    to an assignment of a primitive type.
 //    This performs the appropriate extension.
-
+//
 void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 {
     assert(varTypeIsIntegralOrI(asgType));
@@ -7990,18 +7990,18 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 //    dst           - The destination node: local var / block node.
 //    srcOrFillVall - The value to assign for CopyBlk, the integer "fill" for InitBlk
 //    isVolatile    - Whether this is a volatile memory operation or not.
-//    isCopyBlock   - True if this is a block copy (rather than a block init).
 //
 // Return Value:
 //    Returns the newly constructed and initialized block operation.
 //
-GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
+GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
 {
     assert(varTypeIsStruct(dst) && (dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
 
+    bool isCopyBlock = srcOrFillVal->TypeGet() == dst->TypeGet();
     if (!isCopyBlock) // InitBlk
     {
-        assert(varTypeIsIntegral(srcOrFillVal));
+        assert(genActualTypeIsInt(srcOrFillVal));
         if (!srcOrFillVal->IsIntegralConst(0))
         {
             srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);

@@ -2163,10 +2163,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
-    return gtNewBlkOpNode(dst,   // dst
-                          src,   // src
-                          false, // volatile
-                          true); // copyBlock
+    return gtNewBlkOpNode(dst, src);
 }
 
 GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)

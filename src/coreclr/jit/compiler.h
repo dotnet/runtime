@@ -2357,7 +2357,7 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
+    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 

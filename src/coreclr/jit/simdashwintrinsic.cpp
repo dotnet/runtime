@@ -1860,8 +1860,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         dest->gtType = simdType;
         dest->gtFlags |= GTF_GLOB_REF;
 
-        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
-        retNode->gtFlags |= ((copyBlkDst->gtFlags | copyBlkSrc->gtFlags) & GTF_ALL_EFFECT);
+        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;
     }

@@ -1150,7 +1150,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     }
 
     // Return a store node, to be appended.
-    GenTree* storeNode = gtNewBlkOpNode(dest, src, /* isVolatile */ false, /* isCopyBlock */ true);
+    GenTree* storeNode = gtNewBlkOpNode(dest, src);
 
     return storeNode;
 }
@@ -4026,8 +4026,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 // realType is either struct or SIMD
                 var_types      realType  = lvaGetRealType(structTempNum);
                 GenTreeLclVar* structLcl = gtNewLclvNode(structTempNum, realType);
-                impAppendTree(gtNewBlkOpNode(structLcl, gtNewIconNode(0), false, false), CHECK_SPILL_NONE,
-                              impCurStmtDI);
+                impAppendTree(gtNewBlkOpNode(structLcl, gtNewIconNode(0)), CHECK_SPILL_NONE, impCurStmtDI);
 
                 return gtNewLclvNode(structTempNum, realType);
             }
@@ -8956,8 +8955,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             GenTree* newObjInit;
                             if (lclDsc->TypeGet() == TYP_STRUCT)
                             {
-                                newObjInit = gtNewBlkOpNode(newObjDst, gtNewIconNode(0), /* isVolatile */ false,
-                                                            /* isCopyBlock */ false);
+                                newObjInit = gtNewBlkOpNode(newObjDst, gtNewIconNode(0));
                             }
                             else
                             {
@@ -10694,8 +10692,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
                 op2 = gtNewIconNode(0);
-
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
+                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
 
             case CEE_INITBLK:
@@ -10708,7 +10705,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     size = (unsigned)op3->AsIntConCommon()->IconValue();
                     op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 }
                 else
                 {
@@ -10739,7 +10736,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     op1 = gtNewBlockVal(op1, size);
                     op2 = gtNewBlockVal(op2, size);
-                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, /* isCopyBlock */ true);
+                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 }
                 else
                 {
@@ -10784,7 +10781,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     gtSetObjGcInfo(op1->AsObj());
                 }
-                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0), /* isCopyBlock */ true);
+                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0));
                 goto SPILL_APPEND;
             }
 
