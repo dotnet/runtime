@@ -374,6 +374,59 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
     JITDUMP("\n");
 }
 
+void Rationalizer::RewriteAssignmentOnCast(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_ASG));
+
+    var_types type = node->TypeGet();
+
+    if (!varTypeIsSmall(type))
+        return;
+
+    GenTreeCast* cast = node->gtGetOp2()->AsCast();
+
+    if (cast->gtOverflow())
+        return;
+
+    if (cast->gtSetFlags())
+        return;
+
+    var_types castToType   = cast->CastToType();
+    var_types castFromType = cast->CastFromType();
+
+    //if (!varTypeIsIntegral(castToType))
+    //    return;
+
+    //if (!varTypeIsSmall(node->gtGetOp1()))
+    //    return;
+
+    if (!varTypeIsSmall(castToType))
+        return;
+
+    if (!varTypeIsIntegral(castFromType))
+        return;
+
+    // If we are performing a narrowing cast and
+    // castToType is larger or the same as node's type
+    // then we can discard the cast.
+    if (genTypeSize(castToType) < genTypeSize(type))
+        return;
+
+    if (genActualType(castFromType) == genActualType(castToType))
+    {
+        GenTree* castOp = cast->CastOp();
+
+        // Removes the cast.
+        node->gtOp2 = castOp;
+        BlockRange().Remove(cast);
+    }
+    else
+    {
+        // This is a type-changing cast so we cannot remove it entirely.
+        cast->gtCastType = genActualType(castToType);
+    }
+}
+
 void Rationalizer::RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment)
 {
     assert(assignment != nullptr);
@@ -391,6 +444,11 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     GenTreeOp* assignment = use.Def()->AsOp();
     assert(assignment->OperGet() == GT_ASG);
+
+    if (assignment->gtGetOp2()->OperIs(GT_CAST))
+    {
+        RewriteAssignmentOnCast(assignment);
+    }
 
     GenTree* location = assignment->gtGetOp1();
     GenTree* value    = assignment->gtGetOp2();

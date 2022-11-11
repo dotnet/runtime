@@ -57,6 +57,7 @@ private:
     // Other transformations
     void RewriteAssignment(LIR::Use& use);
     void RewriteAddress(LIR::Use& use);
+    void RewriteAssignmentOnCast(GenTreeOp* assignment);
 
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);

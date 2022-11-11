@@ -319,7 +319,6 @@ private:
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
-    void LowerStoreLocOrIndirOfCast(GenTree* node);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);

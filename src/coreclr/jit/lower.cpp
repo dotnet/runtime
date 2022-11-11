@@ -3497,80 +3497,6 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     ContainCheckRet(ret);
 }
 
-void Lowering::LowerStoreLocOrIndirOfCast(GenTree* node)
-{
-    assert(node->OperIs(GT_STOREIND, GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
-
-    var_types type = node->TypeGet();
-
-    if (!varTypeIsIntegral(type))
-        return;
-
-    GenTreeCast* cast = nullptr;
-    if (node->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR))
-    {
-        cast = node->gtGetOp1()->AsCast();
-    }
-    else
-    {
-        cast = node->gtGetOp2()->AsCast();
-    }
-
-    if (cast->gtOverflow())
-        return;
-
-    if (cast->gtSetFlags())
-        return;
-
-    var_types castToType   = cast->CastToType();
-    var_types castFromType = cast->CastFromType();
-
-    if (!varTypeIsIntegral(castToType))
-        return;
-
-    if (!varTypeIsIntegral(castFromType))
-        return;
-
-    // If we are performing a narrowing cast and
-    // castToType is larger or the same as node's type
-    // then we can discard the cast.
-    if (genTypeSize(castToType) < genTypeSize(type))
-        return;
-
-    if (genActualType(castFromType) == genActualType(castToType))
-    {
-        GenTree* castOp = cast->CastOp();
-
-        castOp->ClearContained();
-
-        // Removes the cast.
-        if (node->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR))
-        {
-            node->AsLclVarCommon()->gtOp1 = castOp;
-        }
-        else
-        {
-            node->AsStoreInd()->gtOp2 = castOp;
-        }
-
-        BlockRange().Remove(cast);
-
-        if (!castOp->OperIs(GT_CALL))
-        {
-            for (GenTree* op : castOp->Operands())
-            {
-                op->ClearContained();
-            }
-            LowerNode(castOp);
-        }
-    }
-    else
-    {
-        // This is a type-changing cast so we cannot remove it entirely.
-        cast->gtCastType = genActualType(castToType);
-    }
-}
-
 //----------------------------------------------------------------------------------------------
 // LowerStoreLocCommon: platform idependent part of local var or field store lowering.
 //
@@ -3589,11 +3515,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     GenTree*   src           = lclStore->gtGetOp1();
     LclVarDsc* varDsc        = comp->lvaGetDesc(lclStore);
     const bool srcIsMultiReg = src->IsMultiRegNode();
-
-    if (src->OperIs(GT_CAST))
-    {
-        LowerStoreLocOrIndirOfCast(lclStore);
-    }
 
     if (!srcIsMultiReg && varTypeIsStruct(varDsc))
     {
@@ -7293,11 +7214,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     assert(ind->TypeGet() != TYP_STRUCT);
 
     TryRetypingFloatingPointStoreToIntegerStore(ind);
-
-    if (ind->gtGetOp2()->OperIs(GT_CAST))
-    {
-        LowerStoreLocOrIndirOfCast(ind);
-    }
 
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
