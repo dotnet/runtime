@@ -324,11 +324,6 @@ GenTree* Compiler::impCreateCompareInd(GenTreeLclVar*        obj,
     GenTree*  addOffsetTree = gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
     GenTree*  indirTree     = gtNewIndir(type, addOffsetTree);
 
-    if (varTypeIsSmall(indirTree))
-    {
-        indirTree = gtNewCastNode(actualType, indirTree, true, varTypeToUnsigned(type));
-    }
-
     if (cmpMode == OrdinalIgnoreCase)
     {
         ssize_t mask;
@@ -385,7 +380,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //   [ ch1 ]
         //   [value]
         //
-        return impCreateCompareInd(data, TYP_SHORT, dataOffset, cns[0], cmpMode);
+        return impCreateCompareInd(data, TYP_USHORT, dataOffset, cns[0], cmpMode);
     }
     if (len == 2)
     {
