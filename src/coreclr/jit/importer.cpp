@@ -938,37 +938,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     // TODO-1stClassStructs: Avoid creating an address if it is not needed, or re-creating a Blk node if it is.
     GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
 
-    return impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, di, block);
-}
-
-//------------------------------------------------------------------------
-// impAssignStructPtr: Assign (copy) the structure from 'src' to 'destAddr'.
-//
-// Arguments:
-//    destAddr     - address of the destination of the assignment
-//    src          - source of the assignment
-//    structHnd    - handle representing the struct type
-//    curLevel     - stack level for which a spill may be being done
-//    pAfterStmt   - statement to insert any additional statements after
-//    di           - debug info for new statements
-//    block        - block to insert any additional statements in
-//
-// Return Value:
-//    The tree that should be appended to the statement list that represents the assignment.
-//
-// Notes:
-//    Temp assignments may be appended to impStmtList if spilling is necessary.
-
-GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
-                                      GenTree*             src,
-                                      CORINFO_CLASS_HANDLE structHnd,
-                                      unsigned             curLevel,
-                                      Statement**          pAfterStmt, /* = NULL */
-                                      const DebugInfo&     di,         /* = DebugInfo() */
-                                      BasicBlock*          block       /* = NULL */
-                                      )
-{
-    GenTree* dest = nullptr;
+    dest = nullptr;
 
     DebugInfo usedDI = di;
     if (!usedDI.IsValid())
@@ -1308,6 +1278,37 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     gtBlockOpInit(asgNode, dest, src, false);
 
     return asgNode;
+}
+
+//------------------------------------------------------------------------
+// impAssignStructPtr: Assign (copy) the structure from 'src' to 'destAddr'.
+//
+// Arguments:
+//    destAddr     - address of the destination of the assignment
+//    src          - source of the assignment
+//    structHnd    - handle representing the struct type
+//    curLevel     - stack level for which a spill may be being done
+//    pAfterStmt   - statement to insert any additional statements after
+//    di           - debug info for new statements
+//    block        - block to insert any additional statements in
+//
+// Return Value:
+//    The tree that should be appended to the statement list that represents the assignment.
+//
+// Notes:
+//    Temp assignments may be appended to impStmtList if spilling is necessary.
+//
+GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
+                                      GenTree*             src,
+                                      CORINFO_CLASS_HANDLE structHnd,
+                                      unsigned             curLevel,
+                                      Statement**          pAfterStmt, /* = NULL */
+                                      const DebugInfo&     di,         /* = DebugInfo() */
+                                      BasicBlock*          block       /* = NULL */
+                                      )
+{
+    GenTree* dst = gtNewStructVal(typGetObjLayout(structHnd), destAddr);
+    return impAssignStruct(dst, src, structHnd, curLevel, pAfterStmt, di, block);
 }
 
 /*****************************************************************************
