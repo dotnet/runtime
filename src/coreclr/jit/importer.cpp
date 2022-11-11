@@ -3861,22 +3861,15 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
-    node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-    node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+    node = gtNewLclVarAddrNode(lvaNewObjArrayArgs);
 
     // Pop dimension arguments from the stack one at a time and store it
     // into lvaNewObjArrayArgs temp.
     for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
     {
-        GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
-
-        GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
-        dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                             new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
-        dest = gtNewOperNode(GT_IND, TYP_INT, dest);
-
-        node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
+        GenTree* arg  = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
+        GenTree* dest = gtNewLclFldNode(lvaNewObjArrayArgs, TYP_INT, sizeof(INT32) * i);
+        node          = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
     }
 
     node =

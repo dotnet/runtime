@@ -1993,21 +1993,13 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         {
             static bool IsArgsFieldInit(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
             {
-                return (tree->OperGet() == GT_ASG) && IsArgsFieldIndir(tree->gtGetOp1(), index, lvaNewObjArrayArgs) &&
-                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
+                return tree->OperIs(GT_ASG) && IsArgsField(tree->gtGetOp1(), index, lvaNewObjArrayArgs);
             }
 
-            static bool IsArgsFieldIndir(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
+            static bool IsArgsField(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
             {
-                return (tree->OperGet() == GT_IND) && (tree->gtGetOp1()->OperGet() == GT_ADD) &&
-                       (tree->gtGetOp1()->gtGetOp2()->IsIntegralConst(sizeof(INT32) * index)) &&
-                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
-            }
-
-            static bool IsArgsAddr(GenTree* tree, unsigned lvaNewObjArrayArgs)
-            {
-                return (tree->OperGet() == GT_ADDR) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
-                       (tree->gtGetOp1()->AsLclVar()->GetLclNum() == lvaNewObjArrayArgs);
+                return tree->OperIs(GT_LCL_FLD) && (tree->AsLclFld()->GetLclNum() == lvaNewObjArrayArgs) &&
+                       (tree->AsLclFld()->GetLclOffs() == sizeof(INT32) * index);
             }
 
             static bool IsComma(GenTree* tree)
@@ -2059,7 +2051,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             argIndex++;
         }
 
-        assert((comma != nullptr) && Match::IsArgsAddr(comma, lvaNewObjArrayArgs));
+        assert((comma != nullptr) && comma->OperIs(GT_LCL_VAR_ADDR) &&
+               (comma->AsLclVarCommon()->GetLclNum() == lvaNewObjArrayArgs));
 
         if (argIndex != numArgs)
         {
