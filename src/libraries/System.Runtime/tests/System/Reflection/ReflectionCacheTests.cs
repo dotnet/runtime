@@ -60,6 +60,8 @@ namespace System.Reflection.Tests
 
             PropertyInfo parentProperty = typeof(A).GetProperty("P");
             PropertyInfo childProperty = s_type.GetProperty("P");
+            Assert.NotNull(parentProperty);
+            Assert.NotNull(childProperty);
             Assert.NotEqual(parentProperty, childProperty);
         }
 
