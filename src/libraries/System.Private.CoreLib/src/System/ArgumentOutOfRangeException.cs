@@ -132,7 +132,7 @@ namespace System
         public static void ThrowIfGreaterThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
-            if (value.CompareTo(other) == 1)
+            if (value.CompareTo(other) > 0)
                 Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
         }
 
@@ -143,7 +143,7 @@ namespace System
         public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
-            if (value.CompareTo(other) != -1)
+            if (value.CompareTo(other) >= 0)
                 Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
         }
 
@@ -154,7 +154,7 @@ namespace System
         public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
-            if (value.CompareTo(other) == -1)
+            if (value.CompareTo(other) < 0)
                 Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
         }
 
@@ -165,7 +165,7 @@ namespace System
         public static void ThrowIfLessThanOrEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
-            if (value.CompareTo(other) != 1)
+            if (value.CompareTo(other) <= 0)
                 Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
         }
     }
