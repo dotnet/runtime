@@ -923,12 +923,12 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
 //
-GenTree* Compiler::impAssignStruct(GenTree*             dest,
-                                   GenTree*             src,
-                                   unsigned             curLevel,
-                                   Statement**          pAfterStmt, /* = nullptr */
-                                   const DebugInfo&     di,         /* = DebugInfo() */
-                                   BasicBlock*          block       /* = nullptr */
+GenTree* Compiler::impAssignStruct(GenTree*         dest,
+                                   GenTree*         src,
+                                   unsigned         curLevel,
+                                   Statement**      pAfterStmt, /* = nullptr */
+                                   const DebugInfo& di,         /* = DebugInfo() */
+                                   BasicBlock*      block       /* = nullptr */
                                    )
 {
     assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir() || dest->OperIs(GT_FIELD)));
@@ -1086,8 +1086,8 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
         GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
         GenTree* destAddrClone;
-        destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel, pAfterStmt
-                                    DEBUGARG("MKREFANY assignment"));
+        destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
+                                pAfterStmt DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
@@ -1133,8 +1133,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
             // In this case we have neither been given a statement to insert after, nor are we
             // in the importer where we can append the side effect.
             // Instead, we're going to sink the assignment below the COMMA.
-            src->AsOp()->gtOp2 =
-                impAssignStruct(dest, src->AsOp()->gtOp2, curLevel, pAfterStmt, usedDI, block);
+            src->AsOp()->gtOp2 = impAssignStruct(dest, src->AsOp()->gtOp2, curLevel, pAfterStmt, usedDI, block);
             src->AddAllEffectsFlags(src->AsOp()->gtOp2);
 
             return src;
@@ -2310,7 +2309,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 #if defined(JIT32_GCENCODER)
     const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
 #else
-    const bool forceInsertNewBlock      = compStressCompile(STRESS_CATCH_ARG, 5);
+    const bool forceInsertNewBlock = compStressCompile(STRESS_CATCH_ARG, 5);
 #endif // defined(JIT32_GCENCODER)
 
     /* Spill GT_CATCH_ARG to a temp if there are jumps to the beginning of the handler */
