@@ -468,12 +468,7 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             const string username = "testForDotnetRuntime";
-            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
-
-            uint removalResult = Interop.NetUserDel(null, username);
-            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
-
-            Interop.NetUserAdd(username, password);
+            using WindowsTestAccount testAccount = new WindowsTestAccount(username);
 
             bool hasStarted = false;
             SafeProcessHandle handle = null;
@@ -496,7 +491,7 @@ namespace System.Diagnostics.Tests
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
-                p.StartInfo.PasswordInClearText = password;
+                p.StartInfo.PasswordInClearText = testAccount.Password;
 
                 try
                 {
@@ -511,7 +506,6 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(username, Helpers.GetProcessUserName(p));
                 bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
                 Assert.True(isProfileLoaded);
-
             }
             finally
             {
@@ -529,8 +523,6 @@ namespace System.Diagnostics.Tests
                 {
                     SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
                 }
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 

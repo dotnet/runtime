@@ -41,7 +41,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerTypeProxy()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 16);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -60,6 +60,10 @@ namespace DebuggerTests
             await CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
             props = await GetObjectOnFrame(frame, "b");
             await CheckString(props, "Val2", "one");
+
+            await CheckValueType(locals, "bs", "DebuggerTests.WithProxyStruct", description:"DebuggerTests.WithProxyStruct");
+            props = await GetObjectOnFrame(frame, "bs");
+            await CheckString(props, "Val2", "one struct");
 
             await CheckObject(locals, "openWith", "System.Collections.Generic.Dictionary<string, string>", description: "Count = 3");
             props = await GetObjectOnFrame(frame, "openWith");
@@ -106,7 +110,7 @@ namespace DebuggerTests
                 Assert.True(task.Result);
             }
         }
-        
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectObjectOfTypeWithToStringOverriden()
         {

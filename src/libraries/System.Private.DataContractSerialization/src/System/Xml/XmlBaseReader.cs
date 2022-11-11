@@ -57,8 +57,6 @@ namespace System.Xml
         private static readonly XmlInitialNode s_initialNode = new XmlInitialNode(XmlBufferReader.Empty);
         private static readonly XmlEndOfFileNode s_endOfFileNode = new XmlEndOfFileNode(XmlBufferReader.Empty);
         private static readonly XmlClosedNode s_closedNode = new XmlClosedNode(XmlBufferReader.Empty);
-        private static Base64Encoding? s_base64Encoding;
-        private static BinHexEncoding? s_binHexEncoding;
         private const string xmlns = "xmlns";
         private const string xml = "xml";
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
@@ -75,11 +73,6 @@ namespace System.Xml
             _atomicTextNode = new XmlAtomicTextNode(_bufferReader);
             _node = s_closedNode;
         }
-
-
-        private static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
-
-        private static BinHexEncoding BinHexEncoding => s_binHexEncoding ??= new BinHexEncoding();
 
         protected XmlBufferReader BufferReader
         {
@@ -1187,7 +1180,7 @@ namespace System.Xml
                     }
                 }
             }
-            return ReadBytes(Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), false);
+            return ReadBytes(DataContractSerializer.Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), false);
         }
 
         public override string ReadElementContentAsString()
@@ -1381,7 +1374,7 @@ namespace System.Xml
             XmlNodeType nodeType = _node.NodeType;
             if (nodeType == XmlNodeType.Element || nodeType == XmlNodeType.EndElement)
                 return 0;
-            return ReadBytes(Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), true);
+            return ReadBytes(DataContractSerializer.Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), true);
         }
 
         public override byte[] ReadContentAsBinHex()
@@ -1403,7 +1396,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
             if (count == 0)
                 return 0;
-            return ReadBytes(BinHexEncoding, 1, 2, buffer, offset, Math.Min(count, 512), true);
+            return ReadBytes(DataContractSerializer.BinHexEncoding, 1, 2, buffer, offset, Math.Min(count, 512), true);
         }
 
         public override int ReadElementContentAsBinHex(byte[] buffer, int offset, int count)

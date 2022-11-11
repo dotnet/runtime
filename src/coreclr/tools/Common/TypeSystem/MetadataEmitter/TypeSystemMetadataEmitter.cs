@@ -28,7 +28,7 @@ namespace Internal.TypeSystem
         private BlobHandle _noArgsVoidReturnStaticMethodSigHandle;
         protected TypeSystemContext _typeSystemContext;
 
-        public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null, AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None)
+        public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
         {
             _typeSystemContext = context;
             _metadataBuilder = new MetadataBuilder();

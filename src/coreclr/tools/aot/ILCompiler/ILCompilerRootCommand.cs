@@ -138,9 +138,9 @@ namespace ILCompiler
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
-            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens, true), true, "Fully generate given assembly if it's used");
+            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens), true, "Fully generate given assembly if it's used");
         public Option<IEnumerable<string>> TrimmedAssemblies { get; } =
-            new(new[] { "--trim" }, result => ILLinkify(result.Tokens, true), true, "Trim the specified assembly");
+            new(new[] { "--trim" }, result => ILLinkify(result.Tokens), true, "Trim the specified assembly");
         public Option<bool> RootDefaultAssemblies { get; } =
             new(new[] { "--defaultrooting" }, "Root assemblies that are not marked [IsTrimmable]");
         public Option<TargetArchitecture> TargetArchitecture { get; } =
@@ -345,7 +345,7 @@ namespace ILCompiler
             };
         }
 
-        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens, bool setDefaultToEmpty)
+        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens)
         {
             if (tokens.Count == 0)
             {

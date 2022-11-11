@@ -489,33 +489,29 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
+    GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
+    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
-    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
-    GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile semantics (this is a nop on X86)
+    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
+    GTF_IND_VOLATILE            = 0x40000000, // GT_IND -- the load or store must use volatile semantics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
-                                              // Same as GTF_ARRLEN_NONFAULTING.
-    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND   -- the target is on the heap
-    GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
-                                              //             assignment; don't evaluate it independently.
-    GTF_IND_REQ_ADDR_IN_REG     = GTF_IND_ASG_LHS, // GT_IND  -- requires its addr operand to be evaluated
-                                              // into a register. This flag is useful in cases where it
-                                              // is required to generate register indirect addressing mode.
-                                              // One such case is virtual stub calls on xarch.  This is only
-                                              // valid in the backend, where GTF_IND_ASG_LHS is not necessary
-                                              // (all such indirections will be lowered to GT_STOREIND).
-    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND   -- the load or store is unaligned (we assume worst case
-                                              //             alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
-    GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
+    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND -- the target is on the heap
+    GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
+                                              //           This flag is useful in cases where it is required to generate register
+                                              //           indirect addressing mode. One such case is virtual stub calls on xarch.
+    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
+                                              //           assignment; don't evaluate it independently.
+    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND -- the load or store is unaligned (we assume worst case
+                                              //           alignment of 1 byte)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
@@ -1743,6 +1739,7 @@ public:
             case GT_RETFILT:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
                 return gtType == TYP_VOID;
@@ -1811,6 +1808,8 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
+
+    inline GenTree*& Data();
 
     bool TryGetUse(GenTree* operand, GenTree*** pUse);
 
@@ -3538,7 +3537,7 @@ class SsaNumInfo final
     static const int BITS_PER_SIMPLE_NUM     = 8;
     static const int MAX_SIMPLE_NUM          = (1 << (BITS_PER_SIMPLE_NUM - 1)) - 1;
     static const int SIMPLE_NUM_MASK         = MAX_SIMPLE_NUM;
-    static const int SIMPLE_NUM_COUNT        = sizeof(int) / BITS_PER_SIMPLE_NUM;
+    static const int SIMPLE_NUM_COUNT        = (sizeof(int) * BITS_PER_BYTE) / BITS_PER_SIMPLE_NUM;
     static const int COMPOSITE_ENCODING_BIT  = 1 << 31;
     static const int OUTLINED_ENCODING_BIT   = 1 << 15;
     static const int OUTLINED_INDEX_LOW_MASK = OUTLINED_ENCODING_BIT - 1;
@@ -4030,8 +4029,8 @@ struct GenTreeField : public GenTreeUnOp
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+    GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTreeUnOp(oper, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
@@ -4055,6 +4054,30 @@ struct GenTreeField : public GenTreeUnOp
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsInstance() const
+    {
+        return GetFldObj() != nullptr;
+    }
+
+    bool IsStatic() const
+    {
+        return !IsInstance();
+    }
+
+    bool IsTlsStatic() const
+    {
+        assert(((gtFlags & GTF_FLD_TLS) == 0) || IsStatic());
+        return (gtFlags & GTF_FLD_TLS) != 0;
+    }
+
+    bool IsOffsetKnown() const
+    {
+#ifdef FEATURE_READYTORUN
+        return gtFieldLookup.addr == nullptr;
+#endif // FEATURE_READYTORUN
+        return true;
     }
 };
 
@@ -7008,8 +7031,7 @@ struct GenTreeIndir : public GenTreeOp
 
     void SetAddr(GenTree* addr)
     {
-        assert(addr != nullptr);
-        assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
+        assert(varTypeIsI(addr));
         gtOp1 = addr;
     }
 
@@ -8922,6 +8944,12 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;
+}
+
+inline GenTree*& GenTree::Data()
+{
+    assert(OperIsStore() && (OperIsIndir() || OperIsLocal()));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)

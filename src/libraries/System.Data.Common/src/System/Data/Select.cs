@@ -676,7 +676,7 @@ namespace System.Data
                 StorageType resultType;
                 if (expr._left.IsSqlColumn || expr._right.IsSqlColumn)
                 {
-                    resultType = BinaryNode.ResultSqlType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultSqlType(leftType, rightType, expr._op);
                 }
                 else
                 {

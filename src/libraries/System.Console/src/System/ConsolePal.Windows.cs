@@ -948,11 +948,6 @@ namespace System
 
         public static unsafe void SetWindowSize(int width, int height)
         {
-            if (width <= 0)
-                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
-            if (height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
-
             // Get the position of the current console window
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
 

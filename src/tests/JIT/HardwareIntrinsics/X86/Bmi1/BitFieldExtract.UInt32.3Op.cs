@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Bmi1
 {
     public static partial class Program
     {
-        private static void BitFieldExtractUInt323Op()
+        [Fact]
+        public static void BitFieldExtractUInt323Op()
         {
             var test = new ScalarTernOpTest__BitFieldExtractUInt32();
 

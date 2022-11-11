@@ -709,7 +709,8 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     // Currently AVX doesn't support integer.
     // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
     if (op1Reg != targetReg && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported &&
-        !(ins == INS_cvtsi2ss || ins == INS_cvtsi2sd) && GetEmitter()->IsThreeOperandAVXInstruction(ins))
+        !(ins == INS_cvtsi2ss32 || ins == INS_cvtsi2sd32 || ins == INS_cvtsi2ss64 || ins == INS_cvtsi2sd64) &&
+        GetEmitter()->IsThreeOperandAVXInstruction(ins))
     {
         inst_RV_RV_RV(ins, targetReg, op1Reg, op2Reg, emitActualTypeSize(targetType));
     }

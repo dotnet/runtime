@@ -4762,6 +4762,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
                         return false;
                     }
 
+                    // Ensure the source isn't a phi.
+                    if (op2->OperIs(GT_PHI))
+                    {
+                        return false;
+                    }
+
                     asgNode  = tree;
                     asgStmt  = stmt;
                     asgBlock = middleBlock;
