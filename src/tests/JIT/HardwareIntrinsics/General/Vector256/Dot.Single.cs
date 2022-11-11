@@ -18,7 +18,6 @@ namespace JIT.HardwareIntrinsics.General._Vector256
 {
     public static partial class Program
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75791")]
         [Fact]
         public static void DotSingle()
         {
