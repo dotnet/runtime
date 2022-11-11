@@ -86,7 +86,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c0", '\u20AC');
                     await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
@@ -737,7 +737,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("lazy-debugger-test")]
-        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-\u3128")]
         public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -964,7 +964,7 @@ namespace DebuggerTests
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-\u0105\u0142.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
             string classWithNamespace, string expectedFileLocation)
         {
@@ -1096,10 +1096,10 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task SetBreakpointInProjectWithChineseCharactereInPath()
         {
-            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-\u3128.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
             await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
-                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-\u3128] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-\u3128.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
