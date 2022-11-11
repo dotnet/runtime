@@ -16909,6 +16909,41 @@ bool GenTree::isIndirAddrMode()
 
 bool GenTree::isIndir() const
 {
+#ifdef DEBUG
+    if (getJitStressLevel() != 0)
+    {
+        DWORD64 timestamp = __rdtsc();
+        if ((timestamp % 10000) == 0)
+        {
+            int whichError = (timestamp / 10000) % 10;
+
+            switch (whichError)
+            {
+                case 0:
+                case 1:
+                case 2:
+                    assert(!"Error 0~2");
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                    assert(!"Error 3~5");
+                    break;
+                case 6:
+                case 7:
+                case 8:
+                    assert(!"Error 6~8");
+                    break;
+                case 9:
+                    while (true){}
+                    break;
+                default:
+                    assert(!"shouldn't reach here.");
+                    break;
+            }
+        }
+    }
+#endif
     return OperGet() == GT_IND || OperGet() == GT_STOREIND;
 }
 
