@@ -813,8 +813,7 @@ namespace System.Drawing.Tests
                 var logFont = new LOGFONT();
                 font.ToLogFont(logFont, graphics);
 
-                if (-13 != logFont.lfHeight) Environment.FailFast("");
-                // Assert.Equal(-13 != logFont.lfHeight);
+                Assert.Equal(-13, logFont.lfHeight);
                 Assert.Equal(0, logFont.lfWidth);
                 Assert.Equal(0, logFont.lfEscapement);
                 Assert.Equal(0, logFont.lfOrientation);
