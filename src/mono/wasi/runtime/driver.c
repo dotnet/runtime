@@ -160,10 +160,6 @@ char* gai_strerror(int code) {
     return result;
 }
 
-int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength) {
-    return getentropy (buffer, bufferLength);
-}
-
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
@@ -172,12 +168,6 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	entry->next = satellite_assemblies;
 	satellite_assemblies = entry;
 	++satellite_assembly_count;
-}
-
-void
-mono_wasm_setenv (const char *name, const char *value)
-{
-	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
 static void *sysglobal_native_handle;
@@ -328,6 +318,7 @@ static PinvokeImport SystemGlobalizationNativeImports [] = {
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
+	printf("In wasm_dl_load for name %s\n", name);
 	if (!strcmp (name, "libSystem.Native"))
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
@@ -429,6 +420,8 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+
+#if TODOWASI
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
 	{
@@ -449,8 +442,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	const char *appctx_values[2];
 	appctx_values [0] = "/";
-	appctx_values [1] = "browser-wasm";
-
+	appctx_values [1] = "wasi-wasm";
 	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
@@ -467,10 +459,14 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 	} else {
 		free (file_path);
 	}
-
 	monovm_initialize (2, appctx_keys, appctx_values);
+#else
+	monovm_initialize (0, NULL, NULL);
+#endif /* TODOWASI */
 
+#if TODOWASI
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
+#endif /* TODOWASI */
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
@@ -801,10 +797,15 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
 }
 
 int main() {
+	printf("monoeg_g_setenv\n");
+	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
+
+	printf("mono_set_assemblies_path\n");
     // Assume the runtime pack has been copied into the output directory as 'runtime'
     // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	printf("mono_set_assemblies_path\n");
     mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+
 	printf("mono_wasm_load_runtime\n");
     mono_wasm_load_runtime("", 0);
 
