@@ -626,6 +626,10 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
             structHnd = AsCall()->gtRetClsHnd;
             break;
 
+        case GT_RET_EXPR:
+            structHnd = AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
+            break;
+
         default:
             unreached();
     }
@@ -8105,7 +8109,7 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
 //
 GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
 {
-    assert(dst->OperIsBlk() || dst->OperIsLocal());
+    assert(dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD));
 
     if (!isCopyBlock)
     {
