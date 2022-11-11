@@ -59,7 +59,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetDouble();
             }
 
-            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3]);
+            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 
             bool succeeded = !expectedOutOfRangeException;
 
@@ -115,7 +115,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetDouble();
             }
 
-            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3]);
+            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 
             bool succeeded = !expectedOutOfRangeException;
 

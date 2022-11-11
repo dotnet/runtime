@@ -59,7 +59,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetSingle();
             }
 
-            Vector512<Single> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+            Vector512<Single> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
             bool succeeded = !expectedOutOfRangeException;
 
@@ -115,7 +115,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetSingle();
             }
 
-            Vector512<Single> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+            Vector512<Single> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
             bool succeeded = !expectedOutOfRangeException;
 

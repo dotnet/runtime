@@ -55,7 +55,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetDouble();
             }
 
-            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3]);
+            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 
             Double result = value.ToScalar();
             ValidateResult(result, values);
@@ -72,7 +72,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512_1
                 values[i] = TestLibrary.Generator.GetDouble();
             }
 
-            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3]);
+            Vector512<Double> value = Vector512.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 
             object result = typeof(Vector512)
                                 .GetMethod(nameof(Vector512.ToScalar))
