@@ -40,6 +40,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
+
     childNode->SetContained();
     assert(childNode->isContained());
 
@@ -58,6 +59,60 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// MakeSrcRegOptional: Make "childNode" a regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can regOptional its 'childNode'
+//    childNode  - is an op that will now be regOptional to its parent.
+//
+void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    assert(!parentNode->OperIsLeaf());
+
+    childNode->SetRegOptional();
+    assert(childNode->IsRegOptional());
+
+#ifdef DEBUG
+    // Verify caller of this method checked safety.
+    //
+    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+    if (!isSafeToContainMem)
+    {
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
+        assert(isSafeToContainMem);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
+//
+// Arguments:
+//    parentNode - is a non-leaf node that can contain or regOptional its 'childNode'
+//    childNode  - is an op that will now be contained or regOptional to its parent.
+//
+void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
+    assert(!parentNode->OperIsHWIntrinsic());
+
+    if (!IsSafeToContainMem(parentNode, childNode))
+    {
+        return;
+    }
+
+    if (IsContainableMemoryOp(childNode))
+    {
+        MakeSrcContained(parentNode, childNode);
+    }
+    else
+    {
+        MakeSrcRegOptional(parentNode, childNode);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3455,6 +3510,8 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
+    TryRetypingFloatingPointStoreToIntegerStore(lclStore);
+
     GenTree*   src           = lclStore->gtGetOp1();
     LclVarDsc* varDsc        = comp->lvaGetDesc(lclStore);
     const bool srcIsMultiReg = src->IsMultiRegNode();
@@ -5399,28 +5456,19 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         GenTree* unused = unusedStack.Pop();
 
-        // Use a loop to process some of the nodes iteratively
-        // instead of pushing them on the stack.
-        while ((unused != base) && (unused != index))
+        if ((unused != base) && (unused != index))
         {
             JITDUMP("Removing unused node:\n  ");
             DISPNODE(unused);
 
             BlockRange().Remove(unused);
 
-            if (unused->OperIs(GT_ADD, GT_MUL, GT_LSH))
+            for (GenTree* operand : unused->Operands())
             {
-                // Push the first operand and loop back to process the second one.
-                // This minimizes the stack depth because the second one tends to be
-                // a constant so it gets processed and then the first one gets popped.
-                unusedStack.Push(unused->AsOp()->gtGetOp1());
-                unused = unused->AsOp()->gtGetOp2();
+                unusedStack.Push(operand);
             }
-            else
-            {
-                assert(unused->OperIs(GT_CNS_INT));
-                break;
-            }
+
+            DEBUG_DESTROY_NODE(unused);
         }
     }
 
@@ -7165,6 +7213,8 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
+    TryRetypingFloatingPointStoreToIntegerStore(ind);
+
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
     //
@@ -7192,51 +7242,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
             }
         }
 #endif
-
-        if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
-        {
-            // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
-            GenTree*  data   = ind->Data();
-            double    dblCns = data->AsDblCon()->DconValue();
-            ssize_t   intCns = 0;
-            var_types type   = TYP_UNKNOWN;
-            // XARCH: we can always contain the immediates.
-            // ARM64: zero can always be contained, other cases will use immediates from the data
-            //        section and it is not a clear win to switch them to inline integers.
-            // ARM:   FP constants are assembled from integral ones, so it is always profitable
-            //        to directly use the integers as it avoids the int -> float conversion.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM)
-            bool shouldSwitchToInteger = true;
-#else // TARGET_ARM64
-            bool   shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
-#endif
-
-            if (shouldSwitchToInteger)
-            {
-                if (ind->TypeIs(TYP_FLOAT))
-                {
-                    float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-                    intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
-                    type         = TYP_INT;
-                }
-#ifdef TARGET_64BIT
-                else
-                {
-                    assert(ind->TypeIs(TYP_DOUBLE));
-                    intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
-                    type   = TYP_LONG;
-                }
-#endif
-            }
-
-            if (type != TYP_UNKNOWN)
-            {
-                data->BashToConst(intCns, type);
-                ind->ChangeType(type);
-            }
-        }
 
         LowerStoreIndir(ind);
     }
@@ -7466,6 +7471,89 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 
     LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
+}
+
+//------------------------------------------------------------------------
+// TryRetypingFloatingPointStoreToIntegerStore: Retype an FP memory store.
+//
+// On some targets, integer stores are cheaper and/or smaller than their
+// floating-point counterparts, because, e. g., integer immediates can be
+// encoded inline while FP ones need to be loaded from the data section.
+//
+// Arguments:
+//    store - The store node
+//
+void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
+{
+    assert(store->OperIsStore() && !store->OperIsAtomicOp());
+
+    if (!varTypeIsFloating(store))
+    {
+        return;
+    }
+
+    // We only want to transform memory stores, not definitions of candidate locals.
+    //
+    if (store->OperIs(GT_STORE_LCL_VAR) && !comp->lvaGetDesc(store->AsLclVar())->lvDoNotEnregister)
+    {
+        return;
+    }
+
+    GenTree* data = store->Data();
+    assert(store->TypeGet() == data->TypeGet());
+
+    // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
+    //
+    if (data->IsCnsFltOrDbl())
+    {
+        double    dblCns = data->AsDblCon()->DconValue();
+        ssize_t   intCns = 0;
+        var_types type   = TYP_UNKNOWN;
+        // XARCH: we can always contain the immediates.
+        // ARM64: zero can always be contained, other cases will use immediates from the data
+        //        section and it is not a clear win to switch them to inline integers.
+        // ARM:   FP constants are assembled from integral ones, so it is always profitable
+        //        to directly use the integers as it avoids the int -> float conversion.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
+        bool shouldSwitchToInteger = true;
+#else // TARGET_ARM64 || TARGET_LOONGARCH64
+        bool       shouldSwitchToInteger = FloatingPointUtils::isPositiveZero(dblCns);
+#endif
+
+        if (shouldSwitchToInteger)
+        {
+            if (store->TypeIs(TYP_FLOAT))
+            {
+                float fltCns = static_cast<float>(dblCns);
+                intCns       = *reinterpret_cast<INT32*>(&fltCns);
+                type         = TYP_INT;
+            }
+#ifdef TARGET_64BIT
+            else
+            {
+                assert(store->TypeIs(TYP_DOUBLE));
+                intCns = *reinterpret_cast<INT64*>(&dblCns);
+                type   = TYP_LONG;
+            }
+#endif
+        }
+
+        if (type != TYP_UNKNOWN)
+        {
+            data->BashToConst(intCns, type);
+
+            assert(!store->OperIsLocalStore() || comp->lvaGetDesc(store->AsLclVarCommon())->lvDoNotEnregister);
+            if (store->OperIs(GT_STORE_LCL_VAR))
+            {
+                store->SetOper(GT_STORE_LCL_FLD);
+                store->AsLclFld()->SetLclOffs(0);
+                store->AsLclFld()->SetLayout(nullptr);
+            }
+            store->ChangeType(type);
+        }
+    }
 }
 
 #ifdef FEATURE_SIMD

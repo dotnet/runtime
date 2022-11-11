@@ -1510,8 +1510,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     HRESULT hr = S_OK;
     INT32   iRetVal = 0;
 
-    BEGIN_ENTRYPOINT_THROWS;
-
     Thread *pThread = GetThread();
     MethodDesc *pMeth;
     {
@@ -1580,7 +1578,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     IfFailThrow(hr);
 
-    END_ENTRYPOINT_THROWS;
     return iRetVal;
 }
 

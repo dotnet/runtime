@@ -4577,8 +4577,6 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 
     BEGIN_PRESERVE_LAST_ERROR;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     if (pModuleBase)
         *pModuleBase = NULL;
     if (pFuncEntry)
@@ -4604,8 +4602,7 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     }
 
 Exit:
-    END_ENTRYPOINT_VOIDRET;
-
+    ;
     END_PRESERVE_LAST_ERROR;
 }
 #endif // FEATURE_EH_FUNCLETS
@@ -6574,7 +6571,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
     PTR_RUNTIME_FUNCTION pColdRuntimeFunction = pRuntimeFunctions + coldMethodIndex;
     methodRegionInfo->coldStartAddress = JitTokenToModuleBase(MethodToken)
         + RUNTIME_FUNCTION__BeginAddress(pColdRuntimeFunction);
-    
+
     ULONG coldMethodIndexNext;
     if ((ULONG)(lookupIndex) == (pInfo->m_nHotColdMap - 2))
     {
@@ -6639,4 +6636,4 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemor
 #endif //FEATURE_EH_FUNCLETS
 #endif // #ifdef DACCESS_COMPILE
 
-#endif 
+#endif

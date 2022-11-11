@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolDefinitionNode.Offset => HeaderSize;
 
-        public override ObjectNodeSection Section => GetDictionaryLayout(_factory).DictionarySection(_factory);
+        public override ObjectNodeSection GetSection(NodeFactory factory) => GetDictionaryLayout(_factory).DictionarySection(_factory);
 
         public GenericDictionaryNode(NodeFactory factory)
         {

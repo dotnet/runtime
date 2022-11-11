@@ -2587,12 +2587,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst())
+                if (op1->OperIsConst() || gtIsTypeof(op1))
                 {
                     // op1 is a known constant, replace with 'true'.
                     retNode = gtNewIconNode(1);
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
-                    // We can also consider FTN_ADDR and typeof(T) here
+                    // We can also consider FTN_ADDR here
                 }
                 else
                 {
@@ -2854,6 +2854,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsByRefLike:
             {
@@ -2865,31 +2866,52 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // to `true` or `false`
                 // e.g., `typeof(int).IsValueType` => `true`
                 // e.g., `typeof(Span<int>).IsByRefLike` => `true`
-                if (impStackTop().val->IsCall())
+                CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
+                if (gtIsTypeof(impStackTop().val, &hClass))
                 {
-                    GenTreeCall* call = impStackTop().val->AsCall();
-                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    switch (ni)
                     {
-                        assert(call->gtArgs.CountArgs() == 1);
-                        CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                        if (hClass != NO_CLASS_HANDLE)
+                        case NI_System_Type_get_IsEnum:
                         {
-                            switch (ni)
+                            TypeCompareState state = info.compCompHnd->isEnum(hClass, nullptr);
+                            if (state == TypeCompareState::May)
                             {
-                                case NI_System_Type_get_IsValueType:
-                                    retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
-                                    break;
-                                case NI_System_Type_get_IsByRefLike:
-                                    retNode = gtNewIconNode(
-                                        (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
-                                    break;
-                                default:
-                                    NO_WAY("Intrinsic not supported in this path.");
+                                retNode = nullptr;
+                                break;
                             }
-                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                            retNode = gtNewIconNode(state == TypeCompareState::Must ? 1 : 0);
+                            break;
                         }
+                        case NI_System_Type_get_IsValueType:
+                            retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
+                            break;
+                        case NI_System_Type_get_IsByRefLike:
+                            retNode = gtNewIconNode(
+                                (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
+                            break;
+                        default:
+                            NO_WAY("Intrinsic not supported in this path.");
                     }
+                    if (retNode != nullptr)
+                    {
+                        impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                    }
+                }
+                break;
+            }
+
+            case NI_System_Type_GetEnumUnderlyingType:
+            {
+                GenTree*             type             = impStackTop().val;
+                CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
+                CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
+                if (gtIsTypeof(type, &hClassEnum) && (hClassEnum != NO_CLASS_HANDLE) &&
+                    (info.compCompHnd->isEnum(hClassEnum, &hClassUnderlying) == TypeCompareState::Must) &&
+                    (hClassUnderlying != NO_CLASS_HANDLE))
+                {
+                    GenTree* handle = gtNewIconEmbClsHndNode(hClassUnderlying);
+                    retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                    impPopStack();
                 }
                 break;
             }
@@ -7140,6 +7162,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_RuntimeTypeHandle_GetValueInternal;
             }
         }
+        else if (strcmp(className, "RuntimeType") == 0)
+        {
+            if (strcmp(methodName, "get_IsActualEnum") == 0)
+            {
+                result = NI_System_Type_get_IsEnum;
+            }
+        }
         else if (strcmp(className, "Type") == 0)
         {
             if (strcmp(methodName, "get_IsValueType") == 0)
@@ -7169,6 +7198,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "GetTypeFromHandle") == 0)
             {
                 result = NI_System_Type_GetTypeFromHandle;
+            }
+            else if (strcmp(methodName, "get_IsEnum") == 0)
+            {
+                result = NI_System_Type_get_IsEnum;
+            }
+            else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
+            {
+                result = NI_System_Type_GetEnumUnderlyingType;
             }
         }
         else if (strcmp(className, "String") == 0)

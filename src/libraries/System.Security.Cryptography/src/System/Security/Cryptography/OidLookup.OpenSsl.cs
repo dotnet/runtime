@@ -8,6 +8,8 @@ namespace System.Security.Cryptography
 {
     internal static partial class OidLookup
     {
+#pragma warning disable IDE0060
+
         private static bool ShouldUseCache(OidGroup oidGroup)
         {
             return true;
@@ -47,5 +49,8 @@ namespace System.Security.Cryptography
 
             return Interop.Crypto.GetOidValue(sharedObject);
         }
+
+#pragma warning restore IDE0060
+
     }
 }

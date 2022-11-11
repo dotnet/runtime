@@ -545,6 +545,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_CreateScalar:
         case NI_Vector64_CreateScalarUnsafe:
         {
             if (genTypeSize(simdBaseType) == 8)
@@ -556,12 +557,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_Create:
         case NI_Vector128_Create:
+        case NI_Vector128_CreateScalar:
         case NI_Vector128_CreateScalarUnsafe:
         {
             uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
             assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
 
-            bool isConstant = true;
+            bool isConstant     = true;
+            bool isCreateScalar = (intrinsic == NI_Vector64_CreateScalar) || (intrinsic == NI_Vector128_CreateScalar);
 
             if (varTypeIsFloating(simdBaseType))
             {
@@ -620,7 +623,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u8[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val       = {};
+                            vecCon->gtSimd32Val.u8[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < simdLength - 1; index++)
                             {
@@ -641,7 +649,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u16[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u16[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -662,7 +675,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u32[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u32[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -683,7 +701,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u64[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u64[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -703,7 +726,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.f32[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.f32[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -723,7 +751,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.f64[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.f64[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {

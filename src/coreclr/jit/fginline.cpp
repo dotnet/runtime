@@ -251,7 +251,7 @@ private:
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
                 // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->bbFlags |= inlineeBB->bbFlags & BBF_SPLIT_GAINED;
+                m_compiler->compCurBB->bbFlags |= inlineeBB->bbFlags & BBF_COPY_PROPAGATE;
             }
 
 #ifdef DEBUG

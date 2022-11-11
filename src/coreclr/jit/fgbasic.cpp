@@ -1163,6 +1163,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
 
                             // These are foldable if the first argument is a constant
+                            case NI_System_Type_get_IsEnum:
+                            case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:

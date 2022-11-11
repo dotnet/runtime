@@ -718,7 +718,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e)
             {
-                throw new ArgumentException(e.Message, nameof(peImagePath));
+                throw new ArgumentException(e.Message, nameof(peImagePath), e);
             }
 
             Exception? errorToReport = null;

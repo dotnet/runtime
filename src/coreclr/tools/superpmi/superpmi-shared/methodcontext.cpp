@@ -1256,7 +1256,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
-    memcpy(jitFlags, resultFlags, value.B);
+    memcpy((void*)jitFlags, (void*)resultFlags, value.B);
     return value.B;
 }
 
@@ -5909,6 +5909,41 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     DWORD value = IsMoreSpecificType->Get(key);
     DEBUG_REP(dmpIsMoreSpecificType(key, value));
     return value != 0;
+}
+
+void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType, TypeCompareState result)
+{
+    if (IsEnum == nullptr)
+        IsEnum = new LightWeightMap<DWORDLONG, DLD>();
+
+    DWORDLONG key = CastHandle(cls);
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    if (underlyingType != nullptr)
+        value.A = CastHandle(*underlyingType);
+    else
+        value.A = 0;
+    value.B = (DWORD)result;
+
+    IsEnum->Add(key, value);
+    DEBUG_REC(dmpIsEnum(key, value));
+}
+void MethodContext::dmpIsEnum(DWORDLONG key, DLD value)
+{
+    printf("IsEnum key cls-%016llX, value underlyingType-%016llX result-%u", key, value.A, value.B);
+}
+TypeCompareState MethodContext::repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    DWORDLONG key = CastHandle(cls);
+
+    AssertMapAndKeyExist(IsEnum, key, ": key %016llX", key);
+
+    DLD value = IsEnum->Get(key);
+    DEBUG_REP(dmpIsEnum(key, value));
+    if (underlyingType != nullptr)
+        *underlyingType = (CORINFO_CLASS_HANDLE)value.A;
+    return (TypeCompareState)value.B;
 }
 
 void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
