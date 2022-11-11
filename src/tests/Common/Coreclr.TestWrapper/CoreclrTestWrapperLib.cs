@@ -204,6 +204,7 @@ namespace CoreclrTestLib
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
+        public const string HELIX_DUMP_FOLDER_ENVIRONMENT_VAR = "HELIX_DUMP_FOLDER";
 
         static bool CollectCrashDump(Process process, string path)
         {
@@ -250,7 +251,7 @@ namespace CoreclrTestLib
 
                 if (crashReportPresent)
                 {
-                    TryPrintStackTraceFromCrashReport(coreRoot, path);
+                    TryPrintStackTraceFromCrashReport(path);
                 }
             }
             else
@@ -270,16 +271,16 @@ namespace CoreclrTestLib
         ///     Parse crashreport.json file, use llvm-symbolizer to extract symbols
         ///     and recreate the stacktrace that is printed on the console.
         /// </summary>
-        /// <param name="coreRoot">Path to CORE_ROOT</param>
         /// <param name="crashdump">crash dump path</param>
-        /// <returns></returns>
-        static bool TryPrintStackTraceFromCrashReport(string coreRoot, string crashdump)
+        /// <returns>true, if we can print the stack trace, otherwise false.</returns>
+        static bool TryPrintStackTraceFromCrashReport(string crashdump)
         {
             string crashReportJsonFile = crashdump + ".crashreport.json";
             if (!File.Exists(crashReportJsonFile))
             {
                 return false;
             }
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string contents = File.ReadAllText(crashReportJsonFile);
 
             dynamic crashReport = JsonConvert.DeserializeObject(contents);
@@ -493,6 +494,7 @@ namespace CoreclrTestLib
 
                     DateTime startTime = DateTime.Now;
                     process.Start();
+                    int pid = process.Id;
 
                     var cts = new CancellationTokenSource();
                     Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
@@ -504,6 +506,24 @@ namespace CoreclrTestLib
                         exitCode = process.ExitCode;
                         MobileAppHandler.CheckExitCode(exitCode, testBinaryBase, category, outputWriter);
                         Task.WaitAll(copyOutput, copyError);
+
+                        if (!OperatingSystem.IsWindows())
+                        {
+                            // crashreport is only for non-windows.
+                            if (exitCode != 0)
+                            {
+                                // Search for dump, if created.
+                                string helixDumpFolder = Environment.GetEnvironmentVariable(HELIX_DUMP_FOLDER_ENVIRONMENT_VAR);
+                                if (helixDumpFolder != null)
+                                {
+                                    string possibleDmpFile = Path.Combine(helixDumpFolder, $"coredump.{pid}.dmp");
+                                    if (File.Exists(possibleDmpFile))
+                                    {
+                                        TryPrintStackTraceFromCrashReport(possibleDmpFile);
+                                    }
+                                }
+                            }
+                        }
                     }
                     else
                     {
