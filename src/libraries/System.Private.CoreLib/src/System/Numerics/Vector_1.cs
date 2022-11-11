@@ -476,12 +476,12 @@ namespace System.Numerics
         {
             for (int index = 0; index < Count; index++)
             {
-                if (Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
+                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
-                    return false;
+                    return true;
                 }
             }
-            return true;
+            return false;
         }
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
