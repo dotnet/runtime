@@ -8952,13 +8952,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
-                            newObjThisPtr = gtNewLclvNode(lclNum, lclDsc->TypeGet());
-
-                            newObjThisPtr = gtNewBlkOpNode(newObjThisPtr,    // Dest
-                                                           gtNewIconNode(0), // Value
-                                                           false,            // isVolatile
-                                                           false);           // not copyBlock
-                            impAppendTree(newObjThisPtr, CHECK_SPILL_NONE, impCurStmtDI);
+                            GenTree* newObjDst = gtNewLclvNode(lclNum, lclDsc->TypeGet());
+                            GenTree* newObjInit;
+                            if (lclDsc->TypeGet() == TYP_STRUCT)
+                            {
+                                newObjInit = gtNewBlkOpNode(newObjDst, gtNewIconNode(0), /* isVolatile */ false,
+                                                            /* isCopyBlock */ false);
+                            }
+                            else
+                            {
+                                newObjInit = gtNewAssignNode(newObjDst, gtNewZeroConNode(lclDsc->TypeGet()));
+                            }
+                            impAppendTree(newObjInit, CHECK_SPILL_NONE, impCurStmtDI);
                         }
                         else
                         {

@@ -7975,7 +7975,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                     }
                     else
                     {
-                        GenTree* zero = gtNewZeroConNode(genActualType(lclType));
+                        GenTree* zero = gtNewZeroConNode(lclType);
                         init          = gtNewAssignNode(lcl, zero);
                     }
                     Statement* initStmt = gtNewStmt(init, callDI);

@@ -7171,7 +7171,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 {
     GenTree* zero;
 
-    switch (type)
+    switch (genActualType(type))
     {
         case TYP_INT:
         case TYP_REF:
