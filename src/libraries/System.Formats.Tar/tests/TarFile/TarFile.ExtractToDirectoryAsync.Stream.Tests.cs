@@ -97,6 +97,19 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [Fact]
+        public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts_Async()
+        {
+            using (TempDirectory root = new TempDirectory())
+            {
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "docker-hello-world");
+                await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+
+                Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
+                Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
+            }
+        }
+
         [Theory]
         [InlineData(TarEntryType.SymbolicLink)]
         [InlineData(TarEntryType.HardLink)]
