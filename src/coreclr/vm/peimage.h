@@ -321,11 +321,6 @@ private:
 
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
-
-#ifdef METADATATRACKER_DATA
-    class MetaDataTracker   *m_pMDTracker;
-#endif // METADATATRACKER_DATA
-
     IMDInternalImport* m_pMDImport;
 };
 

@@ -169,6 +169,7 @@
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
+    <Compile Include="System\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
@@ -211,6 +212,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
@@ -604,7 +606,6 @@
   <!-- Import refererence assembly and ApiCompat logic -->
   <PropertyGroup>
     <IsSourceProject>true</IsSourceProject>
-    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
   </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />

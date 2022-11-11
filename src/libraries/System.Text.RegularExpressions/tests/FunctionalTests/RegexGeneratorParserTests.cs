@@ -3,7 +3,9 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
@@ -838,6 +840,37 @@ namespace System.Text.RegularExpressions.Tests
                     [GeneratedRegex($""{""ab""}{""cd""}"")]
                     public static partial Regex Valid();
                 }", compile: true));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("Takes several seconds")]
+        public void Deterministic_SameRegexProducesSameSource()
+        {
+            string first = Generate();
+            for (int trials = 0; trials < 3; trials++)
+            {
+                Assert.Equal(first, Generate());
+            }
+
+            static string Generate()
+            {
+                const string Code =
+                    @"using System.Text.RegularExpressions;
+                    partial class C
+                    {
+                        [GeneratedRegex(""(?<Name>\w+) (?<Street>\w+), (?<City>\w+) (?<State>[A-Z]{2}) (?<Zip>[0-9]{5})"")]
+                        public static partial Regex Valid();
+                    }";
+
+                // Generate the source in a new process so that any process-specific randomization is different between runs,
+                // e.g. hash code randomization for strings.
+
+                using RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                    async () => Console.WriteLine(await RegexGeneratorHelper.GenerateSourceText(Code)),
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
+
+                return handle.Process.StandardOutput.ReadToEnd();
+            }
         }
     }
 }

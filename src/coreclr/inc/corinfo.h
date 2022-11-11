@@ -1056,6 +1056,7 @@ typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
 typedef struct CORINFO_METHOD_STRUCT_*      CORINFO_METHOD_HANDLE;
 typedef struct CORINFO_FIELD_STRUCT_*       CORINFO_FIELD_HANDLE;
+typedef struct CORINFO_OBJECT_STRUCT_*      CORINFO_OBJECT_HANDLE;
 typedef struct CORINFO_ARG_LIST_STRUCT_*    CORINFO_ARG_LIST_HANDLE;    // represents a list of argument types
 typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
@@ -2256,19 +2257,20 @@ public:
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
-    // Returns string length and content (can be null for dynamic context)
+    // Returns (sub)string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
             char16_t*                   buffer,     /* OUT */
-            int                         bufferSize  /* IN  */
+            int                         bufferSize, /* IN  */
+            int                         startIndex = 0 /* IN  */
             ) = 0;
 
 
     //------------------------------------------------------------------------------
     // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
-    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic 
+    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic
     //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
     //
     // Arguments:
@@ -2283,7 +2285,7 @@ public:
     //    Bytes written to the given buffer, the range is [0..bufferSize)
     //
     virtual size_t printObjectDescription (
-            void*                       handle,                       /* IN  */
+            CORINFO_OBJECT_HANDLE       handle,                       /* IN  */
             char*                       buffer,                       /* OUT */
             size_t                      bufferSize,                   /* IN  */
             size_t*                     pRequiredBufferSize = nullptr /* OUT */
@@ -2499,7 +2501,7 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    virtual void* getRuntimeTypePointer(
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2513,7 +2515,7 @@ public:
     //    Returns true if object is known to be immutable
     //
     virtual bool isObjectImmutable(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     //------------------------------------------------------------------------------
@@ -2526,7 +2528,7 @@ public:
     //    Returns CORINFO_CLASS_HANDLE handle that represents given object's type
     //
     virtual CORINFO_CLASS_HANDLE getObjectType(
-            void*                       objPtr
+            CORINFO_OBJECT_HANDLE       objPtr
             ) = 0;
 
     virtual bool getReadyToRunHelper(
@@ -2633,6 +2635,16 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
+    // Returns TypeCompareState::Must if cls is known to be an enum.
+    // For enums with known exact type returns the underlying
+    // type in underlyingType when the provided pointer is
+    // non-NULL.
+    // Returns TypeCompareState::May when a runtime check is required.
+    virtual TypeCompareState isEnum(
+            CORINFO_CLASS_HANDLE        cls,
+            CORINFO_CLASS_HANDLE*       underlyingType
+            ) = 0;
+
     // Given a class handle, returns the Parent type.
     // For COMObjectType, it returns Class Handle of System.Object.
     // Returns 0 if System.Object is passed in.
@@ -2727,6 +2739,8 @@ public:
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
+
+    virtual int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) = 0;
 
     /*********************************************************************************/
     //
@@ -2845,7 +2859,7 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of 
+    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(
@@ -3195,15 +3209,13 @@ public:
 
     //------------------------------------------------------------------------------
     // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
-    //    field represents a statically initialized readonly field of any type, it might be:
-    //    * integer/floating point primitive
-    //    * null
-    //    * frozen object reference (string, array or object)
+    //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
-    //    field      - field handle
-    //    buffer     - buffer field's value will be stored to
-    //    bufferSize - size of buffer
+    //    field                - field handle
+    //    buffer               - buffer field's value will be stored to
+    //    bufferSize           - size of buffer
+    //    ignoreMovableObjects - ignore movable reference types or not
     //
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
@@ -3211,7 +3223,8 @@ public:
     virtual bool getReadonlyStaticFieldValue(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
-                    int                     bufferSize
+                    int                     bufferSize,
+                    bool                    ignoreMovableObjects = true
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

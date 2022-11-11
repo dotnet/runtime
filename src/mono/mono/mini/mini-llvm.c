@@ -8775,18 +8775,6 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
-		case OP_SSE_ANDN: {
-			LLVMValueRef minus_one [2];
-			minus_one [0] = const_int64 (-1);
-			minus_one [1] = const_int64 (-1);
-			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
-			LLVMValueRef vec_xor = LLVMBuildXor (builder, vec_lhs_i64, LLVMConstVector (minus_one, 2), "");
-			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
-			LLVMValueRef vec_and = LLVMBuildAnd (builder, vec_rhs_i64, vec_xor, "");
-			values [ins->dreg] = LLVMBuildBitCast (builder, vec_and, type_to_sse_type (ins->inst_c1), "");
-			break;
-		}
-
 		case OP_SSE_ADDSS:
 		case OP_SSE_SUBSS:
 		case OP_SSE_DIVSS:
@@ -9289,18 +9277,6 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
-		case OP_VECTOR_IABS: {
-			// %sub = sub <16 x i8> zeroinitializer, %arg
-			// %cmp = icmp sgt <16 x i8> %arg, zeroinitializer
-			// %abs = select <16 x i1> %cmp, <16 x i8> %arg, <16 x i8> %sub
-			LLVMTypeRef typ = type_to_sse_type (ins->inst_c1);
-			LLVMValueRef sub = LLVMBuildSub(builder, LLVMConstNull(typ), lhs, "");
-			LLVMValueRef cmp = LLVMBuildICmp(builder, LLVMIntSGT, lhs, LLVMConstNull(typ), "");
-			LLVMValueRef abs = LLVMBuildSelect (builder, cmp, lhs, sub, "");
-			values [ins->dreg] = convert (ctx, abs, typ);
-			break;
-		}
-
 		case OP_SSSE3_ALIGNR: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMValueRef zero = LLVMConstNull (v128_i1_t);
@@ -9605,6 +9581,32 @@ MONO_RESTORE_WARNING
 		}
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_VECTOR_ANDN: {
+			LLVMValueRef minus_one [2];
+			minus_one [0] = const_int64 (-1);
+			minus_one [1] = const_int64 (-1);
+			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
+			LLVMValueRef vec_xor = LLVMBuildXor (builder, vec_lhs_i64, LLVMConstVector (minus_one, 2), "");
+			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
+			LLVMValueRef vec_and = LLVMBuildAnd (builder, vec_rhs_i64, vec_xor, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, vec_and, type_to_sse_type (ins->inst_c1), "");
+			break;
+		}
+
+		case OP_VECTOR_IABS: {
+			// %sub = sub <16 x i8> zeroinitializer, %arg
+			// %cmp = icmp sgt <16 x i8> %arg, zeroinitializer
+			// %abs = select <16 x i1> %cmp, <16 x i8> %arg, <16 x i8> %sub
+			LLVMTypeRef typ = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef sub = LLVMBuildSub(builder, LLVMConstNull(typ), lhs, "");
+			LLVMValueRef cmp = LLVMBuildICmp(builder, LLVMIntSGT, lhs, LLVMConstNull(typ), "");
+			LLVMValueRef abs = LLVMBuildSelect (builder, cmp, lhs, sub, "");
+			values [ins->dreg] = convert (ctx, abs, typ);
+			break;
+		}
+#endif
+
 		case OP_XCOMPARE_FP: {
 			LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
 			LLVMValueRef cmp = LLVMBuildFCmp (builder, pred, lhs, rhs, "");
@@ -9691,7 +9693,7 @@ MONO_RESTORE_WARNING
 #endif /* defined(TARGET_X86) || defined(TARGET_AMD64) */
 
 // Shared between ARM64 and X86
-#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
 			IntrinsicId iid = ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
@@ -9854,7 +9856,46 @@ MONO_RESTORE_WARNING
 #endif
 
 #if defined(TARGET_ARM64)
+		case OP_XEQUAL_ARM64_V128_FAST: {
+			LLVMTypeRef t, elemt;
+			LLVMValueRef cmp, first_elem, min_pair, result;
+			int nelems;
 
+			LLVMTypeRef srcelemt = LLVMGetElementType (LLVMTypeOf (lhs));
+
+			//%c = icmp sgt <16 x i8> %a0, %a1
+			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ())
+				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
+			else
+				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
+			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
+
+			if (srcelemt == LLVMDoubleType ())
+				elemt = LLVMInt64Type ();
+			else if (srcelemt == LLVMFloatType ())
+				elemt = LLVMInt32Type ();
+			else
+				elemt = srcelemt;
+
+			t = LLVMVectorType (elemt, nelems);
+			cmp = LLVMBuildSExt (builder, cmp, t, "");
+			// cmp is a <nelems x elemt> vector, each element is either 0xff... or 0
+			cmp = convert (ctx, cmp, LLVMVectorType (LLVMInt32Type (), 4));
+			// MinPair
+			LLVMTypeRef arg_t = LLVMTypeOf (cmp);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
+			LLVMValueRef args [] = { cmp, cmp };
+			min_pair = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UMINP, ovr_tag, args, "");
+			// Get the lower 64 bits
+			min_pair = convert (ctx, min_pair, LLVMVectorType (LLVMInt64Type (), 2));
+			first_elem = LLVMBuildExtractElement (builder, min_pair, const_int32 (0), "");
+
+			// convert to 0/1
+			result = LLVMBuildICmp (builder, LLVMIntEQ, first_elem, LLVMConstAllOnes (LLVMInt64Type ()), "");
+			
+			values [ins->dreg] = LLVMBuildZExt (builder, result, LLVMInt8Type (), "");
+			break;
+		}
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)ins->inst_c0;
@@ -10039,58 +10080,6 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildFPTrunc (builder, result, v64_r4_t, "");
 			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_UCVTF:
-		case OP_ARM64_SCVTF:
-		case OP_ARM64_UCVTF_SCALAR:
-		case OP_ARM64_SCVTF_SCALAR: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean scalar = FALSE;
-			gboolean is_unsigned = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_UCVTF_SCALAR: scalar = TRUE; case OP_ARM64_UCVTF: is_unsigned = TRUE; break;
-			case OP_ARM64_SCVTF_SCALAR: scalar = TRUE; break;
-			}
-			LLVMValueRef result = lhs;
-			LLVMTypeRef cvt_t = ret_t;
-			if (scalar) {
-				result = scalar_from_vector (ctx, result);
-				cvt_t = LLVMGetElementType (ret_t);
-			}
-			if (is_unsigned)
-				result = LLVMBuildUIToFP (builder, result, cvt_t, "arm64_ucvtf");
-			else
-				result = LLVMBuildSIToFP (builder, result, cvt_t, "arm64_scvtf");
-			if (scalar)
-				result = vector_from_scalar (ctx, ret_t, result);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_FCVTZS:
-		case OP_ARM64_FCVTZS_SCALAR:
-		case OP_ARM64_FCVTZU:
-		case OP_ARM64_FCVTZU_SCALAR: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean scalar = FALSE;
-			gboolean is_unsigned = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_FCVTZU_SCALAR: scalar = TRUE; case OP_ARM64_FCVTZU: is_unsigned = TRUE; break;
-			case OP_ARM64_FCVTZS_SCALAR: scalar = TRUE; break;
-			}
-			LLVMValueRef result = lhs;
-			LLVMTypeRef cvt_t = ret_t;
-			if (scalar) {
-				result = scalar_from_vector (ctx, result);
-				cvt_t = LLVMGetElementType (ret_t);
-			}
-			if (is_unsigned)
-				result = LLVMBuildFPToUI (builder, result, cvt_t, "arm64_fcvtzu");
-			else
-				result = LLVMBuildFPToSI (builder, result, cvt_t, "arm64_fcvtzs");
-			if (scalar)
-				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -11326,6 +11315,58 @@ MONO_RESTORE_WARNING
 			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
 			result = LLVMBuildNot (builder, result, "");
 			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_CVT_UI_FP:
+		case OP_CVT_SI_FP:
+		case OP_CVT_UI_FP_SCALAR:
+		case OP_CVT_SI_FP_SCALAR: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean scalar = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_CVT_UI_FP_SCALAR: scalar = TRUE; case OP_CVT_UI_FP: is_unsigned = TRUE; break;
+			case OP_CVT_SI_FP_SCALAR: scalar = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			LLVMTypeRef cvt_t = ret_t;
+			if (scalar) {
+				result = scalar_from_vector (ctx, result);
+				cvt_t = LLVMGetElementType (ret_t);
+			}
+			if (is_unsigned)
+				result = LLVMBuildUIToFP (builder, result, cvt_t, "ui2fp");
+			else
+				result = LLVMBuildSIToFP (builder, result, cvt_t, "si2fp");
+			if (scalar)
+				result = vector_from_scalar (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_CVT_FP_SI:
+		case OP_CVT_FP_SI_SCALAR:
+		case OP_CVT_FP_UI:
+		case OP_CVT_FP_UI_SCALAR: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean scalar = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_CVT_FP_UI_SCALAR: scalar = TRUE; case OP_CVT_FP_UI: is_unsigned = TRUE; break;
+			case OP_CVT_FP_SI_SCALAR: scalar = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			LLVMTypeRef cvt_t = ret_t;
+			if (scalar) {
+				result = scalar_from_vector (ctx, result);
+				cvt_t = LLVMGetElementType (ret_t);
+			}
+			if (is_unsigned)
+				result = LLVMBuildFPToUI (builder, result, cvt_t, "fp2ui");
+			else
+				result = LLVMBuildFPToSI (builder, result, cvt_t, "fp2si");
+			if (scalar)
+				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}

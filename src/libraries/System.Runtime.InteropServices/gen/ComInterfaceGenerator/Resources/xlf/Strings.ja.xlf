@@ -39,22 +39,22 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">メソッド '{0}' は、'partial' とマークされていない型 '{1}' に含まれています。P/Invoke ソース生成はメソッド '{0}' を無視します。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
-        <target state="new">Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</target>
+        <target state="translated">'LibraryImportAttribute' でマークされたメソッドは、'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、非 'static'、非 'partial'、ジェネリックであるメソッドは無視されます。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">'LibraryImportAttribute' でマークされている場合、メソッド '{0}'は 'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、メソッド '{0}' は無視されます。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
-        <target state="new">Invalid 'LibraryImportAttribute' usage</target>
+        <target state="translated">'LibraryImportAttribute' の使用状況が無効です</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">

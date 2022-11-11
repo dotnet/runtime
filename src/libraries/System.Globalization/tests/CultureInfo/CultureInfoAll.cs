@@ -822,5 +822,15 @@ namespace System.Globalization.Tests
             e = AssertExtensions.Throws<CultureNotFoundException>("culture", () => new CultureInfo(0x1000));
             Assert.Equal(0x1000, e.InvalidCultureId);
         }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)] // for these platforms cultures are taken from icu filters 
+        [InlineData("nb-NO")]
+        public void ContainsCulture(string culture)
+        {
+			var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+            var containsCulture = cultures.Any(x=>x.Name == culture);
+            Assert.True(containsCulture);
+        }
     }
 }

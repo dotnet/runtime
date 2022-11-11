@@ -24,11 +24,9 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
-- name: TeamName
-  value: dotnet-core-acquisition
-- name: PostBuildSign
-  value: true
+- template: /eng/pipelines/common/internal-variables.yml
+  parameters:
+    teamName: dotnet-core-acquisition
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

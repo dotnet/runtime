@@ -215,7 +215,7 @@ public:
         , m_IsFromValueClass(false)
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
-        , m_HasProfile(false)
+        , m_HasProfileWeights(false)
     {
         // Empty
     }
@@ -265,7 +265,7 @@ protected:
     bool     m_IsFromValueClass : 1;
     bool     m_NonGenericCallsGeneric : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
-    bool     m_HasProfile : 1;
+    bool     m_HasProfileWeights : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It
@@ -360,7 +360,7 @@ protected:
     unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
-    bool        m_HasProfile;
+    bool        m_HasProfileWeights;
     bool        m_IsClassCtor;
     bool        m_IsSameThis;
     bool        m_CallerHasNewArray;

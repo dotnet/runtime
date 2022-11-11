@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.None;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.None;
 
         /// <summary>
         /// Create a converter for the provided <see cref="Type"/>.

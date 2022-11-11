@@ -47,3 +47,34 @@ jobs:
       #   extraStepsParameters:
       #     creator: dotnet-bot
       #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Android devices
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_arm
+    - Android_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)

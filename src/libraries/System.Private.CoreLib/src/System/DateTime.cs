@@ -273,7 +273,7 @@ namespace System
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
                 _dateData = ticks | ((ulong)kind << KindShift);
@@ -291,7 +291,7 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second)
         {
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             }
@@ -307,7 +307,7 @@ namespace System
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 _dateData = ticks | ((ulong)kind << KindShift);
@@ -327,7 +327,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, 0).UTicks;
             }
@@ -500,7 +500,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
             }
@@ -777,7 +777,7 @@ namespace System
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 ticks += (uint)millisecond * (uint)TicksPerMillisecond;
@@ -1257,12 +1257,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return FromFileTimeLeapSecondsAware((ulong)fileTime);
             }
-#pragma warning restore 162
 
             // This is the ticks in Universal time for this fileTime.
             ulong universalTicks = (ulong)fileTime + FileTimeOffset;
@@ -1696,12 +1694,10 @@ namespace System
             // Treats the input as universal if it is not specified
             long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().Ticks : Ticks;
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return (long)ToFileTimeLeapSecondsAware(ticks);
             }
-#pragma warning restore 162
 
             ticks -= FileTimeOffset;
             if (ticks < 0)
@@ -1967,7 +1963,7 @@ namespace System
             {
                 ticks += TimeToTicks(hour, minute, second) + (uint)millisecond * (uint)TicksPerMillisecond;
             }
-            else if (second == 60 && s_systemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
+            else if (second == 60 && SystemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
             {
                 // if we have leap second (second = 60) then we'll need to check if it is valid time.
                 // if it is valid, then we adjust the second to 59 so DateTime will consider this second is last second

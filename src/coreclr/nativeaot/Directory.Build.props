@@ -59,6 +59,13 @@
     <FeatureComWrappers>false</FeatureComWrappers>
     <FeatureComWrappers Condition="'$(TargetsWindows)' == 'true'">true</FeatureComWrappers>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeatureObjCMarshal>false</FeatureObjCMarshal>
+    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true'">true</FeatureObjCMarshal>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">

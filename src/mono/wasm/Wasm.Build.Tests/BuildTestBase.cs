@@ -463,7 +463,7 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "")
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
         {
             InitPaths(id);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -483,7 +483,10 @@ namespace Wasm.Build.Tests
                     .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
                     .EnsureSuccessful();
 
-            return Path.Combine(_projectDir!, $"{id}.csproj");
+            string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
+            if (runAnalyzers)
+                AddItemsPropertiesToProject("<RunAnalyzers>true</RunAnalyzers>");
+            return projectfile;
         }
 
         public string CreateBlazorWasmTemplateProject(string id)

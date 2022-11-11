@@ -197,29 +197,6 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
     return CreateGlobalHandleCommon(object, HNDTYPE_REFCOUNTED);
 }
 
-// Special handle creation convenience functions
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-
-struct NativeComWeakHandleInfo
-{
-    IWeakReference *WeakReference;
-    INT64 WrapperId;
-};
-
-inline OBJECTHANDLE CreateNativeComWeakHandle(IGCHandleStore* store, OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
-{
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_NATIVE_COM, (void*)pComWeakHandleInfo);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
-}
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
 // Creates a variable-strength handle
 inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
 {
@@ -367,35 +344,6 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
     DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-inline void DestroyNativeComWeakHandle(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    // Delete the COM info and release the weak reference if we have one. We're assuming that
-    // this will not reenter the runtime, since if we are pointing at a managed object, we should
-    // not be using HNDTYPE_WEAK_NATIVE_COM but rather HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
-    void* pExtraInfo = GCHandleUtilities::GetGCHandleManager()->GetExtraInfoFromHandle(handle);
-    NativeComWeakHandleInfo* comWeakHandleInfo = reinterpret_cast<NativeComWeakHandleInfo*>(pExtraInfo);
-    if (comWeakHandleInfo != nullptr)
-    {
-        _ASSERTE(comWeakHandleInfo->WeakReference != nullptr);
-        comWeakHandleInfo->WeakReference->Release();
-        delete comWeakHandleInfo;
-    }
-
-    DiagHandleDestroyed(handle);
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_NATIVE_COM);
-}
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
 // Handle holders/wrappers
 

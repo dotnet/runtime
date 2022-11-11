@@ -345,7 +345,6 @@ internal sealed class JObjectValueCreator
                                                     initialPos,
                                                     className,
                                                     typeId,
-                                                    numValues,
                                                     isEnum,
                                                     includeStatic,
                                                     token);

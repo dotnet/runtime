@@ -2059,13 +2059,6 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genSetScopeInfo();
 
-#if defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
-    if (compiler->verbose)
-    {
-        varLiveKeeper->dumpLvaVariableLiveRanges();
-    }
-#endif // defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
-
 #ifdef LATE_DISASM
     unsigned finalHotCodeSize;
     unsigned finalColdCodeSize;
@@ -6959,8 +6952,11 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 end++;
             }
 
-            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
-            liveRangeIndex++;
+            if (start < end)
+            {
+                genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+                liveRangeIndex++;
+            }
         };
 
         siVarLoc*      curLoc   = nullptr;

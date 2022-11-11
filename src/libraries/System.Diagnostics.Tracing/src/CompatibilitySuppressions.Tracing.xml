@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Diagnostics.Tracing.DiagnosticCounter:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>ref/net7.0/System.Diagnostics.Tracing.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.Tracing.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Diagnostics.Tracing.EventCounter:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>ref/net7.0/System.Diagnostics.Tracing.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.Tracing.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Diagnostics.Tracing.IncrementingEventCounter:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>ref/net7.0/System.Diagnostics.Tracing.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.Tracing.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Diagnostics.Tracing.IncrementingPollingCounter:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>ref/net7.0/System.Diagnostics.Tracing.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.Tracing.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Diagnostics.Tracing.PollingCounter:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>ref/net7.0/System.Diagnostics.Tracing.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.Tracing.dll</Right>
+  </Suppression>
+</Suppressions>

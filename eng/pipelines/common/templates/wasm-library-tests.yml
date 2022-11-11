@@ -49,11 +49,17 @@ jobs:
             ne(dependencies.evaluate_paths.outputs.SetPathVars_any_other_than_wasm_wbt_dbg.containsChange, true))
       - name: _wasmRunSmokeTestsOnlyArg
         value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
+      - name: chromeInstallArg
+        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+          value: /p:InstallChromeForTests=true
+        ${{ else }}:
+          value: ''
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):

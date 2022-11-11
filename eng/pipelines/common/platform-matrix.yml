@@ -271,7 +271,7 @@ jobs:
       platform: Centos7_Linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: centos-7-source-build-20210714125450-5d87b80
+        image: centos-7-source-build
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

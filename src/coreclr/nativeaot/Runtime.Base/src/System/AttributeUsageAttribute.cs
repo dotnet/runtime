@@ -16,6 +16,7 @@ namespace System
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class AttributeUsageAttribute : Attribute
     {
+#pragma warning disable IDE0060
         //Constructors
         public AttributeUsageAttribute(AttributeTargets validOn)
         {
@@ -24,6 +25,7 @@ namespace System
         public AttributeUsageAttribute(AttributeTargets validOn, bool allowMultiple, bool inherited)
         {
         }
+#pragma warning restore IDE0060
 
         //Properties.
         // Allowing the set properties as it allows a more readable syntax in the specifiers (and are commonly used)

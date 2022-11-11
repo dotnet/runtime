@@ -2217,6 +2217,27 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void CreateActivityWithNullOperationName()
+        {
+            Activity a = new Activity(operationName: null);
+            Assert.Equal(string.Empty, a.OperationName);
+
+            using ActivitySource aSource = new ActivitySource("NullOperationName");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => activitySource == aSource;
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity a1 = aSource.StartActivity(null, ActivityKind.Client);
+            Assert.NotNull(a1);
+            Assert.Equal(string.Empty, a1.OperationName);
+
+            using Activity a2 = aSource.CreateActivity(null, ActivityKind.Client);
+            Assert.NotNull(a2);
+            Assert.Equal(string.Empty, a2.OperationName);
+        }
+
+        [Fact]
         public void EnumerateEventTagsTest()
         {
             ActivityEvent e = new("testEvent");

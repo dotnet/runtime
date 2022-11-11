@@ -3,13 +3,10 @@
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
     <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
-
-  <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
-    <Warning Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' != 'true'" Text="This sample requires perftracing or threading" />
-  </Target>
 
   <PropertyGroup>
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>

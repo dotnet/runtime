@@ -2202,13 +2202,20 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                osThreadId = (SIZE_T)-1;
                             }
-                            syncBlock->InitState(recursionLevel + 1, pThread);
+                            else
+                            {
+                                osThreadId = pThread->GetOSThreadId64();
+                            }
+
+                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2237,8 +2244,8 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
                 LEAVE_SPIN_LOCK(this);
             }
-            // SyncBlockCache::LockHolder goes out of scope here
         }
+        // SyncBlockCache::LockHolder goes out of scope here
     }
 
     RETURN syncBlock;
@@ -2372,6 +2379,7 @@ void AwareLock::Enter()
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2434,6 +2442,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2541,21 +2550,31 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     // the object associated with this lock.
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
-    BOOLEAN IsContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
-    LARGE_INTEGER startTicks = { {0} };
-
-    if (IsContentionKeywordEnabled)
-    {
-        QueryPerformanceCounter(&startTicks);
-
-        // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId());
-    }
-
     LogContention();
     Thread::IncrementMonitorLockContentionCount(pCurThread);
 
     OBJECTREF obj = GetOwningObject();
+
+    LARGE_INTEGER startTicks = { {0} };
+    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+
+    if (isContentionKeywordEnabled)
+    {
+        QueryPerformanceCounter(&startTicks);
+
+        if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
+        {
+            FireEtwLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
+        }
+
+        // Fire a contention start event for a managed contention
+        FireEtwContentionStart_V2(
+            ETW::ContentionLog::ContentionStructs::ManagedContention,
+            GetClrInstanceId(),
+            this,
+            OBJECTREFToObject(obj),
+            m_HoldingOSThreadId);
+    }
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
     IncrementTransientPrecious();
@@ -2684,7 +2703,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     GCPROTECT_END();
     DecrementTransientPrecious();
 
-    if (IsContentionKeywordEnabled)
+    if (isContentionKeywordEnabled)
     {
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
@@ -2702,6 +2721,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     }
 
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2764,7 +2784,6 @@ BOOL AwareLock::OwnedByCurrentThread()
     WRAPPER_NO_CONTRACT;
     return (GetThread() == m_HoldingThread);
 }
-
 
 // ***************************************************************************
 //

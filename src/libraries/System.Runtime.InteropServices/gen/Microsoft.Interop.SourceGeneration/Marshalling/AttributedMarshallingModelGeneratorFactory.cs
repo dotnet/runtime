@@ -384,7 +384,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
 
@@ -393,7 +393,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.BidirectionalMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.BidirectionalMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
 
@@ -403,7 +403,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = SR.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
         }
