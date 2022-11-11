@@ -5,6 +5,11 @@
     <TestRuntime>true</TestRuntime>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- This test project builds against implementation assemblies while the src
+    projects build against ref assemblies, so sometimes AssemblyVersions may
+    mismatch. Generating Binding redirects automatically will guarantee that for
+    these cases, the loader is still able to run the tests succesfully. -->
+    <AutoGenerateBindingRedirects Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
