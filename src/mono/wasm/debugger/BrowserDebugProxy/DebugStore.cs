@@ -1186,8 +1186,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
             this.BreakableLines = new List<int>();
 
-            var urlWithSpecialCharCodedHex = EscapeAscii(url);
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
+            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
                 this.Url = this.SourceUri.ToString();
@@ -1196,33 +1195,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 this.Url = DotNetUrl;
             }
-        }
-
-        private static string EscapeAscii(string path)
-        {
-            var builder = new StringBuilder();
-            foreach (char c in path)
-            {
-                switch (c)
-                {
-                    case var _ when c >= 'a' && c <= 'z':
-                    case var _ when c >= 'A' && c <= 'Z':
-                    case var _ when char.IsDigit(c):
-                    case var _ when c > 255:
-                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~':
-                        builder.Append(c);
-                        break;
-                    case var _ when c == Path.DirectorySeparatorChar:
-                    case var _ when c == Path.AltDirectorySeparatorChar:
-                    case var _ when c == '\\':
-                        builder.Append(c);
-                        break;
-                    default:
-                        builder.AppendFormat("%{0:X2}", (int)c);
-                        break;
-                }
-            }
-            return builder.ToString();
         }
 
         internal void AddMethod(MethodInfo mi)

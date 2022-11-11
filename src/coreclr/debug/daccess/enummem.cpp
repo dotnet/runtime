@@ -702,18 +702,18 @@ HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
         SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
-    AppDomainIterator adIter(FALSE);
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
+    if (appDomain == NULL)
+        return S_OK;
+
     EX_TRY
     {
-        while (adIter.Next())
-        {
-            CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
-            (
-                // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
-                // you from pulling entire files loaded into memory into the dump.
-                adIter.GetDomain()->EnumMemoryRegions(flags, true);
-            );
-        }
+        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
+        (
+            // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
+            // you from pulling entire files loaded into memory into the dump.
+            appDomain->EnumMemoryRegions(flags, true);
+        );
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
