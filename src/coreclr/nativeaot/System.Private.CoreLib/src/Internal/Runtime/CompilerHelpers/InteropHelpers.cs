@@ -22,7 +22,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// <summary>
     /// These methods are used to throw exceptions from generated code.
     /// </summary>
-    internal static partial class InteropHelpers
+    internal static class InteropHelpers
     {
         internal static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
         {
