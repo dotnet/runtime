@@ -1276,7 +1276,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             return nullptr;
                         }
 
-                        op2 = gtNewVconNode(simdType);
+                        op2                          = gtNewVconNode(simdType);
                         op2->AsVecCon()->gtSimd32Val = simd32Val;
 
                         op1 = impSIMDPopStack(simdType);

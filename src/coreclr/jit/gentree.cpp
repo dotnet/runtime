@@ -20287,7 +20287,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd32Val = vecCon1->gtSimd32Val;
+                vecCon2->gtSimd32Val   = vecCon1->gtSimd32Val;
 
                 // op1 = op1 - constVector
                 op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, vecCon1, opJitType, simdSize, isSimdAsHWIntrinsic);
@@ -20536,7 +20536,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd32Val = vecCon1->gtSimd32Val;
+                vecCon2->gtSimd32Val   = vecCon1->gtSimd32Val;
 
                 // op1 = op1 - constVector
                 op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, vecCon1, opJitType, simdSize, isSimdAsHWIntrinsic);
@@ -21159,14 +21159,14 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(
     if (op1->IsIntegralConst() || op1->IsCnsFltOrDbl())
     {
         GenTreeVecCon* vecCon = gtNewVconNode(type);
-        vecCon->gtSimd32Val = {};
+        vecCon->gtSimd32Val   = {};
 
         switch (simdBaseType)
         {
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                uint8_t cnsVal = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
+                uint8_t cnsVal            = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
                 vecCon->gtSimd32Val.u8[0] = cnsVal;
                 break;
             }
@@ -21174,7 +21174,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                uint16_t cnsVal = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
+                uint16_t cnsVal            = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
                 vecCon->gtSimd32Val.u16[0] = cnsVal;
                 break;
             }
@@ -21182,7 +21182,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(
             case TYP_INT:
             case TYP_UINT:
             {
-                uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
+                uint32_t cnsVal            = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
                 vecCon->gtSimd32Val.u32[0] = cnsVal;
                 break;
             }
@@ -21190,21 +21190,21 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
-                uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t cnsVal            = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
                 vecCon->gtSimd32Val.u64[0] = cnsVal;
                 break;
             }
 
             case TYP_FLOAT:
             {
-                float cnsVal = static_cast<float>(op1->AsDblCon()->DconValue());
+                float cnsVal               = static_cast<float>(op1->AsDblCon()->DconValue());
                 vecCon->gtSimd32Val.f32[0] = cnsVal;
                 break;
             }
 
             case TYP_DOUBLE:
             {
-                double cnsVal = static_cast<double>(op1->AsDblCon()->DconValue());
+                double cnsVal              = static_cast<double>(op1->AsDblCon()->DconValue());
                 vecCon->gtSimd32Val.f64[0] = cnsVal;
                 break;
             }
@@ -21630,10 +21630,10 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd32Val = vecCon1->gtSimd32Val;
+                vecCon2->gtSimd32Val   = vecCon1->gtSimd32Val;
 
                 GenTreeVecCon* vecCon3 = gtNewVconNode(type);
-                vecCon3->gtSimd32Val = vecCon2->gtSimd32Val;
+                vecCon3->gtSimd32Val   = vecCon2->gtSimd32Val;
 
                 // op1 = op1 - constVector
                 // -or-
@@ -21977,7 +21977,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd32Val = vecCon1->gtSimd32Val;
+                vecCon2->gtSimd32Val   = vecCon1->gtSimd32Val;
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
@@ -22021,7 +22021,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd32Val = vecCon1->gtSimd32Val;
+                vecCon2->gtSimd32Val   = vecCon1->gtSimd32Val;
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
@@ -22135,7 +22135,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 }
 
                 GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                vecCon2->gtSimd16Val = vecCon1->gtSimd16Val;
+                vecCon2->gtSimd16Val   = vecCon1->gtSimd16Val;
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
@@ -22178,7 +22178,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                     }
 
                     GenTreeVecCon* vecCon2 = gtNewVconNode(type);
-                    vecCon2->gtSimd16Val = vecCon1->gtSimd16Val;
+                    vecCon2->gtSimd16Val   = vecCon1->gtSimd16Val;
 
                     tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
                                                     isSimdAsHWIntrinsic);
