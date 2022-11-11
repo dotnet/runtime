@@ -75,7 +75,7 @@ GC_Initialize(
 
 #ifdef BUILD_AS_STANDALONE
     assert(clrToGC != nullptr);
-    g_theGCToCLR = clrToGC;
+    g_theGCToCLR = (IGCToCLR2*)clrToGC;
 #else
     UNREFERENCED_PARAMETER(clrToGC);
     assert(clrToGC == nullptr);
