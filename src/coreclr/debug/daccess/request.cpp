@@ -2214,13 +2214,14 @@ HRESULT ClrDataAccess::GetAppDomainList(unsigned int count, CLRDATA_ADDRESS valu
 {
     SOSDacEnter();
 
-    AppDomainIterator ai(FALSE);
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
     unsigned int i = 0;
-    while (ai.Next() && (i < count))
+    if (appDomain != NULL && i < count)
     {
         if (values)
-            values[i] = HOST_CDADDR(ai.GetDomain());
-        i++;
+            values[0] = HOST_CDADDR(appDomain);
+
+        i = 1;
     }
 
     if (fetched)
@@ -2240,8 +2241,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 
     // Get an accurate count of appdomains.
     adsData->DomainCount = 0;
-    AppDomainIterator ai(FALSE);
-    while (ai.Next())
+    if (AppDomain::GetCurrentDomain() != NULL)
         adsData->DomainCount++;
 
     SOSDacLeave();

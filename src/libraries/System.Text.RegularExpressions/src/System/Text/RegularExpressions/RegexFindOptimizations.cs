@@ -194,12 +194,12 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>true iff <see cref="TryFindNextStartingPosition"/> might advance the position.</summary>
+        /// <summary>true iff <see cref="TryFindNextStartingPositionLeftToRight"/> might advance the position.</summary>
         public bool IsUseful =>
             FindMode != FindNextStartingPositionMode.NoSearch || // there's a searching scheme available
             LeadingAnchor == RegexNodeKind.Bol; // there's a leading BOL anchor we can otherwise search for
 
-        /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPosition"/> operation</summary>
+        /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPositionLeftToRight"/> or <see cref="TryFindNextStartingPositionRightToLeft"/> operation</summary>
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;
 
         /// <summary>Gets the leading anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
@@ -313,96 +313,21 @@ namespace System.Text.RegularExpressions
         /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
         /// <param name="start">The index in <paramref name="textSpan"/> to consider the start for start anchor purposes.</param>
         /// <returns>true if a position to attempt a match was found; false if none was found.</returns>
-        public bool TryFindNextStartingPosition(ReadOnlySpan<char> textSpan, ref int pos, int start)
+        public bool TryFindNextStartingPositionRightToLeft(ReadOnlySpan<char> textSpan, ref int pos, int start)
         {
             // Return early if we know there's not enough input left to match.
-            if (!_rightToLeft)
+            if (pos < MinRequiredLength)
             {
-                if (pos > textSpan.Length - MinRequiredLength)
-                {
-                    pos = textSpan.Length;
-                    return false;
-                }
-            }
-            else
-            {
-                if (pos < MinRequiredLength)
-                {
-                    pos = 0;
-                    return false;
-                }
+                pos = 0;
+                return false;
             }
 
-            // Optimize the handling of a Beginning-Of-Line (BOL) anchor (only for left-to-right).  BOL is special, in that unlike
-            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-            // to boost our position to the next line, and then continue normally with any searches.
-            if (LeadingAnchor == RegexNodeKind.Bol)
-            {
-                // If we're not currently positioned at the beginning of a line (either
-                // the beginning of the string or just after a line feed), find the next
-                // newline and position just after it.
-                Debug.Assert(!_rightToLeft);
-                int posm1 = pos - 1;
-                if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
-                {
-                    int newline = textSpan.Slice(pos).IndexOf('\n');
-                    if ((uint)newline > textSpan.Length - 1 - pos)
-                    {
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
-                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
-                    pos = newline + 1 + pos;
-                    if (pos > textSpan.Length - MinRequiredLength)
-                    {
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                }
-            }
+            Debug.Assert(LeadingAnchor != RegexNodeKind.Bol, "BOL isn't enabled for RTL");
 
             switch (FindMode)
             {
                 // There's an anchor.  For some, we can simply compare against the current position.
                 // For others, we can jump to the relevant location.
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                    if (pos != 0)
-                    {
-                        // If we're not currently at the beginning, we'll never be, so fail immediately.
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                    if (pos != start)
-                    {
-                        // If we're not currently at the start, we'll never be, so fail immediately.
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                    if (pos < textSpan.Length - 1)
-                    {
-                        // If we're not currently at the end (or a newline just before it), skip ahead
-                        // since nothing until then can possibly match.
-                        pos = textSpan.Length - 1;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                    if (pos < textSpan.Length)
-                    {
-                        // If we're not currently at the end (or a newline just before it), skip ahead
-                        // since nothing until then can possibly match.
-                        pos = textSpan.Length;
-                    }
-                    return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
                     if (pos != 0)
@@ -446,34 +371,7 @@ namespace System.Text.RegularExpressions
                     }
                     return true;
 
-                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
-                    if (pos < textSpan.Length - MinRequiredLength - 1)
-                    {
-                        pos = textSpan.Length - MinRequiredLength - 1;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
-                    if (pos < textSpan.Length - MinRequiredLength)
-                    {
-                        pos = textSpan.Length - MinRequiredLength;
-                    }
-                    return true;
-
                 // There's a case-sensitive prefix.  Search for it with ordinal IndexOf.
-
-                case FindNextStartingPositionMode.LeadingString_LeftToRight:
-                    {
-                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan());
-                        if (i >= 0)
-                        {
-                            pos += i;
-                            return true;
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
 
                 case FindNextStartingPositionMode.LeadingString_RightToLeft:
                     {
@@ -500,6 +398,148 @@ namespace System.Text.RegularExpressions
                         }
 
                         pos = 0;
+                        return false;
+                    }
+
+                // There's a set at the beginning of the pattern.  Search for it.
+
+                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
+                    {
+                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
+                        string set = FixedDistanceSets![0].Set;
+
+                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
+                        for (int i = span.Length - 1; i >= 0; i--)
+                        {
+                            if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
+                            {
+                                pos = i + 1;
+                                return true;
+                            }
+                        }
+
+                        pos = 0;
+                        return false;
+                    }
+
+                // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
+
+                default:
+                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch);
+                    return true;
+            }
+        }
+
+        /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
+        /// <param name="textSpan">The text to search.</param>
+        /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
+        /// <param name="start">The index in <paramref name="textSpan"/> to consider the start for start anchor purposes.</param>
+        /// <returns>true if a position to attempt a match was found; false if none was found.</returns>
+        public bool TryFindNextStartingPositionLeftToRight(ReadOnlySpan<char> textSpan, ref int pos, int start)
+        {
+            // Return early if we know there's not enough input left to match.
+            if (pos > textSpan.Length - MinRequiredLength)
+            {
+                pos = textSpan.Length;
+                return false;
+            }
+
+            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+            // to boost our position to the next line, and then continue normally with any searches.
+            if (LeadingAnchor == RegexNodeKind.Bol)
+            {
+                // If we're not currently positioned at the beginning of a line (either
+                // the beginning of the string or just after a line feed), find the next
+                // newline and position just after it.
+                int posm1 = pos - 1;
+                if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
+                {
+                    int newline = textSpan.Slice(pos).IndexOf('\n');
+                    if ((uint)newline > textSpan.Length - 1 - pos)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
+
+                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                    pos = newline + 1 + pos;
+                    if (pos > textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
+                }
+            }
+
+            switch (FindMode)
+            {
+                // There's an anchor.  For some, we can simply compare against the current position.
+                // For others, we can jump to the relevant location.
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                    // If we're not currently at the beginning, we'll never be, so fail immediately.
+                    if (pos == 0)
+                    {
+                        return true;
+                    }
+                    pos = textSpan.Length;
+                    return false;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                    // If we're not currently at the start, we'll never be, so fail immediately.
+                    if (pos == start)
+                    {
+                        return true;
+                    }
+                    pos = textSpan.Length;
+                    return false;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                    if (pos < textSpan.Length - 1)
+                    {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
+                        pos = textSpan.Length - 1;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                    if (pos < textSpan.Length)
+                    {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
+                        pos = textSpan.Length;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                    if (pos < textSpan.Length - MinRequiredLength - 1)
+                    {
+                        pos = textSpan.Length - MinRequiredLength - 1;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                    if (pos < textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length - MinRequiredLength;
+                    }
+                    return true;
+
+                // There's a case-sensitive prefix.  Search for it with ordinal IndexOf.
+
+                case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                    {
+                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan());
+                        if (i >= 0)
+                        {
+                            pos += i;
+                            return true;
+                        }
+
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -535,25 +575,6 @@ namespace System.Text.RegularExpressions
                         }
 
                         pos = textSpan.Length;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
                         return false;
                     }
 

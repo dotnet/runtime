@@ -46,6 +46,8 @@ int32_t SystemNative_SetWindowSize(WinSize* windowSize)
 #if HAVE_IOCTL && HAVE_TIOCSWINSZ
     return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
 #else
+    // Not supported on e.g. Android. Also, prevent a compiler error because windowSize is unused
+    (void)windowSize;
     errno = ENOTSUP;
     return -1;
 #endif
