@@ -38,7 +38,7 @@ namespace System.Web.Util
             }
 
             // Don't create string writer if we don't have nothing to encode
-            int pos = IndexOfHtmlAttributeEncodingChars(value, 0);
+            int pos = IndexOfHtmlAttributeEncodingChars(value);
             if (pos == -1)
             {
                 return value;
@@ -63,7 +63,7 @@ namespace System.Web.Util
 
         private static void HtmlAttributeEncodeInternal(string s, TextWriter output)
         {
-            int index = IndexOfHtmlAttributeEncodingChars(s, 0);
+            int index = IndexOfHtmlAttributeEncodingChars(s);
             if (index == -1)
             {
                 output.Write(s);
@@ -125,29 +125,8 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlEncode(value));
         }
 
-        private static int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
-        {
-            Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
-
-            ReadOnlySpan<char> span = s.AsSpan(startPos);
-            for (int i = 0; i < span.Length; i++)
-            {
-                char ch = span[i];
-                if (ch <= '<')
-                {
-                    switch (ch)
-                    {
-                        case '<':
-                        case '"':
-                        case '\'':
-                        case '&':
-                            return startPos + i;
-                    }
-                }
-            }
-
-            return -1;
-        }
+        private static int IndexOfHtmlAttributeEncodingChars(string s) =>
+            s.AsSpan().IndexOfAny("<\"'&");
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
