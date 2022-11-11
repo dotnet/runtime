@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
+using Common;
+
 namespace Regression.UnitTests
 {
     public unsafe class ImportTests

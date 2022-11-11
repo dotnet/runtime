@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Regression.UnitTests
+namespace Common
 {
     [Flags]
     internal enum CorOpenFlags

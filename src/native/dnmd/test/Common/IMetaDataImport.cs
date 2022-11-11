@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Regression.UnitTests
+namespace Common
 {
     [ComImport]
     [Guid("7DAC8207-D3AE-4c75-9B67-92801A497D44")]

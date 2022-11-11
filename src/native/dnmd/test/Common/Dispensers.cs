@@ -1,7 +1,7 @@
 ﻿
 using System.Runtime.InteropServices;
 
-namespace Regression.UnitTests
+namespace Common
 {
     internal static class Dispensers
     {
@@ -45,7 +45,7 @@ namespace Regression.UnitTests
                 : OperatingSystem.IsMacOS() ? "libdnmd_interfaces.dylib"
                 : "libdnmd_interfaces.so";
 
-            var current = Path.Combine(@"Debug", runtimeName);
+            var current = Path.Combine(@"", runtimeName);
 
             nint mod = NativeLibrary.Load(current);
             var getter = (delegate* unmanaged<in Guid, out IMetaDataDispenser, int>)NativeLibrary.GetExport(mod, "GetDispenser");
