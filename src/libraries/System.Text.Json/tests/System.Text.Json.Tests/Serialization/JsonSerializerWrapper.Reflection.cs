@@ -735,7 +735,7 @@ namespace System.Text.Json.Serialization.Tests
                     }
 
                     totalRead += read;
-                };
+                }
 
                 return totalRead;
             }
