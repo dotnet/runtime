@@ -1878,16 +1878,13 @@ void CodeGen::genGenerateMachineCode()
 
     genFinalizeFrame();
 
-    unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
-
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                ,
-                            maxTmpSize);
+                                );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -5400,14 +5397,6 @@ void CodeGen::genFinalizeFrame()
 
     compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
-    /* We want to make sure that the prolog size calculated here is accurate
-       (that is instructions will not shrink because of conservative stack
-       frame approximations).  We do this by filling in the correct size
-       here (where we have committed to the final numbers for the frame offsets)
-       This will ensure that the prolog size is always correct
-    */
-    GetEmitter()->emitMaxTmpSize = regSet.tmpGetTotalSize();
-
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
     {
@@ -6332,8 +6321,6 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
-
-    noway_assert(GetEmitter()->emitMaxTmpSize == regSet.tmpGetTotalSize());
 }
 #ifdef _PREFAST_
 #pragma warning(pop)

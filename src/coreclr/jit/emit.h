@@ -1939,8 +1939,6 @@ public:
     bool emitInInstrumentation;
 #endif // PSEUDORANDOM_NOP_INSERTION
 
-    unsigned emitMaxTmpSize;
-
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
 #endif
