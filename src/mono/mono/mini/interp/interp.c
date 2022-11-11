@@ -3542,48 +3542,52 @@ static long total_executed_opcodes;
  *  the C# methods in System.Math, but having interpreter opcodes for these operations
  *  improves performance for FP math a lot in some cases.
  */
-static float min_f (float lhs, float rhs) {
-	if (isnan(lhs))
+static float
+min_f (float lhs, float rhs) {
+	if (mono_isnan (lhs))
 		return lhs;
-	else if (isnan(rhs))
+	else if (mono_isnan (rhs))
 		return rhs;
 	else if (lhs == rhs)
-		return signbit(lhs) ? lhs : rhs;
+		return mono_signbit (lhs) ? lhs : rhs;
 	else
-		return fminf(lhs, rhs);
+		return fminf (lhs, rhs);
 }
 
-static float max_f (float lhs, float rhs) {
-	if (isnan(lhs))
+static float
+max_f (float lhs, float rhs) {
+	if (mono_isnan (lhs))
 		return lhs;
-	else if (isnan(rhs))
+	else if (mono_isnan (rhs))
 		return rhs;
 	else if (lhs == rhs)
-		return signbit(rhs) ? lhs : rhs;
+		return mono_signbit (rhs) ? lhs : rhs;
 	else
-		return fmaxf(lhs, rhs);
+		return fmaxf (lhs, rhs);
 }
 
-static double min_d (double lhs, double rhs) {
-	if (isnan(lhs))
+static double
+min_d (double lhs, double rhs) {
+	if (mono_isnan (lhs))
 		return lhs;
-	else if (isnan(rhs))
+	else if (mono_isnan (rhs))
 		return rhs;
 	else if (lhs == rhs)
-		return signbit(lhs) ? lhs : rhs;
+		return mono_signbit (lhs) ? lhs : rhs;
 	else
-		return fmin(lhs, rhs);
+		return fmin (lhs, rhs);
 }
 
-static double max_d (double lhs, double rhs) {
-	if (isnan(lhs))
+static double
+max_d (double lhs, double rhs) {
+	if (mono_isnan (lhs))
 		return lhs;
-	else if (isnan(rhs))
+	else if (mono_isnan (rhs))
 		return rhs;
 	else if (lhs == rhs)
-		return signbit(rhs) ? lhs : rhs;
+		return mono_signbit (rhs) ? lhs : rhs;
 	else
-		return fmax(lhs, rhs);
+		return fmax (lhs, rhs);
 }
 
 /*
