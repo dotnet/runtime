@@ -26,5 +26,6 @@
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="runtime" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 </Project>
