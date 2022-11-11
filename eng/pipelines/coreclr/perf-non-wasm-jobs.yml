@@ -34,7 +34,6 @@ jobs:
       # - windows_x86
       # - Linux_musl_x64
       jobParameters:
-        framework: net8.0
         testGroup: perf
 
   # build mono for AOT
