@@ -76,9 +76,11 @@
 
   <Target Name="GenerateWasiPropsAndRspFiles">
 
-    <!-- Generate emcc-props.json -->
+    <!-- Generate wasi-props.json -->
     <ItemGroup>
-      <_WasiLinkFlags Include="-Wl,--allow-undefined"/>
+      <!-- TODOWASI
+      <_WasiLinkFlags Include="-Wl, - - allow-undefined"/>
+      -->
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
@@ -98,6 +100,9 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
+      <_WasiLinkFlags Include="-lwasi-emulated-process-clocks"/>
+      <_WasiLinkFlags Include="-lwasi-emulated-signal"/>
+      <_WasiLinkFlags Include="-lwasi-emulated-mman"/>
     </ItemGroup>
 
     <PropertyGroup>
