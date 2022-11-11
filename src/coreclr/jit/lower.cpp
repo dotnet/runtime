@@ -3522,8 +3522,8 @@ void Lowering::LowerStoreLocOrIndirOfCast(GenTree* node)
     if (cast->gtSetFlags())
         return;
 
-    var_types    castToType   = cast->CastToType();
-    var_types    castFromType = cast->CastFromType();
+    var_types castToType   = cast->CastToType();
+    var_types castFromType = cast->CastFromType();
 
     if (!varTypeIsIntegral(castToType))
         return;
