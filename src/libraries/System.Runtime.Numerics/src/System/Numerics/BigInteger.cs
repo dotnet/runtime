@@ -3481,41 +3481,18 @@ namespace System.Numerics
 
             ulong result = 0;
 
-            if (value._sign >= 0)
+            // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
+            // so the sign of value does not matter and both cases can be handled in the same way
+
+            uint part = value._bits[0];
+
+            for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
             {
-                // When the value is positive, we simply need to do a tzcnt for all bits until we find one set
-
-                uint part = value._bits[0];
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    part = value._bits[i];
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
+                part = value._bits[i];
+                result += (sizeof(uint) * 8);
             }
-            else
-            {
-                // When the value is negative, we need to tzcnt the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                uint part = ~value._bits[0] + 1;
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    // Simply process bits, adding the carry while the previous value is zero
-
-                    part = ~value._bits[i] + 1;
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
-            }
+            result += uint.TrailingZeroCount(part);
 
             return result;
         }
