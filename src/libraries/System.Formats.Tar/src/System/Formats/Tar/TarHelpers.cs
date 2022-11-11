@@ -21,6 +21,20 @@ namespace System.Formats.Tar
         internal const int MaxBufferLength = 4096;
         internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
+        internal const UnixFileMode ValidUnixFileModes =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute |
+            UnixFileMode.StickyBit |
+            UnixFileMode.SetGroup |
+            UnixFileMode.SetUser;
+
         // Default mode for TarEntry created for a file-type.
         private const UnixFileMode DefaultFileMode =
             UnixFileMode.UserRead | UnixFileMode.UserWrite |
