@@ -169,25 +169,41 @@
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionWasiSdk"
           Condition="'$(ShouldProvisionWasiSdk)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasi\wasi-sdk-version.txt">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
     </ReadLinesFromFile>
 
     <PropertyGroup>
       <WASI_SDK_PATH>$(ProvisionWasiSdkDir)</WASI_SDK_PATH>
       <WasiLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasi'))</WasiLocalPath>
-      <WasiSdkLocalPath>wasi-sdk</WasiSdkLocalPath>
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
+      <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
+      <WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="rm -rf wasi-sdk-*/ wasi-sdk/ &amp;&amp; curl -L -o- https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz | tar -xvz &amp;&amp; mv wasi-sdk-$(WasiSdkVersion).*/ wasi-sdk/"
+    <Exec Command="rm -rf wasi-sdk-*/ wasi-sdk/ &amp;&amp; curl -L -o- $(WasiSdkUrl) | tar -xvz &amp;&amp; mv wasi-sdk-$(WasiSdkVersion).*/ wasi-sdk/ &amp;&amp; cp wasi-sdk-version.txt wasi-sdk/wasi-sdk-version.txt"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(WasiLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Error Text="TODOWASI ProvisionWasiSdk on windows is not implemented " Condition="'$(HostOS)' == 'windows'" />
 
+  </Target>
+
+  <Target Name="ValidateWasiSdk" Condition="'$(SkipMonoCrossJitConfigure)' != 'true'">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/wasi-sdk-version.txt">
+      <Output TaskParameter="Lines" ItemName="_ActualVersionLines" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk-version.txt">
+      <Output TaskParameter="Lines" ItemName="_ExpectedVersionLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <ActualWasiSdkVersion>%(_ActualVersionLines.Identity)</ActualWasiSdkVersion>
+      <ExpectedWasiSdkVersion>%(_ExpectedVersionLines.Identity)</ExpectedWasiSdkVersion>
+    </PropertyGroup>
+    <Error Text="Expected and actual version of WASI SDK is not matching. Please delete /src/mono/wasi/wasi-sdk/ folder to provision it new version" 
+      Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
   </Target>
 
   <!-- Copy Mono runtime bits to $(Destination) -->
@@ -854,7 +870,7 @@
   <PropertyGroup>
     <MonoDependsOnTargets>CheckEnv;GetXcodeDir;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
     <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">GenerateRuntimeVersionFile;ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
-    <MonoDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">GenerateRuntimeVersionFile;ProvisionWasiSdk;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">GenerateRuntimeVersionFile;ProvisionWasiSdk;ValidateWasiSdk;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
   <!-- General targets -->
