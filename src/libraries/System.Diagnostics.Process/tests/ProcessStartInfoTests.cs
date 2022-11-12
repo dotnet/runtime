@@ -466,10 +466,10 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            using Process p = CreateProcessLong();
+            using Process longRunning = CreateProcessLong();
             p.StartInfo.LoadUserProfile = true;
 
-            using var testAccountCleanup = CreateUserAndExecute(p);
+            using TestProcessState testAccountCleanup = CreateUserAndExecute(p);
 
             string username = testAccountCleanup.ProcessAccountName.Split('\\').Last();
             Assert.Equal(username, Helpers.GetProcessUserName(p));
@@ -1364,25 +1364,18 @@ namespace System.Diagnostics.Tests
             {
                 // Read file content using network credentials and output it for assertion comparison
                 Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable(UncPath)));
-                Console.Write(ItemSeparator);
-
                 try
                 {
                     // Read file content using current user - should fail, because impersonated user
                     // isn't explicitly authorized to access the file.
                     _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
-                    Console.Write('1');
+                    
+                    return -1;
                 }
-                catch (SecurityException)
+                catch (Exception ex) when (ex is SecurityException or UnauthorizedAccessException)
                 {
-                    Console.Write('0');
+                    return RemoteExecutor.SuccessExitCode;
                 }
-                catch (UnauthorizedAccessException)
-                {
-                    Console.Write('0');
-                }
-
-                return RemoteExecutor.SuccessExitCode;
             });
             p.StartInfo.Environment[LocalPath] = testFilePath;
             p.StartInfo.Environment[UncPath] = testFileUncPath;
@@ -1390,7 +1383,7 @@ namespace System.Diagnostics.Tests
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.UseCredentialsForNetworkingOnly = true;
 
-            Action<string, string> setup = (username, _) =>
+            void Setup()
             {
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
@@ -1506,38 +1499,24 @@ namespace System.Diagnostics.Tests
 
             public string ImpersonationAccountName => _processImpersonationAccount?.AccountName;
 
-            protected virtual void Dispose(bool disposing)
-            {
-                if (!_disposedValue)
-                {
-                    if (disposing)
-                    {
-                        if (_hasStarted)
-                        {
-                            _process.Kill();
-
-                            Assert.True(_process.WaitForExit(WaitInMS));
-                        }
-
-                        if (PlatformDetection.IsNotWindowsServerCore)
-                        {
-                            // remove the access
-                            SetAccessControl((_processImpersonationAccount ?? _processAccount).AccountName, _process.StartInfo.FileName, _workingDirectory, add: false);
-                        }
-
-                        _additionalCleanup?.Invoke(_processAccount?.AccountName, _processImpersonationAccount?.AccountName);
-                        _processAccount?.Dispose();
-                        _processImpersonationAccount?.Dispose();
-                    }
-
-                    _disposedValue = true;
-                }
-            }
-
             public void Dispose()
             {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
+                if (_hasStarted)
+                {
+                    _process.Kill();
+
+                    Assert.True(_process.WaitForExit(WaitInMS));
+                }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    // remove the access
+                    SetAccessControl((_processImpersonationAccount ?? _processAccount).AccountName, _process.StartInfo.FileName, _workingDirectory, add: false);
+                }
+
+                _additionalCleanup?.Invoke(_processAccount?.AccountName, _processImpersonationAccount?.AccountName);
+                _processAccount?.Dispose();
+                _processImpersonationAccount?.Dispose();
             }
         }
     }
