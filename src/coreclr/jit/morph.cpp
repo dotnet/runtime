@@ -10180,13 +10180,8 @@ DONE_MORPHING_CHILDREN:
         case GT_ASG:
             fgAssignSetVarDef(tree);
 
-            /* We can't CSE the LHS of an assignment */
-            /* We also must set in the pre-morphing phase, otherwise assertionProp doesn't see it */
-            if (op1->IsLocal() || (op1->TypeGet() != TYP_STRUCT))
-            {
-                op1->gtFlags |= GTF_DONT_CSE;
-            }
-
+            // Location nodes cannot be CSEd.
+            op1->gtFlags |= GTF_DONT_CSE;
             break;
 
         case GT_CAST:
