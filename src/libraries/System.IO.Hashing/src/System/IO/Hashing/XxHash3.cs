@@ -11,7 +11,6 @@ using static System.IO.Hashing.XxHashShared;
 
 namespace System.IO.Hashing
 {
-
     /// <summary>Provides an implementation of the XXH3 hash algorithm for generating a 64-bit hash.</summary>
     /// <remarks>
     /// For methods that persist the computed numerical hash value as bytes,
