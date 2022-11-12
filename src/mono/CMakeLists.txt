@@ -208,6 +208,33 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
   add_link_options(-Wl,-z,relro)
   add_link_options(-Wl,-z,now)
+  # Detect Linux ID
+  set(LINUX_ID_FILE "/etc/os-release")
+  if(CMAKE_CROSSCOMPILING)
+      set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
+  endif()
+
+  if(EXISTS ${LINUX_ID_FILE})
+      execute_process(
+          COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
+          OUTPUT_VARIABLE LINUX_ID
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+      execute_process(
+          COMMAND bash -c "if strings \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
+          OUTPUT_VARIABLE LINUX_MUSL
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+
+  if(DEFINED LINUX_ID)
+	  if(LINUX_ID STREQUAL alpine)
+          set(HOST_ALPINE_LINUX 1)
+      endif()
+
+      if(LINUX_MUSL STREQUAL musl)
+          set(HOST_LINUX_MUSL 1)
+      endif()
+  endif(DEFINED LINUX_ID)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -783,6 +810,12 @@ endif()
 if (TARGET_BROWSER)
   # sys/errno.h exists, but just emits a warning and includes errno.h
   unset(HAVE_SYS_ERRNO_H)
+endif()
+
+if(HOST_ALPINE_LINUX)
+  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+  # larger than the initial committed stack size.
+  add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
 ### End of OS specific checks
 

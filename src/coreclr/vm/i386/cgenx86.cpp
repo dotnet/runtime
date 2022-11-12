@@ -1163,6 +1163,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 
 #else // !TARGET_UNIX
 
+#if !__has_builtin(__cpuid)
 void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1173,7 +1174,9 @@ void __cpuid(int cpuInfo[4], int function_id)
         : "0"(function_id)
     );
 }
+#endif
 
+#if !__has_builtin(__cpuidex)
 void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1184,6 +1187,7 @@ void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
         : "0"(function_id), "2"(subFunction_id)
     );
 }
+#endif
 
 extern "C" DWORD __stdcall xmmYmmStateSupport()
 {

@@ -319,6 +319,11 @@ if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries(coreclrpal ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
+  # bundled libunwind requires using libucontext on alpine and x86
+  if(CLR_CMAKE_TARGET_ALPINE_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+    target_link_libraries(coreclrpal ucontext)
+  endif(CLR_CMAKE_TARGET_ALPINE_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_NETBSD)

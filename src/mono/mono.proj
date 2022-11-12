@@ -417,11 +417,17 @@
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCFLAGS Include="-Wno-int-conversion" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
     <ItemGroup Condition="'$(RealTargetOS)' == 'Linux'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCFLAGS Include="-Wno-int-conversion" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsLinuxMusl)' == 'true' and '$(TargetArchitecture)' == 's390x'">
+      <_MonoAOTCFLAGS Include="-lucontext" />
+      <_MonoCFLAGS Include="-lucontext" />
     </ItemGroup>
 
     <!-- Devloop features -->
@@ -500,16 +506,18 @@
       <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
       <MonoToolchainPrebuiltOS Condition="'$(OS)' == 'Windows_NT'">windows-x86_64</MonoToolchainPrebuiltOS>
       <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
-      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true'">gnu</_LinuxAbi>
-      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true'">android</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'">linux-gnu</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' == 'true'">alpine-linux-musl</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true'">linux-android</_LinuxAbi>
       <_LinuxFloatAbi Condition="'$(TargetsAndroid)' != 'true'">hf</_LinuxFloatAbi>
       <_Objcopy>objcopy</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x86'">i686-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(TargetsLinuxMusl)' == 'true' and '$(CrossBuild)' != 'true'">objcopy</_Objcopy>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
