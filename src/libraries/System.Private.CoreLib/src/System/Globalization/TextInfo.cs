@@ -216,13 +216,17 @@ namespace System.Globalization
 
             // JIT will treat this as a constant in release builds
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion);
+            nuint i = 0;
+            if (!IsAsciiCasingSameAsInvariant)
+            {
+                goto NON_ASCII;
+            }
 
             ref ushort src = ref Unsafe.As<char, ushort>(ref source);
             ref ushort dst = ref Unsafe.As<char, ushort>(ref destination);
 
             nuint lengthU = (nuint)charCount;
             nuint lengthToExamine = lengthU - (nuint)Vector128<ushort>.Count;
-            nuint i = 0;
             do
             {
                 Vector128<ushort> vec = Vector128.LoadUnsafe(ref src, i);
