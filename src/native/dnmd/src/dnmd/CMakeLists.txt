@@ -18,7 +18,10 @@ add_library(dnmd
   ${HEADERS}
 )
 
-set_target_properties(dnmd PROPERTIES PUBLIC_HEADER ../inc/dnmd.h)
-set_target_properties(dnmd PROPERTIES PUBLIC_HEADER ../inc/dnmd.hpp)
+target_include_directories(dnmd PUBLIC ../inc)
+
+set_target_properties(dnmd PROPERTIES
+  PUBLIC_HEADER ../inc/dnmd.h
+  PUBLIC_HEADER ../inc/dnmd.hpp)
 
 install(TARGETS dnmd)

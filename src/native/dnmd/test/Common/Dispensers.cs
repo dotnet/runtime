@@ -38,6 +38,11 @@ namespace Common
             return dispenser;
         }
 
+        private static string GetCurrentDirectory()
+        {
+            return @"F:\DNMD\artifacts\src\interfaces\Release\";
+        }
+
         private static unsafe IMetaDataDispenser GetCurrent()
         {
             var runtimeName =
@@ -45,7 +50,7 @@ namespace Common
                 : OperatingSystem.IsMacOS() ? "libdnmd_interfaces.dylib"
                 : "libdnmd_interfaces.so";
 
-            var current = Path.Combine(@"", runtimeName);
+            var current = Path.Combine(GetCurrentDirectory(), runtimeName);
 
             nint mod = NativeLibrary.Load(current);
             var getter = (delegate* unmanaged<in Guid, out IMetaDataDispenser, int>)NativeLibrary.GetExport(mod, "GetDispenser");

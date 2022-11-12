@@ -20,6 +20,9 @@ add_library(dnmd_interfaces
   ${HEADERS}
 )
 
+target_include_directories(dnmd_interfaces_static PUBLIC ../inc)
+target_include_directories(dnmd_interfaces PRIVATE ../inc)
+
 target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED)
 target_link_libraries(dnmd_interfaces dnmd)
 
