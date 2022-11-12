@@ -101,7 +101,7 @@ namespace System.IO.Hashing
             if (destination.Length >= sizeof(ulong) * 2)
             {
                 Hash128 hash = HashToHash128(source, seed);
-                WriteCanonical128(hash, destination);
+                WriteBigEndian128(hash, destination);
                 bytesWritten = HashLengthInBytes;
                 return true;
             }
@@ -183,11 +183,11 @@ namespace System.IO.Hashing
                 }
             }
 
-            WriteCanonical128(current, destination);
+            WriteBigEndian128(current, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WriteCanonical128(in Hash128 hash, Span<byte> destination)
+        private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
         {
             // TODO https://github.com/dotnet/runtime/issues/72107: Use BinaryPrimitives.WriteUInt128BigEndian() once it is supported
             ulong low = hash.Low64;
