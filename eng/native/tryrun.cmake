@@ -8,7 +8,11 @@ endmacro()
 
 if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
-   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl)
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 
   set(ALPINE_LINUX 1)
 elseif(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
