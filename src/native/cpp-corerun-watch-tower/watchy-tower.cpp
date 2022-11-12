@@ -95,8 +95,90 @@ static bool parse_args(const int argc, const char *argv[], configuration& config
             fprintf(stderr, "Unknown option '%s'.\n", arg);
             return false;
         }
-
     }
-
     return true;
 }
+
+/* Little example of forking a child process, and finishing it instantly if it
+ * takes longer than a certain amount of time.
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+int run_timed_process(const long, const int, const char *[]);
+
+int main(const int argc, const char *argv[])
+{
+    int result = run_timed_process(3000L, argc-1, &argv[1]);
+    printf("App Exit Code: %d\n", result);
+    return 0;
+}
+
+int run_timed_process(const long timeout_ms, const int program_argc, const char *program_argv[])
+{
+//     for (int i = 0; i < program_argc; i++)
+//         printf("Argv[%d] = %s\n", i, program_argv[i]);
+//
+    const int check_interval = 1000;
+    int check_count = 0;
+    char *args[program_argc];
+
+    pid_t child_pid;
+    int child_status;
+    int w;
+
+    for (int i = 0; i < program_argc; i++)
+    {
+        args[i] = (char *)program_argv[i];
+    }
+
+    printf("Forking!\n");
+    child_pid = fork();
+
+    if (child_pid < 0)
+    {
+        // Fork failed. No memory remaining available :(
+        printf("Fork failed... Returning ENOMEM.\n");
+        return ENOMEM;
+    }
+    else if (child_pid == 0)
+    {
+        // Instructions for child process!
+        printf("Fork successful! Running child process now...\n");
+        execv(args[0], &args[0]);
+        _exit(EXIT_FAILURE);
+    }
+    else
+    {
+        do
+        {
+            // Instructions for the parent process!
+            w = waitpid(child_pid, &child_status, WNOHANG);
+
+            if (w == -1)
+                return EINVAL;
+
+            usleep(check_interval * 1000);
+
+            if (w)
+            {
+                if (WIFEXITED(child_status))
+                {
+                    printf("Child process exited by signal %d.\n", WEXITSTATUS(child_status));
+                    return WEXITSTATUS(child_status);
+                }
+            }
+        } while (check_count++ < (timeout_ms / check_interval));
+    }
+
+    printf("Child process took too long. Timed out... Exiting...\n");
+    kill(child_pid, SIGKILL);
+    return ETIMEDOUT;
+}
+
+*/
