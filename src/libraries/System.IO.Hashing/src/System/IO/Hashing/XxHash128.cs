@@ -38,16 +38,16 @@ namespace System.IO.Hashing
             Initialize(ref _state, (ulong)seed);
         }
 
-        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data.</summary>
+        /// <summary>Computes the XXH128 hash of the provided <paramref name="source"/> data.</summary>
         /// <param name="source">The data to hash.</param>
-        /// <returns>The XXH3 128-bit hash code of the provided data.</returns>
+        /// <returns>The XXH128 128-bit hash code of the provided data.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source) => Hash(source, seed: 0);
 
-        /// <summary>Computes the XXH3 hash of the provided data using the provided seed.</summary>
+        /// <summary>Computes the XXH128 hash of the provided data using the provided seed.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation.</param>
-        /// <returns>The XXH3 128-bit hash code of the provided data.</returns>
+        /// <returns>The XXH128 128-bit hash code of the provided data.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source, long seed)
         {
@@ -63,10 +63,10 @@ namespace System.IO.Hashing
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
 
-        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data using the optionally provided <paramref name="seed"/>.</summary>
+        /// <summary>Computes the XXH128 hash of the provided <paramref name="source"/> data using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
-        /// <returns>The XXH3 128-bit hash code of the provided data.</returns>
+        /// <returns>The XXH128 128-bit hash code of the provided data.</returns>
         public static byte[] Hash(ReadOnlySpan<byte> source, long seed = 0)
         {
             byte[] result = new byte[HashLengthInBytes];
@@ -74,7 +74,7 @@ namespace System.IO.Hashing
             return result;
         }
 
-        /// <summary>Computes the XXH3 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
+        /// <summary>Computes the XXH128 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
@@ -90,7 +90,7 @@ namespace System.IO.Hashing
             return bytesWritten;
         }
 
-        /// <summary>Attempts to compute the XXH3 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
+        /// <summary>Attempts to compute the XXH128 hash of the provided <paramref name="source"/> data into the provided <paramref name="destination"/> using the optionally provided <paramref name="seed"/>.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="destination">The buffer that receives the computed 128-bit hash code.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination"/>.</param>
