@@ -218,8 +218,8 @@ namespace System.IO.Hashing
 
             uint combined = ((uint)c1 << 16) | ((uint)c2 << 24) | c3 | (length << 8);
 
-            const uint secretXor = unchecked((uint)DefaultSecretUInt64_0) ^ (uint)(DefaultSecretUInt64_0 >> 32);
-            return XxHash64.Avalanche(combined ^ (secretXor + seed));
+            const uint SecretXor = unchecked((uint)DefaultSecretUInt64_0) ^ (uint)(DefaultSecretUInt64_0 >> 32);
+            return XxHash64.Avalanche(combined ^ (SecretXor + seed));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
