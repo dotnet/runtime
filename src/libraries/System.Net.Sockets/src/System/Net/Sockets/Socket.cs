@@ -1694,7 +1694,6 @@ namespace System.Net.Sockets
             // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
             // with the right address family.
             EndPoint endPointSnapshot = remoteEP;
-
             Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
@@ -1731,7 +1730,7 @@ namespace System.Net.Sockets
                     }
                     else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
                     {
-                        // We expect IPv6 on dial mode sockets but we can also get plain old IPv4
+                        // We expect IPv6 on DualMode sockets but we can also get plain old IPv4
                         remoteEP = new IPEndPoint(socketAddress.GetIPAddress().MapToIPv6(), socketAddress.GetPort());
                     }
                 }
@@ -1840,7 +1839,7 @@ namespace System.Net.Sockets
                     }
                     else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
                     {
-                        // We expect IPv6 on dial mode sockets but we can also get plain old IPv4
+                        // We expect IPv6 on DalMode sockets but we can also get plain old IPv4
                         remoteEP = new IPEndPoint(socketAddress.GetIPAddress().MapToIPv6(), socketAddress.GetPort());
                     }
                 }
