@@ -232,8 +232,8 @@ namespace System.IO.Hashing
             uint inputLow = ReadUInt32LE(source);
             uint inputHigh = ReadUInt32LE(source + length - sizeof(uint));
 
-            const ulong secretXor = DefaultSecretUInt64_1 ^ DefaultSecretUInt64_2;
-            ulong bitflip = secretXor - seed;
+            const ulong SecretXor = DefaultSecretUInt64_1 ^ DefaultSecretUInt64_2;
+            ulong bitflip = SecretXor - seed;
             ulong input64 = inputHigh + (((ulong)inputLow) << 32);
 
             return Rrmxmx(input64 ^ bitflip, length);
