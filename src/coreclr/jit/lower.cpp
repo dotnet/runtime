@@ -3782,11 +3782,30 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
             unsigned realSize = retVal->OperIs(GT_OBJ) ? retVal->AsObj()->Size() : retVal->AsIndir()->Size();
-            if (genTypeSize(nativeReturnType) != realSize && realSize != 0)
+            CORINFO_CLASS_HANDLE structCls = NO_CLASS_HANDLE;
+            if (realSize == 0)
             {
-                // TODO-ADDR: delete "realSize != 0" part once "IND<struct>" nodes are no more
+                assert(retVal->gtNext->OperIs(GT_RETURN));
+
+                // We have an IND<struct> node, assuming it's used in a return statement, take target size
+                // from the current method's signature (it's only used to decide whether we need to spill it to
+                // a local or not, so the actual size won't be used).
+                // TODO-ADDR: delete once "IND<struct>" nodes are no more
+                structCls = comp->info.compMethodInfo->args.retTypeClass;
+                realSize  = comp->info.compCompHnd->getClassSize(structCls);
+            }
+
+            if (genTypeSize(nativeReturnType) > realSize)
+            {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                ReplaceWithLclVar(retValUse);
+                unsigned tmpNum = BAD_VAR_NUM;
+                if (structCls != NO_CLASS_HANDLE)
+                {
+                    tmpNum               = comp->lvaGrabTemp(true DEBUGARG("spilling IND(X)"));
+                    comp->genReturnLocal = tmpNum;
+                    comp->lvaSetStruct(tmpNum, structCls, true);
+                }
+                ReplaceWithLclVar(retValUse, tmpNum);
                 LowerRetSingleRegStructLclVar(ret);
                 break;
             }
