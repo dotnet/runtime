@@ -200,8 +200,8 @@ namespace System.IO.Hashing
                 return HashLength1To3(source, length, seed);
             }
 
-            const ulong secretXor = DefaultSecretUInt64_7 ^ DefaultSecretUInt64_8;
-            return XxHash64.Avalanche(seed ^ secretXor);
+            const ulong SecretXor = DefaultSecretUInt64_7 ^ DefaultSecretUInt64_8;
+            return XxHash64.Avalanche(seed ^ SecretXor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
