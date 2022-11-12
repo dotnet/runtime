@@ -1601,7 +1601,7 @@ namespace System.Numerics
 
                 // Use ToString for small values
 
-                if ((_bits is null) || (_bits.Length <= 2))
+                if ((_bits is null) || (_bits.Length <= 4))
                 {
                     return ToString();
                 }
