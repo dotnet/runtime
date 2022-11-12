@@ -189,7 +189,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteCanonical128(in Hash128 hash, Span<byte> destination)
         {
-            // TODO: Use BinaryPrimitives.WriteUInt128BigEndian() once it is supported
+            // TODO https://github.com/dotnet/runtime/issues/72107: Use BinaryPrimitives.WriteUInt128BigEndian() once it is supported
             var low = hash.Low64;
             var high = hash.High64;
             if (BitConverter.IsLittleEndian)
