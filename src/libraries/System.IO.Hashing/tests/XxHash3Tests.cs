@@ -3,7 +3,6 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.IO.Hashing;
 using System.Linq;
 using System.Text;
 using Xunit;
