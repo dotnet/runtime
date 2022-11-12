@@ -57,12 +57,16 @@ namespace System.IO.Hashing
         public XxHash128(long seed) : base (default(int)) { }
         public override void Append(System.ReadOnlySpan<byte> source) { }
         protected override void GetCurrentHashCore(System.Span<byte> destination) { }
+#if NET7_0_OR_GREATER
         [System.CLSCompliantAttribute(false)] public UInt128 GetCurrentHashAsUInt128() { throw null; }
+#endif
         public static byte[] Hash(byte[] source) { throw null; }
         public static byte[] Hash(byte[] source, long seed) { throw null; }
         public static byte[] Hash(System.ReadOnlySpan<byte> source, long seed = (long)0) { throw null; }
         public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, long seed = (long)0) { throw null; }
+#if NET7_0_OR_GREATER
         [System.CLSCompliantAttribute(false)] public static UInt128 HashToUInt128(ReadOnlySpan<byte> source, long seed = 0) { throw null; }
+#endif
         public override void Reset() { }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, long seed = (long)0) { throw null; }
     }
