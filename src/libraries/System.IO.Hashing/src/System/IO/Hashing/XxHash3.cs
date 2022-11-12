@@ -21,7 +21,7 @@ namespace System.IO.Hashing
 #endif
     public sealed unsafe class XxHash3 : NonCryptographicHashAlgorithm
     {
-        /// <summary>XXH3 64 produces 8-byte hashes.</summary>
+        /// <summary>XXH3 produces 8-byte hashes.</summary>
         private new const int HashLengthInBytes = 8;
 
         private State _state;
