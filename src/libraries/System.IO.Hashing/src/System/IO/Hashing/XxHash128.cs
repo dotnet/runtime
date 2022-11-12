@@ -118,6 +118,7 @@ namespace System.IO.Hashing
             return new Int128(hash.High64, hash.Low64);
         }
 #endif
+
         private static Hash128 HashToHash128(ReadOnlySpan<byte> source, long seed = 0)
         {
             uint length = (uint)source.Length;
