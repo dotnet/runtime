@@ -67,14 +67,14 @@
 
 } // end of class MyDelegate
 
-.class private auto ansi beforefieldinit My
+.class public auto ansi beforefieldinit My_b173569
        extends [mscorlib]System.Object
 {
   .method private hidebysig static pinvokeimpl("kernel32" winapi) 
           int32  GetTickCount() cil managed preservesig
   {
   }
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -85,7 +85,7 @@
     .locals init (class MyDelegate V_0)
     IL_0000:  nop
     IL_0001:  ldnull
-    IL_0002:  ldftn      int32 My::GetTickCount()
+    IL_0002:  ldftn      int32 My_b173569::GetTickCount()
 
               nop
 

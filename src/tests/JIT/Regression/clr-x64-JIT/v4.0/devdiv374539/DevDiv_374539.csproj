@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <!-- This test takes a long time to run; exclude it by default -->
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
