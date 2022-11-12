@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 // Implemented from the specification at
 // https://github.com/Cyan4973/xxHash/blob/f9155bd4c57e2270a4ffbb176485e5d713de1c9b/doc/xxhash_spec.md
@@ -12,14 +13,25 @@ namespace System.IO.Hashing
 {
     public sealed partial class XxHash64
     {
+        internal const ulong Prime64_1 = 0x9E3779B185EBCA87;
+        internal const ulong Prime64_2 = 0xC2B2AE3D27D4EB4F;
+        internal const ulong Prime64_3 = 0x165667B19E3779F9;
+        internal const ulong Prime64_4 = 0x85EBCA77C2B2AE63;
+        internal const ulong Prime64_5 = 0x27D4EB2F165667C5;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong Avalanche(ulong hash)
+        {
+            hash ^= hash >> 33;
+            hash *= Prime64_2;
+            hash ^= hash >> 29;
+            hash *= Prime64_3;
+            hash ^= hash >> 32;
+            return hash;
+        }
+
         private struct State
         {
-            private const ulong Prime64_1 = 0x9E3779B185EBCA87;
-            private const ulong Prime64_2 = 0xC2B2AE3D27D4EB4F;
-            private const ulong Prime64_3 = 0x165667B19E3779F9;
-            private const ulong Prime64_4 = 0x85EBCA77C2B2AE63;
-            private const ulong Prime64_5 = 0x27D4EB2F165667C5;
-
             private ulong _acc1;
             private ulong _acc2;
             private ulong _acc3;
@@ -127,13 +139,7 @@ namespace System.IO.Hashing
                     acc *= Prime64_1;
                 }
 
-                acc ^= (acc >> 33);
-                acc *= Prime64_2;
-                acc ^= (acc >> 29);
-                acc *= Prime64_3;
-                acc ^= (acc >> 32);
-
-                return acc;
+                return Avalanche(acc);
             }
         }
     }

@@ -6,7 +6,6 @@
     <OutputType>Library</OutputType>
     <IsWasmProject>true</IsWasmProject>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>

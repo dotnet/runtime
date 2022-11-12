@@ -20,11 +20,11 @@ namespace System.CommandLine
     //
     // Helpers for command line processing
     //
-    internal static class Helpers
+    internal static partial class Helpers
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static Dictionary<string, string> BuildPathDictionay(IReadOnlyList<Token> tokens, bool strict)
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
@@ -34,6 +34,24 @@ namespace System.CommandLine
             }
 
             return dictionary;
+        }
+
+        public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
+        {
+            List<string> paths = new();
+            Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
+            foreach (Token token in tokens)
+            {
+                AppendExpandedPaths(dictionary, token.Value, false);
+                foreach (string file in dictionary.Values)
+                {
+                    paths.Add(file);
+                }
+
+                dictionary.Clear();
+            }
+
+            return paths;
         }
 
         public static TargetOS GetTargetOS(string token)
@@ -81,7 +99,7 @@ namespace System.CommandLine
                 return TargetArchitecture.X86;
             else if (token.Equals("x64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.X64;
-            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase))
+            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase) || token.Equals("armel", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM;
             else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
@@ -171,7 +189,7 @@ namespace System.CommandLine
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    Helpers.AppendExpandedPaths(dictionary, optInList, false);
+                                    AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {
@@ -286,6 +304,59 @@ namespace System.CommandLine
                     Console.WriteLine("Warning: No files matching " + pattern);
                 }
             }
+        }
+
+        /// <summary>
+        /// Read the response file line by line and treat each line as a single token.
+        /// Skip the comment lines that start with `#`.
+        /// A return value indicates whether the operation succeeded.
+        /// </summary>
+        /// <remarks>
+        /// This method does not support:
+        ///   * referencing another response file.
+        ///   * inline `#` comments.
+        /// </remarks>
+        public static bool TryReadResponseFile(string filePath, out IReadOnlyList<string> newTokens, out string error)
+        {
+            try
+            {
+                var tokens = new List<string>();
+                foreach (string line in File.ReadAllLines(filePath))
+                {
+                    string token = line.Trim();
+                    if (token.Length > 0 && token[0] != '#')
+                    {
+                        if (token.EndsWith('"'))
+                        {
+                            int firstQuotePosition = token.IndexOf('"');
+
+                            // strip leading and trailing quotes from value.
+                            if (firstQuotePosition >= 0 && firstQuotePosition < token.Length - 1 &&
+                                (firstQuotePosition == 0 || token[firstQuotePosition - 1] != '\\'))
+                            {
+                                token = token[..firstQuotePosition] + token[(firstQuotePosition + 1)..^1];
+                            }
+                        }
+
+                        tokens.Add(token);
+                    }
+                }
+
+                newTokens = tokens;
+                error = null;
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                error = $"Response file not found: '{filePath}'";
+            }
+            catch (IOException e)
+            {
+                error = $"Error reading response file '{filePath}': {e}";
+            }
+
+            newTokens = null;
+            return false;
         }
     }
 }

@@ -18,7 +18,7 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-  
+
 schedules:
   - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
     displayName: Runtime-linker-tests default schedule
@@ -48,56 +48,59 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-#
-# Evaluate paths
-#
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
-
-#
-# Build Release config vertical for Windows, Linux, Linux musl and OSX
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x64
-    - OSX_x64
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
-      timeoutInMinutes: 120
-      nameSuffix: Runtime_Release
-      condition:
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-      buildArgs: -s clr+libs -c $(_BuildConfig)
-      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+    jobs:
 
-#
-# Build Release config vertical for Browser-wasm
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - Browser_wasm
-    jobParameters:
-      testGroup: innerloop
-      timeoutInMinutes: 120
-      nameSuffix: Runtime_Release
-      buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
-      condition:
-        or(
-          eq(variables['isRollingBuild'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
-      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
-      extraStepsParameters:
-          extraTestArgs: '/p:WasmBuildNative=false'
+    #
+    # Evaluate paths
+    #
+    - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+    #
+    # Build Release config vertical for Windows, Linux, Linux musl and OSX
+    #
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        platforms:
+        - windows_x64
+        - OSX_x64
+        - Linux_x64
+        jobParameters:
+          testGroup: innerloop
+          timeoutInMinutes: 120
+          nameSuffix: Runtime_Release
+          condition:
+            or(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+          buildArgs: -s clr+libs -c $(_BuildConfig)
+          extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+
+    #
+    # Build Release config vertical for Browser-wasm
+    #
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        platforms:
+        - Browser_wasm
+        jobParameters:
+          testGroup: innerloop
+          timeoutInMinutes: 120
+          nameSuffix: Runtime_Release
+          buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
+          condition:
+            or(
+              eq(variables['isRollingBuild'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
+          extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+          extraStepsParameters:
+              extraTestArgs: '/p:WasmBuildNative=false'

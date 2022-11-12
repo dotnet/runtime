@@ -209,7 +209,9 @@ namespace System.IO.Hashing
         public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination, long seed = 0)
         {
             if (destination.Length < HashSize)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            {
+                ThrowDestinationTooShort();
+            }
 
             return StaticHash(source, destination, seed);
         }

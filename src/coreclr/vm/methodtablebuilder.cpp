@@ -2659,14 +2659,6 @@ MethodTableBuilder::EnumerateClassMethods()
         METHOD_IMPL_TYPE implType;
         LPSTR strMethodName;
 
-#ifdef FEATURE_TYPEEQUIVALENCE
-        // TypeEquivalent structs must not have methods
-        if (bmtProp->fIsTypeEquivalent && fIsClassValueType)
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
-        }
-#endif
-
         //
         // Go to the next method and retrieve its attributes.
         //
@@ -2686,6 +2678,14 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
+#ifdef FEATURE_TYPEEQUIVALENCE
+        // TypeEquivalent structs must not have non-static methods
+        if (!IsMdStatic(dwMemberAttrs) && bmtProp->fIsTypeEquivalent && fIsClassValueType)
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
+        }
+#endif
+
         bool isVtblGap = false;
         if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs) || IsDelegate())
         {
@@ -2698,7 +2698,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
 
-            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && strncmp(strMethodName, "_VtblGap", 8) == 0;
+            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && IsVtblGapName(strMethodName);
         }
         else
         {
@@ -2737,9 +2737,6 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
 
                 numGenericMethodArgs = hEnumTyPars.EnumGetCount();
-
-                // We do not want to support context-bound objects with generic methods.
-
                 if (numGenericMethodArgs != 0)
                 {
                     HENUMInternalHolder hEnumGenericPars(pMDInternalImport);
@@ -2799,7 +2796,7 @@ MethodTableBuilder::EnumerateClassMethods()
             //   the '_'. We ignore this.
             //
 
-            LPCSTR pos = strMethodName + 8;
+            LPCSTR pos = strMethodName + COR_VTABLEGAP_NAME_LENGTH;
 
             // Skip optional number.
             while (IS_DIGIT(*pos))
@@ -3191,7 +3188,6 @@ MethodTableBuilder::EnumerateClassMethods()
             else
 #endif // !FEATURE_COMINTEROP
             {
-                // This codepath is used by remoting
                 type = METHOD_TYPE_NORMAL;
             }
         }
@@ -9999,7 +9995,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             // * UInt128: unsigned __int128
             //
             // This behavior matches the ABI standard on various Unix platforms
-            // On Windows, no standard for Int128 has been established yet, 
+            // On Windows, no standard for Int128 has been established yet,
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)

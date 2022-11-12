@@ -253,6 +253,7 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -444,12 +445,25 @@ bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                                        unsigned              metaTOK,   /* IN  */
                                        char16_t*             buffer,    /* OUT */
-                                       int                   bufferSize /* IN  */
+                                       int                   bufferSize,/* IN  */
+                                       int                   startIndex /* IN  */
                                        )
 {
     mc->cr->AddCall("getStringLiteral");
-    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
-    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, temp);
+    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex, temp);
+    return temp;
+}
+
+size_t interceptor_ICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                                char*                 buffer,             /* OUT */
+                                                size_t                bufferSize,         /* IN  */
+                                                size_t*               pRequiredBufferSize /* OUT */
+                                                )
+{
+    mc->cr->AddCall("printObjectDescription");
+    size_t temp = original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
+    mc->recPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize, temp);
     return temp;
 }
 
@@ -779,6 +793,30 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getRuntimeTypePointer");
+    CORINFO_OBJECT_HANDLE temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
+    mc->recGetRuntimeTypePointer(cls, temp);
+    return temp;
+}
+
+bool interceptor_ICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE typeObj)
+{
+    mc->cr->AddCall("isObjectImmutable");
+    bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
+    mc->recIsObjectImmutable(typeObj, temp);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeObj)
+{
+    mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getObjectType(typeObj);
+    mc->recGetObjectType(typeObj, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
@@ -927,6 +965,24 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     mc->cr->AddCall("isMoreSpecificType");
     bool temp = original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
     mc->recIsMoreSpecificType(cls1, cls2, temp);
+    return temp;
+}
+
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState interceptor_ICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    mc->cr->AddCall("isEnum");
+    CORINFO_CLASS_HANDLE tempUnderlyingType = nullptr;
+    TypeCompareState temp = original_ICorJitInfo->isEnum(cls, &tempUnderlyingType);
+    mc->recIsEnum(cls, &tempUnderlyingType, temp);
+    if (underlyingType != nullptr)
+    {
+        *underlyingType = tempUnderlyingType;
+    }
     return temp;
 }
 
@@ -1082,6 +1138,14 @@ bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     mc->cr->AddCall("isFieldStatic");
     bool result = original_ICorJitInfo->isFieldStatic(fldHnd);
     mc->recIsFieldStatic(fldHnd, result);
+    return result;
+}
+
+int interceptor_ICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    mc->cr->AddCall("getArrayOrStringLength");
+    int result = original_ICorJitInfo->getArrayOrStringLength(objHnd);
+    mc->recGetArrayOrStringLength(objHnd, result);
     return result;
 }
 
@@ -1702,6 +1766,14 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     CorInfoType          cit = getFieldType(field, &cch, NULL);
     mc->recGetFieldAddress(field, ppIndirection, temp, cit);
     return temp;
+}
+
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+{
+    mc->cr->AddCall("getReadonlyStaticFieldValue");
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects, result);
+    return result;
 }
 
 // return the class handle for the current value of a static field

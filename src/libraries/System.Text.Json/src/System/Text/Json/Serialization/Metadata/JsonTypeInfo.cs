@@ -256,6 +256,23 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        /// <summary>
+        /// Specifies whether the current instance has been locked for modification.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="JsonTypeInfo"/> instance can be locked either if
+        /// it has been passed to one of the <see cref="JsonSerializer"/> methods,
+        /// has been associated with a <see cref="JsonSerializerContext"/> instance,
+        /// or a user explicitly called the <see cref="MakeReadOnly"/> method on the instance.
+        /// </remarks>
+        public bool IsReadOnly { get; private set; }
+
+        /// <summary>
+        /// Locks the current instance for further modification.
+        /// </summary>
+        /// <remarks>This method is idempotent.</remarks>
+        public void MakeReadOnly() => IsReadOnly = true;
+
         private protected JsonPolymorphismOptions? _polymorphismOptions;
 
         internal object? CreateObjectWithArgs { get; set; }
@@ -477,7 +494,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void VerifyMutable()
         {
-            if (_isConfigured)
+            if (IsReadOnly)
             {
                 ThrowHelper.ThrowInvalidOperationException_TypeInfoImmutable();
             }
@@ -511,6 +528,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         Configure();
 
+                        IsReadOnly = true;
                         _isConfigured = true;
                     }
                     catch (Exception e)
@@ -693,6 +711,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A blank <see cref="JsonPropertyInfo"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="propertyType"/> or <paramref name="name"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="propertyType"/> cannot be used for serialization.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="JsonTypeInfo"/> instance has been locked for further modification.</exception>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
@@ -712,6 +731,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
+            VerifyMutable();
             JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
             propertyInfo.Name = name;
 
@@ -731,7 +751,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (!_isConfigured)
                     {
-                        // Ensure SourceGen had a chance to add properties
                         LateAddProperties();
                         _properties = new(this);
                         return;
@@ -748,6 +767,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
             string memberName = jsonPropertyInfo.MemberName;
+
+            jsonPropertyInfo.EnsureChildOf(this);
 
             if (jsonPropertyInfo.IsExtensionData)
             {
@@ -876,12 +897,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                // Resolver didn't modify properties
-
-                // Source gen currently when initializes properties
-                // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
-                // cycles in the object graph. For that reason properties cannot be added immediately.
-                // This is a no-op for ReflectionJsonTypeInfo
+                // Resolver didn't modify any properties, create the property cache from scratch.
                 LateAddProperties();
                 PropertyCache ??= CreatePropertyCache(capacity: 0);
             }

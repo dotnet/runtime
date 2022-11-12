@@ -123,7 +123,7 @@ static LPSTR MapFileOpenModes(LPSTR str , BOOL * bTextMode)
     The PAL does not support this behavior. */
     if (NULL != strchr(str,'D'))
     {
-        ASSERT("The PAL doesn't support the 'D' flag for _fdopen and fopen.\n");
+        ASSERT("The PAL doesn't support the 'D' flag for fopen.\n");
         return NULL;
     }
 
@@ -192,63 +192,6 @@ static BOOL WriteOnlyMode(FILE* pFile)
     return FALSE;
 }
 #endif //UNGETC_NOT_RETURN_EOF
-
-/*++
-Function:
-  _fdopen
-
-see MSDN
-
---*/
-PAL_FILE *
-__cdecl
-_fdopen(
-    int handle,
-    const char *mode)
-{
-    PAL_FILE *f = NULL;
-    LPSTR supported = NULL;
-    BOOL bTextMode = TRUE;
-
-    PERF_ENTRY(_fdopen);
-    ENTRY("_fdopen (handle=%d mode=%p (%s))\n", handle, mode, mode);
-
-    _ASSERTE(mode != NULL);
-
-    f = (PAL_FILE*)PAL_malloc( sizeof( PAL_FILE ) );
-    if ( f )
-    {
-        supported = MapFileOpenModes( (char*)mode , &bTextMode);
-        if ( !supported )
-        {
-            PAL_free(f);
-            f = NULL;
-            goto EXIT;
-        }
-
-        f->bsdFilePtr = (FILE *)fdopen( handle, supported );
-        f->PALferrorCode = PAL_FILE_NOERROR;
-        /* Make sure fdopen did not fail. */
-        if ( !f->bsdFilePtr )
-        {
-            PAL_free( f );
-            f = NULL;
-        }
-
-        PAL_free( supported );
-        supported = NULL;
-    }
-    else
-    {
-        ERROR( "Unable to allocate memory for the PAL_FILE wrapper!\n" );
-    }
-
-EXIT:
-    LOGEXIT( "_fdopen returns FILE* %p\n", f );
-    PERF_EXIT(_fdopen);
-    return f;
-}
-
 
 /*++
 

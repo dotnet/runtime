@@ -242,7 +242,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return EmptyReadOnlyCollection<Expression>.Instance;
+            return ReadOnlyCollection<Expression>.Empty;
         }
 
         internal override bool SameArguments(ICollection<Expression>? arguments) =>
@@ -622,7 +622,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return EmptyReadOnlyCollection<Expression>.Instance;
+            return ReadOnlyCollection<Expression>.Empty;
         }
 
         internal override bool SameArguments(ICollection<Expression>? arguments) =>

@@ -17,7 +17,6 @@
 #include "remoteeventchannel.cpp"
 #elif WIN32
 #include "windowspipeline.cpp"
-#include "eventredirectionpipeline.cpp"
 #include "shimlocaldatatarget.cpp"
 #include "localeventchannel.cpp"
 #endif

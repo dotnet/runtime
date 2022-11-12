@@ -58,6 +58,7 @@
         "clamp03",
         "gbalykov",
         "hjleee",
+        "JongHeonChoi",
         "wscho77"
       ],
       "label": "os-tizen"
@@ -205,9 +206,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -248,9 +248,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -262,9 +261,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -276,9 +274,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -293,7 +290,6 @@
       "pod": "adam-david",
       "owners": [
         "adamsitnik",
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "Jozkee",
@@ -304,9 +300,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -335,9 +330,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -349,9 +343,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -363,9 +356,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -651,9 +643,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -665,9 +656,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -687,9 +677,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -781,7 +770,6 @@
     {
       "lead": "tommcdon",
       "owners": [
-        "eerhardt",
         "maryamariyan",
         "tarekgh"
       ],
@@ -915,9 +903,8 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eric-maryam-nick-tarek",
+      "pod": "maryam-nick-tarek",
       "owners": [
-        "eerhardt",
         "ericstj",
         "jeffhandley",
         "maryamariyan",
@@ -952,11 +939,10 @@
       "label": "area-System.IO.Compression"
     },
     {
-      "lead": "kevinpi",
+      "lead": "adityamandaleeka",
       "owners": [
         "davidfowl",
-        "halter73",
-        "jkotalik"
+        "halter73"
       ],
       "label": "area-System.IO.Pipelines"
     },
@@ -1297,6 +1283,7 @@
     {
       "lead": "jeffhandley",
       "owners": [
+        "ericstj",
         "jeffhandley"
       ],
       "label": "area-System.Speech"

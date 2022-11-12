@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -770,6 +771,87 @@ namespace System.SpanTests
                 ReadOnlySpan<char> values = new ReadOnlySpan<char>(new char[] { (char)99, (char)99, (char)99, (char)99, (char)99, (char)99 });
                 int index = span.IndexOfAny(values);
                 Assert.Equal(-1, index);
+            }
+        }
+
+        [Fact]
+        [OuterLoop("Takes about a second to execute")]
+        public static void TestIndexOfAny_RandomInputs_Char()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: IndexOfAnyReferenceImpl,
+                actual: (searchSpace, values) => searchSpace.IndexOfAny(values));
+
+            static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
+            {
+                for (int i = 0; i < searchSpace.Length; i++)
+                {
+                    if (values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+    }
+
+    public static class IndexOfAnyCharTestHelper
+    {
+        private static readonly char[] s_randomAsciiChars;
+        private static readonly char[] s_randomChars;
+
+        static IndexOfAnyCharTestHelper()
+        {
+            s_randomAsciiChars = new char[10 * 1024];
+            s_randomChars = new char[1024 * 1024];
+
+            var rng = new Random(42);
+
+            for (int i = 0; i < s_randomAsciiChars.Length; i++)
+            {
+                s_randomAsciiChars[i] = (char)rng.Next(0, 128);
+            }
+
+            rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+        }
+
+        public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values);
+
+        public static void TestRandomInputs(IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
+        {
+            var rng = new Random(42);
+
+            for (int iterations = 0; iterations < 1_000_000; iterations++)
+            {
+                // There are more interesting corner cases with ASCII needles, stress those more.
+                Test(s_randomChars, s_randomAsciiChars);
+
+                Test(s_randomChars, s_randomChars);
+            }
+
+            void Test(ReadOnlySpan<char> haystackRandom, ReadOnlySpan<char> needleRandom)
+            {
+                const int MaxNeedleLength = 8;
+                const int MaxHaystackLength = 40;
+
+                ReadOnlySpan<char> haystack = haystackRandom.Slice(rng.Next(haystackRandom.Length + 1));
+                haystack = haystack.Slice(0, Math.Min(haystack.Length, rng.Next(MaxHaystackLength)));
+
+                ReadOnlySpan<char> needle = needleRandom.Slice(rng.Next(needleRandom.Length + 1));
+                needle = needle.Slice(0, Math.Min(needle.Length, rng.Next(MaxNeedleLength)));
+
+                int expectedIndex = expected(haystack, needle);
+                int actualIndex = actual(haystack, needle);
+
+                if (expectedIndex != actualIndex)
+                {
+                    string readableNeedle = string.Join(", ", needle.ToString().Select(c => (int)c));
+                    string readableHaystack = string.Join(", ", haystack.ToString().Select(c => (int)c));
+
+                    Assert.True(false, $"Expected {expectedIndex}, got {actualIndex} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                }
             }
         }
     }

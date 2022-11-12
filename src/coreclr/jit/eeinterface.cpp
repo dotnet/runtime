@@ -20,45 +20,67 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 //------------------------------------------------------------------------
-// StringPrinter::Printf:
-//   Print a formatted string.
+// StringPrinter::Grow:
+//   Grow the internal buffer to a new specified size.
 //
 // Arguments:
-//    format - the format
+//    newSize - the new size.
 //
-void StringPrinter::Printf(const char* format, ...)
+void StringPrinter::Grow(size_t newSize)
 {
-    va_list args;
-    va_start(args, format);
+    assert(newSize > m_bufferMax);
+    char* newBuffer = m_alloc.allocate<char>(newSize);
+    memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
 
-    while (true)
+    m_buffer    = newBuffer;
+    m_bufferMax = newSize;
+}
+
+//------------------------------------------------------------------------
+// StringPrinter::Append:
+//   Append a substring to the internal buffer.
+//
+// Arguments:
+//    str - the substring to append
+//
+void StringPrinter::Append(const char* str)
+{
+    size_t strLen = strlen(str);
+
+    size_t newIndex = m_bufferIndex + strLen;
+
+    if (newIndex >= m_bufferMax)
     {
-        size_t bufferLeft = m_bufferMax - m_bufferIndex;
-        assert(bufferLeft >= 1); // always fit null terminator
-
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-        int printed = _vsnprintf_s(m_buffer + m_bufferIndex, bufferLeft, _TRUNCATE, format, argsCopy);
-        va_end(argsCopy);
-
-        if (printed < 0)
+        size_t newSize = m_bufferMax * 2;
+        while (newIndex >= newSize)
         {
-            // buffer too small
-            size_t newSize   = m_bufferMax * 2;
-            char*  newBuffer = m_alloc.allocate<char>(newSize);
-            memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
+            newSize *= 2;
+        }
 
-            m_buffer    = newBuffer;
-            m_bufferMax = newSize;
-        }
-        else
-        {
-            m_bufferIndex = m_bufferIndex + static_cast<size_t>(printed);
-            break;
-        }
+        Grow(newSize);
     }
 
-    va_end(args);
+    memcpy(&m_buffer[m_bufferIndex], str, strLen + 1);
+    m_bufferIndex += strLen;
+}
+
+//------------------------------------------------------------------------
+// StringPrinter::Append:
+//   Append a single character to the internal buffer.
+//
+// Arguments:
+//    chr - the character
+//
+void StringPrinter::Append(char chr)
+{
+    if (m_bufferIndex + 1 >= m_bufferMax)
+    {
+        Grow(m_bufferMax * 2);
+    }
+
+    m_buffer[m_bufferIndex]     = chr;
+    m_buffer[m_bufferIndex + 1] = '\0';
+    m_bufferIndex++;
 }
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
@@ -73,7 +95,7 @@ void StringPrinter::Printf(const char* format, ...)
 //
 void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 {
-    printer->Printf("%s", varTypeName(jitType));
+    printer->Append(varTypeName(jitType));
 }
 
 //------------------------------------------------------------------------
@@ -109,12 +131,12 @@ void Compiler::eePrintType(StringPrinter*       printer,
                 eePrintJitType(printer, JitType2PreciseVarType(childType));
             }
 
-            printer->Printf("[");
+            printer->Append('[');
             for (unsigned i = 1; i < arrayRank; i++)
             {
-                printer->Printf(",");
+                printer->Append(',');
             }
-            printer->Printf("]");
+            printer->Append(']');
             return;
         }
 
@@ -124,10 +146,11 @@ void Compiler::eePrintType(StringPrinter*       printer,
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
     {
-        printer->Printf("%s.", namespaceName);
+        printer->Append(namespaceName);
+        printer->Append('.');
     }
 
-    printer->Printf("%s", className);
+    printer->Append(className);
 
     if (!includeInstantiation)
     {
@@ -144,14 +167,14 @@ void Compiler::eePrintType(StringPrinter*       printer,
             break;
         }
 
-        printer->Printf("%c", pref);
+        printer->Append(pref);
         pref = ',';
         eePrintTypeOrJitAlias(printer, typeArg, includeNamespace, true);
     }
 
     if (pref != '[')
     {
-        printer->Printf("]");
+        printer->Append(']');
     }
 }
 
@@ -213,36 +236,36 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
     if (clsHnd != NO_CLASS_HANDLE)
     {
         eePrintType(printer, clsHnd, includeNamespaces, includeClassInstantiation);
-        printer->Printf(":");
+        printer->Append(':');
     }
 
     const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
-    printer->Printf("%s", methName);
+    printer->Append(methName);
 
     if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
     {
-        printer->Printf("[");
+        printer->Append('[');
         for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
         {
             if (i > 0)
             {
-                printer->Printf(",");
+                printer->Append(',');
             }
 
             eePrintTypeOrJitAlias(printer, sig->sigInst.methInst[i], includeNamespaces, true);
         }
-        printer->Printf("]");
+        printer->Append(']');
     }
 
     if (includeSignature)
     {
-        printer->Printf("(");
+        printer->Append('(');
 
         CORINFO_ARG_LIST_HANDLE argLst = sig->args;
         for (unsigned i = 0; i < sig->numArgs; i++)
         {
             if (i > 0)
-                printer->Printf(",");
+                printer->Append(',');
 
             CORINFO_CLASS_HANDLE vcClsHnd;
             var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
@@ -269,14 +292,14 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
             argLst = info.compCompHnd->getArgNext(argLst);
         }
 
-        printer->Printf(")");
+        printer->Append(')');
 
         if (includeReturnType)
         {
             var_types retType = JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
-                printer->Printf(":");
+                printer->Append(':');
                 switch (retType)
                 {
                     case TYP_REF:
@@ -301,7 +324,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         // the this pointer type as the first element of the arg type list
         if (includeThisSpecifier && sig->hasThis() && !sig->hasExplicitThis())
         {
-            printer->Printf(":this");
+            printer->Append(":this");
         }
     }
 }
@@ -385,7 +408,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
     }
 
     p.Truncate(0);
-    p.Printf("hackishClassName:hackishMethodName(?)");
+    p.Append("hackishClassName:hackishMethodName(?)");
     return p.GetBuffer();
 }
 

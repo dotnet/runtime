@@ -1372,3 +1372,137 @@ public class ReadOnlySpanTest
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public class ToStringOverriden
+{
+    class ToStringOverridenA {
+        public override string ToString()
+        {
+            return "helloToStringOverridenA";
+        }
+    }
+    class ToStringOverridenB: ToStringOverridenA {}
+
+    class ToStringOverridenC {}
+    class ToStringOverridenD: ToStringOverridenC
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenD";
+        }
+    }
+
+    struct ToStringOverridenE
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenE";
+        }
+    }
+
+    class ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenF";
+        }
+    }
+    class ToStringOverridenG: ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenG";
+        }
+    }
+
+    class ToStringOverridenH
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenH";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenHWrong";
+        }
+    }
+
+    class ToStringOverridenI
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenIWrong";
+        }
+    }
+
+    struct ToStringOverridenJ
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenJ";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenJWrong";
+        }
+    }
+
+    struct ToStringOverridenK
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenKWrong";
+        }
+    }
+
+    record ToStringOverridenL
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenL";
+        }
+    }
+
+    record ToStringOverridenM
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenMWrong";
+        }
+    }
+
+    record ToStringOverridenN
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenN";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenNWrong";
+        }
+    }
+
+    public override string ToString()
+    {
+        return "helloToStringOverriden";
+    }
+    public static void Run()
+    {
+        var a = new ToStringOverriden();
+        var b = new ToStringOverridenB();
+        var c = new ToStringOverridenD();
+        var d = new ToStringOverridenE();
+        ToStringOverridenA e = new ToStringOverridenB();
+        object f = new ToStringOverridenB();
+        var g = new ToStringOverridenG();
+        var h = new ToStringOverridenH();
+        var i = new ToStringOverridenI();
+        var j = new ToStringOverridenJ();
+        var k = new ToStringOverridenK();
+        var l = new ToStringOverridenL();
+        var m = new ToStringOverridenM();
+        var n = new ToStringOverridenN();
+        System.Diagnostics.Debugger.Break();
+    }
+}

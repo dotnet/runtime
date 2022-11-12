@@ -159,7 +159,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return EmptyReadOnlyCollection<Expression>.Instance;
+            return ReadOnlyCollection<Expression>.Empty;
         }
 
         public override Expression GetArgument(int index)

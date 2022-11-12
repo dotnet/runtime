@@ -71,11 +71,13 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                if (!Interop.Crypto.EvpCipherFinalEx(
+                if (!Interop.Crypto.EvpAeadCipherFinalEx(
                     _ctxHandle,
                     ciphertextAndTag.Slice(ciphertextBytesWritten),
-                    out int bytesWritten))
+                    out int bytesWritten,
+                    out bool authTagMismatch))
                 {
+                    Debug.Assert(!authTagMismatch);
                     throw new CryptographicException();
                 }
 
@@ -133,13 +135,20 @@ namespace System.Security.Cryptography
 
             plaintextBytesWritten += bytesWritten;
 
-            if (!Interop.Crypto.EvpCipherFinalEx(
+            if (!Interop.Crypto.EvpAeadCipherFinalEx(
                 _ctxHandle,
                 plaintext.Slice(plaintextBytesWritten),
-                out bytesWritten))
+                out bytesWritten,
+                out bool authTagMismatch))
             {
                 CryptographicOperations.ZeroMemory(plaintext);
-                throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+
+                if (authTagMismatch)
+                {
+                    throw new AuthenticationTagMismatchException();
+                }
+
+                throw new CryptographicException(SR.Arg_CryptographyException);
             }
 
             plaintextBytesWritten += bytesWritten;

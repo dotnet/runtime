@@ -215,8 +215,7 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
 void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
-    LogError("Hit unimplemented expandRawHandleIntrinsic");
-    DebugBreakorAV(129);
+    jitInstance->mc->repExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -381,11 +380,22 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                              unsigned              metaTOK,   /* IN  */
                              char16_t*             buffer,    /* OUT */
-                             int                   bufferSize /* IN  */
+                             int                   bufferSize,/* IN  */
+                             int                   startIndex
                              )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+}
+
+size_t MyICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                      char*                 buffer,             /* OUT */
+                                      size_t                bufferSize,         /* IN  */
+                                      size_t*               pRequiredBufferSize /* OUT */
+                                     )
+{
+    jitInstance->mc->cr->AddCall("printObjectDescription");
+    return jitInstance->mc->repPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 /**********************************************************************************/
@@ -663,6 +673,27 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+CORINFO_OBJECT_HANDLE MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
+    CORINFO_OBJECT_HANDLE result = jitInstance->mc->repGetRuntimeTypePointer(cls);
+    return result;
+}
+
+bool MyICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
+{
+    jitInstance->mc->cr->AddCall("isObjectImmutable");
+    bool result = jitInstance->mc->repIsObjectImmutable(objPtr);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
+{
+    jitInstance->mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(objPtr);
+    return result;
+}
+
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,
@@ -786,6 +817,17 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
 {
     jitInstance->mc->cr->AddCall("isMoreSpecificType");
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
+}
+
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState MyICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    jitInstance->mc->cr->AddCall("isEnum");
+    return jitInstance->mc->repIsEnum(cls, underlyingType);
 }
 
 // Given a class handle, returns the Parent type.
@@ -915,6 +957,12 @@ bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
     jitInstance->mc->cr->AddCall("isFieldStatic");
     return jitInstance->mc->repIsFieldStatic(fldHnd);
+}
+
+int MyICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    jitInstance->mc->cr->AddCall("getArrayOrStringLength");
+    return jitInstance->mc->repGetArrayOrStringLength(objHnd);
 }
 
 /*********************************************************************************/
@@ -1191,13 +1239,15 @@ const char16_t* MyICJI::getJitTimeLogFilename()
     // we have the ability to replay this, but we treat it in this case as EE context
     //  return jitInstance->eec->jitTimeLogFilename;
 
-    // We want to be able to set COMPLUS_JitTimeLogFile when replaying, to collect JIT
+    // We want to be able to set DOTNET_JitTimeLogFile or COMPlus_JitTimeLogFile when replaying, to collect JIT
     // statistics. So, just do a getenv() call. This isn't quite as thorough as
     // the normal CLR config value functions (which also check the registry), and we've
     // also hard-coded the variable name here instead of using:
     //      CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
     // like in the VM, but it works for our purposes.
-    return (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
+    const char16_t* dotnetVar = (const char16_t*)GetEnvironmentVariableWithDefaultW(W("DOTNET_JitTimeLogFile"));
+    return dotnetVar != nullptr ? dotnetVar :
+        (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
 }
 
 /*********************************************************************************/
@@ -1485,6 +1535,12 @@ void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getFieldAddress");
     return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
+}
+
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+{
+    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
 }
 
 // return the class handle for the current value of a static field

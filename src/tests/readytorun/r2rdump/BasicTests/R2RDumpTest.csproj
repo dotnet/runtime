@@ -41,8 +41,8 @@ $(DotnetToolCommand) $(R2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInf
 $(DotnetToolCommand) $(R2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
 $(DotnetToolCommand) $(R2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out HelloWorld.ni.dll HelloWorld.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GcInfoTransitions.ni.dll GcInfoTransitions.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GenericFunctions.ni.dll GenericFunctions.dll
@@ -51,6 +51,6 @@ $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in HelloWorld.ni.dll --out Hell
 $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v --ignoreSensitive
 $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
 $(BashDotnetToolCommand) $(BashR2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

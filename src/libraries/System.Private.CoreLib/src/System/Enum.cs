@@ -116,12 +116,24 @@ namespace System
             return GetEnumName(GetEnumInfo(enumType), ulValue);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
-            int index = FindDefinedIndex(enumInfo.Values, ulValue);
-            if (index >= 0)
+            if (enumInfo.ValuesAreSequentialFromZero)
             {
-                return enumInfo.Names[index];
+                string[] names = enumInfo.Names;
+                if (ulValue < (ulong)names.Length)
+                {
+                    return names[(uint)ulValue];
+                }
+            }
+            else
+            {
+                int index = FindDefinedIndex(enumInfo.Values, ulValue);
+                if (index >= 0)
+                {
+                    return enumInfo.Names[index];
+                }
             }
 
             return null; // return null so the caller knows to .ToString() the input
@@ -302,7 +314,7 @@ namespace System
 
         internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            GetEnumInfo(enumType, true).Names;
+            GetEnumInfo(enumType).Names;
 
         public static Type GetUnderlyingType(Type enumType)
         {
@@ -411,16 +423,21 @@ namespace System
         internal static ulong[] InternalGetValues(RuntimeType enumType)
         {
             // Get all of the values
-            return GetEnumInfo(enumType, false).Values;
+            return GetEnumInfo(enumType, getNames: false).Values;
         }
 
         public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType enumType = (RuntimeType)typeof(TEnum);
-            ulong[] ulValues = Enum.InternalGetValues(enumType);
-            ulong ulValue = Enum.ToUInt64(value);
+            EnumInfo info = GetEnumInfo(enumType, getNames: false);
+            ulong ulValue = ToUInt64(value);
+            ulong[] ulValues = info.Values;
 
-            return FindDefinedIndex(ulValues, ulValue) >= 0;
+            // If the enum's values are all sequentially numbered starting from 0, then we can
+            // just return if the requested index is in range. Otherwise, search for the value.
+            return
+                info.ValuesAreSequentialFromZero ? ulValue < (ulong)ulValues.Length :
+                FindDefinedIndex(ulValues, ulValue) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

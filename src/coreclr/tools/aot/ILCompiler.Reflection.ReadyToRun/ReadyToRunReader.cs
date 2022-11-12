@@ -507,13 +507,34 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
+                int nRuntimeFunctions = runtimeFunctionSection.Size / runtimeFunctionSize;
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
+                IDictionary<int, int[]> dHotColdMap = new Dictionary<int, int[]>();
+                int firstColdRuntimeFunction = nRuntimeFunctions;
 
-                // initialize R2RMethods
+                if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.HotColdMap, out ReadyToRunSection hotColdMapSection))
+                {
+                    int count = hotColdMapSection.Size / 8;
+                    int hotColdMapOffset = GetOffset(hotColdMapSection.RelativeVirtualAddress);
+                    List<List<int>> mHotColdMap = new List<List<int>>();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        mHotColdMap.Add(new List<int> { NativeReader.ReadInt32(Image, ref hotColdMapOffset), NativeReader.ReadInt32(Image, ref hotColdMapOffset) });
+                    }
+
+                    for (int i = 0; i < count - 1; i++)
+                    {
+                        dHotColdMap.Add(mHotColdMap[i][1], Enumerable.Range(mHotColdMap[i][0], (mHotColdMap[i + 1][0] - mHotColdMap[i][0])).ToArray());
+                    }
+                    dHotColdMap.Add(mHotColdMap[count - 1][1], Enumerable.Range(mHotColdMap[count - 1][0], (nRuntimeFunctions - mHotColdMap[count - 1][0])).ToArray());
+
+                    firstColdRuntimeFunction = mHotColdMap[0][0];
+                }
+                //initialize R2RMethods
                 ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSection(section, reader, isEntryPoint));
                 ParseInstanceMethodEntrypoints(isEntryPoint);
-                CountRuntimeFunctions(isEntryPoint);
+                CountRuntimeFunctions(isEntryPoint, dHotColdMap, firstColdRuntimeFunction);
             }
         }
 
@@ -625,8 +646,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     _pointerSize = 8;
                     break;
 
-                case (Machine) 0x6264: /* LoongArch64 */
-                    _architecture = (Architecture) 6; /* LoongArch64 */
+                case (Machine)0x6264: /* LoongArch64 */
+                    _architecture = (Architecture)6; /* LoongArch64 */
                     _pointerSize = 8;
                     break;
 
@@ -1116,22 +1137,66 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void CountRuntimeFunctions(bool[] isEntryPoint)
+        private void CountRuntimeFunctions(bool[] isEntryPoint, IDictionary<int, int[]> dHotColdMap, int firstColdRuntimeFunction)
         {
             foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
+                {
                     continue;
-
+                }
                 int count = 0;
                 int i = runtimeFunctionId;
                 do
                 {
                     count++;
                     i++;
-                } while (i < isEntryPoint.Length && !isEntryPoint[i]);
-                method.RuntimeFunctionCount = count;
+                } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
+                
+                if (dHotColdMap.ContainsKey(runtimeFunctionId))
+                {
+                    int coldSize = dHotColdMap[runtimeFunctionId].Length;
+                    method.ColdRuntimeFunctionId = dHotColdMap[runtimeFunctionId][0];
+                    method.RuntimeFunctionCount = count + coldSize;
+                    method.ColdRuntimeFunctionCount = coldSize;
+                }
+                else
+                {
+                    Debug.Assert(runtimeFunctionId < firstColdRuntimeFunction);
+                    method.RuntimeFunctionCount = count;
+                }
+            }
+        }
+
+        public void ValidateRuntimeFunctions(List<RuntimeFunction> runtimeFunctionList)
+        {
+            List<RuntimeFunction> runtimeFunctions = (List<RuntimeFunction>)runtimeFunctionList;
+            RuntimeFunction firstRuntimeFunction = runtimeFunctions[0];
+            BaseUnwindInfo firstUnwindInfo = firstRuntimeFunction.UnwindInfo;
+            var x64UnwindInfo = firstUnwindInfo as Amd64.UnwindInfo;
+            System.Collections.Generic.HashSet<uint> hashPersonalityRoutines = new System.Collections.Generic.HashSet<uint>();
+            if (x64UnwindInfo != null)
+            {
+                hashPersonalityRoutines.Add(x64UnwindInfo.PersonalityRoutineRVA);
+            }
+
+            for (int i = 1; i < runtimeFunctions.Count; i++)
+            {
+                Debug.Assert(runtimeFunctions[i - 1].StartAddress.CompareTo(runtimeFunctions[i].StartAddress) < 0, "RuntimeFunctions are not sorted");
+                Debug.Assert(runtimeFunctions[i - 1].EndAddress <= runtimeFunctions[i].StartAddress, "RuntimeFunctions intervals overlap");
+
+                if (x64UnwindInfo != null && ((x64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0))
+                {
+                    Amd64.UnwindInfo x64UnwindInfoCurr = (Amd64.UnwindInfo)runtimeFunctions[i].UnwindInfo;
+
+                    if ((x64UnwindInfoCurr.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0)
+                    {
+                        uint currPersonalityRoutineRVA = x64UnwindInfoCurr.PersonalityRoutineRVA;
+                        hashPersonalityRoutines.Add(currPersonalityRoutineRVA);
+                        Debug.Assert(hashPersonalityRoutines.Count < 3, "There are more than two different runtimefunctions PersonalityRVAs");
+                    }
+                }
             }
         }
 
@@ -1462,7 +1527,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     metadataReader = ManifestReader;
                     assemblyReferenceHandle = ManifestReferences[index - 1];
                 }
-             }
+            }
 
             return assemblyReferenceHandle;
         }

@@ -99,7 +99,7 @@ namespace System.Formats.Cbor
                 // you can add a zero-byte value to the most significant side of the array.
                 // Right in this case as it is Big-endian.
                 var bytesPlusOne = new byte[bigEndianBytes.Length + 1];
-                bigEndianBytes.CopyTo(bytesPlusOne.AsSpan().Slice(1));
+                bigEndianBytes.CopyTo(bytesPlusOne.AsSpan(1));
                 temp = bytesPlusOne;
             }
             else

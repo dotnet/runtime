@@ -713,7 +713,7 @@ namespace DebuggerTests
 
                  await CheckProps(frame_locals, new
                  {
-                     mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
+                     mi = TObject("System.Reflection.RuntimeMethodInfo", description: "Void SimpleStaticMethod(System.DateTime, System.String)"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
                      strings = TArray("string[]", "string[1]"),

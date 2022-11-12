@@ -951,5 +951,27 @@ namespace System.SpanTests
                 }
             }
         }
+
+        [Fact]
+        [OuterLoop("Takes about a second to execute")]
+        public static void TestLastIndexOfAny_RandomInputs_Char()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: LastIndexOfAnyReferenceImpl,
+                actual: (searchSpace, values) => searchSpace.LastIndexOfAny(values));
+
+            static int LastIndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
+            {
+                for (int i = searchSpace.Length - 1; i >= 0; i--)
+                {
+                    if (values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
     }
 }

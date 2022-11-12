@@ -126,19 +126,22 @@ jobs:
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
-        artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI asmdiffs files
       inputs:
         targetPath: $(SpmiAsmdiffsLocation)
-        artifactName: 'SuperPMI_Asmdiffs_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_Asmdiffs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_BuildLogs_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true

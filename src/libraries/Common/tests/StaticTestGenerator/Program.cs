@@ -199,9 +199,10 @@ namespace StaticTestGenerator
 
             // Write out the associated .csproj
             string csprojPath = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(testAssemblyPath) + "-runner.csproj");
+            Version version = Environment.Version;
             File.WriteAllText(
                 csprojPath,
-                CSProjTemplate
+                GetCsprojTemplate($"net{version.Major}.{version.Minor}")
                 .Replace("#HelperAssemblyLocation#", Path.GetDirectoryName(testAssemblyPath) + Path.DirectorySeparatorChar)
                 .Replace("#TestAssembly#", Path.GetFullPath(testAssemblyPath))
                 .Replace("#TestAssemblyLocation#", testAssemblyPath));
@@ -1127,13 +1128,11 @@ public static class Test
 }
 ";
 
-        /// <summary>The template for the .csproj.</summary>
-        private const string CSProjTemplate =
-@"<Project Sdk=""Microsoft.NET.Sdk"">
+        private string GetCsprojTemplate(string targetFramework) =>
+$@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>preview</LangVersion>
+    <TargetFramework>{targetFramework}</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>IDE0049</NoWarn> <!-- names can be simplified -->
   </PropertyGroup>

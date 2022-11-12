@@ -119,7 +119,7 @@ namespace System.Drawing.Imaging
             public static ref int GetPinnableReference(BitmapData managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.GetPinnableReference());
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
-            public static int* ConvertToUnmanaged(BitmapData managed) => throw new UnreachableException();
+            public static int* ConvertToUnmanaged(BitmapData _) => throw new UnreachableException();
         }
 #endif
     }
