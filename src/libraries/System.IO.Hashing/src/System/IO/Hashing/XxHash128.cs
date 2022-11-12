@@ -12,7 +12,7 @@ using static System.IO.Hashing.XxHashShared;
 
 namespace System.IO.Hashing
 {
-    /// <summary>Provides an implementation of the XXH3 hash algorithm for generating a 128-bit hash.</summary>
+    /// <summary>Provides an implementation of the XXH128 hash algorithm for generating a 128-bit hash.</summary>
     /// <remarks>
     /// For methods that persist the computed numerical hash value as bytes,
     /// the value is written in the Big Endian byte order.
