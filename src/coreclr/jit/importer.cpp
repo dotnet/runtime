@@ -4505,31 +4505,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     isStaticReadOnlyInitedRef = !isSpeculative;
                 }
             }
-            else // We need the value of a static field
-            {
-                op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_FLD_INITCLASS;
-                }
-
-                if (isBoxedStatic)
-                {
-                    op1->ChangeType(TYP_REF); // points at boxed object
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
-
-                    if (varTypeIsStruct(lclTyp))
-                    {
-                        // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-                        op1 = gtNewObjNode(pFieldInfo->structType, op1);
-                    }
-                    else
-                    {
-                        op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-                        op1->gtFlags |= (GTF_GLOB_REF | GTF_IND_NONFAULTING);
-                    }
-                }
+#endif // TARGET_64BIT
 
             assert(hasConstAddr);
             assert(pFieldInfo->fieldLookup.addr != nullptr);

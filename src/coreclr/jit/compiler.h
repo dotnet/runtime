@@ -5733,7 +5733,6 @@ private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
-    GenTree* fgMorphExpandStaticField(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
     bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
