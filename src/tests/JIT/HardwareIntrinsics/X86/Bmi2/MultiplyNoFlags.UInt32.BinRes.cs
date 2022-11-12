@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Bmi2
 {
     public static partial class Program
     {
-        private static void MultiplyNoFlagsUInt32BinRes()
+        [Fact]
+        public static void MultiplyNoFlagsUInt32BinRes()
         {
             var test = new ScalarTernOpBinResTest__MultiplyNoFlagsUInt32();
 
