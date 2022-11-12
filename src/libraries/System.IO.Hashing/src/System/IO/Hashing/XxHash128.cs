@@ -171,8 +171,8 @@ namespace System.IO.Hashing
                 fixed (byte* secret = _state.Secret)
                 {
                     DigestLong(ref _state, accumulators, secret);
-                    current.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * XxHash64.Prime64_1);
-                    current.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(_state.TotalLength * XxHash64.Prime64_2));
+                    current.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * Prime64_1);
+                    current.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(_state.TotalLength * Prime64_2));
                 }
             }
             else
@@ -386,8 +386,8 @@ namespace System.IO.Hashing
                 HashInternalLoop(accumulators, source, length, secret);
 
                 Hash128 h128;
-                h128.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * XxHash64.Prime64_1);
-                h128.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * XxHash64.Prime64_2));
+                h128.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1);
+                h128.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * Prime64_2));
                 return h128;
             }
         }

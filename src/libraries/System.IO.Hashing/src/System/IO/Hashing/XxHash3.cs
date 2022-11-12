@@ -168,7 +168,7 @@ namespace System.IO.Hashing
                 fixed (byte* secret = _state.Secret)
                 {
                     DigestLong(ref _state, accumulators, secret);
-                    current = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * XxHash64.Prime64_1);
+                    current = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * Prime64_1);
                 }
             }
             else
@@ -263,7 +263,7 @@ namespace System.IO.Hashing
         {
             Debug.Assert(length >= 17 && length <= 128);
 
-            ulong hash = length * XxHash64.Prime64_1;
+            ulong hash = length * Prime64_1;
 
             switch ((length - 1) / 32)
             {
@@ -292,7 +292,7 @@ namespace System.IO.Hashing
         {
             Debug.Assert(length >= 129 && length <= 240);
 
-            ulong hash = length * XxHash64.Prime64_1;
+            ulong hash = length * Prime64_1;
 
             hash += Mix16Bytes(source + (16 * 0), DefaultSecretUInt64_0, DefaultSecretUInt64_1, seed);
             hash += Mix16Bytes(source + (16 * 1), DefaultSecretUInt64_2, DefaultSecretUInt64_3, seed);
@@ -356,7 +356,7 @@ namespace System.IO.Hashing
 
                 HashInternalLoop(accumulators, source, length, secret);
 
-                return MergeAccumulators(accumulators, secret + 11, length * XxHash64.Prime64_1);
+                return MergeAccumulators(accumulators, secret + 11, length * Prime64_1);
             }
         }
     }

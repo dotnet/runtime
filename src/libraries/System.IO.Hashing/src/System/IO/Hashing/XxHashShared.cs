@@ -20,7 +20,6 @@ namespace System.IO.Hashing
 #endif
     internal static unsafe class XxHashShared
     {
-        /// <summary>XXH3 produces 8-byte hashes.</summary>
         public const int StripeLengthBytes = 64;
         public const int SecretLengthBytes = 192;
         public const int SecretSizeMin = 136;
@@ -119,6 +118,42 @@ namespace System.IO.Hashing
 
             // Validate some relationships.
             Debug.Assert(InternalBufferLengthBytes % StripeLengthBytes == 0);
+
+            ReadOnlySpan<ulong> defaultSecretUInt64 = MemoryMarshal.Cast<byte, ulong>(DefaultSecret);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[0])== DefaultSecretUInt64_0);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[1])== DefaultSecretUInt64_1);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[2])== DefaultSecretUInt64_2);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[3])== DefaultSecretUInt64_3);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[4])== DefaultSecretUInt64_4);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[5])== DefaultSecretUInt64_5);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[6])== DefaultSecretUInt64_6);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[7])== DefaultSecretUInt64_7);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[8])== DefaultSecretUInt64_8);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[9])== DefaultSecretUInt64_9);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[10]) == DefaultSecretUInt64_10);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[11]) == DefaultSecretUInt64_11);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[12]) == DefaultSecretUInt64_12);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[13]) == DefaultSecretUInt64_13);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[14]) == DefaultSecretUInt64_14);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[15]) == DefaultSecretUInt64_15);
+
+            ReadOnlySpan<ulong> defaultSecret3UInt64 = MemoryMarshal.Cast<byte, ulong>(DefaultSecret.Slice(3));
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[0])== DefaultSecret3UInt64_0);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[1])== DefaultSecret3UInt64_1);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[2])== DefaultSecret3UInt64_2);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[3])== DefaultSecret3UInt64_3);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[4])== DefaultSecret3UInt64_4);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[5])== DefaultSecret3UInt64_5);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[6])== DefaultSecret3UInt64_6);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[7])== DefaultSecret3UInt64_7);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[8])== DefaultSecret3UInt64_8);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[9])== DefaultSecret3UInt64_9);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[10]) == DefaultSecret3UInt64_10);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[11]) == DefaultSecret3UInt64_11);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[12]) == DefaultSecret3UInt64_12);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[13]) == DefaultSecret3UInt64_13);
+
+            static ulong ReadLE64(ulong data) => BitConverter.IsLittleEndian ? data : BinaryPrimitives.ReverseEndianness(data);
         }
 #endif
 
@@ -149,7 +184,7 @@ namespace System.IO.Hashing
 
             fixed (ulong* accumulators = state.Accumulators)
             {
-                XxHashShared.InitializeAccumulators(accumulators);
+                InitializeAccumulators(accumulators);
             }
         }
 
@@ -358,27 +393,27 @@ namespace System.IO.Hashing
 #if NET7_0_OR_GREATER
             if (Vector256.IsHardwareAccelerated)
             {
-                Vector256.Store(Vector256.Create(XxHash32.Prime32_3, XxHash64.Prime64_1, XxHash64.Prime64_2, XxHash64.Prime64_3), accumulators);
-                Vector256.Store(Vector256.Create(XxHash64.Prime64_4, XxHash32.Prime32_2, XxHash64.Prime64_5, XxHash32.Prime32_1), accumulators + 4);
+                Vector256.Store(Vector256.Create(Prime32_3, Prime64_1, Prime64_2, Prime64_3), accumulators);
+                Vector256.Store(Vector256.Create(Prime64_4, Prime32_2, Prime64_5, Prime32_1), accumulators + 4);
             }
             else if (Vector128.IsHardwareAccelerated)
             {
-                Vector128.Store(Vector128.Create(XxHash32.Prime32_3, XxHash64.Prime64_1), accumulators);
-                Vector128.Store(Vector128.Create(XxHash64.Prime64_2, XxHash64.Prime64_3), accumulators + 2);
-                Vector128.Store(Vector128.Create(XxHash64.Prime64_4, XxHash32.Prime32_2), accumulators + 4);
-                Vector128.Store(Vector128.Create(XxHash64.Prime64_5, XxHash32.Prime32_1), accumulators + 6);
+                Vector128.Store(Vector128.Create(Prime32_3, Prime64_1), accumulators);
+                Vector128.Store(Vector128.Create(Prime64_2, Prime64_3), accumulators + 2);
+                Vector128.Store(Vector128.Create(Prime64_4, Prime32_2), accumulators + 4);
+                Vector128.Store(Vector128.Create(Prime64_5, Prime32_1), accumulators + 6);
             }
             else
 #endif
             {
-                accumulators[0] = XxHash32.Prime32_3;
-                accumulators[1] = XxHash64.Prime64_1;
-                accumulators[2] = XxHash64.Prime64_2;
-                accumulators[3] = XxHash64.Prime64_3;
-                accumulators[4] = XxHash64.Prime64_4;
-                accumulators[5] = XxHash32.Prime32_2;
-                accumulators[6] = XxHash64.Prime64_5;
-                accumulators[7] = XxHash32.Prime32_1;
+                accumulators[0] = Prime32_3;
+                accumulators[1] = Prime64_1;
+                accumulators[2] = Prime64_2;
+                accumulators[3] = Prime64_3;
+                accumulators[4] = Prime64_4;
+                accumulators[5] = Prime32_2;
+                accumulators[6] = Prime64_5;
+                accumulators[7] = Prime32_1;
             }
         }
 
@@ -709,7 +744,7 @@ namespace System.IO.Hashing
                 {
                     ulong xorShift = XorShift(*accumulators, 47);
                     ulong xorWithKey = xorShift ^ ReadUInt64LE(secret);
-                    *accumulators = xorWithKey * XxHash32.Prime32_1;
+                    *accumulators = xorWithKey * Prime32_1;
 
                     accumulators++;
                     secret += sizeof(ulong);
@@ -723,7 +758,7 @@ namespace System.IO.Hashing
         {
             Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
             Vector256<ulong> xorWithKey = xorShift ^ secret;
-            accVec = xorWithKey * Vector256.Create((ulong)XxHash32.Prime32_1);
+            accVec = xorWithKey * Vector256.Create((ulong)Prime32_1);
             return accVec;
         }
 
@@ -732,7 +767,7 @@ namespace System.IO.Hashing
         {
             Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
             Vector128<ulong> xorWithKey = xorShift ^ secret;
-            accVec = xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1);
+            accVec = xorWithKey * Vector128.Create((ulong)Prime32_1);
             return accVec;
         }
 #endif
