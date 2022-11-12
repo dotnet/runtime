@@ -244,10 +244,10 @@ namespace System.IO.Hashing
         {
             Debug.Assert(length >= 9 && length <= 16);
 
-            const ulong secretXorL = DefaultSecretUInt64_3 ^ DefaultSecretUInt64_4;
-            const ulong secretXorR = DefaultSecretUInt64_5 ^ DefaultSecretUInt64_6;
-            ulong bitflipLow = secretXorL + seed;
-            ulong bitflipHigh = secretXorR - seed;
+            const ulong SecretXorL = DefaultSecretUInt64_3 ^ DefaultSecretUInt64_4;
+            const ulong SecretXorR = DefaultSecretUInt64_5 ^ DefaultSecretUInt64_6;
+            ulong bitflipLow = SecretXorL + seed;
+            ulong bitflipHigh = SecretXorR - seed;
 
             ulong inputLow = ReadUInt64LE(source) ^ bitflipLow;
             ulong inputHigh = ReadUInt64LE(source + length - sizeof(ulong)) ^ bitflipHigh;
