@@ -49,12 +49,12 @@ namespace Regression.Performance
 
             Console.WriteLine("CreateImport");
             sw.Restart();
-            hr = _CurrentCreateImport(iter);
-            Console.WriteLine($"  Current:  {sw.ElapsedMilliseconds,width}");
-            if (hr < 0) throw new Exception(msg);
-            sw.Restart();
             hr = _BaselineCreateImport(iter);
             Console.WriteLine($"  Baseline: {sw.ElapsedMilliseconds,width}");
+            if (hr < 0) throw new Exception(msg);
+            sw.Restart();
+            hr = _CurrentCreateImport(iter);
+            Console.WriteLine($"  Current:  {sw.ElapsedMilliseconds,width}");
             if (hr < 0) throw new Exception(msg);
 
             Console.WriteLine("EnumTypeDefs");

@@ -46,7 +46,9 @@ namespace Common
         private static unsafe IMetaDataDispenser GetBaseline()
         {
             nint ptr = GetBaselineRaw();
-            return (IMetaDataDispenser)Marshal.GetObjectForIUnknown(ptr);
+            var dispenser = (IMetaDataDispenser)Marshal.GetObjectForIUnknown(ptr);
+            _ = Marshal.Release(ptr);
+            return dispenser;
         }
 
         private static string GetCurrentDirectory()
