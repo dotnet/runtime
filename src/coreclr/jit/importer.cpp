@@ -930,7 +930,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
                                    BasicBlock*      block       /* = nullptr */
                                    )
 {
-    assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir() || dest->OperIs(GT_FIELD)));
+    assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir()));
 
     assert(dest->TypeGet() == src->TypeGet());
     if (dest->TypeIs(TYP_STRUCT))
@@ -1207,7 +1207,14 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         case GT_IND:
             if (willDeref)
             {
-                return structVal->AsIndir()->Addr();
+                GenTree* addr = structVal->AsIndir()->Addr();
+                if (addr->OperIs(GT_FIELD_ADDR))
+                {
+                    // TODO-FIELD: delete this zero-diff quirk.
+                    addr->gtFlags &= ~GTF_FLD_DEREFERENCED;
+                }
+
+                return addr;
             }
             break;
 
@@ -1216,19 +1223,6 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 
         case GT_LCL_FLD:
             return gtNewLclAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(), TYP_BYREF);
-
-        case GT_FIELD:
-        {
-            GenTreeField* fieldNode = structVal->AsField();
-            GenTreeField* fieldAddr =
-                new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, TYP_BYREF, fieldNode->GetFldObj(),
-                                                       fieldNode->gtFldHnd, fieldNode->gtFldOffset);
-            fieldAddr->gtFldMayOverlap = fieldNode->gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN
-            fieldAddr->gtFieldLookup = fieldNode->gtFieldLookup;
-#endif
-            return fieldAddr;
-        }
 
         case GT_COMMA:
             impAppendTree(structVal->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
@@ -1348,7 +1342,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-            if (blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD))
+            if (blockNode->OperIsBlk())
             {
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
@@ -3264,18 +3258,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                                     if (castResult == TypeCompareState::Must)
                                     {
-                                        const CORINFO_FIELD_HANDLE hasValueFldHnd =
-                                            info.compCompHnd->getFieldInClass(nullableCls, 0);
-
-                                        assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
-
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
                                         objToBox = impGetStructAddr(objToBox, nullableCls, CHECK_SPILL_ALL, true);
+                                        static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
 
-                                        impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
-                                                       typeInfo(TI_INT));
+                                        impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TI_INT));
 
                                         JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                         return 1 + sizeof(mdToken);
@@ -8287,7 +8276,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // If the value being produced comes from loading
                             // via an underlying address, just null check the address.
-                            if (op1->OperIs(GT_FIELD, GT_IND, GT_BLK))
+                            if (op1->OperIs(GT_IND, GT_BLK))
                             {
                                 gtChangeOperToNullCheck(op1, block);
                             }
@@ -9259,15 +9248,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        if (isLoadAddress)
-                        {
-                            op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
-                                                     obj, fieldInfo.offset);
-                        }
-                        else
-                        {
-                            op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
-                        }
+                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
+                                                 obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
@@ -9275,17 +9257,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
                         }
 #endif
-
                         if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
                             op1->AsField()->gtFldMayOverlap = true;
                         }
 
-                        if (!isLoadAddress && compIsForInlining() &&
-                            impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, nullptr, obj,
-                                                                               impInlineInfo->inlArgInfo))
+                        if (!isLoadAddress)
                         {
-                            impInlineInfo->thisDereferencedFirst = true;
+                            ClassLayout* layout;
+                            lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, &layout);
+                            op1    = gtNewFieldIndirNode(lclTyp, layout, op1->AsField());
+
+                            if (compIsForInlining() &&
+                                impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, nullptr, obj,
+                                                                                   impInlineInfo->inlArgInfo))
+                            {
+                                impInlineInfo->thisDereferencedFirst = true;
+                            }
                         }
                     }
                     break;
@@ -9382,14 +9370,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!isLoadAddress)
                 {
-
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
                         op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
 
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_BLK));
+                            assert(op1->OperIs(GT_IND, GT_BLK));
                             op1->gtFlags |= GTF_IND_VOLATILE;
                         }
                     }
@@ -9398,7 +9385,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_BLK));
+                            assert(op1->OperIs(GT_IND, GT_BLK));
                             op1->gtFlags |= GTF_IND_UNALIGNED;
                         }
                     }
@@ -9426,7 +9413,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STFLD:
             case CEE_STSFLD:
             {
-
                 bool isStoreStatic = (opcode == CEE_STSFLD);
 
                 /* Get the CP_Fieldref index */
@@ -9442,7 +9428,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
-                lclTyp = JITtype2varType(fieldInfo.fieldType);
+                ClassLayout* layout;
+                lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);
 
                 if (compIsForInlining())
                 {
@@ -9568,13 +9555,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        /* Create the data member node */
-                        op1             = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
-                        DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
-                        if (StructHasOverlappingFields(typeFlags))
-                        {
-                            op1->AsField()->gtFldMayOverlap = true;
-                        }
+                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField, obj,
+                                                 fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
@@ -9582,6 +9564,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
                         }
 #endif
+                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
+                        {
+                            op1->AsField()->gtFldMayOverlap = true;
+                        }
+
+                        op1 = gtNewFieldIndirNode(lclTyp, layout, op1->AsField());
 
                         if (compIsForInlining() &&
                             impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, nullptr, obj,
@@ -9597,10 +9585,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = gtNewFieldAddrNode(TYP_I_IMPL, resolvedToken.hField, nullptr, fieldInfo.offset);
                         op1->gtFlags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
 
-                        ClassLayout* layout;
-                        lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);
-                        op1    = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING)
-                                                     : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
+                        op1 = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING)
+                                                  : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
                         break;
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
@@ -9635,7 +9621,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    assert(op1->OperIs(GT_FIELD, GT_IND));
+                    assert(op1->OperIs(GT_IND));
 
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
@@ -9653,8 +9639,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((lclTyp == TYP_REF) &&
                         (((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) != 0) || obj->TypeIs(TYP_REF)))
                     {
-                        static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_IND_TGT_HEAP);
-                        op1->gtFlags |= GTF_FLD_TGT_HEAP;
+                        op1->gtFlags |= GTF_IND_TGT_HEAP;
                     }
 
                     /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
@@ -12674,7 +12659,7 @@ void Compiler::impFixPredLists()
 //
 // Remarks:
 //   This is a variant of GenTree::IsInvariant that is more suitable for use
-//   during import. Unlike that function, this one handles GT_FIELD nodes.
+//   during import. Unlike that function, this one handles GT_FIELD_ADDR nodes.
 //
 bool Compiler::impIsInvariant(const GenTree* tree)
 {
