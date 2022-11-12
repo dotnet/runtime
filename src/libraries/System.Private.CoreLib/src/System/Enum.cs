@@ -24,20 +24,19 @@ using System.Runtime.InteropServices;
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
         private const char EnumSeparatorChar = ',';
-        private const string ZeroEnumValue = "0";
         #endregion
 
         #region Private Static Methods
 
-        private string ValueToString()
+        private string AsNumberToString()
         {
             ref byte data = ref this.GetRawData();
-            return (InternalGetCorElementType()) switch
+            return InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data).ToString(),
                 CorElementType.ELEMENT_TYPE_U1 => data.ToString(),
@@ -57,23 +56,60 @@ namespace System
             };
         }
 
-        private static bool ValueToString<TEnum>(TEnum value, Span<char> destination, out int charsWritten, bool isHexFormat = false) where TEnum : struct, Enum
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // optimizes into a single TryFormat call for all types expressible in C#
+        private static bool TryAsNumberToString<TEnum>(TEnum value, Span<char> destination, out int charsWritten) where TEnum : struct, Enum
         {
-            return (Type.GetTypeCode(typeof(TEnum))) switch
+            switch (Type.GetTypeCode(typeof(TEnum)))
             {
-                TypeCode.SByte => Unsafe.As<TEnum, sbyte>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X2" : null),
-                TypeCode.Byte => Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X2" : null),
-                TypeCode.Int16 => Unsafe.As<TEnum, short>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X4" : null),
-                TypeCode.UInt16 => Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X4" : null),
-                TypeCode.UInt32 => Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X8" : null),
-                TypeCode.Int32 => Unsafe.As<TEnum, int>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X8" : null),
-                TypeCode.UInt64 => Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X16" : null),
-                TypeCode.Int64 => Unsafe.As<TEnum, long>(ref value).TryFormat(destination, out charsWritten, isHexFormat ? "X16" : null),
-                _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
+                case TypeCode.SByte:
+                    return Unsafe.As<TEnum, sbyte>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Byte:
+                    return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Boolean:
+                    return Unsafe.As<TEnum, bool>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Int16:
+                    return Unsafe.As<TEnum, short>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.UInt16:
+                    return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Char:
+                    if (!destination.IsEmpty)
+                    {
+                        destination[0] = Unsafe.As<TEnum, char>(ref value);
+                        charsWritten = 1;
+                        return true;
+                    }
+                    charsWritten = 0;
+                    return false;
+
+                case TypeCode.UInt32:
+                    return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Int32:
+                    return Unsafe.As<TEnum, int>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.UInt64:
+                    return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Int64:
+                    return Unsafe.As<TEnum, long>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Single:
+                    return Unsafe.As<TEnum, float>(ref value).TryFormat(destination, out charsWritten);
+
+                case TypeCode.Double:
+                    return Unsafe.As<TEnum, double>(ref value).TryFormat(destination, out charsWritten);
+
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             };
         }
 
-        private string ValueToHexString()
+        private string AsNumberToHexString()
         {
             ref byte data = ref this.GetRawData();
             Span<byte> bytes = stackalloc byte[8];
@@ -85,24 +121,29 @@ namespace System
                     bytes[0] = data;
                     length = 1;
                     break;
+
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return data != 0 ? "01" : "00";
+
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     BinaryPrimitives.WriteUInt16BigEndian(bytes, Unsafe.As<byte, ushort>(ref data));
                     length = 2;
                     break;
+
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
                     BinaryPrimitives.WriteUInt32BigEndian(bytes, Unsafe.As<byte, uint>(ref data));
                     length = 4;
                     break;
+
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
                     BinaryPrimitives.WriteUInt64BigEndian(bytes, Unsafe.As<byte, ulong>(ref data));
                     length = 8;
                     break;
+
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
@@ -110,9 +151,37 @@ namespace System
             return HexConverter.ToString(bytes.Slice(0, length), HexConverter.Casing.Upper);
         }
 
-        private static string ValueToHexString(object value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // optimizes into a single TryFormat call for all types expressible in C#
+        private static bool TryAsNumberToHexString<TEnum>(TEnum value, Span<char> destination, out int charsWritten) where TEnum : struct, Enum
         {
-            return (Convert.GetTypeCode(value)) switch
+            switch (Type.GetTypeCode(typeof(TEnum)))
+            {
+                case TypeCode.Byte or TypeCode.SByte:
+                    return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten, "X2");
+
+                case TypeCode.Boolean:
+                    {
+                        bool copied = (Unsafe.As<TEnum, bool>(ref value) ? "01" : "00").TryCopyTo(destination);
+                        charsWritten = copied ? 2 : 0;
+                        return copied;
+                    }
+
+                case TypeCode.UInt16 or TypeCode.Int16 or TypeCode.Char:
+                    return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten, "X4");
+
+                case TypeCode.UInt32 or TypeCode.Int32:
+                    return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten, "X8");
+
+                case TypeCode.UInt64 or TypeCode.Int64:
+                    return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten, "X16");
+
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            };
+        }
+
+        private static string AsNumberToHexString(object value) =>
+            Convert.GetTypeCode(value) switch
             {
                 TypeCode.SByte => ((byte)(sbyte)value).ToString("X2", null),
                 TypeCode.Byte => ((byte)value).ToString("X2", null),
@@ -126,7 +195,6 @@ namespace System
                 TypeCode.Int64 => ((ulong)(long)value).ToString("X16", null),
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
-        }
 
         internal static string? GetEnumName(RuntimeType enumType, ulong ulValue)
         {
@@ -156,7 +224,7 @@ namespace System
             return null; // return null so the caller knows to .ToString() the input
         }
 
-        private static string? InternalFormat(RuntimeType enumType, ulong value)
+        private static string? FormatSingleNameOrFlagNames(RuntimeType enumType, ulong value)
         {
             EnumInfo enumInfo = GetEnumInfo(enumType);
 
@@ -166,138 +234,94 @@ namespace System
             }
 
             // These are flags OR'ed together (We treat everything as unsigned types)
-            return InternalFlagsFormat(enumInfo, value);
+            return FormatFlagNames(enumInfo, value);
         }
 
-        private static bool InternalFormat(RuntimeType enumType, ulong value, Span<char> destination, out int charsWritten, out bool isDestinationTooSmall)
-        {
-            EnumInfo enumInfo = GetEnumInfo(enumType);
-
-            if (!enumInfo.HasFlagsAttribute)
-            {
-                string? enumName = GetEnumName(enumInfo, value);
-
-                if (enumName == null)
-                {
-                    charsWritten = 0;
-                    isDestinationTooSmall = false;
-                    return false;
-                }
-
-                if (destination.Length < enumName.Length)
-                {
-                    charsWritten = 0;
-                    isDestinationTooSmall = true;
-                    return false;
-                }
-
-                enumName.CopyTo(destination);
-                charsWritten = enumName.Length;
-                isDestinationTooSmall = false;
-                return true;
-            }
-
-            // These are flags OR'ed together (We treat everything as unsigned types)
-            return InternalFlagsFormat(enumInfo, value, destination, out charsWritten, out isDestinationTooSmall);
-        }
-
-        private static string? InternalFlagsFormat(RuntimeType enumType, ulong result)
-        {
-            return InternalFlagsFormat(GetEnumInfo(enumType), result);
-        }
-
-        private static string? InternalFlagsFormat(EnumInfo enumInfo, ulong resultValue)
+        private static string? FormatFlagNames(EnumInfo enumInfo, ulong resultValue)
         {
             string[] names = enumInfo.Names;
             ulong[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);
 
-            string? singleEnumFlagsFormat = GetSingleEnumFlagsFormat(ref resultValue, names, values, out int index);
-            if (singleEnumFlagsFormat != null)
+            string? result = GetSingleFlagsEnumNameForValue(resultValue, names, values, out int index);
+            if (result is null)
             {
-                return singleEnumFlagsFormat;
+                // With a ulong result value, regardless of the enum's base type, the maximum
+                // possible number of consistent name/values we could have is 64, since every
+                // value is made up of one or more bits, and when we see values and incorporate
+                // their names, we effectively switch off those bits.
+                Span<int> foundItems = stackalloc int[64];
+                if (TryFindFlagsNames(resultValue, names, values, index, foundItems, out int resultLength, out int foundItemsCount))
+                {
+                    foundItems = foundItems.Slice(0, foundItemsCount);
+                    int length = GetMultipleEnumsFlagsFormatResultLength(resultLength, foundItemsCount);
+
+                    result = string.FastAllocateString(length);
+                    WriteMultipleFoundFlagsNames(names, foundItems, new Span<char>(ref result.GetRawStringData(), result.Length));
+                }
             }
 
-            // With a ulong result value, regardless of the enum's base type, the maximum
-            // possible number of consistent name/values we could have is 64, since every
-            // value is made up of one or more bits, and when we see values and incorporate
-            // their names, we effectively switch off those bits.
-            Span<int> foundItems = stackalloc int[64];
-            bool isEnumsFound = FindEnums(ref resultValue, names, values, index, ref foundItems, out int resultLength, out int foundItemsCount);
-            if (!isEnumsFound)
-            {
-                return null;
-            }
-
-            Debug.Assert(foundItemsCount > 0);
-            int length = GetMultipleEnumsFlagsFormatResultLength(resultLength, foundItemsCount);
-
-            string multipleEnumsFlagsFormat = string.FastAllocateString(length);
-            Span<char> resultSpan = new Span<char>(ref multipleEnumsFlagsFormat.GetRawStringData(), multipleEnumsFlagsFormat.Length);
-
-            SetMultipleEnumsFlagsFormat(names, ref foundItems, foundItemsCount, resultSpan);
-
-            return multipleEnumsFlagsFormat;
+            return result;
         }
 
-        private static bool InternalFlagsFormat(EnumInfo enumInfo, ulong resultValue, Span<char> destination, out int charsWritten, out bool isDestinationTooSmall)
+        private static bool TryFormatFlagNames(EnumInfo enumInfo, ulong resultValue, Span<char> destination, out int charsWritten, ref bool isDestinationTooSmall)
         {
+            Debug.Assert(!isDestinationTooSmall);
+
             string[] names = enumInfo.Names;
             ulong[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);
 
-            string? singleEnumFlagsFormat = GetSingleEnumFlagsFormat(ref resultValue, names, values, out int index);
-            if (singleEnumFlagsFormat != null)
+            if (GetSingleFlagsEnumNameForValue(resultValue, names, values, out int index) is string singleEnumFlagsFormat)
             {
-                if (destination.Length < singleEnumFlagsFormat.Length)
+                if (singleEnumFlagsFormat.TryCopyTo(destination))
                 {
-                    charsWritten = 0;
-                    isDestinationTooSmall = true;
-                    return false;
+                    charsWritten = singleEnumFlagsFormat.Length;
+                    return true;
                 }
 
-                singleEnumFlagsFormat.CopyTo(destination);
-                charsWritten = singleEnumFlagsFormat.Length;
-                isDestinationTooSmall = false;
-                return true;
-            }
-
-            // With a ulong result value, regardless of the enum's base type, the maximum
-            // possible number of consistent name/values we could have is 64, since every
-            // value is made up of one or more bits, and when we see values and incorporate
-            // their names, we effectively switch off those bits.
-            Span<int> foundItems = stackalloc int[64];
-            bool isEnumsFound = FindEnums(ref resultValue, names, values, index, ref foundItems, out int resultLength, out int foundItemsCount);
-            if (!isEnumsFound)
-            {
-                charsWritten = 0;
-                isDestinationTooSmall = false;
-                return false;
-            }
-
-            Debug.Assert(foundItemsCount > 0);
-            int length = GetMultipleEnumsFlagsFormatResultLength(resultLength, foundItemsCount);
-
-            if (destination.Length < length)
-            {
-                charsWritten = 0;
                 isDestinationTooSmall = true;
-                return false;
+            }
+            else
+            {
+                // With a ulong result value, regardless of the enum's base type, the maximum
+                // possible number of consistent name/values we could have is 64, since every
+                // value is made up of one or more bits, and when we see values and incorporate
+                // their names, we effectively switch off those bits.
+                Span<int> foundItems = stackalloc int[64];
+                if (TryFindFlagsNames(resultValue, names, values, index, foundItems, out int resultLength, out int foundItemsCount))
+                {
+                    foundItems = foundItems.Slice(0, foundItemsCount);
+                    int length = GetMultipleEnumsFlagsFormatResultLength(resultLength, foundItemsCount);
+
+                    if (length <= destination.Length)
+                    {
+                        charsWritten = length;
+                        WriteMultipleFoundFlagsNames(names, foundItems, destination);
+                        return true;
+                    }
+
+                    isDestinationTooSmall = true;
+                }
             }
 
-            SetMultipleEnumsFlagsFormat(names, ref foundItems, foundItemsCount, destination);
-            charsWritten = length;
-            isDestinationTooSmall = false;
-            return true;
+            charsWritten = 0;
+            return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // used twice, once from string-based and once from span-based code path
         private static int GetMultipleEnumsFlagsFormatResultLength(int resultLength, int foundItemsCount)
         {
+            Debug.Assert(foundItemsCount >= 2);
+            Debug.Assert(foundItemsCount <= 64);
+
             const int SeparatorStringLength = 2; // ", "
-            return checked(resultLength + (SeparatorStringLength * (foundItemsCount - 1)));
+            int allSeparatorsLength = SeparatorStringLength * (foundItemsCount - 1);
+            return checked(resultLength + allSeparatorsLength);
         }
 
-        private static string? GetSingleEnumFlagsFormat(ref ulong resultValue, string[] names, ulong[] values, out int index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // used twice, once from string-based and once from span-based code path
+        private static string? GetSingleFlagsEnumNameForValue(ulong resultValue, string[] names, ulong[] values, out int index)
         {
             // Values are sorted, so if the incoming value is 0, we can check to see whether
             // the first entry matches it, in which case we can return its name; otherwise,
@@ -307,42 +331,48 @@ namespace System
                 index = 0;
                 return values.Length > 0 && values[0] == 0 ?
                     names[0] :
-                    ZeroEnumValue;
+                    "0";
             }
 
             // Walk from largest to smallest. It's common to have a flags enum with a single
             // value that matches a single entry, in which case we can just return the existing
             // name string.
-            index = values.Length - 1;
-            while (index >= 0)
+            int i;
+            for (i = values.Length - 1; (uint)i < (uint)values.Length; i--)
             {
-                if (values[index] == resultValue)
+                if (values[i] <= resultValue)
                 {
-                    return names[index];
-                }
+                    if (values[i] == resultValue)
+                    {
+                        index = i;
+                        return names[i];
+                    }
 
-                if (values[index] < resultValue)
-                {
                     break;
                 }
-
-                index--;
             }
 
+            index = i;
             return null;
         }
 
-        private static bool FindEnums(ref ulong resultValue, string[] names, ulong[] values, int index, ref Span<int> foundItems, out int resultLength, out int foundItemsCount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // used twice, once from string-based and once from span-based code path
+        private static bool TryFindFlagsNames(ulong resultValue, string[] names, ulong[] values, int index, Span<int> foundItems, out int resultLength, out int foundItemsCount)
         {
             // Now look for multiple matches, storing the indices of the values
             // into our span.
             resultLength = 0;
             foundItemsCount = 0;
 
-            while (index >= 0)
+            while (true)
             {
+                if ((uint)index >= (uint)values.Length)
+                {
+                    break;
+                }
+
                 ulong currentValue = values[index];
-                if (index == 0 && currentValue == 0)
+                if (((uint)index | currentValue) == 0)
                 {
                     break;
                 }
@@ -350,7 +380,8 @@ namespace System
                 if ((resultValue & currentValue) == currentValue)
                 {
                     resultValue -= currentValue;
-                    foundItems[foundItemsCount++] = index;
+                    foundItems[foundItemsCount] = index;
+                    foundItemsCount++;
                     resultLength = checked(resultLength + names[index].Length);
                 }
 
@@ -360,35 +391,33 @@ namespace System
             // If we exhausted looking through all the values and we still have
             // a non-zero result, we couldn't match the result to only named values.
             // In that case, we return null and let the call site just generate
-            // a string for the integral value.
+            // a string for the integral value if it desires.
             return resultValue == 0;
         }
 
-        private static void SetMultipleEnumsFlagsFormat(string[] names, ref Span<int> foundItems, int foundItemsCount, Span<char> resultSpan)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // used twice, once from string-based and once from span-based code path
+        private static void WriteMultipleFoundFlagsNames(string[] names, ReadOnlySpan<int> foundItems, Span<char> destination)
         {
-            // We know what strings to concatenate.  Do so.
+            Debug.Assert(foundItems.Length >= 2);
 
-            string name = names[foundItems[--foundItemsCount]];
-            name.CopyTo(resultSpan);
-            resultSpan = resultSpan.Slice(name.Length);
-            while (--foundItemsCount >= 0)
+            for (int i = foundItems.Length - 1; i != 0; i--)
             {
-                resultSpan[0] = EnumSeparatorChar;
-                resultSpan[1] = ' ';
-                resultSpan = resultSpan.Slice(2);
-
-                name = names[foundItems[foundItemsCount]];
-                name.CopyTo(resultSpan);
-                resultSpan = resultSpan.Slice(name.Length);
+                string name = names[foundItems[i]];
+                name.CopyTo(destination);
+                destination = destination.Slice(name.Length);
+                Span<char> afterSeparator = destination.Slice(2); // done before copying ", " to eliminate those two bounds checks
+                destination[0] = EnumSeparatorChar;
+                destination[1] = ' ';
+                destination = afterSeparator;
             }
+
+            names[foundItems[0]].CopyTo(destination);
         }
 
-        internal static ulong ToUInt64(object value)
-        {
+        internal static ulong ToUInt64(object value) =>
             // Helper function to silently convert the value to UInt64 from the other base types for enum without throwing an exception.
             // This is need since the Convert functions do overflow checks.
-            TypeCode typeCode = Convert.GetTypeCode(value);
-            ulong result = typeCode switch
+            Convert.GetTypeCode(value) switch
             {
                 TypeCode.SByte => (ulong)(sbyte)value,
                 TypeCode.Byte => (byte)value,
@@ -402,8 +431,6 @@ namespace System
                 TypeCode.Int64 => (ulong)(long)value,
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
-            return result;
-        }
 
         private static ulong ToUInt64<TEnum>(TEnum value) where TEnum : struct, Enum =>
             Type.GetTypeCode(typeof(TEnum)) switch
@@ -514,6 +541,7 @@ namespace System
                         byte flagsValue = pFlagsValue;
                         return (pThisValue & flagsValue) == flagsValue;
                     }
+
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -521,6 +549,7 @@ namespace System
                         ushort flagsValue = Unsafe.As<byte, ushort>(ref pFlagsValue);
                         return (Unsafe.As<byte, ushort>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
 #if TARGET_32BIT
@@ -532,6 +561,7 @@ namespace System
                         uint flagsValue = Unsafe.As<byte, uint>(ref pFlagsValue);
                         return (Unsafe.As<byte, uint>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
 #if TARGET_64BIT
@@ -543,6 +573,7 @@ namespace System
                         ulong flagsValue = Unsafe.As<byte, ulong>(ref pFlagsValue);
                         return (Unsafe.As<byte, ulong>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+
                 default:
                     Debug.Fail("Unknown enum underlying type");
                     return false;
@@ -710,6 +741,7 @@ namespace System
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
                 }
+
                 result = null;
                 return false;
             }
@@ -727,8 +759,9 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentException(SR.Arg_MustContainEnumInfo, nameof(value));
+                    ThrowInvalidEmptyParseArgument();
                 }
+
                 result = null;
                 return false;
             }
@@ -821,6 +854,7 @@ namespace System
                 {
                     ArgumentNullException.Throw(nameof(value));
                 }
+
                 result = default;
                 return false;
             }
@@ -832,18 +866,19 @@ namespace System
         {
             // Validation on the enum type itself.  Failures here are considered non-parsing failures
             // and thus always throw rather than returning false.
-            if (!typeof(TEnum).IsEnum)
+            if (!typeof(TEnum).IsEnum) // with IsEnum being an intrinsic, this whole block will be eliminated for all meaningful cases
             {
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(TEnum));
             }
 
             value = value.TrimStart();
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentException(SR.Arg_MustContainEnumInfo, nameof(value));
+                    ThrowInvalidEmptyParseArgument();
                 }
+
                 result = default;
                 return false;
             }
@@ -1192,9 +1227,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(value);
 
             // Delegate rest of error checking to the other functions
-            TypeCode typeCode = Convert.GetTypeCode(value);
-
-            return typeCode switch
+            return Convert.GetTypeCode(value) switch
             {
                 TypeCode.Int32 => ToObject(enumType, (int)value),
                 TypeCode.SByte => ToObject(enumType, (sbyte)value),
@@ -1227,7 +1260,7 @@ namespace System
                 if (format.Length != 1)
                 {
                     // all acceptable format string are of length 1
-                    throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
+                    throw CreateInvalidFormatSpecifierException();
                 }
                 return ((Enum)value).ToString(format);
             }
@@ -1241,73 +1274,99 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
-                    case 'G':
                     case 'g':
-                        return InternalFormat(rtType, ToUInt64(value)) ?? value.ToString()!;
+                        return FormatSingleNameOrFlagNames(rtType, ToUInt64(value)) ?? value.ToString()!;
 
-                    case 'D':
                     case 'd':
                         return value.ToString()!;
 
-                    case 'X':
                     case 'x':
-                        return ValueToHexString(value);
+                        return AsNumberToHexString(value);
 
-                    case 'F':
                     case 'f':
-                        return InternalFlagsFormat(rtType, ToUInt64(value)) ?? value.ToString()!;
+                        return FormatFlagNames(GetEnumInfo(rtType), ToUInt64(value)) ?? value.ToString()!;
                 }
             }
 
-            throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
+            throw CreateInvalidFormatSpecifierException();
         }
 
-        public static bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format) where TEnum : struct, Enum
+        /// <summary>Tries to format the value of the enumerated type instance into the provided span of characters.</summary>
+        /// <typeparam name="TEnum"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="destination">The span into which to write the instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <param name="format">A span containing the character that represents the standard format string that defines the acceptable format of destination. This may be empty, or "g", "d", "f", or "x".</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/> if the destination span wasn't large enough to contain the formatted value.</returns>
+        /// <exception cref="FormatException">The format parameter contains an invalid value.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // format is most frequently a constant, and we want it exposed to the implementation; this should be inlined automatically, anyway
+        public static bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct, Enum
         {
-            if (!destination.IsEmpty && format.Length == 1)
+            return format.IsEmpty ?
+                TryFormatDefault(value, destination, out charsWritten) :
+                TryFormatNonDefault(value, destination, out charsWritten, format);
+
+            static bool TryFormatDefault(TEnum value, Span<char> destination, out int charsWritten)
             {
-                // Optimize for these standard formats that are not affected by culture.
-                switch ((char)(format[0] | 0x20))
+                EnumInfo enumInfo = GetEnumInfo((RuntimeType)typeof(TEnum));
+                ulong ulongValue = ToUInt64(value);
+
+                if (!enumInfo.HasFlagsAttribute)
                 {
-                    case 'g':
+                    if (GetEnumName(enumInfo, ulongValue) is string enumName)
+                    {
+                        if (enumName.TryCopyTo(destination))
                         {
-                            RuntimeType rtType = (RuntimeType)typeof(TEnum);
-                            if (InternalFormat(rtType, ToUInt64(value), destination, out charsWritten, out bool isDestinationTooSmall))
-                            {
-                                return true;
-                            }
-                            if (isDestinationTooSmall)
-                            {
-                                // Avoid calling ValueToString, InternalFormat was possible, however the destination span was too small.
-                                return false;
-                            }
-                            return ValueToString(value, destination, out charsWritten);
+                            charsWritten = enumName.Length;
+                            return true;
                         }
-                    case 'd':
-                        return ValueToString(value, destination, out charsWritten);
-                    case 'x':
-                        return ValueToString(value, destination, out charsWritten, true);
-                    case 'f':
-                        {
-                            EnumInfo enumInfo = GetEnumInfo((RuntimeType)typeof(TEnum));
-                            if (InternalFlagsFormat(enumInfo, ToUInt64(value), destination, out charsWritten, out bool isDestinationTooSmall))
-                            {
-                                return true;
-                            }
-                            if (isDestinationTooSmall)
-                            {
-                                // Avoid calling ValueToString, InternalFlagsFormat was possible, however the destination span was too small.
-                                return false;
-                            }
-                            return ValueToString(value, destination, out charsWritten);
-                        }
+
+                        charsWritten = 0;
+                        return false;
+                    }
                 }
+                else
+                {
+                    bool destinationIsTooSmall = false;
+                    if (TryFormatFlagNames(enumInfo, ulongValue, destination, out charsWritten, ref destinationIsTooSmall) || destinationIsTooSmall)
+                    {
+                        return !destinationIsTooSmall;
+                    }
+                }
+
+                return TryAsNumberToString(value, destination, out charsWritten);
             }
 
-            charsWritten = 0;
-            return false;
+            static bool TryFormatNonDefault(TEnum value, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format)
+            {
+                if (format.Length == 1)
+                {
+                    switch (format[0] | 0x20)
+                    {
+                        case 'g':
+                            return TryFormatDefault(value, destination, out charsWritten);
+
+                        case 'd':
+                            return TryAsNumberToString(value, destination, out charsWritten);
+
+                        case 'x':
+                            return TryAsNumberToHexString(value, destination, out charsWritten);
+
+                        case 'f':
+                            bool destinationIsTooSmall = false;
+                            if (TryFormatFlagNames(GetEnumInfo((RuntimeType)typeof(TEnum)), ToUInt64(value), destination, out charsWritten, ref destinationIsTooSmall) ||
+                                destinationIsTooSmall)
+                            {
+                                return !destinationIsTooSmall;
+                            }
+                            goto case 'd';
+                    }
+                }
+
+                throw CreateInvalidFormatSpecifierException();
+            }
         }
         #endregion
 
@@ -1315,7 +1374,7 @@ namespace System
         internal object GetValue()
         {
             ref byte data = ref this.GetRawData();
-            return (InternalGetCorElementType()) switch
+            return InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data),
                 CorElementType.ELEMENT_TYPE_U1 => data,
@@ -1335,6 +1394,7 @@ namespace System
             };
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ulong ToUInt64()
         {
             ref byte data = ref this.GetRawData();
@@ -1342,37 +1402,46 @@ namespace System
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                     return (ulong)Unsafe.As<byte, sbyte>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_U1:
                     return data;
+
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return data != 0 ? 1UL : 0UL;
+
                 case CorElementType.ELEMENT_TYPE_I2:
                     return (ulong)Unsafe.As<byte, short>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_I4:
 #if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return (ulong)Unsafe.As<byte, int>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_U4:
 #if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                 case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, uint>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_I8:
 #if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return (ulong)Unsafe.As<byte, long>(ref data);
+
                 case CorElementType.ELEMENT_TYPE_U8:
 #if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, ulong>(ref data);
+
                 default:
                     Debug.Fail("Unknown enum underlying type");
                     return 0;
@@ -1403,10 +1472,12 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U1:
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return pThisValue == pOtherValue;
+
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
 #if TARGET_32BIT
@@ -1415,6 +1486,7 @@ namespace System
 #endif
                 case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
 #if TARGET_64BIT
@@ -1423,6 +1495,7 @@ namespace System
 #endif
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+
                 default:
                     Debug.Fail("Unknown enum underlying type");
                     return false;
@@ -1435,7 +1508,7 @@ namespace System
             // The runtime can bypass calls to Enum::GetHashCode and call the underlying type's GetHashCode directly
             // to avoid boxing the enum.
             ref byte data = ref this.GetRawData();
-            return (InternalGetCorElementType()) switch
+            return InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U1 => data.GetHashCode(),
@@ -1457,14 +1530,10 @@ namespace System
 
         public override string ToString()
         {
-            // Returns the value in a human readable format.  For PASCAL style enums who's value maps directly the name of the field is returned.
-            // For PASCAL style enums who's values do not map directly the decimal value of the field is returned.
-            // For BitFlags (indicated by the Flags custom attribute): If for each bit that is set in the value there is a corresponding constant
-            // (a pure power of 2), then the OR string (ie "Red, Yellow") is returned. Otherwise, if the value is zero or if you can't create a string that consists of
-            // pure powers of 2 OR-ed together, you return a hex value
-
             // Try to see if its one of the enum values, then we return a String back else the value
-            return InternalFormat((RuntimeType)GetType(), ToUInt64()) ?? ValueToString();
+            return
+                FormatSingleNameOrFlagNames((RuntimeType)GetType(), ToUInt64()) ??
+                AsNumberToString();
         }
 
         public int CompareTo(object? target)
@@ -1485,38 +1554,48 @@ namespace System
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_U1:
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return pThisValue.CompareTo(pTargetValue);
+
                 case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_I4:
 #if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_U4:
 #if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                     return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_I8:
 #if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_U8:
 #if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                     return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
+
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+
                 default:
                     Debug.Fail("Unknown enum underlying type");
                     return 0;
@@ -1542,27 +1621,23 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                switch (format[0] | 0x20)
                 {
-                    case 'G':
                     case 'g':
                         return ToString();
 
-                    case 'D':
                     case 'd':
-                        return ValueToString();
+                        return AsNumberToString();
 
-                    case 'X':
                     case 'x':
-                        return ValueToHexString();
+                        return AsNumberToHexString();
 
-                    case 'F':
                     case 'f':
-                        return InternalFlagsFormat((RuntimeType)GetType(), ToUInt64()) ?? ValueToString();
+                        return FormatFlagNames(GetEnumInfo((RuntimeType)GetType()), ToUInt64()) ?? AsNumberToString();
                 }
             }
 
-            throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
+            throw CreateInvalidFormatSpecifierException();
         }
 
         [Obsolete("The provider argument is not used. Use ToString() instead.")]
@@ -1574,9 +1649,8 @@ namespace System
         #endregion
 
         #region IConvertible
-        public TypeCode GetTypeCode()
-        {
-            return (InternalGetCorElementType()) switch
+        public TypeCode GetTypeCode() =>
+            InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => TypeCode.SByte,
                 CorElementType.ELEMENT_TYPE_U1 => TypeCode.Byte,
@@ -1590,7 +1664,6 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U8 => TypeCode.UInt64,
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
-        }
 
         bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
@@ -1713,13 +1786,22 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
             if (!rtType.IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
 #if NATIVEAOT
             // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
             // https://github.com/dotnet/runtime/issues/7976
             if (enumType.ContainsGenericParameters)
                 throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
 #endif
+
             return rtType;
         }
+
+        private static void ThrowInvalidEmptyParseArgument() =>
+            throw new ArgumentException(SR.Arg_MustContainEnumInfo, "value");
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/78300
+        private static Exception CreateInvalidFormatSpecifierException() =>
+            new FormatException(SR.Format_InvalidEnumFormatSpecification);
     }
 }
