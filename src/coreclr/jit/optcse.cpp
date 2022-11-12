@@ -3238,12 +3238,6 @@ public:
                 else
                 {
                     noway_assert(asg->AsOp()->gtOp2 == val);
-
-                    if (val->OperIs(GT_CAST))
-                    {
-                        asg->ChangeType(val->AsCast()->CastToType());
-                        asg->gtGetOp1()->ChangeType(val->AsCast()->CastToType());
-                    }
                 }
 
                 // Assign the proper Value Numbers.

@@ -376,6 +376,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
 void Rationalizer::RewriteCastOnAssignment(GenTreeOp* node)
 {
+    return;
     assert(node->OperIs(GT_ASG));
 
     var_types type = node->TypeGet();
