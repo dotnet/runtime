@@ -153,7 +153,6 @@ namespace System.IO.Hashing
             }
         }
 
-
         /// <summary>"This is a stronger avalanche, preferable when input has not been previously mixed."</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Rrmxmx(ulong hash, uint length)
