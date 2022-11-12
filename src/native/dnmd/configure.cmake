@@ -11,8 +11,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(MSVC)
   add_compile_options(/Zc:wchar_t-) # wchar_t is a built-in type.
   add_compile_options(/W4 /WX) # warning level 4 and all warnings as errors.
-  add_compile_options(/Zi) # enable debugging information
+  add_compile_options(/Zi) # enable debugging information.
+
+  add_link_options(/DEBUG) # enable debugging information.
 else()
   add_compile_options(-Wall -Werror) # warning level 3 and all warnings as errors.
-  add_compile_options(-g>) # enable debugging information
+  add_compile_options(-g) # enable debugging information.
 endif()
