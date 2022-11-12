@@ -7,21 +7,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._CpuId
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        public unsafe static void CpuId()
         {
             int testResult = Pass;
 
             if (!X86Base.IsSupported)
             {
-                return testResult;
+                return;
             }
 
             (int eax, int ebx, int ecx, int edx) = X86Base.CpuId(0x00000000, 0x00000000);
@@ -50,7 +52,8 @@ namespace IntelHardwareIntrinsicTest
 
             if ((maxFunctionId < 0x00000001) || (Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic") is null))
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
@@ -123,7 +126,8 @@ namespace IntelHardwareIntrinsicTest
 
             if (maxFunctionId < 0x00000007)
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
@@ -164,7 +168,8 @@ namespace IntelHardwareIntrinsicTest
 
             if (maxFunctionIdEx < 0x00000001)
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000001), 0x00000000);
@@ -175,7 +180,8 @@ namespace IntelHardwareIntrinsicTest
                 testResult = Fail;
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
+            return;
         }
 
         static bool IsBitIncorrect(int register, int bitNumber, bool expectedResult, string name)

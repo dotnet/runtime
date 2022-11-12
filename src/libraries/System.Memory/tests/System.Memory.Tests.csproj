@@ -100,6 +100,7 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Overlaps.cs" />
+    <Compile Include="Span\Replace.T.cs" />
     <Compile Include="Span\Reverse.cs" />
     <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />
