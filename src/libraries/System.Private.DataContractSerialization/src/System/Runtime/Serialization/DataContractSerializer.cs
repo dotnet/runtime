@@ -79,11 +79,11 @@ namespace System.Runtime.Serialization
         }
 
         public DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes)
-            : this(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false)
+            : this(type, rootName, rootNamespace, knownTypes, false, false)
         {
         }
 
-        internal DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes, int maxItemsInObjectGraph,
+        internal DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes,
                 bool ignoreExtensionDataObject, bool preserveObjectReferences)
         {
             XmlDictionary dictionary = new XmlDictionary(2);
@@ -434,7 +434,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return DataContract.GetDataContract(objectType.TypeHandle, objectType);
+                return DataContract.GetDataContract(objectType);
             }
         }
 

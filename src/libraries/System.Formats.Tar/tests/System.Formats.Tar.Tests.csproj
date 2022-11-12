@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>$(LibrariesProjectRoot)/Common/tests/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
@@ -17,6 +17,7 @@
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Tests.cs" />
+    <Compile Include="TarFile\TarFile.CreateFromDirectory.File.Roundtrip.cs" />
     <Compile Include="TarEntry\TarEntry.Conversion.Tests.Base.cs" />
     <Compile Include="TarEntry\GnuTarEntry.Conversion.Tests.cs" />
     <Compile Include="TarEntry\PaxTarEntry.Conversion.Tests.cs" />

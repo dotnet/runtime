@@ -27,7 +27,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly HashSet<MethodDesc> _methodsWithSynthesizedPgoData = new HashSet<MethodDesc>();
 
         public InstrumentationDataTableNode(NodeFactory factory, ProfileDataManager profileDataManager)
-            : base(factory.Target)
         {
             _factory = factory;
             _profileDataManager = profileDataManager;

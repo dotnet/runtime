@@ -22,7 +22,7 @@ public class StringEquals
         }
 
         Console.WriteLine(testCount);
-        return testCount == 25920 ? 100 : 0;
+        return testCount == 27888 ? 100 : 0;
     }
 }
 
@@ -195,10 +195,22 @@ public static class Tests
     [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_157(string s) => ValidateEquals(s == "2ж1311a23b2212aЙ21Й11жb3233bb3a1", s, "2ж1311a23b2212aЙ21Й11жb3233bb3a1");
     [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_158(string s) => ValidateEquals(s == "01Й11113ь3Й32a3ьЙЙ3Й32b2ab221310", s, "01Й11113ь3Й32a3ьЙЙ3Й32b2ab221310");
     [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_159(string s) => ValidateEquals(s == "a120213b11211\0223223312ьь1Й3222Й", s, "a120213b11211\0223223312ьь1Й3222Й");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_160(string s) => ValidateEquals(s == "\u9244", s, "\u9244");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_161(string s) => ValidateEquals(s == "\u9244\u9244", s, "\u9244\u9244");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_162(string s) => ValidateEquals(s == "\u9244\u9244\u9244", s, "\u9244\u9244\u9244");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_163(string s) => ValidateEquals(s == "\uFFFF", s, "\uFFFF");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_164(string s) => ValidateEquals(s == "\uFFFF\uFFFF", s, "\uFFFF\uFFFF");
+    [MethodImpl(MethodImplOptions.NoInlining)] public static void Equals_165(string s) => ValidateEquals(s == "\uFFFF\uFFFF\uFFFF", s, "\uFFFF\uFFFF\uFFFF");
 
     public static readonly string[] s_TestData =
     {
         null,
+        "\u9244",
+        "\u9244\u9244",
+        "\u9244\u9244\u9244",
+        "\uFFFF",
+        "\uFFFF\uFFFF",
+        "\uFFFF\uFFFF\uFFFF",
         "",
         "\0",
         "a",

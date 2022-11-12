@@ -713,8 +713,8 @@ namespace System.IO.Hashing
                 {
                     for (int i = 0; i < SecretLengthBytes; i += sizeof(ulong) * 2)
                     {
-                        Unsafe.WriteUnaligned(destinationSecret + i, Unsafe.ReadUnaligned<ulong>(defaultSecret + i) + seed);
-                        Unsafe.WriteUnaligned(destinationSecret + i + 8, Unsafe.ReadUnaligned<ulong>(defaultSecret + i + 8) - seed);
+                        WriteUInt64LE(destinationSecret + i, ReadUInt64LE(defaultSecret + i) + seed);
+                        WriteUInt64LE(destinationSecret + i + 8, ReadUInt64LE(defaultSecret + i + 8) - seed);
                     }
                 }
             }
@@ -1002,6 +1002,16 @@ namespace System.IO.Hashing
             BitConverter.IsLittleEndian ?
                 Unsafe.ReadUnaligned<ulong>(data) :
                 BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(data));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteUInt64LE(byte* data, ulong value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(data, value);
+        }
 
         [StructLayout(LayoutKind.Auto)]
         private struct State
