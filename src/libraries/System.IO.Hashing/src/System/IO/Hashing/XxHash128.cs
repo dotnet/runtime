@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Based on the XXH3 implementation from https://github.com/Cyan4973/xxHash.
+// Based on the XXH128 implementation from https://github.com/Cyan4973/xxHash.
 
 using System.Buffers.Binary;
 using System.Diagnostics;
