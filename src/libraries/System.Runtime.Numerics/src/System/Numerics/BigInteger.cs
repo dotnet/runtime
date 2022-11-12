@@ -1610,10 +1610,10 @@ namespace System.Numerics
                 // Represent L as `k * 10^i`, then `x = L * 2^n = k * 10^(i + (n * log10(2)))`
                 // Let `m = n * log10(2)`, the final result would be `x = (k * 10^(m - [m])) * 10^(i+[m])`
 
-                const double log10Of2Pow32 = 9.632959861247398; // Log10(2^32)
+                const double log10Of2 = 0.3010299956639812; // Log10(2)
                 ulong highBits = ((ulong)_bits[^1] << kcbitUint) + _bits[^2];
                 double lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
-                double exponentLow = lowBitsCount32 * log10Of2Pow32;
+                double exponentLow = lowBitsCount32 * kcbitUint * log10Of2;
 
                 // Max possible length of _bits is int.MaxValue of bytes,
                 // thus max possible value of BigInteger is 2^(8*Array.MaxLength)-1 which is larger than 10^(2^33)
