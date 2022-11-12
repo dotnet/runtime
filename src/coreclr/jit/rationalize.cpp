@@ -376,10 +376,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
 void Rationalizer::RewriteCastOnAssignment(GenTreeOp* node)
 {
-    return;
     assert(node->OperIs(GT_ASG));
-
-    var_types type = node->TypeGet();
 
     GenTreeCast* cast = node->gtGetOp2()->AsCast();
 
@@ -404,7 +401,7 @@ void Rationalizer::RewriteCastOnAssignment(GenTreeOp* node)
     // If we are performing a narrowing cast and
     // castToType is larger or the same as node's type
     // then we can discard the cast.
-    if (genTypeSize(castToType) < genTypeSize(type))
+    if (genTypeSize(castToType) < genTypeSize(node->gtGetOp1()))
         return;
 
     if (genActualType(castFromType) == genActualType(castToType))
