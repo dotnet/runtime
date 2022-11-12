@@ -42,9 +42,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(int timeout, byte[] buffer)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
             ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
@@ -58,9 +58,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private void CheckArgs(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(IPAddress address, int timeout, byte[] buffer)
         {
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -363,7 +363,7 @@ namespace System.Net.NetworkInformation
                 return Send(address, timeout, buffer, options);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             return GetAddressAndSend(hostNameOrAddress, timeout, buffer, options);
         }
@@ -398,7 +398,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
 
             // Need to snapshot the address here, so we're sure that it's not changed between now
             // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
@@ -590,7 +590,7 @@ namespace System.Net.NetworkInformation
 
         private Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
 
             return SendPingAsyncInternal(
                 // Need to snapshot the address here, so we're sure that it's not changed between now
@@ -643,7 +643,7 @@ namespace System.Net.NetworkInformation
                 return SendPingAsync(address, timeout, buffer, options, cancellationToken);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             return SendPingAsyncInternal(
                 hostNameOrAddress,

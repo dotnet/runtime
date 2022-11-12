@@ -211,6 +211,10 @@ internal sealed class Xcode
     {
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
+        if (!preferDylibs)
+        {
+            excludes.Add(".dylib");
+        }
         if (optimized)
         {
             excludes.Add(".pdb");

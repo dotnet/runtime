@@ -43,7 +43,7 @@ public:
     // doesn't contain the root framework at all.
     deps_resolver_t(
         const arguments_t& args,
-        fx_definition_vector_t& fx_definitions,
+        const fx_definition_vector_t& fx_definitions,
         const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
         bool is_framework_dependent)
         : m_fx_definitions(fx_definitions)
@@ -54,40 +54,35 @@ public:
         , m_is_framework_dependent(is_framework_dependent)
         , m_needs_file_existence_checks(false)
     {
-        int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
-        int root_framework = -1;
-        if (root_framework_rid_fallback_graph == nullptr)
-        {
-            root_framework = lowest_framework;
-            root_framework_rid_fallback_graph = &m_fx_definitions[root_framework]->get_deps().get_rid_fallback_graph();
-        }
+        m_fx_deps.resize(m_fx_definitions.size());
 
+        // Process from lowest (root) to highest (app) framework.
+        // If we weren't explicitly given a rid fallback graph, that of
+        // the root framework is used for higher frameworks.
+        int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
         for (int i = lowest_framework; i >= 0; --i)
         {
-            if (i == 0)
-            {
-                m_fx_definitions[i]->set_deps_file(args.deps_path);
-                trace::verbose(_X("Using %s deps file"), m_fx_definitions[i]->get_deps_file().c_str());
-            }
-            else
-            {
-                pal::string_t fx_deps_file = get_fx_deps(m_fx_definitions[i]->get_dir(), m_fx_definitions[i]->get_name());
-                m_fx_definitions[i]->set_deps_file(fx_deps_file);
-                trace::verbose(_X("Using Fx %s deps file"), fx_deps_file.c_str());
-            }
+            pal::string_t deps_file = i == 0
+                ? args.deps_path
+                : get_fx_deps(m_fx_definitions[i]->get_dir(), m_fx_definitions[i]->get_name());
+            trace::verbose(_X("Using %s deps file"), deps_file.c_str());
 
-            if (i == root_framework)
+            if (root_framework_rid_fallback_graph == nullptr && i == lowest_framework)
             {
-                m_fx_definitions[i]->parse_deps();
+                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(false, deps_file, nullptr));
+
+                // The fx_definitions contains the root framework, so set the
+                // rid fallback graph that will be used for other frameworks.
+                root_framework_rid_fallback_graph = &m_fx_deps[lowest_framework]->get_rid_fallback_graph();
             }
             else
             {
                 // The rid graph is obtained from the root framework
-                m_fx_definitions[i]->parse_deps(*root_framework_rid_fallback_graph);
+                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(true, deps_file, root_framework_rid_fallback_graph));
             }
         }
 
-        resolve_additional_deps(args, *root_framework_rid_fallback_graph);
+        resolve_additional_deps(args, root_framework_rid_fallback_graph);
 
         setup_additional_probes(args.probe_paths);
         setup_probe_config(args);
@@ -100,21 +95,21 @@ public:
 
     bool valid(pal::string_t* errors)
     {
-        for (size_t i = 0; i < m_fx_definitions.size(); ++i)
+        for (size_t i = 0; i < m_fx_deps.size(); ++i)
         {
             // Verify the deps file exists. The app deps file does not need to exist
             if (i != 0)
             {
-                if (!m_fx_definitions[i]->get_deps().exists())
+                if (!m_fx_deps[i]->exists())
                 {
-                    errors->assign(_X("A fatal error was encountered, missing dependencies manifest at: ") + m_fx_definitions[i]->get_deps_file());
+                    errors->assign(_X("A fatal error was encountered, missing dependencies manifest at: ") + m_fx_deps[i]->get_deps_file());
                     return false;
                 }
             }
 
-            if (!m_fx_definitions[i]->get_deps().is_valid())
+            if (!m_fx_deps[i]->is_valid())
             {
-                errors->assign(_X("An error occurred while parsing: ") + m_fx_definitions[i]->get_deps_file());
+                errors->assign(_X("An error occurred while parsing: ") + m_fx_deps[i]->get_deps_file());
                 return false;
             }
         }
@@ -154,24 +149,19 @@ public:
 
     void resolve_additional_deps(
         const arguments_t& args,
-        const deps_json_t::rid_fallback_graph_t& rid_fallback_graph);
+        const deps_json_t::rid_fallback_graph_t* rid_fallback_graph);
 
-    const deps_json_t& get_deps() const
+    const deps_json_t& get_app_deps() const
     {
-        return get_app(m_fx_definitions).get_deps();
+        return *m_fx_deps[0];
     }
 
-    const pal::string_t& get_deps_file() const
+    const deps_json_t& get_root_deps() const
     {
-        return get_app(m_fx_definitions).get_deps_file();
+        return *m_fx_deps[m_fx_definitions.size() - 1];
     }
 
-    void get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
-
-    const fx_definition_vector_t& get_fx_definitions() const
-    {
-        return m_fx_definitions;
-    }
+    void enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback);
 
     bool is_framework_dependent() const
     {
@@ -249,7 +239,10 @@ private:
         pal::string_t* candidate,
         bool &found_in_bundle);
 
-    fx_definition_vector_t& m_fx_definitions;
+    const fx_definition_vector_t& m_fx_definitions;
+
+    // Resolved deps.json for each m_fx_definitions (corresponding indices)
+    std::vector<std::unique_ptr<deps_json_t>> m_fx_deps;
 
     pal::string_t m_app_dir;
 

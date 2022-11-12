@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Compile(Compiler compiler)
         {
             CompileAttributes(compiler);
-            CheckRequiredAttribute(compiler, _selectKey != Compiler.InvalidQueryKey, "select");
+            CheckRequiredAttribute(_selectKey != Compiler.InvalidQueryKey, "select");
             CheckEmpty(compiler);
         }
 
