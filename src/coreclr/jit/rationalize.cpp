@@ -374,14 +374,11 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
     JITDUMP("\n");
 }
 
-void Rationalizer::RewriteAssignmentOnCast(GenTreeOp* node)
+void Rationalizer::RewriteCastOnAssignment(GenTreeOp* node)
 {
     assert(node->OperIs(GT_ASG));
 
     var_types type = node->TypeGet();
-
-    if (!varTypeIsSmall(type))
-        return;
 
     GenTreeCast* cast = node->gtGetOp2()->AsCast();
 
@@ -394,11 +391,8 @@ void Rationalizer::RewriteAssignmentOnCast(GenTreeOp* node)
     var_types castToType   = cast->CastToType();
     var_types castFromType = cast->CastFromType();
 
-    //if (!varTypeIsIntegral(castToType))
-    //    return;
-
-    //if (!varTypeIsSmall(node->gtGetOp1()))
-    //    return;
+    if (!varTypeIsSmall(node->gtGetOp1()))
+        return;
 
     if (!varTypeIsSmall(castToType))
         return;
@@ -447,7 +441,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     if (assignment->gtGetOp2()->OperIs(GT_CAST))
     {
-        RewriteAssignmentOnCast(assignment);
+        RewriteCastOnAssignment(assignment);
     }
 
     GenTree* location = assignment->gtGetOp1();
