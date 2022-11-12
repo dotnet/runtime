@@ -449,7 +449,7 @@ namespace System.IO.Hashing
         {
             public ulong Low64;
             public ulong High64;
-            
+
             public Hash128(ulong low64, ulong high64)
             {
                 Low64 = low64;
