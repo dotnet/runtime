@@ -1151,6 +1151,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateScalar<T>(T value)
             where T : struct => Vector128.CreateScalar(value).ToVector256();
@@ -1158,42 +1159,49 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> CreateScalar(double value) => CreateScalar<double>(value);
 
         /// <summary>Creates a new <see cref="Vector256{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<short> CreateScalar(short value) => CreateScalar<short>(value);
 
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> CreateScalar(int value) => CreateScalar<int>(value);
 
         /// <summary>Creates a new <see cref="Vector256{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<long> CreateScalar(long value) => CreateScalar<long>(value);
 
         /// <summary>Creates a new <see cref="Vector256{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector256{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
@@ -1201,6 +1209,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
@@ -1208,12 +1217,14 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> CreateScalar(float value) => CreateScalar<float>(value);
 
         /// <summary>Creates a new <see cref="Vector256{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
@@ -1221,6 +1232,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
@@ -1228,6 +1240,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);

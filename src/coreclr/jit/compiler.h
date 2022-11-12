@@ -2641,6 +2641,11 @@ public:
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
+    GenTreeField* gtNewFieldAddrNode(var_types            type,
+                                     CORINFO_FIELD_HANDLE fldHnd,
+                                     GenTree*             obj    = nullptr,
+                                     DWORD                offset = 0);
+
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
                                      var_types            elemType,
@@ -2663,7 +2668,7 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
-    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
+    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
@@ -2873,6 +2878,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
+    // Check if this tree is a typeof()
+    bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
@@ -5724,6 +5731,9 @@ public:
 
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
+    GenTree* fgMorphExpandStaticField(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
     bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
@@ -10846,6 +10856,7 @@ public:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:

@@ -492,7 +492,10 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 	else
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 #else	
-	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	if (!COMPILE_LLVM (cfg))
+		ins->inst_c1 = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
+	return ins;
 #endif
 }
 
@@ -1151,7 +1154,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// args [0] & ~vector(-0.0)
 			MonoInst *zero = emit_xzero(cfg, arg_class);	// 0.0
 			zero = emit_simd_ins (cfg, klass, OP_NEGATION, zero->dreg, -1); // -0.0
-			MonoInst *ins = emit_simd_ins (cfg, klass, OP_SSE_ANDN, zero->dreg, args [0]->dreg);
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_VECTOR_ANDN, zero->dreg, args [0]->dreg);
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
@@ -1184,14 +1187,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_WASM)
 		/* Swap lhs and rhs because Vector128 needs lhs & !rhs
 		   whereas SSE2 does !lhs & rhs */
 		MonoInst *tmp = args[0];
 		args[0] = args[1];
 		args[1] = tmp;
 
-		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
+		return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_ANDN, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
@@ -1694,15 +1697,16 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+		return NULL;
+
 	int size = mono_class_value_size (klass, NULL);
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	g_assert (size > 0);
 	g_assert (esize > 0);
 	int len = size / esize;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
-
-	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
-		return NULL;
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -3199,7 +3203,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Add, OP_XBINOP, OP_FADD},
 	{SN_AddScalar, OP_SSE_ADDSS},
 	{SN_And, OP_SSE_AND},
-	{SN_AndNot, OP_SSE_ANDN},
+	{SN_AndNot, OP_VECTOR_ANDN},
 	{SN_CompareEqual, OP_XCOMPARE_FP, CMP_EQ},
 	{SN_CompareGreaterThan, OP_XCOMPARE_FP,CMP_GT},
 	{SN_CompareGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_GE},
@@ -3290,7 +3294,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_AddSaturate, OP_SSE2_ADDS},
 	{SN_AddScalar, OP_SSE2_ADDSD},
 	{SN_And, OP_SSE_AND},
-	{SN_AndNot, OP_SSE_ANDN},
+	{SN_AndNot, OP_VECTOR_ANDN},
 	{SN_Average},
 	{SN_CompareEqual},
 	{SN_CompareGreaterThan},

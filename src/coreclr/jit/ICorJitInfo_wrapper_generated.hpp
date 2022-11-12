@@ -830,6 +830,16 @@ bool WrapICorJitInfo::isMoreSpecificType(
     return temp;
 }
 
+TypeCompareState WrapICorJitInfo::isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType)
+{
+    API_ENTER(isEnum);
+    TypeCompareState temp = wrapHnd->isEnum(cls, underlyingType);
+    API_LEAVE(isEnum);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getParentType(
           CORINFO_CLASS_HANDLE cls)
 {
