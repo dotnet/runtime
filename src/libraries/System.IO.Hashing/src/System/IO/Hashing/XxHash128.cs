@@ -22,7 +22,7 @@ namespace System.IO.Hashing
 #endif
     public sealed unsafe class XxHash128 : NonCryptographicHashAlgorithm
     {
-        /// <summary>XXH3 128 produces 16-byte hashes.</summary>
+        /// <summary>XXH128 produces 16-byte hashes.</summary>
         private new const int HashLengthInBytes = 16;
 
         private State _state;
