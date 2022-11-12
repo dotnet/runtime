@@ -495,7 +495,6 @@ namespace CoreclrTestLib
 
                     DateTime startTime = DateTime.Now;
                     process.Start();
-                    int pid = process.Id;
 
                     var cts = new CancellationTokenSource();
                     Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
@@ -514,11 +513,22 @@ namespace CoreclrTestLib
                             if (exitCode != 0)
                             {
                                 // Search for dump, if created.
-                                string possibleDmpFile = Path.Combine(crashDumpFolder, $"coredump.{pid}.dmp");
-                                outputWriter.WriteLine($"Test failed. Trying to load dump file: '{possibleDmpFile}'");
-                                if (File.Exists(possibleDmpFile))
+                                if (Directory.Exists(crashDumpFolder))
                                 {
-                                    TryPrintStackTraceFromCrashReport(possibleDmpFile, outputWriter);
+                                    outputWriter.WriteLine($"Test failed. Trying to see if dump file was created in {crashDumpFolder} since {startTime}");
+                                    DirectoryInfo crashDumpFolderInfo = new DirectoryInfo(crashDumpFolder);
+                                    var dmpFilesInfo = crashDumpFolderInfo.GetFiles("*.crashreport.json").OrderByDescending(f => f.CreationTime);
+                                    foreach (var dmpFile in dmpFilesInfo)
+                                    {
+                                        if (dmpFile.CreationTime < startTime)
+                                        {
+                                            // No new files since test started.
+                                            outputWriter.WriteLine("Finish looking for *.crashreport.json. No new files created.");
+                                            break;
+                                        }
+                                        outputWriter.WriteLine($"Processing {dmpFile.FullName}");
+                                        TryPrintStackTraceFromCrashReport(dmpFile.FullName, outputWriter);
+                                    }
                                 }
                             }
                         }
