@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector64_1
 {
     public static partial class Program
     {
-        private static void ToVector128SByte()
+        [Fact]
+        public static void ToVector128SByte()
         {
             var test = new VectorExtend__ToVector128SByte();
 
