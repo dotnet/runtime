@@ -426,15 +426,14 @@ namespace System.IO.Hashing
         [DebuggerDisplay("Low64: {" + nameof(Low64) + "}, High64: {" + nameof(High64) + "}")]
         private struct Hash128
         {
+            public ulong Low64;
+            public ulong High64;
+            
             public Hash128(ulong low64, ulong high64)
             {
                 Low64 = low64;
                 High64 = high64;
             }
-
-            public ulong Low64;
-
-            public ulong High64;
         }
     }
 }
