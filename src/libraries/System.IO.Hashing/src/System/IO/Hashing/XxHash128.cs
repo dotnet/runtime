@@ -114,7 +114,7 @@ namespace System.IO.Hashing
         // TODO https://github.com/dotnet/runtime/issues/76279: Make this public.
         private static Int128 HashToInt128(ReadOnlySpan<byte> source, long seed = 0)
         {
-            var hash = HashToHash128(source, seed);
+            Hash128 hash = HashToHash128(source, seed);
             return new Int128(hash.High64, hash.Low64);
         }
 #endif
@@ -190,15 +190,15 @@ namespace System.IO.Hashing
         private static void WriteCanonical128(in Hash128 hash, Span<byte> destination)
         {
             // TODO https://github.com/dotnet/runtime/issues/72107: Use BinaryPrimitives.WriteUInt128BigEndian() once it is supported
-            var low = hash.Low64;
-            var high = hash.High64;
+            ulong low = hash.Low64;
+            ulong high = hash.High64;
             if (BitConverter.IsLittleEndian)
             {
                 low = BinaryPrimitives.ReverseEndianness(low);
                 high = BinaryPrimitives.ReverseEndianness(high);
             }
 
-            ref var dest0 = ref MemoryMarshal.GetReference(destination);
+            ref byte dest0 = ref MemoryMarshal.GetReference(destination);
             Unsafe.WriteUnaligned(ref dest0, high);
             Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
         }
@@ -264,7 +264,7 @@ namespace System.IO.Hashing
             ulong bitflip = (DefaultSecretUInt64_2 ^ DefaultSecretUInt64_3) + seed;
             ulong keyed = input64 ^ bitflip;
 
-            var m128High = Multiply64To128(keyed, Prime64_1 + (length << 2), out ulong m128Low);
+            ulong m128High = Multiply64To128(keyed, Prime64_1 + (length << 2), out ulong m128Low);
 
             m128High += (m128Low << 1);
             m128Low ^= (m128High >> 3);
@@ -285,7 +285,7 @@ namespace System.IO.Hashing
             ulong bitfliph = (DefaultSecretUInt64_6 ^ DefaultSecretUInt64_7) + seed;
             ulong inputLo = ReadUInt64LE(source);
             ulong inputHi = ReadUInt64LE(source + length - 8);
-            var m128High = Multiply64To128(inputLo ^ inputHi ^ bitflipl, Prime64_1, out ulong m128Low);
+            ulong m128High = Multiply64To128(inputLo ^ inputHi ^ bitflipl, Prime64_1, out ulong m128Low);
 
             m128Low += (ulong)(length - 1) << 54;
             inputHi ^= bitfliph;
@@ -296,7 +296,7 @@ namespace System.IO.Hashing
 
             m128Low ^= BinaryPrimitives.ReverseEndianness(m128High);
 
-            var h128High = Multiply64To128(m128Low, Prime64_2, out ulong h128Low);
+            ulong h128High = Multiply64To128(m128Low, Prime64_2, out ulong h128Low);
             h128High += m128High * (ulong)Prime64_2;
 
             h128Low = Avalanche(h128Low);
@@ -345,7 +345,7 @@ namespace System.IO.Hashing
             accLow = Avalanche(accLow);
             accHigh = Avalanche(accHigh);
 
-            var bound = ((length - (32 * 4)) / 32);
+            uint bound = ((length - (32 * 4)) / 32);
             if (bound != 0)
             {
                 Mix32Bytes(ref accLow, ref accHigh, source + (32 * 4), source + (32 * 4) + 16, DefaultSecret3UInt64_0, DefaultSecret3UInt64_1, DefaultSecret3UInt64_2, DefaultSecret3UInt64_3, seed);

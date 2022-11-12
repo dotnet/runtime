@@ -436,7 +436,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply64To128ThenFold(ulong left, ulong right)
         {
-            var upper = Multiply64To128(left, right, out ulong lower);
+            ulong upper = Multiply64To128(left, right, out ulong lower);
             return lower ^ upper;
         }
 
