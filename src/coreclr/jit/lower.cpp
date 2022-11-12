@@ -3781,7 +3781,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            unsigned realSize = retVal->AsIndir()->Size();
+            unsigned             realSize  = retVal->AsIndir()->Size();
             CORINFO_CLASS_HANDLE structCls = comp->info.compMethodInfo->args.retTypeClass;
             if (realSize == 0)
             {
@@ -3789,8 +3789,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // from the current method's signature (it's only used to decide whether we need to spill it to
                 // a local or not, so the actual size won't be used).
                 // TODO-ADDR: delete once "IND<struct>" nodes are no more
-                structCls = comp->info.compMethodInfo->args.retTypeClass;
-                realSize  = comp->info.compCompHnd->getClassSize(structCls);
+                realSize = comp->info.compCompHnd->getClassSize(structCls);
             }
 
             if (genTypeSize(nativeReturnType) > realSize)
