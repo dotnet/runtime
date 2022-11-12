@@ -111,11 +111,15 @@ namespace System.IO.Hashing
         }
 
 #if NET7_0_OR_GREATER
-        // TODO https://github.com/dotnet/runtime/issues/76279: Make this public.
-        private static Int128 HashToInt128(ReadOnlySpan<byte> source, long seed = 0)
+        /// <summary>Computes the XXH128 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
+        /// <returns>The computed XXH128 hash.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 HashToUInt128(ReadOnlySpan<byte> source, long seed = 0)
         {
             Hash128 hash = HashToHash128(source, seed);
-            return new Int128(hash.High64, hash.Low64);
+            return new UInt128(hash.High64, hash.Low64);
         }
 #endif
 
@@ -160,6 +164,12 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
+            Hash128 current = GetCurrentHashAsHash128();
+            WriteBigEndian128(current, destination);
+        }
+
+        private Hash128 GetCurrentHashAsHash128()
+        {
             Hash128 current;
 
             if (_state.TotalLength > MidSizeMaxBytes)
@@ -183,8 +193,19 @@ namespace System.IO.Hashing
                 }
             }
 
-            WriteBigEndian128(current, destination);
+            return current;
         }
+
+#if NET7_0_OR_GREATER
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public UInt128 GetCurrentHashAsUInt128()
+        {
+            Hash128 current = GetCurrentHashAsHash128();
+            return new UInt128(current.High64, current.Low64);
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
