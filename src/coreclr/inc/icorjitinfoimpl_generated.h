@@ -303,9 +303,6 @@ void getReadyToRunDelegateCtorHelper(
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup) override;
 
-const char* getHelperName(
-          CorInfoHelpFunc helpFunc) override;
-
 CorInfoInitClassResult initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

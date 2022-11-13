@@ -672,12 +672,6 @@ void MyICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMeth
     jitInstance->mc->repGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
-const char* MyICJI::getHelperName(CorInfoHelpFunc funcNum)
-{
-    jitInstance->mc->cr->AddCall("getHelperName");
-    return jitInstance->mc->repGetHelperName(funcNum);
-}
-
 // This function tries to initialize the class (run the class constructor).
 // this function returns whether the JIT must insert helper calls before
 // accessing static field or method.

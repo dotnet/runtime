@@ -507,12 +507,6 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
     original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
-const char* interceptor_ICJI::getHelperName(
-          CorInfoHelpFunc helpFunc)
-{
-    return original_ICorJitInfo->getHelperName(helpFunc);
-}
-
 CorInfoInitClassResult interceptor_ICJI::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

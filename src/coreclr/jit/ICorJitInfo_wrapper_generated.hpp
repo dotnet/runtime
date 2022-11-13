@@ -704,15 +704,6 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
-const char* WrapICorJitInfo::getHelperName(
-          CorInfoHelpFunc helpFunc)
-{
-    API_ENTER(getHelperName);
-    const char* temp = wrapHnd->getHelperName(helpFunc);
-    API_LEAVE(getHelperName);
-    return temp;
-}
-
 CorInfoInitClassResult WrapICorJitInfo::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

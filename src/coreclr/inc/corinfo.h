@@ -2514,10 +2514,6 @@ public:
             CORINFO_LOOKUP *   pLookup
             ) = 0;
 
-    virtual const char* getHelperName(
-            CorInfoHelpFunc
-            ) = 0;
-
     // This function tries to initialize the class (run the class constructor).
     // this function returns whether the JIT must insert helper calls before
     // accessing static field or method.

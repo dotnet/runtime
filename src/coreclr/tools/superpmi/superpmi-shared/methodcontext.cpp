@@ -4841,45 +4841,6 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     return srcBufferLength;
 }
 
-void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
-{
-    if (GetHelperName == nullptr)
-        GetHelperName = new LightWeightMap<DWORD, DWORD>();
-
-    DWORD value = (DWORD)-1;
-    if (result != nullptr)
-        value = (DWORD)GetHelperName->AddBuffer((unsigned char*)result, (DWORD)strlen(result) + 1);
-
-    DWORD key = (DWORD)funcNum;
-    GetHelperName->Add(key, value);
-    DEBUG_REC(dmpGetHelperName(key, value));
-}
-void MethodContext::dmpGetHelperName(DWORD key, DWORD value)
-{
-    printf("GetHelperName key ftn-%u, value '%s'", key, (const char*)GetHelperName->GetBuffer(value));
-    GetHelperName->Unlock();
-}
-const char* MethodContext::repGetHelperName(CorInfoHelpFunc funcNum)
-{
-    if (GetHelperName == nullptr)
-        return "Yickish helper name";
-
-    DWORD key = (DWORD)funcNum;
-
-    int itemIndex = GetHelperName->GetIndex(key);
-    if (itemIndex < 0)
-    {
-        return "hackishHelperName";
-    }
-    else
-    {
-        DWORD value = GetHelperName->Get(key);
-        DEBUG_REP(dmpGetHelperName(key, value));
-        unsigned int buffIndex = (unsigned int)value;
-        return (const char*)GetHelperName->GetBuffer(buffIndex);
-    }
-}
-
 void MethodContext::recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result)
 {
     if (CanCast == nullptr)

@@ -2360,11 +2360,6 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private byte* getHelperName(CorInfoHelpFunc helpFunc)
-        {
-            return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
-        }
-
         private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             FieldDesc fd = field == null ? null : HandleToObject(field);
