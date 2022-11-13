@@ -3785,9 +3785,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             CORINFO_CLASS_HANDLE structCls = comp->info.compMethodInfo->args.retTypeClass;
             if (realSize == 0)
             {
-                // We have an IND<struct> node, assuming it's used in a return statement, take target size
-                // from the current method's signature (it's only used to decide whether we need to spill it to
-                // a local or not, so the actual size won't be used).
                 // TODO-ADDR: delete once "IND<struct>" nodes are no more
                 realSize = comp->info.compCompHnd->getClassSize(structCls);
             }
@@ -3795,13 +3792,8 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (genTypeSize(nativeReturnType) > realSize)
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                unsigned tmpNum = BAD_VAR_NUM;
-                if (structCls != NO_CLASS_HANDLE)
-                {
-                    tmpNum               = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                    comp->genReturnLocal = tmpNum;
-                    comp->lvaSetStruct(tmpNum, structCls, true);
-                }
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                comp->lvaSetStruct(tmpNum, structCls, false);
                 ReplaceWithLclVar(retValUse, tmpNum);
                 LowerRetSingleRegStructLclVar(ret);
                 break;
