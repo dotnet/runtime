@@ -325,7 +325,13 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+if(TARGET_WASM AND MONO_CROSS_COMPILE)
+set(profiler_sources ../profiler/browser.c)
+else()
+set(profiler_sources "")
+endif()
+
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")

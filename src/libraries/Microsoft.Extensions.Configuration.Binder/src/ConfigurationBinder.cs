@@ -299,43 +299,41 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                // for arrays, collections, and read-only list-like interfaces, we concatenate on to what is already there
-                if (type.IsArray || IsArrayCompatibleInterface(type))
+                // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
+                if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
                         bindingPoint.SetValue(BindArray(type, (IEnumerable?)bindingPoint.Value, config, options));
                     }
+
+                    // for getter-only collection properties that we can't add to, nothing more we can do
                     return;
                 }
 
-                // for sets and read-only set interfaces, we clone what's there into a new collection.
-                if (TypeIsASetInterface(type))
+                // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
+                if (TypeIsASetInterface(type) && !bindingPoint.IsReadOnly)
                 {
-                    if (!bindingPoint.IsReadOnly)
+                    object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
+                    if (newValue != null)
                     {
-                        object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
-                        if (newValue != null)
-                        {
-                            bindingPoint.SetValue(newValue);
-                        }
+                        bindingPoint.SetValue(newValue);
                     }
+
                     return;
                 }
 
                 // For other mutable interfaces like ICollection<>, IDictionary<,> and ISet<>, we prefer copying values and setting them
                 // on a new instance of the interface over populating the existing instance implementing the interface.
                 // This has already been done, so there's not need to check again.
-                if (TypeIsADictionaryInterface(type))
+                if (TypeIsADictionaryInterface(type) && !bindingPoint.IsReadOnly)
                 {
-                    if (!bindingPoint.IsReadOnly)
+                    object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
+                    if (newValue != null)
                     {
-                        object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
-                        if (newValue != null)
-                        {
-                            bindingPoint.SetValue(newValue);
-                        }
+                        bindingPoint.SetValue(newValue);
                     }
+
                     return;
                 }
 
@@ -348,12 +346,19 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
-                    // on a new instance of the interface over populating the existing instance implementing the interface.
-                    // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
-                    // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
 
-                    bindingPoint.SetValue(CreateInstance(type, config, options));
+                    if (interfaceGenericType is not null &&
+                        (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                    {
+                        // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
+                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                        bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                    }
+                    else
+                    {
+                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                    }
                 }
 
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
@@ -552,9 +557,9 @@ namespace Microsoft.Extensions.Configuration
         // Binds and potentially overwrites a concrete dictionary.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
-        // When a user specifies a concrete dictionary in their config class, then that
-        // value is used as-us. When a user specifies an interface (instantiated) in their config class,
-        // then it is cloned to a new dictionary, the same way as other collections.
+        // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
+        // in their config class, then that value is used as-is. When a user specifies an interface (instantiated)
+        // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindConcreteDictionary(
@@ -582,10 +587,20 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+            Debug.Assert(dictionary is not null);
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
-            PropertyInfo setter = genericType.GetProperty("Item", DeclaredOnlyLookup)!;
+            Type dictionaryObjectType = dictionary.GetType();
+
+            MethodInfo tryGetValue = dictionaryObjectType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
+
+            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
+            PropertyInfo? setter = dictionaryObjectType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            if (setter is null || !setter.CanWrite)
+            {
+                // Cannot set any item on the dictionary object.
+                return;
+            }
+
             foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
@@ -611,8 +626,13 @@ namespace Microsoft.Extensions.Configuration
                         setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
         }
@@ -644,8 +664,14 @@ namespace Microsoft.Extensions.Configuration
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
+
                 }
             }
         }
@@ -693,8 +719,13 @@ namespace Microsoft.Extensions.Configuration
                         list.Add(itemBindingPoint.Value);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 
@@ -752,8 +783,13 @@ namespace Microsoft.Extensions.Configuration
                         addMethod.Invoke(instance, arguments);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
+                            nameof(options.ErrorOnUnknownConfiguration)), ex);
+                    }
                 }
             }
 
@@ -836,14 +872,12 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
         }
 
-        private static bool IsArrayCompatibleInterface(Type type)
+        private static bool IsImmutableArrayCompatibleInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IEnumerable<>)
-                || genericTypeDefinition == typeof(ICollection<>)
-                || genericTypeDefinition == typeof(IList<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
@@ -924,6 +958,12 @@ namespace Microsoft.Extensions.Configuration
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
 
+            BindInstance(
+                parameter.ParameterType,
+                propertyBindingPoint,
+                config.GetSection(parameterName),
+                options);
+
             if (propertyBindingPoint.Value is null)
             {
                 if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
@@ -935,12 +975,6 @@ namespace Microsoft.Extensions.Configuration
                     throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
                 }
             }
-
-            BindInstance(
-                parameter.ParameterType,
-                propertyBindingPoint,
-                config.GetSection(parameterName),
-                options);
 
             return propertyBindingPoint.Value;
         }

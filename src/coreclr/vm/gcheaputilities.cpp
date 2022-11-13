@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include "configuration.h"
 #include "gcheaputilities.h"
 #include "gcenv.ee.h"
 #include "appdomain.hpp"
@@ -179,7 +180,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
 //
 // See Documentation/design-docs/standalone-gc-loading.md for details
 // on the loading protocol in use here.
-HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
+HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -334,8 +335,7 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     assert(g_gc_load_status == GC_LOAD_STATUS_BEFORE_START);
     g_gc_load_status = GC_LOAD_STATUS_START;
 
-    LPWSTR standaloneGcLocation = nullptr;
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCName, &standaloneGcLocation);
+    LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
     if (!standaloneGcLocation)
     {
         return InitializeDefaultGC();

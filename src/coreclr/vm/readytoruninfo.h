@@ -52,6 +52,9 @@ class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
 
+    // HotColdMappingLookupTable::LookupMappingForMethod searches m_pHotColdMap, and thus needs access.
+    friend class HotColdMappingLookupTable;
+
     PTR_Module                      m_pModule;
     PTR_ModuleBase                  m_pNativeManifestModule;
     PTR_READYTORUN_HEADER           m_pHeader;
@@ -64,6 +67,9 @@ class ReadyToRunInfo
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
+
+    PTR_ULONG                       m_pHotColdMap;
+    DWORD                           m_nHotColdMap;
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
 

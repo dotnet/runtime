@@ -7601,10 +7601,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-    if (mHandleMask & CorHandleWeakNativeCom)
-        result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
@@ -7778,11 +7774,6 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.i64ExtraData = refCnt;
             break;
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-        case HNDTYPE_WEAK_NATIVE_COM:
-            data.dwType = (DWORD)CorHandleWeakNativeCom;
-            break;
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
         case HNDTYPE_DEPENDENT:
             data.dwType = (DWORD)CorHandleStrongDependent;

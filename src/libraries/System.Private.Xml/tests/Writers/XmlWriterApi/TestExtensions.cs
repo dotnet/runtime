@@ -4,11 +4,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using XmlCoreTest.Common;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using XmlCoreTest.Common;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     // Based on https://github.com/xunit/xunit/blob/bccfcccf26b2c63c90573fe1a17e6572882ef39c/src/xunit.core/Sdk/InlineDataDiscoverer.cs
     public class XmlWriterInlineDataDiscoverer : IDataDiscoverer

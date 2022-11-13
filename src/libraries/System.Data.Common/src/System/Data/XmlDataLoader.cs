@@ -1364,12 +1364,12 @@ namespace System.Data
                 {                                              // Have to load schema.
                     if (_isTableLevel)
                     {                           // Loading into the DataTable ?
-                        _dataTable!.ReadXSDSchema(_dataReader, false); // Invoke ReadXSDSchema on a table
+                        _dataTable!.ReadXSDSchema(_dataReader); // Invoke ReadXSDSchema on a table
                         _nodeToSchemaMap = new XmlToDatasetMap(_dataReader.NameTable, _dataTable);
                     }                                               // Rebuild XML to DataSet map with new schema.
                     else
                     {                                          // Loading into the DataSet ?
-                        _dataSet!.ReadXSDSchema(_dataReader, false);   // Invoke ReadXSDSchema on a DataSet
+                        _dataSet!.ReadXSDSchema(_dataReader);   // Invoke ReadXSDSchema on a DataSet
                         _nodeToSchemaMap = new XmlToDatasetMap(_dataReader.NameTable, _dataSet);
                     }                                               // Rebuild XML to DataSet map with new schema.
                 }

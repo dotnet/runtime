@@ -210,7 +210,7 @@ namespace System
             if (invoke is null)
                 return null;
 
-            ParameterInfo[] delargs = invoke.GetParametersInternal();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
             Type[] delargtypes = new Type[delargs.Length];
 
             for (int i = 0; i < delargs.Length; i++)
@@ -250,8 +250,8 @@ namespace System
                 return false;
             }
 
-            ParameterInfo[] delargs = invoke.GetParametersInternal();
-            ParameterInfo[] args = method.GetParametersInternal();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
+            ParameterInfo[] args = method.GetParametersNoCopy();
 
             bool argLengthMatch;
 

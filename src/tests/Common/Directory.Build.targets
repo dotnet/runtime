@@ -87,6 +87,11 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
+      <!-- Used by disasm output verification tests -->
+      <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
       <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
       <RunTimeArtifactsIncludeFolders Include="xunit/" />
     </ItemGroup>

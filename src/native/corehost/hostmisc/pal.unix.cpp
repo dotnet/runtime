@@ -171,6 +171,7 @@ namespace
         }
 
         fclose(file);
+        free(line);
         if (!found)
             return false;
 

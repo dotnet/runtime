@@ -448,13 +448,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
                 // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
                 const int CharsPerTimeoutCheck = 1_000;
-                ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
-                    input.Slice(0, pos + CharsPerTimeoutCheck) :
-                    input;
+                int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
+                    pos + CharsPerTimeoutCheck :
+                    input.Length;
 
                 bool done = currentState.NfaState is not null ?
-                    FindEndPositionDeltas<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(inputForInnerLoop, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
-                    FindEndPositionDeltas<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(inputForInnerLoop, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
+                    FindEndPositionDeltas<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
+                    FindEndPositionDeltas<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
@@ -466,7 +466,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
                 // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
                 // input available.
-                if (pos < inputForInnerLoop.Length)
+                if (pos < innerLoopLength)
                 {
                     // Because there was still more input available, a failure to transition in DFA mode must be the cause
                     // of the early exit. Upgrade to NFA mode.
@@ -505,7 +505,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 0 if iteration completed because we reached an initial state.
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
-        private bool FindEndPositionDeltas<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, RegexRunnerMode mode,
+        private bool FindEndPositionDeltas<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
                 ref int posRef, ref CurrentState state, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
             where TStateHandler : struct, IStateHandler
             where TInputReader : struct, IInputReader
@@ -561,7 +561,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If there is more input available try to transition with the next character.
-                    if (!IsMintermId(positionId) || !TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state, positionId))
                     {
                         return false;
                     }

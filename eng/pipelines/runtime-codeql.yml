@@ -1,0 +1,65 @@
+trigger:
+  none
+
+schedules:
+  - cron: 0 12 * * 1
+    displayName: Weekly Monday CodeQL/Semmle run
+    branches:
+      include:
+      - main
+    always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - name: Codeql.Enabled
+    value: True
+  - name: Codeql.Cadence
+    value: 0
+  - name: Codeql.TSAEnabled
+    value: True
+  - name: Codeql.BuildIdentifier
+    value: $(System.JobDisplayName)
+  - name: Codeql.Language
+    value: cpp,csharp,java,python
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      #
+      # Build CoreCLR runtime packs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - Linux_x64
+          - windows_x64
+          jobParameters:
+            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: AllSubsets_CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
+            isManualCodeQLBuild: true
+
+      #
+      # Build Mono runtime packs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          runtimeFlavor: mono
+          platforms:
+          - Linux_x64
+          - windows_x64
+          jobParameters:
+            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
+            nameSuffix: AllSubsets_Mono
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
+            isManualCodeQLBuild: true

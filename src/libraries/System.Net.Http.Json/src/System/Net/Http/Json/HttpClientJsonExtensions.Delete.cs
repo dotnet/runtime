@@ -257,19 +257,8 @@ namespace System.Net.Http.Json
                 // Nullable forgiving reason:
                 // DeleteAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
-                return await ReadFromJsonAsyncHelper(response.Content!, type, options, cancellationToken).ConfigureAwait(false);
+                return await response.Content!.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
             }
-
-            // Workaround for https://github.com/mono/linker/issues/1416, extracting the offending call into a separate method
-            // which can be annotated with suppressions.
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresDynamicCode.")]
-            static Task<object?> ReadFromJsonAsyncHelper(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
-                => content.ReadFromJsonAsync(type, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -282,7 +271,7 @@ namespace System.Net.Http.Json
                 // Nullable forgiving reason:
                 // DeleteAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
-                return await ReadFromJsonAsyncHelper<T>(response.Content!, options, cancellationToken).ConfigureAwait(false);
+                return await response.Content!.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
             }
         }
 

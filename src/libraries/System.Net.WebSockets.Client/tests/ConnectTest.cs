@@ -25,7 +25,14 @@ namespace System.Net.WebSockets.Client.Tests
             yield return NoThrow(options => options.UseDefaultCredentials = false);
             yield return Throw(options => options.Credentials = new NetworkCredential());
             yield return Throw(options => options.Proxy = new WebProxy());
-            yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
+
+            // Will result in an exception on apple mobile platforms
+            // and crash the test.
+            if (PlatformDetection.IsNotAppleMobile)
+            {
+                yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
+            }
+
             yield return NoThrow(options => options.ClientCertificates = new X509CertificateCollection());
             yield return Throw(options => options.RemoteCertificateValidationCallback = delegate { return true; });
             yield return Throw(options => options.Cookies = new CookieContainer());
@@ -173,7 +180,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "SetRequestHeader not supported on browser")]
         public async Task ConnectAsync_AddHostHeader_Success()
         {
@@ -294,7 +300,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "SetRequestHeader not supported on Browser")]
         public async Task ConnectAsync_NonStandardRequestHeaders_HeadersAddedWithoutValidation()
         {
@@ -365,7 +370,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -400,7 +404,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
         public async Task ConnectAsync_HttpResponseDetailsCollectedOnFailure()
         {
@@ -420,7 +423,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
         public async Task ConnectAsync_HttpResponseDetailsCollectedOnFailure_CustomHeader()
         {
@@ -443,7 +445,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
         public async Task ConnectAsync_HttpResponseDetailsCollectedOnSuccess_Extensions()
         {

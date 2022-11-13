@@ -3,17 +3,20 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-#
-# Evaluate paths
-#
-- template: /eng/pipelines/common/evaluate-default-paths.yml
-
-- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-    isRollingBuild: ${{ variables.isRollingBuild }}
-    excludeNonLibTests: false
-    excludeLibTests: true
+    jobs:
+
+    #
+    # Evaluate paths
+    #
+    - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
+      parameters:
+        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+        isRollingBuild: ${{ variables.isRollingBuild }}
+        excludeNonLibTests: false
+        excludeLibTests: true

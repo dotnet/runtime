@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tracing
     /// TraceLogging: Used when calling EventSource.WriteMultiMerge.
     /// Stores the type information to use when writing the event fields.
     /// </summary>
-    public class TraceLoggingEventTypes
+    internal sealed class TraceLoggingEventTypes
     {
         internal readonly TraceLoggingTypeInfo[] typeInfos;
 #if FEATURE_PERFTRACING

@@ -1704,6 +1704,8 @@ namespace ILCompiler
         public interface ISerializableValue
         {
             void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            bool GetRawData(NodeFactory factory, out object data);
         }
 
         /// <summary>
@@ -1713,6 +1715,8 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            bool IsKnownImmutable { get; }
+            int ArrayLength { get; }
         }
 
         /// <summary>
@@ -1766,6 +1770,8 @@ namespace ILCompiler
             }
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            public abstract bool GetRawData(NodeFactory factory, out object data);
 
             private static T ThrowInvalidProgram<T>()
             {
@@ -1855,6 +1861,12 @@ namespace ILCompiler
                 builder.EmitBytes(InstanceBytes);
             }
 
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = InstanceBytes;
+                return true;
+            }
+
             private byte[] AsExactByteCount(int size)
             {
                 if (InstanceBytes.Length != size)
@@ -1903,6 +1915,12 @@ namespace ILCompiler
             {
                 throw new NotSupportedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
@@ -1929,6 +1947,12 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
             }
         }
 
@@ -1976,6 +2000,12 @@ namespace ILCompiler
                 // This would imply we have a byref-typed static field. The layout algorithm should have blocked this.
                 throw new NotImplementedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -2022,6 +2052,17 @@ namespace ILCompiler
                     Type,
                     new AllocationSite(AllocationSite.OwningType, AllocationSite.InstructionCounter - baseInstructionCounter),
                     this);
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                if (this is ISerializableReference serializableRef)
+                {
+                    data = factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, serializableRef);
+                    return true;
+                }
+                data = null;
+                return false;
+            }
         }
 
 #pragma warning disable CA1852
@@ -2095,6 +2136,10 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
+
+            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
 #pragma warning disable CA1852
@@ -2183,6 +2228,10 @@ namespace ILCompiler
 
                 builder.EmitBytes(_data);
             }
+
+            public bool IsKnownImmutable => _elementCount == 0;
+
+            public int ArrayLength => Length;
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -2223,6 +2272,12 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 builder.EmitPointerReloc(factory.SerializedStringObject(_value));
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = factory.SerializedStringObject(_value);
+                return true;
             }
 
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
@@ -2296,6 +2351,10 @@ namespace ILCompiler
                 int pointerSize = factory.Target.PointerSize;
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
+
+            public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
         private struct FieldAccessor

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -91,18 +93,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
          *   }
          * }
         */
-        public static void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, bool? useUberFramework = false, JArray frameworks = null)
+        public static void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, bool? useUberFramework = false, JsonArray frameworks = null)
         {
             string name = useUberFramework.HasValue && useUberFramework.Value ? "Microsoft.UberFramework" : "Microsoft.NETCore.App";
 
-            JObject runtimeOptions = new JObject(
-                new JProperty("framework",
-                    new JObject(
-                        new JProperty("name", name),
-                        new JProperty("version", version)
-                    )
-                )
-            );
+            JsonObject runtimeOptions = new JsonObject
+            {
+                ["framework"] = new JsonObject
+                {
+                    ["name"] = name,
+                    ["version"] = version
+                }
+            };
 
             if (rollFwdOnNoCandidateFx.HasValue)
             {
@@ -120,7 +122,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 file.Directory.Create();
             }
 
-            JObject json = new JObject();
+            JsonObject json = new JsonObject();
             json.Add("runtimeOptions", runtimeOptions);
             File.WriteAllText(destFile, json.ToString());
         }
@@ -173,18 +175,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             dir.Create();
 
-            JObject versionInfo = new JObject();
+            JsonObject versionInfo = new JsonObject();
             if (assemblyVersion != null)
             {
-                versionInfo.Add(new JProperty("assemblyVersion", assemblyVersion));
+                versionInfo.Add("assemblyVersion", (JsonNode)assemblyVersion);
             }
 
             if (fileVersion != null)
             {
-                versionInfo.Add(new JProperty("fileVersion", fileVersion));
+                versionInfo.Add("fileVersion", (JsonNode)fileVersion);
             }
 
-            JObject depsjson = CreateDepsJson("UberFx", "System.Collections.Immutable/1.0.0", "System.Collections.Immutable", versionInfo);
+            JsonObject depsjson = CreateDepsJson("UberFx", "System.Collections.Immutable/1.0.0", "System.Collections.Immutable", versionInfo);
             string depsFile = Path.Combine(builtSharedUberFxDir, "Microsoft.UberFramework.deps.json");
             File.WriteAllText(depsFile, depsjson.ToString());
 
@@ -194,7 +196,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             File.Copy(fileSource, fileDest);
         }
 
-        public static JObject CreateDepsJson(string fxName, string testPackage, string testAssembly, JObject versionInfo = null)
+        public static JsonObject CreateDepsJson(string fxName, string testPackage, string testAssembly, JsonObject versionInfo = null)
         {
             // Create the deps.json. Generated file (example)
             /*
@@ -224,49 +226,39 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             if (versionInfo == null)
             {
-                versionInfo = new JObject();
+                versionInfo = new JsonObject();
             }
 
-            JObject depsjson = new JObject(
-                new JProperty("runtimeTarget",
-                    new JObject(
-                        new JProperty("name", fxName)
-                    )
-                ),
-                new JProperty("targets",
-                    new JObject(
-                      new JProperty(fxName,
-                          new JObject(
-                              new JProperty(testPackage,
-                                  new JObject(
-                                      new JProperty("dependencies",
-                                        new JObject()
-                                      ),
-                                      new JProperty("runtime",
-                                          new JObject(
-                                              new JProperty(testAssembly + ".dll",
-                                                  versionInfo
-                                              )
-                                          )
-                                      )
-                                  )
-                              )
-                          )
-                      )
-                  )
-              ),
-                  new JProperty("libraries",
-                      new JObject(
-                          new JProperty(testPackage,
-                            new JObject(
-                                new JProperty("type", "assemblyreference"),
-                                new JProperty("serviceable", false),
-                                new JProperty("sha512", "")
-                            )
-                        )
-                    )
-                )
-            );
+            JsonObject depsjson = new JsonObject
+            {
+                ["runtimeTarget"] = new JsonObject
+                {
+                    ["name"] = fxName
+                },
+                ["targets"] = new JsonObject
+                {
+                    [fxName] = new JsonObject
+                    {
+                        [testPackage] = new JsonObject
+                        {
+                            ["dependencies"] = new JsonObject(),
+                            ["runtime"] = new JsonObject
+                            {
+                                [testAssembly + ".dll"] = versionInfo
+                            }
+                        }
+                    }
+                },
+                ["libraries"] = new JsonObject
+                {
+                    [testPackage] = new JsonObject
+                    {
+                        ["type"] = "assemblyreference",
+                        ["serviceable"] = false,
+                        ["sha512"] = ""
+                    }
+                }
+            };
 
             return depsjson;
         }
@@ -276,52 +268,39 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string fxNameWithVersion, 
             string testPackage, 
             string testPackageVersion, 
-            JObject testAssemblyVersionInfo = null,
+            JsonObject testAssemblyVersionInfo = null,
             string testAssembly = null)
         {
-            JObject depsjson = JObject.Parse(File.ReadAllText(jsonFile));
+            JsonObject depsjson = (JsonObject)JsonObject.Parse(File.ReadAllText(jsonFile));
 
             string testPackageWithVersion = testPackage + "/" + testPackageVersion;
             testAssembly = testAssembly ?? (testPackage + ".dll");
 
-            JProperty targetsProperty = (JProperty)depsjson["targets"].First;
-            JObject targetsValue = (JObject)targetsProperty.Value;
+            JsonObject targetsValue = (JsonObject)depsjson["targets"].AsObject().First().Value;
 
-            var assembly = new JProperty(testPackage, testPackageVersion);
-            JObject packageDependencies = (JObject)targetsValue[fxNameWithVersion]["dependencies"];
-            packageDependencies.Add(assembly);
+            JsonObject packageDependencies = (JsonObject)targetsValue[fxNameWithVersion]["dependencies"];
+            packageDependencies.Add(testPackage, (JsonNode)testPackageVersion);
 
             if (testAssemblyVersionInfo == null)
             {
-                testAssemblyVersionInfo = new JObject();
+                testAssemblyVersionInfo = new JsonObject();
             }
 
-            var package = new JProperty(testPackageWithVersion,
-                new JObject(
-                    new JProperty("runtime",
-                        new JObject(
-                            new JProperty(testAssembly,
-                                new JObject(
-                                    testAssemblyVersionInfo
-                                )
-                            )
-                        )
-                    )
-                )
-            );
+            targetsValue.Add(testPackageWithVersion, new JsonObject
+            {
+                ["runtime"] = new JsonObject
+                {
+                    [testAssembly] = testAssemblyVersionInfo
+                }
+            });
 
-            targetsValue.Add(package);
-
-            var library = new JProperty(testPackageWithVersion,
-                new JObject(
-                    new JProperty("type", "assemblyreference"),
-                    new JProperty("serviceable", false),
-                    new JProperty("sha512", "")
-                )
-            );
-
-            JObject libraries = (JObject)depsjson["libraries"];
-            libraries.Add(library);
+            JsonObject libraries = (JsonObject)depsjson["libraries"];
+            libraries.Add(testPackageWithVersion, new JsonObject
+            {
+                ["type"] = "assemblyreference",
+                ["serviceable"] = false,
+                ["sha512"] = ""
+            });
 
             File.WriteAllText(jsonFile, depsjson.ToString());
         }

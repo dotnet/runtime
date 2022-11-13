@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
@@ -19,6 +19,10 @@ Microsoft.Extensions.Primitives.StringSegment</PackageDescription>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Extensions\ChangeCallbackRegistrar.cs"
+             Link="Common\src\Extensions\ChangeCallbackRegistrar.cs" />
+    <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs"
+             Link="Common\src\Extensions\EmptyDisposable.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

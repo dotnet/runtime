@@ -458,5 +458,15 @@ namespace System.Tests
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             Assert.Equal(-15868, Int128.Parse("-15868", NumberStyles.Number, ci));
         }
+
+        [Fact]
+        public static void Runtime75416()
+        {
+            Int128 a = (Int128.MaxValue - 10) * +100;
+            Assert.Equal(a, -1100);
+
+            Int128 b = (Int128.MaxValue - 10) * -100;
+            Assert.Equal(b, +1100);
+        }
     }
 }

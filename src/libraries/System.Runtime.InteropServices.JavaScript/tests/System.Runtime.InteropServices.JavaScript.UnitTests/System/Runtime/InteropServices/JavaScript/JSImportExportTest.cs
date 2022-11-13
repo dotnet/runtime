@@ -19,6 +19,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task MultipleImportAsync()
+        {
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            Assert.NotNull(first);
+            Assert.NotNull(second);
+            Assert.Equal("object", first.GetTypeOfProperty("instance"));
+            var instance1 = first.GetPropertyAsJSObject("instance");
+            var instance2 = second.GetPropertyAsJSObject("instance");
+            Assert.Same(instance1, instance2);
+        }
+
+        [Fact]
         public unsafe void GlobalThis()
         {
             Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));
@@ -1372,9 +1385,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public void JsExportThrows()
         {
-            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.Throw)));
+            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport)));
             Assert.DoesNotContain("Unexpected error", ex.Message);
             Assert.Contains("-t-e-s-t-", ex.Message);
+        }
+
+        [Fact]
+        public void JsExportCatchToString()
+        {
+            var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.DoesNotContain("Unexpected error", toString);
+            Assert.Contains("-t-e-s-t-", toString);
+            Assert.DoesNotContain(nameof(JavaScriptTestHelper.ThrowFromJSExport), toString);
+        }
+
+        [Fact]
+        public void JsExportCatchStack()
+        {
+            var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
+            Assert.Contains("catch1stack", stack);
         }
 
         #endregion Exception
@@ -1445,6 +1475,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportSleep()
         {
             await JavaScriptTestHelper.sleep(100);
+        }
+
+        [Fact]
+        public async Task JsImportTaskTypes()
+        {
+            object a = new object();
+            Exception e = new Exception();
+            JSObject j = JSHost.GlobalThis;
+            Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+            Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+            Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
         }
 
         [Fact]
@@ -1920,12 +1962,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-            Assert.Contains(" at Module.throw0", exThrow0.StackTrace);
+            Assert.Contains("throw0fn", exThrow0.StackTrace);
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-            Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
+            Assert.Contains("throw1fn", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)

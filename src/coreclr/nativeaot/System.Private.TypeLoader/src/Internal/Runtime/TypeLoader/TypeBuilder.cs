@@ -223,7 +223,7 @@ namespace Internal.Runtime.TypeLoader
             ParseNativeLayoutInfo(genericMethod);
         }
 
-        private void InsertIntoNeedsTypeHandleList(TypeBuilderState state, TypeDesc type)
+        private void InsertIntoNeedsTypeHandleList(TypeDesc type)
         {
             if ((type is DefType) || (type is ArrayType) || (type is PointerType) || (type is ByRefType))
             {
@@ -259,7 +259,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (!hasTypeHandle)
             {
-                InsertIntoNeedsTypeHandleList(state, type);
+                InsertIntoNeedsTypeHandleList(type);
             }
 
             bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
@@ -1135,7 +1135,7 @@ namespace Internal.Runtime.TypeLoader
             return type.BaseType;
         }
 
-        private void FinishInterfaces(TypeDesc type, TypeBuilderState state)
+        private void FinishInterfaces(TypeBuilderState state)
         {
             DefType[] interfaces = state.RuntimeInterfaces;
             if (interfaces != null)
@@ -1343,7 +1343,7 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishBaseTypeAndDictionaries(type, state);
 
-                FinishInterfaces(type, state);
+                FinishInterfaces(state);
 
                 FinishClassConstructor(type, state);
 
@@ -1362,7 +1362,7 @@ namespace Internal.Runtime.TypeLoader
 
                     state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
 
-                    FinishInterfaces(type, state);
+                    FinishInterfaces(state);
 
                     if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
                     {

@@ -88,6 +88,10 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
 	return ins;
@@ -2046,6 +2050,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
 	/* Fallback if SIMD is disabled */

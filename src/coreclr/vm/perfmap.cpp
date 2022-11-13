@@ -368,7 +368,7 @@ void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig,
     // don't have a native image signature.
     GUID mvid;
     pPEAssembly->GetMVID(&mvid);
-    if(!StringFromGUID2(mvid, pwszSig, nSigSize))
+    if(!GuidToLPWSTR(mvid, pwszSig, nSigSize))
     {
         pwszSig[0] = '\0';
     }

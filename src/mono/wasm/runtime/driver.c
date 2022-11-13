@@ -55,7 +55,6 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
-void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -67,6 +66,7 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int signature);
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -127,11 +127,11 @@ static int resolved_datetime_class = 0,
 int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
 typedef struct {
 	int version;
-	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles);
+	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *flags);
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
@@ -345,7 +345,7 @@ compare_int (const void *k1, const void *k2)
 }
 
 static void*
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles)
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
 {
 	uint32_t token = mono_method_get_token (method);
 	assert (token);
@@ -354,27 +354,18 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	int *indexes = NULL;
 	int indexes_size = 0;
-	uint8_t *handles = NULL;
+	uint8_t *flags = NULL;
 	void **funcs = NULL;
 
-	*uses_handles = 0;
+	*out_flags = 0;
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#if defined(ICALL_TABLE_mscorlib)
-	if (!strcmp (image_name, "mscorlib")) {
-		indexes = mscorlib_icall_indexes;
-		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
-		handles = mscorlib_icall_handles;
-		funcs = mscorlib_icall_funcs;
-		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
-	}
-#endif
 #if defined(ICALL_TABLE_corlib)
 	if (!strcmp (image_name, "System.Private.CoreLib")) {
 		indexes = corlib_icall_indexes;
 		indexes_size = sizeof (corlib_icall_indexes) / 4;
-		handles = corlib_icall_handles;
+		flags = corlib_icall_flags;
 		funcs = corlib_icall_funcs;
 		assert (sizeof (corlib_icall_indexes [0]) == 4);
 	}
@@ -383,7 +374,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
 		indexes_size = sizeof (System_icall_indexes) / 4;
-		handles = System_icall_handles;
+		flags = System_icall_flags;
 		funcs = System_icall_funcs;
 	}
 #endif
@@ -397,7 +388,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	}
 
 	uint32_t idx = (int*)p - indexes;
-	*uses_handles = handles [idx];
+	*out_flags = flags [idx];
 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
@@ -452,7 +443,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 
-void mono_initialize_internals ()
+void mono_initialize_internals (void)
 {
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
@@ -465,7 +456,7 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_register_bundled_satellite_assemblies ()
+mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
@@ -595,7 +586,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
@@ -641,7 +631,7 @@ mono_wasm_assembly_load (const char *name)
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib ()
+mono_wasm_get_corlib (void)
 {
 	MonoAssembly* result;
 	MONO_ENTER_GC_UNSAFE;
@@ -912,7 +902,7 @@ _get_uri_class(MonoException** exc)
 }
 
 static void
-_ensure_classes_resolved ()
+_ensure_classes_resolved (void)
 {
 	MONO_ENTER_GC_UNSAFE;
 	if (!datetime_class && !resolved_datetime_class) {
@@ -1410,9 +1400,21 @@ mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(M
 void mono_profiler_init_aot (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_profiler_aot (const char *desc)
+mono_wasm_profiler_init_aot (const char *desc)
 {
 	mono_profiler_init_aot (desc);
+}
+
+#endif
+
+#ifdef ENABLE_BROWSER_PROFILER
+
+void mono_profiler_init_browser (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_browser (const char *desc)
+{
+	mono_profiler_init_browser (desc);
 }
 
 #endif
@@ -1477,4 +1479,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 	*destination = (int64_t)value;
 	return I52_ERROR_NONE;
+}
+
+EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
+	return mono_method_full_name(method, 0);
 }

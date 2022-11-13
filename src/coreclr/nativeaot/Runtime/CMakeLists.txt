@@ -105,9 +105,6 @@ if (WIN32)
     ${GC_DIR}/handletablepriv.h
     ${GC_DIR}/objecthandle.h
     ${GC_DIR}/softwarewritewatch.h)
-endif(WIN32)
-
-if(WIN32)
 
   include_directories(windows)
 

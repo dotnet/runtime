@@ -37,6 +37,6 @@ namespace System.Numerics
         /// <summary>Computes <c>10</c> raised to a given power and subtracts one.</summary>
         /// <param name="x">The power to which <c>10</c> is raised.</param>
         /// <returns><c>10<sup><paramref name="x" /></sup> - 1</c></returns>
-        static virtual TSelf Exp10M1(TSelf x) => TSelf.Exp10M1(x) - TSelf.One;
+        static virtual TSelf Exp10M1(TSelf x) => TSelf.Exp10(x) - TSelf.One;
     }
 }

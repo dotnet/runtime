@@ -8,7 +8,7 @@ import Serializer from "../server_pthread/ipc-protocol/base-serializer";
 import { CommandSetId, EventPipeCommandId, ProcessCommandId } from "../server_pthread/ipc-protocol/types";
 import { assertNever, mono_assert } from "../../types";
 import { delay } from "../../promise-utils";
-
+import { pthread_self } from "../../pthreads/worker";
 
 
 function expectAdvertise(data: ArrayBuffer): boolean {
@@ -46,7 +46,7 @@ function extractOkSessionID(data: ArrayBuffer): number {
     }
 }
 
-function computeStringByteLength(s: string): number {
+function computeStringByteLength(s: string | null): number {
     if (s === undefined || s === null || s === "")
         return 4; // just length of zero
     return 4 + 2 * s.length + 2; // length + UTF16 + null
@@ -106,6 +106,19 @@ function makeProcessResumeRuntime(): Uint8Array {
     return buffer;
 }
 
+function postMessageToBrowser(message: any, transferable?: Transferable[]): void {
+    pthread_self.postMessageToBrowser({
+        type: "diagnostic_server_mock",
+        ...message
+    }, transferable);
+}
+
+function addEventListenerFromBrowser(cmd: string, listener: (data: any) => void) {
+    pthread_self.addEventListenerFromBrowser((event) => {
+        if (event.data.cmd === cmd) listener(event.data);
+    });
+}
+
 export function createMockEnvironment(): MockEnvironment {
     const command = {
         makeEventPipeCollectTracing2,
@@ -117,6 +130,8 @@ export function createMockEnvironment(): MockEnvironment {
         extractOkSessionID,
     };
     return {
+        postMessageToBrowser,
+        addEventListenerFromBrowser,
         createPromiseController,
         delay,
         command,

@@ -1366,7 +1366,7 @@ namespace Microsoft.VisualBasic.FileIO
         public string? ReadToEnd() { throw null; }
         public void SetDelimiters(params string[]? delimiters) { }
         public void SetFieldWidths(params int[]? fieldWidths) { }
-        void System.IDisposable.Dispose() { }
+        public void Dispose() { }
     }
     public enum UICancelOption
     {

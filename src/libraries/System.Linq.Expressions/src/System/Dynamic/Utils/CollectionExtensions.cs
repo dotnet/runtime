@@ -57,25 +57,26 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T>? enumerable)
         {
-            if (enumerable == null)
+            if (enumerable != null && enumerable != ReadOnlyCollection<T>.Empty)
             {
-                return EmptyReadOnlyCollection<T>.Instance;
+                if (enumerable is TrueReadOnlyCollection<T> troc)
+                {
+                    return troc;
+                }
+
+                if (enumerable is ReadOnlyCollectionBuilder<T> builder)
+                {
+                    return builder.ToReadOnlyCollection();
+                }
+
+                T[] array = enumerable.ToArray();
+                if (array.Length != 0)
+                {
+                    return new TrueReadOnlyCollection<T>(array);
+                }
             }
 
-            if (enumerable is TrueReadOnlyCollection<T> troc)
-            {
-                return troc;
-            }
-
-            if (enumerable is ReadOnlyCollectionBuilder<T> builder)
-            {
-                return builder.ToReadOnlyCollection();
-            }
-
-            T[] array = enumerable.ToArray();
-            return array.Length == 0 ?
-                EmptyReadOnlyCollection<T>.Instance :
-                new TrueReadOnlyCollection<T>(array);
+            return ReadOnlyCollection<T>.Empty;
         }
 
         // We could probably improve the hashing here

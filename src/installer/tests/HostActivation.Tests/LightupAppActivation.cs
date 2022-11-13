@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -400,9 +400,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Create a deps.json file in the folder "additionalDeps\shared\Microsoft.NETCore.App\9999.0.0"
             string additionalDepsRootPath = Path.Combine(_fxBaseDir, "additionalDeps");
-            JObject versionInfo = new JObject();
-            versionInfo.Add(new JProperty("assemblyVersion", "0.0.0.1"));
-            versionInfo.Add(new JProperty("fileVersion", "0.0.0.2"));
+            JsonObject versionInfo = new JsonObject
+            {
+                ["assemblyVersion"] = "0.0.0.1",
+                ["fileVersion"] = "0.0.0.2"
+            };
             string additionalDepsPath = CreateAdditionalDeps(additionalDepsRootPath, versionInfo);
 
             // Version: NetCoreApp 9999.0.0
@@ -456,10 +458,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Create a deps.json file in the folder "additionalDeps\shared\Microsoft.NETCore.App\9999.0.0"
             string additionalDepsRootPath = Path.Combine(_fxBaseDir, "additionalDeps");
-            JObject versionInfo = new JObject();
-            // Use Higher version numbers to win
-            versionInfo.Add(new JProperty("assemblyVersion", "99.9.9.9"));
-            versionInfo.Add(new JProperty("fileVersion", "98.9.9.9"));
+            JsonObject versionInfo = new JsonObject
+            {
+                // Use Higher version numbers to win
+                ["assemblyVersion"] = "99.9.9.9",
+                ["fileVersion"] = "98.9.9.9"
+            };
             string additionalDepsPath = CreateAdditionalDeps(additionalDepsRootPath, versionInfo);
 
             // Version: NetCoreApp 9999.0.0
@@ -492,7 +496,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             File.Copy(libDepsJson, Path.Combine(customLightupPath, Path.GetFileName(libDepsJson)));
         }
 
-        private static string CreateAdditionalDeps(string destDir, JObject immutableCollectionVersionInfo)
+        private static string CreateAdditionalDeps(string destDir, JsonObject immutableCollectionVersionInfo)
         {
             DirectoryInfo dir = new DirectoryInfo(destDir);
             if (dir.Exists)
@@ -502,7 +506,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             dir.Create();
 
-            JObject depsjson = SharedFramework.CreateDepsJson("Microsoft.NETCore.App", "LightupLib/1.0.0", "LightupLib");
+            JsonObject depsjson = SharedFramework.CreateDepsJson("Microsoft.NETCore.App", "LightupLib/1.0.0", "LightupLib");
 
             string depsFile = Path.Combine(destDir, "My.deps.json");
             File.WriteAllText(depsFile, depsjson.ToString());

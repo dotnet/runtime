@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -135,6 +135,7 @@ namespace ILCompiler.DependencyAnalysis
             // the time of startup. (Linker likely can't do it, unfortunately.)
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
             builder.AddSymbol(_endSymbol);
 

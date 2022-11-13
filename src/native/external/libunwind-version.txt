@@ -13,6 +13,8 @@ Apply https://github.com/libunwind/libunwind/pull/377
 Apply https://github.com/libunwind/libunwind/pull/382
 Apply https://github.com/libunwind/libunwind/pull/398
 Apply https://github.com/libunwind/libunwind/pull/400
+Apply https://github.com/libunwind/libunwind/pull/414
+Apply https://github.com/libunwind/libunwind/pull/416
 
 For LoongArch64:
 Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322
