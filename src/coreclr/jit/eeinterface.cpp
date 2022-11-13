@@ -569,7 +569,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, 
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true); }))
     {
         printer.Truncate(0);
-        printer.Append("hackishClassName");
+        printer.Append("<unknown class>");
     }
 
     return printer.GetBuffer();
@@ -590,7 +590,7 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, false); }))
     {
         printer.Truncate(0);
-        printer.Append("hackishClassName");
+        printer.Append("<unknown class>");
     }
 
     return printer.GetBuffer();
