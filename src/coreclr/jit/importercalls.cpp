@@ -213,7 +213,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         const char* className;
         const char* methodName =
             info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
-        if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
+        if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr) &&
+            (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
             (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
         {
             return impImportJitTestLabelMark(sig->numArgs);
