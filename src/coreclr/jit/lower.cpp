@@ -3000,7 +3000,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->SetIconValue(0xff);
                 op2->gtType = castOp->gtType;
 #else
-                castOp->gtType = castToType;
+                // Do not change the castOp type for OR, XOR, AND if the cast type is BOOL
+                // as it will not matter.
+                if (!(castOp->OperIs(GT_OR, GT_XOR, GT_AND) && (castToType == TYP_BOOL)))
+                {
+                    castOp->gtType = castToType;
+                }
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
@@ -3008,16 +3013,25 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
+                    bool canRecontainCastOp = false;
+
                     GenTree* op1 = castOp->gtGetOp1();
                     if ((op1 != nullptr) && !op1->IsCnsIntOrI())
                     {
                         op1->ClearContained();
+                        canRecontainCastOp = true;
                     }
 
                     GenTree* op2 = castOp->gtGetOp2();
                     if ((op2 != nullptr) && !op2->IsCnsIntOrI())
                     {
                         op2->ClearContained();
+                        canRecontainCastOp = true;
+                    }
+
+                    if (canRecontainCastOp)
+                    {
+                        ContainCheckBinary(castOp->AsOp());
                     }
                 }
 
