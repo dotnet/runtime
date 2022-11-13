@@ -685,19 +685,24 @@ namespace System
         internal static extern bool HasInstantiation(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
+        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
         {
-            RuntimeType retType = type;
-
-            if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
+            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
             {
-                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
-                GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
+                if (type.GenericCache is not RuntimeType genericDefinition)
+                {
+                    RuntimeTypeHandle nativeHandle = type.TypeHandle;
+                    genericDefinition = null!;
+                    GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref genericDefinition));
+                    type.GenericCache = genericDefinition;
+                }
+
+                return genericDefinition;
             }
 
-            return retType;
+            return type;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

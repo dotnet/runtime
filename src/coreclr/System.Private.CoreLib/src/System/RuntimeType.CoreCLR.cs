@@ -1499,7 +1499,7 @@ namespace System
                 m_typeCode = TypeCode.Empty;
                 m_runtimeType = runtimeType;
                 m_isGlobal = RuntimeTypeHandle.GetModule(runtimeType).RuntimeType == runtimeType;
-                m_isNullableOfT = Nullable.GetUnderlyingType(runtimeType) != null;
+                m_isNullableOfT = Nullable.GetUnderlyingType(runtimeType, true) != null;
             }
             #endregion
 
