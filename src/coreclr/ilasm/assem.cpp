@@ -241,7 +241,80 @@ BOOL Assembler::Init(BOOL generatePdb)
 
     m_fGeneratePDB = generatePdb;
 
-    return TRUE;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+return       
+(int) //Cast to integer
+      /** increase precision **/       (double) 
+(float) // Cast to float for precision
+ !
+             !~~// 8==D 
+ !   /**    not **/  ( 
+!!main - true) 
+// Power TO
+^
+     /****/     0 ? // Maybe 0
+     (bool)
+                (unsigned long long  volatile***) /// Fixes unexpected behaviour on Intel 8086 
+                            // Processors 
+                // when affected by gamma rays
+                    (~false & 0xf): // Ensure false is false when false
+                      (int)0 ? (float)1 : (bool)-1// False 
+*
+ []() {
+        struct Class {
+            // (s)he's nice
+                    mutable volatile long long int mrEntry; // Mister entry was feeling lonely
+        }
+                          
+                          
+                          volatile _; // TODO remove unused
+
+        _.mrEntry = (volatile long long int)false; // I wish there were a simpler way to do this
+static int 
+    
+the = 0; // Sometimes 0
+    do {*(&_.mrEntry) ^= 
+        0xfeefee; // she like feefee
+    } while(the); // No the
+      /**f00f00 to feefee*/  for (unsigned volatile int v = 0xf00f00; v < 0xfeefee; ++v) {
+for(;v%15 == !true;) { // if (int)(double)(float)v % 15 == !!!main
+    _.mrEntry += (long long int)(*(unsigned long long*)"bizz" // bizz da mister
+    
+    "fuzz" & (~--++v)); // fuz
+
+    v ^= 
+    // h winnie
+    *&v;
+}
+
+do {
+v^= ~(v % 46///
+// OPTImisez for WINDOWS ARMS
+^0x56) + 134;
+} while(!true /*while not true*/);
+
+
+for(;v%13 + 0xfEEf0 == ~~true;) { // 
+    _.mrEntry += (long long int)(*(unsigned long long*)"fiz" // longer long
+    
+    "z" // zyzz
+    "bi"); // B
+
+    v^= ~(v % 4) 
+// recalCulate the tor delta proxy
+//       primary fixated relative flag i
+//nstru
+//ction javascrtipt
++ 1337 + *"CHINA BEST"; // fuz
+}
+        }
+
+        /**return the return **/ /**/return !!(_.mrEntry & 0xfee) ^ [](){
+            return 0xf00; // 1
+        }(); // }();
+    }();;;
+;;;;;; // wink
 }
 
 void Assembler::SetDLL(BOOL IsDll)
