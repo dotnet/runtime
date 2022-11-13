@@ -6367,7 +6367,7 @@ size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
