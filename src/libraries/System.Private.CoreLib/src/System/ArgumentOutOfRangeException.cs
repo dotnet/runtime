@@ -90,9 +90,45 @@ namespace System
         public virtual object? ActualValue => _actualValue;
 
         [DoesNotReturn]
-        private static void Throw(string? paramName, string message)
+        private static void ThrowZero(string paramName)
         {
-            throw new ArgumentOutOfRangeException(paramName, message);
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonZero, paramName));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, paramName));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNegativeOrZero(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowGreater(string paramName, object other)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowGreaterEqual(string paramName, object other)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowLess(string paramName, object other)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
+        }
+
+        [DoesNotReturn]
+        private static void ThrowLessEqual(string paramName, object other)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is zero.</summary>
@@ -102,7 +138,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsZero(value))
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonZero, paramName));
+                ThrowZero(paramName);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative.</summary>
@@ -112,7 +148,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsNegative(value))
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, paramName));
+                ThrowNegative(paramName);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative or zero.</summary>
@@ -122,7 +158,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsNegative(value) || T.IsZero(value))
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
+                ThrowNegativeOrZero(paramName);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than <paramref name="other"/>.</summary>
@@ -133,7 +169,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) > 0)
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
+                ThrowGreater(paramName, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than or equal <paramref name="other"/>.</summary>
@@ -144,7 +180,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) >= 0)
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
+                ThrowGreaterEqual(paramName, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than <paramref name="other"/>.</summary>
@@ -155,7 +191,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) < 0)
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
+                ThrowLess(paramName, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than or equal <paramref name="other"/>.</summary>
@@ -166,7 +202,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) <= 0)
-                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
+                ThrowLessEqual(paramName, other);
         }
     }
 }
