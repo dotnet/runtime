@@ -104,13 +104,13 @@ public unsafe class CrossVirtualAlloc : IDisposable
             const int MEM_RESERVE = 0x2000;
             const int PAGE_READWRITE = 0x04;
 
-            _ptr = VirtualAlloc(null, PageSize * 2, MEM_RESERVE, PAGE_READWRITE);
-            if (_ptr != null)
+            byte* reservePtr = VirtualAlloc(null, PageSize * 2, MEM_RESERVE, PAGE_READWRITE);
+            if (reservePtr != null)
             {
-                _ptr = VirtualAlloc(_ptr, PageSize, MEM_COMMIT, PAGE_READWRITE);
+                _ptr = VirtualAlloc(reservePtr, PageSize, MEM_COMMIT, PAGE_READWRITE);
                 if (_ptr == null)
                 {
-                    VirtualFree(_ptr, 0, 0);
+                    VirtualFree(reservePtr, 0, 0);
                 }
             }
         }
