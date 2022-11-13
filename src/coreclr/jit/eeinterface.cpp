@@ -228,7 +228,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              bool                  includeThisSpecifier)
 {
     CorInfoHelpFunc helper = eeGetHelperNum(methHnd);
-    if (helper == CORINFO_HELP_UNDEF)
+    if (helper != CORINFO_HELP_UNDEF)
     {
         assert(helper < CORINFO_HELP_COUNT);
         printer->Append(s_jitHelperNames[helper]);

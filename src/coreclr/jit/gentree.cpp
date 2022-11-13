@@ -18302,9 +18302,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
         if (queryForCurrentClass)
         {
 #if DEBUG
-            char buffer[128];
+            char fieldNameBuffer[128];
+            char classNameBuffer[128];
             JITDUMP("Querying runtime about current class of field %s (declared as %s)\n",
-                    eeGetFieldName(fieldHnd, true, buffer, sizeof(buffer)));
+                    eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
+                    eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
 #endif // DEBUG
 
             // Is this a fully initialized init-only static field?

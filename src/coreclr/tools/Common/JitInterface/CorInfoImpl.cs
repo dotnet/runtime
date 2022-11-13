@@ -1929,7 +1929,7 @@ namespace Internal.JitInterface
 
         private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
-            var type = HandleToObject(cls);
+            TypeDesc type = HandleToObject(cls);
             string name = JitTypeNameFormatter.Instance.FormatName(type);
             return PrintFromUtf16(name, buffer, bufferSize, pRequiredBufferSize);
         }
