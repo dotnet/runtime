@@ -296,14 +296,27 @@ namespace JIT.HardwareIntrinsics.General._Vector256
             UInt16 actualResult = default;
             UInt16 intermResult = default;
 
-            for (var i = 0; i < Op1ElementCount; i++)
+            if (Op1ElementCount != 1)
             {
-                if ((i % Vector128<UInt16>.Count) == 0)
+                for (var i = 0; i < Op1ElementCount; i += 2)
                 {
-                    actualResult += intermResult;
-                    intermResult = default;
+                    if ((i % Vector128<UInt16>.Count) == 0)
+                    {
+                        actualResult += intermResult;
+                        intermResult = default;
+                    }
+
+                    UInt16 pairResult = default;
+
+                    pairResult += (UInt16)(left[i + 0] * right[i + 0]);
+                    pairResult += (UInt16)(left[i + 1] * right[i + 1]);
+
+                    intermResult += pairResult;
                 }
-                intermResult += (UInt16)(left[i] * right[i]);
+            }
+            else
+            {
+                intermResult += (UInt16)(left[0] * right[0]);
             }
 
             actualResult += intermResult;

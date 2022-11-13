@@ -296,14 +296,27 @@ namespace JIT.HardwareIntrinsics.General
             {RetBaseType} actualResult = default;
             {RetBaseType} intermResult = default;
 
-            for (var i = 0; i < Op1ElementCount; i++)
+            if (Op1ElementCount != 1)
             {
-                if ((i % Vector128<{Op1BaseType}>.Count) == 0)
+                for (var i = 0; i < Op1ElementCount; i += 2)
                 {
-                    actualResult += intermResult;
-                    intermResult = default;
+                    if ((i % Vector128<{Op1BaseType}>.Count) == 0)
+                    {
+                        actualResult += intermResult;
+                        intermResult = default;
+                    }
+
+                    {RetBaseType} pairResult = default;
+
+                    pairResult += ({RetBaseType})(left[i + 0] * right[i + 0]);
+                    pairResult += ({RetBaseType})(left[i + 1] * right[i + 1]);
+
+                    intermResult += pairResult;
                 }
-                intermResult += ({RetBaseType})(left[i] * right[i]);
+            }
+            else
+            {
+                intermResult += ({RetBaseType})(left[0] * right[0]);
             }
 
             actualResult += intermResult;

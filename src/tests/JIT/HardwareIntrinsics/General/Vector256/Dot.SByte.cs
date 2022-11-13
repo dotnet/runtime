@@ -296,14 +296,27 @@ namespace JIT.HardwareIntrinsics.General._Vector256
             SByte actualResult = default;
             SByte intermResult = default;
 
-            for (var i = 0; i < Op1ElementCount; i++)
+            if (Op1ElementCount != 1)
             {
-                if ((i % Vector128<SByte>.Count) == 0)
+                for (var i = 0; i < Op1ElementCount; i += 2)
                 {
-                    actualResult += intermResult;
-                    intermResult = default;
+                    if ((i % Vector128<SByte>.Count) == 0)
+                    {
+                        actualResult += intermResult;
+                        intermResult = default;
+                    }
+
+                    SByte pairResult = default;
+
+                    pairResult += (SByte)(left[i + 0] * right[i + 0]);
+                    pairResult += (SByte)(left[i + 1] * right[i + 1]);
+
+                    intermResult += pairResult;
                 }
-                intermResult += (SByte)(left[i] * right[i]);
+            }
+            else
+            {
+                intermResult += (SByte)(left[0] * right[0]);
             }
 
             actualResult += intermResult;
