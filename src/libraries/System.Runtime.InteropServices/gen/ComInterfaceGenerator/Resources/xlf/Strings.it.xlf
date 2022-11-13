@@ -39,22 +39,22 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">Il metodo '{0}' è contenuto in un tipo '{1}' non contrassegnato come 'partial'. Durante la generazione dell'origine P/Invoke il metodo '{0}' verrà ignorato.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
-        <target state="new">Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</target>
+        <target state="translated">I metodi contrassegnati con 'LibraryImportAttribute' devono essere 'static', 'partial' e non generici. Durante la generazione dell'origine P/Invoke i metodi non 'static', non 'partial' o generici verranno ignorati.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">Il metodo '{0}' deve essere 'static', 'partial' e non generico quando è contrassegnato con 'LibraryImportAttribute'. Durante la generazione dell'origine P/Invoke il metodo '{0}' verrà ignorato.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
-        <target state="new">Invalid 'LibraryImportAttribute' usage</target>
+        <target state="translated">Utilizzo di 'LibraryImportAttribute' non valido</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">

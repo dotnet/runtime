@@ -305,7 +305,7 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.m_handle);
+            int result = GetGenerationWR(wo.WeakHandle);
             KeepAlive(wo);
             return result;
         }
@@ -389,8 +389,8 @@ namespace System
 
         /// <summary>
         /// Get a count of the bytes allocated over the lifetime of the process.
-        /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
         /// </summary>
+        /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetTotalAllocatedBytes(bool precise = false);
 
@@ -795,8 +795,8 @@ namespace System
         /// <summary>
         /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't necessarily have to be the same as the ones that are passed by the user.
         /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
-        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
             GCConfigurationContext context = new GCConfigurationContext

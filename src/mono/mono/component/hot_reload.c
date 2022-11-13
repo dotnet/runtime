@@ -144,6 +144,9 @@ hot_reload_get_num_methods_added (MonoClass *klass);
 static const char *
 hot_reload_get_capabilities (void);
 
+static uint32_t
+hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
@@ -179,7 +182,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_fields_iter,
 	&hot_reload_get_num_fields_added,
 	&hot_reload_get_num_methods_added,
-	&hot_reload_get_capabilities
+	&hot_reload_get_capabilities,
+	&hot_reload_get_method_params,
 };
 
 MonoComponentHotReload *
@@ -271,6 +275,9 @@ struct _BaselineInfo {
 
 	/* Parents for added methods, fields, etc */
 	GHashTable *member_parent; /* maps added methoddef or fielddef tokens to typedef tokens */
+
+	/* Params for added methods */
+	GHashTable *method_params; /* maps methoddef tokens to a MonoClassMetadataUpdateMethodParamInfo* */
 
 	/* Skeletons for all newly-added types from every generation. Accessing the array requires the image lock. */
 	GArray *skeletons;
@@ -411,6 +418,12 @@ baseline_info_destroy (BaselineInfo *info)
 
 	if (info->skeletons)
 		g_array_free (info->skeletons, TRUE);
+
+	if (info->member_parent)
+		g_hash_table_destroy (info->member_parent);
+
+	if (info->method_params)
+		g_hash_table_destroy (info->method_params);
 
 	g_free (info);
 }
@@ -626,6 +639,11 @@ add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClas
 /* Add field->parent reverse lookup for existing classes */
 static void
 add_field_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t field_token);
+
+/* Add a method->params lookup for new methods in existing classes */
+static void
+add_param_info_for_method (BaselineInfo *base_info, uint32_t param_token, uint32_t method_token);
+
 
 void
 hot_reload_init (void)
@@ -2019,6 +2037,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 	uint32_t add_member_typedef = 0;
 	uint32_t add_property_propertymap = 0;
 	uint32_t add_event_eventmap = 0;
+	uint32_t add_field_method = 0;
 
 	gboolean assemblyref_updated = FALSE;
 	for (guint32 i = 0; i < rows ; ++i) {
@@ -2049,6 +2068,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 		case ENC_FUNC_ADD_PARAM: {
 			g_assert (token_table == MONO_TABLE_METHOD);
+			add_field_method = log_token;
 			break;
 		}
 		case ENC_FUNC_ADD_FIELD: {
@@ -2115,8 +2135,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 		case MONO_TABLE_METHOD: {
 			/* if adding a param, handle it with the next record */
-			if (func_code == ENC_FUNC_ADD_PARAM)
+			if (func_code == ENC_FUNC_ADD_PARAM) {
+				g_assert (is_addition);
 				break;
+			}
+			g_assert (func_code == ENC_FUNC_DEFAULT);
 
 			if (!base_info->method_table_update)
 				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -2366,9 +2389,21 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			 *
 			 * So by the time we see the param additions, the methods are already in.
 			 *
-			 * FIXME: we need a lookaside table (like member_parent) for every place
-			 * that looks at MONO_METHOD_PARAMLIST
 			 */
+			if (is_addition) {
+				g_assert (add_field_method != 0);
+				uint32_t parent_type_token = hot_reload_method_parent (image_base, add_field_method);
+				g_assert (parent_type_token != 0); // we added a parameter to a method that was added
+				if (pass2_context_is_skeleton (ctx, parent_type_token)) {
+					// it's a parameter on a new method in a brand new class
+					// FIXME: need to do something here?
+				} else {
+					// it's a parameter on a new method in an existing class
+					add_param_info_for_method (base_info, log_token, add_field_method);
+				}
+				add_field_method = 0;
+				break;
+			}
 			break;
 		}
 		case MONO_TABLE_INTERFACEIMPL: {
@@ -2819,6 +2854,28 @@ hot_reload_field_parent (MonoImage *base_image, uint32_t field_token)
 }
 
 
+static void
+add_param_info_for_method (BaselineInfo *base_info, uint32_t param_token, uint32_t method_token)
+{
+	if (!base_info->method_params) {
+		base_info->method_params = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
+	}
+	MonoMethodMetadataUpdateParamInfo* info = NULL;
+	info = g_hash_table_lookup (base_info->method_params, GUINT_TO_POINTER (method_token));
+	if (!info) {
+		// FIXME locking
+		info = g_new0 (MonoMethodMetadataUpdateParamInfo, 1);
+		g_hash_table_insert (base_info->method_params, GUINT_TO_POINTER (method_token), info);
+		info->first_param_token = param_token;
+		info->param_count = 1;
+	} else {
+		uint32_t param_index = mono_metadata_token_index (param_token);
+		// expect params for a single method to be a contiguous sequence of rows
+		g_assert (mono_metadata_token_index (info->first_param_token) + info->param_count == param_index);
+		info->param_count++;
+	}
+}
+
 /* HACK - keep in sync with locator_t in metadata/metadata.c */
 typedef struct {
 	guint32 idx;			/* The index that we are trying to locate */
@@ -3147,6 +3204,32 @@ hot_reload_get_num_methods_added (MonoClass *klass)
 	}
 	return count;
 }
+
+static uint32_t
+hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt)
+{
+	BaselineInfo *base_info = baseline_info_lookup (base_image);
+	g_assert (base_info);
+
+	/* FIXME: locking in case the hash table grows */
+
+	if (!base_info->method_params)
+		return 0;
+
+	MonoMethodMetadataUpdateParamInfo* info = NULL;
+	info = g_hash_table_lookup (base_info->method_params, GUINT_TO_POINTER (methoddef_token));
+	if (!info) {
+		if (out_param_count_opt)
+			*out_param_count_opt = 0;
+		return 0;
+	}
+
+	if (out_param_count_opt)
+		*out_param_count_opt = info->param_count;
+
+	return mono_metadata_token_index (info->first_param_token);
+}
+
 
 static const char *
 hot_reload_get_capabilities (void)

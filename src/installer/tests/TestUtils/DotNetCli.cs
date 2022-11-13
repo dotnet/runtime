@@ -53,6 +53,7 @@ namespace Microsoft.DotNet.Cli.Build
             newArgs.Insert(0, command);
 
             return Command.Create(DotnetExecutablePath, newArgs)
+                .EnvironmentVariable("DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER", "1") // https://github.com/dotnet/runtime/issues/74328
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0"); // Avoid looking at machine state by default
         }

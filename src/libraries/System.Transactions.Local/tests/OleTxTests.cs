@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Transactions.Tests;
@@ -542,7 +541,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         {
             TransactionManager.ImplicitDistributedTransactions = true;
 
-            MinimalOleTxScenario();
+            Test(MinimalOleTxScenario);
 
             Assert.Throws<InvalidOperationException>(() => TransactionManager.ImplicitDistributedTransactions = false);
             TransactionManager.ImplicitDistributedTransactions = true;
@@ -575,6 +574,11 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             return;
         }
 
+        if (s_isTestSuiteDisabled)
+        {
+            return;
+        }
+
         TransactionManager.ImplicitDistributedTransactions = true;
 
         // In CI, we sometimes get XACT_E_TMNOTAVAILABLE; when it happens, it's typically on the very first
@@ -589,14 +593,27 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
                 action();
                 return;
             }
-            catch (TransactionException e) when (e.InnerException is TransactionManagerCommunicationException)
+            catch (Exception e) when (e is TransactionManagerCommunicationException or TransactionException { InnerException: TransactionManagerCommunicationException })
             {
-                if (--nRetries == 0)
+                if (--nRetries > 0)
                 {
-                    throw;
+                    Thread.Sleep(1000);
+
+                    continue;
                 }
 
-                Thread.Sleep(1000);
+                // We've continuously gotten XACT_E_TMNOTAVAILABLE for the entire retry window - MSDTC is unavailable in some way.
+                // We don't want this to make our CI flaky, so we swallow the exception and skip all subsequent tests.
+                if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_CI")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HELIX_WORKITEM_ROOT")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AGENT_OS")))
+                {
+                    s_isTestSuiteDisabled = true;
+
+                    return;
+                }
+
+                throw;
             }
         }
     }
@@ -647,4 +664,6 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         public OleTxFixture()
             => Test(MinimalOleTxScenario);
     }
+
+    private static bool s_isTestSuiteDisabled;
 }

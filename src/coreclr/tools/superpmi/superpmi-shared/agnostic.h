@@ -90,6 +90,14 @@ struct DLDD
     DWORD     C;
 };
 
+struct DLDDD
+{
+    DWORDLONG A;
+    DWORD     B;
+    DWORD     C;
+    DWORD     D;
+};
+
 struct Agnostic_CORINFO_METHODNAME_TOKENin
 {
     DWORDLONG ftn;
@@ -188,12 +196,6 @@ struct Agnostic_GetOSRInfo
 {
     DWORD index;
     unsigned ilOffset;
-};
-
-struct Agnostic_GetFieldAddress
-{
-    DWORDLONG ppIndirection;
-    DWORDLONG fieldAddress;
 };
 
 struct Agnostic_GetStaticFieldCurrentClass

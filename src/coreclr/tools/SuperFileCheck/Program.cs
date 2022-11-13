@@ -224,7 +224,7 @@ namespace SuperFileCheck
             if (namespaceDecl != null)
             {
                 var identifiers =
-                    namespaceDecl.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ValueText);
+                    namespaceDecl.Name.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ValueText);
                 return $"{String.Join(".", identifiers)}.{qualifiedTypeName}";
             }
 
@@ -373,8 +373,8 @@ namespace SuperFileCheck
             var methodName = methodDeclInfo.FullyQualifiedName.Replace("*", "{{.*}}"); // Change wild-card to FileCheck wild-card syntax.
 
             // Create anchors from the first prefix.
-            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: {methodName}";
-            var endAnchorText = $"// {checkPrefixes[0]}: {methodName}";
+            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: for method {methodName}";
+            var endAnchorText = $"// {checkPrefixes[0]}: for method {methodName}";
 
             // Create temp source file based on the source text of the method.
             // Newlines are added to pad the text so FileCheck's error messages will correspond

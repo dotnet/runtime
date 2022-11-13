@@ -301,8 +301,8 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
-  ICorJitInfo_API_names.h
-  ICorJitInfo_API_wrapper.hpp
+  ICorJitInfo_names_generated.h
+  ICorJitInfo_wrapper_generated.hpp
   inline.h
   inlinepolicy.h
   instr.h
@@ -502,7 +502,6 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
-       palrt
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES

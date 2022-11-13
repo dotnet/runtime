@@ -53,7 +53,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
-#include <tchar.h>
 #include <specstrings.h>
 #include <math.h>
 #include <limits.h>

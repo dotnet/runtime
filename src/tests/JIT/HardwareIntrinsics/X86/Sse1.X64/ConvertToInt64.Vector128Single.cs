@@ -13,12 +13,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using JIT.HardwareIntrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse1.X64
 {
     public static partial class Program
     {
-        private static void ConvertToInt64Vector128Single()
+        [Fact]
+        public static void ConvertToInt64Vector128Single()
         {
             var test = new SimdScalarUnaryOpConvertTest__ConvertToInt64Vector128Single();
 

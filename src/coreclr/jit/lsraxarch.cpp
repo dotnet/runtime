@@ -1650,10 +1650,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     //      const and <=6 reg words      -                  0 (pushes '0')
     //      const and >6 reg words       Yes                0 (pushes '0')
     //      const and <PageSize          No                 0 (amd64) 1 (x86)
-    //                                                        (x86:tmpReg for sutracting from esp)
-    //      const and >=PageSize         No                 2 (regCnt and tmpReg for subtracing from sp)
+    //
+    //      const and >=PageSize         No                 1 (regCnt)
     //      Non-const                    Yes                0 (regCnt=targetReg and pushes '0')
-    //      Non-const                    No                 2 (regCnt and tmpReg for subtracting from sp)
+    //      Non-const                    No                 1 (regCnt)
     //
     // Note: Here we don't need internal register to be different from targetReg.
     // Rather, require it to be different from operand's reg.
@@ -1667,6 +1667,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 
         if (sizeVal == 0)
         {
+            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
         else
@@ -1679,22 +1680,20 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
             // we will generate 'push 0'.
             assert((sizeVal % REGSIZE_BYTES) == 0);
+
             if (!compiler->info.compInitMem)
             {
-                // No need to initialize allocated stack space.
-                if (sizeVal < compiler->eeGetPageSize())
-                {
 #ifdef TARGET_X86
-                    // x86 needs a register here to avoid generating "sub" on ESP.
-                    buildInternalIntRegisterDefForNode(tree);
-#endif
-                }
-                else
+                // x86 always needs regCnt.
+                // For regCnt
+                buildInternalIntRegisterDefForNode(tree);
+#else  // !TARGET_X86
+                if (sizeVal >= compiler->eeGetPageSize())
                 {
-                    // We need two registers: regCnt and RegTmp
-                    buildInternalIntRegisterDefForNode(tree);
+                    // For regCnt
                     buildInternalIntRegisterDefForNode(tree);
                 }
+#endif // !TARGET_X86
             }
         }
     }
@@ -1702,7 +1701,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     {
         if (!compiler->info.compInitMem)
         {
-            buildInternalIntRegisterDefForNode(tree);
+            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
         BuildUse(size);

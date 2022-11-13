@@ -1045,9 +1045,11 @@ namespace System.Text.Json.Serialization.Tests
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
+            Assert.False(typeInfo.IsReadOnly);
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo2.Type);
+            Assert.False(typeInfo2.IsReadOnly);
 
             Assert.NotSame(typeInfo, typeInfo2);
 
@@ -1066,6 +1068,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
+            Assert.True(typeInfo.IsReadOnly);
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Same(typeInfo, typeInfo2);
@@ -1077,6 +1080,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<TestClassForEncoding> jti = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
 
+            Assert.False(jti.IsReadOnly);
             Assert.Equal(1, jti.Properties.Count);
             jti.Properties.Clear();
 
@@ -1088,11 +1092,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Using JsonTypeInfo will lock JsonSerializerOptions
             Assert.True(options.IsReadOnly);
+            Assert.True(jti.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => options.IncludeFields = false);
 
             // Getting JsonTypeInfo now should return a fresh immutable instance
             JsonTypeInfo<TestClassForEncoding> jti2 = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
             Assert.NotSame(jti, jti2);
+            Assert.True(jti2.IsReadOnly);
             Assert.Equal(1, jti2.Properties.Count);
             Assert.Throws<InvalidOperationException>(() => jti2.Properties.Clear());
 

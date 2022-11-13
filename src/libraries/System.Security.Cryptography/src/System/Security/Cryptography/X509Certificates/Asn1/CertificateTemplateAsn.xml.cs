@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, encoded, out CertificateTemplateAsn decoded);
+                DecodeCore(ref reader, expectedTag, out CertificateTemplateAsn decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }
@@ -63,16 +63,16 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateTemplateAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, out CertificateTemplateAsn decoded)
         {
-            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CertificateTemplateAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out CertificateTemplateAsn decoded)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+                DecodeCore(ref reader, expectedTag, out decoded);
             }
             catch (AsnContentException e)
             {
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CertificateTemplateAsn decoded)
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out CertificateTemplateAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);

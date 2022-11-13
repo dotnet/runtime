@@ -274,7 +274,7 @@ public:
 
     bool  HasComponentSize()
     {
-        static_assert(HasComponentSizeFlag == (1 << 31), "we assume that HasComponentSizeFlag matches the sign bit");
+        static_assert(HasComponentSizeFlag == (MethodTable::Flags)(1 << 31), "we assume that HasComponentSizeFlag matches the sign bit");
         // return (m_uFlags & HasComponentSizeFlag) != 0;
 
         return (int32_t)m_uFlags < 0;

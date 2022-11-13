@@ -84,7 +84,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
-    [false, "mono_profiler_init_aot", "void", ["number"]],
+    [false, "mono_wasm_profiler_init_aot", "void", ["number"]],
+    [false, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
@@ -93,6 +94,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_u52_to_f64", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_i52", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
+    [true, "mono_wasm_method_get_name", "number", ["number"]],
 ];
 
 export interface t_Cwraps {
@@ -193,7 +195,8 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_enable_on_demand_gc(enable: number): void;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
-    mono_profiler_init_aot(desc: string): void;
+    mono_wasm_profiler_init_aot(desc: string): void;
+    mono_wasm_profiler_init_browser(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
     mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments): MonoString;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
@@ -203,6 +206,7 @@ export interface t_Cwraps {
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
+    mono_wasm_method_get_name(method: MonoMethod): CharPtr;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
+
+#pragma warning disable IDE0060
 
 namespace System.Runtime.Intrinsics.Wasm
 {

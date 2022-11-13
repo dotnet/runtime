@@ -519,6 +519,16 @@ namespace R2RDump
                         _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, _r2r.GetAssemblyMvid(mvidIndex));
                     }
                     break;
+                case ReadyToRunSectionType.HotColdMap:
+                    int count = section.Size / 8;
+                    int hotColdMapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    for (int i = 0; i < count; i++)
+                    {
+                        _writer.Write(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
+                        _writer.Write(",");
+                        _writer.WriteLine(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
+                    }
+                    break;
                 default:
                     _writer.WriteLine("Unsupported section type {0}", section.Type);
                     break;
