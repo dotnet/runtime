@@ -5748,7 +5748,7 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value != 0;
 }
 
-void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType, TypeCompareState result)
+void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result)
 {
     if (IsEnum == nullptr)
         IsEnum = new LightWeightMap<DWORDLONG, DLD>();
@@ -5757,10 +5757,7 @@ void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* un
 
     DLD value;
     ZeroMemory(&value, sizeof(value));
-    if (underlyingType != nullptr)
-        value.A = CastHandle(*underlyingType);
-    else
-        value.A = 0;
+    value.A = CastHandle(underlyingType);
     value.B = (DWORD)result;
 
     IsEnum->Add(key, value);
