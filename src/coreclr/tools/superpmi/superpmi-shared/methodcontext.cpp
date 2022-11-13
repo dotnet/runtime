@@ -4998,11 +4998,7 @@ void MethodContext::recPrintEntity(
     {
         res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
     }
-
-    size_t bytesWritten = 0;
-
-    BYTE* srcBuffer = (BYTE*)PrintObjectDescription->GetBuffer(value.buffer);
-    if (bufferSize > 0)
+    else
     {
         res.buffer = UINT_MAX;
     }
@@ -5067,7 +5063,7 @@ size_t MethodContext::repPrintEntity(
     return bytesWritten;
 }
 
-void MethodContext::recPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+void MethodContext::recPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
 {
     recPrintEntity("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
 }
@@ -5075,7 +5071,7 @@ void MethodContext::dmpPrintObjectDescription(DWORDLONG key, const Agnostic_Prin
 {
     dmpPrintEntity("PrintObjectDescription", PrintObjectDescription, key, value);
 }
-size_t MethodContext::repPrintObjectDescription(void* handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+size_t MethodContext::repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     return repPrintEntity("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize);
 }
