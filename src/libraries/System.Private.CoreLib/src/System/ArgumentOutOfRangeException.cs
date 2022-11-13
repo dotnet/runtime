@@ -121,8 +121,8 @@ namespace System
         public static void ThrowIfNegativeOrZero<T>(T value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : INumberBase<T>
         {
-            ThrowIfNegative(value, paramName);
-            ThrowIfZero(value, paramName);
+            if (T.IsNegative(value) || T.IsZero(value))
+                Throw(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than <paramref name="other"/>.</summary>

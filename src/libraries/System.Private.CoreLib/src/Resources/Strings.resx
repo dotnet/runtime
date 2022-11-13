@@ -1868,6 +1868,9 @@
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
     <value>'{0}' must be non-negative value.</value>
   </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>'{0}' must be non-negative and non-zero value.</value>
+  </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLowerOrEqual" xml:space="preserve">
     <value>'{0}' must be lower than or equal '{1}'.</value>
   </data>
