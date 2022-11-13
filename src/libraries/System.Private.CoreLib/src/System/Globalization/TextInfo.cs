@@ -263,13 +263,10 @@ namespace System.Globalization
         NON_ASCII:
             // We encountered non-ASCII data and therefore can't perform invariant case conversion;
             // Fallback to ICU/NLS
-            fixed (char* pSource = &source)
-            {
-                fixed (char* pDest = &destination)
-                {
-                    ChangeCaseCore(pSource + i, charCount - (int)i, pDest + i, charCount - (int)i, toUpper);
-                }
-            }
+            ChangeCaseCommon_Scalar<TConversion>(
+                ref Unsafe.Add(ref source, i),
+                ref Unsafe.Add(ref destination, i),
+                charCount - (int)i);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
