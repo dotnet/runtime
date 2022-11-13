@@ -773,7 +773,7 @@ struct Agnostic_RecordCallSite
     DWORDLONG                 methodHandle;
 };
 
-struct Agnostic_PrintEntityResult
+struct Agnostic_PrintResult
 {
     // Required size of a buffer to contain everything including null terminator.
     // UINT_MAX if it was not determined during recording.

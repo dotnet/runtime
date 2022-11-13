@@ -215,28 +215,6 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
 // SuperPMI's method context replaying instead of directly making calls into the JIT/EE interface.
 //-------------------------------------------------------------------------------------------------
 
-// Originally from src/jit/ee_il_dll.cpp
-const char* CallUtils::GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr)
-{
-    if (GetHelperNum(method))
-    {
-        if (classNamePtr != nullptr)
-            *classNamePtr = "HELPER";
-
-        // The JIT version uses the getHelperName JIT/EE interface call, but this is easier for us
-        return kHelperName[GetHelperNum(method)];
-    }
-
-    if (IsNativeMethod(method))
-    {
-        if (classNamePtr != nullptr)
-            *classNamePtr = "NATIVE";
-        method            = GetMethodHandleForNative(method);
-    }
-
-    return (mc->repGetMethodName(method, classNamePtr));
-}
-
 // Originally from src/jit/eeinterface.cpp
 // If `ignoreMethodName` is `true`, we construct the function signature with a dummy method name that will be the
 // same for all methods.
@@ -244,11 +222,24 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 {
     const char* returnType = NULL;
 
-    const char* className = ignoreMethodName ? "CLASS" : nullptr;
-    const char* methodName = ignoreMethodName ? "METHOD" : GetMethodName(mc, hnd, &className);
-    if ((GetHelperNum(hnd) != CORINFO_HELP_UNDEF) || IsNativeMethod(hnd))
+    if ((GetHelperNum(hnd) != CORINFO_HELP_UNDEF))
     {
-        return methodName;
+        return kHelperName[GetHelperNum(hnd)];
+    }
+
+    char classNameBuffer[256];
+    char methodNameBuffer[256];
+
+    const char* className = "CLASS";
+    const char* methodName = "METHOD";
+
+    if (!ignoreMethodName)
+    {
+        mc->repPrintClassName(mc->repGetMethodClass(hnd), classNameBuffer, sizeof(classNameBuffer));
+        mc->repPrintMethodName(hnd, methodNameBuffer, sizeof(methodNameBuffer));
+
+        className = classNameBuffer;
+        methodName = methodNameBuffer;
     }
 
     size_t   length = 0;
@@ -375,18 +366,4 @@ inline CorInfoHelpFunc CallUtils::GetHelperNum(CORINFO_METHOD_HANDLE method)
     if (!(((size_t)method) & 1))
         return (CORINFO_HELP_UNDEF);
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
-}
-
-// Originally from jit/compiler.hpp
-inline bool CallUtils::IsNativeMethod(CORINFO_METHOD_HANDLE method)
-{
-    return ((((size_t)method) & 0x2) == 0x2);
-}
-
-// Originally from jit/compiler.hpp
-inline CORINFO_METHOD_HANDLE CallUtils::GetMethodHandleForNative(CORINFO_METHOD_HANDLE method)
-{
-    // Tweaked to avoid using CRT assertions
-    Assert((((size_t)method) & 0x3) == 0x2);
-    return (CORINFO_METHOD_HANDLE)(((size_t)method) & ~0x3);
 }

@@ -1063,65 +1063,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     return result;
 }
 
-void MethodContext::recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName)
-{
-    if (GetMethodName == nullptr)
-        GetMethodName = new LightWeightMap<DLD, DD>();
-    DD  value;
-    DLD key;
-    key.A = CastHandle(ftn);
-    key.B = (moduleName != nullptr);
-
-    if (methodname != nullptr)
-        value.A = GetMethodName->AddBuffer((unsigned char*)methodname, (DWORD)strlen(methodname) + 1);
-    else
-        value.A = (DWORD)-1;
-
-    if ((moduleName != nullptr) && (*moduleName != nullptr))
-        value.B = GetMethodName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
-    else
-        value.B = (DWORD)-1;
-
-    GetMethodName->Add(key, value);
-    DEBUG_REC(dmpGetMethodName(key, value));
-}
-void MethodContext::dmpGetMethodName(DLD key, DD value)
-{
-    unsigned char* methodName = (unsigned char*)GetMethodName->GetBuffer(value.A);
-    unsigned char* moduleName = (unsigned char*)GetMethodName->GetBuffer(value.B);
-    printf("GetMethodName key - ftn-%016llX modNonNull-%u, value meth-'%s', mod-'%s'", key.A, key.B, methodName,
-           moduleName);
-    GetMethodName->Unlock();
-}
-
-const char* MethodContext::repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName)
-{
-    const char* result = "hackishMethodName";
-    DD          value;
-    DLD         key;
-    key.A = CastHandle(ftn);
-    key.B = (moduleName != nullptr);
-
-    int itemIndex = -1;
-    if (GetMethodName != nullptr)
-        itemIndex = GetMethodName->GetIndex(key);
-    if (itemIndex < 0)
-    {
-        if (moduleName != nullptr)
-            *moduleName = "hackishModuleName";
-    }
-    else
-    {
-        value = GetMethodName->Get(key);
-        DEBUG_REP(dmpGetMethodName(key, value));
-
-        if (moduleName != nullptr)
-            *moduleName = (const char*)GetMethodName->GetBuffer(value.B);
-        result          = (const char*)GetMethodName->GetBuffer(value.A);
-    }
-    return result;
-}
-
 void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                                  char*                 methodName,
                                                  const char**          className,
@@ -4742,52 +4683,6 @@ CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
     return (CorInfoType)value.B;
 }
 
-void MethodContext::recGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName, const char* result)
-{
-    if (GetFieldName == nullptr)
-        GetFieldName = new LightWeightMap<DWORDLONG, DD>();
-
-    DD value;
-
-    if (result != nullptr)
-        value.A = GetFieldName->AddBuffer((unsigned char*)result, (DWORD)strlen(result) + 1);
-    else
-        value.A = (DWORD)-1;
-
-    if ((moduleName != nullptr) && (*moduleName != nullptr)) // protect strlen
-        value.B = (DWORD)GetFieldName->AddBuffer((unsigned char*)*moduleName, (DWORD)strlen(*moduleName) + 1);
-    else
-        value.B = (DWORD)-1;
-
-    DWORDLONG key = CastHandle(ftn);
-    GetFieldName->Add(key, value);
-    DEBUG_REC(dmpGetFieldName(key, value));
-}
-void MethodContext::dmpGetFieldName(DWORDLONG key, DD value)
-{
-    unsigned char* fieldName  = (unsigned char*)GetFieldName->GetBuffer(value.A);
-    unsigned char* moduleName = (unsigned char*)GetFieldName->GetBuffer(value.B);
-    printf("GetFieldName key - ftn-%016llX, value fld-'%s', mod-'%s'", key, fieldName, moduleName);
-    GetFieldName->Unlock();
-}
-const char* MethodContext::repGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName)
-{
-    if (GetFieldName == nullptr)
-    {
-        if (moduleName != nullptr)
-            *moduleName = "hackishModuleName";
-        return "hackishFieldName";
-    }
-
-    DWORDLONG key = CastHandle(ftn);
-    DD value = GetFieldName->Get(key);
-    DEBUG_REP(dmpGetFieldName(key, value));
-
-    if (moduleName != nullptr)
-        *moduleName = (const char*)GetFieldName->GetBuffer(value.B);
-    return (const char*)GetFieldName->GetBuffer(value.A);
-}
-
 void MethodContext::recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
                                           CorInfoInlineTypeCheckSource source,
                                           CorInfoInlineTypeCheck       result)
@@ -4944,137 +4839,6 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
         memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
     }
     return srcBufferLength;
-}
-
-void MethodContext::recPrintEntity(
-    const char* name,
-    LightWeightMap<DWORDLONG, Agnostic_PrintEntityResult>*& map,
-    DWORDLONG handle,
-    char* buffer,
-    size_t bufferSize,
-    size_t* pRequiredBufferSize,
-    size_t bytesWritten)
-{
-    if (map == nullptr)
-        map = new LightWeightMap<DWORDLONG, Agnostic_PrintEntityResult>();
-
-    // Required size of a buffer that contains all data and null terminator.
-    UINT requiredBufferSize = UINT_MAX;
-    if (pRequiredBufferSize != nullptr)
-    {
-        requiredBufferSize = (UINT)(*pRequiredBufferSize);
-    }
-    else if (bytesWritten + 1 < bufferSize)
-    {
-        requiredBufferSize = (UINT)(bytesWritten + 1);
-    }
-
-    Agnostic_PrintEntityResult res;
-    int index = map->GetIndex(handle);
-    if (index != -1)
-    {
-        // Merge with existing entry
-
-        res = map->GetItem(index);
-
-        if (requiredBufferSize != UINT_MAX)
-        {
-            res.requiredBufferSize = requiredBufferSize;
-        }
-
-        if (bytesWritten > res.bufferSize)
-        {
-            // Always stored without null terminator.
-            res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
-            res.bufferSize = bytesWritten;
-        }
-
-        map->Update(index, res);
-
-        dmpPrintEntity(name, map, handle, res);
-        return;
-    }
-
-    if (buffer != nullptr)
-    {
-        res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
-    }
-    else
-    {
-        res.buffer = UINT_MAX;
-    }
-
-    res.bufferSize = (UINT)bytesWritten;
-    res.requiredBufferSize = requiredBufferSize;
-
-    map->Add(handle, res);
-    dmpPrintEntity(name, map, handle, res);
-}
-
-void MethodContext::dmpPrintEntity(
-    const char* name,
-    LightWeightMapBuffer* buffer,
-    DWORDLONG key,
-    const Agnostic_PrintEntityResult& value)
-{
-    printf("%s key hnd-%016llX, bufferSize-%u, requiredBufferSize-%u", name, key, value.bufferSize, value.requiredBufferSize);
-    buffer->Unlock();
-}
-
-size_t MethodContext::repPrintEntity(
-    const char* name,
-    LightWeightMap<DWORDLONG, Agnostic_PrintEntityResult>*& map,
-    DWORDLONG handle,
-    char* buffer,
-    size_t bufferSize,
-    size_t* pRequiredBufferSize)
-{
-    AssertMapAndKeyExist(map, handle, ": map %s key %016llx", name, handle);
-
-    Agnostic_PrintEntityResult res = map->Get(handle);
-    DEBUG_REP(dmpPrintEntity(name, buffer, handle, res));
-
-    if (pRequiredBufferSize != nullptr)
-    {
-        if (res.requiredBufferSize == UINT_MAX)
-        {
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing requiredBufferSize for %s key %016llx)", name, handle);
-        }
-
-        *pRequiredBufferSize = res.requiredBufferSize;
-    }
-
-    // requiredBufferSize is with null terminator, but buffer is stored without null terminator.
-    // Determine if we have enough data to answer the call losslessly.
-    bool haveFullBuffer = (res.requiredBufferSize != UINT_MAX) && ((res.bufferSize + 1) >= res.requiredBufferSize);
-    if (!haveFullBuffer && (bufferSize > static_cast<size_t>(res.bufferSize) + 1))
-    {
-        LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (not enough buffer data for %s key %016llx)", name, handle);
-    }
-
-    size_t bytesWritten = 0;
-    if ((buffer != nullptr) && (bufferSize > 0))
-    {
-        char* storedBuffer = (char*)map->GetBuffer(res.buffer);
-        bytesWritten = min(bufferSize - 1, res.bufferSize);
-        memcpy(buffer, storedBuffer, bytesWritten);
-        buffer[bytesWritten] = '\0';
-    }
-
-    return bytesWritten;
-}
-
-void MethodContext::recPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
-{
-    recPrintEntity("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
-}
-void MethodContext::dmpPrintObjectDescription(DWORDLONG key, const Agnostic_PrintEntityResult& value)
-{
-    dmpPrintEntity("PrintObjectDescription", PrintObjectDescription, key, value);
-}
-size_t MethodContext::repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
-{
-    return repPrintEntity("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize);
 }
 
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
@@ -6721,17 +6485,174 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
     return result;
 }
 
+void MethodContext::recPrint(
+    const char* name,
+    LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
+    DWORDLONG handle,
+    char* buffer,
+    size_t bufferSize,
+    size_t* pRequiredBufferSize,
+    size_t bytesWritten)
+{
+    if (map == nullptr)
+        map = new LightWeightMap<DWORDLONG, Agnostic_PrintResult>();
+
+    // Required size of a buffer that contains all data and null terminator.
+    UINT requiredBufferSize = UINT_MAX;
+    if (pRequiredBufferSize != nullptr)
+    {
+        requiredBufferSize = (UINT)(*pRequiredBufferSize);
+    }
+    else if (bytesWritten + 1 < bufferSize)
+    {
+        requiredBufferSize = (UINT)(bytesWritten + 1);
+    }
+
+    Agnostic_PrintResult res;
+    int index = map->GetIndex(handle);
+    if (index != -1)
+    {
+        // Merge with existing entry
+
+        res = map->GetItem(index);
+
+        if (requiredBufferSize != UINT_MAX)
+        {
+            res.requiredBufferSize = requiredBufferSize;
+        }
+
+        if (bytesWritten > res.bufferSize)
+        {
+            // Always stored without null terminator.
+            res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
+            res.bufferSize = (UINT)bytesWritten;
+        }
+
+        map->Update(index, res);
+
+        dmpPrint(name, map, handle, res);
+        return;
+    }
+
+    if (buffer != nullptr)
+    {
+        res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
+    }
+    else
+    {
+        res.buffer = UINT_MAX;
+    }
+
+    res.bufferSize = (UINT)bytesWritten;
+    res.requiredBufferSize = requiredBufferSize;
+
+    map->Add(handle, res);
+    dmpPrint(name, map, handle, res);
+}
+
+void MethodContext::dmpPrint(
+    const char* name,
+    LightWeightMapBuffer* buffer,
+    DWORDLONG key,
+    const Agnostic_PrintResult& value)
+{
+    printf("%s key hnd-%016llX, bufferSize-%u, requiredBufferSize-%u", name, key, value.bufferSize, value.requiredBufferSize);
+    buffer->Unlock();
+}
+
+size_t MethodContext::repPrint(
+    const char* name,
+    LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
+    DWORDLONG handle,
+    char* buffer,
+    size_t bufferSize,
+    size_t* pRequiredBufferSize)
+{
+    AssertMapAndKeyExist(map, handle, ": map %s key %016llx", name, handle);
+
+    Agnostic_PrintResult res = map->Get(handle);
+    DEBUG_REP(dmpPrint(name, buffer, handle, res));
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        if (res.requiredBufferSize == UINT_MAX)
+        {
+            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing requiredBufferSize for %s key %016llx)", name, handle);
+        }
+
+        *pRequiredBufferSize = res.requiredBufferSize;
+    }
+
+    // requiredBufferSize is with null terminator, but buffer is stored without null terminator.
+    // Determine if we have enough data to answer the call losslessly.
+    bool haveFullBuffer = (res.requiredBufferSize != UINT_MAX) && ((res.bufferSize + 1) >= res.requiredBufferSize);
+    if (!haveFullBuffer && (bufferSize > static_cast<size_t>(res.bufferSize) + 1))
+    {
+        LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (not enough buffer data for %s key %016llx)", name, handle);
+    }
+
+    size_t bytesWritten = 0;
+    if ((buffer != nullptr) && (bufferSize > 0))
+    {
+        char* storedBuffer = (char*)map->GetBuffer(res.buffer);
+        bytesWritten = min(bufferSize - 1, res.bufferSize);
+        memcpy(buffer, storedBuffer, bytesWritten);
+        buffer[bytesWritten] = '\0';
+    }
+
+    return bytesWritten;
+}
+
+void MethodContext::recPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    recPrint("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
+}
+void MethodContext::dmpPrintObjectDescription(DWORDLONG key, const Agnostic_PrintResult& value)
+{
+    dmpPrint("PrintObjectDescription", PrintObjectDescription, key, value);
+}
+size_t MethodContext::repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    return repPrint("PrintObjectDescription", PrintObjectDescription, CastHandle(handle), buffer, bufferSize, pRequiredBufferSize);
+}
+
 void MethodContext::recPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
 {
-    recPrintEntity("PrintClassName", PrintClassName, CastHandle(cls), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
+    recPrint("PrintClassName", PrintClassName, CastHandle(cls), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
 }
-void MethodContext::dmpPrintClassName(DWORDLONG key, const Agnostic_PrintEntityResult& value)
+void MethodContext::dmpPrintClassName(DWORDLONG key, const Agnostic_PrintResult& value)
 {
-    dmpPrintEntity("PrintClassName", PrintClassName, key, value);
+    dmpPrint("PrintClassName", PrintClassName, key, value);
 }
 size_t MethodContext::repPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    return repPrintEntity("PrintClassName", PrintClassName, CastHandle(cls), buffer, bufferSize, pRequiredBufferSize);
+    return repPrint("PrintClassName", PrintClassName, CastHandle(cls), buffer, bufferSize, pRequiredBufferSize);
+}
+
+void MethodContext::recPrintFieldName(CORINFO_FIELD_HANDLE fld, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    recPrint("PrintFieldName", PrintFieldName, CastHandle(fld), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
+}
+void MethodContext::dmpPrintFieldName(DWORDLONG key, const Agnostic_PrintResult& value)
+{
+    dmpPrint("PrintFieldName", PrintFieldName, key, value);
+}
+size_t MethodContext::repPrintFieldName(CORINFO_FIELD_HANDLE fld, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    return repPrint("PrintFieldName", PrintFieldName, CastHandle(fld), buffer, bufferSize, pRequiredBufferSize);
+}
+
+void MethodContext::recPrintMethodName(CORINFO_METHOD_HANDLE meth, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten)
+{
+    recPrint("PrintMethodName", PrintMethodName, CastHandle(meth), buffer, bufferSize, pRequiredBufferSize, bytesWritten);
+}
+void MethodContext::dmpPrintMethodName(DWORDLONG key, const Agnostic_PrintResult& value)
+{
+    dmpPrint("PrintMethodName", PrintMethodName, key, value);
+}
+size_t MethodContext::repPrintMethodName(CORINFO_METHOD_HANDLE meth, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
+{
+    return repPrint("PrintMethodName", PrintMethodName, CastHandle(meth), buffer, bufferSize, pRequiredBufferSize);
 }
 
 void MethodContext::recGetTailCallHelpers(

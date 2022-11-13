@@ -937,15 +937,15 @@ void DumpIL(MethodContext* mc)
 
     mc->repCompileMethod(&cmi, &flags, &os);
 
-    const char* moduleName = nullptr;
-    const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
+    char methodName[256];
+    mc->repPrintMethodName(cmi.ftn, methodName, sizeof(methodName));
 
     char className[256];
     mc->repPrintClassName(mc->repGetMethodClass(cmi.ftn), className, sizeof(className));
 
     printf("// ProcessName - '%s'\n", mc->cr->repProcessName());
     printf(".assembly extern mscorlib{}\n");
-    printf(".assembly %s{}\n", moduleName);
+    printf(".assembly dumped_asm\n");
     printf(".class %s\n", className);
     printf("{\n");
     printf("   .method ");

@@ -2843,19 +2843,10 @@ namespace Internal.JitInterface
             return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
         }
 
-        private byte* getFieldName(CORINFO_FIELD_STRUCT_* ftn, byte** moduleName)
+        private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
-            var field = HandleToObject(ftn);
-            if (moduleName != null)
-            {
-                MetadataType typeDef = field.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(field.Name));
+            FieldDesc field = HandleToObject(fld);
+            return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
@@ -3139,20 +3130,10 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private byte* getMethodName(CORINFO_METHOD_STRUCT_* ftn, byte** moduleName)
+        private nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             MethodDesc method = HandleToObject(ftn);
-
-            if (moduleName != null)
-            {
-                MetadataType typeDef = method.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(method.Name));
+            return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)

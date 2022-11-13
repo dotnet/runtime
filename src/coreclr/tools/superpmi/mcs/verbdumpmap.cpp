@@ -29,8 +29,8 @@ void DumpMap(int index, MethodContext* mc)
 
     mc->repCompileMethod(&cmi, &flags, &os);
 
-    const char* moduleName = nullptr;
-    const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
+    char methodName[256];
+    mc->repPrintMethodName(cmi.ftn, methodName, sizeof(methodName));
     char className[256];
     mc->repPrintClassName(mc->repGetMethodClass(cmi.ftn), className, sizeof(className));
 
