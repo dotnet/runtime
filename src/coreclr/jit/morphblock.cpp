@@ -357,13 +357,8 @@ void MorphInitBlockHelper::MorphStructCases()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        // For an InitBlock we always require a block operand.
-        m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, true /*isBlkReqd*/);
+        m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::StructBlock;
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_result                = m_asg;
-        m_result->AsOp()->gtOp1 = m_dst;
-        m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
 
         if (m_dstVarDsc != nullptr)
         {
@@ -401,29 +396,20 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
     JITDUMP("MorphBlock for %s tree, before:\n", (isDest ? "dst" : "src"));
     DISPTREE(tree);
 
-    // Src can be a primitive type.
-    assert(!isDest || varTypeIsStruct(tree));
-
-    GenTree* handleTree = nullptr;
-    GenTree* addr       = nullptr;
+    assert(varTypeIsStruct(tree));
 
     if (tree->OperIs(GT_COMMA))
     {
         // TODO-Cleanup: this block is not needed for not struct nodes, but
         // fgMorphOneAsgBlockOp works wrong without this transformation.
         tree = MorphCommaBlock(comp, tree->AsOp());
+        if (isDest)
+        {
+            tree->SetDoNotCSE();
+        }
     }
 
-    if (!tree->OperIsBlk())
-    {
-        JITDUMP("MorphBlock after:\n");
-        DISPTREE(tree);
-        return tree;
-    }
-
-    GenTree* blkAddr = tree->AsBlk()->Addr();
-    assert(blkAddr != nullptr);
-    assert(blkAddr->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    assert(!tree->OperIsIndir() || varTypeIsI(genActualType(tree->AsIndir()->Addr())));
 
     JITDUMP("MorphBlock after:\n");
     DISPTREE(tree);
@@ -833,12 +819,27 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
-    // Verify that the types on the LHS and RHS match.
+    // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
     assert(m_dst->TypeGet() == m_src->TypeGet());
-    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
-    if (m_dst->TypeIs(TYP_STRUCT) && !m_src->OperIs(GT_IND))
+    if (m_dst->TypeIs(TYP_STRUCT))
     {
+        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
+        if (m_src->OperIs(GT_IND))
+        {
+            m_src->SetOper(m_blockLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
+            m_src->AsBlk()->SetLayout(m_blockLayout);
+            m_src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+            m_src->AsBlk()->gtBlkOpGcUnsafe = false;
+#endif // !JIT32_GCENCODER
+        }
+
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+    }
+    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
+    else if (m_src->OperIsBlk())
+    {
+        m_src->SetOper(GT_IND);
     }
 }
 
@@ -976,7 +977,7 @@ void MorphCopyBlockHelper::MorphStructCases()
     // promotion.
     if ((m_srcVarDsc == nullptr) && !m_src->OperIsIndir())
     {
-        JITDUMP(" src is a not an L-value");
+        JITDUMP(" src is not an L-value");
         requiresCopyBlock = true;
     }
 
@@ -1117,18 +1118,6 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (requiresCopyBlock)
     {
-        const var_types asgType   = m_dst->TypeGet();
-        bool            isBlkReqd = (asgType == TYP_STRUCT);
-        m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockLayout, isBlkReqd);
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_asg->gtOp1 = m_dst;
-
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockLayout, isBlkReqd);
-        m_asg->gtOp2 = m_src;
-
-        m_asg->SetAllEffectsFlags(m_dst, m_src);
-        m_asg->gtFlags |= GTF_ASG;
-
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::StructBlock;
     }
