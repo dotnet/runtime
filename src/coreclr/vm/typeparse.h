@@ -37,6 +37,7 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
     }
 }
 
+
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,

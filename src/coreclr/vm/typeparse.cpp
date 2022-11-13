@@ -1387,7 +1387,6 @@ TypeName::GetTypeHaveAssemblyHelper(
 } // TypeName::GetTypeHaveAssemblyHelper
 
 
-
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
