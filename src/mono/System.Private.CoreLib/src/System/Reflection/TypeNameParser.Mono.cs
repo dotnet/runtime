@@ -54,7 +54,7 @@ namespace System.Reflection
             }.Parse();
         }
 
-        private bool CheckTopLevelAssemblyQualifiedName()
+        private static bool CheckTopLevelAssemblyQualifiedName()
         {
             return true;
         }
