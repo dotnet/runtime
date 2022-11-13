@@ -34,7 +34,7 @@ namespace System
         private readonly string _userName;
         private SafeAccessTokenHandle _accountTokenHandle;
         public SafeAccessTokenHandle AccountTokenHandle => _accountTokenHandle;
-        public string AccountName { get; set; }
+        public string AccountName { get; private set; }
         public string Password { get; }
 
         public WindowsTestAccount(string userName)
