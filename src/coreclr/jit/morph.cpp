@@ -11006,10 +11006,10 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         return cast;
     }
 
-    if (src->OperIsSimple())
-    {
-        fgOptimizeCastOfSmpOp(cast);
-    }
+    //if (src->OperIsSimple())
+    //{
+    //    fgOptimizeCastOfSmpOp(cast);
+    //}
 
     // See if we can discard the cast.
     if (varTypeIsIntegral(cast) && varTypeIsIntegral(src))

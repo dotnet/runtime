@@ -851,10 +851,10 @@ void Lowering::LowerCast(GenTree* tree)
 
     GenTree* castOp = tree->AsCast()->CastOp();
 
-    //    if (castOp->OperIsSimple())
-    //    {
-    //        LowerCastOfSmpOp(tree->AsCast());
-    //    }
+    if (castOp->OperIsSimple())
+    {
+        LowerCastOfSmpOp(tree->AsCast());
+    }
 
     var_types castToType = tree->CastToType();
     var_types srcType    = castOp->TypeGet();
