@@ -32,6 +32,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_OBJECT_STRUCT_
+    {
+    }
+
     public struct CORINFO_CLASS_STRUCT_
     {
     }

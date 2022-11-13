@@ -108,6 +108,7 @@ set(CORECLR_LIBRARIES
     System.Globalization.Native-Static
     interop
     coreclrminipal
+    gc_pal
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

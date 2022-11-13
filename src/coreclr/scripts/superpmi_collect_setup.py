@@ -24,13 +24,13 @@
 # 4.  For benchmarks collections, a specialized script is called to set up the benchmarks collection.
 # 5.  Lastly, it sets the pipeline variables.
 #
-# Below are the helix queues it sets depending on the OS/architecture:
+# Below are the helix queues and images it sets depending on the OS/architecture (accepted format by Helix is either "QueueName" or "(DisplayName)QueueName@Image")
 # | Arch  | windows                 | Linux                                                                                                                                | macOS          |
 # |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
 # | x86   | Windows.10.Amd64.X86.Rt | -                                                                                                                                    | -              |
 # | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
-# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 | -              |
-# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 | OSX.1100.ARM64 |
+# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7                        | -              |
+# | arm64 | Windows.11.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8                        | OSX.1100.ARM64 |
 #
 ################################################################################
 ################################################################################
@@ -405,7 +405,7 @@ def setup_microbenchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "8.0.100-alpha.1.22558.2", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -456,12 +456,12 @@ def main(main_args):
 
     # Determine the Helix queue name to use when running jobs.
     if platform_name == "windows":
-        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
+        helix_queue = "Windows.11.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
     elif platform_name == "linux":
         if arch == "arm":
-            helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
+            helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
     elif platform_name == "osx":

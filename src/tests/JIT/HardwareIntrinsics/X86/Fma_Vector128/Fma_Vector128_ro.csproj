@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Fma_Vector128_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiplyAdd.Double.cs" />
+    <Compile Include="MultiplyAdd.Single.cs" />
+    <Compile Include="MultiplyAddNegated.Double.cs" />
+    <Compile Include="MultiplyAddNegated.Single.cs" />
+    <Compile Include="MultiplyAddNegatedScalar.Double.cs" />
+    <Compile Include="MultiplyAddNegatedScalar.Single.cs" />
+    <Compile Include="MultiplyAddScalar.Double.cs" />
+    <Compile Include="MultiplyAddScalar.Single.cs" />
+    <Compile Include="MultiplyAddSubtract.Double.cs" />
+    <Compile Include="MultiplyAddSubtract.Single.cs" />
+    <Compile Include="MultiplySubtract.Double.cs" />
+    <Compile Include="MultiplySubtract.Single.cs" />
+    <Compile Include="MultiplySubtractAdd.Double.cs" />
+    <Compile Include="MultiplySubtractAdd.Single.cs" />
+    <Compile Include="MultiplySubtractNegated.Double.cs" />
+    <Compile Include="MultiplySubtractNegated.Single.cs" />
+    <Compile Include="MultiplySubtractNegatedScalar.Double.cs" />
+    <Compile Include="MultiplySubtractNegatedScalar.Single.cs" />
+    <Compile Include="MultiplySubtractScalar.Double.cs" />
+    <Compile Include="MultiplySubtractScalar.Single.cs" />
+    <Compile Include="Program.Fma_Vector128.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

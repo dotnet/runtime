@@ -485,5 +485,13 @@ namespace System.Linq.Tests
                 }
             }
         }
+
+        [Fact]
+        public void StableSort_CustomComparerAlwaysReturns0()
+        {
+            byte[] values = new byte[] { 0x45, 0x7D, 0x4B, 0x61, 0x27 };
+            byte[] newValues = values.Order(Comparer<byte>.Create((a, b) => 0)).ToArray();
+            AssertExtensions.SequenceEqual(values, newValues);
+        }
     }
 }

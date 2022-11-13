@@ -7,7 +7,18 @@
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
 
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace' or '$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+    
+    <!-- so that SharedArrayBuffer is enabled -->
+    <_MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</_MonoWasmThreads>
+    <WasmXHarnessArgs Condition="'$(_MonoWasmThreads)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+    <_ServeHeaders    Condition="'$(_MonoWasmThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
+
+    <!-- For streaming instantiation of WASM module and browser cache -->
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .wasm=application/wasm</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .json=application/json</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .mjs=text/javascript</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .cjs=text/javascript</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
@@ -26,6 +37,7 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+      <BuildAdditionalArgs Condition="'$(MonoDiagnosticsMock)' != ''">$(BuildAdditionalArgs) /p:MonoDiagnosticsMock=$(MonoDiagnosticsMock) </BuildAdditionalArgs>
     </PropertyGroup>
     <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
@@ -42,12 +54,7 @@
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-  <!-- 
-    - we add MIME type for .wasm .mjs .js .cjs .json. Browsers require it for proper and fast execution. For example streaming instantiation of WASM module.
-    - we set `Cross-Origin-Opener-Policy` headers so that SharedArrayBuffer is enabled
-    - we set `Content-Security-Policy` headers to test that the app is able to run in environments with such restrictions.
-  -->
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .wasm=application/wasm --mime .mjs=text/javascript --mime .js=text/javascript --mime .cjs=text/javascript --mime .json=application/json -h Cross-Origin-Opener-Policy:same-origin -h &quot;Cross-Origin-Embedder-Policy:require-corp&quot; -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; " IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />

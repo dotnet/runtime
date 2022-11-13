@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd.Arm64
 {
     public static partial class Program
     {
-        private static void ConvertToSingleUpper_Vector128_Single()
+        [Fact]
+        public static void ConvertToSingleUpper_Vector128_Single()
         {
             var test = new SimpleBinaryOpTest__ConvertToSingleUpper_Vector128_Single();
 

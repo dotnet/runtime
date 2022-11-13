@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "dllexport.h"
-#include "jitinterface.h"
+#include "jitinterface_generated.h"
 
 DLL_EXPORT int JitCompileMethod(
     CorInfoExceptionClass **ppException,

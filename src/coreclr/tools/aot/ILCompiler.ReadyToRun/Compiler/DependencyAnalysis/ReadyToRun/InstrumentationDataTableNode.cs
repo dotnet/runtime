@@ -26,7 +26,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ProfileDataManager _profileDataManager;
 
         public InstrumentationDataTableNode(NodeFactory factory, MethodDesc[] instrumentationDataMethods, ProfileDataManager profileDataManager)
-            : base(factory.Target)
         {
             _factory = factory;
             _instrumentationDataMethods = instrumentationDataMethods;

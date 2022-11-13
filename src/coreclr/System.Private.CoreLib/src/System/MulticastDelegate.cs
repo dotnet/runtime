@@ -568,6 +568,7 @@ namespace System
 
 #pragma warning disable IDE0060
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorClosed(object target, IntPtr methodPtr)
         {
             if (target == null)
@@ -577,6 +578,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
             this._target = target;
@@ -584,6 +586,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorRTClosed(object target, IntPtr methodPtr)
         {
             this._target = target;
@@ -591,6 +594,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
@@ -599,6 +603,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
@@ -607,6 +612,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
             this._target = target;
@@ -615,6 +621,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;
@@ -624,6 +631,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
+        [System.Diagnostics.DebuggerStepThrough]
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;

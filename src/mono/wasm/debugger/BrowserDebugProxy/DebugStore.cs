@@ -482,7 +482,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return paramsInfo;
         }
 
-        public void UpdateEnC(MetadataReader asmMetadataReader, MetadataReader pdbMetadataReaderParm, int methodIdx)
+        public void UpdateEnC(MetadataReader pdbMetadataReaderParm, int methodIdx)
         {
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
             this.pdbMetadataReader = pdbMetadataReaderParm;
@@ -836,14 +836,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
-        public AssemblyInfo(string name, ILogger logger)
+        public AssemblyInfo(ILogger logger)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
         }
 
-        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
@@ -974,7 +974,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
                         StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
 
-                        typeInfo = CreateTypeInfo(typeHandle, typeDefinition, asmMetadataReaderParm);
+                        typeInfo = CreateTypeInfo(typeHandle, typeDefinition);
                     }
                 }
                 else if (entry.Operation == EditAndContinueOperation.Default)
@@ -986,7 +986,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, entryRow);
                         if (methods.TryGetValue(entryRow, out MethodInfo method))
                         {
-                            method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, methodIdx);
+                            method.UpdateEnC(pdbMetadataReaderParm, methodIdx);
                         }
                         else if (typeInfo != null)
                         {
@@ -1041,7 +1041,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
-                var typeInfo = CreateTypeInfo(type, typeDefinition, asmMetadataReader);
+                var typeInfo = CreateTypeInfo(type, typeDefinition);
 
                 foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
                 {
@@ -1113,7 +1113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public TypeInfo CreateTypeInfo(TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader)
+        public TypeInfo CreateTypeInfo(TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
             var typeInfo = new TypeInfo(this, typeHandle, type, asmMetadataReader, logger);
             TypesByName[typeInfo.FullName] = typeInfo;
@@ -1186,8 +1186,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
             this.BreakableLines = new List<int>();
 
-            var urlWithSpecialCharCodedHex = EscapeAscii(url);
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
+            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
                 this.Url = this.SourceUri.ToString();
@@ -1196,33 +1195,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 this.Url = DotNetUrl;
             }
-        }
-
-        private static string EscapeAscii(string path)
-        {
-            var builder = new StringBuilder();
-            foreach (char c in path)
-            {
-                switch (c)
-                {
-                    case var _ when c >= 'a' && c <= 'z':
-                    case var _ when c >= 'A' && c <= 'Z':
-                    case var _ when char.IsDigit(c):
-                    case var _ when c > 255:
-                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~':
-                        builder.Append(c);
-                        break;
-                    case var _ when c == Path.DirectorySeparatorChar:
-                    case var _ when c == Path.AltDirectorySeparatorChar:
-                    case var _ when c == '\\':
-                        builder.Append(c);
-                        break;
-                    default:
-                        builder.Append(string.Format($"%{((int)c):X2}"));
-                        break;
-                }
-            }
-            return builder.ToString();
         }
 
         internal void AddMethod(MethodInfo mi)
@@ -1394,12 +1366,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public IEnumerable<SourceFile> Add(SessionId id, string name, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
+        public IEnumerable<SourceFile> Add(SessionId id, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
         {
             AssemblyInfo assembly;
             try
             {
-                assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, logger, token);
+                assembly = new AssemblyInfo(monoProxy, id, assembly_data, pdb_data, logger, token);
             }
             catch (Exception e)
             {
@@ -1493,7 +1465,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;
                     }
-                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
+                    assembly = new AssemblyInfo(monoProxy, id, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)
                 {

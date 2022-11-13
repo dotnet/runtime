@@ -3,5 +3,31 @@
   <Suppression>
     <DiagnosticId>CP0004</DiagnosticId>
     <Target>System.Diagnostics.EventLog.Messages, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
+    <Left>left</Left>
+    <Right>runtimes/win/lib/net6.0/System.Diagnostics.EventLog.Messages.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0004</DiagnosticId>
+    <Target>System.Diagnostics.EventLog.Messages, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
+    <Left>left</Left>
+    <Right>runtimes/win/lib/net7.0/System.Diagnostics.EventLog.Messages.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>F:System.Diagnostics.Eventing.Reader.StandardEventKeywords.CorrelationHint:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net462/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.CreateEventSource(System.String,System.String,System.String):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net462/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>P:System.Diagnostics.EventLogEntry.EventID:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net462/System.Diagnostics.EventLog.dll</Right>
   </Suppression>
 </Suppressions>

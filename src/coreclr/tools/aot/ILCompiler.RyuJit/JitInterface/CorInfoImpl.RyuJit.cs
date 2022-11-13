@@ -21,6 +21,8 @@ using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
 using RyuJitCompilation = ILCompiler.Compilation;
 #endif
 
+#pragma warning disable IDE0060
+
 namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl
@@ -1818,17 +1820,25 @@ namespace Internal.JitInterface
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+            pResult.compileTimeHandle = null;
+
             switch (method.Name)
             {
                 case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
                 case "DefaultConstructorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
                     break;
                 case "AllocatorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
+                    break;
+                default:
+                    Debug.Fail("Unexpected raw handle intrinsic");
                     break;
             }
         }
@@ -2202,6 +2212,100 @@ namespace Internal.JitInterface
 
             Debug.Assert(index <= maxExactClasses);
             return index;
+        }
+
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        {
+            Debug.Assert(fieldHandle != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+
+            FieldDesc field = HandleToObject(fieldHandle);
+            Debug.Assert(field.IsStatic);
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            {
+                PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                if (preinitManager.IsPreinitialized(owningType))
+                {
+                    TypePreinit.ISerializableValue value = preinitManager
+                        .GetPreinitializationInfo(owningType).GetFieldValue(field);
+
+                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
+
+                    if (value == null)
+                    {
+                        Debug.Assert(bufferSize == targetPtrSize);
+
+                        // Write "null" to buffer
+                        new Span<byte>(buffer, targetPtrSize).Clear();
+                        return true;
+                    }
+
+                    if (value.GetRawData(_compilation.NodeFactory, out object data))
+                    {
+                        switch (data)
+                        {
+                            case byte[] bytes:
+                                Debug.Assert(bufferSize == bytes.Length);
+
+                                // Ensure we have enough room in the buffer, it can be a large struct
+                                bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
+                                return true;
+
+                            case FrozenObjectNode or FrozenStringNode:
+                                Debug.Assert(bufferSize == targetPtrSize);
+
+                                // save handle's value to buffer
+                                nint handle = ObjectToHandle(data);
+                                new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
+                                return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
+        {
+            object obj = HandleToObject(objPtr);
+            return obj switch
+            {
+                FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
+                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
+                _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
+            };
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
+            return null;
+        }
+
+        private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
+        {
+            object obj = HandleToObject(objPtr);
+            return obj switch
+            {
+                FrozenStringNode => true,
+                FrozenObjectNode frozenObj => frozenObj.IsKnownImmutable,
+                _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
+            };
+        }
+
+        private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        {
+            object obj = HandleToObject(objHnd);
+            return obj switch
+            {
+                FrozenStringNode frozenStr => frozenStr.Data.Length,
+                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
+                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
+            };
         }
     }
 }

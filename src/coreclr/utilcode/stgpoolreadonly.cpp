@@ -10,21 +10,12 @@
 //*****************************************************************************
 #include "stdafx.h"                     // Standard include.
 #include <stgpool.h>                    // Our interface definitions.
-#include "metadatatracker.h"
+
 //
 //
 // StgPoolReadOnly
 //
 //
-
-#if METADATATRACKER_ENABLED
-MetaDataTracker  *MetaDataTracker::m_MDTrackers = NULL;
-BOOL MetaDataTracker::s_bEnabled = FALSE;
-
-void        (*MetaDataTracker::s_IBCLogMetaDataAccess)(const void *addr) = NULL;
-void        (*MetaDataTracker::s_IBCLogMetaDataSearch)(const void *result) = NULL;
-
-#endif // METADATATRACKER_ENABLED
 
 const BYTE StgPoolSeg::m_zeros[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                                       0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

@@ -99,7 +99,7 @@ namespace System.CommandLine
                 return TargetArchitecture.X86;
             else if (token.Equals("x64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.X64;
-            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase))
+            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase) || token.Equals("armel", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM;
             else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
