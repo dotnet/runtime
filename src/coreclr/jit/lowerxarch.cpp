@@ -126,7 +126,7 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     assert(node->OperIs(GT_MUL));
 
     // Do not do these optimizations when min-opts enabled.
-    if (comp->opts.MinOpts())
+    if (comp->opts.OptimizationDisabled())
         return nullptr;
 
     if (!varTypeIsIntegral(node))
