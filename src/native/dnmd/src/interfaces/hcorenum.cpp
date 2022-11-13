@@ -11,16 +11,6 @@
     } \
 }
 
-HCORENUMImpl* HCORENUMImpl::ToImpl(HCORENUM hEnum) noexcept
-{
-    return reinterpret_cast<HCORENUMImpl*>(hEnum);
-}
-
-HCORENUM HCORENUMImpl::ToEnum(HCORENUMImpl* enumImpl) noexcept
-{
-    return reinterpret_cast<HCORENUM>(enumImpl);
-}
-
 HRESULT HCORENUMImpl::CreateTableEnum(_In_ uint32_t count, _Out_ HCORENUMImpl** impl) noexcept
 {
     assert(impl != nullptr);
@@ -136,9 +126,25 @@ HRESULT HCORENUMImpl::ReadTokens(
     ULONG cMax,
     ULONG* pcTokens) noexcept
 {
-    return (_type == HCORENUMType::Table)
-        ? ReadTableTokens(rTokens, cMax, (uint32_t*)pcTokens)
-        : ReadDynamicTokens(rTokens, cMax, (uint32_t*)pcTokens);
+    HRESULT hr;
+    uint32_t tokenCount = 0;
+    if (cMax == 1)
+    {
+        hr = ReadOneToken(rTokens[0]);
+        if (hr == S_OK)
+            tokenCount = 1;
+    }
+    else
+    {
+        hr = (_type == HCORENUMType::Table)
+            ? ReadTableTokens(rTokens, cMax, tokenCount)
+            : ReadDynamicTokens(rTokens, cMax, tokenCount);
+    }
+
+    if (pcTokens != nullptr)
+        *pcTokens = tokenCount;
+
+    return hr;
 }
 
 HRESULT HCORENUMImpl::Reset(_In_ ULONG position) noexcept
@@ -148,10 +154,37 @@ HRESULT HCORENUMImpl::Reset(_In_ ULONG position) noexcept
         : ResetDynamicEnum(position);
 }
 
+HRESULT HCORENUMImpl::ReadOneToken(mdToken& rToken) noexcept
+{
+    HCORENUMImpl* enumImpl = this;
+
+    // Find the current enumerator
+    while (enumImpl->_readIn == enumImpl->_total)
+    {
+        enumImpl = enumImpl->_next;
+        // Check next link in enumerator list
+        if (enumImpl == nullptr)
+            return S_FALSE;
+    }
+
+    if (_type == HCORENUMType::Table)
+    {
+        if (!md_cursor_to_token(enumImpl->_table.Current, &rToken))
+            return S_FALSE;
+        (void)md_cursor_next(&enumImpl->_table.Current);
+    }
+    else
+    {
+        rToken = enumImpl->_dynamic.Page[enumImpl->_readIn];
+    }
+    enumImpl->_readIn++;
+    return S_OK;
+}
+
 HRESULT HCORENUMImpl::ReadTableTokens(
     mdToken rTokens[],
     uint32_t cMax,
-    uint32_t* pcTokens) noexcept
+    uint32_t& tokenCount) noexcept
 {
     assert(_type == HCORENUMType::Table);
     assert(rTokens != nullptr);
@@ -178,16 +211,14 @@ HRESULT HCORENUMImpl::ReadTableTokens(
         enumImpl->_readIn++;
     }
 Done:
-    if (pcTokens != nullptr)
-        *pcTokens = count;
-
+    tokenCount = count;
     return S_OK;
 }
 
 HRESULT HCORENUMImpl::ReadDynamicTokens(
     mdToken rTokens[],
     uint32_t cMax,
-    uint32_t* pcTokens) noexcept
+    uint32_t& tokenCount) noexcept
 {
     assert(_type == HCORENUMType::Dynamic);
     assert(rTokens != nullptr);
@@ -210,9 +241,7 @@ HRESULT HCORENUMImpl::ReadDynamicTokens(
         count++;
     }
 Done:
-    if (pcTokens != nullptr)
-        *pcTokens = count;
-
+    tokenCount = count;
     return S_OK;
 }
 

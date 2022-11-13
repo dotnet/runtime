@@ -34,8 +34,7 @@ mdcursor_t create_cursor(mdtable_t* table, uint32_t row)
 static mdtable_t* type_to_table(mdcxt_t* cxt, mdtable_id_t table_id)
 {
     assert(cxt != NULL);
-    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
-        return NULL;
+    assert(0 <= table_id && table_id < MDTABLE_MAX_COUNT);
     return &cxt->tables[table_id];
 }
 
@@ -74,10 +73,6 @@ bool md_cursor_move(mdcursor_t* c, int32_t delta)
 {
     if (c == NULL || CursorTable(c) == NULL)
         return false;
-
-    if (delta == 0)
-        return true;
-
     return cursor_move_no_checks(c, delta);
 }
 
@@ -95,9 +90,11 @@ bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
     if (cxt == NULL)
         return false;
 
-    mdtable_t* table = type_to_table(cxt, ExtractTokenType(tk));
-    if (table == NULL)
+    mdtable_id_t table_id = ExtractTokenType(tk);
+    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
         return false;
+
+    mdtable_t* table = type_to_table(cxt, table_id);
 
     // Indices into tables begin at 1 - see II.22.
     uint32_t row = RidFromToken(tk);
@@ -287,7 +284,7 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
         {
             // Returning a cursor means pointing directly into a table
             // so we must validate the cursor is valid prior to creation.
-            table = &qcxt.table->cxt->tables[table_id];
+            table = type_to_table(qcxt.table->cxt, table_id);
 
             // Indices into tables begin at 1 - see II.22.
             // However, tables can contain a row ID of 0 to

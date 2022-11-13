@@ -544,7 +544,7 @@ enum class HCORENUMType : uint32_t
 };
 
 // Represents a singly linked list or dynamic uint32_t array enumerator
-class HCORENUMImpl
+class HCORENUMImpl final
 {
     HCORENUMType _type;
 
@@ -569,9 +569,6 @@ class HCORENUMImpl
     HCORENUMImpl* _next;
 
 public: // static
-    static HCORENUMImpl* ToImpl(HCORENUM hEnum) noexcept;
-    static HCORENUM ToEnum(HCORENUMImpl* enumImpl) noexcept;
-
     // Lifetime operations
     static HRESULT CreateTableEnum(_In_ uint32_t count, _Out_ HCORENUMImpl** impl) noexcept;
     static void InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept;
@@ -595,14 +592,15 @@ public: // instance
     HRESULT Reset(_In_ ULONG position) noexcept;
 
 private:
+    HRESULT ReadOneToken(mdToken& rToken) noexcept;
     HRESULT ReadTableTokens(
         mdToken rTokens[],
         uint32_t cMax,
-        uint32_t* pcTokens) noexcept;
+        uint32_t& tokenCount) noexcept;
     HRESULT ReadDynamicTokens(
         mdToken rTokens[],
         uint32_t cMax,
-        uint32_t* pcTokens) noexcept;
+        uint32_t& tokenCount) noexcept;
 
     HRESULT ResetTableEnum(_In_ uint32_t position) noexcept;
     HRESULT ResetDynamicEnum(_In_ uint32_t position) noexcept;

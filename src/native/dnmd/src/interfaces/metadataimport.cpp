@@ -4,6 +4,8 @@
 
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
 
+#define ToHCORENUMImpl(hcorenum) (reinterpret_cast<HCORENUMImpl*>(hcorenum))
+
 #define RETURN_IF_FAILED(exp) \
 { \
     hr = (exp); \
@@ -15,7 +17,7 @@
 
 void STDMETHODCALLTYPE MetadataImportRO::CloseEnum(HCORENUM hEnum)
 {
-    HCORENUMImpl* impl = HCORENUMImpl::ToImpl(hEnum);
+    HCORENUMImpl* impl = ToHCORENUMImpl(hEnum);
     if (impl != nullptr)
         HCORENUMImpl::Destroy(impl);
 }
@@ -25,14 +27,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pul
     if (pulCount == nullptr)
         return E_INVALIDARG;
 
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(hEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(hEnum);
     *pulCount = enumImpl->Count();
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPos)
 {
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(hEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(hEnum);
     if (enumImpl == nullptr)
         return S_OK;
     return enumImpl->Reset(ulPos);
@@ -49,7 +51,7 @@ namespace
         ULONG* pcTokens)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+        HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
         if (enumImpl == nullptr)
         {
             mdcursor_t cursor;
@@ -75,7 +77,7 @@ namespace
         ULONG* pcTokens)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+        HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
         if (enumImpl == nullptr)
         {
             mdcursor_t cursor;
@@ -129,7 +131,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
     ULONG* pcTypeDefs)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         mdcursor_t cursor;
@@ -160,7 +162,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
     ULONG* pcImpls)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         mdcursor_t cursor;
@@ -274,7 +276,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
     ULONG* pcTokens)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         if (TypeFromToken(cl) != mdtTypeDef)
@@ -405,7 +407,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
     ULONG* pcTokens)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         CorTokenType type = (CorTokenType)TypeFromToken(tk);
@@ -535,7 +537,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
     ULONG* pcProperties)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         if (TypeFromToken(td) != mdtTypeDef)
@@ -574,7 +576,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     ULONG* pcEvents)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         if (TypeFromToken(td) != mdtTypeDef)
@@ -969,7 +971,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     ULONG* pcStrings)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
