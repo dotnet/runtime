@@ -11588,7 +11588,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 #if !defined(TARGET_64BIT)
                         if (varTypeIsLong(varDsc))
                         {
-                            fieldName = index == 0 ? "lo" : "hi";
+                            fieldName = (index == 0) ? "lo" : "hi";
                         }
                         else
 #endif // !defined(TARGET_64BIT)
