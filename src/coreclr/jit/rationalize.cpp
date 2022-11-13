@@ -404,19 +404,12 @@ void Rationalizer::RewriteCastOnAssignment(GenTreeOp* node)
     if (genTypeSize(castToType) < genTypeSize(node->gtGetOp1()))
         return;
 
-    if (genActualType(castFromType) == genActualType(castToType))
-    {
-        GenTree* castOp = cast->CastOp();
+    GenTree* castOp = cast->CastOp();
 
-        // Removes the cast.
-        node->gtOp2 = castOp;
-        BlockRange().Remove(cast);
-    }
-    else
-    {
-        // This is a type-changing cast so we cannot remove it entirely.
-        cast->gtCastType = genActualType(castToType);
-    }
+    // Removes the cast.
+    node->gtOp2 = castOp;
+    BlockRange().Remove(cast);
+
 }
 
 void Rationalizer::RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment)
