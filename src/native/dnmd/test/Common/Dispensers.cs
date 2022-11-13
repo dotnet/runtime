@@ -1,4 +1,10 @@
-﻿
+﻿//#define NETFX_20_BASELINE
+//#define NETFX_40_BASELINE
+
+#if NETFX_20_BASELINE || NETFX_40_BASELINE
+using Microsoft.Win32;
+#endif
+
 using System.Runtime.InteropServices;
 
 namespace Common
@@ -22,12 +28,21 @@ namespace Common
 
         private static unsafe nint GetBaselineRaw()
         {
+#if NETFX_20_BASELINE || NETFX_40_BASELINE
+            using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework");
+#if NETFX_20_BASELINE
+            var baseline = Path.Combine((string)key.GetValue("InstallRoot")!, "v2.0.50727", "mscorwks.dll");
+#else // NETFX_40_BASELINE
+            var baseline = Path.Combine((string)key.GetValue("InstallRoot")!, "v4.0.30319", "clr.dll");
+#endif
+#else
             var runtimeName =
                 OperatingSystem.IsWindows() ? "coreclr.dll"
                 : OperatingSystem.IsMacOS() ? "libcorclr.dylib"
                 : "libcoreclr.so";
 
             var baseline = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, runtimeName);
+#endif
 
             nint mod = NativeLibrary.Load(baseline);
             var getter = (delegate* unmanaged<in Guid, in Guid, out nint, int>)NativeLibrary.GetExport(mod, "MetaDataGetDispenser");

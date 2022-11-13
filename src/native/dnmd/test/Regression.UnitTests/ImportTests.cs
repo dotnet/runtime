@@ -62,13 +62,15 @@ namespace Regression.UnitTests
             {
                 Assert.Equal(IsGlobal(baselineImport, typedef), IsGlobal(currentImport, typedef));
                 Assert.Equal(EnumInterfaceImpls(baselineImport, typedef), EnumInterfaceImpls(currentImport, typedef));
+                Assert.Equal(EnumPermissionSets(baselineImport, typedef), EnumPermissionSets(currentImport, typedef));
+                Assert.Equal(EnumMembers(baselineImport, typedef), EnumMembers(currentImport, typedef));
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
+                    Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSets(baselineImport, methoddef), EnumPermissionSets(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
-                    Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                 }
                 var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
                 foreach (var eventdef in events)
@@ -83,13 +85,12 @@ namespace Regression.UnitTests
                 var fields = AssertAndReturn(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
                 foreach (var fielddef in fields)
                 {
-                    Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                     Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
+                    Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                 }
                 Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
 
-            Assert.Equal(EnumMembers(baselineImport), EnumMembers(currentImport));
             Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
             Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
             Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
@@ -465,30 +466,27 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMembers(IMetaDataImport import)
+        private static List<uint> EnumMembers(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
-            var typedefs = EnumTypeDefs(import);
             var tokensBuffer = new uint[EnumBuffer];
-            foreach (uint typedef in typedefs)
+            nint hcorenum = 0;
+            try
             {
-                tokens.Add(typedef);
-                nint hcorenum = 0;
-                try
+                while (0 == import.EnumMembers(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
                 {
-                    while (0 == import.EnumMembers(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
-                        && returned != 0)
+                    for (int i = 0; i < returned; ++i)
                     {
-                        for (int i = 0; i < returned; ++i)
-                        {
-                            tokens.Add(tokensBuffer[i]);
-                        }
+                        tokens.Add(tokensBuffer[i]);
                     }
                 }
-                finally
-                {
-                    import.CloseEnum(hcorenum);
-                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
             }
             return tokens;
         }

@@ -54,7 +54,7 @@ bool md_create_cursor(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* curs
 
 static bool cursor_move_no_checks(mdcursor_t* c, int32_t delta)
 {
-    assert(c != NULL && delta != 0);
+    assert(c != NULL);
 
     mdtable_t* table = CursorTable(c);
     uint32_t row = CursorRow(c);
