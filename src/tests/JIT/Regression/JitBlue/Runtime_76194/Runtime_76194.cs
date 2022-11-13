@@ -142,7 +142,8 @@ public unsafe class CrossVirtualAlloc : IDisposable
     {
         if (OperatingSystem.IsWindows())
         {
-            VirtualFree(_ptr, 0, 0);
+            const int MEM_RELEASE = 0x8000;
+            VirtualFree(_ptr, 0, MEM_RELEASE);
         }
         else
         {
