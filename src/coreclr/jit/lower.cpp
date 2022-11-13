@@ -491,6 +491,74 @@ GenTree* Lowering::LowerNode(GenTree* node)
     return node->gtNext;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerCastOfSmpOp:
+//
+// Arguments:
+//    node - A cast node that is of a simple op node
+//
+void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
+{
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+    var_types srcType    = castOp->TypeGet();
+
+    assert(castOp->OperIsSimple());
+
+    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+        return;
+
+    if (castOp->gtSetFlags())
+        return;
+
+    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
+        return;
+
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+    {
+        // This removes the casts as it prevents zero/sign-extended 'mov's before the op.
+
+        bool canRelowerCastOp = false;
+
+        if (castOp->gtGetOp1()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+            if (!op1->gtOverflow() && varTypeIsIntegral(op1->CastFromType()))
+            {
+                canRelowerCastOp      = true;
+                castOp->AsOp()->gtOp1 = op1->CastOp();
+
+                BlockRange().Remove(op1);
+            }
+        }
+
+        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+            if (!op2->gtOverflow() && varTypeIsIntegral(op2->CastFromType()))
+            {
+                canRelowerCastOp      = true;
+                castOp->AsOp()->gtOp2 = op2->CastOp();
+
+                BlockRange().Remove(op2);
+            }
+        }
+
+        if (canRelowerCastOp)
+        {
+            castOp->gtGetOp1()->ClearContained();
+            if (castOp->OperIsBinary())
+            {
+                castOp->gtGetOp2()->ClearContained();
+            }
+
+            LowerNode(castOp);
+        }
+    }
+}
+
 /**  -- Switch Lowering --
  * The main idea of switch lowering is to keep transparency of the register requirements of this node
  * downstream in LSRA.  Given that the switch instruction is inherently a control statement which in the JIT

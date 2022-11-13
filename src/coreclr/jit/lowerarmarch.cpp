@@ -771,6 +771,11 @@ void Lowering::LowerCast(GenTree* tree)
 
     assert(!varTypeIsSmall(srcType));
 
+    if (tree->AsCast()->CastOp()->OperIsSimple())
+    {
+        LowerCastOfSmpOp(tree->AsCast());
+    }
+
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
 }
