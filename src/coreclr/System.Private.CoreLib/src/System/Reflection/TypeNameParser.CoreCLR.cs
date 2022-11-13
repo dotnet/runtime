@@ -110,23 +110,8 @@ namespace System.Reflection
             {
                 ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
 
-                if (_throwOnError)
-                {
-                    assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
-                }
-                else
-                {
-                    // When throwOnError is false we should only catch FileNotFoundException.
-                    // Other exceptions like BadImageFormatException should still fly.
-                    try
-                    {
-                        assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        return null;
-                    }
-                }
+                assembly = RuntimeAssembly.InternalLoad(new AssemblyName(assemblyName), ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext,
+                    requestingAssembly: (RuntimeAssembly?)_topLevelAssembly, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
         }
