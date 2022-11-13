@@ -88,7 +88,7 @@ static void* ReserveMemory(size_t size)
     // FOH segments there so e.g. JIT can use relocs for frozen objects.
     return ExecutableAllocator::Instance()->Reserve(size);
 #else
-    return ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+    return ClrVirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
 #endif
 }
 
