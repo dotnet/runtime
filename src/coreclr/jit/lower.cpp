@@ -504,6 +504,9 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
     var_types srcType    = castOp->TypeGet();
 
     assert(castOp->OperIsSimple());
+    
+    if (node->gtOverflow())
+        return;
 
     if (castOp->OperMayOverflow() && castOp->gtOverflow())
         return;
