@@ -1863,13 +1863,13 @@
     <value>Year must be between 1 and 9999.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
-    <value>'{0}' must be non-zero value.</value>
+    <value>'{0}' must be a non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
-    <value>'{0}' must be non-negative value.</value>
+    <value>'{0}' must be a non-negative value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
-    <value>'{0}' must be non-negative and non-zero value.</value>
+    <value>'{0}' must be a non-negative and non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLowerOrEqual" xml:space="preserve">
     <value>'{0}' must be lower than or equal '{1}'.</value>
