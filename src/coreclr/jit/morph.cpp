@@ -5458,7 +5458,7 @@ GenTree* Compiler::fgMorphExpandStaticField(GenTree* tree)
     }
     else if (isStaticReadOnlyInited)
     {
-        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle));
+        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle, false));
 
         // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
         tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);

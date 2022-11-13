@@ -9516,8 +9516,8 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 #ifdef DEBUG
     if (emitComp->opts.varNames && offs < 0)
     {
-        printf("'");
-        emitComp->eePrintFieldName(fldHnd);
+        char buffer[128];
+        printf("'%s", emitComp->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
         if (offs)
         {
             printf("%+Id", offs);

@@ -2415,12 +2415,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
-        char fieldName[64];
-        compiler->eePrintFieldNameToBuffer(pFieldInfo->fldHnd, fieldName, sizeof(fieldName));
-
+        char fieldNameBuffer[64];
+        const char* fieldName = compiler->eeGetFieldName(pFieldInfo->fldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
         char buf[200];
-        sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum,
-                  fieldName, pFieldInfo->fldOffset);
+        sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
         size_t len  = strlen(buf) + 1;
@@ -7833,9 +7831,8 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             CORINFO_CLASS_HANDLE typeHnd = parentvarDsc->GetStructHnd();
             CORINFO_FIELD_HANDLE fldHnd  = info.compCompHnd->getFieldInClass(typeHnd, varDsc->lvFldOrdinal);
 
-            printf(" V%02u.", varDsc->lvParentLcl);
-            eePrintFieldName(fldHnd);
-            printf("(offs=0x%02x)", varDsc->lvFldOffset);
+            char buffer[128];
+            printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, eeGetFieldName(fldHnd, false, buffer, sizeof(buffer)), varDsc->lvFldOffset);
 
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
             switch (promotionType)

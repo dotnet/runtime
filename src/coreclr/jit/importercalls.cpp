@@ -5018,9 +5018,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
     }
 
+#ifdef DEBUG
+    char buffer[256];
     JITDUMP("%s call would invoke method %s\n",
             isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
-            eeGetMethodName(likelyMethod, nullptr));
+            eeGetMethodFullName(likelyMethod, true, true, buffer, sizeof(buffer)));
+#endif
 
     // Add this as a potential candidate.
     //
@@ -5777,7 +5780,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
         objClassName   = eeGetClassName(objClass);
         baseClassName  = eeGetClassName(baseClass);
-        baseMethodName = eeGetMethodName(baseMethod, nullptr);
+        baseMethodName = eeGetMethodName(baseMethod);
 
         if (verbose)
         {
@@ -5883,7 +5886,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (verbose || doPrint)
         {
-            derivedMethodName = eeGetMethodName(derivedMethod, nullptr);
+            derivedMethodName = eeGetMethodName(derivedMethod);
             derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {

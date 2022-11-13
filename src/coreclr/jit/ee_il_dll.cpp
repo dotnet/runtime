@@ -120,6 +120,16 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     g_jitInitialized = true;
 }
 
+#ifndef DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif
+
 void jitShutdown(bool processIsTerminating)
 {
     if (!g_jitInitialized)
@@ -1401,151 +1411,7 @@ bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithSPMIErrorTrap(function, param);
 }
 
-/*****************************************************************************
- *
- *                      Utility functions
- */
-
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(FEATURE_TRACELOGGING)
-
-/*****************************************************************************/
-
-// static helper names - constant array
-const char* jitHlpFuncTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-
-/*****************************************************************************
-*
-*  Filter wrapper to handle exception filtering.
-*  On Unix compilers don't support SEH.
-*/
-
-struct FilterSuperPMIExceptionsParam_ee_il
-{
-    Compiler*             pThis;
-    Compiler::Info*       pJitInfo;
-    CORINFO_FIELD_HANDLE  field;
-    CORINFO_METHOD_HANDLE method;
-    CORINFO_CLASS_HANDLE  clazz;
-    const char**          classNamePtr;
-    const char*           fieldOrMethodOrClassNamePtr;
-    char*                 className;
-    unsigned              classSize;
-    EXCEPTION_POINTERS    exceptionPointers;
-};
-
-template<typename T, size_t (ICorJitInfo::*print)(T, char*, size_t, size_t*)>
-static void eePrint(StringPrinter* sp, Compiler* comp, const char* defaultName, T handle)
-{
-    char buffer[256];
-    size_t requiredBufferSize;
-    bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-        (comp->info.compCompHnd->*print)(handle, buffer, sizeof(buffer), &requiredBufferSize);
-        });
-
-    if (!success)
-    {
-        sp->Append(defaultName);
-        return;
-    }
-
-    if (bufferSize >= requiredBufferSize)
-    {
-        sp->Append(buffer);
-        return;
-    }
-
-    char* pBuffer = new (comp, CMK_DebugOnly) char[requiredBufferSize];
-    success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-        (comp->info.compCompHnd->*print)(handle, pBuffer, requiredBufferSize);
-        });
-
-    if (!success)
-    {
-        sp->Append(defaultName);
-        return;
-    }
-
-    sp->Append(pBuffer);
-}
-
-
-//------------------------------------------------------------------------
-// eeGetClassName:
-//   Get the name (including namespace and instantiation) of a type.
-//   If missing information (in SPMI), then return a placeholder string.
-//
-// Parameters:
-//   clsHnd - the handle of the class
-//   buffer - a buffer to use for scratch space, or null pointer to allocate a new string.
-//   bufferSize - the size of buffer. If the final class name is longer a new string will be allocated.
-//
-// Return value:
-//   The name string.
-//
-const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, size_t bufferSize)
-{
-    StringPrinter printer(getAllocator(CMK_DebugOnly), buffer, bufferSize);
-    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true); }))
-    {
-        printer.Truncate(0);
-        printer.Append("hackishClassName");
-    }
-
-    return printer.GetBuffer();
-}
-
-const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, bool includeClass, char* buffer, size_t bufferSize)
-{
-    StringPrinter printer(getAllocator(CMK_DebugOnly), buffer, bufferSize);
-    if (includeClass)
-    {
-        if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, info.compCompHnd->getFieldClass(field), true); }))
-        {
-            printer.Append("hackishClassName");
-        }
-
-        printer.Append(':');
-    }
-
-    eePrint<CORINFO_FIELD_HANDLE, &ICorJitInfo::printFieldName>(&printer, this, "hackishFieldName", field);
-    return printer.GetBuffer();
-}
-
-const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, char* buffer, size_t bufferSize)
-{
-    if (eeGetHelperNum(method) != CORINFO_HELP_UNDEF)
-    {
-        CorInfoHelpFunc ftnNum = eeGetHelperNum(method);
-        const char*     name   = info.compCompHnd->getHelperName(ftnNum);
-
-        // If it's something unknown from a RET VM, or from SuperPMI, then use our own helper name table.
-        if ((strcmp(name, "AnyJITHelper") == 0) || (strcmp(name, "Yickish helper name") == 0))
-        {
-            if ((unsigned)ftnNum < CORINFO_HELP_COUNT)
-            {
-                name = jitHlpFuncTable[ftnNum];
-            }
-        }
-
-        return name;
-    }
-
-    if (eeIsNativeMethod(method))
-    {
-        method = eeGetMethodHandleForNative(method);
-    }
-
-    return eePrint<CORINFO_METHOD_HANDLE, &ICorJitInfo::printMethodName>(this, "hackishMethodName", method, buffer, bufferSize);
-}
-
-#endif
-
 #ifdef DEBUG
-
 //------------------------------------------------------------------------
 // eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
 // and the value isn't found, use a bogus size.
@@ -1557,78 +1423,12 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, char* buffer
 //
 unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
+    unsigned classSize = UINT_MAX;
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        classSize = info.compCompHnd->getClassSize(clsHnd);
+        });
 
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
-    }
-    return param.classSize;
+    return classSize;
 }
 
-//------------------------------------------------------------------------
-// eeGetShortClassName: Returns class name with no instantiation.
-//
-// Arguments:
-//   clsHnd - the class handle to get the type name of
-//
-// Return value:
-//   String without instantiation.
-//
-const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
-{
-    StringPrinter printer(getAllocator(CMK_DebugOnly));
-    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, false); }))
-    {
-        printer.Truncate(0);
-        printer.Append("hackishClassName");
-    }
-
-    return printer.GetBuffer();
-}
-
-void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
-{
-    const size_t maxStrSize = 64;
-    char         str[maxStrSize];
-    size_t       actualLen = 0;
-
-    // Ignore potential SPMI failures
-    bool success = eeRunFunctorWithSPMIErrorTrap(
-        [&]() { actualLen = this->info.compCompHnd->printObjectDescription(handle, str, maxStrSize); });
-
-    if (!success)
-    {
-        return;
-    }
-
-    for (size_t i = 0; i < actualLen; i++)
-    {
-        // Replace \n and \r symbols with whitespaces
-        if (str[i] == '\n' || str[i] == '\r')
-        {
-            str[i] = ' ';
-        }
-    }
-
-    printf("%s '%s'\n", prefix, str);
-}
-#else  // DEBUG
-void jitprintf(const char* fmt, ...)
-{
-    va_list vl;
-    va_start(vl, fmt);
-    vfprintf(jitstdout, fmt, vl);
-    va_end(vl);
-}
 #endif // !DEBUG

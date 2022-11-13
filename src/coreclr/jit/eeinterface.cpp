@@ -10,9 +10,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-// ONLY FUNCTIONS common to all variants of the JIT (EXE, DLL) should go here)
-// otherwise they belong in the corresponding directory.
-
 #include "jitpch.h"
 
 #ifdef _MSC_VER
@@ -82,8 +79,6 @@ void StringPrinter::Append(char chr)
     m_buffer[m_bufferIndex + 1] = '\0';
     m_bufferIndex++;
 }
-
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
 //------------------------------------------------------------------------
 // eePrintJitType:
@@ -200,6 +195,12 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     }
 }
 
+static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
+#define JITHELPER(code, pfnHelper, sig) #code,
+#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
+#include "jithelpers.h"
+};
+
 //------------------------------------------------------------------------
 // eePrintMethod:
 //   Print a method given by a method handle, its owning class handle and its
@@ -226,6 +227,14 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              bool                  includeReturnType,
                              bool                  includeThisSpecifier)
 {
+    CorInfoHelpFunc helper = eeGetHelperNum(methHnd);
+    if (helper == CORINFO_HELP_UNDEF)
+    {
+        assert(helper < CORINFO_HELP_COUNT);
+        printer->Append(s_jitHelperNames[helper]);
+        return;
+    }
+
     if (clsHnd != NO_CLASS_HANDLE)
     {
         eePrintType(printer, clsHnd, includeClassInstantiation);
@@ -334,6 +343,39 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 }
 
 //------------------------------------------------------------------------
+// eePrintField:
+//   Print a field name to a StringPrinter.
+//
+// Arguments:
+//    printer     - the printer
+//    fld         - The field
+//    includeType - Whether to prefix the string by <class name>:
+//
+void Compiler::eePrintField(StringPrinter* printer, CORINFO_FIELD_HANDLE fld, bool includeType)
+{
+    if (includeType)
+    {
+        CORINFO_CLASS_HANDLE cls = info.compCompHnd->getFieldClass(fld);
+        eePrintType(printer, cls, true);
+        printer->Append(':');
+    }
+
+    size_t requiredBufferSize;
+    char buffer[256];
+    info.compCompHnd->printFieldName(fld, buffer, sizeof(buffer), &requiredBufferSize);
+    if (sizeof(buffer) <= requiredBufferSize)
+    {
+        printer->Append(buffer);
+    }
+    else
+    {
+        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
+        info.compCompHnd->printFieldName(fld, pBuffer, requiredBufferSize);
+        printer->Append(pBuffer);
+    }
+}
+
+//------------------------------------------------------------------------
 // eeGetMethodFullName:
 //   Get a string describing a method.
 //
@@ -341,18 +383,25 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 //    hnd                  - the method handle
 //    includeReturnType    - Whether to include the return type in the string
 //    includeThisSpecifier - Whether to include a specifier for whether this is an instance method.
+//    buffer               - Preexisting buffer to use (can be nullptr to allocate on heap).
+//    bufferSize           - Size of preexisting buffer.
+//
+// Remarks:
+//   If the final string is larger than the preexisting buffer can contain then
+//   the string will be jit memory allocated.
 //
 // Returns:
 //   The string.
 //
-const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier)
+const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier, char* buffer, size_t bufferSize)
 {
-    if ((eeGetHelperNum(hnd) != CORINFO_HELP_UNDEF) || eeIsNativeMethod(hnd))
+    CorInfoHelpFunc helper = eeGetHelperNum(hnd);
+    if (helper != CORINFO_HELP_UNDEF)
     {
-        return eeGetMethodName(hnd);;
+        return s_jitHelperNames[helper];
     }
 
-    StringPrinter        p(getAllocator(CMK_DebugOnly));
+    StringPrinter        p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
     CORINFO_CLASS_HANDLE clsHnd  = NO_CLASS_HANDLE;
     bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
         clsHnd = info.compCompHnd->getMethodClass(hnd);
@@ -407,10 +456,177 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
     }
 
     p.Truncate(0);
-    p.Append("hackishClassName:hackishMethodName(?)");
+    p.Append("<unknown method>");
     return p.GetBuffer();
 }
 
-#endif // defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
+//------------------------------------------------------------------------
+// eeGetMethodName:
+//   Get the name of a method.
+//
+// Arguments:
+//    hnd                  - the method handle
+//    buffer               - Preexisting buffer to use (can be nullptr to allocate on heap).
+//    bufferSize           - Size of preexisting buffer.
+//
+// Remarks:
+//   See eeGetMethodFullName for documentation about the buffer.
+//
+// Returns:
+//   The string.
+//
+const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer, size_t bufferSize)
+{
+    StringPrinter        p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
+    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,
+                      /* sig */ nullptr,
+                      /* includeClassInstantiation */ false,
+                      /* includeMethodInstantiation */ false,
+                      /* includeSignature */ false,
+                      /* includeReturnType */ false,
+                      /* includeThisSpecifier */ false);
 
-/*****************************************************************************/
+    });
+
+    if (!success)
+    {
+        p.Truncate(0);
+        p.Append("<unknown method>");
+    }
+
+    return p.GetBuffer();
+}
+
+//------------------------------------------------------------------------
+// eeGetFieldName:
+//   Get a string describing a field.
+//
+// Arguments:
+//    fldHnd               - the field handle
+//    includeType          - Whether to prefix the string with <type name>:
+//    buffer               - Preexisting buffer to use (can be nullptr to allocate on heap).
+//    bufferSize           - Size of preexisting buffer.
+//
+// Remarks:
+//   See eeGetMethodFullName for documentation about the buffer.
+//
+// Returns:
+//   The string.
+//
+const char* Compiler::eeGetFieldName(
+    CORINFO_FIELD_HANDLE fldHnd,
+    bool                 includeType,
+    char*                buffer,
+    size_t               bufferSize)
+{
+    StringPrinter p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
+    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintField(&p, fldHnd, includeType);
+    });
+
+    if (success)
+    {
+        return p.GetBuffer();
+    }
+
+    p.Truncate(0);
+
+    if (includeType)
+    {
+        p.Append("<unknown class>:");
+
+        success = eeRunFunctorWithSPMIErrorTrap([&]() {
+            eePrintField(&p, fldHnd, false);
+            });
+
+        if (success)
+        {
+            return p.GetBuffer();
+        }
+
+        p.Truncate(0);
+    }
+
+    if (includeType)
+    {
+        p.Append("<unknown class>:");
+    }
+
+    p.Append("<unknown field>");
+    return p.GetBuffer();
+}
+
+//------------------------------------------------------------------------
+// eeGetClassName:
+//   Get the name (including namespace and instantiation) of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Parameters:
+//   clsHnd - the handle of the class
+//   buffer - a buffer to use for scratch space, or null pointer to allocate a new string.
+//   bufferSize - the size of buffer. If the final class name is longer a new string will be allocated.
+//
+// Return value:
+//   The name string.
+//
+const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, size_t bufferSize)
+{
+    StringPrinter printer(getAllocator(CMK_DebugOnly), buffer, bufferSize);
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true); }))
+    {
+        printer.Truncate(0);
+        printer.Append("hackishClassName");
+    }
+
+    return printer.GetBuffer();
+}
+
+//------------------------------------------------------------------------
+// eeGetShortClassName: Returns class name with no instantiation.
+//
+// Arguments:
+//   clsHnd - the class handle to get the type name of
+//
+// Return value:
+//   String without instantiation.
+//
+const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
+{
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, false); }))
+    {
+        printer.Truncate(0);
+        printer.Append("hackishClassName");
+    }
+
+    return printer.GetBuffer();
+}
+
+void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
+{
+    const size_t maxStrSize = 64;
+    char         str[maxStrSize];
+    size_t       actualLen = 0;
+
+    // Ignore potential SPMI failures
+    bool success = eeRunFunctorWithSPMIErrorTrap(
+        [&]() { actualLen = this->info.compCompHnd->printObjectDescription(handle, str, maxStrSize); });
+
+    if (!success)
+    {
+        return;
+    }
+
+    for (size_t i = 0; i < actualLen; i++)
+    {
+        // Replace \n and \r symbols with whitespaces
+        if (str[i] == '\n' || str[i] == '\r')
+        {
+            str[i] = ' ';
+        }
+    }
+
+    printf("%s '%s'\n", prefix, str);
+}
+
