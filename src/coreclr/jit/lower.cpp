@@ -3794,6 +3794,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
                 comp->lvaSetStruct(tmpNum, structCls, false);
+                comp->genReturnLocal = tmpNum;
                 ReplaceWithLclVar(retValUse, tmpNum);
                 LowerRetSingleRegStructLclVar(ret);
                 break;
