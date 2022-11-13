@@ -90,43 +90,43 @@ namespace System
         public virtual object? ActualValue => _actualValue;
 
         [DoesNotReturn]
-        private static void ThrowZero(string paramName)
+        private static void ThrowZero(string? paramName)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonZero, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowNegative(string paramName)
+        private static void ThrowNegative(string? paramName)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowNegativeOrZero(string paramName)
+        private static void ThrowNegativeOrZero(string? paramName)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowGreater(string paramName, object other)
+        private static void ThrowGreater(string? paramName, object other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowGreaterEqual(string paramName, object other)
+        private static void ThrowGreaterEqual(string? paramName, object other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLess(string paramName, object other)
+        private static void ThrowLess(string? paramName, object other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLessEqual(string paramName, object other)
+        private static void ThrowLessEqual(string? paramName, object other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
         }
