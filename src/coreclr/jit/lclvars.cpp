@@ -2415,7 +2415,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
-        char        fieldNameBuffer[64];
+        char        fieldNameBuffer[128];
         const char* fieldName =
             compiler->eeGetFieldName(pFieldInfo->fldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
         char buf[200];
