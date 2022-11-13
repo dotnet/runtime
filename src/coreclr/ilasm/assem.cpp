@@ -250,7 +250,7 @@ return
  !
              !~~// 8==D 
  !   /**    not **/  ( 
-!!main - true) 
+!!true - true) 
 // Power TO
 ^
      /****/     0 ? // Maybe 0
