@@ -97,7 +97,7 @@ static void* CommitMemory(void* ptr, size_t size)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     return ExecutableAllocator::Instance()->Commit(ptr, size, /*isExecutable*/ false);
 #else
-    return ClrVirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE)
+    return ClrVirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
 #endif
 }
 
