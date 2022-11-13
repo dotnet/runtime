@@ -7617,7 +7617,7 @@ public:
 
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fldHnd,
                                bool                 includeType,
-                               char*                buffer = nullptr,
+                               char*                buffer     = nullptr,
                                size_t               bufferSize = 0);
 
     const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer = nullptr, size_t bufferSize = 0);
@@ -7855,7 +7855,6 @@ public:
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
     // Utility functions
-
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);

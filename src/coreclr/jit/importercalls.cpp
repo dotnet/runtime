@@ -211,10 +211,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // These should be in corelib.h, and available through a JIT/EE interface call.
         const char* namespaceName;
         const char* className;
-        const char* methodName = info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+        const char* methodName =
+            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
         if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
-            (strcmp(className, "JitTestLabel") == 0) &&
-            (strcmp(methodName, "Mark") == 0))
+            (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
         {
             return impImportJitTestLabelMark(sig->numArgs);
         }

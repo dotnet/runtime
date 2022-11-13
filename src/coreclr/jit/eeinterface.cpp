@@ -242,7 +242,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
     }
 
     size_t requiredBufferSize;
-    char buffer[256];
+    char   buffer[256];
     info.compCompHnd->printMethodName(methHnd, buffer, sizeof(buffer), &requiredBufferSize);
     if (sizeof(buffer) <= requiredBufferSize)
     {
@@ -361,7 +361,7 @@ void Compiler::eePrintField(StringPrinter* printer, CORINFO_FIELD_HANDLE fld, bo
     }
 
     size_t requiredBufferSize;
-    char buffer[256];
+    char   buffer[256];
     info.compCompHnd->printFieldName(fld, buffer, sizeof(buffer), &requiredBufferSize);
     if (sizeof(buffer) <= requiredBufferSize)
     {
@@ -393,7 +393,8 @@ void Compiler::eePrintField(StringPrinter* printer, CORINFO_FIELD_HANDLE fld, bo
 // Returns:
 //   The string.
 //
-const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier, char* buffer, size_t bufferSize)
+const char* Compiler::eeGetMethodFullName(
+    CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier, char* buffer, size_t bufferSize)
 {
     CorInfoHelpFunc helper = eeGetHelperNum(hnd);
     if (helper != CORINFO_HELP_UNDEF)
@@ -477,8 +478,8 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
 //
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer, size_t bufferSize)
 {
-    StringPrinter        p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
-    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
+    StringPrinter p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
+    bool          success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,
                       /* sig */ nullptr,
                       /* includeClassInstantiation */ false,
@@ -514,16 +515,10 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffe
 // Returns:
 //   The string.
 //
-const char* Compiler::eeGetFieldName(
-    CORINFO_FIELD_HANDLE fldHnd,
-    bool                 includeType,
-    char*                buffer,
-    size_t               bufferSize)
+const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE fldHnd, bool includeType, char* buffer, size_t bufferSize)
 {
     StringPrinter p(getAllocator(CMK_DebugOnly), buffer, bufferSize);
-    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
-        eePrintField(&p, fldHnd, includeType);
-    });
+    bool          success = eeRunFunctorWithSPMIErrorTrap([&]() { eePrintField(&p, fldHnd, includeType); });
 
     if (success)
     {
@@ -536,9 +531,7 @@ const char* Compiler::eeGetFieldName(
     {
         p.Append("<unknown class>:");
 
-        success = eeRunFunctorWithSPMIErrorTrap([&]() {
-            eePrintField(&p, fldHnd, false);
-            });
+        success = eeRunFunctorWithSPMIErrorTrap([&]() { eePrintField(&p, fldHnd, false); });
 
         if (success)
         {
@@ -629,4 +622,3 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
 
     printf("%s '%s'\n", prefix, str);
 }
-

@@ -1424,9 +1424,7 @@ bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
 unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
     unsigned classSize = UINT_MAX;
-    eeRunFunctorWithSPMIErrorTrap([&]() {
-        classSize = info.compCompHnd->getClassSize(clsHnd);
-        });
+    eeRunFunctorWithSPMIErrorTrap([&]() { classSize = info.compCompHnd->getClassSize(clsHnd); });
 
     return classSize;
 }
