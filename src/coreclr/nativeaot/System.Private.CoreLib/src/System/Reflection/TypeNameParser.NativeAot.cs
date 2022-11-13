@@ -125,7 +125,7 @@ namespace System.Reflection
 
                 if (assembly != null)
                 {
-                    return assembly.GetTypeCore(name, throwOnError: true, ignoreCase: _ignoreCase);
+                    return assembly.GetTypeCore(name, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                 }
                 else
                 {
