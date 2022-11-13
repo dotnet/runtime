@@ -3442,45 +3442,6 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
     return result;
 }
 
-template<typename TAppend>
-static void AppendTypeNameEscaped(const char* str, TAppend append)
-{
-    CONTRACTL {
-        MODE_PREEMPTIVE;
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    bool hasReservedChar = false;
-    for (const char* curChar = str; *curChar; curChar++)
-    {
-        if (IsTypeNameReservedChar(*curChar))
-        {
-            hasReservedChar = true;
-            break;
-        }
-    }
-
-    if (!hasReservedChar)
-    {
-        append(str);
-        return;
-    }
-
-    while (*str)
-    {
-        if (IsTypeNameReservedChar(*str))
-        {
-            append("\\");
-        }
-
-        char singleChar[2] = { *str, 0 };
-        append(singleChar);
-
-        str++;
-    }
-}
-
 /*********************************************************************/
 size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
@@ -3523,6 +3484,11 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     // Subset of TypeString that does just what we need while staying in UTF8
     // and avoiding expensive copies. This function is called a lot in checked
     // builds.
+    // One difference is that we do not handle escaping type names here (see
+    // IsTypeNameReservedChar). The situation is rare and somewhat complicated
+    // to handle since it requires iterating UTF8 encoded codepoints. Given
+    // that this function is only needed for diagnostics the complication seems
+    // unnecessary.
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
@@ -3550,11 +3516,11 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
 
             if ((nameSpace != NULL) && (*nameSpace != '\0'))
             {
-                AppendTypeNameEscaped(nameSpace, append);
+                append(nameSpace);
                 append(".");
             }
 
-            AppendTypeNameEscaped(name, append);
+            append(name);
 
             if (i != 0)
             {
