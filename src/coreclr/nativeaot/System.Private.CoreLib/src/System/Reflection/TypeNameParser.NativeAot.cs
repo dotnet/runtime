@@ -62,10 +62,15 @@ namespace System.Reflection
             }.Parse();
         }
 
-        partial void TopLevelAssemblyQualifiedName()
+        private bool CheckTopLevelAssemblyQualifiedName()
         {
             if (_topLevelAssembly != null)
-                throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+            {
+                if (_throwOnError)
+                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                return false;
+            }
+            return true;
         }
 
         private Assembly? ResolveAssembly(string assemblyName)
@@ -91,8 +96,6 @@ namespace System.Reflection
             return assembly;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string name, string? assemblyNameIfAny)
         {
             Assembly? assembly = (assemblyNameIfAny != null) ? ResolveAssembly(assemblyNameIfAny) : null;

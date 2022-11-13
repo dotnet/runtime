@@ -54,6 +54,11 @@ namespace System.Reflection
             }.Parse();
         }
 
+        private bool CheckTopLevelAssemblyQualifiedName()
+        {
+            return true;
+        }
+
         private Assembly? ResolveAssembly(string assemblyName)
         {
             var name = new AssemblyName(assemblyName);

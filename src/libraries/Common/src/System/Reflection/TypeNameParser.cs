@@ -32,7 +32,8 @@ namespace System.Reflection
             TokenType token = GetNextToken();
             if (token != TokenType.End)
             {
-                TopLevelAssemblyQualifiedName();
+                if (!CheckTopLevelAssemblyQualifiedName())
+                    return null;
 
                 if (token != TokenType.Comma)
                 {
@@ -46,11 +47,6 @@ namespace System.Reflection
 
             return typeName.ResolveType(ref this, assemblyName);
         }
-
-        //
-        // Notify that the parser encountered top-level assembly qualified name
-        //
-        partial void TopLevelAssemblyQualifiedName();
 
         //
         // Parses a type name without any assembly name qualification.

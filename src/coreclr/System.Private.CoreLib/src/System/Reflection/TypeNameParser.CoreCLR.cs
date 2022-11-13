@@ -23,6 +23,7 @@ namespace System.Reflection
         private bool _ignoreCase;
         private bool _extensibleParser;
         private void* _stackMark;
+        private Assembly? _topLevelAssembly;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -66,6 +67,32 @@ namespace System.Reflection
                 _extensibleParser = extensibleParser,
                 _stackMark = Unsafe.AsPointer(ref stackMark)
             }.Parse();
+        }
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            bool throwOnError,
+            bool ignoreCase,
+            Assembly topLevelAssembly)
+        {
+            return new TypeNameParser(typeName)
+            {
+                _throwOnError = throwOnError,
+                _ignoreCase = ignoreCase,
+                _topLevelAssembly = topLevelAssembly
+            }.Parse();
+        }
+
+        private bool CheckTopLevelAssemblyQualifiedName()
+        {
+            if (_topLevelAssembly != null)
+            {
+                if (_throwOnError)
+                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                return false;
+            }
+            return true;
         }
 
         private Assembly? ResolveAssembly(string assemblyName)
@@ -131,19 +158,28 @@ namespace System.Reflection
             }
             else
             {
-                // TODO: Call into runtime type loader to avoid escaping and parsing the name again
-                name = EscapeTypeName(name);
+                assembly ??= _topLevelAssembly;
 
-                if (assembly == null)
+                if (assembly is not null)
+                {
+                    if (assembly is RuntimeAssembly runtimeAssembly)
+                    {
+                        type = runtimeAssembly.GetTypeCore(name, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                    }
+                    else
+                    {
+                        // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
+                        // method. This is wasteful because it'll probably reparse a type string that we've already parsed
+                        // but it can't be helped.
+                        type = assembly.GetType(EscapeTypeName(name), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                    }
+                }
+                else
                 {
                     ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
 
                     type = RuntimeTypeHandle.GetTypeByName(
-                        name, _throwOnError, _ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
-                }
-                else
-                {
-                    type = assembly.GetType(name, _throwOnError, _ignoreCase);
+                        EscapeTypeName(name), _throwOnError, _ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
                 }
             }
 

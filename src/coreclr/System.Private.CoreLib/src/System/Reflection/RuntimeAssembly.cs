@@ -190,37 +190,37 @@ namespace System.Reflection
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetType(QCallAssembly assembly,
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetTypeCore", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void GetTypeCore(QCallAssembly assembly,
                                             string name,
-                                            [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
                                             [MarshalAs(UnmanagedType.Bool)] bool ignoreCase,
-                                            ObjectHandleOnStack type,
-                                            ObjectHandleOnStack keepAlive,
-                                            ObjectHandleOnStack assemblyLoadContext);
+                                            ObjectHandleOnStack retType);
+
+        internal Type? GetTypeCore(string name, bool throwOnError, bool ignoreCase)
+        {
+            RuntimeAssembly runtimeAssembly = this;
+            Type? type = null;
+
+            GetTypeCore(new QCallAssembly(ref runtimeAssembly),
+                name,
+                ignoreCase,
+                ObjectHandleOnStack.Create(ref type));
+
+            if (type == null && throwOnError)
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, name, FullName));
+
+            return type;
+        }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(
             string name, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-            RuntimeType? type = null;
-            object? keepAlive = null;
-            AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
-
-            RuntimeAssembly runtimeAssembly = this;
-            GetType(new QCallAssembly(ref runtimeAssembly),
-                    name,
-                    throwOnError,
-                    ignoreCase,
-                    ObjectHandleOnStack.Create(ref type),
-                    ObjectHandleOnStack.Create(ref keepAlive),
-                    ObjectHandleOnStack.Create(ref assemblyLoadContextStack));
-            GC.KeepAlive(keepAlive);
-
-            return type;
+            return TypeNameParser.GetType(name, topLevelAssembly: this,
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExportedTypes")]

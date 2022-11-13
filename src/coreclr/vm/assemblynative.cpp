@@ -335,13 +335,10 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly,
-                                       LPCWSTR wszName,
-                                       BOOL bThrowOnError,
-                                       BOOL bIgnoreCase,
-                                       QCall::ObjectHandleOnStack retType,
-                                       QCall::ObjectHandleOnStack keepAlive,
-                                       QCall::ObjectHandleOnStack pAssemblyLoadContext)
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle pAssembly,
+    LPCWSTR wszName,
+    BOOL bIgnoreCase,
+    QCall::ObjectHandleOnStack retType)
 {
     CONTRACTL
     {
@@ -350,26 +347,22 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
     }
     CONTRACTL_END;
 
-    TypeHandle retTypeHandle;
-
     BEGIN_QCALL;
 
-    BOOL prohibitAsmQualifiedName = TRUE;
+    NameHandle typeName(pAssembly->GetModule(), mdtBaseType);
 
-    AssemblyBinder * pBinder = NULL;
+    StackSString name(wszName);
 
-    if (*pAssemblyLoadContext.m_ppObject != NULL)
+    if (bIgnoreCase)
     {
-        GCX_COOP();
-        ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
-
-        INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
-
-        pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
+        typeName.SetCaseInsensitive();
+        // The type name is expected to be lower-cased by the caller for case-insensitive lookups
+        name.LowerCase();
     }
 
-    // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pBinder);
+    typeName.SetName(name.GetUTF8());
+
+    TypeHandle retTypeHandle = pAssembly->GetAssembly()->GetLoader()->LoadTypeHandleThrowing(&typeName);
 
     if (!retTypeHandle.IsNull())
     {
@@ -378,8 +371,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
     }
 
     END_QCALL;
-
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType)
