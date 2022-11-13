@@ -81,6 +81,8 @@ namespace System.IO.Tests
     [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
+        private TestFileShare _testShare;
+
         public static bool CanShareFiles => _canShareFiles.Value;
 
         private static Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
@@ -110,31 +112,7 @@ namespace System.IO.Tests
             string testDirectoryPath = Path.GetFullPath(TestDirectory);
             string shareName = new DirectoryInfo(testDirectoryPath).Name;
             string fileName = GetTestFileName(index, memberName, lineNumber);
-
-            SHARE_INFO_502 shareInfo = default;
-            shareInfo.shi502_netname = shareName;
-            shareInfo.shi502_path = testDirectoryPath;
-            shareInfo.shi502_remark = "folder created to test UNC file paths";
-            shareInfo.shi502_max_uses = -1;
-
-            int infoSize = Marshal.SizeOf(shareInfo);
-            IntPtr infoBuffer = Marshal.AllocCoTaskMem(infoSize);
-
-            try
-            {
-                Marshal.StructureToPtr(shareInfo, infoBuffer, false);
-
-                int shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
-
-                if (shareResult != 0 && shareResult != 2118) // is a failure that is not a NERR_DuplicateShare
-                {
-                    throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
-                }
-            }
-            finally
-            {
-                Marshal.FreeCoTaskMem(infoBuffer);
-            }
+            _testShare = new TestFileShare(shareName, testDirectoryPath);
 
             // now once the folder has been shared we can use "localhost" to access it:
             // both type of slashes are valid, so let's test one for Debug and another for other configs
@@ -147,42 +125,15 @@ namespace System.IO.Tests
 
         protected override void Dispose(bool disposing)
         {
-            string testDirectoryPath = Path.GetFullPath(TestDirectory);
-            string shareName = new DirectoryInfo(testDirectoryPath).Name;
-
             try
             {
-                NetShareDel(string.Empty, shareName, 0);
+                _testShare?.Dispose();
             }
             finally
             {
                 base.Dispose(disposing);
             }
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct SHARE_INFO_502
-        {
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string shi502_netname;
-            public uint shi502_type;
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string shi502_remark;
-            public int shi502_permissions;
-            public int shi502_max_uses;
-            public int shi502_current_uses;
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string shi502_path;
-            public IntPtr shi502_passwd;
-            public int shi502_reserved;
-            public IntPtr shi502_security_descriptor;
-        }
-
-        [DllImport(Interop.Libraries.Netapi32)]
-        public static extern int NetShareAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, int level, IntPtr buf, IntPtr parm_err);
-
-        [DllImport(Interop.Libraries.Netapi32)]
-        public static extern int NetShareDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string netname, int reserved);
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
