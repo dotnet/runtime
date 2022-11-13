@@ -13,7 +13,6 @@ namespace Internal.TypeSystem
     // TODO: This file is pretty much a line-by-line port of C++ code to parse CA type name strings from NUTC.
     //       It's a stopgap solution.
     //       This should be replaced with type name parser in System.Reflection.Metadata once it starts shipping.
-    // !!!!
 
     public static class CustomAttributeTypeNameParser
     {
