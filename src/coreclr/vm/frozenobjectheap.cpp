@@ -149,8 +149,6 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
         ThrowOutOfMemory();
     }
 
-    // CommitMemory is expected to be PageSize-aligned so we can expect
-    // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 
     segment_info si;
