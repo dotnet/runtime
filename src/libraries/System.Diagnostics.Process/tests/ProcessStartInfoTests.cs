@@ -467,12 +467,12 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             using Process longRunning = CreateProcessLong();
-            p.StartInfo.LoadUserProfile = true;
+            longRunning.StartInfo.LoadUserProfile = true;
 
-            using TestProcessState testAccountCleanup = CreateUserAndExecute(p);
+            using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning);
 
             string username = testAccountCleanup.ProcessAccountName.Split('\\').Last();
-            Assert.Equal(username, Helpers.GetProcessUserName(p));
+            Assert.Equal(username, Helpers.GetProcessUserName(longRunning));
             bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
             Assert.True(isProfileLoaded);
         }
@@ -1383,24 +1383,7 @@ namespace System.Diagnostics.Tests
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.UseCredentialsForNetworkingOnly = true;
 
-            void Setup()
-            {
-                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
-                {
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
-                }
-            };
-
-            Action<string, string> cleanup = (username, _) =>
-            {
-                if (PlatformDetection.IsNotWindowsServerCore)
-                {
-                    // remove the access
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
-                }
-            };
-
-            using var processInfo = CreateUserAndExecute(p, false, setup, cleanup);
+            using var processInfo = CreateUserAndExecute(p, false, Setup, Cleanup);
 
             string processUserName = Helpers.GetProcessUserName(p);
             string output = p.StandardOutput.ReadToEnd();
@@ -1410,6 +1393,23 @@ namespace System.Diagnostics.Tests
             Assert.Equal(testFileContent, splitOutput[0]);
             Assert.Equal("0", splitOutput[1]);
             Assert.Equal(processInfo.ImpersonationAccountName?.Split('\\')?.LastOrDefault(), processUserName);
+
+            void Setup(string username, string _)
+            {
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
+                }
+            };
+
+            void Cleanup(string username, string _)
+            {
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    // remove the access
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
+                }
+            };
         }
 
         private TestProcessState CreateUserAndExecute(
@@ -1476,8 +1476,6 @@ namespace System.Diagnostics.Tests
             private readonly string _workingDirectory;
 
             private readonly Action<string, string> _additionalCleanup;
-
-            private bool _disposedValue;
 
             public TestProcessState(
                 Process process,
