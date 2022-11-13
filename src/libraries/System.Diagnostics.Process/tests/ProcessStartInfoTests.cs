@@ -1355,7 +1355,7 @@ namespace System.Diagnostics.Tests
             const string ShareName = "testForDotNet";
             using TestFileShare fileShare = new TestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
             string testFileUncPath = $"\\\\localhost\\{ShareName}\\{Path.GetFileName(testFilePath)}";
-            string testFileContent = Guid.NewGuid().ToString();
+            string testFileContent = "42";
             File.WriteAllText(testFilePath, testFileContent);
 
             const string LocalPath = nameof(LocalPath);
@@ -1363,13 +1363,13 @@ namespace System.Diagnostics.Tests
             using Process p = CreateProcess(() =>
             {
                 // Read file content using network credentials and output it for assertion comparison
-                Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable(UncPath)));
+                _ = File.ReadAllText(Environment.GetEnvironmentVariable(UncPath));
                 try
                 {
                     // Read file content using current user - should fail, because impersonated user
                     // isn't explicitly authorized to access the file.
                     _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
-                    
+
                     return -1;
                 }
                 catch (Exception ex) when (ex is SecurityException or UnauthorizedAccessException)
@@ -1379,19 +1379,14 @@ namespace System.Diagnostics.Tests
             });
             p.StartInfo.Environment[LocalPath] = testFilePath;
             p.StartInfo.Environment[UncPath] = testFileUncPath;
-            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-            p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.UseCredentialsForNetworkingOnly = true;
 
-            using var processInfo = CreateUserAndExecute(p, false, Setup, Cleanup);
+            using var processInfo = CreateUserAndExecute(p, true, Setup, Cleanup);
 
             string processUserName = Helpers.GetProcessUserName(p);
-            string output = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
 
-            string[] splitOutput = output.Split(ItemSeparator, StringSplitOptions.None);
-            Assert.Equal(testFileContent, splitOutput[0]);
-            Assert.Equal("0", splitOutput[1]);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
             Assert.Equal(processInfo.ImpersonationAccountName?.Split('\\')?.LastOrDefault(), processUserName);
 
             void Setup(string username, string _)
