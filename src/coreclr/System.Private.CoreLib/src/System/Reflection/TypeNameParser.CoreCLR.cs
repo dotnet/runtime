@@ -117,7 +117,7 @@ namespace System.Reflection
                 else
                 {
                     // When throwOnError is false we should only catch FileNotFoundException.
-                    // Other exceptions like BadImangeFormatException should still fly.
+                    // Other exceptions like BadImageFormatException should still fly.
                     try
                     {
                         assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
