@@ -93,6 +93,55 @@ coded_index_entry const coded_index_map[] =
 #endif // DNMD_PORTABLE_PDB
 };
 
+bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index)
+{
+    // See II.24.2.6
+    assert(coded_index != NULL);
+
+    // Use the embedded index into the coded index map.
+    size_t ci_idx = ExtractCodedIndex(col_details);
+    if (ci_idx >= ARRAY_SIZE(coded_index_map))
+        return false;
+    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+
+    // Verify the supplied table type is valid for encoding.
+    uint32_t tgt_table = ExtractTokenType(tk);
+    uint32_t row;
+    for (uint8_t i = 0; i < ci_entry->lookup_len; ++i)
+    {
+        // If the table is valid, construct the coded index.
+        if (ci_entry->lookup[i] == tgt_table)
+        {
+            row = RidFromToken(tk);
+            *coded_index = (row << ci_entry->bit_encoding_size) | (uint32_t)i;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* table_id, uint32_t* table_row)
+{
+    // See II.24.2.6
+    assert(table_id != NULL && table_row != NULL);
+
+    // Use the embedded index into the coded index map.
+    size_t ci_idx = ExtractCodedIndex(col_details);
+    if (ci_idx >= ARRAY_SIZE(coded_index_map))
+        return false;
+    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+
+    // Create a mask to extract the index into the entry.
+    uint32_t code_mask = (1 << ci_entry->bit_encoding_size) - 1;
+    if ((cidx & code_mask) >= ci_entry->lookup_len)
+        return false;
+    *table_id = ci_entry->lookup[cidx & code_mask];
+
+    // Remove the encoded lookup index.
+    *table_row = cidx >> ci_entry->bit_encoding_size;
+    return true;
+}
+
 // Compute the row size and embed the offset for
 // each column in the column details.
 static uint32_t compute_row_offsets_size(mdtcol_t* col, size_t col_len)

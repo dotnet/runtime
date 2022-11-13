@@ -341,6 +341,10 @@ int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
 int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
 // Find a row or range of rows where the supplied column has the expected value.
+// These APIs assume the actual value, typically row ID (RID) for tokens, that is embedded
+// in the table. An exception is made for coded indices, which are cumbersome to compute.
+// If the queried column contains a coded index value, the value will be validated and
+// transformed to its coded form for comparison.
 bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
 bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count);
 

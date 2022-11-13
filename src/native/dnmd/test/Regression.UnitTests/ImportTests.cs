@@ -66,6 +66,7 @@ namespace Regression.UnitTests
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+                    Assert.Equal(EnumPermissionSets(baselineImport, methoddef), EnumPermissionSets(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                 }
@@ -349,6 +350,34 @@ namespace Regression.UnitTests
                 Assert.Equal(0, import.CountEnum(hcorenum, out int count));
                 Assert.Equal(count, tokens.Count);
                 import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumPermissionSets(IMetaDataImport import, uint tk)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+
+            // See CorDeclSecurity for actions definitions
+            for (uint action = 0; action <= 0xf; ++action)
+            {
+                nint hcorenum = 0;
+                try
+                {
+                    while (0 == import.EnumPermissionSets(ref hcorenum, tk, action, tokensBuffer, tokensBuffer.Length, out uint returned)
+                        && returned != 0)
+                    {
+                        for (int j = 0; j < returned; ++j)
+                        {
+                            tokens.Add(tokensBuffer[j]);
+                        }
+                    }
+                }
+                finally
+                {
+                    import.CloseEnum(hcorenum);
+                }
             }
             return tokens;
         }

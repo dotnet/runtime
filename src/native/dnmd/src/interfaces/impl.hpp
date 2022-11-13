@@ -538,4 +538,74 @@ public: // IUnknown
     }
 };
 
+enum class HCORENUMType : uint32_t
+{
+    Table = 1, Dynamic
+};
+
+// Represents a singly linked list or dynamic uint32_t array enumerator
+class HCORENUMImpl
+{
+    HCORENUMType _type;
+
+    union
+    {
+        // Enumerate for tables
+        struct
+        {
+            mdcursor_t Current;
+            mdcursor_t Start;
+        } _table;
+
+        // Enumerate for dynamic uint32_t array
+        struct
+        {
+            uint32_t Page[16];
+        } _dynamic;
+    };
+
+    uint32_t _readIn;
+    uint32_t _total;
+    HCORENUMImpl* _next;
+
+public: // static
+    static HCORENUMImpl* ToImpl(HCORENUM hEnum) noexcept;
+    static HCORENUM ToEnum(HCORENUMImpl* enumImpl) noexcept;
+
+    // Lifetime operations
+    static HRESULT CreateTableEnum(_In_ uint32_t count, _Out_ HCORENUMImpl** impl) noexcept;
+    static void InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept;
+
+    static HRESULT CreateDynamicEnum(_Out_ HCORENUMImpl** impl) noexcept;
+    static HRESULT AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t value) noexcept;
+
+    static void Destroy(_In_ HCORENUMImpl* impl) noexcept;
+
+public: // instance
+    // Get the total items for this enumeration
+    uint32_t Count() const noexcept;
+
+    // Read in the tokens for this enumeration
+    HRESULT ReadTokens(
+        mdToken rTokens[],
+        ULONG cMax,
+        ULONG* pcTokens) noexcept;
+
+    // Reset the enumeration to a specific position
+    HRESULT Reset(_In_ ULONG position) noexcept;
+
+private:
+    HRESULT ReadTableTokens(
+        mdToken rTokens[],
+        uint32_t cMax,
+        uint32_t* pcTokens) noexcept;
+    HRESULT ReadDynamicTokens(
+        mdToken rTokens[],
+        uint32_t cMax,
+        uint32_t* pcTokens) noexcept;
+
+    HRESULT ResetTableEnum(_In_ uint32_t position) noexcept;
+    HRESULT ResetDynamicEnum(_In_ uint32_t position) noexcept;
+};
+
 #endif // _SRC_INTERFACES_IMPL_HPP_

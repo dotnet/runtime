@@ -1,6 +1,7 @@
 set(SOURCES
   dispenser.cpp
   metadataimport.cpp
+  hcorenum.cpp
 )
 
 set(HEADERS

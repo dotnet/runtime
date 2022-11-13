@@ -1,11 +1,5 @@
 #include "internal.h"
 
-#define CreateTokenType(tk) (mdToken)(((uint32_t)tk << 24) & 0xff000000)
-#define ExtractTokenType(tk) ((tk >> 24) & 0xff)
-
-#define CreateTokenIndex(i) (mdToken)(i & 0x00ffffff)
-#define ExtractTokenIndex(i) (uint32_t)(i & 0x00ffffff)
-
 static mdtable_t* CursorTable(mdcursor_t* c)
 {
     assert(c != NULL);
@@ -15,7 +9,7 @@ static mdtable_t* CursorTable(mdcursor_t* c)
 static uint32_t CursorRow(mdcursor_t* c)
 {
     assert(c != NULL);
-    return ExtractTokenIndex(c->_reserved2);
+    return RidFromToken(c->_reserved2);
 }
 
 static bool CursorNull(mdcursor_t* c)
@@ -106,7 +100,7 @@ bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
         return false;
 
     // Indices into tables begin at 1 - see II.22.
-    uint32_t row = ExtractTokenIndex(tk);
+    uint32_t row = RidFromToken(tk);
     if (row == 0 || row > table->row_count)
         return false;
 
@@ -126,7 +120,7 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
         return true;
     }
 
-    mdToken row = CreateTokenIndex(CursorRow(&c));
+    mdToken row = RidFromToken(CursorRow(&c));
     if (row > table->row_count)
         return false;
 
@@ -255,10 +249,6 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
     if (!(qcxt.col_details & (mdtc_idx_table | mdtc_idx_coded)))
         return -1;
 
-    size_t ci_idx;
-    coded_index_entry const* ci_entry;
-    uint32_t code_mask;
-
     uint32_t table_row;
     mdtable_id_t table_id;
 
@@ -275,27 +265,14 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
 
             // The raw value is the row index into the table that
             // is embedded in the column details.
-            table_row = CreateTokenIndex(raw);
+            table_row = RidFromToken(raw);
             table_id = ExtractTable(qcxt.col_details);
         }
         else
         {
             assert(qcxt.col_details & mdtc_idx_coded);
-
-            // Use the embedded index into the coded index map.
-            ci_idx = ExtractCodedIndex(qcxt.col_details);
-            if (ci_idx >= ARRAY_SIZE(coded_index_map))
+            if (!decompose_coded_index(raw, qcxt.col_details, &table_id, &table_row))
                 return -1;
-            ci_entry = &coded_index_map[ci_idx];
-
-            // Create a mask to extract the index into the entry.
-            code_mask = (1 << ci_entry->bit_encoding_size) - 1;
-            if ((raw & code_mask) >= ci_entry->lookup_len)
-                return -1;
-            table_id = ci_entry->lookup[raw & code_mask];
-
-            // Remove the encoded lookup index.
-            table_row = raw >> ci_entry->bit_encoding_size;
         }
 
         if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
@@ -304,7 +281,7 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
         mdtable_t* table;
         if (tk != NULL)
         {
-            tk[read_in] = CreateTokenType(table_id) | CreateTokenIndex(table_row);
+            tk[read_in] = CreateTokenType(table_id) | RidFromToken(table_row);
         }
         else
         {
@@ -601,6 +578,7 @@ typedef struct _find_cxt_t
 {
     uint32_t col_offset;
     uint32_t data_len;
+    mdtcol_t col_details;
 } find_cxt_t;
 
 static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_t* fcxt)
@@ -615,6 +593,7 @@ static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_
     mdtcol_t cd = table->column_details[idx];
     fcxt->col_offset = ExtractOffset(cd);
     fcxt->data_len = (cd & mdtc_b2) ? 2 : 4;
+    fcxt->col_details = cd;
     return true;
 }
 
@@ -645,7 +624,7 @@ static void const* cursor_to_row_bytes(mdcursor_t* c)
     return &CursorTable(c)->data.ptr[(CursorRow(c) - 1) * CursorTable(c)->row_size_bytes];
 }
 
-bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor)
+static bool find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t* value, mdcursor_t* cursor)
 {
     mdtable_t* table = CursorTable(&begin);
     if (table == NULL || cursor == NULL)
@@ -660,12 +639,19 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
     if (!create_find_context(table, idx, &fcxt))
         return false;
 
+    // If the value is for a coded index, update the value.
+    if (fcxt.col_details & mdtc_idx_coded)
+    {
+        if (!compose_coded_index(*value, fcxt.col_details, value))
+            return false;
+    }
+
     // Compute the starting row.
     void const* starting_row = cursor_to_row_bytes(&begin);
     // Add +1 for inclusive count - use binary search if sorted, otherwise linear.
     void const* row_maybe = (table->is_sorted)
-        ? md_bsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt)
-        : md_lsearch(&value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt);
+        ? md_bsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt)
+        : md_lsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt);
     if (row_maybe == NULL)
         return false;
 
@@ -680,11 +666,16 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
     return true;
 }
 
+bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor)
+{
+    return find_row_from_cursor(begin, idx, &value, cursor);
+}
+
 bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count)
 {
     // Look for any instance of the value.
     mdcursor_t found;
-    if (!md_find_row_from_cursor(begin, idx, value, &found))
+    if (!find_row_from_cursor(begin, idx, &value, &found))
         return false;
 
     // If the table isn't sorted, then a range isn't possible.

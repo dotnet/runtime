@@ -13,78 +13,11 @@
     } \
 }
 
-namespace
-{
-    // Represents a singly linked list enumerator
-    struct HCORENUMImpl
-    {
-        // Cursors for table walking
-        mdcursor_t current;
-        mdcursor_t start;
-        uint32_t readIn;
-        uint32_t total;
-
-        // Cursor for user string heap walking
-        mduserstringcursor_t us_current;
-
-        HCORENUMImpl* next;
-    };
-
-    HCORENUMImpl* ToEnumImpl(HCORENUM hEnum) noexcept
-    {
-        return reinterpret_cast<HCORENUMImpl*>(hEnum);
-    }
-
-    HCORENUM ToEnum(HCORENUMImpl* enumImpl) noexcept
-    {
-        return reinterpret_cast<HCORENUM>(enumImpl);
-    }
-
-    HRESULT CreateHCORENUMImpl(_In_ size_t count, _Out_ HCORENUMImpl** pEnumImpl) noexcept
-    {
-        HCORENUMImpl* enumImpl;
-        enumImpl = (HCORENUMImpl*)::malloc(sizeof(*enumImpl) * count);
-        if (enumImpl == nullptr)
-            return E_OUTOFMEMORY;
-
-        HCORENUMImpl* prev = enumImpl;
-        prev->next = nullptr;
-        for (size_t i = 1; i < count; ++i)
-        {
-            prev->next = &enumImpl[i];
-            prev = prev->next;
-            prev->next = nullptr;
-        }
-
-        *pEnumImpl = enumImpl;
-        return S_OK;
-    }
-
-    void InitHCORENUMImpl(_Inout_ HCORENUMImpl* enumImpl, _In_ mduserstringcursor_t cursor, _In_ uint32_t count) noexcept
-    {
-        ::memset(enumImpl, 0, sizeof(*enumImpl));
-        enumImpl->total = count;
-        enumImpl->us_current = cursor;
-    }
-
-    void InitHCORENUMImpl(_Inout_ HCORENUMImpl* enumImpl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept
-    {
-        enumImpl->current = cursor;
-        enumImpl->start = cursor;
-        enumImpl->readIn = 0;
-        enumImpl->total = rows;
-        enumImpl->us_current = (mduserstringcursor_t)~0; // Used create an invalid cursor.
-    }
-
-    void DestroyHCORENUM(HCORENUM hEnum) noexcept
-    {
-        ::free(ToEnumImpl(hEnum));
-    }
-}
-
 void STDMETHODCALLTYPE MetadataImportRO::CloseEnum(HCORENUM hEnum)
 {
-    DestroyHCORENUM(hEnum);
+    HCORENUMImpl* impl = HCORENUMImpl::ToImpl(hEnum);
+    if (impl != nullptr)
+        HCORENUMImpl::Destroy(impl);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pulCount)
@@ -92,99 +25,21 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pul
     if (pulCount == nullptr)
         return E_INVALIDARG;
 
-    HCORENUMImpl* enumImpl = ToEnumImpl(hEnum);
-
-    // Accumulate all tables in the enumerator
-    uint32_t count = 0;
-    while (enumImpl != nullptr)
-    {
-        count += enumImpl->total;
-        enumImpl = enumImpl->next;
-    }
-
-    *pulCount = count;
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(hEnum);
+    *pulCount = enumImpl->Count();
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPos)
 {
-    HCORENUMImpl* enumImpl = ToEnumImpl(hEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(hEnum);
     if (enumImpl == nullptr)
         return S_OK;
-
-    mdcursor_t newStart;
-    uint32_t newReadIn;
-    bool reset = false;
-    while (enumImpl != nullptr)
-    {
-        newStart = enumImpl->start;
-        if (reset)
-        {
-            // Reset the enumerator state
-            newReadIn = 0;
-        }
-        else if (ulPos < enumImpl->total)
-        {
-            // The current enumerator contains the position
-            if (!md_cursor_move(&newStart, ulPos))
-                return E_INVALIDARG;
-            newReadIn = ulPos;
-            reset = true;
-        }
-        else
-        {
-            // The current enumerator is consumed based on position
-            ulPos -= enumImpl->total;
-            if (!md_cursor_move(&newStart, enumImpl->total))
-                return E_INVALIDARG;
-            newReadIn = enumImpl->total;
-        }
-
-        enumImpl->current = newStart;
-        enumImpl->readIn = newReadIn;
-        enumImpl = enumImpl->next;
-    }
-
-    return S_OK;
+    return enumImpl->Reset(ulPos);
 }
 
 namespace
 {
-    HRESULT ReadFromEnum(
-        HCORENUMImpl* enumImpl,
-        mdToken rTokens[],
-        ULONG cMax,
-        ULONG* pcTokens)
-    {
-        assert(enumImpl != nullptr && rTokens != nullptr);
-
-        uint32_t count = 0;
-        for (uint32_t i = 0; i < cMax; ++i)
-        {
-            // Check if all values have been read.
-            while (enumImpl->readIn == enumImpl->total)
-            {
-                enumImpl = enumImpl->next;
-                // Check next link in enumerator list
-                if (enumImpl == nullptr)
-                    goto Done;
-            }
-
-            if (!md_cursor_to_token(enumImpl->current, &rTokens[count]))
-                break;
-            count++;
-
-            if (!md_cursor_next(&enumImpl->current))
-                break;
-            enumImpl->readIn++;
-        }
-Done:
-        if (pcTokens != nullptr)
-            *pcTokens = count;
-
-        return S_OK;
-    }
-
     HRESULT EnumTokens(
         mdhandle_t mdhandle,
         mdtable_id_t mdtid,
@@ -194,7 +49,7 @@ Done:
         ULONG* pcTokens)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+        HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
         if (enumImpl == nullptr)
         {
             mdcursor_t cursor;
@@ -202,12 +57,12 @@ Done:
             if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
                 return E_INVALIDARG;
 
-            RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-            InitHCORENUMImpl(enumImpl, cursor, rows);
+            RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+            HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
             *phEnum = enumImpl;
         }
 
-        return ReadFromEnum(enumImpl, rTokens, cMax, pcTokens);
+        return enumImpl->ReadTokens(rTokens, cMax, pcTokens);
     }
 
     HRESULT EnumTokenRange(
@@ -220,7 +75,7 @@ Done:
         ULONG* pcTokens)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+        HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
         if (enumImpl == nullptr)
         {
             mdcursor_t cursor;
@@ -232,12 +87,38 @@ Done:
             if (!md_get_column_value_as_range(cursor, column, &begin, &count))
                 return CLDB_E_FILE_CORRUPT;
 
-            RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-            InitHCORENUMImpl(enumImpl, begin, count);
+            RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+            HCORENUMImpl::InitTableEnum(*enumImpl, begin, count);
             *phEnum = enumImpl;
         }
 
-        return ReadFromEnum(enumImpl, rTokens, cMax, pcTokens);
+        return enumImpl->ReadTokens(rTokens, cMax, pcTokens);
+    }
+
+    HRESULT CopyIntoStringBuffer(
+        LPCWSTR str,
+        uint32_t strCharCount,
+        _Out_writes_to_opt_(cchBuffer, *pchBuffer)
+        LPWSTR  szBuffer,
+        ULONG   cchBuffer,
+        ULONG* pchBuffer) noexcept
+    {
+        assert(str != nullptr && pchBuffer != nullptr);
+
+        *pchBuffer = strCharCount;
+        if (cchBuffer > 0 && strCharCount > 0)
+        {
+            uint32_t toCopyWChar = cchBuffer < strCharCount ? cchBuffer : strCharCount;
+            assert(szBuffer != nullptr);
+            ::memcpy(szBuffer, str, toCopyWChar * sizeof(WCHAR));
+            if (cchBuffer < strCharCount)
+            {
+                ::memset(&szBuffer[cchBuffer - 1], 0, sizeof(WCHAR)); // Ensure null terminator
+                return CLDB_S_TRUNCATION;
+            }
+        }
+
+        return S_OK;
     }
 }
 
@@ -248,7 +129,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
     ULONG* pcTypeDefs)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         mdcursor_t cursor;
@@ -263,12 +144,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
         rows--;
         (void)md_cursor_next(&cursor);
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-        InitHCORENUMImpl(enumImpl, cursor, rows);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+        HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
 
-    return ReadFromEnum(enumImpl, rTypeDefs, cMax, pcTypeDefs);
+    return enumImpl->ReadTokens(rTypeDefs, cMax, pcTypeDefs);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
@@ -279,7 +160,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
     ULONG* pcImpls)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
         mdcursor_t cursor;
@@ -291,12 +172,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
         if (!md_find_range_from_cursor(cursor, mdtInterfaceImpl_Class, id, &cursor, &rows))
             return CLDB_E_FILE_CORRUPT;
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-        InitHCORENUMImpl(enumImpl, cursor, rows);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+        HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
 
-    return ReadFromEnum(enumImpl, rImpls, cMax, pcImpls);
+    return enumImpl->ReadTokens(rImpls, cMax, pcImpls);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeRefs(
@@ -392,13 +273,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    if (TypeFromToken(cl) != mdtTypeDef)
-        return E_INVALIDARG;
-
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
+        if (TypeFromToken(cl) != mdtTypeDef)
+            return E_INVALIDARG;
+
         mdcursor_t cursor;
         if (!md_token_to_cursor(_md_ptr.get(), cl, &cursor))
             return CLDB_E_INDEX_NOTFOUND;
@@ -413,13 +294,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
             return CLDB_E_FILE_CORRUPT;
         }
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(2, &enumImpl));
-        InitHCORENUMImpl(&enumImpl[0], methodList, methodListCount);
-        InitHCORENUMImpl(&enumImpl[1], fieldList, fieldListCount);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(2, &enumImpl));
+        HCORENUMImpl::InitTableEnum(enumImpl[0], methodList, methodListCount);
+        HCORENUMImpl::InitTableEnum(enumImpl[1], fieldList, fieldListCount);
         *phEnum = enumImpl;
     }
 
-    return ReadFromEnum(enumImpl, rMembers, cMax, pcTokens);
+    return enumImpl->ReadTokens(rMembers, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
@@ -481,7 +362,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFieldsWithName(
     return E_NOTIMPL;
 }
 
-
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumParams(
     HCORENUM* phEnum,
     mdMethodDef mb,
@@ -524,7 +404,58 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        CorTokenType type = (CorTokenType)TypeFromToken(tk);
+        if (type != mdtTypeDef
+            && type != mdtMethodDef
+            && type != mdtAssembly)
+        {
+            *pcTokens = 0;
+            return S_FALSE;
+        }
+
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_DeclSecurity, &cursor, &count))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (!IsNilToken(tk))
+        {
+            if (!md_find_range_from_cursor(cursor, mdtDeclSecurity_Parent, tk, &cursor, &count))
+                return CLDB_E_RECORD_NOTFOUND;
+        }
+
+        if (IsDclActionNil(dwActions))
+        {
+            RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+            HCORENUMImpl::InitTableEnum(*enumImpl, cursor, count);
+        }
+        else
+        {
+            uint32_t action;
+            mdToken toAdd;
+            RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+            for (uint32_t i = 0; i < count; ++i)
+            {
+                if (1 == md_get_column_value_as_constant(cursor, mdtDeclSecurity_Action, 1, &action)
+                    && action == dwActions)
+                {
+                    // If we read from the cursor it must be valid.
+                    (void)md_cursor_to_token(cursor, &toAdd);
+                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, toAdd));
+                }
+
+                if (!md_cursor_next(&cursor))
+                    return CLDB_E_RECORD_NOTFOUND;
+            }
+        }
+        *phEnum = enumImpl;
+    }
+
+    return enumImpl->ReadTokens(rPermission, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
@@ -603,13 +534,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
     ULONG       cMax,
     ULONG* pcProperties)
 {
-    if (TypeFromToken(td) != mdtTypeDef)
-        return E_INVALIDARG;
-
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
+        if (TypeFromToken(td) != mdtTypeDef)
+            return E_INVALIDARG;
+
         // Create cursor for PropertyMap table
         mdcursor_t propertyMap;
         uint32_t propertyMapCount;
@@ -627,12 +558,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
             return CLDB_E_FILE_CORRUPT;
         }
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-        InitHCORENUMImpl(enumImpl, propertyList, propertyListCount);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+        HCORENUMImpl::InitTableEnum(*enumImpl, propertyList, propertyListCount);
         *phEnum = enumImpl;
     }
 
-    return ReadFromEnum(enumImpl, rProperties, cMax, pcProperties);
+    return enumImpl->ReadTokens(rProperties, cMax, pcProperties);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
@@ -642,13 +573,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     ULONG       cMax,
     ULONG* pcEvents)
 {
-    if (TypeFromToken(td) != mdtTypeDef)
-        return E_INVALIDARG;
-
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
+        if (TypeFromToken(td) != mdtTypeDef)
+            return E_INVALIDARG;
+
         // Create cursor for EventMap table
         mdcursor_t eventMap;
         uint32_t eventMapCount;
@@ -666,12 +597,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
             return CLDB_E_FILE_CORRUPT;
         }
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-        InitHCORENUMImpl(enumImpl, eventList, eventListCount);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+        HCORENUMImpl::InitTableEnum(*enumImpl, eventList, eventListCount);
         *phEnum = enumImpl;
     }
 
-    return ReadFromEnum(enumImpl, rEvents, cMax, pcEvents);
+    return enumImpl->ReadTokens(rEvents, cMax, pcEvents);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
@@ -829,7 +760,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetRVA(
         mdcursor_t fieldRvaRow;
         if (!md_create_cursor(_md_ptr.get(), mdtid_FieldRva, &cursor, &unused)
             || !md_find_row_from_cursor(cursor, mdtFieldRva_Field, RidFromToken(tk), &fieldRvaRow))
+        {
             return CLDB_E_RECORD_NOTFOUND;
+        }
 
         if (1 != md_get_column_value_as_constant(fieldRvaRow, mdtFieldRva_Rva, 1, &codeRVA))
             return CLDB_E_FILE_CORRUPT;
@@ -850,7 +783,26 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPermissionSetProps(
     void const** ppvPermission,
     ULONG* pcbPermission)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(pm) != mdtPermission)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), pm, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (pdwAction != nullptr
+        && 1 != md_get_column_value_as_constant(cursor, mdtDeclSecurity_Action, 1, (uint32_t*)pdwAction))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (ppvPermission != nullptr
+        && 1 != md_get_column_value_as_blob(cursor, mdtDeclSecurity_PermissionSet, 1, (uint8_t const**)ppvPermission, (uint32_t*)pcbPermission))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetSigFromToken(
@@ -920,6 +872,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUnresolvedMethods(
     ULONG       cMax,
     ULONG* pcTokens)
 {
+    // IMetaDataEmit only
     return E_NOTIMPL;
 }
 
@@ -943,23 +896,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
     if (string.str_bytes % sizeof(WCHAR) == 0)
         return CLDB_E_FILE_CORRUPT;
 
-    // Set the return as soon as we know.
+    // Compute the string size in characters
     uint32_t retCharLen = (string.str_bytes - 1) / sizeof(WCHAR);
-    *pchString = retCharLen;
-
-    if (cchString > 0 && retCharLen > 0)
-    {
-        uint32_t toCopyWChar = cchString < retCharLen ? cchString : retCharLen;
-        assert(szString != nullptr);
-        memcpy(szString, string.str, toCopyWChar * sizeof(WCHAR));
-        if (cchString < retCharLen)
-        {
-            ::memset(&szString[cchString - 1], 0, sizeof(WCHAR)); // Ensure null terminator
-            return CLDB_S_TRUNCATION;
-        }
-    }
-
-    return S_OK;
+    return CopyIntoStringBuffer(string.str, retCharLen, szString, cchString, pchString);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
@@ -994,26 +933,19 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
 
 namespace
 {
-    uint32_t EnumNonEmptyUserStrings(
+    HRESULT EnumNonEmptyUserStrings(
         _In_ mdhandle_t handle,
-        _Inout_ mduserstringcursor_t& cursor,
-        _Out_writes_opt_(cMax) mdString rStrings[],
-        _In_ ULONG cMax)
+        _Inout_ HCORENUMImpl& enumImpl)
     {
-        assert(cMax != 0);
+        HRESULT hr;
+
         mduserstring_t us[8];
         uint32_t offsets[ARRAYSIZE(us)];
 
-        // Initialize buffer if provided.
-        if (rStrings != nullptr)
-            ::memset(rStrings, 0, cMax * sizeof(rStrings[0]));
-
-        uint32_t bulkRead;
-        uint32_t i = 0;
-        while (i < cMax)
+        mduserstringcursor_t cursor = 0;
+        for (;;)
         {
-            bulkRead = ARRAYSIZE(us) < (cMax - i) ? ARRAYSIZE(us) : (cMax - i);
-            int32_t count = md_walk_user_string_heap(handle, &cursor, bulkRead, us, offsets);
+            int32_t count = md_walk_user_string_heap(handle, &cursor, ARRAYSIZE(us), us, offsets);
             if (count == 0)
                 break;
 
@@ -1022,14 +954,11 @@ namespace
                 if (us[j].str_bytes == 0)
                     continue;
 
-                if (rStrings != nullptr)
-                    rStrings[i] = RidToToken(offsets[j], mdtString);
-
-                i++;
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(enumImpl, RidToToken(offsets[j], mdtString)));
             }
         }
 
-        return i;
+        return S_OK;
     }
 }
 
@@ -1040,22 +969,21 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     ULONG* pcStrings)
 {
     HRESULT hr;
-    HCORENUMImpl* enumImpl = ToEnumImpl(*phEnum);
+    HCORENUMImpl* enumImpl = HCORENUMImpl::ToImpl(*phEnum);
     if (enumImpl == nullptr)
     {
-        mduserstringcursor_t cursor = 0;
-        uint32_t count = EnumNonEmptyUserStrings(_md_ptr.get(), cursor, nullptr, UINT32_MAX);
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+        hr = EnumNonEmptyUserStrings(_md_ptr.get(), *enumImpl);
+        if (FAILED(hr))
+        {
+            HCORENUMImpl::Destroy(enumImpl);
+            return hr;
+        }
 
-        RETURN_IF_FAILED(CreateHCORENUMImpl(1, &enumImpl));
-        cursor = 0;
-        InitHCORENUMImpl(enumImpl, cursor, count);
         *phEnum = enumImpl;
     }
 
-    *pcStrings = (cMax > 0)
-        ? EnumNonEmptyUserStrings(_md_ptr.get(), enumImpl->us_current, rStrings, cMax)
-        : 0;
-    return S_OK;
+    return enumImpl->ReadTokens(rStrings, cMax, pcStrings);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamForMethodIndex(
