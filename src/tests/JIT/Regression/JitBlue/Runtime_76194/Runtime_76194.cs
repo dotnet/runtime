@@ -103,6 +103,7 @@ public unsafe class CrossVirtualAlloc : IDisposable
             const int MEM_COMMIT = 0x1000;
             const int MEM_RESERVE = 0x2000;
             const int PAGE_READWRITE = 0x04;
+            const int MEM_RELEASE = 0x8000;
 
             byte* reservePtr = VirtualAlloc(null, PageSize * 2, MEM_RESERVE, PAGE_READWRITE);
             if (reservePtr != null)
@@ -110,7 +111,7 @@ public unsafe class CrossVirtualAlloc : IDisposable
                 _ptr = VirtualAlloc(reservePtr, PageSize, MEM_COMMIT, PAGE_READWRITE);
                 if (_ptr == null)
                 {
-                    VirtualFree(reservePtr, 0, 0);
+                    VirtualFree(reservePtr, 0, MEM_RELEASE);
                 }
             }
         }
