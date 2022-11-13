@@ -3009,20 +3009,22 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
-                    op1->ClearContained();
+                    GenTree* op2 = castOp->gtGetOp2();
 
+                    op1->ClearContained();
+                    op2->ClearContained();
+
+#ifdef TARGET_XARCH
                     if (op1->OperIs(GT_LCL_VAR) && !op2->OperIs(GT_LCL_VAR))
                     {
                         op1->ChangeType(castToType);
                     }
 
-                    GenTree* op2 = castOp->gtGetOp2();
-                    op2->ClearContained();
-
                     if (op2->OperIs(GT_LCL_VAR) && !op1->OperIs(GT_LCL_VAR))
                     {
                         op2->ChangeType(castToType);
                     }
+#endif // TARGET_XARCH
 
                     ContainCheckBinary(castOp->AsOp());
                 }

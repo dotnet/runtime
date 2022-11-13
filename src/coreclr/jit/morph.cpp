@@ -11006,11 +11006,6 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         return cast;
     }
 
-    if (src->OperIsSimple())
-    {
-        fgOptimizeCastOfSmpOp(cast);
-    }
-
     // See if we can discard the cast.
     if (varTypeIsIntegral(cast) && varTypeIsIntegral(src))
     {
@@ -11090,62 +11085,6 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
     }
 
     return cast;
-}
-
-//------------------------------------------------------------------------
-// fgOptimizeCastOfSmpOp: Optimizes the supplied GT_CAST tree of a GTK_SMPOP.
-//
-// Arguments:
-//    tree - the cast tree to optimize
-//
-void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
-{
-    return;
-
-    GenTree* src = cast->CastOp();
-
-    assert(src->OperIsSimple());
-
-    if (gtIsActiveCSE_Candidate(cast) || gtIsActiveCSE_Candidate(src))
-        return;
-
-    var_types castToType = cast->CastToType();
-    var_types srcType    = src->TypeGet();
-
-    if (src->OperMayOverflow() && src->gtOverflow())
-        return;
-
-    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
-        return;
-
-    if (src->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
-    {
-        if (src->gtGetOp1()->OperIs(GT_CAST))
-        {
-            GenTreeCast* op1 = src->gtGetOp1()->AsCast();
-
-            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
-                !gtIsActiveCSE_Candidate(op1) && (castToType == op1->CastToType()))
-            {
-                src->AsOp()->gtOp1 = op1->CastOp();
-
-                DEBUG_DESTROY_NODE(op1);
-            }
-        }
-
-        if (src->OperIsBinary() && src->gtGetOp2()->OperIs(GT_CAST))
-        {
-            GenTreeCast* op2 = src->gtGetOp2()->AsCast();
-
-            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
-                !gtIsActiveCSE_Candidate(op2) && (castToType == op2->CastToType()))
-            {
-                src->AsOp()->gtOp2 = op2->CastOp();
-
-                DEBUG_DESTROY_NODE(op2);
-            }
-        }
-    }
 }
 
 //------------------------------------------------------------------------
