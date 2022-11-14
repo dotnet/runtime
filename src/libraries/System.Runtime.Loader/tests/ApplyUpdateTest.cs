@@ -364,6 +364,11 @@ namespace System.Reflection.Metadata
                 fi.SetValue(x2, 65535.01);
                 Assert.Equal(65535.01, x2.GetDoubleField);
 
+                tr = __makeref(x2);
+                fi.SetValueDirect (tr, 32768.2);
+                Assert.Equal (32768.2, x2.GetDoubleField);
+                Assert.Equal ((object)32768.2, fi.GetValueDirect (tr));
+
             });
         }
 
