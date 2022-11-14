@@ -16,10 +16,15 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         private string _stringField;
         private double _doubleField;
 
+        private int[] _intArrayFieldWithInit = new[] { 2, 4, 6, 8, 10, 12 };
+
         public void TestMethod () {
             _stringField = "abcd";
             _doubleField = 3.14159;
         }
+
+        public int GetIntArrayLength() => _intArrayFieldWithInit?.Length ?? -1;
+        public int GetIntArrayElt(int i) => _intArrayFieldWithInit[i];
 
         public void IncRefDouble (ref double d)
         {

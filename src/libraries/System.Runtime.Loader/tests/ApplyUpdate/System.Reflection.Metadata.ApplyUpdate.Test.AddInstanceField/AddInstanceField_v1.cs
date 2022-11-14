@@ -32,12 +32,18 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         private double _doubleField;
         private double _doubleField2;
 
+        private int[] _intArrayFieldWithInit = new[] { 2, 4, 6, 8, 10, 12 };
+        private int[] _intArrayFieldWithInit2 = new[] { 1, 3, 5, 7, 9, 11 };
+
         public void TestMethod () {
             _stringField = "spqr";
             _stringField2 = "4567";
             _doubleField = 2.71828;
             _doubleField2 = 0.707106;
         }
+
+        public int GetIntArrayLength() => _intArrayFieldWithInit2?.Length ?? -1;
+        public int GetIntArrayElt(int i) => _intArrayFieldWithInit2[i];
 
         public struct NewStruct
         {

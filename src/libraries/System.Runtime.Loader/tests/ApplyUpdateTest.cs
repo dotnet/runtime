@@ -331,10 +331,15 @@ namespace System.Reflection.Metadata
                 Assert.Equal ("4567", x1.GetStringField);
                 Assert.Equal (0.707106, x1.GetDoubleField);
 
+                Assert.Equal (-1, x1.GetIntArrayLength ()); // new field on existing object is initially null
+
                 var x2 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
 
                 Assert.Equal ("New Initial Value", x2.GetStringField);
                 Assert.Equal (6.5, x2.GetDoubleField);
+
+                Assert.Equal (6, x2.GetIntArrayLength());
+                Assert.Equal (7, x2.GetIntArrayElt (3));
                 
                 // now check that reflection can get/set the new fields
                 var fi = x2.GetType().GetField("NewStructField");
