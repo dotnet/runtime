@@ -26,8 +26,8 @@ namespace ComInterfaceGenerator.Tests
                     {
                         if (s_vtable[0] == null)
                         {
-                            s_vtable[0] = (delegate* unmanaged<nint, int>)&Native.ABI_GetData;
-                            s_vtable[1] = (delegate* unmanaged<nint, int, void>)&Native.ABI_SetData;
+                            s_vtable[0] = (delegate* unmanaged<void*, int>)&Native.ABI_GetData;
+                            s_vtable[1] = (delegate* unmanaged<void*, int, void>)&Native.ABI_SetData;
                         }
                         return s_vtable;
                     }
