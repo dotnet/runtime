@@ -24,7 +24,6 @@ public class ApkBuilder
     public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
-    public bool IncludeNetworkSecurityConfig { get; set; }
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
@@ -57,12 +56,6 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(mainLibraryFileName) && !File.Exists(Path.Combine(AppDir, mainLibraryFileName)))
         {
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
-        }
-
-        var networkSecurityConfigFilePath = Path.Combine(AppDir, "res", "xml", "network_security_config.xml");
-        if (IncludeNetworkSecurityConfig && !File.Exists(networkSecurityConfigFilePath))
-        {
-            throw new ArgumentException($"IncludeNetworkSecurityConfig is set but the file '{networkSecurityConfigFilePath}' was not found");
         }
 
         if (string.IsNullOrEmpty(abi))
@@ -399,11 +392,6 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
-        string networkSecurityConfigAttribute =
-            IncludeNetworkSecurityConfig
-                ? "a:networkSecurityConfig=\"@xml/network_security_config\""
-                : string.Empty;
-
         string envVariables = "";
         foreach (ITaskItem item in EnvironmentVariables)
         {
@@ -421,7 +409,6 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
-                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttribute)
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
@@ -446,8 +433,7 @@ public class ApkBuilder
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        string resources = IncludeNetworkSecurityConfig ? "-S res" : string.Empty;
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets {resources} -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));

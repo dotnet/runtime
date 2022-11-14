@@ -85,8 +85,6 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string? NativeMainSource { get; set; }
 
-    public bool IncludeNetworkSecurityConfig { get; set; }
-
     public string? KeyStorePath { get; set; }
 
     public bool ForceInterpreter { get; set; }
@@ -112,7 +110,6 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
-        apkBuilder.IncludeNetworkSecurityConfig = IncludeNetworkSecurityConfig;
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
