@@ -2041,29 +2041,29 @@ namespace System
             }
         }
 
-        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            ArgumentNullException.ThrowIfNull(ifaceType);
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = ifaceType as RuntimeType;
+            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             InterfaceMapping res;
-            if (!ifaceType.IsInterface)
-                throw new ArgumentException("Argument must be an interface.", nameof(ifaceType));
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException(SR.Arg_MustBeInterface, nameof(interfaceType));
             if (IsInterface)
-                throw new ArgumentException("'this' type cannot be an interface itself");
+                throw new ArgumentException(SR.Argument_InterfaceMap);
             var this_type = this;
             res.TargetType = this;
-            res.InterfaceType = ifaceType;
+            res.InterfaceType = interfaceType;
             GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
-                throw new ArgumentException("Interface not found", nameof(ifaceType));
+                throw new ArgumentException(SR.Arg_NotFoundIFace, nameof(interfaceType));
 
             return res;
         }

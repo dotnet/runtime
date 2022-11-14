@@ -612,7 +612,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -786,7 +786,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }

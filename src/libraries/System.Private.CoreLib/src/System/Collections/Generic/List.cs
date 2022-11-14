@@ -398,7 +398,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
             }
         }
 
