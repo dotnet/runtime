@@ -2273,6 +2273,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				int idx = first_field_idx + i;
 				guint32 offset;
 				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
+                                /* metadata-update: updates to explicit layout classes are not allowed. */
 				field_offsets [i] = offset + MONO_ABI_SIZEOF (MonoObject);
 			}
 			ftype = mono_type_get_underlying_type (field->type);
