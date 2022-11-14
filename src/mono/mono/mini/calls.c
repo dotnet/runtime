@@ -249,6 +249,72 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 	call->need_unbox_trampoline = unbox_trampoline;
 
+	if (!sig->pinvoke && cfg->backend->frontend_varargs && sig->call_convention == MONO_CALL_VARARG) {
+		MonoInst *ins;
+
+		/*
+		 * Use a different signature which passes the arglist argument explicitly as the last argument
+		 */
+		// This could outlive JITting
+		MonoMethodSignature *sig2 = m_method_alloc0 (cfg->method, MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count + 1) * sizeof (MonoType*));
+		memcpy (sig2, sig, mono_metadata_signature_size (sig));
+		sig2->call_convention = MONO_CALL_DEFAULT;
+		sig2->param_count ++;
+		sig2->params [sig->sentinelpos] = mono_get_int_type ();
+		for (int i = sig->sentinelpos; i < sig->param_count; ++i)
+			sig2->params [i + 1] = sig->params [i];
+
+		MonoInst **args2 = mono_mempool_alloc0 (cfg->mempool, sig2->param_count * sizeof (MonoInst*));
+		memcpy (args2, args, sig->param_count * sizeof (MonoInst*));
+		for (int i = sig->sentinelpos; i < sig->param_count; ++i)
+			args2 [i + 1] = args [i];
+
+		/*
+		 * Save the signature and the addresses of arguments to a LOCALLOC-ed array and pass it as the
+		 * arglist argument.
+		 */
+		MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+		ins->dreg = alloc_preg (cfg);
+		ins->inst_imm = (sig->param_count + 1) * sizeof (target_mgreg_t);
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MonoInst *arglist_arg = ins;
+
+		/* Set the lowest bit of the argument to signal to ArgIterator:Setup () that the arguments are passed by ref */
+		MONO_INST_NEW (cfg, ins, OP_POR_IMM);
+		ins->dreg = alloc_preg (cfg);
+		ins->sreg1 = arglist_arg->dreg;
+		ins->inst_imm = 1;
+		MONO_ADD_INS (cfg->cbb, ins);
+		args2 [sig->sentinelpos] = ins;
+
+		int pos = 0;
+
+		/* The signature is the first element in the buffer */
+		int sig_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, sig);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, arglist_arg->dreg, pos * sizeof (target_mgreg_t), sig_reg);
+		pos ++;
+
+		/* Store arguments into the buffer after the signature */
+		for (int i = sig->sentinelpos; i < sig->param_count; ++i) {
+			MonoInst *arg = args [i];
+			int addr_reg;
+
+			if (mini_is_gsharedvt_type (sig->params [i]) || MONO_TYPE_IS_PRIMITIVE (sig->params [i]) || MONO_TYPE_ISSTRUCT (sig->params [i])) {
+				EMIT_NEW_VARLOADA_VREG (cfg, ins, arg->dreg, sig->params [i]);
+				addr_reg = ins->dreg;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, arglist_arg->dreg, pos * sizeof (target_mgreg_t), addr_reg);
+			} else {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, arglist_arg->dreg, pos * sizeof (target_mgreg_t), arg->dreg);
+			}
+			pos ++;
+		}
+
+		call->signature = sig2;
+		call->args = args2;
+	}
+
 #ifdef ENABLE_LLVM
 	if (COMPILE_LLVM (cfg))
 		mono_llvm_emit_call (cfg, call);

@@ -1392,15 +1392,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	for (pindex = pstart; pindex < sig->param_count; ++pindex) {
 		ainfo = cinfo->args + sig->hasthis + pindex;
 
-		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
-			/* Prevent implicit arguments and sig_cookie from
-			   being passed in registers */
-			cinfo->gr = PARAM_REGS;
-			cinfo->fr = FP_PARAM_REGS;
-			/* Emit the signature cookie just before the implicit arguments */
-			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
-		}
-
 		add_param (cinfo, ainfo, sig->params [pindex]);
 		if (ainfo->storage == ArgVtypeByRef) {
 			/* Pass the argument address in the next register */
@@ -1414,16 +1405,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				cinfo->gr ++;
 			}
 		}
-	}
-
-	/* Handle the case where there are no implicit arguments */
-	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
-		/* Prevent implicit arguments and sig_cookie from
-		   being passed in registers */
-		cinfo->gr = PARAM_REGS;
-		cinfo->fr = FP_PARAM_REGS;
-		/* Emit the signature cookie just before the implicit arguments */
-		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
 	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
@@ -2154,7 +2135,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
 	cinfo = cfg->arch.cinfo;
@@ -2204,7 +2185,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	 * Compute cfg->stack_offset and update cfg->used_int_regs.
 	 */
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
@@ -2602,34 +2583,6 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 	}
 }
 
-static void
-emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
-{
-	MonoMethodSignature *tmp_sig;
-	int sig_reg;
-
-	if (MONO_IS_TAILCALL_OPCODE (call))
-		NOT_IMPLEMENTED;
-
-	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
-
-	/*
-	 * mono_ArgIterator_Setup assumes the signature cookie is
-	 * passed first and all the arguments which were before it are
-	 * passed on the stack after the signature. So compensate by
-	 * passing a different signature.
-	 */
-	tmp_sig = mono_metadata_signature_dup (call->signature);
-	tmp_sig->param_count -= call->signature->sentinelpos;
-	tmp_sig->sentinelpos = 0;
-	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
-
-	sig_reg = mono_alloc_ireg (cfg);
-	MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
-
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, cinfo->sig_cookie.offset, sig_reg);
-}
-
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -2677,11 +2630,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	for (i = 0; i < cinfo->nargs; ++i) {
 		ainfo = cinfo->args + i;
 		arg = call->args [i];
-
-		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* Emit the signature cookie just before the implicit arguments */
-			emit_sig_cookie (cfg, call, cinfo);
-		}
 
 		switch (ainfo->storage) {
 		case ArgInIReg:
@@ -2740,10 +2688,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 	}
-
-	/* Handle the case where there are no implicit arguments */
-	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (cinfo->nargs == sig->sentinelpos))
-		emit_sig_cookie (cfg, call, cinfo);
 
 	call->call_info = cinfo;
 	call->stack_usage = cinfo->stack_usage;
@@ -2839,7 +2783,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
 	cinfo = cfg->arch.cinfo;
@@ -4537,9 +4481,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ARGLIST:
-			g_assert (cfg->arch.cinfo);
-			code = emit_addx_imm (code, ARMREG_IP0, cfg->arch.args_reg, cfg->arch.cinfo->sig_cookie.offset);
-			arm_strx (code, ARMREG_IP0, sreg1, 0);
+			g_assert_not_reached ();
 			break;
 		case OP_DYN_CALL: {
 			MonoInst *var = cfg->dyn_call_var;
@@ -4791,7 +4733,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	int i, part;
-	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
+	MonoMethodSignature *sig = cfg->signature;
 
 	cinfo = cfg->arch.cinfo;
 	g_assert (cinfo);
@@ -5102,13 +5044,12 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
-	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	guint8 *code;
 	int cfa_offset, max_offset;
 
-	sig = mono_method_signature_internal (method);
+	sig = cfg->signature;
 	cfg->code_size = 256 + sig->param_count * 64;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 

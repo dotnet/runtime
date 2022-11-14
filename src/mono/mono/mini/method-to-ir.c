@@ -4003,8 +4003,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	MonoMethodHeaderSummary header;
 	MonoVTable *vtable;
 	int limit;
-#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	int i;
 #endif
 
@@ -4027,6 +4027,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	if (sig->call_convention == MONO_CALL_VARARG)
 		return FALSE;
 
 	/* also consider num_locals? */
@@ -11488,7 +11491,11 @@ mono_ldptr:
 			vtvar = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.argumenthandle_class), OP_LOCAL);
 
 			EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
-			EMIT_NEW_UNALU (cfg, ins, OP_ARGLIST, -1, addr->dreg);
+			if (cfg->backend->frontend_varargs) {
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, cfg->arglist_arg->dreg);
+			} else {
+				EMIT_NEW_UNALU (cfg, ins, OP_ARGLIST, -1, addr->dreg);
+			}
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			ins->type = STACK_VTYPE;

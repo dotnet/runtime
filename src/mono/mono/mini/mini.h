@@ -1236,6 +1236,7 @@ typedef struct {
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
 	guint            force_float32 : 1;
+	guint            frontend_varargs : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1310,6 +1311,7 @@ typedef struct {
 	MonoJumpInfo    *patch_info;
 	MonoJitInfo     *jit_info;
 	MonoJitDynamicMethodInfo *dynamic_info;
+	MonoMethodSignature *signature;
 	guint            num_bblocks, max_block_num;
 	guint            locals_start;
 	guint            num_varinfo; /* used items in varinfo */
@@ -1332,6 +1334,7 @@ typedef struct {
 	MonoMethod      *method_to_register; /* The method to register in JIT info tables */
 	MonoGenericContext *generic_context;
 	MonoInst        *this_arg;
+	MonoInst        *arglist_arg;
 
 	MonoBackend *backend;
 

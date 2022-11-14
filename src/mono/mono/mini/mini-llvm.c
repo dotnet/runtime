@@ -3950,7 +3950,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		}
 	}
 
-	names = g_new (char *, sig->param_count);
+	names = g_new0 (char *, sig->param_count);
 	mono_method_get_param_names (cfg->method, (const char **) names);
 
 	for (int i = 0; i < sig->param_count; ++i) {
@@ -11553,14 +11553,6 @@ MONO_RESTORE_WARNING
 void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
-#ifdef TARGET_WASM
-	if (mono_method_signature_internal (cfg->method)->call_convention == MONO_CALL_VARARG) {
-		cfg->exception_message = g_strdup ("vararg callconv");
-		cfg->disable_llvm = TRUE;
-		return;
-	}
-#endif
-
 	if (cfg->llvm_only)
 		return;
 
@@ -11949,7 +11941,7 @@ emit_method_inner (EmitContext *ctx)
 		}
 	}
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 	ctx->sig = sig;
 
 	linfo = get_llvm_call_info (cfg, sig);
@@ -12119,8 +12111,12 @@ emit_method_inner (EmitContext *ctx)
 	if (linfo->dummy_arg)
 		LLVMSetValueName (LLVMGetParam (method, linfo->dummy_arg_pindex), "dummy_arg");
 
-	names = g_new (char *, sig->param_count);
+	names = g_new0 (char *, sig->param_count);
 	mono_method_get_param_names (cfg->method, (const char **) names);
+
+	if (cfg->arglist_arg)
+		/* The last argument is the arglist */
+		names [sig->param_count - 1] = g_strdup_printf ("vararg_arglist");
 
 	/* Set parameter names/attributes */
 	for (int i = 0; i < sig->param_count; ++i) {
@@ -12596,7 +12592,7 @@ mono_llvm_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 	if (cfg->gsharedvt && cfg->llvm_only) {
 		gboolean vretaddr = FALSE;
 
@@ -12605,7 +12601,7 @@ mono_llvm_create_vars (MonoCompile *cfg)
 		} else {
 			LLVMCallInfo *linfo;
 
-			linfo = get_llvm_call_info (cfg, mono_method_signature_internal (cfg->method));
+			linfo = get_llvm_call_info (cfg, cfg->signature);
 			vretaddr = (linfo->ret.storage == LLVMArgVtypeRetAddr || linfo->ret.storage == LLVMArgVtypeByRef || linfo->ret.storage == LLVMArgGsharedvtFixed || linfo->ret.storage == LLVMArgGsharedvtVariable || linfo->ret.storage == LLVMArgGsharedvtFixedVtype);
 		}
 		if (vretaddr) {
@@ -12642,7 +12638,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	if (sig->call_convention == MONO_CALL_VARARG) {
+	if (!cfg->backend->frontend_varargs && sig->call_convention == MONO_CALL_VARARG) {
 		cfg->exception_message = g_strdup ("varargs");
 		cfg->disable_llvm = TRUE;
 		return;

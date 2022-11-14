@@ -6194,18 +6194,30 @@ ves_icall_RuntimeMethodInfo_get_name (MonoReflectionMethodHandle m, MonoError *e
 void
 ves_icall_System_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 {
-	iter->sig = *(MonoMethodSignature**)argsp;
+	if ((gsize)argsp & 1) {
+		/* New style varargs, argsp points to a buffer with the signature and addresses of arguments */
+		gpointer *args = (gpointer*)((gsize)argsp - 1);
+		iter->sig = args [0];
+		argsp = (char*)(args + 1);
+		iter->args = args + 1;
+		iter->byref_args = 1;
+	} else {
+		/* Old style varargs, argsp points to the signature, followed by the arguments passed by value on the stack */
+		iter->sig = *(MonoMethodSignature**)argsp;
+
+		/* FIXME: it's not documented what start is exactly... */
+		if (start) {
+			iter->args = start;
+		} else {
+			iter->args = argsp + sizeof (gpointer);
+		}
+		iter->byref_args = 0;
+	}
 
 	g_assert (iter->sig->sentinelpos <= iter->sig->param_count);
 	g_assert (iter->sig->call_convention == MONO_CALL_VARARG);
 
 	iter->next_arg = 0;
-	/* FIXME: it's not documented what start is exactly... */
-	if (start) {
-		iter->args = start;
-	} else {
-		iter->args = argsp + sizeof (gpointer);
-	}
 	iter->num_args = iter->sig->param_count - iter->sig->sentinelpos;
 
 	/* g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos); */
@@ -6223,20 +6235,26 @@ ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef 
 
 	res->type = iter->sig->params [i];
 	res->klass = mono_class_from_mono_type_internal (res->type);
-	arg_size = mono_type_stack_size (res->type, &align);
+	if (iter->byref_args) {
+		res->value = *(gpointer*)iter->args;
+		iter->args = ((gpointer*)iter->args) + 1;
+		iter->next_arg ++;
+	} else {
+		arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__)
-	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
+		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
-	res->value = iter->args;
+		res->value = iter->args;
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	if (arg_size <= sizeof (gpointer)) {
-		int dummy;
-		int padding = arg_size - mono_type_size (res->type, &dummy);
-		res->value = (guint8*)res->value + padding;
-	}
+		if (arg_size <= sizeof (gpointer)) {
+			int dummy;
+			int padding = arg_size - mono_type_size (res->type, &dummy);
+			res->value = (guint8*)res->value + padding;
+		}
 #endif
-	iter->args = (char*)iter->args + arg_size;
-	iter->next_arg++;
+		iter->args = (char*)iter->args + arg_size;
+		iter->next_arg++;
+	}
 
 	/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res->type->type, arg_size, res->value); */
 }
@@ -6256,15 +6274,21 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 			continue;
 		res->type = iter->sig->params [i];
 		res->klass = mono_class_from_mono_type_internal (res->type);
-		/* FIXME: endianness issue... */
-		arg_size = mono_type_stack_size (res->type, &align);
+		if (iter->byref_args) {
+			res->value = *(gpointer*)iter->args;
+			iter->args = ((gpointer*)iter->args) + 1;
+			iter->next_arg ++;
+		} else {
+			/* FIXME: endianness issue... */
+			arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__)
-		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
+			iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
-		res->value = iter->args;
-		iter->args = (char*)iter->args + arg_size;
-		iter->next_arg++;
-		/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value); */
+			res->value = iter->args;
+			iter->args = (char*)iter->args + arg_size;
+			iter->next_arg++;
+			/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value); */
+		}
 		return;
 	}
 	/* g_print ("arg type 0x%02x not found\n", res.type->type); */

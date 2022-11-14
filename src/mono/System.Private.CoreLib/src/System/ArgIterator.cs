@@ -14,6 +14,7 @@ namespace System
         private IntPtr args;
         private int next_arg;
         private int num_args;
+        private int byref_args;
 #pragma warning restore 169, 414
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -24,6 +25,7 @@ namespace System
             sig = IntPtr.Zero;
             args = IntPtr.Zero;
             next_arg = num_args = 0;
+            byref_args = 0;
             if (arglist.args == IntPtr.Zero)
                 throw new PlatformNotSupportedException();
             Setup(arglist.args, IntPtr.Zero);
@@ -35,6 +37,7 @@ namespace System
             sig = IntPtr.Zero;
             args = IntPtr.Zero;
             next_arg = num_args = 0;
+            byref_args = 0;
             if (arglist.args == IntPtr.Zero)
                 throw new PlatformNotSupportedException();
             Setup(arglist.args, (IntPtr)ptr);

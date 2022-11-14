@@ -122,7 +122,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	if (sig->hasthis)
 		cinfo->args [0].storage = ArgOnStack;
 
-	// not supported
 	g_assert (sig->call_convention != MONO_CALL_VARARG);
 
 	int i;
@@ -246,7 +245,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = mono_method_signature_internal (cfg->method);
+	sig = cfg->signature;
 
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);

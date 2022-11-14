@@ -1876,11 +1876,25 @@ mono_compile_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
+	gboolean has_arglist_arg = FALSE;
 	int i;
 
 	header = cfg->header;
 
 	sig = mono_method_signature_internal (cfg->method);
+
+	if (cfg->backend->frontend_varargs && sig->call_convention == MONO_CALL_VARARG) {
+		has_arglist_arg = TRUE;
+
+		MonoMethodSignature *sig2 = mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count + 1) * sizeof (MonoType*));
+		memcpy (sig2, sig, mono_metadata_signature_size (sig));
+		sig2->call_convention = MONO_CALL_DEFAULT;
+		sig2->param_count ++;
+		sig2->params [sig->param_count] = mono_get_int_type ();
+		sig = sig2;
+	}
+
+	cfg->signature = sig;
 
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		cfg->ret = mono_compile_create_var (cfg, sig->ret, OP_ARG);
@@ -1899,11 +1913,15 @@ mono_compile_create_vars (MonoCompile *cfg)
 		cfg->this_arg = arg;
 	}
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = 0; i < sig->param_count - (has_arglist_arg ? 1 : 0); ++i) {
 		MonoInst* arg = mono_compile_create_var (cfg, sig->params [i], OP_ARG);
 		mono_apply_volatile (arg, header->volatile_args, i + sig->hasthis);
 		cfg->args [i + sig->hasthis] = arg;
 	}
+
+	if (has_arglist_arg)
+		/* Implicit argument passed last containing varargs information */
+		cfg->arglist_arg = cfg->args [sig->param_count - 1] = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 
 	if (cfg->verbose_level > 2) {
 		if (cfg->ret) {
@@ -1917,7 +1935,10 @@ mono_compile_create_vars (MonoCompile *cfg)
 		}
 
 		for (i = 0; i < sig->param_count; ++i) {
-			printf ("\targ [%d]: ", i);
+			if (cfg->args [i + sig->hasthis] == cfg->arglist_arg)
+				printf ("\targlist arg: ");
+			else
+				printf ("\targ [%d]: ", i);
 			mono_print_ins (cfg->args [i + sig->hasthis]);
 		}
 	}
@@ -3020,6 +3041,9 @@ init_backend (MonoBackend *backend)
 #endif
 #ifdef MONO_ARCH_FORCE_FLOAT32
 	backend->force_float32 = 1;
+#endif
+#ifdef MONO_ARCH_FRONTEND_VARARGS
+	backend->frontend_varargs = 1;
 #endif
 }
 

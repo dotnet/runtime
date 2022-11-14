@@ -360,6 +360,7 @@ typedef struct {
 	gpointer args;
 	gint32 next_arg;
 	gint32 num_args;
+	gint32 byref_args;
 } MonoArgIterator;
 
 struct _MonoException {

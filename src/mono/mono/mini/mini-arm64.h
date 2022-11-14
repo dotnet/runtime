@@ -181,6 +181,7 @@ typedef struct {
 #ifdef TARGET_OSX
 #define MONO_ARCH_FORCE_FLOAT32 1
 #endif
+#define MONO_ARCH_FRONTEND_VARARGS 1
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
@@ -260,7 +261,7 @@ struct CallInfo {
 	int gr, fr, stack_usage;
 	gboolean pinvoke, vararg;
 	ArgInfo ret;
-	ArgInfo sig_cookie;
+	ArgInfo arglist_arg;
 	ArgInfo args [1];
 };
 
