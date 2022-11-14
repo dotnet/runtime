@@ -21064,7 +21064,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < simdSize; i++)
                 {
-                    vecCon->gtSimd32Val.u8[0] = cnsVal;
+                    vecCon->gtSimd32Val.u8[i] = cnsVal;
                 }
                 break;
             }
@@ -21076,7 +21076,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < (simdSize / 2); i++)
                 {
-                    vecCon->gtSimd32Val.u16[0] = cnsVal;
+                    vecCon->gtSimd32Val.u16[i] = cnsVal;
                 }
                 break;
             }
@@ -21088,7 +21088,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
-                    vecCon->gtSimd32Val.u32[0] = cnsVal;
+                    vecCon->gtSimd32Val.u32[i] = cnsVal;
                 }
                 break;
             }
@@ -21100,7 +21100,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
-                    vecCon->gtSimd32Val.u64[0] = cnsVal;
+                    vecCon->gtSimd32Val.u64[i] = cnsVal;
                 }
                 break;
             }
@@ -21111,7 +21111,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
-                    vecCon->gtSimd32Val.f32[0] = cnsVal;
+                    vecCon->gtSimd32Val.f32[i] = cnsVal;
                 }
                 break;
             }
@@ -21122,7 +21122,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
-                    vecCon->gtSimd32Val.f64[0] = cnsVal;
+                    vecCon->gtSimd32Val.f64[i] = cnsVal;
                 }
                 break;
             }
@@ -21312,7 +21312,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < simdSize; i++)
                 {
-                    vecCon->gtSimd32Val.u8[0] = cnsVal;
+                    vecCon->gtSimd32Val.u8[i] = cnsVal;
                 }
                 break;
             }
@@ -21324,7 +21324,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < (simdSize / 2); i++)
                 {
-                    vecCon->gtSimd32Val.u16[0] = cnsVal;
+                    vecCon->gtSimd32Val.u16[i] = cnsVal;
                 }
                 break;
             }
@@ -21336,7 +21336,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
-                    vecCon->gtSimd32Val.u32[0] = cnsVal;
+                    vecCon->gtSimd32Val.u32[i] = cnsVal;
                 }
                 break;
             }
@@ -21348,7 +21348,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
-                    vecCon->gtSimd32Val.u64[0] = cnsVal;
+                    vecCon->gtSimd32Val.u64[i] = cnsVal;
                 }
                 break;
             }
@@ -21359,7 +21359,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
-                    vecCon->gtSimd32Val.f32[0] = cnsVal;
+                    vecCon->gtSimd32Val.f32[i] = cnsVal;
                 }
                 break;
             }
@@ -21370,7 +21370,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
-                    vecCon->gtSimd32Val.f64[0] = cnsVal;
+                    vecCon->gtSimd32Val.f64[i] = cnsVal;
                 }
                 break;
             }
