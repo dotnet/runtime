@@ -798,6 +798,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
+    INDEBUG(ig->igDataSize = gs;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -1025,6 +1026,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     if (sz != 0)
     {
         assert(emitLastIns != nullptr);
+        assert(emitLastInsIG == emitCurIG);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
 
@@ -1036,7 +1038,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastInsIG = ig;
     }
 
     // Reset the buffer free pointers
@@ -1185,7 +1188,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1507,6 +1511,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     /* Grab the space for the instruction */
 
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    emitLastInsIG    = emitCurIG;
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));
@@ -9105,6 +9110,65 @@ void emitter::emitNxtIG(bool extend)
     // We haven't written any code into the IG yet, so clear our record of the last block written to the IG.
     emitCurIG->lastGeneratedBlock = nullptr;
 #endif
+}
+
+//------------------------------------------------------------------------
+// emitRemoveLastInstruction: Remove the last instruction emitted; it has been optimized away by the
+// next instruction we are generating. `emitLastIns` must be non-null, meaning there is a
+// previous instruction. The previous instruction might have already been saved, or it might
+// be in the currently accumulating insGroup buffer.
+//
+// The `emitLastIns` is set to nullptr after this function. It is expected that a new instruction
+// will be immediately generated after this, which will set it again.
+//
+// NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
+// generated replacement(s).
+//
+void emitter::emitRemoveLastInstruction()
+{
+    assert(emitLastIns != nullptr);
+    assert(emitLastInsIG != nullptr);
+
+    JITDUMP("Removing saved instruction in %s:\n", emitLabelString(emitLastInsIG));
+    JITDUMPEXEC(dispIns(emitLastIns))
+
+    // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
+
+    BYTE* lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
+
+    if ((emitCurIGfreeBase <= (BYTE*)lastInsActualStartAddr) && ((BYTE*)lastInsActualStartAddr < emitCurIGfreeEndp))
+    {
+        // The last instruction is in the current buffer. That means the current IG is non-empty.
+        assert(emitCurIGnonEmpty());
+        assert((BYTE*)lastInsActualStartAddr < emitCurIGfreeNext);
+        assert(emitCurIGinsCnt >= 1);
+        assert(emitCurIGsize >= emitLastIns->idCodeSize());
+
+        size_t insSize    = emitCurIGfreeNext - (BYTE*)lastInsActualStartAddr;
+        emitCurIGfreeNext = (BYTE*)lastInsActualStartAddr;
+        emitCurIGinsCnt -= 1;
+        emitCurIGsize -= emitLastIns->idCodeSize();
+
+        // We're going to overwrite the memory; zero it.
+        memset(emitCurIGfreeNext, 0, insSize);
+    }
+    else
+    {
+        // The last instruction has already been saved. It must be the last instruction in the group.
+        assert((BYTE*)emitLastInsIG->igData + emitLastInsIG->igDataSize ==
+               (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
+        assert(emitLastInsIG->igInsCnt >= 1);
+        assert(emitLastInsIG->igSize >= emitLastIns->idCodeSize());
+
+        emitLastInsIG->igInsCnt -= 1;
+        emitLastInsIG->igSize -= (unsigned short)emitLastIns->idCodeSize();
+
+        // We don't overwrite this memory; it's simply ignored. We could zero it to be sure nobody uses it,
+        // but it's not necessary, and leaving it might be useful for debugging.
+    }
+
+    // We no longer know what the previous instruction is.
+    emitLastIns = nullptr;
 }
 
 /*****************************************************************************
