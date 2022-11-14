@@ -5,6 +5,7 @@ using System;
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
+using Internal.Runtime;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -925,7 +926,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
-            if (!target.IsOSX)
+            if (!TargetFeatures.TargetSupportsObjectiveCMarshal(target))
                 return false;
 
             const string ObjectiveCMsgSend = "objc_msgSend";
@@ -942,7 +943,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
-            if (!target.IsOSX || pinvokeModule != ObjectiveCLibrary)
+            if (!TargetFeatures.TargetSupportsObjectiveCMarshal(target) || pinvokeModule != ObjectiveCLibrary)
                 return null;
 
 #pragma warning disable CA1416

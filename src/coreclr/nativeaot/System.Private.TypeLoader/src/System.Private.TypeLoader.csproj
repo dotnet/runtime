@@ -47,6 +47,9 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\TargetFeatures.cs">
+      <Link>TargetFeatures.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>ArrayBuilder.cs</Link>
     </Compile>
