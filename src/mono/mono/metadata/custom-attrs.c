@@ -2890,6 +2890,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		}
 	} else {
 		/* FIXME: metadata-update */
+                if (G_UNLIKELY (image->has_updates))
+                        g_warning ("[WeakAttribute] ignored on fields added by hot reload in '%s'", image->name);
 
 		/* Memberref pointing to a typeref */
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];

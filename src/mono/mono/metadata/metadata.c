@@ -6942,18 +6942,18 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 	locator_t loc;
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
 
-	if (!tdef->base)
-		return NULL;
-
 	loc.t = tdef;
 	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
 	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
 
-	/* FIXME: metadata-update */
 	/* FIXME: Index translation */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
-		return NULL;
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
+
+        if (G_UNLIKELY (meta->has_updates)) {
+                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+                        return NULL;
+        }
 
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
