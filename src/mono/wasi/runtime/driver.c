@@ -179,161 +179,22 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 }
 
 static void *sysglobal_native_handle;
-int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
-char* SystemNative_GetEnv(char* name);
-char* SystemNative_GetEnviron(char* name);
-void SystemNative_FreeEnviron(char* name);
-intptr_t SystemNative_Dup(intptr_t oldfd);
-int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
-int64_t SystemNative_GetSystemTimeAsTicks();
-int32_t SystemNative_Stat(const char* path, void* output);
-int32_t SystemNative_LStat(const char* path, void* output);
-int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
-void* SystemNative_LowLevelMonitor_Create();
-void SystemNative_LowLevelMonitor_Acquire(void* monitor);
-void SystemNative_LowLevelMonitor_Release(void* monitor);
-int32_t SystemNative_LowLevelMonitor_TimedWait(void *monitor, int32_t timeoutMilliseconds);
-void SystemNative_LowLevelMonitor_Wait(void* monitor);
-int SystemNative_GetErrNo();
-void SystemNative_SetErrNo(int value);
-char* SystemNative_GetCwd();
-void SystemNative_GetNonCryptographicallySecureRandomBytes();
-void SystemNative_GetCryptographicallySecureRandomBytes();
-int32_t SystemNative_Open(const char* path, int x, int y);
-void SystemNative_ConvertErrorPalToPlatform();
-void SystemNative_StrErrorR();
-void SystemNative_Close();
-void SystemNative_FStat();
-void SystemNative_LSeek();
-void SystemNative_PRead();
-void SystemNative_CanGetHiddenFlag();
-int32_t SystemNative_Access(const char* path, int32_t mode);
-void SystemNative_Malloc();
-void SystemNative_Free();
-void SystemNative_SysLog();
-
-#define PAL_O_RDONLY 0x0000
-#define PAL_O_WRONLY 0x0001
-#define PAL_O_RDWR 0x0002
-#define PAL_O_ACCESS_MODE_MASK 0x000F
-
-int32_t SystemNative_Open2(const char* path, int flags, int mode) {
-	//printf ("In SystemNative_Open2 for %s\n", path);
-	// The implementation in libSystemNative tries to use PAL_O_CLOEXEC, which isn't supported here, so override it
-	if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDONLY) {
-		flags = O_RDONLY;
-	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDWR) {
-		flags = O_RDWR;
-	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_WRONLY) {
-		flags = O_WRONLY;
-	}
-
-	int result;
-    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
-	return result;
-}
-
-int32_t SystemNative_Stat2(const char* path, FileStatus* output)
-{
-	// For some reason the libSystemNative SystemNative_Stat doesn't seem to work. Maybe I did something wrong elsewhere,
-	// or maybe it's hardcoded to something specific to browser wasm
-	struct stat stat_result;
-	int ret;
-    while ((ret = stat(path, &stat_result)) < 0 && errno == EINTR);
-
-	output->Size = stat_result.st_size;
-	output->ATime = stat_result.st_atime;
-	output->MTime = stat_result.st_mtime;
-	output->CTime = stat_result.st_ctime;
-	output->Mode = S_ISDIR (stat_result.st_mode)
-		? 0x4000  // Dir
-		: 0x8000; // File
-
-	// Never fail when looking for the root directory. Even if the WASI host isn't giving us filesystem access
-	// (which is the default), we need the root directory to appear to exist, otherwise things like ASP.NET Core
-	// will fail by default, whether or not it needs to read anything from the filesystem.
-	if (ret != 0 && path[0] == '/' && path[1] == 0) {
-		output->Mode = 0x4000; // Dir
-		return 0;
-	}
-
-	//printf("SystemNative_Stat2 for %s has ISDIR=%i and will return mode %i; ret=%i\n", path, S_ISDIR (stat_result.st_mode), output->Mode, ret);
-
-	return ret;
-}
-
-int32_t SystemNative_Write2(intptr_t fd, const void* buffer, int32_t bufferSize) {
-	// Not sure why, but am getting fd=-1 when trying to write to stdout (which fails), so here's a workaround
-	return SystemNative_Write((int)fd == -1 ? 1: fd, buffer, bufferSize);
-}
-
-int64_t SystemNative_GetTimestamp2() {
-	// libSystemNative's implementation of SystemNative_GetTimestamp causes the process to exit. It probably
-	// relies on calling into JS.
-	struct timeval time;
-	return (gettimeofday(&time, NULL) == 0)
-		? (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000)
-		: 0;
-}
-
-// TODOWASI replace with native libs
-static PinvokeImport SystemNativeImports [] = {
-	{"SystemNative_GetEnv", SystemNative_GetEnv },
-	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
-	{"SystemNative_FreeEnviron", SystemNative_FreeEnviron },
-	{"SystemNative_LChflagsCanSetHiddenFlag", SystemNative_LChflagsCanSetHiddenFlag },
-	{"SystemNative_Dup", SystemNative_Dup},
-	{"SystemNative_Write", SystemNative_Write2},
-	{"SystemNative_GetSystemTimeAsTicks", SystemNative_GetSystemTimeAsTicks},
-	{"SystemNative_LStat", SystemNative_Stat2},
-	{"SystemNative_FStat", SystemNative_FStat},
-	{"SystemNative_LSeek", SystemNative_LSeek},
-	{"SystemNative_ConvertErrorPlatformToPal", SystemNative_ConvertErrorPlatformToPal},
-	{"SystemNative_LowLevelMonitor_Create", SystemNative_LowLevelMonitor_Create},
-	{"SystemNative_LowLevelMonitor_Acquire", SystemNative_LowLevelMonitor_Acquire},
-	{"SystemNative_LowLevelMonitor_Release", SystemNative_LowLevelMonitor_Release},
-	{"SystemNative_LowLevelMonitor_TimedWait", SystemNative_LowLevelMonitor_TimedWait},
-	{"SystemNative_LowLevelMonitor_Wait", SystemNative_LowLevelMonitor_Wait},
-	{"SystemNative_GetErrNo", SystemNative_GetErrNo},
-	{"SystemNative_SetErrNo", SystemNative_SetErrNo},
-	{"SystemNative_GetCwd", SystemNative_GetCwd},
-	{"SystemNative_GetNonCryptographicallySecureRandomBytes", SystemNative_GetNonCryptographicallySecureRandomBytes},
-	{"SystemNative_GetCryptographicallySecureRandomBytes", SystemNative_GetCryptographicallySecureRandomBytes},
-	{"SystemNative_Stat", SystemNative_Stat2},
-	{"SystemNative_Open", SystemNative_Open2},
-	{"SystemNative_Close", SystemNative_Close},
-	{"SystemNative_ConvertErrorPalToPlatform", SystemNative_ConvertErrorPalToPlatform},
-	{"SystemNative_StrErrorR", SystemNative_StrErrorR},
-	{"SystemNative_PRead", SystemNative_PRead},
-	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
-	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
-	{"SystemNative_Access", SystemNative_Access},
-	{"SystemNative_Malloc", SystemNative_Malloc},
-	{"SystemNative_Free", SystemNative_Free},
-	{"SystemNative_SysLog", SystemNative_SysLog},
-	{NULL, NULL}
-};
-
-void GlobalizationNative_LoadICU() {
-	assert(0);
-}
-
-static PinvokeImport SystemGlobalizationNativeImports [] = {
-	{"GlobalizationNative_LoadICU", GlobalizationNative_LoadICU },
-	{NULL, NULL}
-};
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
-	printf("In wasm_dl_load for name %s\n", name);
-	if (!strcmp (name, "libSystem.Native"))
-		return SystemNativeImports;
-	if (!strcmp (name, "libSystem.Globalization.Native"))
-		return SystemGlobalizationNativeImports;
+	void* handle = wasm_dl_lookup_pinvoke_table (name);
+	if (handle)
+		return handle;
 
-	//printf("In wasm_dl_load for name %s but treating as NOT FOUND\n", name);
-    return 0;
+	if (!strcmp (name, "System.Globalization.Native"))
+		return sysglobal_native_handle;
+
+#if WASM_SUPPORTS_DLOPEN
+	return dlopen(name, flags);
+#endif
+
+	return NULL;
 }
 
 static void*
@@ -341,6 +202,12 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
 	if (handle == sysglobal_native_handle)
 		assert (0);
+
+#if WASM_SUPPORTS_DLOPEN
+	if (!wasm_dl_is_pinvoke_tables (handle)) {
+		return dlsym (handle, name);
+	}
+#endif
 
 	PinvokeImport *table = (PinvokeImport*)handle;
 	for (int i = 0; table [i].name; ++i) {

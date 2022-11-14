@@ -1867,6 +1867,11 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
 #else /* TARGET_WASI */
 
+int32_t SystemNative_Link(const char* source, const char* linkTarget)
+{
+    return -1;
+}
+
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
     return -1;
