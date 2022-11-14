@@ -47,28 +47,32 @@ namespace Mono.Linker.Steps
 
 			var reducer = new BodyReducer (method.Body, _context);
 
-			//
-			// If no external dependency can be extracted into constant there won't be
-			// anything to optimize in the method
-			//
-			if (!reducer.ApplyTemporaryInlining (this))
-				return;
+			try {
+				//
+				// If no external dependency can be extracted into constant there won't be
+				// anything to optimize in the method
+				//
+				if (!reducer.ApplyTemporaryInlining (this))
+					return;
 
-			//
-			// This is the main step which evaluates if any expression can
-			// produce folded branches. When it finds them the unreachable
-			// branch is removed.
-			//
-			if (reducer.RewriteBody ())
-				_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
+				//
+				// This is the main step which evaluates if any expression can
+				// produce folded branches. When it finds them the unreachable
+				// branch is removed.
+				//
+				if (reducer.RewriteBody ())
+					_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
 
-			//
-			// Note: The inliner cannot run before reducer rewrites body as it
-			// would require another recomputing offsets due to instructions replacement
-			// done by inliner
-			//
-			var inliner = new CallInliner (method.Body, this);
-			inliner.RewriteBody ();
+				//
+				// Note: The inliner cannot run before reducer rewrites body as it
+				// would require another recomputing offsets due to instructions replacement
+				// done by inliner
+				//
+				var inliner = new CallInliner (method.Body, this);
+				inliner.RewriteBody ();
+			} catch (Exception e) {
+				throw new InternalErrorException ($"Could not process the body of method '{method.GetDisplayName ()}'.", e);
+			}
 		}
 
 		static bool IsMethodSupported (MethodDefinition method)
