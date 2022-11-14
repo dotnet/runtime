@@ -9,54 +9,70 @@ using Internal.TypeSystem;
 namespace Internal.JitInterface
 {
     // This is a very rough equivalent of typestring.cpp in the CLR used with
-    // FormatNamespace|FormatNoInst. This is currently only used for
-    // printClassName in the JIT-EE interface that is used for the various
-    // method set JIT variables (JitDisasm for example). The JIT handles
-    // formatting of most type names on its own so we only need the basics
-    // here.
+    // FormatNamespace|FormatNoInst, with some adjustments related to generic
+    // instantiations. This is currently only used for printClassName in the
+    // JIT-EE interface that is used for the various method set JIT variables
+    // (JitDisasm for example).
     internal sealed class JitTypeNameFormatter : TypeNameFormatter
     {
         public static JitTypeNameFormatter Instance { get; } = new JitTypeNameFormatter();
 
         public override void AppendName(StringBuilder sb, PointerType type)
         {
-            Debug.Fail("Unexpected pointer type in JitTypeNameFormatter");
+            AppendName(sb, type.ParameterType);
+            sb.Append('*');
         }
 
         public override void AppendName(StringBuilder sb, GenericParameterDesc type)
         {
-            Debug.Fail("Unexpected generic parameter in JitTypeNameFormatter");
+            Debug.Fail("Unexpected generic parameter type in JitTypeNameFormatter");
         }
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
         {
-            Debug.Fail("Unexpected TVar in JitTypeNameFormatter");
+            Debug.Fail("Unexpected signature type variable in JitTypeNameFormatter");
         }
 
         public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
         {
-            Debug.Fail("Unexpected MVar in JitTypeNameFormatter");
+            Debug.Fail("Unexpected signature method variable in JitTypeNameFormatter");
         }
 
         public override void AppendName(StringBuilder sb, FunctionPointerType type)
         {
-            Debug.Fail("Unexpected function pointer type in JitTypeNameFormatter");
+            MethodSignature signature = type.Signature;
+
+            AppendName(sb, signature.ReturnType);
+
+            sb.Append(" (");
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+                AppendName(sb, signature[i]);
+            }
+
+            sb.Append(')');
         }
 
         public override void AppendName(StringBuilder sb, ByRefType type)
         {
-            Debug.Fail("Unexpected ByRef type in JitTypeNameFormatter");
+            AppendName(sb, type.ParameterType);
+            sb.Append('&');
         }
 
         public override void AppendName(StringBuilder sb, ArrayType type)
         {
-            Debug.Fail("Unexpected array type in JitTypeNameFormatter");
+            AppendName(sb, type.ElementType);
+            sb.Append('[');
+            sb.Append(',', type.Rank - 1);
+            sb.Append(']');
         }
 
         protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
         {
             AppendName(sb, type.GetTypeDefinition());
-            // Instantiation itself is handled by JIT.
+            // Type name intentionally excludes instantiations.
         }
 
         protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
