@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 using Xunit.Abstractions;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
@@ -978,7 +979,7 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
-            Assert.True(ret["callFrames"][0]["url"].Value<string>().Contains(expectedFileNameEscaped)); 
+            Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Theory]
@@ -1107,7 +1108,7 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
-            Assert.True(ret["callFrames"][0]["url"].Value<string>().Contains("debugger-test-chinese-char-in-path-ㄨ/test.cs"));
+            Assert.EndsWith("debugger-test-chinese-char-in-path-ㄨ/test.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Fact]
