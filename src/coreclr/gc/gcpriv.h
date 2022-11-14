@@ -1185,6 +1185,7 @@ public:
     heap_segment* unlink_region_front();
     heap_segment* unlink_smallest_region (size_t size);
     size_t get_num_free_regions();
+    size_t get_num_free_regions_no_verify();
     size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
