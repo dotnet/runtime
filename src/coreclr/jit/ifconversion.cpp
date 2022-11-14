@@ -558,7 +558,7 @@ bool OptIfConversionDsc::optIfConvert()
         return false;
     }
 
-    // Check the Then and Else blocks have a single assignment each.
+    // Check the Then and Else blocks have a single operation each.
     if (!IfConvertCheckStmts(m_startBlock->bbNext, &m_thenOperation))
     {
         return false;
@@ -579,8 +579,8 @@ bool OptIfConversionDsc::optIfConvert()
         // Currently can only support Else Asg Blocks that have the same destination as the Then block.
         if (m_thenOperation.node->gtOper == GT_ASG)
         {
-            unsigned lclNumThen = m_thenOperation.node->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-            unsigned lclNumElse = m_elseOperation.node->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+            unsigned lclNumThen = m_thenOperation.node->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+            unsigned lclNumElse = m_elseOperation.node->gtGetOp1()->AsLclVarCommon()->GetLclNum();
             if (lclNumThen != lclNumElse)
             {
                 return false;
@@ -649,8 +649,8 @@ bool OptIfConversionDsc::optIfConvert()
         else
         {
             // Duplicate the destination of the Then assignment.
-            assert(m_thenOperation.node->AsOp()->gtOp1->IsLocal());
-            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->AsOp()->gtOp1->AsLclVarCommon());
+            assert(m_thenOperation.node->gtGetOp1()->IsLocal());
+            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
             selectTrueInput->gtFlags &= GTF_EMPTY;
         }
         selectFalseInput = m_thenOperation.node->gtGetOp2();
