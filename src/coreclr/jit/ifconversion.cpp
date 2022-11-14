@@ -54,7 +54,7 @@ private:
     bool IfConvertCheckThenFlow();
     void IfConvertFindFlow();
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
-    void IfConvertMergeBlocks(BasicBlock* fromBlock);
+    void IfConvertJoinStmts(BasicBlock* fromBlock);
 
 #ifdef DEBUG
     void IfConvertDump();
@@ -322,14 +322,14 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 }
 
 //-----------------------------------------------------------------------------
-// IfConvertMergeBlocks
+// IfConvertJoinStmts
 //
-// Merge a block into the start block.
+// Move all the statements from a block onto the end of the start block.
 //
 // Arguments:
 //   fromBlock  -- Source block
 //
-void OptIfConversionDsc::IfConvertMergeBlocks(BasicBlock* fromBlock)
+void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 {
     Statement* stmtList1 = m_startBlock->firstStmt();
     Statement* stmtList2 = fromBlock->firstStmt();
@@ -698,10 +698,10 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Merge all the blocks.
-    IfConvertMergeBlocks(m_thenOperation.block);
+    IfConvertJoinStmts(m_thenOperation.block);
     if (m_doElseConversion)
     {
-        IfConvertMergeBlocks(m_elseOperation.block);
+        IfConvertJoinStmts(m_elseOperation.block);
     }
 
     // Update the flow from the original block.
