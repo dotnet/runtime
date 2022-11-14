@@ -1517,6 +1517,7 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp);
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1529,6 +1530,11 @@ public:
     }
 
     bool isRMWHWIntrinsic(Compiler* comp)
+    {
+        return false;
+    }
+
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp)
     {
         return false;
     }

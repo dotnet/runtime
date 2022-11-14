@@ -153,10 +153,13 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
+    RBM_LOWSIMD = 1LL << 63,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
+
+
 };
 
 #elif defined(TARGET_X86)

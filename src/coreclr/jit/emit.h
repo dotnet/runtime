@@ -1128,8 +1128,6 @@ protected:
                 case IF_RWR_RRD_RRD:
                 case IF_RWR_RRD_RRD_CNS:
                 case IF_RWR_RRD_RRD_RRD:
-                case IF_RWR_RRD_SRD_RRD:
-                case IF_RWR_RRD_ARD_RRD:
                     return true;
                 default:
                     return false;

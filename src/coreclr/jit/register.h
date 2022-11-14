@@ -114,6 +114,7 @@ REGDEF(XMM30,  30+XMMBASE,  XMMMASK(30),  "mm30" )
 REGDEF(XMM31,  31+XMMBASE,  XMMMASK(31),  "mm31" )
 
 REGDEF(STK,    32+XMMBASE,  0x0000,       "STK"  )
+
 #endif // !TARGET_X86
 
 #elif defined(TARGET_ARM)

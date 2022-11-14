@@ -1064,6 +1064,7 @@ private:
     regMaskTP allRegs(RegisterType rt);
     regMaskTP allByteRegs();
     regMaskTP allSIMDRegs();
+    regMaskTP lowSIMDRegs();
     regMaskTP internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
