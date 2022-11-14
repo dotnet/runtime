@@ -3223,7 +3223,6 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
 } 
 

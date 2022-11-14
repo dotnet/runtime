@@ -4494,11 +4494,13 @@ mini_init (const char *filename)
 #ifdef ENABLE_ILGEN
 	mono_marshal_lightweight_init ();
   	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 #else
 	if (mono_marshal_is_ilgen_requested ())
   	{
 		mono_marshal_lightweight_init ();
   		mono_component_marshal_ilgen()->ilgen_init_internal ();
+		mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
  	}
 	else{
 		mono_marshal_noilgen_init_lightweight();
