@@ -81,11 +81,15 @@ static MonoDomain *root_domain;
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
 static void
-wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
+wasi_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-    printf("[wasm_trace_logger] %s\n", message);
-	if (fatal)
-		exit (1);
+    printf("[wasi_trace_logger] %s\n", message);
+	if (fatal) {
+		// make it trap so we could see the stack trace
+		// (*(int*)(void*)-1)++;
+		exit(1);
+	}
+	
 }
 
 typedef uint32_t target_mword;
@@ -377,7 +381,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_trace_logger, NULL);
+	mono_trace_set_log_handler (wasi_trace_logger, NULL);
 
 	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
@@ -686,8 +690,8 @@ int main() {
     mono_wasm_load_runtime("", 0);
 
 	printf("mono_wasm_assembly_load\n");
-    MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample.dll");
-	printf("mono_wasm_assembly_get_entry_point\n");
+    MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");
+	printf("mono_wasm_assembly_get_entry_point %d\n", (int)assembly);
     MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
     MonoObject* out_exc;
     MonoObject *exit_code = mono_wasm_invoke_method (entry_method, NULL, NULL, &out_exc);
