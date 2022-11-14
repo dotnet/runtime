@@ -30,17 +30,6 @@ namespace System.Xml
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
-        private static UTF8Encoding? s_utf8Encoding;
-        private static UnicodeEncoding? s_unicodeEncoding;
-
-        private static Base64Encoding? s_base64Encoding;
-
-        public static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
-
-        private static UTF8Encoding UTF8Encoding => s_utf8Encoding ??= new UTF8Encoding(false, true);
-
-        private static UnicodeEncoding UnicodeEncoding => s_unicodeEncoding ??= new UnicodeEncoding(false, false, true);
-
         public static bool ToBoolean(string value)
         {
             try
@@ -343,7 +332,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF8.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -355,7 +344,7 @@ namespace System.Xml
         {
             try
             {
-                return UnicodeEncoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF16.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -368,7 +357,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetBytes(value);
+                return DataContractSerializer.ValidatingUTF8.GetBytes(value);
             }
             catch (DecoderFallbackException exception)
             {
@@ -380,7 +369,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetChars(buffer, offset, count, chars, charOffset);
+                return DataContractSerializer.ValidatingUTF8.GetChars(buffer, offset, count, chars, charOffset);
             }
             catch (DecoderFallbackException exception)
             {

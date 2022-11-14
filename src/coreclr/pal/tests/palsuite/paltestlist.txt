@@ -95,7 +95,6 @@ c_runtime/malloc/test1/paltest_malloc_test1
 c_runtime/malloc/test2/paltest_malloc_test2
 c_runtime/memchr/test1/paltest_memchr_test1
 c_runtime/memcmp/test1/paltest_memcmp_test1
-c_runtime/memcpy/test1/paltest_memcpy_test1
 c_runtime/memmove/test1/paltest_memmove_test1
 c_runtime/memset/test1/paltest_memset_test1
 c_runtime/modf/test1/paltest_modf_test1

@@ -2373,8 +2373,6 @@ public:
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
     GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
 
-    GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -2643,6 +2641,11 @@ public:
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
+    GenTreeField* gtNewFieldAddrNode(var_types            type,
+                                     CORINFO_FIELD_HANDLE fldHnd,
+                                     GenTree*             obj    = nullptr,
+                                     DWORD                offset = 0);
+
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
                                      var_types            elemType,
@@ -2665,7 +2668,7 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
-    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
+    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
@@ -2815,7 +2818,7 @@ public:
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
     bool gtStoreDefinesField(
-        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize);
+        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -2875,6 +2878,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
+    // Check if this tree is a typeof()
+    bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
@@ -4873,10 +4878,6 @@ public:
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 
-    // Does value-numbering for a block assignment.
-    void fgValueNumberBlockAssignment(GenTree* tree);
-
-    // Does value-numbering for a variable definition that has SSA.
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
@@ -5722,9 +5723,13 @@ private:
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
+    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
+    GenTree* fgMorphExpandStaticField(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
     bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
@@ -5773,10 +5778,8 @@ private:
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
                                            methodPointerInfo*      ldftnToken);
     GenTree* fgMorphLeaf(GenTree* tree);
-    void fgAssignSetVarDef(GenTree* tree);
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
-    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
@@ -5819,9 +5822,9 @@ private:
     void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
+    unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetBigOffsetMorphingTemp(var_types type); // We cache one temp per type to be
-                                                         // used when morphing big offset.
+    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
 
     //----------------------- Liveness analysis -------------------------------
 
@@ -5897,8 +5900,6 @@ private:
 #if !FEATURE_FIXED_OUT_ARGS
     unsigned fgThrowHlpBlkStkLevel(BasicBlock* block);
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    unsigned fgBigOffsetMorphingTemps[TYP_COUNT];
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
@@ -6056,10 +6057,6 @@ protected:
 
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
-
-    // During global assertion prop, returns the conservative normal VN for a tree;
-    // otherwise returns NoVN
-    ValueNum optConservativeNormalVN(GenTree* tree);
 
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
@@ -6835,6 +6832,8 @@ public:
         }
     };
 
+    PhaseStatus optVNBasedDeadStoreRemoval();
+
 // clang-format off
 
 #define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
@@ -7336,6 +7335,10 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
+
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree*         op1,
                                       GenTree*         op2,
@@ -7343,7 +7346,6 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
-    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
@@ -8997,10 +8999,19 @@ private:
     // canUseEvexEncoding - Answer the question: Is Evex encoding supported on this target.
     //
     // Returns:
-    //    TRUE if Evex encoding is supported, FALSE if not.
+    //    `true` if Evex encoding is supported, `false` if not.
+    //
     bool canUseEvexEncoding() const
     {
 #ifdef TARGET_XARCH
+
+#ifdef DEBUG
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
 #else
         return false;
@@ -9011,18 +9022,26 @@ private:
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
     //
     // Returns:
-    //    TRUE if user requests EVEX encoding and it's safe, FALSE if not.
+    //    `true` if user requests EVEX encoding and it's safe, `false` if not.
+    //
     bool DoJitStressEvexEncoding() const
     {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) && defined(DEBUG)
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support.
-        if (JitConfig.JitStressEVEXEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
+
+        if (JitConfig.JitForceEVEXEncoding())
         {
             return true;
         }
-#endif
+        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            return true;
+        }
+#endif // TARGET_XARCH && DEBUG
+
         return false;
     }
 
@@ -10834,6 +10853,7 @@ public:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
