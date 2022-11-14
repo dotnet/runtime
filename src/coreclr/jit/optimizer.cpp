@@ -10700,6 +10700,17 @@ void Compiler::optRemoveRedundantZeroInits()
 //
 PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 {
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableVNBasedDeadStoreRemovalRange;
+    JitEnableVNBasedDeadStoreRemovalRange.EnsureInit(JitConfig.JitEnableVNBasedDeadStoreRemovalRange());
+
+    if (!JitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
+    {
+        JITDUMP("VN-based dead store removal disabled by JitEnableVNBasedDeadStoreRemovalRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
     bool madeChanges = false;
 
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
