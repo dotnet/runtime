@@ -180,157 +180,160 @@ public class FullRangeComparisonTest
     /* If/Else conditions that consume. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Eq_else_byte_consume(byte a1, byte a2) {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 == a2) { a1 = 10; } else { a1 = 100; }
+    public static void Ne_else_byte_consume(byte a1, byte a2)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        if (a1 != a2) { a1 = 10; } else { a1 = 100; }
         consume<byte>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Ne_else_short_consume(short a1, short a2)
+    public static void Lt_else_short_consume(short a1, short a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 != a2) { a1 = 11; } else { a1 = 101; }
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        if (a1 < a2) { a1 = 11; } else { a1 = 101; }
         consume<short>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Lt_else_int_consume(int a1, int a2)
+    public static void Le_else_int_consume(int a1, int a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 < a2) { a1 = 12; } else { a1 = 102; }
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        if (a1 <= a2) { a1 = 12; } else { a1 = 102; }
         consume<int>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Le_else_long_consume(long a1, long a2)
+    public static void Gt_else_long_consume(long a1, long a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 <= a2) { a1 = 13; } else { a1 = 103; }
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, gt
+        if (a1 > a2) { a1 = 13; } else { a1 = 103; }
         consume<long>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Gt_else_ushort_consume(ushort a1, ushort a2)
+    public static void Ge_else_ushort_consume(ushort a1, ushort a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 > a2) { a1 = 14; } else { a1 = 104; }
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
+        if (a1 >= a2) { a1 = 14; } else { a1 = 104; }
         consume<ushort>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Ge_else_uint_consume(uint a1, uint a2)
+    public static void Eq_else_uint_consume(uint a1, uint a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 >= a2) { a1 = 15; } else { a1 = 105; }
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
+        if (a1 == a2) { a1 = 15; } else { a1 = 105; }
         consume<uint>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Eq_else_ulong_consume(ulong a1, ulong a2)
+    public static void Ne_else_ulong_consume(ulong a1, ulong a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        if (a1 == a2) { a1 = 16; } else { a1 = 106; }
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ne
+        if (a1 != a2) { a1 = 16; } else { a1 = 106; }
         consume<ulong>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Ne_else_float_int_consume(float f1, float f2, int a1, int a2)
+    public static void Lt_else_float_int_consume(float f1, float f2, int a1, int a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
-        if (f1 != f2) { a1 = 17; } else { a1 = 107; }
+        //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        if (f1 < f2) { a1 = 17; } else { a1 = 107; }
         consume<float>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Lt_else_double_int_consume(double f1, double f2, int a1, int a2)
+    public static void Le_else_double_int_consume(double f1, double f2, int a1, int a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
-        if (f1 < f2) { a1 = 18; } else { a1 = 108; }
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        if (f1 <= f2) { a1 = 18; } else { a1 = 108; }
         consume<double>(a1, a2);
     }
 
-    /* If conditions that return. */
+    /* If/Else conditions that return. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static byte Eq_else_byte_return(byte a1, byte a2) {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 == a2) ? (byte)10 : (byte)100;
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static short Ne_else_short_return(short a1, short a2)
+    public static byte Lt_else_byte_return(byte a1, byte a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 != a2) ? (short)11 : (short)101;
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        return (a1 < a2) ? (byte)10 : (byte)100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Lt_else_int_return(int a1, int a2)
+    public static short Le_else_short_return(short a1, short a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 < a2) ? (int)12 : (int)102;
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        return (a1 <= a2) ? (short)11 : (short)101;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static long Le_else_long_return(long a1, long a2)
+    public static int Gt_else_int_return(int a1, int a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 <= a2) ? (long)13 : (long)103;
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        return (a1 > a2) ? (int)12 : (int)102;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static ushort Gt_else_ushort_return(ushort a1, ushort a2)
+    public static long Ge_else_long_return(long a1, long a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 > a2) ? (ushort)14 : (ushort)104;
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ge
+        return (a1 >= a2) ? (long)13 : (long)103;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static uint Ge_else_uint_return(uint a1, uint a2)
+    public static ushort Eq_else_ushort_return(ushort a1, ushort a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 >= a2) ? (uint)15 : (uint)105;
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
+        return (a1 == a2) ? (ushort)14 : (ushort)104;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static ulong Eq_else_ulong_return(ulong a1, ulong a2)
+    public static uint Ne_else_uint_return(uint a1, uint a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
-        return (a1 == a2) ? (ulong)16 : (ulong)106;
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        return (a1 != a2) ? (uint)15 : (uint)105;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Ne_else_float_int_return(float a1, float a2)
+    public static ulong Lt_else_ulong_return(ulong a1, ulong a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
-        return (a1 != a2) ? 17 : 107;
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, lt
+        return (a1 < a2) ? (ulong)16 : (ulong)106;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Lt_else_double_int_return(double a1, double a2)
+    public static int Le_else_float_int_return(float a1, float a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
-        return (a1 < a2) ? 18 : 108;
+        //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        return (a1 <= a2) ? 17 : 107;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Gt_else_double_int_return(double a1, double a2)
+    {
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        return (a1 > a2) ? 18 : 108;
+    }
+
 
     public static int Main()
     {
@@ -470,59 +473,59 @@ public class FullRangeComparisonTest
         Eq_double_long_consume(10.1, 11.1, 12, 13);
         Ne_double_int_consume(10.1, 11.1, 12, 13);
 
-        Eq_else_byte_consume(20, 21);
-        Ne_else_short_consume(10, 11);
-        Lt_else_int_consume(10, 11);
-        Le_else_long_consume(10, 11);
-        Gt_else_ushort_consume(10, 11);
-        Ge_else_uint_consume(10, 11);
-        Eq_else_ulong_consume(10, 11);
-        Ne_else_float_int_consume(10.1F, 11.1F, 12, 13);
-        Lt_else_double_int_consume(10.1, 11.1, 12, 13);
+        Ne_else_byte_consume(20, 21);
+        Lt_else_short_consume(10, 11);
+        Le_else_int_consume(10, 11);
+        Gt_else_long_consume(10, 11);
+        Ge_else_ushort_consume(10, 11);
+        Eq_else_uint_consume(10, 11);
+        Ne_else_ulong_consume(10, 11);
+        Lt_else_float_int_consume(10.1F, 11.1F, 12, 13);
+        Le_else_double_int_consume(10.1, 11.1, 12, 13);
 
-        if (Eq_else_byte_return(10,11) != 100)
+        if (Lt_else_byte_return(10,11) != 10)
         {
-            Console.WriteLine("FullRangeComparisonTest:Eq_else_byte_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Lt_else_byte_return() failed");
             return 101;
         }
-        if (Ne_else_short_return(10, 11) != 11)
+        if (Le_else_short_return(10, 11) != 11)
         {
-            Console.WriteLine("FullRangeComparisonTest:Ne_else_short_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Le_else_short_return() failed");
             return 101;
         }
-        if (Lt_else_int_return(10, 11) != 12)
+        if (Gt_else_int_return(10, 11) != 102)
         {
-            Console.WriteLine("FullRangeComparisonTest:Lt_else_int_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Gt_else_int_return() failed");
             return 101;
         }
-        if (Le_else_long_return(10, 11) != 13)
+        if (Ge_else_long_return(10, 11) != 103)
         {
-            Console.WriteLine("FullRangeComparisonTest:Le_else_long_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Ge_else_long_return() failed");
             return 101;
         }
-        if (Gt_else_ushort_return(10, 11) != 104)
+        if (Eq_else_ushort_return(10, 11) != 104)
         {
-            Console.WriteLine("FullRangeComparisonTest:Gt_else_ushort_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Eq_else_ushort_return() failed");
             return 101;
         }
-        if (Ge_else_uint_return(10, 11) != 105)
+        if (Ne_else_uint_return(10, 11) != 15)
         {
-            Console.WriteLine("FullRangeComparisonTest:Ge_else_uint_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Ne_else_uint_return() failed");
             return 101;
         }
-        if (Eq_else_ulong_return(10, 11) != 106)
+        if (Lt_else_ulong_return(10, 11) != 16)
         {
-            Console.WriteLine("FullRangeComparisonTest:Eq_else_ulong_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Lt_else_ulong_return() failed");
             return 101;
         }
-        if (Ne_else_float_int_return(10.1F, 11.1F) != 17)
+        if (Le_else_float_int_return(10.1F, 11.1F) != 17)
         {
-            Console.WriteLine("FullRangeComparisonTest:Ne_else_float_int_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Le_else_float_int_return() failed");
             return 101;
         }
-        if (Lt_else_double_int_return(10.1, 11.1) != 18)
+        if (Gt_else_double_int_return(10.1, 11.1) != 108)
         {
-            Console.WriteLine("FullRangeComparisonTest:Lt_else_double_int_return() failed");
+            Console.WriteLine("FullRangeComparisonTest:Gt_else_double_int_return() failed");
             return 101;
         }
 
