@@ -13,7 +13,6 @@ MonoClass* mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *na
 MonoMethod* mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments);
 MonoObject* mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc);
 int mono_unbox_int (MonoObject *obj);
-void mono_wasm_setenv (const char *name, const char *value);
 void add_assembly(const char* base_dir, const char *name);
 
 MonoArray* mono_wasm_obj_array_new (int size);

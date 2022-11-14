@@ -9,12 +9,18 @@
 
 #include <assert.h>
 #include <errno.h>
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
+
+#if !defined(TARGET_WASI)
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -718,3 +724,41 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 }
 
 #endif
+
+#else /* TARGET_WASI */
+
+int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
+{
+    return 0;
+}
+
+void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
+{
+}
+
+void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
+{
+}
+
+void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
+{
+}
+
+void SystemNative_RegisterForSigChld(SigChldCallback callback)
+{
+}
+
+void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
+{
+}
+
+int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
+{
+    return 0;
+}
+
+void SystemNative_DisablePosixSignalHandling(int signalCode)
+{
+}
+
+#endif /* TARGET_WASI */

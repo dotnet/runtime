@@ -23,7 +23,7 @@ if(HOST_SOLARIS)
 endif()
 
 if(HOST_WASI)
-  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
 endif()
 
 function(ac_check_headers)
@@ -85,7 +85,7 @@ ac_check_funcs (
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
-if (HOST_LINUX OR HOST_BROWSER)
+if (HOST_LINUX OR HOST_BROWSER OR HOST_WASI)
   # sysctl is deprecated on Linux and doesn't work on Browser
   set(HAVE_SYS_SYSCTL_H 0)
 else ()
@@ -99,7 +99,10 @@ if(NOT HOST_DARWIN)
   ac_check_funcs (getentropy)
 endif()
 
-find_package(Threads)
+if(NOT HOST_WASI)
+  # TODOWASI
+  find_package(Threads)
+endif()
 # Needed to find pthread_ symbols
 set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
 
@@ -262,12 +265,12 @@ elseif(HOST_IOS)
   endif()
 elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
-elseif(HOST_BROWSER)
-  set(HAVE_FORK 0)
 elseif(HOST_SOLARIS)
   set(HAVE_GETPROTOBYNAME 1)
   set(HAVE_NETINET_TCP_H 1)
   set(HAVE_GETADDRINFO 1)
+elseif(HOST_BROWSER)
+  set(HAVE_FORK 0)
 elseif(HOST_WASI)
   # Redirected to errno.h
   set(SYS_ERRNO_H 0)

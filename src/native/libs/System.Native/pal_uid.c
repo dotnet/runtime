@@ -11,8 +11,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#if HAVE_GRP_H
 #include <grp.h>
+#endif
+#if HAVE_PWD_H
 #include <pwd.h>
+#endif
 
 // Linux c-libraries (glibc, musl) provide a thread-safe getgrouplist.
 // OSX man page mentions explicitly the implementation is not thread safe,
@@ -22,8 +26,12 @@
 #endif
 
 #if defined(USE_GROUPLIST_LOCK) || !HAVE_GETGRGID_R
+#if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
+#endif
+
+#if !defined(TARGET_WASI)
 
 static int32_t ConvertNativePasswdToPalPasswd(int error, struct passwd* nativePwd, struct passwd* result, Passwd* pwd)
 {
@@ -302,3 +310,45 @@ char* SystemNative_GetGroupName(uint32_t gid)
     return name;
 #endif
 }
+
+#else /* TARGET_WASI */
+int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
+{
+    return -1;
+}
+
+uint32_t SystemNative_GetEUid(void)
+{
+    return 0xFFFFFFFF;
+}
+
+uint32_t SystemNative_GetEGid(void)
+{
+    return 0xFFFFFFFF;
+}
+
+int32_t SystemNative_SetEUid(uint32_t euid)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
+{
+    return -1;
+}
+
+char* SystemNative_GetGroupName(uint32_t gid)
+{
+    return NULL;
+}
+#endif /* TARGET_WASI */

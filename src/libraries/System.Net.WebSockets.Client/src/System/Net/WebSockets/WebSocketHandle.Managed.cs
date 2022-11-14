@@ -280,8 +280,9 @@ namespace System.Net.WebSockets
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
                 handler.UseCookies = options.Cookies != null;
+#if !TARGET_WASI
                 handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
-
+#endif
                 handler.Credentials = options.UseDefaultCredentials ?
                     CredentialCache.DefaultCredentials :
                     options.Credentials;
@@ -297,9 +298,11 @@ namespace System.Net.WebSockets
 
                 if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
                 {
+#if !TARGET_WASI
                     Debug.Assert(handler.SslOptions.ClientCertificates == null);
                     handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
                     handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
+#endif
                 }
 
                 return new HttpMessageInvoker(handler);

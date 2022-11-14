@@ -9,7 +9,9 @@
 #include "pal_utilities.h"
 
 #include <errno.h>
+#if HAVE_NET_IF_H
 #include <net/if.h>
+#endif
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>

@@ -41,6 +41,18 @@
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.Serialization.SerializationEventHandler</Target>
     <Left>ref/net7.0/System.Runtime.Serialization.Formatters.dll</Left>
+    <Right>runtimes/wasi/lib/net7.0/System.Runtime.Serialization.Formatters.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.Serialization.TypeLoadExceptionHolder</Target>
+    <Left>ref/net7.0/System.Runtime.Serialization.Formatters.dll</Left>
+    <Right>runtimes/wasi/lib/net7.0/System.Runtime.Serialization.Formatters.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.Serialization.SerializationEventHandler</Target>
+    <Left>ref/net7.0/System.Runtime.Serialization.Formatters.dll</Left>
     <Right>runtimes/ios/lib/net7.0/System.Runtime.Serialization.Formatters.dll</Right>
   </Suppression>
   <Suppression>

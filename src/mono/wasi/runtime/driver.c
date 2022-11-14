@@ -33,10 +33,18 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
-#include "wasm/runtime/pinvoke.h"
+#include "pinvoke.h"
 
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
+#endif
+
+#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
+#define NEED_INTERP 1
+#ifndef LINK_ICALLS
+// FIXME: llvm+interp mode needs this to call icalls
+#define NEED_NORMAL_ICALL_TABLES 1
+#endif
 #endif
 
 void mono_wasm_enable_debugging (int);
@@ -155,13 +163,9 @@ typedef struct
 } FileStatus;
 
 char* gai_strerror(int code) {
-    char result[256];
+    char* result = malloc(256);
     sprintf(result, "Error code %i", code);
     return result;
-}
-
-int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength) {
-    return getentropy (buffer, bufferLength);
 }
 
 void
@@ -172,12 +176,6 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	entry->next = satellite_assemblies;
 	satellite_assemblies = entry;
 	++satellite_assembly_count;
-}
-
-void
-mono_wasm_setenv (const char *name, const char *value)
-{
-	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
 static void *sysglobal_native_handle;
@@ -278,6 +276,7 @@ int64_t SystemNative_GetTimestamp2() {
 		: 0;
 }
 
+// TODOWASI replace with native libs
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
 	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
@@ -327,6 +326,7 @@ static PinvokeImport SystemGlobalizationNativeImports [] = {
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
+	printf("In wasm_dl_load for name %s\n", name);
 	if (!strcmp (name, "libSystem.Native"))
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
@@ -422,12 +422,14 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+
+#if TODOWASI
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
 	{
@@ -448,8 +450,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	const char *appctx_values[2];
 	appctx_values [0] = "/";
-	appctx_values [1] = "browser-wasm";
-
+	appctx_values [1] = "wasi-wasm";
 	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
@@ -466,10 +467,14 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 	} else {
 		free (file_path);
 	}
-
 	monovm_initialize (2, appctx_keys, appctx_values);
+#else
+	monovm_initialize (0, NULL, NULL);
+#endif /* TODOWASI */
 
+#if TODOWASI
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
+#endif /* TODOWASI */
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
@@ -480,6 +485,12 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
+#ifdef LINK_ICALLS
+	#error /* TODOWASI */
+#endif
+#ifdef NEED_NORMAL_ICALL_TABLES
+	mono_icall_table_init ();
+#endif
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();
@@ -780,7 +791,10 @@ void add_assembly(const char* base_dir, const char *name) {
     rewind(fileptr);
 
     buffer = (unsigned char *)malloc(filelen * sizeof(char));
-    fread(buffer, filelen, 1, fileptr);
+    if(!fread(buffer, filelen, 1, fileptr)) {
+        printf("Failed to load %s\n", filename);
+        fflush(stdout);
+    }
     fclose(fileptr);
 
     assert(mono_wasm_add_assembly(name, buffer, filelen));
@@ -794,4 +808,21 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
     MonoMethod* method = mono_wasm_assembly_find_method (class, method_name, num_params);
 	assert (method);
 	return method;
+}
+
+int main() {
+    // Assume the runtime pack has been copied into the output directory as 'runtime'
+    // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
+    mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+
+	printf("mono_wasm_load_runtime\n");
+    mono_wasm_load_runtime("", 0);
+
+	printf("mono_wasm_assembly_load\n");
+    MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample.dll");
+	printf("mono_wasm_assembly_get_entry_point\n");
+    MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
+    MonoObject* out_exc;
+    MonoObject *exit_code = mono_wasm_invoke_method (entry_method, NULL, NULL, &out_exc);
+    return mono_unbox_int (exit_code);
 }

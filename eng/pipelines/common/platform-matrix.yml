@@ -374,7 +374,28 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly
+# Wasi WebAssembly
+
+- ${{ if containsValue(parameters.platforms, 'Wasi_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Wasi
+      archType: wasm
+      targetRid: wasi-wasm
+      platform: Wasi_wasm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: Linux_x64
+      jobParameters:
+        hostedOs: Linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Browser WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
   - template: xplat-setup.yml
@@ -395,7 +416,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly Linux Firefox
+# Browser WebAssembly Linux Firefox
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox') }}:
   - template: xplat-setup.yml
@@ -416,7 +437,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly on Windows
+# Browser WebAssembly on Windows
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml

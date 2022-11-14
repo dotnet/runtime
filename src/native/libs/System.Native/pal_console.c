@@ -13,12 +13,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#if HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 #include <unistd.h>
 #include <poll.h>
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <signal.h>
 
+#if !defined(TARGET_WASI)
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
     assert(windowSize != NULL);
@@ -485,3 +490,72 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 
     return initialized;
 }
+
+#else /* TARGET_WASI */
+
+int32_t SystemNative_GetWindowSize(WinSize* windowSize)
+{
+    memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_SetWindowSize(WinSize* windowSize)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_IsATty(intptr_t fd)
+{
+    return -1;
+}
+
+void SystemNative_SetKeypadXmit(const char* terminfoString)
+{
+}
+
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+{
+}
+
+void SystemNative_UninitializeConsoleAfterRead(void)
+{
+}
+
+void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
+{
+}
+
+void SystemNative_GetControlCharacters(
+    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
+    uint8_t* posixDisableValue)
+{
+}
+
+int32_t SystemNative_StdinReady(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetSignalForBreak(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
+{
+    return -1;
+}
+
+int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
+{
+    return -1;
+}
+
+#endif /* TARGET_WASI */

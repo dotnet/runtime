@@ -4,13 +4,16 @@
 #include "pal_config.h"
 #include "pal_dynamicload.h"
 
+#if HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
 #include <string.h>
 
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
 #endif
 
+#if !defined(TARGET_WASI)
 void* SystemNative_LoadLibrary(const char* filename)
 {
     // Check whether we have been requested to load 'libc'. If that's the case, then:
@@ -55,11 +58,35 @@ void SystemNative_FreeLibrary(void* handle)
 {
     dlclose(handle);
 }
+#else /* TARGET_WASI */
+void* SystemNative_LoadLibrary(const char* filename)
+{
+    // TODOWASI
+    return NULL;
+}
 
-#ifdef TARGET_ANDROID
+void* SystemNative_GetLoadLibraryError(void)
+{
+    // TODOWASI
+    return NULL;
+}
+
+void* SystemNative_GetProcAddress(void* handle, const char* symbol)
+{
+    // TODOWASI
+    return NULL;
+}
+
+void SystemNative_FreeLibrary(void* handle)
+{
+    // TODOWASI
+}
+#endif /* TARGET_WASI */
+
+#if defined TARGET_ANDROID || defined TARGET_WASI
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
-    return (void*)RTLD_DEFAULT;
+    return NULL;
 }
 #else
 static void* volatile g_defaultSearchOrderPseudoHandle = NULL;

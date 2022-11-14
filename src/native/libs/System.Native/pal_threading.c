@@ -20,11 +20,14 @@
 // So we can use the declaration of pthread_cond_timedwait_relative_np
 #undef _XOPEN_SOURCE
 #endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #if defined(TARGET_OSX)
 #define _XOPEN_SOURCE
 #endif
 
+#if !defined(TARGET_WASI)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
@@ -285,3 +288,74 @@ void SystemNative_Abort(void)
 {
     abort();
 }
+
+#else /* TARGET_WASI */
+struct LowLevelMonitor
+{
+    bool IsLocked;
+    // TODOWASI
+};
+
+LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
+{
+    // TODOWASI
+    return NULL;
+}
+
+void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
+{
+    // TODOWASI
+}
+
+void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
+{
+    // TODOWASI
+}
+
+void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
+{
+    // TODOWASI
+}
+
+void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
+{
+    // TODOWASI
+}
+
+int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
+{
+    // TODOWASI
+    return false;
+}
+
+void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
+{
+    // TODOWASI
+}
+
+int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
+{
+    // TODOWASI
+    return false;
+}
+
+int32_t SystemNative_SchedGetCpu(void)
+{
+    // TODOWASI
+    return -1;
+}
+
+__attribute__((noreturn))
+void SystemNative_Exit(int32_t exitCode)
+{
+    assert(false);
+    // TODOWASI
+}
+
+__attribute__((noreturn))
+void SystemNative_Abort(void)
+{
+    assert(false);
+    // TODOWASI
+}
+#endif /* TARGET_WASI */

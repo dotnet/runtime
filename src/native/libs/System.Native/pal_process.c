@@ -8,14 +8,20 @@
 
 #include <assert.h>
 #include <errno.h>
+#if HAVE_GRP_H
 #include <grp.h>
+#endif
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#if HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <unistd.h>
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -23,7 +29,9 @@
 #if HAVE_PIPE2
 #include <fcntl.h>
 #endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
@@ -41,6 +49,7 @@
 
 #include <minipal/getexepath.h>
 
+#if !defined(TARGET_WASI)
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
 c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
@@ -519,10 +528,14 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
     {
         case PAL_RLIMIT_CPU:
             return RLIMIT_CPU;
+#ifdef RLIMIT_FSIZE
         case PAL_RLIMIT_FSIZE:
             return RLIMIT_FSIZE;
+#endif
+#ifdef RLIMIT_DATA
         case PAL_RLIMIT_DATA:
             return RLIMIT_DATA;
+#endif
         case PAL_RLIMIT_STACK:
             return RLIMIT_STACK;
         case PAL_RLIMIT_CORE:
@@ -878,3 +891,107 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
+
+#else /* TARGET_WASI */
+
+
+int32_t SystemNative_ForkAndExecProcess(const char* filename,
+                                      char* const argv[],
+                                      char* const envp[],
+                                      const char* cwd,
+                                      int32_t redirectStdin,
+                                      int32_t redirectStdout,
+                                      int32_t redirectStderr,
+                                      int32_t setCredentials,
+                                      uint32_t userId,
+                                      uint32_t groupId,
+                                      uint32_t* groups,
+                                      int32_t groupsLength,
+                                      int32_t* childPid,
+                                      int32_t* stdinFd,
+                                      int32_t* stdoutFd,
+                                      int32_t* stderrFd)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
+{
+    return -1;
+}
+
+int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
+{
+    return -1;
+}
+
+int32_t SystemNative_Kill(int32_t pid, int32_t signal)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetPid(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetSid(int32_t pid)
+{
+    return -1;
+}
+
+void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
+{
+}
+
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
+{
+    return -1;
+}
+
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+{
+    return -1;
+}
+
+int64_t SystemNative_PathConf(const char* path, PathConfName name)
+{
+    return -1;
+}
+
+int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
+{
+    return -1;
+}
+
+int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
+{
+    return -1;
+}
+
+char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
+{
+    return NULL;
+}
+
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
+
+char* SystemNative_GetProcessPath(void)
+{
+    return NULL;
+}
+#endif /* TARGET_WASI */

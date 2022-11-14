@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Wasi</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'Wasi'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'Wasi'">
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />

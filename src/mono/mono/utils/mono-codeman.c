@@ -362,6 +362,8 @@ mono_codeman_free (gpointer p)
 	void* const heap = mono_code_manager_heap;
 	g_assert (heap);
 	HeapFree (heap, 0, p);
+#elif HOST_WASI
+	//TODOWASI
 #else
 	mono_codeman_enable_write ();
 	dlfree (p);
