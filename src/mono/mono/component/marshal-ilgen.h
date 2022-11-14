@@ -10,6 +10,10 @@
 #include "metadata/marshal.h"
 #include "mono/component/component.h"
 
+#if !defined(ENABLE_ILGEN)
+# error ENABLE_ILGEN is always required now
+#endif
+
 typedef struct MonoComponentMarshalILgen {
 	MonoComponent component;
 	void (*ilgen_init_internal) (void);
