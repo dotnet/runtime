@@ -5554,7 +5554,7 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
 
-	/* metadata-update: TODO support added static fields with initializers. */
+	/* metadata-update: added static fields with initializers don't seem to get here */
 	g_assert (!m_field_is_from_update (field));
 
 	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
