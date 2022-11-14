@@ -900,9 +900,9 @@
       <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
         <Destination>$(RuntimeBinDir)libmono-icall-table.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
+      <!-- <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
         <Destination>$(RuntimeBinDir)libmono-ilgen.a</Destination>
-      </_MonoRuntimeArtifacts>
+      </_MonoRuntimeArtifacts>-->
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
