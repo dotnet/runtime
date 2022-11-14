@@ -14,7 +14,7 @@ namespace System.Net.Security.Tests
     public class TransportContextTest
     {
         [Fact]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

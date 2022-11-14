@@ -694,7 +694,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
@@ -753,7 +753,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
@@ -810,7 +810,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("TODO", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
