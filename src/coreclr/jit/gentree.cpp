@@ -19228,9 +19228,21 @@ GenTree* Compiler::gtNewSimdAbsNode(
 
         GenTreeVecCon* bitMask = gtNewVconNode(type);
 
-        for (unsigned i = 0; i < (simdSize / 8); i++)
+        if (simdBaseType == TYP_FLOAT)
         {
-            bitMask->gtSimd32Val.f64[i] = -0.0;
+            for (unsigned i = 0; i < (simdSize / 4); i++)
+            {
+                bitMask->gtSimd32Val.f32[i] = -0.0f;
+            }
+        }
+        else
+        {
+            assert(simdBaseType == TYP_DOUBLE);
+
+            for (unsigned i = 0; i < (simdSize / 8); i++)
+            {
+                bitMask->gtSimd32Val.f64[i] = -0.0;
+            }
         }
 
         return gtNewSimdBinOpNode(GT_AND_NOT, type, op1, bitMask, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
