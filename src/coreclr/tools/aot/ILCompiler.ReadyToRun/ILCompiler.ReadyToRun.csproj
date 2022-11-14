@@ -16,12 +16,18 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
     <RunAnalyzers>false</RunAnalyzers>
+    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -57,6 +63,11 @@
     <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="..\..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\GenericParameterProxy.cs" Link="Compiler\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\MethodProxy.cs" Link="Compiler\Dataflow\MethodProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\ParameterProxy.cs" Link="Compiler\Dataflow\ParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Compiler\Dataflow\TypeProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
@@ -118,7 +129,16 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
+    <Compile Include="..\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
+    <Compile Include="..\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
     <Compile Include="..\ILLink.Shared\TrimAnalysis\ReferenceKind.cs" Link="ILLink.Shared\TrimAnalysis\ReferenceKind.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" Link="ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\MethodProxy.cs" Link="ILLink.Shared\TypeSystemProxy\MethodProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
@@ -309,6 +329,4 @@
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
-
-  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>
