@@ -320,6 +320,11 @@ namespace System.Net.Security
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), message.GetException());
                         }
 
+#if TARGET_ANDROID
+                        if (_securityContext?.ValidationException is Exception validationException)
+                            throw new AuthenticationException(SR.net_auth_SSPI, validationException);
+#endif
+
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
                     else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -508,9 +513,6 @@ namespace System.Net.Security
             // we shouldn't run it repeatedly and honor the existing validation result.
             // It's possible that the validation result isn't set (for example the client didn't send a certificate)
             // in which case we still need to run the verification.
-            if (_securityContext?.ValidationException is Exception validationException)
-                throw new AuthenticationException(SR.net_auth_SSPI, validationException);
-
             if (_securityContext?.ValidationResult is SslStream.JavaProxy.RemoteCertificateValidationResult result)
             {
                 sslPolicyErrors = result.SslPolicyErrors;
