@@ -250,6 +250,7 @@ struct insGroup
 #ifdef DEBUG
     BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
     jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+    size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -2172,12 +2173,15 @@ private:
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
 
+    void emitRemoveLastInstruction();
+
     bool emitCurIGnonEmpty()
     {
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
     instrDesc* emitLastIns;
+    insGroup*  emitLastInsIG;
 
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
