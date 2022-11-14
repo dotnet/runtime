@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Sdk;
 using Xunit.Abstractions;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
@@ -962,7 +961,7 @@ namespace DebuggerTests
         [Theory]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/test#.cs",
+            "dotnet://debugger-test-special-char-in-path.dll/test%23.cs",
             "debugger-test-special-char-in-path-%23%40/test%23.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
@@ -972,7 +971,6 @@ namespace DebuggerTests
             string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
-            var loc = bp.Value["locations"]?.Value<JArray>()[0];
             var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
                 expectedFileLocation,

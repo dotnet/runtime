@@ -1183,10 +1183,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
             this.docHandle = docHandle;
             this.url = url;
-            this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
+            var urlWithSpecialCharCodedHex = EscapeAscii(url);
+            this.DebuggerFileName = urlWithSpecialCharCodedHex.Replace("\\", "/").Replace(":", "");
             this.BreakableLines = new List<int>();
 
-            var urlWithSpecialCharCodedHex = EscapeAscii(url);
+
             this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
