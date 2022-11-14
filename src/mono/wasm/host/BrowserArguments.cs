@@ -19,7 +19,10 @@ internal sealed class BrowserArguments
     public BrowserArguments(CommonConfiguration commonConfig)
     {
         CommonConfig = commonConfig;
-        AppArgs = GetOptions().Parse(commonConfig.RemainingArgs).ToArray();
+        List<string> appArgs = GetOptions().Parse(commonConfig.RemainingArgs);
+        if (CommonConfig.Debugging)
+            appArgs.Add("--debug");
+        AppArgs = appArgs.ToArray();
 
         ParseJsonProperties(CommonConfig.HostConfig.Properties);
     }
