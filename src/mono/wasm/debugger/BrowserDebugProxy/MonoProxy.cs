@@ -20,6 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
         public static HttpClient HttpClient => new HttpClient();
@@ -258,7 +259,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context))
+            if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
                 if  (method == "Debugger.setPauseOnExceptions")
                 {
@@ -267,11 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                if (method != "DotnetDebugger.setDebuggerProperty")
-                {
-                    // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
-                    return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
-                }
+                return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
             switch (method)
