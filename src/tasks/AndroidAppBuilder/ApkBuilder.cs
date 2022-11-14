@@ -173,7 +173,6 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
-        Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
         if (StripDebugSymbols)
@@ -202,19 +201,8 @@ public class ApkBuilder
                 // aapt complains on such files
                 return false;
             }
-            if (file.Contains("/res/"))
-            {
-                // exclude everything in the `res` folder
-                return false;
-            }
             return true;
         });
-
-        // copy the res directory as is
-        if (Directory.Exists(Path.Combine(AppDir, "res")))
-        {
-            Utils.DirectoryCopy(Path.Combine(AppDir, "res"), Path.Combine(OutputDir, "res"));
-        }
 
         // add AOT .so libraries
         foreach (var aotlib in aotLibraryFiles)
