@@ -141,7 +141,7 @@ The first 4 options are mutually exclusive
         have managed thread local statics, which work through the HELPER. Support for this is considered
         legacy, and going forward, the EE should
 
-    * <NONE> This is a normal static field. Its address in memory is determined by getFieldInfo. (see
+    * <NONE> This is a normal static field. Its address in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
@@ -1719,7 +1719,7 @@ struct CORINFO_FIELD_INFO
     CorInfoIsAccessAllowedResult accessAllowed;
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
-    CORINFO_CONST_LOOKUP    fieldLookup;
+    CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
 };
 
 //----------------------------------------------------------------------------
@@ -3197,6 +3197,13 @@ public:
     // returns the class's domain ID for accessing shared statics
     virtual unsigned getClassDomainID (
                     CORINFO_CLASS_HANDLE    cls,
+                    void                  **ppIndirection = NULL
+                    ) = 0;
+
+
+    // return the data's address (for static fields only)
+    virtual void* getFieldAddress(
+                    CORINFO_FIELD_HANDLE    field,
                     void                  **ppIndirection = NULL
                     ) = 0;
 

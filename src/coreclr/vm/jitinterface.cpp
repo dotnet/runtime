@@ -1480,8 +1480,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fieldFlags = 0;
 
     pResult->offset = pField->GetOffset();
-    pResult->fieldLookup.addr = nullptr;
-
     if (pField->IsStatic())
     {
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
@@ -1498,17 +1496,16 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Provide helper to use if the JIT is not able to emit the TLS access
                 // as intrinsic
                 pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR_TLS;
+
                 pResult->offset = module->GetFieldTlsOffset(pResult->offset);
             }
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_RVA_ADDRESS;
-                pResult->fieldLookup.addr = pField->GetStaticAddressHandle(NULL);
-                pResult->fieldLookup.accessType = IAT_VALUE;
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassInited())
+            if (!pFieldMT->IsClassPreInited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1548,41 +1545,9 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
 
-                // Allocate space for the local class if necessary, but don't trigger
-                // class construction.
-                DomainLocalModule* pLocalModule = pFieldMT->GetDomainLocalModule();
-                pLocalModule->PopulateClass(pFieldMT);
-
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassInited())
+                if (!pFieldMT->IsClassPreInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
-
-                GCX_COOP();
-
-                pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
-                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
-                {
-                    Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
-
-                    if (frozenObj == nullptr)
-                    {
-                        // Boxed static is not yet set, allocate it
-                        pFieldMT->AllocateRegularStaticBox(pField, (BYTE*)pResult->fieldLookup.addr);
-                        frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
-                    }
-
-                    _ASSERT(frozenObj != nullptr);
-
-                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
-                    // for structs containing gc handles
-                    if (!frozenObj->GetMethodTable()->ContainsPointers() &&
-                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
-                    {
-                        pResult->fieldLookup.addr = frozenObj->GetData();
-                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                    }
-                }
-                pResult->fieldLookup.accessType = IAT_VALUE;
             }
         }
 
@@ -11998,6 +11963,54 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
+/*********************************************************************/
+void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
+                                  void **ppIndirection)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void *result = NULL;
+
+    if (ppIndirection != NULL)
+        *ppIndirection = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*) fieldHnd;
+
+    MethodTable* pMT = field->GetEnclosingMethodTable();
+
+    _ASSERTE(!pMT->ContainsGenericVariables());
+
+    void *base = NULL;
+
+    if (!field->IsRVA())
+    {
+        // <REVISIT_TODO>@todo: assert that the current method being compiled is unshared</REVISIT_TODO>
+        // We must not call here for statics of collectible types.
+        _ASSERTE(!pMT->Collectible());
+
+        // Allocate space for the local class if necessary, but don't trigger
+        // class construction.
+        DomainLocalModule *pLocalModule = pMT->GetDomainLocalModule();
+        pLocalModule->PopulateClass(pMT);
+
+        GCX_COOP();
+
+        base = (void *) field->GetBase();
+    }
+
+    result = field->GetStaticAddressHandle(base);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
 {
     CONTRACTL {
@@ -14547,6 +14560,33 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
+}
+
+void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
+                                  void **ppIndirection)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void *result = NULL;
+
+    if (ppIndirection != NULL)
+        *ppIndirection = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+
+    _ASSERTE(field->IsRVA());
+
+    result = field->GetStaticAddressHandle(NULL);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,

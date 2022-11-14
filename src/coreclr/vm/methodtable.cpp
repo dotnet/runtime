@@ -58,7 +58,6 @@
 #include "array.h"
 #include "castcache.h"
 #include "dynamicinterfacecastable.h"
-#include "frozenobjectheap.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3484,6 +3483,7 @@ void MethodTable::AllocateRegularStaticBoxes()
     PTR_BYTE pStaticBase = GetGCStaticsBasePointer();
 
     GCPROTECT_BEGININTERIOR(pStaticBase);
+
     {
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
@@ -3491,70 +3491,33 @@ void MethodTable::AllocateRegularStaticBoxes()
 
         while (pField < pFieldEnd)
         {
+            _ASSERTE(pField->IsStatic());
+
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                AllocateRegularStaticBox(pField, pStaticBase + pField->GetOffset());
+                TypeHandle  th = pField->GetFieldTypeHandleThrowing();
+                MethodTable* pFieldMT = th.GetMethodTable();
+
+                LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics());
+
+                SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
             }
+
             pField++;
         }
     }
     GCPROTECT_END();
 }
 
-void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        CONTRACTL_END;
-    }
-    _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
-
-    Object** boxedStaticHandle = reinterpret_cast<Object**>(fieldAddress);
-
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
-    {
-        // Boxed static is already initialized
-        return;
-    }
-
-    // Grab field's type handle before we enter lock
-    TypeHandle th = pField->GetFieldTypeHandleThrowing();
-
-    // Taking a lock since we might come here from multiple threads/places
-    CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
-
-    // double-checked locking
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
-    {
-        // Boxed static is already initialized
-        return;
-    }
-
-    MethodTable* pFieldMT = th.GetMethodTable();
-    LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-    bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pFieldMT->RequiresAlign8())
-    {
-        // 64bit alignment is not yet supported in FOH for 32bit targets
-        canBeFrozen = false;
-    }
-#endif
-    OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
-    SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
-}
-
 //==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool canBeFrozen)
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_ANY;
         CONTRACTL_END;
     }
 
@@ -3563,21 +3526,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     // Activate any dependent modules if necessary
     pFieldMT->EnsureInstanceActive();
 
-    OBJECTREF obj = NULL;
-    if (canBeFrozen)
-    {
-        // In case if we don't plan to collect this handle we may try to allocate it on FOH
-        _ASSERT(!pFieldMT->ContainsPointers());
-        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-        obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
-        // obj can be null in case if struct is huge (>64kb)
-        if (obj != NULL)
-        {
-            return obj;
-        }
-    }
-
-    obj = AllocateObject(pFieldMT);
+    OBJECTREF obj = AllocateObject(pFieldMT);
 
     // Pin the object if necessary
     if (fPinned)
