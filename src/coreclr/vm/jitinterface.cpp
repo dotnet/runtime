@@ -3512,7 +3512,7 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
 
     if (pRequiredBufferSize != nullptr)
     {
-        *pRequiredBufferSize = requiredBufferSize;
+        *pRequiredBufferSize = requiredBufferSize + 1;
     }
 
     EE_TO_JIT_TRANSITION();
