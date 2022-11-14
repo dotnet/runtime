@@ -1300,10 +1300,9 @@ public:
         return (ICodeManager *)m_pDefaultCodeMan;
     }
 
-    static PTR_Module FindZapModule(TADDR currentData);
     static PTR_Module FindReadyToRunModule(TADDR currentData);
 
-    // FindZapModule flavor to be used during GC to find GCRefMap
+    // FindReadyToRunModule flavor to be used during GC to find GCRefMap
     static PTR_Module FindModuleForGCRefMap(TADDR currentData);
 
     static RangeSection*  GetRangeSectionAndPrev(RangeSection *pRS, TADDR addr, RangeSection **ppPrev);
@@ -1377,8 +1376,6 @@ private:
                                IJitManager* pJit,
                                RangeSection::RangeSectionFlags flags,
                                TADDR pHeapListOrZapModule);
-    static void DeleteRangeHelper(RangeSection** ppRangeList,
-                                  TADDR StartRange);
 
 #ifndef DACCESS_COMPILE
     static PCODE getNextJumpStub(MethodDesc* pMD,
