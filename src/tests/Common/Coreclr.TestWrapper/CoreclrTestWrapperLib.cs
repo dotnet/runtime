@@ -399,6 +399,7 @@ namespace CoreclrTestLib
                 symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
             }
 
+            // Go through the output of llvm-symbolizer and strip all the markers we added initially.
             string[] contentsToSantize = symbolizerOutput.Split(Environment.NewLine);
             StringBuilder finalBuilder = new StringBuilder();
             for (int lineNum = 0; lineNum < contentsToSantize.Length; lineNum++)
