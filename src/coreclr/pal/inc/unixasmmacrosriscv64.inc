@@ -38,7 +38,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-    la.local  \HelperReg, \Name
+    lla  \HelperReg, \Name
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
@@ -61,12 +61,12 @@ C_FUNC(\Name\()_End):
     .cfi_rel_offset \reg, \ofs
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
+.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
     sd \reg1, \ofs(sp)
     sd \reg2, (\ofs+8)(sp)
     .cfi_rel_offset \reg1, \ofs
     .cfi_rel_offset \reg1, \ofs + 8
-    .ifc \reg1, fp
+    .if (\__def_cfa_save ==  1)
         addi fp, sp, 0
         .cfi_def_cfa_register fp
     .endif
@@ -77,30 +77,37 @@ C_FUNC(\Name\()_End):
     .cfi_adjust_cfa_offset -\ssize
     .cfi_rel_offset \reg1, 0
     .cfi_rel_offset \reg2, 8
-    .ifc \reg1, fp
+    .if (\__def_cfa_save ==  1)
         addi fp, sp, 0
         .cfi_def_cfa_register fp
     .endif
 .endm
 
 .macro EPILOG_RESTORE_REG reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    ld  \reg, (\ofs)(sp)
+    .cfi_restore \reg
+    .cfi_def_cfa_register sp
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    ld  \reg2, (\ofs+8)(sp)
+    ld  \reg1, (\ofs)(sp)
+    .cfi_restore \reg2
+    .cfi_restore \reg1
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    ld  \reg2, 8(sp)
+    ld  \reg1, 0(sp)
+    .cfi_restore \reg2
+    .cfi_restore \reg1
+
+    addi  sp, sp, \ssize
+    .cfi_def_cfa sp,-\ssize
 .endm
 
 .macro EPILOG_RETURN
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    jalr x0, ra, 0
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -210,8 +217,40 @@ C_FUNC(\Name\()_End):
 // Extra:
 //
 .macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+
+        __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_SaveFPArgs = \SaveFPRegs
+
+        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+            __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        .endif
+
+        __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
+
+        .if (__PWTB_SaveFPArgs == 1)
+            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
+        .endif
+
+
+        __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
+        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 
+
+        // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
+        __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64
+        PROLOG_STACK_ALLOC __PWTB_StackAlloc
+        PROLOG_SAVE_REG_PAIR  fp, ra, __PWTB_CalleeSavedRegisters, 1
+
+        // First, Spill argument registers.
+        SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+
+        // Then, Spill callee saved registers.  $sp=$r3.
+        SAVE_CALLEESAVED_REGISTERS     sp, __PWTB_CalleeSavedRegisters
+
+        // saving is f10-17.
+        .if (__PWTB_SaveFPArgs == 1)
+            SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+        .endif
+
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN

@@ -16,12 +16,12 @@
 
 #define __gmscpu_h__
 
-// S0 - S11 
-#define NUM_NONVOLATILE_CONTEXT_POINTERS 12
+// CalleeSaveRegisters
+#define NUM_NONVOLATILE_CONTEXT_POINTERS 14
 
 struct MachState {
-    ULONG64        captureS0_S11[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
-    PTR_ULONG64    ptrS0_S11[NUM_NONVOLATILE_CONTEXT_POINTERS]; // pointers to preserved registers
+    ULONG64        captureCalleeSavedRegisters[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
+    PTR_ULONG64    ptrCalleeSavedRegisters[NUM_NONVOLATILE_CONTEXT_POINTERS]; // pointers to preserved registers
     TADDR          _pc; // program counter after the function returns
     TADDR          _sp; // stack pointer after the function returns
     BOOL           _isValid;
@@ -61,8 +61,8 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     // sure to properly copy interior pointers into the
     // new struct
 
-    PULONG64* pSrc = (PULONG64 *)&copy->ptrS0_S11;
-    PULONG64* pDst = (PULONG64 *)&this->ptrS0_S11;
+    PULONG64* pSrc = (PULONG64 *)&copy->ptrCalleeSavedRegisters;
+    PULONG64* pDst = (PULONG64 *)&this->ptrCalleeSavedRegisters;
 
     const PULONG64 LowerBoundDst = (PULONG64) this;
     const PULONG64 LowerBoundSrc = (PULONG64) copy;
@@ -80,7 +80,7 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
         }
 
         *pDst++ = valueSrc;
-        captureS0_S11[i] = copy->captureS0_S11[i];
+        captureCalleeSavedRegisters[i] = copy->captureCalleeSavedRegisters[i];
     }
 
 

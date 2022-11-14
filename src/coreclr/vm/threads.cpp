@@ -1114,7 +1114,7 @@ extern "C" void *JIT_WriteBarrier_Loc;
 void *JIT_WriteBarrier_Loc = 0;
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;

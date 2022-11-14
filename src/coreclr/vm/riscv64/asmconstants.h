@@ -107,18 +107,18 @@ ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
 
 
 // Offset of the array containing the address of captured registers in MachState
-#define MachState__captureS0_S11 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureS0_S11 == offsetof(MachState, captureS0_S11))
+#define MachState__captureCalleeSavedRegisters 0x0
+ASMCONSTANTS_C_ASSERT(MachState__captureCalleeSavedRegisters == offsetof(MachState, captureCalleeSavedRegisters))
 
 // Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrS0_S11 0x60
-ASMCONSTANTS_C_ASSERT(MachState__ptrS0_S11 == offsetof(MachState, ptrS0_S11))
+#define MachState__ptrCalleeSavedRegisters 0x70
+ASMCONSTANTS_C_ASSERT(MachState__ptrCalleeSavedRegisters == offsetof(MachState, ptrCalleeSavedRegisters))
 
-#define MachState__isValid 0xd0
+#define MachState__isValid 0xf0
 ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 
-#define LazyMachState_captureS0_S11 MachState__captureS0_S11
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureS0_S11 == offsetof(LazyMachState, captureS0_S11))
+#define LazyMachState_captureCalleeSavedRegisters MachState__captureCalleeSavedRegisters
+ASMCONSTANTS_C_ASSERT(LazyMachState_captureCalleeSavedRegisters == offsetof(LazyMachState, captureCalleeSavedRegisters))
 
 #define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
