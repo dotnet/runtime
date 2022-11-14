@@ -276,8 +276,17 @@ namespace CoreclrTestLib
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
         static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
         {
-            if (!File.Exists(crashReportJsonFile))
+            Console.WriteLine($"Running TryPrintStackTraceFromCrashReport() for {crashReportJsonFile}");
+            try
             {
+                if (!File.Exists(crashReportJsonFile))
+                {
+                    return false;
+                }
+            } catch (Exception ex)
+            {
+                Console.WriteLine($"Got exception when trying to check existance of {crashReportJsonFile}");
+                Console.WriteLine(ex.ToString());
                 return false;
             }
             outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
@@ -354,6 +363,10 @@ namespace CoreclrTestLib
 
                 }
             }
+
+            Console.WriteLine("----------input to llvm-symbolizer-----------------");
+            Console.WriteLine(addrBuilder.ToString());
+            Console.WriteLine("---------------------------");
 
             string symbolizerOutput = null;
 
