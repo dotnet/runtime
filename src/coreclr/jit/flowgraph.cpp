@@ -3068,6 +3068,67 @@ PhaseStatus Compiler::fgSimpleLowering()
                 }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+                case GT_CAST:
+                {
+                    // Simple cast removal optimization.
+                    // TODO: This could be done in morph, but the following occurs when done in morph:
+                    //       - Possible bug in value numbering/CSE that causes a situation
+                    //         for a variable to not be normalized on-load correctly.
+                    //       - Several regressions that need to be investigated.
+                    //       - TP is higher in morph.
+
+                    GenTreeCast*  cast       = tree->AsCast();
+                    GenTree*      castOp     = cast->CastOp();
+                    var_types     castToType = cast->CastToType();
+                    var_types     srcType    = castOp->TypeGet();
+
+                    if (!castOp->OperIsSimple())
+                        break;
+
+                    if (cast->gtOverflow())
+                        break;
+
+                    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+                        break;
+
+                    if (castOp->gtSetFlags())
+                        break;
+
+                    // Only optimize if the castToType is a small integer type.
+                    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType) || !varTypeIsSmall(castToType))
+                        break;
+
+                    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+                    {
+                        // This removes the casts as it prevents zero/sign-extended 'mov's before the op.
+
+                        if (castOp->gtGetOp1()->OperIs(GT_CAST))
+                        {
+                            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+                            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
+                                (castToType == op1->CastToType()))
+                            {
+                                castOp->AsOp()->gtOp1 = op1->CastOp();
+                                range.Remove(op1);
+                            }
+                        }
+
+                        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
+                        {
+                            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+                            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
+                                (castToType == op2->CastToType()))
+                            {
+                                castOp->AsOp()->gtOp2 = op2->CastOp();
+                                range.Remove(op2);
+                            }
+                        }
+                    }
+                }
+                break;
+
                 default:
                 {
                     // No other operators need processing.

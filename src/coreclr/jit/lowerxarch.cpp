@@ -784,13 +784,7 @@ void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
-    GenTree* castOp = tree->AsCast()->CastOp();
-
-    if (castOp->OperIsSimple())
-    {
-        LowerCastOfSmpOp(tree->AsCast());
-    }
-
+    GenTree*  castOp     = tree->AsCast()->CastOp();
     var_types castToType = tree->CastToType();
     var_types srcType    = castOp->TypeGet();
     var_types tmpType    = TYP_UNDEF;

@@ -323,7 +323,6 @@ private:
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
-    void LowerCastOfSmpOp(GenTreeCast* node);
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
