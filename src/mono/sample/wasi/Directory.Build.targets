@@ -53,6 +53,9 @@
   </Target>
 
   <Target Name="RunSampleWithWasmtime" DependsOnTargets="ProvisionWasmtime;BuildSampleInTree">
+  <!-- 
+    TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
+  -->
     <Exec 
     WorkingDirectory="bin/publish"
     Command="$(MonoProjectRoot)wasi/wasmtime/wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />

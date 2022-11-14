@@ -676,9 +676,7 @@ int main() {
     mono_wasm_invoke_method_ref (entry_method, NULL, NULL, &out_exc, &out_res);
 	if (out_exc)
 	{
-		char* message = mono_wasm_string_get_utf8((MonoString*)out_res);
-		printf("%s\n", message);
-		free(message);
+		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
 	if(out_res)
