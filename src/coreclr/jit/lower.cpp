@@ -511,7 +511,11 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
     if (castOp->OperMayOverflow() && castOp->gtOverflow())
         return;
 
-    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
+    if (castOp->gtSetFlags())
+        return;
+
+    // Only optimize if the castToType is a small integer type.
+    if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType) || !varTypeIsSmall(castToType))
         return;
 
     if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
@@ -525,7 +529,7 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
             GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
 
             if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
-                castToType == op1->CastToType())
+                (castToType == op1->CastToType()))
             {
                 canRelowerCastOp      = true;
                 castOp->AsOp()->gtOp1 = op1->CastOp();
@@ -539,7 +543,7 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
             GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
 
             if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
-                castToType == op2->CastToType())
+                (castToType == op2->CastToType()))
             {
                 canRelowerCastOp      = true;
                 castOp->AsOp()->gtOp2 = op2->CastOp();
@@ -3008,23 +3012,22 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     GenTree* op1 = castOp->gtGetOp1();
                     GenTree* op2 = castOp->gtGetOp2();
 
-                    op1->ClearContained();
-                    op2->ClearContained();
-
 #ifdef TARGET_XARCH
-                    // We change the type here so we can take advantage of containment for a memory op.
-
-                    if (op1->OperIs(GT_LCL_VAR) && !op2->OperIs(GT_LCL_VAR))
+                    // If one of the ops is not already contained and one of the ops is a GT_LCL_VAR,
+                    // then change its type to the castToType. We do this to take advantage of
+                    // containment for a memory op.
+                    if (op1->OperIs(GT_LCL_VAR) && !op2->isContained())
                     {
                         op1->ChangeType(castToType);
                     }
-
-                    if (op2->OperIs(GT_LCL_VAR) && !op1->OperIs(GT_LCL_VAR))
+                    else if (op2->OperIs(GT_LCL_VAR) && !op1->isContained())
                     {
                         op2->ChangeType(castToType);
                     }
 #endif // TARGET_XARCH
 
+                    op1->ClearContained();
+                    op2->ClearContained();
                     ContainCheckBinary(castOp->AsOp());
                 }
 
