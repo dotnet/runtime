@@ -10692,7 +10692,7 @@ void Compiler::optRemoveRedundantZeroInits()
 //------------------------------------------------------------------------
 // optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
 //
-// The phase iterates over the partial stores referenced by the SSA
+// The phase iterates over partial stores referenced by the SSA
 // descriptors and deletes those which do not change the local's value.
 //
 // Return Value:
