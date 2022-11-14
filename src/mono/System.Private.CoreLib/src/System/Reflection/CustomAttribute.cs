@@ -158,7 +158,7 @@ namespace System.Reflection
             if (!inherit && res.Length == 1)
             {
                 if (res[0] == null)
-                    throw new CustomAttributeFormatException("Invalid custom attribute format");
+                    throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
 
                 if (attributeType != null)
                 {
@@ -206,7 +206,7 @@ namespace System.Reflection
                     foreach (object attr in res)
                     {
                         if (attr == null)
-                            throw new CustomAttributeFormatException("Invalid custom attribute format");
+                            throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
                     }
                     var result = new Attribute[res.Length];
                     res.CopyTo(result, 0);
@@ -217,7 +217,7 @@ namespace System.Reflection
                 foreach (object attr in res)
                 {
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
 
                     Type attrType = attr.GetType();
                     if (attributeType != null && !attributeType.IsAssignableFrom(attrType))
@@ -244,7 +244,7 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
 
                     Type attrType = attr.GetType();
                     if (attributeType != null)
@@ -376,7 +376,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
                     }
 
                     var result = new CustomAttributeData[res.Count];
@@ -389,7 +389,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
                         if (!attributeType.IsAssignableFrom(attrData.AttributeType))
                             continue;
                         a.Add(attrData);
@@ -410,7 +410,7 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attrData == null)
-                        throw new CustomAttributeFormatException(Message);
+                        throw new CustomAttributeFormatException(SR.CustomAttributeFormat_InvalidCustomAttributeFormat);
 
                     Type attrType = attrData.AttributeType;
                     if (attributeType != null)

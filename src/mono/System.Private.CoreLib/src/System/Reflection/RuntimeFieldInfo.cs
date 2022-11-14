@@ -201,12 +201,9 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType(), nameof(obj)));
             }
 
             if (!IsLiteral)
@@ -228,15 +225,12 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Arg_FieldDeclTarget);
             }
             if (IsLiteral)
-                throw new FieldAccessException("Cannot set a constant field");
+                throw new FieldAccessException(SR.FieldAccess_CannotSetConstantField);
 
             binder ??= Type.DefaultBinder;
             CheckGeneric();
@@ -277,7 +271,7 @@ namespace System.Reflection
         {
             Type? declaringType = DeclaringType;
             if (declaringType != null && declaringType.ContainsGenericParameters)
-                throw new InvalidOperationException("Late bound operations cannot be performed on fields with types for which Type.ContainsGenericParameters is true.");
+                throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);

@@ -1622,7 +1622,7 @@ namespace System
             {
                 Type elementType = this.GetRootElementType();
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
-                    throw new NotSupportedException("NotSupported_ContainsStackPtr");
+                    throw new NotSupportedException(SR.NotSupported_ContainsStackPtr);
 
                 if (IsValueType)
                 {
@@ -1636,7 +1636,7 @@ namespace System
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
             if (IsAbstract)
             {
-                throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
+                throw new MissingMethodException(string.Format(SR.MissingMethod_CannotCreateAbstractClass, FullName));
             }
 
             unsafe
@@ -1957,7 +1957,7 @@ namespace System
         public override Type MakeByRefType()
         {
             if (IsByRef)
-                throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
+                throw new TypeLoadException(SR.TypeLoad_ResolveType);
             Type? type = null;
             var base_type = this;
             make_byref_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
@@ -2114,19 +2114,19 @@ namespace System
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
+                throw new ArgumentException(string.Format(SR.Argument_MustBeRuntimeType, nameof(ifaceType)));
 
             InterfaceMapping res;
             if (!ifaceType.IsInterface)
-                throw new ArgumentException("Argument must be an interface.", nameof(ifaceType));
+                throw new ArgumentException(string.Format(SR.Argument_MustBeInterface, nameof(ifaceType)));
             if (IsInterface)
-                throw new ArgumentException("'this' type cannot be an interface itself");
+                throw new ArgumentException(SR.Argument_InterfaceMap);
             var this_type = this;
             res.TargetType = this;
             res.InterfaceType = ifaceType;
             GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
-                throw new ArgumentException("Interface not found", nameof(ifaceType));
+                throw new ArgumentException(string.Format(SR.ArgumentException_InterfaceNotFound, nameof(ifaceType)));
 
             return res;
         }

@@ -280,6 +280,9 @@
   <data name="Arg_DlgtTypeMis" xml:space="preserve">
     <value>Delegates must be of the same type.</value>
   </data>
+  <data name="Arg_DllNameNotFound" xml:space="preserve">
+    <value>DllName cannot be empty.</value>
+  </data>
   <data name="Arg_DllNotFoundException" xml:space="preserve">
     <value>Dll was not found.</value>
   </data>
@@ -325,6 +328,9 @@
   <data name="Arg_ExternalException" xml:space="preserve">
     <value>External component has thrown an exception.</value>
   </data>
+  <data name="Arg_EnC" xml:space="preserve">
+  <value> EnC: Expected a primitive, valuetype, class or interface field </value>
+  </data>
   <data name="Arg_FieldAccessException" xml:space="preserve">
     <value>Attempted to access a field that is not accessible by the caller.</value>
   </data>
@@ -351,6 +357,9 @@
   </data>
   <data name="Arg_FormatException" xml:space="preserve">
     <value>One of the identified items was in an invalid format.</value>
+  </data>
+  <data name= "Arg_GenericArguments" xml:space="preserve">
+  <value> Generic arguments after array spec or pointer type </value>
   </data>
   <data name="Arg_GenericParameter" xml:space="preserve">
     <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
@@ -648,6 +657,9 @@
   <data name="Arg_NullReferenceException" xml:space="preserve">
     <value>Object reference not set to an instance of an object.</value>
   </data>
+  <data name="Arg_NullTypeHandleReferenceException" xml:space="preserve">
+  <value> Type handle was null {0}. </value>
+  </data>
   <data name="Arg_ObjObj" xml:space="preserve">
     <value>Object type cannot be converted to target type.</value>
   </data>
@@ -834,11 +846,17 @@
   <data name="Argument_AlreadyBoundOrSyncHandle" xml:space="preserve">
     <value>'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.</value>
   </data>
+  <data name="Argument_ArrayCannotBeBoundTo2Dimensions" xml:space="preserve">
+    <value>Array spec cannot have 2 bound dimensions.</value>
+  </data>
   <data name="Argument_ArrayGetInterfaceMap" xml:space="preserve">
     <value>Interface maps for generic interfaces on arrays cannot be retrieved.</value>
   </data>
   <data name="Argument_ArraysInvalid" xml:space="preserve">
-    <value>Array or pointer types are not valid.</value>
+    <value>Array or pointer types are not valid. Name: {0}.</value>
+  </data>
+  <data name="Argument_ArrayParsingError" xml:space="preserve">
+      <value>Error parsing array spec.</value>
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
@@ -912,11 +930,27 @@
   <data name="Argument_BadTypeInCustomAttribute" xml:space="preserve">
     <value>An invalid type was used as a custom attribute constructor argument, field or property.</value>
   </data>
+  <data name="Argument_ByrefQualifierMustBeLastOneOfAType" xml:space="preserve">
+    <value>An invalid type was used as a custom attribute constructor argument, field or property.</value>
+  </data>
+  
+  <data name="Argument_CannotCreateArrayTypeOfByref" xml:space="preserve">
+    <value>Cannot create an array type of a byref type.</value>
+  </data>
+  <data name="Argument_CannotCreatePointerTypeOfByref" xml:space="preserve">
+    <value>Can't have a pointer to a byref type.</value>
+  </data>
   <data name="Argument_CannotCreateTypedReference" xml:space="preserve">
     <value>Cannot use function evaluation to create a TypedReference object.</value>
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
+  </data>
+  <data name="Argument_CannotHaveAByrefOfByref" xml:space="preserve">
+    <value>Can't have a byref of a byref.</value>
+  </data>
+  <data name="Argument_CannotPointToByrefType" xml:space="preserve">
+    <value>Can't have a pointer to a byref type</value>
   </data>
   <data name="Argument_CodepageNotSupported" xml:space="preserve">
     <value>{0} is not a supported code page.</value>
@@ -940,7 +974,10 @@
     <value>Null is not a valid constant value for this type.</value>
   </data>
   <data name="Argument_ConstructorNeedGenericDeclaringType" xml:space="preserve">
-    <value>The specified constructor must be declared on a generic type definition.</value>
+    <value>The specified constructor must be declared on a generic type definition. Name of constructor: {0}.</value>
+  </data>
+  <data name="Argument_ConstructorNotFound" xml:space="preserve">
+    <value>Constructor not found.</value>
   </data>
   <data name="Argument_ConversionOverflow" xml:space="preserve">
     <value>Conversion buffer overflow.</value>
@@ -972,8 +1009,14 @@
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
   </data>
+  <data name="Argument_CustomAttributeInvalidType" xml:space="preserve">
+    <value>Cannot emit a CustomAttribute with argument of type {0}.</value>
+  </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
+  </data>
+  <data name="Argument_CustomModifierLengthInvalidLength" xml:space="preserve">
+    <value>Custom modifiers length `{0}' does not match the size of the arguments.</value>
   </data>
   <data name="Argument_DateTimeBadBinaryData" xml:space="preserve">
     <value>The binary data must result in a DateTime with ticks between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
@@ -1035,14 +1078,29 @@
   <data name="Argument_EnumTypeDoesNotMatch" xml:space="preserve">
     <value>The argument type, '{0}', is not the same as the enum type '{1}'.</value>
   </data>
+  <data name="Argument_ExceptionSuppliedForFilterClause" xml:space="preserve">
+    <value>Do not supply an exception type for filter clause.</value>
+  </data>
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
   </data>
   <data name="Argument_FieldDeclaringTypeGeneric" xml:space="preserve">
     <value>Cannot resolve field {0} because the declaring type of the field handle {1} is generic. Explicitly provide the declaring type to GetFieldFromHandle.</value>
   </data>
+  <data name="Argument_FieldDoesNotBelongToConstructorClass" xml:space="preserve">
+    <value>Field {0} does not belong to the same class as the constructor</value>
+  </data>
+   <data name="Argument_FieldDoesNotHaveAValidType" xml:space="preserve">
+    <value>Field {0} does not have a valid type.</value>
+  </data>
+  <data name="Argument_FieldDoesNotHaveAValidValue" xml:space="preserve">
+    <value>Field {0} does not have a valid value.</value>
+  </data>
+  <data name="Argument_FieldAndTypeHandleIncompatibility" xml:space="preserve">
+    <value>The field handle and the type handle are incompatible.</value>
+  </data>
   <data name="Argument_FieldNeedGenericDeclaringType" xml:space="preserve">
-    <value>The specified field must be declared on a generic type definition.</value>
+    <value>The specified field must be declared on a generic type definition. Name of field: {0}</value>
   </data>
   <data name="Argument_GenConstraintViolation" xml:space="preserve">
     <value>GenericArguments[{0}], '{1}', on '{2}' violates the constraint of type '{3}'.</value>
@@ -1050,8 +1108,23 @@
   <data name="Argument_GenericArgsCount" xml:space="preserve">
     <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
   </data>
+  <data name="Argument_GenericArgumentsOverflow" xml:space="preserve">
+  <value>The type or method has {0} generic parameter(s) but {1} generic argument(s) where provided. A generic argument must be provided for each generic parameter. Name of type arguments: {2}</value>
+  </data>
+  <data name="Argument_GenericArgumentCannotBeByrefOrPointerType" xml:space="preserve">
+    <value>Generic argument can't be byref or pointer type.</value>
+  </data>
   <data name="Argument_GenericsInvalid" xml:space="preserve">
     <value>Generic types are not valid.</value>
+  </data>
+  <data name="Argument_GenericParsingError" xml:space="preserve">
+    <value>Error parsing generic params spec.</value>
+  </data>
+  <data name="Argument_OpenGenericTypeNotPermitted" xml:space="preserve">
+    <value>Open Generic Type not permitted. Name: {0}</value>
+  </data>
+  <data name="Argument_GetMethodNotFound" xml:space="preserve">
+    <value>Get Method not found for '{Name}'</value>
   </data>
   <data name="Argument_GlobalFunctionHasToBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
@@ -1089,6 +1162,12 @@
   <data name="Argument_IndexOutOfArrayBounds" xml:space="preserve">
     <value>The specified index is out of bounds of the specified array.</value>
   </data>
+  <data name="Argument_IncompatablePropertyAndTypeHandle" xml:space="preserve">
+    <value>The property handle and the type handle are incompatible.</value>
+  </data>
+  <data name="Argument_IncorrectLength" xml:space="preserve">
+    <value>Incorrect length {0}.</value>
+  </data>
   <data name="Argument_InterfaceMap" xml:space="preserve">
     <value>'this' type cannot be an interface itself.</value>
   </data>
@@ -1110,14 +1189,20 @@
   <data name="Argument_InvalidArrayLength" xml:space="preserve">
     <value>Length of the array must be {0}.</value>
   </data>
-  <data name="Argument_InvalidArrayType" xml:space="preserve">
-    <value>Target array type is not compatible with the type of items in the collection.</value>
+   <data name="Argument_InvalidArrayType" xml:space="preserve">
+    <value>Array type is invalid.</value>
+  </data>
+  <data name="Argument_MultiDimensionalArrayCannotBeBound" xml:space="preserve">
+    <value>Invalid array spec, multi-dimensional array cannot be bound.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
     <value>The given assembly name was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
+  </data>
+  <data name="Argument_InvalidCharInArraySpecification" xml:space="preserve">
+    <value>"Invalid character in array spec: {0}</value>
   </data>
   <data name="Argument_InvalidCharSequence" xml:space="preserve">
     <value>Invalid Unicode code point found at index {0}.</value>
@@ -1132,7 +1217,7 @@
     <value>Unable to translate Unicode character \\u{0:X4} at index {1} to specified code page.</value>
   </data>
   <data name="Argument_InvalidConstructorDeclaringType" xml:space="preserve">
-    <value>The specified constructor must be declared on the generic type definition of the specified type.</value>
+    <value>The specified constructor must be declared on the generic type definition of the specified type. Name of type: {0}</value>
   </data>
   <data name="Argument_InvalidConstructorInfo" xml:space="preserve">
     <value>The ConstructorInfo object is not valid.</value>
@@ -1175,7 +1260,7 @@
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
   <data name="Argument_InvalidFieldDeclaringType" xml:space="preserve">
-    <value>The specified field must be declared on the generic type definition of the specified type.</value>
+    <value>The specified field must be declared on the generic type definition of the specified type. Name of type: {0}</value>
   </data>
   <data name="Argument_InvalidFileModeAndAccessCombo" xml:space="preserve">
     <value>Combining FileMode: {0} with FileAccess: {1} is invalid.</value>
@@ -1184,7 +1269,10 @@
     <value>Value of flags is invalid.</value>
   </data>
   <data name="Argument_InvalidGenericArg" xml:space="preserve">
-    <value>The generic type parameter was not valid</value>
+    <value>Invalid generic arguments spec</value>
+  </data>
+  <data name="Argument_InvalidGenericArgumentsSeparator" xml:space="preserve">
+    <value>Invalid generic arguments separator {0}</value>
   </data>
   <data name="Argument_InvalidGenericInstArray" xml:space="preserve">
     <value>Generic arguments must be provided for each generic parameter and each generic argument must be a RuntimeType.</value>
@@ -1249,6 +1337,9 @@
   <data name="Argument_NullCharInPath" xml:space="preserve">
     <value>Null character in path.</value>
   </data>
+  <data name="Argument_NullParameterTypes" xml:space="preserve">
+    <value>Elements of the parameterTypes array cannot be null. Name of parameter type: {0}.</value>
+  </data>
   <data name="Argument_InvalidResourceCultureName" xml:space="preserve">
     <value>The given culture name '{0}' cannot be used to locate a resource file. Resource filenames must consist of only letters, numbers, hyphens or underscores.</value>
   </data>
@@ -1291,8 +1382,14 @@
   <data name="Argument_LargeInteger" xml:space="preserve">
     <value>Integer or token was too large to be encoded.</value>
   </data>
+  <data name="Argument_LabelUnmarked" xml:space="preserve">
+    <value>Label #{0} is not marked in method `{1}'</value>
+  </data>
   <data name="Argument_LongEnvVarValue" xml:space="preserve">
     <value>Environment variable name or value is too long.</value>
+  </data>
+  <data name="Argument_MethodBodyMustBelongToType" xml:space="preserve">
+    <value>Method body must belong to this type.</value>
   </data>
   <data name="Argument_MethodDeclaringTypeGeneric" xml:space="preserve">
     <value>Cannot resolve method {0} because the declaring type of the method handle {1} is generic. Explicitly provide the declaring type to GetMethodFromHandle.</value>
@@ -1300,8 +1397,14 @@
   <data name="Argument_MethodDeclaringTypeGenericLcg" xml:space="preserve">
     <value>Method '{0}' has a generic declaring type '{1}'. Explicitly provide the declaring type to GetTokenFor.</value>
   </data>
+  <data name="Argument_MethodIsNotAGenericMethodDefinition" xml:space="preserve">
+    <value>Method is not a generic method definition.</value>
+  </data>
   <data name="Argument_MethodNeedGenericDeclaringType" xml:space="preserve">
     <value>The specified method cannot be dynamic or global and must be declared on a generic type definition.</value>
+  </data>
+  <data name="Argument_MethodNotFoundInType" xml:space="preserve">
+    <value>Method {0} not found in type {1}.</value>
   </data>
   <data name="Argument_MinMaxValue" xml:space="preserve">
     <value>'{0}' cannot be greater than {1}.</value>
@@ -1325,16 +1428,19 @@
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
-    <value>Type must be a runtime Type object.</value>
+    <value>Type must be a runtime Type object {0}.</value>
   </data>
   <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
-    <value>'type' must contain a TypeBuilder as a generic argument.</value>
+    <value>'type' must contain a TypeBuilder as a generic argument. Name of builder type: {0}.</value>
   </data>
   <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
     <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
   </data>
   <data name="Argument_MustHaveLayoutOrBeBlittable" xml:space="preserve">
     <value>The specified structure must be blittable or have layout information.</value>
+  </data>
+  <data name="Argument_MustBeInterface" xml:space="preserve">
+    <value>Argument must be an interface {0}.</value>
   </data>
   <data name="Argument_NativeOverlappedAlreadyFree" xml:space="preserve">
     <value>'overlapped' has already been freed.</value>
@@ -1353,6 +1459,9 @@
   </data>
   <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
     <value>The specified Type must be a struct containing no references.</value>
+  </data>
+  <data name="Argument_NegativeFieldOffsetNotPermitted" xml:space="preserve">
+    <value>Negative field offset is not allowed.</value>
   </data>
   <data name="Argument_NeverValidGenericArgument" xml:space="preserve">
     <value>The type '{0}' may not be used as a type argument.</value>
@@ -1420,8 +1529,23 @@
   <data name="Argument_OutOfOrderDateTimes" xml:space="preserve">
     <value>The DateStart property must come before the DateEnd property.</value>
   </data>
+  <data name="Argument_OutputStreamsNotSupportingTypeBuilders">
+  <value> Output streams do not support TypeBuilders. </value>
+  </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
+  </data>
+  <data name="Argument_ParameterHasUnmatchedArgumentValue" xml:space="preserve">
+    <value>Value of argument {0} + does not match parameter type: {1} -> {2}.</value>
+  </data>
+  <data name="Argument_ParameterInvalidType" xml:space="preserve">
+    <value>Parameter {0} does not have a valid type.</value>
+  </data>
+  <data name="Argument_ParameterInvalidValue" xml:space="preserve">
+    <value>Parameter {0} does not have a valid value.</value>
+  </data>
+  <data name="Argument_TypeParseError" xml:space="preserve">
+    <value>Could not parse the type name: {0}.</value>
   </data>
   <data name="Argument_PreAllocatedAlreadyAllocated" xml:space="preserve">
     <value>'preAllocated' is already in use.</value>
@@ -1464,6 +1588,9 @@
   </data>
   <data name="Argument_SemaphoreInitialMaximum" xml:space="preserve">
     <value>The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.</value>
+  </data>
+  <data name="Argument_SetMethodNotFound" xml:space="preserve">
+    <value>Set Method not found for '{0}'.</value>
   </data>
   <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
     <value>Should not specify exception type for catch clause for filter block.</value>
@@ -1510,6 +1637,12 @@
   <data name="Argument_TypeMustBeVisibleFromCom" xml:space="preserve">
     <value>The specified type must be visible from COM.</value>
   </data>
+  <data name="Argument_TypeMustBeOfExceptionType" xml:space="preserve">
+    <value>Type should be an exception type. Name of exception type: {0}.</value>
+  </data>
+  <data name="Argument_TypeMustHaveDefaultConstructor" xml:space="preserve">
+    <value>Type should have a default constructor. Name of exception type: {0}.</value>
+  </data>
   <data name="Argument_TypeMustNotBeComImport" xml:space="preserve">
     <value>The type must not be imported from COM.</value>
   </data>
@@ -1519,6 +1652,9 @@
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
+  <data name="Argument_UnclosedAssemblyQualifiedTypeName" xml:space="preserve">
+    <value>Unclosed assembly-qualified type name at {0}</value>
+  </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
   </data>
@@ -1526,10 +1662,19 @@
     <value>Unknown unmanaged calling convention for function signature.</value>
   </data>
   <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
+    <value>Specified unmanaged type is only valid on fields.</value>
+  </data>
+  <data name="Argument_UnmanagedTypeOnlyValidOnFields" xml:space="preserve">
     <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
+  </data>
+  <data name="Argument_UnmatchedFieldValueAndType" xml:space="preserve">
+    <value>Value of field '{0}' does not match field type: {1}</value>
   </data>
   <data name="Argument_UnmatchedMethodForLocal" xml:space="preserve">
     <value>Local passed in does not belong to this ILGenerator.</value>
+  </data>
+  <data name="Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName" xml:space="preserve">
+  <value> Unmatched ']' while parsing generic argument assembly name </value>
   </data>
   <data name="Argument_UnmatchingSymScope" xml:space="preserve">
     <value>Non-matching symbol scope.</value>
@@ -1545,6 +1690,12 @@
   </data>
   <data name="ArgumentException_BufferNotFromPool" xml:space="preserve">
     <value>The buffer is not associated with this pool and may not be returned to it.</value>
+  </data>
+  <data name="ArgumentException_InterfaceNotFound" xml:space="preserve">
+    <value>Interface not found {0}.</value>
+  </data>
+  <data name="ArgumentException_ModuleBuilderExpected" xml:space="preserve">
+    <value>ModuleBuilder is expected.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
     <value>The object is not an array with the same number of elements as the array to compare it to.</value>
@@ -1943,6 +2094,9 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
+  <data name="CustomAttributeFormat_InvalidCustomAttributeFormat" xml:space="preserve">
+  <value> Invalid custom attribute format. </value>
+  </data>
   <data name="event_TaskCompleted" xml:space="preserve">
     <value>Task {2} completed.</value>
   </data>
@@ -2150,17 +2304,48 @@
   <data name="EventSource_VarArgsParameterMismatch" xml:space="preserve">
     <value>Event {0} was called with a different type as defined (argument "{1}"). This may cause the event to be displayed incorrectly.</value>
   </data>
+  <data name="Exception_ErrorInCustomAttr" xml:space="preserve">
+    <value>Error in customattr.</value>
+  </data>
+
+  <data name="Exception_EmptyFieldForCustomAttributeType" xml:space="preserve">
+    <value>Custom attribute type '{0}' doesn't contain a field named '{1}'</value>
+  </data>
   <data name="Exception_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
   </data>
   <data name="Exception_EndStackTraceFromPreviousThrow" xml:space="preserve">
     <value>--- End of stack trace from previous location ---</value>
   </data>
+  <data name="Exception_InvalidCustomAttributeLength" xml:space="preserve">
+    <value>Custom attribute length is only '{0}'</value>
+  </data>
+  <data name="Exception_InvalidProlog" xml:space="preserve">
+    <value>Prolog invalid.</value>
+  </data>
+  <data name="Exception_UnknownElementType" xml:space="preserve">
+    <value>Unknown element type '{0}'.</value>
+  </data>
+  <data name="Exception_UnknownNamedType" xml:space="preserve">
+    <value>Unknown named type: {0}</value>
+  </data>
+  <data name="Exception_UnknownMarshalAsAttributeField" xml:space="preserve">
+    <value>Unknown MarshalAsAttribute field: {0}.</value>
+  </data>
+  <data name="Exception_UnhandledFixMeType" xml:space="preserve">
+    <value>FIXME: Type {0} not yet handled in decode_cattr_value.</value>
+  </data>
+  <data name="Exception_UnhandledSubType" xml:space="preserve">
+    <value>Subtype '{0}' of type object not yet handled in decode_cattr_value</value>
+  </data>
   <data name="Exception_WasThrown" xml:space="preserve">
     <value>Exception of type '{0}' was thrown.</value>
   </data>
   <data name="ExecutionContext_ExceptionInAsyncLocalNotification" xml:space="preserve">
     <value>An exception was not handled in an AsyncLocal&lt;T&gt; notification callback.</value>
+  </data>
+  <data name="FieldAccess_CannotSetConstantField" xml:space="preserve">
+  <value> Cannot set a constant field </value>
   </data>
   <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
     <value>Could not resolve assembly '{0}'.</value>
@@ -2383,6 +2568,9 @@
   <data name="InvalidCast_StoreArrayElement" xml:space="preserve">
     <value>Object cannot be stored in an array of this type.</value>
   </data>
+  <data name="InvalidOperation_AbstractMethod" xml:space="preserve">
+    <value>Type is concrete but has abstract method {0} </value>
+  </data>
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
@@ -2400,6 +2588,9 @@
   </data>
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
+  </data>
+  <data name="InvalidOperation_BadInterfaceNotAbstractAndVirtual" xml:space="preserve">
+    <value>Interface method must be abstract and virtual.</value>
   </data>
   <data name="InvalidOperation_BadMethodBody" xml:space="preserve">
     <value>Method '{0}' cannot have a method body.</value>
@@ -2470,6 +2661,9 @@
   <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
     <value>The generic parameters are already defined on this MethodBuilder.</value>
   </data>
+  <data name="InvalidOperation_CanOnlyBeCalledByGenericType" xml:space="preserve">
+    <value>can only be called in generic type.</value>
+  </data>
   <data name="InvalidOperation_GetVersion" xml:space="preserve">
     <value>OSVersion's call to GetVersionEx failed.</value>
   </data>
@@ -2477,7 +2671,7 @@
     <value>Type definition of the global function has been completed.</value>
   </data>
   <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
-    <value>Handle is not initialized.</value>
+    <value>Handle is not initialized. Name of type: {0}</value>
   </data>
   <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
     <value>Handle is not pinned.</value>
@@ -2488,14 +2682,23 @@
   <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
     <value>Failed to compare two elements in the array.</value>
   </data>
+  <data name="InvalidOperation_InvalidIteratorPosition" xml:space="preserve">
+  <value> Iterator is at an invalid position </value>
+  </data>
   <data name="InvalidOperation_MethodBaked" xml:space="preserve">
     <value>Type definition of the method is complete.</value>
   </data>
   <data name="InvalidOperation_MethodBuilderBaked" xml:space="preserve">
     <value>The signature of the MethodBuilder can no longer be modified because an operation on the MethodBuilder caused the methodDef token to be created. For example, a call to SetCustomAttribute requires the methodDef token to emit the CustomAttribute token.</value>
   </data>
+  <data name="InvalidOperation_MethodDoesNotHaveBody" xml:space="preserve">
+    <value>Method '{0}' does not have a method body.</value>
+  </data>
   <data name="InvalidOperation_MethodHasBody" xml:space="preserve">
     <value>Method already has a body.</value>
+  </data>
+  <data name="InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod" xml:space="preserve">
+    <value>Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.</value>
   </data>
   <data name="InvalidOperation_MustCallInitialize" xml:space="preserve">
     <value>You must call Initialize on this object instance before using it.</value>
@@ -2545,6 +2748,9 @@
   </data>
   <data name="InvalidOperation_NullModuleHandle" xml:space="preserve">
     <value>The requested operation is invalid when called on a null ModuleHandle.</value>
+  </data>
+  <data name="InvalidOperation_ObjectFieldsNotProperlyInitialized">
+  <value>Object fields may not be properly initialized.</value>
   </data>
   <data name="InvalidOperation_OpenLocalVariableScope" xml:space="preserve">
     <value>Local variable scope was not properly closed.</value>
@@ -2780,6 +2986,9 @@
   <data name="MissingMethod_Name" xml:space="preserve">
     <value>Method '{0}.{1}' not found.</value>
   </data>
+  <data name="MissingMethod_CannotCreateAbstractClass" xml:space="preserve">
+    <value>Cannot create an abstract class '{0}'.</value>
+  </data>
   <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
     <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
   </data>
@@ -2834,6 +3043,9 @@
   <data name="NotSupported_CollectibleBoundNonCollectible" xml:space="preserve">
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
   </data>
+  <data name="NotSupported_ContainsStackPtr" xml:space="preserve">
+  <value> An element type cannot contain a stack pointer </value>
+  </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
@@ -2885,6 +3097,9 @@
   <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
     <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
   </data>
+  <data name="NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported" xml:space="preserve">
+    <value>User defined subclasses of System.Type are not yet supported.</value>
+  </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
@@ -2900,11 +3115,17 @@
   <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
     <value>Non-static methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>
+  <data name="NotImplemented_NoSupportForModOpt" xml:space="preserve">
+    <value>Mono does not currently support setting modOpt/modReq through SignatureHelper.</value>
+  </data>
   <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
     <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
   </data>
   <data name="NotSupported_NoTypeInfo" xml:space="preserve">
     <value>Cannot resolve {0} to a TypeInfo object.</value>
+  </data>
+  <data name="NotSupported_NotInAnExceptionBlock" xml:space="preserve">
+    <value>Not in an exception block</value>
   </data>
   <data name="NotSupported_NYI" xml:space="preserve">
     <value>This feature is not implemented.</value>
@@ -2914,6 +3135,9 @@
   </data>
   <data name="NotSupported_OleAutBadVarType" xml:space="preserve">
     <value>The given Variant type is not supported by this OleAut function.</value>
+  </data>
+  <data name="NotSupported_OnlyCallAndCallVirtAllowed" xml:space="preserve">
+    <value>Only Call and CallVirt are allowed</value>
   </data>
   <data name="NotSupported_OpenType" xml:space="preserve">
     <value>Cannot create arrays of open type.</value>
@@ -2974,6 +3198,9 @@
   </data>
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
+  </data>
+  <data name="NotSupported_UserTypesNotSupportedUnderFullAot" xml:space="preserve">
+    <value>User types are not supported under full aot.</value>
   </data>
   <data name="NotSupported_ValueClassCM" xml:space="preserve">
     <value>Custom marshalers for value types are not currently supported.</value>
@@ -3314,6 +3541,9 @@
   <data name="StackTrace_InFileLineNumber" xml:space="preserve">
     <value>in {0}:line {1}</value>
   </data>
+  <data name="TargetInvocation_MethodCannotBeInvoked" xml:space="preserve">
+    <value>Method cannot be invoked.</value>
+  </data>
   <data name="Task_ContinueWith_ESandLR" xml:space="preserve">
     <value>The specified TaskContinuationOptions combined LongRunning and ExecuteSynchronously.  Synchronous continuations should not be long running.</value>
   </data>
@@ -3452,6 +3682,15 @@
   <data name="TypeInitialization_Type" xml:space="preserve">
     <value>The type initializer for '{0}' threw an exception.</value>
   </data>
+  <data name="TypeLoad_AssemblyEnumContainsMethodsError" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because it is an enum with methods</value>
+  </data>
+  <data name="TypeLoad_AssemblyInaccessibleInterfaceError" xml:space="preserve">
+    <value>"Could not load type '{0}' from assembly '{1}' because it is implements the inaccessible interface '{2}'.</value>
+  </data>
+  <data name="TypeLoad_AssemblySealedParentTypeError" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because the parent type is sealed.</value>
+  </data>
   <data name="TypeLoad_ResolveNestedType" xml:space="preserve">
     <value>Could not resolve nested type '{0}' in type "{1}'.</value>
   </data>
@@ -3584,6 +3823,9 @@
   <data name="Argument_BadPInvokeOnInterface" xml:space="preserve">
     <value>PInvoke methods cannot exist on interfaces.</value>
   </data>
+  <data name="Argument_BadTypeDef" xml:space="preserve">
+    <value>Bad type def, can't handle '{0}' at {1}</value>
+  </data>
   <data name="Argument_MethodRedefined" xml:space="preserve">
     <value>Method has been already defined.</value>
   </data>
@@ -3598,6 +3840,21 @@
   </data>
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
+  </data>
+  <data name="Argument_PropertyClassUnmatchedWithConstructor" xml:space="preserve">
+    <value>Property '{0}' does not belong to the same class as the constructor</value>
+  </data>
+  <data name="Argument_PropertyInvalidType" xml:space="preserve">
+    <value>Property '{0}' does not have a valid type.</value>
+  </data>
+  <data name="Argument_PropertyInvalidValue" xml:space="preserve">
+    <value>Property {0} does not have a valid value.</value>
+  </data>
+  <data name="Argument_PropertyMissingSetter" xml:space="preserve">
+    <value>"Property '{0}' does not have a setter.</value>
+  </data>
+  <data name="Argument_PropertyUnmatchingPropertyType" xml:space="preserve">
+    <value>"Value of property '{0}' does not match property type: {1} -> {2}</value>
   </data>
   <data name="AssemblyDependencyResolver_FailedToLoadHostpolicy" xml:space="preserve">
     <value>Cannot load hostpolicy library. AssemblyDependencyResolver is currently only supported if the runtime is hosted through hostpolicy library.</value>
@@ -3631,6 +3888,12 @@
   </data>
   <data name="Argument_StartupHookAssemblyLoadFailed" xml:space="preserve">
     <value>Startup hook assembly '{0}' failed to load. See inner exception for details.</value>
+  </data>
+  <data name="InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType" xml:space="preserve">
+    <value>Can't construct custom attribute for TypeBuilder type.</value>
+  </data>
+  <data name="InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder" xml:space="preserve">
+    <value>First argument to GetCustomAttributes can't be a TypeBuilder.</value>
   </data>
   <data name="InvalidOperation_NonStaticComRegFunction" xml:space="preserve">
     <value>COM register function must be static.</value>
@@ -3890,11 +4153,17 @@
   <data name="NotSupported_FeatureBodyRemoved" xml:space="preserve">
     <value>The feature associated with this method was removed.</value>
   </data>
+  <data name="NotSupported_IncompleteTypes" xml:space="preserve">
+    <value>This method is not implemented for incomplete types.</value>
+  </data>
   <data name="NotSupported_InstanceBodyRemoved" xml:space="preserve">
     <value>The body of this instance method was removed by the AOT compiler. This can happen if the owning type was not seen as allocated by the AOT compiler.</value>
   </data>
   <data name="Arg_UnavailableTypeLoadException" xml:space="preserve">
     <value>Attempted to load a type that was not created during ahead of time compilation.</value>
+  </data>
+  <data name = "Target_NonStaticFieldRequirement" xml:space="preserve">
+  <value>Field {0} defined on type {1} is not a field on the target object which is of type {2}.</value>
   </data>
   <data name="TypeInitialization_Type_NoTypeAvailable" xml:space="preserve">
     <value>A type initializer threw an exception. To determine which type, inspect the InnerException's StackTrace property.</value>
@@ -3972,7 +4241,7 @@
     <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
   </data>
   <data name="NoMetadataTokenAvailable" xml:space="preserve">
-    <value>There is no metadata token available for the given member.</value>
+    <value>There is no metadata token available for the given member, MemberImplementationType: {0}.</value>
   </data>
   <data name="ArgumentException_InvalidTypeArgument" xml:space="preserve">
     <value>The type '{0}' may not be used as a type argument.</value>
@@ -3986,6 +4255,9 @@
   <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
     <value>The type '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
   </data>
+  <data name="Argument_CannotBeByRefType" xml:space="preserve">
+    <value>type can't be a byref type. Name of type: {0} </value>
+  </data>
   <data name="CannotCreateByRefOfByRef" xml:space="preserve">
     <value>Cannot create a byref of a byref: {0}</value>
   </data>
@@ -3994,6 +4266,9 @@
   </data>
   <data name="TypeLoad_TypeNotFound" xml:space="preserve">
     <value>The type '{0}' cannot be found.</value>
+  </data>
+  <data name="TypeLoad_TypeNotLoaded" xml:space="preserve">
+    <value>The type '{0}' cannot be loaded.</value>
   </data>
   <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
     <value>The type '{0}' cannot be found in assembly '{1}'.</value>

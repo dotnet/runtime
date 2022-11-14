@@ -123,7 +123,7 @@ namespace System.Reflection.Emit
         public void CreateGlobalFunctions()
         {
             if (global_type_created)
-                throw new InvalidOperationException("global methods already created");
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             if (global_type != null)
             {
                 global_type_created = true;
@@ -153,9 +153,9 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if (global_type_created)
-                throw new InvalidOperationException("global fields already created");
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             if ((size <= 0) || (size >= 0x3f0000))
-                throw new ArgumentException("Data size must be > 0 and < 0x3f0000", null as string);
+                throw new ArgumentException(SR.Argument_BadSizeForData, null as string);
 
             CreateGlobalType();
 
@@ -204,9 +204,9 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
-                throw new ArgumentException("global methods must be static");
+                throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
             if (global_type_created)
-                throw new InvalidOperationException("global methods already created");
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefineMethod(name, attributes, callingConvention, returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
 
@@ -219,9 +219,9 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
-                throw new ArgumentException("global methods must be static");
+                throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
             if (global_type_created)
-                throw new InvalidOperationException("global methods already created");
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
 
@@ -253,7 +253,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(name, "fullname");
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
-                throw new ArgumentException("Duplicate type name within an assembly.");
+                throw new ArgumentException(SR.Argument_DuplicateTypeName);
             TypeBuilder res = new TypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
             AddType(res);
 
@@ -293,7 +293,7 @@ namespace System.Reflection.Emit
         {
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
-                throw new ArgumentException("Duplicate type name within an assembly.");
+                throw new ArgumentException(SR.Argument_DuplicateTypeName);
 
             EnumBuilder eb = new EnumBuilder(this, name, visibility, underlyingType);
             TypeBuilder res = eb.GetTypeBuilder();
@@ -540,7 +540,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
-                throw new ArgumentException("type can't be a byref type", nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_CannotBeByRefType, nameof(type)));
             return type.MetadataToken;
         }
 
@@ -876,7 +876,7 @@ namespace System.Reflection.Emit
                 return Array.Empty<object>();
 
             if (attributeType is TypeBuilder)
-                throw new InvalidOperationException("First argument to GetCustomAttributes can't be a TypeBuilder");
+                throw new InvalidOperationException(SR.InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder);
 
             List<object> results = new List<object>();
             for (int i = 0; i < cattrs.Length; i++)
@@ -884,7 +884,7 @@ namespace System.Reflection.Emit
                 Type t = cattrs[i].Ctor.GetType();
 
                 if (t is TypeBuilder)
-                    throw new InvalidOperationException("Can't construct custom attribute for TypeBuilder type");
+                    throw new InvalidOperationException(SR.InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType);
 
                 if (attributeType == null || attributeType.IsAssignableFrom(t))
                     results.Add(cattrs[i].Invoke());
@@ -902,7 +902,7 @@ namespace System.Reflection.Emit
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetField(name, bindingAttr);
         }
 
@@ -910,7 +910,7 @@ namespace System.Reflection.Emit
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetFields(bindingFlags);
         }
 
@@ -918,7 +918,7 @@ namespace System.Reflection.Emit
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetMethods(bindingFlags);
         }
 

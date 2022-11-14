@@ -128,7 +128,7 @@ namespace System
             // The check is needed because Type.GetTypeFromHandle returns null
             // for zero handles.
             if (value == IntPtr.Zero)
-                throw new InvalidOperationException("Object fields may not be properly initialized");
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectFieldsNotProperlyInitialized);
 
             return Type.GetTypeFromHandle(this)!.Module.ModuleHandle;
         }
@@ -373,7 +373,7 @@ namespace System
 
             if (typeName.Length == 0)
                 if (throwOnError)
-                    throw new TypeLoadException("A null or zero length string does not represent a valid Type.");
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
                 else
                     return null;
 
@@ -384,7 +384,7 @@ namespace System
                                    ref stackMark,
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException("Error loading '" + typeName + "'");
+                    throw new TypeLoadException(string.Format(SR.TypeLoad_TypeNotLoaded, typeName));
             }
             return t;
         }

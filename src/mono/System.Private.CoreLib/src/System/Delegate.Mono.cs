@@ -427,7 +427,7 @@ namespace System
 
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
-            MethodInfo _method = Method ?? throw new NullReferenceException ("method_info is null");
+            MethodInfo _method = Method ?? throw new NullReferenceException (SR.NullReference_This);
 
             object? target = _target;
 

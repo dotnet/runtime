@@ -251,12 +251,12 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
             if (!base_method.IsGenericMethodDefinition || (method_arguments != null))
-                throw new InvalidOperationException("Method is not a generic method definition");
+                throw new InvalidOperationException(SR.Argument_MethodIsNotAGenericMethodDefinition);
 
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (base_method.GetGenericArguments().Length != methodInstantiation.Length)
-                throw new ArgumentException("Incorrect length", nameof(methodInstantiation));
+                throw new ArgumentException(string.Format(SR.Argument_IncorrectLength, nameof(methodInstantiation)));
 
             foreach (Type type in methodInstantiation)
             {

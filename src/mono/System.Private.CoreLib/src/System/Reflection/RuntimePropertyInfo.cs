@@ -454,7 +454,7 @@ namespace System.Reflection
         {
             MethodInfo? method = GetSetMethod(true);
             if (method == null)
-                throw new ArgumentException("Set Method not found for '" + Name + "'");
+                throw new ArgumentException(string.Format(SR.Argument_SetMethodNotFound, Name));
 
             object?[] parms;
             if (index == null || index.Length == 0)
@@ -500,10 +500,10 @@ namespace System.Reflection
         internal static PropertyInfo GetPropertyFromHandle(RuntimePropertyHandle handle, RuntimeTypeHandle reflectedType)
         {
             if (handle.Value == IntPtr.Zero)
-                throw new ArgumentException("The handle is invalid.");
+                throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
-                throw new ArgumentException("The property handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_IncompatablePropertyAndTypeHandle);
             return pi;
         }
     }

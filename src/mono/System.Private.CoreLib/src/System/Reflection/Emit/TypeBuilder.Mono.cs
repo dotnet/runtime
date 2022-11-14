@@ -477,10 +477,7 @@ namespace System.Reflection.Emit
                     null, EmptyTypes, null);
             if (parent_constructor == null)
             {
-                throw new NotSupportedException("Parent does"
-                    + " not have a default constructor."
-                    + " The default constructor must be"
-                    + " explicitly defined.");
+                throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
             }
 
             ConstructorBuilder cb = DefineConstructor(attributes,
@@ -520,7 +517,7 @@ namespace System.Reflection.Emit
                 !((attributes & MethodAttributes.Abstract) != 0) ||
                 !((attributes & MethodAttributes.Virtual) != 0)) &&
                 !(((attributes & MethodAttributes.Static) != 0)))
-                throw new ArgumentException("Interface method must be abstract and virtual.");
+                throw new ArgumentException(SR.InvalidOperation_BadInterfaceNotAbstractAndVirtual);
 
             returnType ??= typeof(void);
             MethodBuilder res = new MethodBuilder(this, name, attributes,
@@ -552,9 +549,9 @@ namespace System.Reflection.Emit
             check_name(nameof(dllName), dllName);
             check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
-                throw new ArgumentException("PInvoke methods must be static and native and cannot be abstract.");
+                throw new ArgumentException(SR.Argument_BadPInvokeMethod);
             if (IsInterface)
-                throw new ArgumentException("PInvoke methods cannot exist on interfaces.");
+                throw new ArgumentException(SR.Argument_BadPInvokeOnInterface);
             check_not_created();
 
             MethodBuilder res
@@ -583,7 +580,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
-                throw new ArgumentException("method body must belong to this type");
+                throw new ArgumentException(SR.Argument_MethodBodyMustBelongToType);
 
             if (methodInfoBody is MethodBuilder mb)
             {
@@ -595,7 +592,7 @@ namespace System.Reflection.Emit
         {
             check_name(nameof(fieldName), fieldName);
             if (type == typeof(void))
-                throw new ArgumentException("Bad field type in defining field.");
+                throw new ArgumentException(SR.Argument_BadFieldType);
             check_not_created();
 
             FieldBuilder res = new FieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);
@@ -759,19 +756,19 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsSealed)
-                    throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because the parent type is sealed.");
+                    throw new TypeLoadException(string.Format(SR.TypeLoad_AssemblySealedParentTypeError, fullname.DisplayName, Assembly));
                 if (parent.IsGenericTypeDefinition)
                     throw new BadImageFormatException();
             }
 
             if (parent == typeof(Enum) && methods != null)
-                throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
+                throw new TypeLoadException(string.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, fullname.DisplayName, Assembly));
             if (interfaces != null)
             {
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
+                        throw new TypeLoadException(string.Format( SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName ));
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
@@ -788,7 +785,7 @@ namespace System.Reflection.Emit
                 {
                     MethodBuilder mb = (MethodBuilder)(methods[i]);
                     if (is_concrete && mb.IsAbstract)
-                        throw new InvalidOperationException("Type is concrete but has abstract method " + mb);
+                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_AbstractMethod, mb));
                     mb.check_override();
                     mb.fixup();
                 }
@@ -857,7 +854,7 @@ namespace System.Reflection.Emit
             {
                 t = t.UnderlyingSystemType;
                 if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
-                    throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                    throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
                 return t;
             }
             else
@@ -1307,11 +1304,11 @@ namespace System.Reflection.Emit
             //return base.MakeGenericType (typeArguments);
 
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException("not a generic type definition");
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
             ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(string.Format("The type or method has {0} generic parameter(s) but {1} generic argument(s) where provided. A generic argument must be provided for each generic parameter.", generic_params.Length, typeArguments.Length), nameof(typeArguments));
+                throw new ArgumentException(string.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length, nameof(typeArguments)));
 
             foreach (Type t in typeArguments)
             {
@@ -1354,7 +1351,7 @@ namespace System.Reflection.Emit
                     LayoutKind.Auto => TypeAttributes.AutoLayout,
                     LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                     LayoutKind.Sequential => TypeAttributes.SequentialLayout,
-                    _ => throw new Exception("Error in customattr"), // we should ignore it since it can be any value anyway...
+                    _ => throw new Exception(SR.Exception_ErrorInCustomAttr), // we should ignore it since it can be any value anyway...
                 };
 
                 Type ctor_type = customBuilder.Ctor is ConstructorBuilder builder ? builder.parameters![0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
@@ -1500,7 +1497,7 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if ((size <= 0) || (size > 0x3f0000))
-                throw new ArgumentException("Data size must be > 0 and < 0x3f0000");
+                throw new ArgumentException(SR.Argument_BadSizeForData);
             check_not_created();
 
             string typeName = "$ArrayType$" + size;
@@ -1530,7 +1527,7 @@ namespace System.Reflection.Emit
                 if ((attrs & TypeAttributes.Interface) != 0)
                 {
                     if ((attrs & TypeAttributes.Abstract) == 0)
-                        throw new InvalidOperationException("Interface must be declared abstract.");
+                        throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
                     this.parent = null;
                 }
                 else
@@ -1555,7 +1552,7 @@ namespace System.Reflection.Emit
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
-                throw new NotSupportedException("This method is not implemented for incomplete types.");
+                throw new NotSupportedException(SR.NotSupported_IncompleteTypes);
 
             return created.GetInterfaceMap(interfaceType);
         }
@@ -1582,13 +1579,13 @@ namespace System.Reflection.Emit
 
         private static Exception not_supported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         internal void check_not_created()
         {
             if (is_created)
-                throw new InvalidOperationException("Unable to change after type has been created.");
+                throw new InvalidOperationException(SR.NotSupported_DynamicModule);
         }
 
         private void check_created()
@@ -1661,7 +1658,7 @@ namespace System.Reflection.Emit
         public override Type GetGenericTypeDefinition()
         {
             if (generic_params == null)
-                throw new InvalidOperationException("Type is not generic");
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
             return this;
         }
 
@@ -1741,20 +1738,20 @@ namespace System.Reflection.Emit
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
+                throw new ArgumentException(string.Format(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor)));
 
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_InvalidConstructorDeclaringType, nameof(type)));
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
-                throw new ArgumentException("constructor not found");
+                throw new ArgumentException(SR.Argument_ConstructorNotFound);
 
             return res;
         }
@@ -1788,7 +1785,7 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
@@ -1804,7 +1801,7 @@ namespace System.Reflection.Emit
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
-                throw new ArgumentException(string.Format("method {0} not found in type {1}", method.Name, type));
+                throw new ArgumentException(string.Format(SR.Argument_MethodNotFoundInType, method.Name, type));
 
             return res;
         }
@@ -1814,23 +1811,23 @@ namespace System.Reflection.Emit
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!field.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
+                throw new ArgumentException(string.Format(SR.Argument_FieldNeedGenericDeclaringType, nameof(field)));
 
             if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
+                throw new ArgumentException(string.Format(SR.Argument_InvalidFieldDeclaringType, nameof(type)));
 
             if (field is FieldOnTypeBuilderInst)
-                throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
+                throw new ArgumentException(string.Format(SR.Argument_FieldNeedGenericDeclaringType, nameof(field)));
 
             FieldInfo res = type.GetField(field);
             if (res == null)
-                throw new System.Exception("field not found");
+                throw new System.Exception(SR.MissingField);
             else
                 return res;
         }
@@ -1963,7 +1960,7 @@ namespace System.Reflection.Emit
                         destValue = ticks;
                         return true;
                     default:
-                        throw new ArgumentException(type!.ToString() + " is not a supported constant type.");
+                        throw new ArgumentException(string.Format(SR.Argument_ConstantNotSupported, type!.ToString()));
                 }
             }
             else
@@ -1979,7 +1976,7 @@ namespace System.Reflection.Emit
 
         private static void throw_argument_ConstantDoesntMatch()
         {
-            throw new ArgumentException("Constant does not match the defined type.");
+            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
         }
 
         public override bool IsTypeDefinition => true;

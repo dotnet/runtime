@@ -100,14 +100,14 @@ internal sealed class FieldStore
 
     public static FieldStore Create (RuntimeTypeHandle type)
     {
-        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(nameof(type), "Type handle was null");
+        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(string.Format(SR.Arg_NullTypeHandleReferenceException, nameof(type)));
         object? loc;
         if (t.IsPrimitive || t.IsValueType)
             loc = RuntimeHelpers.GetUninitializedObject(t);
         else if (t.IsClass || t.IsInterface)
             loc = null;
         else
-            throw new ArgumentException("EnC: Expected a primitive, valuetype, class or interface field");
+            throw new ArgumentException(SR.Arg_EnC);
         /* FIXME: do we want FieldStore to be pinned? */
         return new FieldStore(loc);
     }

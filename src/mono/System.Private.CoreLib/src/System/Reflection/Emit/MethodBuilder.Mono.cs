@@ -93,7 +93,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
                     if (parameterTypes[i] == null)
-                        throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
+                        throw new ArgumentException(string.Format(SR.Argument_NullParameterTypes, nameof(parameterTypes)));
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -321,7 +321,7 @@ namespace System.Reflection.Emit
                  MethodImplAttributes.IL) ||
                 ((iattrs & MethodImplAttributes.ManagedMask) !=
                  MethodImplAttributes.Managed))
-                throw new InvalidOperationException("Method body should not exist.");
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             if (ilgen != null)
                 return ilgen;
             ilgen = new ILGenerator(type.Module, ((ModuleBuilder)type.Module).GetTokenGenerator(), size);
@@ -418,7 +418,7 @@ namespace System.Reflection.Emit
 
                     pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException("DllName cannot be empty");
+                        throw new ArgumentException(SR.Arg_DllNameNotFound);
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
 
@@ -532,12 +532,12 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (type.is_created)
-                throw new InvalidOperationException("Type definition of the method is complete.");
+                throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
 
         private static Exception NotSupported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
@@ -545,7 +545,7 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException("Method is not a generic method definition");
+                throw new InvalidOperationException(SR.Argument_MethodIsNotAGenericMethodDefinition);
             ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {

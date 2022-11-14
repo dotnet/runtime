@@ -453,22 +453,22 @@ namespace System.Reflection.Emit
 
         public override Type MakeArrayType()
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.Argument_CannotCreateArrayTypeOfByref);
         }
 
         public override Type MakeArrayType(int rank)
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.Argument_CannotCreateArrayTypeOfByref);
         }
 
         public override Type MakeByRefType()
         {
-            throw new ArgumentException("Cannot create a byref type of an already byref type");
+            throw new ArgumentException(SR.Argument_CannotCreateArrayTypeOfByref);
         }
 
         public override Type MakePointerType()
         {
-            throw new ArgumentException("Cannot create a pointer type of a byref type");
+            throw new ArgumentException(SR.Argument_CannotCreatePointerTypeOfByref);
         }
     }
 
