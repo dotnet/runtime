@@ -829,17 +829,12 @@ namespace System.Net.Security.Tests
                         return false;
                     };
 
-                errorMessage = PlatformDetection.IsAndroid ? "Authentication failed, see inner exception." : "RemoteCertificateValidationCallback";
+                errorMessage = "RemoteCertificateValidationCallback";
             }
             else
             {
                 // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage =
-                    PlatformDetection.IsWindows
-                        ? "UntrustedRoot"
-                        : PlatformDetection.IsAndroid
-                            ? "Authentication failed, see inner exception."
-                            : "PartialChain";
+                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
@@ -857,7 +852,7 @@ namespace System.Net.Security.Tests
                 var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
                 Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
-                await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+                await t2;
             }
         }
 
