@@ -192,7 +192,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(BN_clear_free) \
     REQUIRED_FUNCTION(BN_dup) \
     REQUIRED_FUNCTION(BN_free) \
-    REQUIRED_FUNCTION(BN_is_zero) \
+    FALLBACK_FUNCTION(BN_is_zero) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
