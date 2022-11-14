@@ -2698,12 +2698,18 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp, bool ze
     if (wantedType != currType)
     {
         // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
-        if ((tree->OperGet() == GT_CNS_INT) && varTypeIsI(dstTyp))
+        if (tree->IsCnsIntOrI() && varTypeIsI(dstTyp))
         {
-            if (!varTypeIsI(tree) || ((tree->gtType == TYP_REF) && (tree->AsIntCon()->gtIconVal == 0)))
+            if ((currType == TYP_REF) && (tree->AsIntCon()->IconValue() == 0))
             {
                 tree->gtType = TYP_I_IMPL;
             }
+#ifdef TARGET_64BIT
+            else if (currType == TYP_INT)
+            {
+                tree->gtType = TYP_I_IMPL;
+            }
+#endif // TARGET_64BIT
         }
 #ifdef TARGET_64BIT
         else if (varTypeIsI(wantedType) && (currType == TYP_INT))
@@ -5480,6 +5486,7 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
+ *  Also inserts upcasts to double when float and double are mixed.
  */
 var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
 {
@@ -5591,9 +5598,11 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         type = genActualType(op1);
 
         // If both operands are TYP_FLOAT, then leave it as TYP_FLOAT. Otherwise, turn floats into doubles
-        if ((type == TYP_FLOAT) && (op2->TypeGet() != TYP_FLOAT))
+        if (varTypeIsFloating(type) && (op2->TypeGet() != type))
         {
-            assert(op2->TypeIs(TYP_DOUBLE));
+            op1 = *pOp1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+            op2 = *pOp2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+
             type = TYP_DOUBLE;
         }
     }
@@ -7441,11 +7450,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
                     }
                 }
-
-                // We can generate a TYP_FLOAT operation that has a TYP_DOUBLE operand.
-                //
-                op1 = impImplicitR4orR8Cast(op1, type);
-                op2 = impImplicitR4orR8Cast(op2, type);
 
                 if (callNode)
                 {
