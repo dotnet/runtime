@@ -8,7 +8,9 @@ public class Test
 {
     public static int Main()
     {
+        Console.WriteLine("");
         Console.WriteLine("Hello World!");
+        Console.WriteLine("");
         return 0;
     }
 }

@@ -1905,8 +1905,8 @@ int32_t SystemNative_Close(intptr_t fd)
 
 intptr_t SystemNative_Dup(intptr_t oldfd)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
+    // https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-dup
+    return oldfd;
 }
 
 int32_t SystemNative_Unlink(const char* path)
@@ -2171,8 +2171,8 @@ void SystemNative_Sync(void)
 
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
+    // the same
+    return Common_Write(fd, buffer, bufferSize);
 }
 
 int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
@@ -2237,14 +2237,20 @@ int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
 
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
+#if HAVE_LCHFLAGS
+    return SystemNative_CanGetHiddenFlag();
+#else
     return false;
+#endif
 }
 
 int32_t SystemNative_CanGetHiddenFlag(void)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
+    return true;
+#else
     return false;
+#endif
 }
 
 int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)

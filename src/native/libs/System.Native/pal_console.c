@@ -510,8 +510,8 @@ int32_t SystemNative_SetWindowSize(WinSize* windowSize)
 
 int32_t SystemNative_IsATty(intptr_t fd)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
+    // the same
+    return isatty(ToFileDescriptor(fd));
 }
 
 void SystemNative_SetKeypadXmit(const char* terminfoString)
@@ -567,8 +567,8 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
+    // No termios and signals on WASI
+    return 1;
 }
 
 #endif /* TARGET_WASI */
