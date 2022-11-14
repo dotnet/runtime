@@ -1209,7 +1209,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case var _ when char.IsLetterOrDigit(c):
                     case var _ when c > 255:
-                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~' || c == '´' || c == '`' || c == '^' || c == '¨':
+                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~' || c == 'Â´' || c == '`' || c == '^' || c == 'Â¨':
                         builder.Append(c);
                         break;
                     case var _ when c == Path.DirectorySeparatorChar:
