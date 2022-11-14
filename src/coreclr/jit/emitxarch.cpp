@@ -4022,14 +4022,10 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 
     insFormat fmt = IF_NONE;
 
-<<<<<<< HEAD
     id->idIns(ins);
     id->idInsFmt(fmt);
 
     sz += emitGetAdjustedSize(id, code);
-=======
-    sz += emitGetAdjustedSizeEvexAware(id, attr, code);
->>>>>>> 12a8cc387e0 (Limit high SIMD reg to compatible intrinsics lsra build.)
     if (TakesRexWPrefix(ins, attr))
     {
         sz += emitGetRexPrefixSize(ins);
@@ -5313,7 +5309,6 @@ void emitter::emitIns_R_I(instruction ins,
     id->idInsFmt(fmt);
     id->idReg1(reg);
 
-<<<<<<< HEAD
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -5334,9 +5329,6 @@ void emitter::emitIns_R_I(instruction ins,
     }
 
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
-=======
-    sz += emitGetAdjustedSizeEvexAware(id, attr, insCodeMI(ins));
->>>>>>> 12a8cc387e0 (Limit high SIMD reg to compatible intrinsics lsra build.)
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
