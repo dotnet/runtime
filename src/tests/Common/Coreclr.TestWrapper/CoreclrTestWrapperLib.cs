@@ -207,11 +207,11 @@ namespace CoreclrTestLib
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
 
-        static bool CollectCrashDump(Process process, string path, StreamWriter outputWriter)
+        static bool CollectCrashDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = $"--name \"{path}\" {process.Id} --withheap";
+            string arguments = $"--name \"{crashDumpPath}\" {process.Id} --withheap";
             Process createdump = new Process();
             bool crashReportPresent = false;
 
@@ -252,7 +252,7 @@ namespace CoreclrTestLib
 
                 if (crashReportPresent)
                 {
-                    TryPrintStackTraceFromCrashReport(path, outputWriter);
+                    TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
                 }
             }
             else
@@ -272,11 +272,10 @@ namespace CoreclrTestLib
         ///     Parse crashreport.json file, use llvm-symbolizer to extract symbols
         ///     and recreate the stacktrace that is printed on the console.
         /// </summary>
-        /// <param name="crashdump">crash dump path</param>
+        /// <param name="crashReportJsonFile">crash dump path</param>
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
-        static bool TryPrintStackTraceFromCrashReport(string crashdump, StreamWriter outputWriter)
+        static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
         {
-            string crashReportJsonFile = crashdump + ".crashreport.json";
             if (!File.Exists(crashReportJsonFile))
             {
                 return false;
