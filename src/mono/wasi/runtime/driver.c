@@ -465,24 +465,6 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	}
 }
 
-// deprecated
-MonoObject*
-mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
-{
-	MonoObject* result = NULL;
-	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
-
-	MonoMethodSignature *sig = mono_method_signature (method);
-	MonoType *type = mono_signature_get_return_type (sig);
-	// If the method return type is void return null
-	// This gets around a memory access crash when the result return a value when
-	// a void method is invoked.
-	if (mono_type_get_type (type) == MONO_TYPE_VOID)
-		return NULL;
-
-	return result;
-}
-
 MonoMethod*
 mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 {
@@ -685,15 +667,21 @@ int main() {
     // Assume the runtime pack has been copied into the output directory as 'runtime'
     // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
     mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
-
-	printf("mono_wasm_load_runtime\n");
     mono_wasm_load_runtime("", 0);
 
-	printf("mono_wasm_assembly_load\n");
     MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");
-	printf("mono_wasm_assembly_get_entry_point %d\n", (int)assembly);
     MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
     MonoObject* out_exc;
-    MonoObject *exit_code = mono_wasm_invoke_method (entry_method, NULL, NULL, &out_exc);
-    return mono_unbox_int (exit_code);
+    MonoObject* out_res;
+    mono_wasm_invoke_method_ref (entry_method, NULL, NULL, &out_exc, &out_res);
+	if (out_exc)
+	{
+		char* message = mono_wasm_string_get_utf8((MonoString*)out_res);
+		printf("%s\n", message);
+		free(message);
+		exit(1);
+	}
+	if(out_res)
+		return mono_unbox_int (out_res);
+	return 0;
 }

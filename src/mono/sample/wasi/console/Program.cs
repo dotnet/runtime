@@ -6,13 +6,18 @@ using System.Threading.Tasks;
 
 public class Test
 {
-    public static async Task<int> Main(string[] args)
+    public static int Main(string[] args)
     {
-        await Task.Delay(1);
-        Console.WriteLine("Hello World!");
-        for (int i = 0; i < args.Length; i++) {
-            Console.WriteLine($"args[{i}] = {args[i]}");
+        try{
+            Console.WriteLine("Hello World!");
+            for (int i = 0; i < args.Length; i++) {
+                Console.WriteLine($"args[{i}] = {args[i]}");
+            }
+            return 0;
         }
-        return 0;
+        catch(Exception){
+            //TODOWASI
+            return 2;
+        }
     }
 }
