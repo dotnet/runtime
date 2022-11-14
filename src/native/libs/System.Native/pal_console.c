@@ -495,6 +495,7 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
     errno = ENOTSUP;
     return -1;
@@ -502,59 +503,71 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 
 int32_t SystemNative_SetWindowSize(WinSize* windowSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     errno = ENOTSUP;
     return -1;
 }
 
 int32_t SystemNative_IsATty(intptr_t fd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 void SystemNative_SetKeypadXmit(const char* terminfoString)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_UninitializeConsoleAfterRead(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
     uint8_t* posixDisableValue)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_StdinReady(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetSignalForBreak(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 

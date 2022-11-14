@@ -912,70 +912,84 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stdoutFd,
                                       int32_t* stderrFd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetPid(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetSid(int32_t pid)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int64_t SystemNative_PathConf(const char* path, PathConfName name)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     (void)pid;
     (void)mask;
     errno = ENOTSUP;
@@ -984,6 +998,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 
 int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     (void)pid;
     (void)mask;
     errno = ENOTSUP;
@@ -992,6 +1007,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
 char* SystemNative_GetProcessPath(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 #endif /* TARGET_WASI */

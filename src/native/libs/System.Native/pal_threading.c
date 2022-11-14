@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_threading.h"
 
+#include <stdio.h>
 #include <limits.h>
 #include <sched.h>
 #include <assert.h>
@@ -292,70 +293,70 @@ void SystemNative_Abort(void)
 #else /* TARGET_WASI */
 struct LowLevelMonitor
 {
+    // TARGET_WASI
     bool IsLocked;
-    // TODOWASI
 };
 
 LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return false;
 }
 
 void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return false;
 }
 
 int32_t SystemNative_SchedGetCpu(void)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 __attribute__((noreturn))
 void SystemNative_Exit(int32_t exitCode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     assert(false);
-    // TODOWASI
 }
 
 __attribute__((noreturn))
 void SystemNative_Abort(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     assert(false);
-    // TODOWASI
 }
 #endif /* TARGET_WASI */

@@ -729,36 +729,44 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 
 int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0;
 }
 
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0;
 }
 
 void SystemNative_DisablePosixSignalHandling(int signalCode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 #endif /* TARGET_WASI */

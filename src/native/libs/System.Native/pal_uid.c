@@ -314,41 +314,49 @@ char* SystemNative_GetGroupName(uint32_t gid)
 #else /* TARGET_WASI */
 int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 uint32_t SystemNative_GetEUid(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0xFFFFFFFF;
 }
 
 uint32_t SystemNative_GetEGid(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0xFFFFFFFF;
 }
 
 int32_t SystemNative_SetEUid(uint32_t euid)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 char* SystemNative_GetGroupName(uint32_t gid)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 #endif /* TARGET_WASI */

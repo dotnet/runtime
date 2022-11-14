@@ -61,31 +61,37 @@ void SystemNative_FreeLibrary(void* handle)
 #else /* TARGET_WASI */
 void* SystemNative_LoadLibrary(const char* filename)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 void* SystemNative_GetLoadLibraryError(void)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 void* SystemNative_GetProcAddress(void* handle, const char* symbol)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 void SystemNative_FreeLibrary(void* handle)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 #endif /* TARGET_WASI */
 
-#if defined TARGET_ANDROID || defined TARGET_WASI
+#if defined TARGET_ANDROID
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
+    return NULL;
+}
+#elif defined TARGET_WASI
+void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
+{
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 #else

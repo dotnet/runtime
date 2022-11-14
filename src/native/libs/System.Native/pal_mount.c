@@ -183,13 +183,13 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 #else /* TARGET_WASI */
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0;
 }
 
 int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     memset(mpi, 0, sizeof(MountPointInformation));
     return -1;
 }
@@ -197,7 +197,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 int32_t
 SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
-    // TODOWASI
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 #endif /* TARGET_WASI */

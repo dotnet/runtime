@@ -1869,165 +1869,198 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
 int32_t SystemNative_Link(const char* source, const char* linkTarget)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Close(intptr_t fd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 intptr_t SystemNative_Dup(intptr_t oldfd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Unlink(const char* path)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ShmUnlink(const char* name)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 DIR* SystemNative_OpenDir(const char* path)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 int32_t SystemNative_CloseDir(DIR* dir)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlGetFD(intptr_t fd)
 {
+    printf("TODOSystemNative_FcntlGetFDWASI\n");
     return -1;
 }
 
 int32_t SystemNative_FcntlCanGetSetPipeSz(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlGetPipeSz(intptr_t fd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FLock(intptr_t fd, int32_t operation)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ChDir(const char* path)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Access(const char* path, int32_t mode)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
@@ -2038,11 +2071,13 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
@@ -2053,160 +2088,192 @@ void* SystemNative_MMap(void* address,
                       intptr_t fd,
                       int64_t offset)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 int32_t SystemNative_MUnmap(void* address, uint64_t length)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int64_t SystemNative_SysConf(int32_t name)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_RmDir(const char* path)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 void SystemNative_Sync(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
 }
 
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 intptr_t SystemNative_INotifyInit(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 char* SystemNative_RealPath(const char* path)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0xFFFFFFFF;
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return false;
 }
 
 int32_t SystemNative_CanGetHiddenFlag(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return false;
 }
 
 int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 

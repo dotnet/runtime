@@ -3288,11 +3288,13 @@ uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
 
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 void SystemNative_FreeHostEntry(HostEntry* entry)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     if (entry != NULL)
     {
         free(entry->CanonicalName);
@@ -3313,238 +3315,284 @@ int32_t SystemNative_GetNameInfo(const uint8_t* address,
                                  int32_t serviceLength,
                                  int32_t flags)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressLen, int32_t addressFamily)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetPort(const uint8_t* socketAddress, int32_t socketAddressLen, uint16_t* port)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetPort(uint8_t* socketAddress, int32_t socketAddressLen, uint16_t port)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetIPv4Address(const uint8_t* socketAddress, int32_t socketAddressLen, uint32_t* address)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen, uint32_t address)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetIPv6Address(
     const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t
 SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Listen(intptr_t socket, int32_t backlog)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetRawSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t
 SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_SetRawSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_CloseSocketEventPort(intptr_t port)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     free(buffer);
     return Error_SUCCESS;
 }
@@ -3552,26 +3600,31 @@ int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
 int32_t
 SystemNative_TryChangeSocketEventRegistration(intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return Error_EFAULT;
 }
 
 int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0;
 }
 
 char* SystemNative_GetPeerUserName(intptr_t socket)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return NULL;
 }
 
 void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     *pathOffset = 0;
     *pathSize = 0;
     *addressSize = 0;
@@ -3579,21 +3632,25 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
 
 int32_t SystemNative_GetMaximumAddressSize(void)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_Disconnect(intptr_t socket)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return -1;
 }
 
 uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
 {
+    printf ("TODOWASI %s\n", __FUNCTION__);
     return 0xFFFFFFFF;
 }
 
