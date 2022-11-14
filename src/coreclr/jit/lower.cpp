@@ -511,9 +511,6 @@ void Lowering::LowerCastOfSmpOp(GenTreeCast* node)
     if (castOp->OperMayOverflow() && castOp->gtOverflow())
         return;
 
-    if (castOp->gtSetFlags())
-        return;
-
     if (!varTypeIsIntegral(castToType) || !varTypeIsIntegral(srcType))
         return;
 
@@ -3015,6 +3012,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     op2->ClearContained();
 
 #ifdef TARGET_XARCH
+                    // We change the type here so we can take advantage of containment for a memory op.
+
                     if (op1->OperIs(GT_LCL_VAR) && !op2->OperIs(GT_LCL_VAR))
                     {
                         op1->ChangeType(castToType);
