@@ -155,7 +155,6 @@ namespace System.Reflection.Context.Tests
         public int field = 2;
         public SecondTestObject(string a) : base(a)
         {
-
         }
     }
 
