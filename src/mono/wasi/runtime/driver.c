@@ -677,9 +677,15 @@ int main() {
 	if (out_exc)
 	{
 		mono_print_unhandled_exception(out_exc);
+		printf("Fail");
 		exit(1);
 	}
 	if(out_res)
-		return mono_unbox_int (out_res);
+	{
+		int r= mono_unbox_int (out_res);
+		printf("OK %d", r);
+		return r;
+	}
+	printf("OK void");
 	return 0;
 }
