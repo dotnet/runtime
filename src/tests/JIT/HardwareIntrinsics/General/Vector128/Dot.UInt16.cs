@@ -293,33 +293,7 @@ namespace JIT.HardwareIntrinsics.General._Vector128
         {
             bool succeeded = true;
 
-            UInt16 actualResult = default;
-            UInt16 intermResult = default;
-
-            if (Op1ElementCount != 1)
-            {
-                for (var i = 0; i < Op1ElementCount; i += 2)
-                {
-                    if ((i % Vector128<UInt16>.Count) == 0)
-                    {
-                        actualResult += intermResult;
-                        intermResult = default;
-                    }
-
-                    UInt16 pairResult = default;
-
-                    pairResult += (UInt16)(left[i + 0] * right[i + 0]);
-                    pairResult += (UInt16)(left[i + 1] * right[i + 1]);
-
-                    intermResult += pairResult;
-                }
-            }
-            else
-            {
-                intermResult += (UInt16)(left[0] * right[0]);
-            }
-
-            actualResult += intermResult;
+            UInt16 actualResult = ComputeExpectedResult(left, right);
 
             if (actualResult != result)
             {
@@ -335,6 +309,31 @@ namespace JIT.HardwareIntrinsics.General._Vector128
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
+            }
+        }
+
+        private UInt16 ComputeExpectedResult(ReadOnlySpan<UInt16> left, ReadOnlySpan<UInt16> right)
+        {
+            // We need to do pairwise addition to compute the result. However, we need this done for the vector chunks
+            // as well. So we'll just recurse down to 1 element. This ensures that:
+            // * Vector512<T> is Vector256<T> + Vector256<T>
+            // * Vector256<T> is Vector128<T> + Vector128<T>
+            // * Vector128<T> is Vector64<T>  + Vector64<T>
+            // * etc
+            // This continues down to `(left[n] * right[n]) + (left[n + 1] * right[n + 1])`
+
+            if (left.Length != 1)
+            {
+                int half = left.Length / 2;
+
+                return (UInt16)(
+                    ComputeExpectedResult(left.Slice(0, half), right.Slice(0, half)) +
+                    ComputeExpectedResult(left.Slice(half), right.Slice(half))
+                );
+            }
+            else
+            {
+                return (UInt16)(left[0] * right[0]);
             }
         }
     }

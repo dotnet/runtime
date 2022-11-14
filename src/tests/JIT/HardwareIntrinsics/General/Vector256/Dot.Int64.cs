@@ -293,33 +293,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
         {
             bool succeeded = true;
 
-            Int64 actualResult = default;
-            Int64 intermResult = default;
-
-            if (Op1ElementCount != 1)
-            {
-                for (var i = 0; i < Op1ElementCount; i += 2)
-                {
-                    if ((i % Vector128<Int64>.Count) == 0)
-                    {
-                        actualResult += intermResult;
-                        intermResult = default;
-                    }
-
-                    Int64 pairResult = default;
-
-                    pairResult += (Int64)(left[i + 0] * right[i + 0]);
-                    pairResult += (Int64)(left[i + 1] * right[i + 1]);
-
-                    intermResult += pairResult;
-                }
-            }
-            else
-            {
-                intermResult += (Int64)(left[0] * right[0]);
-            }
-
-            actualResult += intermResult;
+            Int64 actualResult = ComputeExpectedResult(left, right);
 
             if (actualResult != result)
             {
@@ -335,6 +309,31 @@ namespace JIT.HardwareIntrinsics.General._Vector256
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
+            }
+        }
+
+        private Int64 ComputeExpectedResult(ReadOnlySpan<Int64> left, ReadOnlySpan<Int64> right)
+        {
+            // We need to do pairwise addition to compute the result. However, we need this done for the vector chunks
+            // as well. So we'll just recurse down to 1 element. This ensures that:
+            // * Vector512<T> is Vector256<T> + Vector256<T>
+            // * Vector256<T> is Vector128<T> + Vector128<T>
+            // * Vector128<T> is Vector64<T>  + Vector64<T>
+            // * etc
+            // This continues down to `(left[n] * right[n]) + (left[n + 1] * right[n + 1])`
+
+            if (left.Length != 1)
+            {
+                int half = left.Length / 2;
+
+                return (Int64)(
+                    ComputeExpectedResult(left.Slice(0, half), right.Slice(0, half)) +
+                    ComputeExpectedResult(left.Slice(half), right.Slice(half))
+                );
+            }
+            else
+            {
+                return (Int64)(left[0] * right[0]);
             }
         }
     }
