@@ -969,7 +969,6 @@ namespace DebuggerTests
             string classWithNamespace, string expectedFileLocation)
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
-            var loc = bp.Value["locations"]?.Value<JArray>()[0];
             await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
                 expectedFileLocation,
