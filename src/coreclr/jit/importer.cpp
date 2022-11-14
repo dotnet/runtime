@@ -5558,8 +5558,16 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         // long + int => gives long
         // We get this because in the IL the long isn't Int64, it's just IntPtr.
         // Insert explicit upcasts if needed.
-        op1 = *pOp1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
-        op2 = *pOp2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
+        if (genActualType(op1) != TYP_I_IMPL)
+        {
+            // insert an explicit upcast
+            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
+        }
+        else if (genActualType(op2) != TYP_I_IMPL)
+        {
+            // insert an explicit upcast
+            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
+        }
 
         type = TYP_I_IMPL;
     }
