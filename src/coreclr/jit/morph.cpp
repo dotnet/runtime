@@ -9500,7 +9500,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1)))
                 {
                     // Transformation: a % 1 = 0
-                    return fgMorphModToZero(tree->AsOp());
+                    GenTree* optimizedTree = fgMorphModToZero(tree->AsOp());
+                    if (optimizedTree != nullptr)
+                    {
+                        return optimizedTree;
+                    }
                 }
             }
 
@@ -12769,6 +12773,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //
 // Returns:
 //    The morphed tree, will be a GT_COMMA or a zero constant node.
+//    Can return null if the transformation cannot happen.
 //
 GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 {
@@ -12789,6 +12794,11 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
     if (op1SideEffects != nullptr)
     {
+        // Do not transform this if there are side effects and we are not in global morph.
+        // If we want to allow this, we need to update value numbers for the GT_COMMA.
+        if (!fgGlobalMorph)
+            return nullptr;
+
         GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
 
 #ifdef DEBUG
