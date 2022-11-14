@@ -4260,13 +4260,6 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Initialization of OSR locals must be handled specially
-        if (compiler->lvaIsOSRLocal(varNum))
-        {
-            varDsc->lvMustInit = 0;
-            continue;
-        }
-
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
