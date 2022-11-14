@@ -5,12 +5,13 @@ using Xunit;
 using Xunit.Abstractions;
 
 using Common;
+using System.Runtime.Versioning;
 
 namespace Regression.UnitTests
 {
     public unsafe class ImportTests
     {
-        private const int EnumBuffer = 4;
+        private const int EnumBuffer = 32;
 
         public ImportTests(ITestOutputHelper outputHelper)
         {
@@ -19,7 +20,7 @@ namespace Regression.UnitTests
 
         private ITestOutputHelper Log { get; }
 
-        public static IEnumerable<object[]> FrameworkLibraries()
+        public static IEnumerable<object[]> CoreFrameworkLibraries()
         {
             var spcl = typeof(object).Assembly.Location;
             var frameworkDir = Path.GetDirectoryName(spcl)!;
@@ -36,9 +37,51 @@ namespace Regression.UnitTests
             }
         }
 
+        [SupportedOSPlatform("windows")]
+        public static IEnumerable<object[]> Net20FrameworkLibraries()
+        {
+            foreach (var managedMaybe in Directory.EnumerateFiles(Dispensers.NetFx20Dir, "*.dll"))
+            {
+                PEReader pe = new(File.OpenRead(managedMaybe));
+                if (!pe.HasMetadata)
+                {
+                    pe.Dispose();
+                    continue;
+                }
+
+                yield return new object[] { Path.GetFileName(managedMaybe), pe };
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static IEnumerable<object[]> Net40FrameworkLibraries()
+        {
+            foreach (var managedMaybe in Directory.EnumerateFiles(Dispensers.NetFx40Dir, "*.dll"))
+            {
+                PEReader pe = new(File.OpenRead(managedMaybe));
+                if (!pe.HasMetadata)
+                {
+                    pe.Dispose();
+                    continue;
+                }
+
+                yield return new object[] { Path.GetFileName(managedMaybe), pe };
+            }
+        }
+
         [Theory]
-        [MemberData(nameof(FrameworkLibraries))]
-        public void LoadMetadataAndEnumTokens(string filename, PEReader managedLibrary)
+        [MemberData(nameof(CoreFrameworkLibraries))]
+        public void ImportAPIs_Core(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
+
+        [Theory]
+        [MemberData(nameof(Net20FrameworkLibraries))]
+        public void ImportAPIs_Net20(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
+
+        [Theory]
+        [MemberData(nameof(Net40FrameworkLibraries))]
+        public void ImportAPIs_Net40(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
+
+        private void ImportAPIs(string filename, PEReader managedLibrary)
         {
             Debug.WriteLine($"Loading {filename}...");
 
@@ -62,14 +105,14 @@ namespace Regression.UnitTests
             {
                 Assert.Equal(IsGlobal(baselineImport, typedef), IsGlobal(currentImport, typedef));
                 Assert.Equal(EnumInterfaceImpls(baselineImport, typedef), EnumInterfaceImpls(currentImport, typedef));
-                Assert.Equal(EnumPermissionSets(baselineImport, typedef), EnumPermissionSets(currentImport, typedef));
+                Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, typedef), EnumPermissionSetsAndGetProps(currentImport, typedef));
                 Assert.Equal(EnumMembers(baselineImport, typedef), EnumMembers(currentImport, typedef));
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
-                    Assert.Equal(EnumPermissionSets(baselineImport, methoddef), EnumPermissionSets(currentImport, methoddef));
+                    Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
                 }
                 var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
@@ -355,18 +398,19 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumPermissionSets(IMetaDataImport import, uint tk)
+        private static List<nuint> EnumPermissionSetsAndGetProps(IMetaDataImport import, uint permTk)
         {
-            List<uint> tokens = new();
+            List<nuint> values = new();
             var tokensBuffer = new uint[EnumBuffer];
 
             // See CorDeclSecurity for actions definitions
             for (uint action = 0; action <= 0xf; ++action)
             {
+                List<uint> tokens = new();
                 nint hcorenum = 0;
                 try
                 {
-                    while (0 == import.EnumPermissionSets(ref hcorenum, tk, action, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    while (0 == import.EnumPermissionSets(ref hcorenum, permTk, action, tokensBuffer, tokensBuffer.Length, out uint returned)
                         && returned != 0)
                     {
                         for (int j = 0; j < returned; ++j)
@@ -377,10 +421,27 @@ namespace Regression.UnitTests
                 }
                 finally
                 {
+                    Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                    Assert.Equal(count, tokens.Count);
                     import.CloseEnum(hcorenum);
                 }
+
+                foreach (var pk in tokens)
+                {
+                    int hr = import.GetPermissionSetProps(pk, out uint a, out nint ppvPermission, out uint pcbPermission);
+                    if (hr != 0)
+                    {
+                        values.Add((uint)hr);
+                    }
+                    else
+                    {
+                        values.Add(a);
+                        values.Add((nuint)ppvPermission);
+                        values.Add(pcbPermission);
+                    }
+                }
             }
-            return tokens;
+            return values;
         }
 
         private static List<uint> GetRVA(IMetaDataImport import, uint tk)

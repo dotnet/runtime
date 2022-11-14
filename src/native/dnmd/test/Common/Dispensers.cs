@@ -1,11 +1,9 @@
 ﻿//#define NETFX_20_BASELINE
 //#define NETFX_40_BASELINE
 
-#if NETFX_20_BASELINE || NETFX_40_BASELINE
 using Microsoft.Win32;
-#endif
-
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Common
 {
@@ -22,19 +20,28 @@ namespace Common
         public static nint BaselineRaw { get; } = GetBaselineRaw();
 
         /// <summary>
+        /// Directory for NET Framework 2.0
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        public static string NetFx20Dir { get; } = GetNetFx20Install();
+
+        /// <summary>
+        /// Directory for NET Framework 4.0
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        public static string NetFx40Dir { get; } = GetNetFx40Install();
+
+        /// <summary>
         /// Get the current IMetaDataDispenser implementation.
         /// </summary>
         public static IMetaDataDispenser Current { get; } = GetCurrent();
 
         private static unsafe nint GetBaselineRaw()
         {
-#if NETFX_20_BASELINE || NETFX_40_BASELINE
-            using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework");
 #if NETFX_20_BASELINE
-            var baseline = Path.Combine((string)key.GetValue("InstallRoot")!, "v2.0.50727", "mscorwks.dll");
-#else // NETFX_40_BASELINE
-            var baseline = Path.Combine((string)key.GetValue("InstallRoot")!, "v4.0.30319", "clr.dll");
-#endif
+            var baseline = Path.Combine(NetFx20Dir, "mscorwks.dll");
+#elif NETFX_40_BASELINE
+            var baseline = Path.Combine(NetFx40Dir, "clr.dll");
 #else
             var runtimeName =
                 OperatingSystem.IsWindows() ? "coreclr.dll"
@@ -91,6 +98,20 @@ namespace Common
             }
 
             return dispenser;
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static string GetNetFx20Install()
+        {
+            using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework")!;
+            return Path.Combine((string)key.GetValue("InstallRoot")!, "v2.0.50727");
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static string GetNetFx40Install()
+        {
+            using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework")!;
+            return Path.Combine((string)key.GetValue("InstallRoot")!, "v4.0.30319");
         }
     }
 }
