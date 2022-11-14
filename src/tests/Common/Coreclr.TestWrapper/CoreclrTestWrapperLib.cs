@@ -263,9 +263,9 @@ namespace CoreclrTestLib
             return fSuccess && createdump.ExitCode == 0;
         }
 
-        private static List<string> knownNativeModules = new List<string>() { "libcoreclr.so" };
+        private static List<string> knownNativeModules = new List<string>() { "libcoreclr.so", "libclrjit.so" };
         private static string TO_BE_CONTINUE_TAG = "<TO_BE_CONTINUE>";
-        private static string SKIP_LINE_TAG = "<SKIP_LINE>";
+        private static string SKIP_LINE_TAG = "# <SKIP_LINE>";
 
 
         /// <summary>
@@ -273,6 +273,7 @@ namespace CoreclrTestLib
         ///     and recreate the stacktrace that is printed on the console.
         /// </summary>
         /// <param name="crashReportJsonFile">crash dump path</param>
+        /// <param name="outputWriter">Stream for writing logs</param>
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
         static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
         {
@@ -323,7 +324,7 @@ namespace CoreclrTestLib
                         if ((nativeModuleName != null) && (knownNativeModules.Contains(nativeModuleName)))
                         {
                             // Need to use llvm-symbolizer (only if module_address != 0)
-                            AppendAddress(addrBuilder, (string)frame["native_address"], (string)frame["module_address"]);
+                            AppendAddress(addrBuilder, coreRoot, nativeModuleName, (string)frame["native_address"], (string)frame["module_address"]);
                         }
                         else if ((nativeModuleName != null) || (unmanagedName != null))
                         {
@@ -364,17 +365,13 @@ namespace CoreclrTestLib
                 }
             }
 
-            Console.WriteLine("----------input to llvm-symbolizer-----------------");
-            Console.WriteLine(addrBuilder.ToString());
-            Console.WriteLine("---------------------------");
-
             string symbolizerOutput = null;
 
             Process llvmSymbolizer = new Process()
             {
                 StartInfo = {
                 FileName = "llvm-symbolizer",
-                Arguments = $"--obj={coreRoot}/libcoreclr.so -p",
+                Arguments = $"-p",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -421,16 +418,18 @@ namespace CoreclrTestLib
             return true;
         }
 
-        private static void AppendAddress(StringBuilder sb, string native_address, string module_address)
+        private static void AppendAddress(StringBuilder sb, string coreRoot, string nativeModuleName, string native_address, string module_address)
         {
             if (module_address != "0x0")
             {
+                sb.Append($"{nativeModuleName}!");
                 sb.Append(TO_BE_CONTINUE_TAG);
                 sb.AppendLine();
                 //addrBuilder.AppendLine(frame.native_image_offset);
                 ulong nativeAddress = ulong.Parse(native_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
                 ulong moduleAddress = ulong.Parse(module_address.Substring(2), System.Globalization.NumberStyles.HexNumber);
-                sb.AppendFormat("0x{0:x}", nativeAddress - moduleAddress);
+                string fullPathToModule = Path.Combine(coreRoot, nativeModuleName);
+                sb.AppendFormat("{0} 0x{1:x}", fullPathToModule, nativeAddress - moduleAddress);
             }
         }
 
