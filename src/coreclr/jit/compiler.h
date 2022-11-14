@@ -4878,10 +4878,6 @@ public:
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 
-    // Does value-numbering for a block assignment.
-    void fgValueNumberBlockAssignment(GenTree* tree);
-
-    // Does value-numbering for a variable definition that has SSA.
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
