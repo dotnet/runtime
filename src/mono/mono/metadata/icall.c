@@ -2211,15 +2211,18 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
-	/* TODO: metadata-update: get the values of added fields */
-	g_assert (!m_field_is_from_update (field));
 
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
-		mono_error_set_not_implemented (error, "");
-		return MONO_HANDLE_NEW (MonoObject, NULL);
+		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
+		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		return ves_icall_RuntimeFieldInfo_GetValueInternal (field_h, objHandle, error);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject)));
 	} else {
+		/* metadata-update can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return mono_value_box_handle (klass, (guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject), error);
 	}
 }
@@ -2233,16 +2236,17 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 
 	mono_class_setup_fields (m_field_get_parent (f));
 
-	/* TODO: metadata-update: set the values of added fields */
-	g_assert (!m_field_is_from_update (f));
-
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
 		return_if_nok (error);
 		ves_icall_RuntimeFieldInfo_SetValueInternal (field_h, objHandle, value_h, error);
 	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), MONO_HANDLE_RAW (value_h), FALSE);
 	} else {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		MonoGCHandle gchandle = NULL;
 		g_assert (MONO_HANDLE_RAW (value_h));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), mono_object_handle_pin_unbox (value_h, &gchandle), FALSE);
