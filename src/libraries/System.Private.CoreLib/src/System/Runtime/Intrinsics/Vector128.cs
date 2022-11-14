@@ -1156,6 +1156,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<T> CreateScalar<T>(T value)
             where T : struct => Vector64.CreateScalar(value).ToVector128();
@@ -1163,241 +1164,91 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<byte> CreateScalar(byte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<byte>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we call
-                // the UInt32 overload to ensure zero extension. We can then just treat the result as byte and return.
-                return Sse2.ConvertScalarToVector128UInt32(value).AsByte();
-            }
-            else
-            {
-                return CreateScalar<byte>(value);
-            }
-        }
+        public static unsafe Vector128<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<double> CreateScalar(double value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<double>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                return Sse2.MoveScalar(Vector128<double>.Zero, CreateScalarUnsafe(value));
-            }
-            else
-            {
-                return CreateScalar<double>(value);
-            }
-        }
+        public static unsafe Vector128<double> CreateScalar(double value) => CreateScalar<double>(value);
 
         /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<short> CreateScalar(short value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<short>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we cast
-                // to ushort and call the UInt32 overload to ensure zero extension. We can then just treat the result as short and return.
-                return Sse2.ConvertScalarToVector128UInt32((ushort)(value)).AsInt16();
-            }
-            else
-            {
-                return CreateScalar<short>(value);
-            }
-        }
+        public static unsafe Vector128<short> CreateScalar(short value) => CreateScalar<short>(value);
 
         /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<int> CreateScalar(int value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<int>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                return Sse2.ConvertScalarToVector128Int32(value);
-            }
-            else
-            {
-                return CreateScalar<int>(value);
-            }
-        }
+        public static unsafe Vector128<int> CreateScalar(int value) => CreateScalar<int>(value);
 
         /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<long> CreateScalar(long value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<long>.Zero, 0, value);
-            }
-            else if (Sse2.X64.IsSupported)
-            {
-                return Sse2.X64.ConvertScalarToVector128Int64(value);
-            }
-            else
-            {
-                return CreateScalar<long>(value);
-            }
-        }
+        public static unsafe Vector128<long> CreateScalar(long value) => CreateScalar<long>(value);
 
         /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<nint> CreateScalar(nint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((long)(value)).AsNInt();
-#else
-            return CreateScalar((int)(value)).AsNInt();
-#endif
-        }
+        public static unsafe Vector128<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<nuint> CreateScalar(nuint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((ulong)(value)).AsNUInt();
-#else
-            return CreateScalar((uint)(value)).AsNUInt();
-#endif
-        }
+        public static unsafe Vector128<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<sbyte> CreateScalar(sbyte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<sbyte>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we cast
-                // to byte and call the UInt32 overload to ensure zero extension. We can then just treat the result as sbyte and return.
-                return Sse2.ConvertScalarToVector128UInt32((byte)(value)).AsSByte();
-            }
-            else
-            {
-                return CreateScalar<sbyte>(value);
-            }
-        }
+        public static unsafe Vector128<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<float> CreateScalar(float value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<float>.Zero, 0, value);
-            }
-            else if (Sse.IsSupported)
-            {
-                return Sse.MoveScalar(Vector128<float>.Zero, CreateScalarUnsafe(value));
-            }
-            else
-            {
-                return CreateScalar<float>(value);
-            }
-        }
+        public static unsafe Vector128<float> CreateScalar(float value) => CreateScalar<float>(value);
 
         /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<ushort> CreateScalar(ushort value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<ushort>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                // ConvertScalarToVector128 only deals with 32/64-bit inputs and we need to ensure all upper-bits are zeroed, so we call
-                // the UInt32 overload to ensure zero extension. We can then just treat the result as ushort and return.
-                return Sse2.ConvertScalarToVector128UInt32(value).AsUInt16();
-            }
-            else
-            {
-                return CreateScalar<ushort>(value);
-            }
-        }
+        public static unsafe Vector128<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<uint> CreateScalar(uint value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<uint>.Zero, 0, value);
-            }
-            else if (Sse2.IsSupported)
-            {
-                return Sse2.ConvertScalarToVector128UInt32(value);
-            }
-            else
-            {
-                return CreateScalar<uint>(value);
-            }
-        }
+        public static unsafe Vector128<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<ulong> CreateScalar(ulong value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector128<ulong>.Zero, 0, value);
-            }
-            else if (Sse2.X64.IsSupported)
-            {
-                return Sse2.X64.ConvertScalarToVector128UInt64(value);
-            }
-            else
-            {
-                return CreateScalar<ulong>(value);
-            }
-        }
+        public static unsafe Vector128<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

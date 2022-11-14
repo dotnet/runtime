@@ -2777,7 +2777,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 			cfg->arch.thunks = cfg->thunks;
 			cfg->arch.thunks_size = cfg->thunk_area;
 #ifdef THUNK_ADDR_ALIGNMENT
-			cfg->arch.thunks = ALIGN_TO(cfg->arch.thunks, THUNK_ADDR_ALIGNMENT);
+			cfg->arch.thunks = (guint8 *)ALIGN_TO(cfg->arch.thunks, THUNK_ADDR_ALIGNMENT);
 #endif
 		}
 		thunks = cfg->arch.thunks;
@@ -5930,7 +5930,7 @@ host_mgreg_t*
 mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
+		return (host_mgreg_t *)(gsize)&ctx->sc_sp;
 
 	return &ctx->regs [reg];
 }

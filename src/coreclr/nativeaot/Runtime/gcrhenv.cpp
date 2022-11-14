@@ -1029,10 +1029,6 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
-#endif
-
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // NativeAOT doesn't patch the write barrier like CoreCLR does, but it

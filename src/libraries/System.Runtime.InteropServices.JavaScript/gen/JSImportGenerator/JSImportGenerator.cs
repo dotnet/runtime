@@ -103,7 +103,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
                 .Select(
-                    static (data, ct) => GenerateSource(data.Left, data.Right)
+                    static (data, ct) => GenerateSource(data.Left)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
@@ -222,8 +222,7 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
-            IncrementalStubGenerationContext incrementalContext,
-            JSGeneratorOptions options)
+            IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnostics();
 

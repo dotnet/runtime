@@ -393,6 +393,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[2]);
             Assert.Equal("val2", list[3]);
             Assert.Equal("valx", list[4]);
+
+            // Ensure expandability of the returned list
+            options.AlreadyInitializedListInterface.Add("ExtraItem");
+            Assert.Equal(6, options.AlreadyInitializedListInterface.Count);
+            Assert.Equal("ExtraItem", options.AlreadyInitializedListInterface[5]);
         }
 
         [Fact]
@@ -1098,6 +1103,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.ICollectionNoSetter.Count);
             Assert.Equal("val0", options.ICollectionNoSetter.ElementAt(0));
             Assert.Equal("val1", options.ICollectionNoSetter.ElementAt(1));
+
+            // Ensure expandability of the returned collection
+            options.ICollectionNoSetter.Add("ExtraItem");
+            Assert.Equal(3, options.ICollectionNoSetter.Count);
+            Assert.Equal("ExtraItem", options.ICollectionNoSetter.ElementAt(2));
         }
 
         [Fact]
@@ -1218,6 +1228,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", array[1]);
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
+
+            // Ensure expandability of the returned collection
+            options.ICollection.Add("ExtraItem");
+            Assert.Equal(5, options.ICollection.Count);
+            Assert.Equal("ExtraItem", options.ICollection.ElementAt(4));
         }
 
         [Fact]
@@ -1246,6 +1261,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
+
+            // Ensure expandability of the returned list
+            options.IList.Add("ExtraItem");
+            Assert.Equal(5, options.IList.Count);
+            Assert.Equal("ExtraItem", options.IList[4]);
         }
 
         [Fact]

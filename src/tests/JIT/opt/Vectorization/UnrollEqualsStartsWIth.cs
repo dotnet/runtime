@@ -18,7 +18,7 @@ public class UnrollEqualsStartsWIth
         int testCount = 0;
         foreach (var testType in testTypes)
             testCount += RunTests(testType);
-        return testCount == 113652 ? 100 : 0;
+        return testCount == 127512 ? 100 : 0;
     }
 
     public static int RunTests(Type type)
@@ -37,6 +37,12 @@ public class UnrollEqualsStartsWIth
 
         string[] testData =
         {
+            "\u9244",
+            "\u9244\u9244",
+            "\u9244\u9244\u9244",
+            "\uFFFF",
+            "\uFFFF\uFFFF",
+            "\uFFFF\uFFFF\uFFFF",
             "",
             string.Empty,
             "a",

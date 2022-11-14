@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolDefinitionNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

@@ -77,11 +77,12 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void consume<T>(T a1, T a2) {}
 
+    /* If conditions that are consumed. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Eq_byte_consume(byte a1, byte a2) {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         if (a1 == a2) { a1 = 10; }
         consume<byte>(a1, a2);
     }
@@ -89,8 +90,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Ne_short_consume(short a1, short a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
         if (a1 != a2) { a1 = 11; }
         consume<short>(a1, a2);
     }
@@ -98,8 +99,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Lt_int_consume(int a1, int a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
         if (a1 < a2) { a1 = 12; }
         consume<int>(a1, a2);
     }
@@ -107,8 +108,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Le_long_consume(long a1, long a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, le
         if (a1 <= a2) { a1 = 13; }
         consume<long>(a1, a2);
     }
@@ -116,8 +117,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Gt_ushort_consume(ushort a1, ushort a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
         if (a1 > a2) { a1 = 14; }
         consume<ushort>(a1, a2);
     }
@@ -125,8 +126,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Ge_uint_consume(uint a1, uint a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
         if (a1 >= a2) { a1 = 15; }
         consume<uint>(a1, a2);
     }
@@ -134,8 +135,8 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Eq_ulong_consume(ulong a1, ulong a2)
     {
-        //ARM64: cmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, eq
         if (a1 == a2) { a1 = 16; }
         consume<ulong>(a1, a2);
     }
@@ -143,21 +144,40 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Ne_float_int_consume(float f1, float f2, int a1, int a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
         if (f1 != f2) { a1 = 17; }
         consume<float>(a1, a2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Lt_double_int_consume(double f1, double f2, int a1, int a2)
+    public static void Lt_double_long_consume(double f1, double f2, long a1, long a2)
     {
-        //ARM64: fcmp
-        //ARM64-NEXT: csel
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, lt
         if (f1 < f2) { a1 = 18; }
         consume<double>(a1, a2);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Eq_double_long_consume(double f1, double f2, long a1, long a2)
+    {
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, eq
+        if (f1 == f2) { a1 = 18; }
+        consume<double>(a1, a2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Ne_double_int_consume(double f1, double f2, int a1, int a2)
+    {
+        //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        if (f1 != f2) { a1 = 18; }
+        consume<double>(a1, a2);
+    }
+
+    /* If/Else conditions that consume. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Eq_else_byte_consume(byte a1, byte a2) {
@@ -239,6 +259,7 @@ public class FullRangeComparisonTest
         consume<double>(a1, a2);
     }
 
+    /* If conditions that return. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static byte Eq_else_byte_return(byte a1, byte a2) {
@@ -310,7 +331,6 @@ public class FullRangeComparisonTest
         //ARM64-NEXT: csel
         return (a1 < a2) ? 18 : 108;
     }
-
 
     public static int Main()
     {
@@ -446,7 +466,9 @@ public class FullRangeComparisonTest
         Ge_uint_consume(10, 11);
         Eq_ulong_consume(10, 11);
         Ne_float_int_consume(10.1F, 11.1F, 12, 13);
-        Lt_double_int_consume(10.1, 11.1, 12, 13);
+        Lt_double_long_consume(10.1, 11.1, 12, 13);
+        Eq_double_long_consume(10.1, 11.1, 12, 13);
+        Ne_double_int_consume(10.1, 11.1, 12, 13);
 
         Eq_else_byte_consume(20, 21);
         Ne_else_short_consume(10, 11);

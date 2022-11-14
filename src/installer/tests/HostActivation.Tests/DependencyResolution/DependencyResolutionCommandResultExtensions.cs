@@ -142,6 +142,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
+        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalDeps(this CommandResultAssertions assertion, string depsFilePath)
+        {
+            return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
+        }
 
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
             GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");
