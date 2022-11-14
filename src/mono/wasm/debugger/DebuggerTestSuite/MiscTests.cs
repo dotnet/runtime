@@ -961,20 +961,25 @@ namespace DebuggerTests
         [Theory]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs",
+            "debugger-test-special-char-in-path-%23%40/test%23.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ąłÅ.cs",
+            "debugger-test-special-char-in-path-%23%40/non-ascii-test-ąłÅ.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
-            string classWithNamespace, string expectedFileLocation)
+            string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
-            await EvaluateAndCheck(
+            var loc = bp.Value["locations"]?.Value<JArray>()[0];
+            //Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);            
+            var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
                 expectedFileLocation,
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
+            Assert.True(ret["callFrames"][0]["url"].Value<string>().Contains(expectedFileNameEscaped)); 
         }
 
         [Theory]
@@ -1097,12 +1102,13 @@ namespace DebuggerTests
         public async Task SetBreakpointInProjectWithChineseCharactereInPath()
         {
             var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
-            await EvaluateAndCheck(
+            var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
                 "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+            Assert.True(ret["callFrames"][0]["url"].Value<string>().Contains("debugger-test-chinese-char-in-path-ㄨ/test.cs"));
         }
 
         [Fact]
