@@ -40,8 +40,8 @@ namespace System.Reflection.Context.Tests
         public void GetCustomAttributesData_ReturnsTestModuleAttribute()
         {
             List<CustomAttributeData> customAttributesData = _customModule.GetCustomAttributesData().ToList();
-            Assert.Single(customAttributesData);
-            Assert.Equal("TestModuleAttribute", customAttributesData.First().AttributeType.Name);
+            var testModuleAttribute = customAttributesData.FirstOrDefault(x => x.AttributeType.Name == "TestModuleAttribute");
+            Assert.NotNull(testModuleAttribute);
         }
 
         [Fact]

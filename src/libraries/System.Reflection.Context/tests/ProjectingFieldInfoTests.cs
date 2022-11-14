@@ -21,32 +21,25 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void DeclaringType_ReturnsCustomType()
         {
-            Assert.Equal(ProjectionConstants.CustomType, _field.DeclaringType.FullName);
+            Assert.Equal(ProjectionConstants.SecondTestObject, _field.DeclaringType.FullName);
         }
 
         [Fact]
         public void FieldType_ReturnsIntType()
         {
-            Assert.Equal("System.Int32", _field.FieldType.Name);
+            Assert.Equal("Int32", _field.FieldType.Name);
         }
 
         [Fact]
         public void Module()
         {
-            Assert.Equal(typeof(SecondTestObject).Module, _field.Module);
+            Assert.Equal(typeof(SecondTestObject).Module.Name, _field.Module.Name);
         }
 
         [Fact]
         public void ReflectedType()
         {
-            Assert.Equal(typeof(SecondTestObject), _field.ReflectedType);
-        }
-
-        [Fact]
-        public void GetCustomAttributes()
-        {
-            object[] attributes = _field.GetCustomAttributes(typeof(TestAttribute), false);
-            Assert.Single(attributes);
+            Assert.Equal(typeof(SecondTestObject).Name, _field.ReflectedType.Name);
         }
 
         [Fact]

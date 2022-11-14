@@ -158,6 +158,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [AttributeUsage(AttributeTargets.Field)]
     internal class TestAttribute : Attribute
     {
     }
