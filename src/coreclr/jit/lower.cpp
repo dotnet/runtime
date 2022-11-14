@@ -3013,14 +3013,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     GenTree* op2 = castOp->gtGetOp2();
 
 #ifdef TARGET_XARCH
-                    // If one of the ops is not already contained and one of the ops is a GT_LCL_VAR,
-                    // then change its type to the castToType. We do this to take advantage of
-                    // containment for a memory op.
-                    if (op1->OperIs(GT_LCL_VAR) && !op2->isContained())
+                    // If one of the ops is a GT_LCL_VAR, then change its type to the castToType.
+                    // We do this to take advantage of containment for a memory op.
+                    if (op1->OperIs(GT_LCL_VAR) && !op2->IsCnsIntOrI())
                     {
                         op1->ChangeType(castToType);
                     }
-                    else if (op2->OperIs(GT_LCL_VAR) && !op1->isContained())
+                    else if (op2->OperIs(GT_LCL_VAR))
                     {
                         op2->ChangeType(castToType);
                     }
