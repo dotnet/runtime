@@ -397,7 +397,11 @@ namespace ILCompiler
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
+            string outputFileDir = Path.GetDirectoryName(outputFile);
+            if (!string.IsNullOrEmpty(outputFileDir))
+            {
+                Directory.CreateDirectory(outputFileDir);
+            }
 
             ReadyToRunFlags flags =
                 ReadyToRunFlags.READYTORUN_FLAG_Component |
