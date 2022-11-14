@@ -550,17 +550,6 @@ bool OptIfConversionDsc::optIfConvert()
     {
         return false;
     }
-    // Check the condition or inverted condition is usable. Prefer inverted.
-    bool         invertCond = true;
-    GenCondition genCond    = GenCondition::FromRelop(cond);
-    if (!GenCondition::IsPreferredRelop(GenCondition::Reverse(genCond)))
-    {
-        invertCond = false;
-        if (!GenCondition::IsPreferredRelop(genCond))
-        {
-            return false;
-        }
-    }
 
     // Look for valid flow of Then and Else blocks.
     IfConvertFindFlow();
@@ -676,18 +665,9 @@ bool OptIfConversionDsc::optIfConvert()
         selectFalseInput = m_thenOperation.node->gtGetOp1();
     }
 
-    // Invert the condition if required.
-    if (invertCond)
-    {
-        cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
-        if (varTypeIsFloating(cond->gtGetOp1()))
-        {
-            cond->gtFlags ^= GTF_RELOP_NAN_UN;
-        }
-        GenTree* tmp     = selectTrueInput;
-        selectTrueInput  = selectFalseInput;
-        selectFalseInput = tmp;
-    }
+    // Invert the condition.
+    GenTree* revCond = m_comp->gtReverseCond(cond);
+    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
 
     // Create a select node.
     GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, cond, selectTrueInput, selectFalseInput,
