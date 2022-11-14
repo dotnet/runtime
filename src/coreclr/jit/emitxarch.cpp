@@ -12977,8 +12977,18 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        assert(jitStaticFldIsGlobAddr(fldh));
-        addr = nullptr;
+        if (jitStaticFldIsGlobAddr(fldh))
+        {
+            addr = nullptr;
+        }
+        else
+        {
+            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
+            if (addr == nullptr)
+            {
+                NO_WAY("could not obtain address of static field");
+            }
+        }
     }
 
     BYTE* target = (addr + offs);

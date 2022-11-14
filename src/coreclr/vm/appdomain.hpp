@@ -1088,12 +1088,6 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
-    CrstExplicitInit* GetStaticBoxInitLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_crstStaticBoxInitLock;
-    }
-
     static CrstStatic* GetMethodTableExposedClassObjectLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1118,7 +1112,6 @@ protected:
     CrstExplicitInit m_DomainLocalBlockCrst;
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_crstStaticBoxInitLock;
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
