@@ -207,7 +207,7 @@ namespace System.Reflection
                 ObjectHandleOnStack.Create(ref type));
 
             if (type == null && throwOnError)
-                throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, name, FullName));
+                throw new TypeLoadException(SR.Format(SR.ClassLoad_General /* TypeLoad_TypeNotFoundInAssembly */, name, FullName));
 
             return type;
         }
