@@ -11303,12 +11303,6 @@ void gc_heap::clear_region_info (heap_segment* region)
                         seg_deleted);
 
     bgc_verify_mark_array_cleared (region);
-
-    if (dt_high_memory_load_p())
-    {
-        decommit_mark_array_by_seg (region);
-        region->flags &= ~(heap_segment_flags_ma_committed);
-    }
 #endif //BACKGROUND_GC
 }
 
