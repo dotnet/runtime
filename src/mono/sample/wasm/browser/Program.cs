@@ -9,9 +9,12 @@ namespace Sample
 {
     public partial class Test
     {
+        public static readonly DateTime Created = DateTime.Now;
+        public static readonly string Location = GetLocation();
+
         public static int Main(string[] args)
         {
-            Console.WriteLine($"MF .NET, args({args.Length}): {String.Join(", ", args)}, location: '{GetLocation()}'");
+            Console.WriteLine($"MF .NET, args({args.Length}): {String.Join(", ", args)}, static location: '{Location}', location: '{GetLocation()}', created: '{Created.ToString("yyyy-MM-dd HH:mm:ss")}'");
             return 0;
         }
 

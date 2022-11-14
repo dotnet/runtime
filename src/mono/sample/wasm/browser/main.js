@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-function exportMemory(memory) {
+async function exportMemory(memory) {
     const blob = new Blob([memory], { type: 'application/octet-stream' });
 
     let donwloadLink = document.createElement('a')
     donwloadLink.type = 'download'
     donwloadLink.href = URL.createObjectURL(blob)
-    donwloadLink.download = 'memory.data'
+    donwloadLink.download = 'memory.dat'
     donwloadLink.click()
 }
 
@@ -19,9 +19,14 @@ async function importMemory() {
 
 async function runtime1() {
     console.log("Runtime 1");
-    const dotnet1 = (await import("./dotnet.js?1")).dotnet;
-    const api1 = await dotnet1.create();
-    exportMemory(api1.Module.HEAP8);
+    const dotnet = (await import("./dotnet.js?1")).dotnet;
+    const { setModuleImports, getAssemblyExports, getConfig, Module } = await dotnet.create();
+
+    setModuleImports("main.js", { location: { href: () => window.location.href } });
+
+    const exports = getAssemblyExports(getConfig().mainAssemblyName);
+
+    await exportMemory(Module.HEAP8);
 }
 
 async function runtime2() {
