@@ -2510,6 +2510,13 @@ mono_class_get_field_token (MonoClassField *field)
 
 	mono_class_setup_fields (klass);
 
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			uint32_t idx = mono_metadata_update_get_field_idx (field);
+			return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
+		}
+	}
+
 	while (klass) {
 		MonoClassField *klass_fields = m_class_get_fields (klass);
 		if (!klass_fields)
@@ -2524,10 +2531,6 @@ mono_class_get_field_token (MonoClassField *field)
 					idx = mono_metadata_translate_token_index (m_class_get_image (klass), MONO_TABLE_FIELD, idx);
 				return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
 			}
-		}
-		if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
-			/* TODO: metadata-update: check if the field was added. */
-			g_assert_not_reached ();
 		}
 		klass = m_class_get_parent (klass);
 	}
