@@ -10,11 +10,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using Newtonsoft.Json;
 
 namespace CoreclrTestLib
 {
@@ -284,69 +286,73 @@ namespace CoreclrTestLib
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string contents = File.ReadAllText(crashReportJsonFile);
 
-            dynamic crashReport = JsonConvert.DeserializeObject(contents);
-            var threads = crashReport.payload.threads;
+            dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
+            var threads = crashReport["payload"]["threads"];
             StringBuilder addrBuilder = new StringBuilder();
             foreach (var thread in threads)
             {
 
-                if (thread.native_thread_id == null)
+                if (thread["native_thread_id"] == null)
                 {
                     continue;
                 }
 
                 addrBuilder.AppendLine();
                 addrBuilder.AppendLine("----------------------------------");
-                addrBuilder.AppendLine($"Thread Id: {thread.native_thread_id}");
+                addrBuilder.AppendLine($"Thread Id: {thread["native_thread_id"]}");
                 addrBuilder.AppendLine("      Child SP               IP Call Site");
-                var stack_frames = thread.stack_frames;
+                var stack_frames = thread["stack_frames"];
                 foreach (var frame in stack_frames)
                 {
-                    addrBuilder.Append($"{SKIP_LINE_TAG} {frame.stack_pointer} {frame.native_address} ");
-                    bool isNative = frame.is_managed == "false";
+                    addrBuilder.Append($"{SKIP_LINE_TAG} {frame["stack_pointer"]} {frame["native_address"]} ");
+                    bool isNative = (string)frame["is_managed"] == "false";
 
                     if (isNative)
                     {
-                        if ((frame.native_module != null) && (knownNativeModules.Contains(frame.native_module.Value)))
+                        string nativeModuleName = (string)frame["native_module"];
+                        string unmanagedName = (string)frame["unmanaged_name"];
+
+                        if ((nativeModuleName != null) && (knownNativeModules.Contains(nativeModuleName)))
                         {
                             // Need to use llvm-symbolizer (only if module_address != 0)
-                            AppendAddress(addrBuilder, frame.native_address.Value, frame.module_address.Value);
+                            AppendAddress(addrBuilder, (string)frame["native_address"], (string)frame["module_address"]);
                         }
-                        else if ((frame.native_module != null) || (frame.unmanaged_name != null))
+                        else if ((nativeModuleName != null) || (unmanagedName != null))
                         {
-                            // Some native symbols were found, print them as it is.
-                            if (frame.native_module != null)
+                            if (nativeModuleName != null)
                             {
-                                addrBuilder.Append($"{frame.native_module}!");
+                                addrBuilder.Append($"{nativeModuleName}!");
                             }
-                            if (frame.unmanaged_name != null)
+                            if (unmanagedName != null)
                             {
-                                addrBuilder.Append($"{frame.unmanaged_name}");
+                                addrBuilder.Append($"{unmanagedName}");
                             }
                         }
                     }
                     else
                     {
-                        if ((frame.filename != null) || (frame.method_name != null))
-                        {
-                            // found the managed method name, print them as it is.
-                            if (frame.filename != null)
-                            {
-                                addrBuilder.Append($"{frame.filename}!");
-                            }
-                            if (frame.method_name != null)
-                            {
-                                addrBuilder.Append($"{frame.method_name}");
-                            }
+                        string fileName = (string)frame["filename"];
+                        string methodName = (string)frame["method_name"];
 
+                        if ((fileName != null) || (methodName != null))
+                        {
+                            // found the managed method name
+                            if (fileName != null)
+                            {
+                                addrBuilder.Append($"{fileName}!");
+                            }
+                            if (methodName != null)
+                            {
+                                addrBuilder.Append($"{methodName}");
+                            }
                         }
                         else
                         {
-                            // Possibly JIT code or system call, print the address as it is.
-                            addrBuilder.Append($"{frame.native_address}");
+                            addrBuilder.Append($"{frame["native_address"]}");
                         }
                     }
                     addrBuilder.AppendLine();
+
                 }
             }
 
