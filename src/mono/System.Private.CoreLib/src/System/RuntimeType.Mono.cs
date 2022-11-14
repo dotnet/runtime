@@ -1970,7 +1970,7 @@ namespace System
         public override Type MakePointerType()
         {
             if (IsByRef)
-                throw new TypeLoadException($"Could not load type '{GetType()}' from assembly '{AssemblyQualifiedName}");
+                throw new TypeLoadException(string.Format(SR.ClassLoad_General, GetType(), AssemblyQualifiedName));
             Type? type = null;
             var base_type = this;
             make_pointer_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
@@ -2114,11 +2114,11 @@ namespace System
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(string.Format(SR.Argument_MustBeRuntimeType, nameof(ifaceType)));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
             InterfaceMapping res;
             if (!ifaceType.IsInterface)
-                throw new ArgumentException(string.Format(SR.Argument_MustBeInterface, nameof(ifaceType)));
+                throw new ArgumentException(SR.Argument_MustBeInterface, nameof(ifaceType));
             if (IsInterface)
                 throw new ArgumentException(SR.Argument_InterfaceMap);
             var this_type = this;
@@ -2126,7 +2126,7 @@ namespace System
             res.InterfaceType = ifaceType;
             GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
-                throw new ArgumentException(string.Format(SR.ArgumentException_InterfaceNotFound, nameof(ifaceType)));
+                throw new ArgumentException(SR.ArgumentException_InterfaceNotFound, nameof(ifaceType));
 
             return res;
         }

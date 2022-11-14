@@ -252,7 +252,7 @@ namespace System
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)
-                throw new ArgumentException(string.Format(SR.Argument_TypeParseError, nameof(typeName)));
+                throw new ArgumentException(SR.Argument_TypeParseError, nameof(typeName));
             return res;
         }
 
@@ -326,7 +326,7 @@ namespace System
         private static void BoundCheck(int idx, string s)
         {
             if (idx >= s.Length)
-                throw new ArgumentException(SR.Argument_InvalidGenericArg);
+                throw new ArgumentException(SR.Argument_InvalidGenericArg, "typeName");
         }
 
         private static ITypeIdentifier ParsedTypeIdentifier(string displayName)
@@ -379,7 +379,7 @@ namespace System
                     case '*':
                     case '[':
                         if (name[pos] != '[' && is_recurse)
-                            throw new ArgumentException(SR.Argument_GenericArgumentCannotBeByrefOrPointerType);
+                            throw new ArgumentException(SR.Argument_GenericArgumentCannotBeByrefOrPointerType, "typeName");
                         data.AddName(name.Substring(name_start, pos - name_start));
                         name_start = pos + 1;
                         in_modifiers = true;
@@ -406,13 +406,13 @@ namespace System
                     {
                         case '&':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Argument_CannotHaveAByrefOfByref);
+                                throw new ArgumentException(SR.Argument_CannotHaveAByrefOfByref, "typeName");
 
                             data.is_byref = true;
                             break;
                         case '*':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Argument_CannotPointToByrefType);
+                                throw new ArgumentException(SR.Argument_CannotPointToByrefType, "typeName");
                             // take subsequent '*'s too
                             int pointer_level = 1;
                             while (pos + 1 < name.Length && name[pos + 1] == '*')
@@ -447,17 +447,17 @@ namespace System
                             break;
                         case '[':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Argument_ByrefQualifierMustBeLastOneOfAType);
+                                throw new ArgumentException(SR.Argument_ByrefQualifierMustBeLastOneOfAType, "typeName");
                             ++pos;
                             if (pos >= name.Length)
-                                throw new ArgumentException(SR.Argument_InvalidArrayType);
+                                throw new ArgumentException(SR.Argument_InvalidArrayType, "typeName");
                             SkipSpace(name, ref pos);
 
                             if (name[pos] != ',' && name[pos] != '*' && name[pos] != ']')
                             {//generic args
                                 List<TypeSpec> args = new List<TypeSpec>();
                                 if (data.HasModifiers)
-                                    throw new ArgumentException(SR.Arg_GenericArguments);
+                                    throw new ArgumentException(SR.Arg_GenericArguments, "typeName");
 
                                 while (pos < name.Length)
                                 {
@@ -472,7 +472,7 @@ namespace System
                                         if (name[pos] == ']')
                                             ++pos;
                                         else
-                                            throw new ArgumentException(string.Format(SR.Argument_UnclosedAssemblyQualifiedTypeName, name[pos]));
+                                            throw new ArgumentException(string.Format(SR.Argument_UnclosedAssemblyQualifiedTypeName, name[pos]), "typeName");
                                         BoundCheck(pos, name);
                                     }
 
@@ -481,11 +481,11 @@ namespace System
                                     if (name[pos] == ',')
                                         ++pos; // skip ',' to the start of the next arg
                                     else
-                                        throw new ArgumentException(string.Format(SR.Argument_InvalidGenericArgumentsSeparator, name[pos]));
+                                        throw new ArgumentException(string.Format(SR.Argument_InvalidGenericArgumentsSeparator, name[pos]), "typeName");
 
                                 }
                                 if (pos >= name.Length || name[pos] != ']')
-                                    throw new ArgumentException(SR.Argument_GenericParsingError);
+                                    throw new ArgumentException(SR.Argument_GenericParsingError, "typeName");
                                 data.generic_params = args;
                             }
                             else
@@ -497,11 +497,11 @@ namespace System
                                     if (name[pos] == '*')
                                     {
                                         if (bound)
-                                            throw new ArgumentException(SR.Argument_ArrayCannotBeBoundTo2Dimensions);
+                                            throw new ArgumentException(SR.Argument_ArrayCannotBeBoundTo2Dimensions, "typeName");
                                         bound = true;
                                     }
                                     else if (name[pos] != ',')
-                                        throw new ArgumentException(string.Format(SR.Argument_InvalidCharInArraySpecification, name[pos]));
+                                        throw new ArgumentException(string.Format(SR.Argument_InvalidCharInArraySpecification, name[pos]), "typeName");
                                     else
                                         ++dimensions;
 
@@ -509,9 +509,9 @@ namespace System
                                     SkipSpace(name, ref pos);
                                 }
                                 if (pos >= name.Length || name[pos] != ']')
-                                    throw new ArgumentException(SR.Argument_ArrayParsingError);
+                                    throw new ArgumentException(SR.Argument_ArrayParsingError, "typeName");
                                 if (dimensions > 1 && bound)
-                                    throw new ArgumentException(SR.Argument_MultiDimensionalArrayCannotBeBound);
+                                    throw new ArgumentException(SR.Argument_MultiDimensionalArrayCannotBeBound, "typeName");
                                 data.AddModifier(new IArraySpec(dimensions, bound));
                             }
 
@@ -522,9 +522,9 @@ namespace System
                                 p = pos;
                                 return data;
                             }
-                            throw new ArgumentException(SR.Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName);
+                            throw new ArgumentException(SR.Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName, "typeName");
                         default:
-                            throw new ArgumentException(string.Format(SR.Argument_BadTypeDef, name[pos], pos));
+                            throw new ArgumentException(string.Format(SR.Argument_BadTypeDef, name[pos], pos), "typeName");
                     }
                 }
             }

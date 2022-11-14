@@ -256,7 +256,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (base_method.GetGenericArguments().Length != methodInstantiation.Length)
-                throw new ArgumentException(string.Format(SR.Argument_IncorrectLength, nameof(methodInstantiation)));
+                throw new ArgumentException(SR.Argument_IncorrectLength, nameof(methodInstantiation));
 
             foreach (Type type in methodInstantiation)
             {

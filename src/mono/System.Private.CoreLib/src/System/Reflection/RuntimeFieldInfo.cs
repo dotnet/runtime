@@ -203,7 +203,7 @@ namespace System.Reflection
                 if (obj == null)
                     throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType(), nameof(obj)));
+                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
 
             if (!IsLiteral)
@@ -227,7 +227,7 @@ namespace System.Reflection
                 if (obj == null)
                     throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(SR.Arg_FieldDeclTarget);
+                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
                 throw new FieldAccessException(SR.FieldAccess_CannotSetConstantField);

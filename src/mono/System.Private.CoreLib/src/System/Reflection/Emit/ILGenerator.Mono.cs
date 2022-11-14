@@ -898,10 +898,10 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(excType);
             if (!((excType == typeof(Exception)) ||
                    excType.IsSubclassOf(typeof(Exception))))
-                throw new ArgumentException(string.Format(SR.Argument_TypeMustBeOfExceptionType, nameof(excType)));
+                throw new ArgumentException(SR.Argument_TypeMustBeOfExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException(string.Format(SR.Argument_TypeMustHaveDefaultConstructor, nameof(excType)));
+                throw new ArgumentException(SR.Argument_TypeMustHaveDefaultConstructor, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }

@@ -65,7 +65,7 @@ namespace System.Runtime.CompilerServices
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)
-                throw new ArgumentException(string.Format(SR.InvalidOperation_HandleIsNotInitialized, nameof(type)));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(type.Value);
         }
@@ -115,7 +115,7 @@ namespace System.Runtime.CompilerServices
         public static void RunModuleConstructor(ModuleHandle module)
         {
             if (module == ModuleHandle.EmptyHandle)
-                throw new ArgumentException(string.Format(SR.InvalidOperation_HandleIsNotInitialized, nameof(module)));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(module.Value);
         }

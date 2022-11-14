@@ -1308,7 +1308,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(string.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length, nameof(typeArguments)));
+                throw new ArgumentException(string.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
@@ -1738,16 +1738,16 @@ namespace System.Reflection.Emit
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(string.Format(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor)));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
 
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(string.Format(SR.Argument_InvalidConstructorDeclaringType, nameof(type)));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
@@ -1785,7 +1785,7 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
@@ -1811,19 +1811,19 @@ namespace System.Reflection.Emit
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException(string.Format(SR.Argument_MustBeTypeBuilder, nameof(type)));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!field.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(string.Format(SR.Argument_FieldNeedGenericDeclaringType, nameof(field)));
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
             if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(string.Format(SR.Argument_InvalidFieldDeclaringType, nameof(type)));
+                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             if (field is FieldOnTypeBuilderInst)
-                throw new ArgumentException(string.Format(SR.Argument_FieldNeedGenericDeclaringType, nameof(field)));
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)

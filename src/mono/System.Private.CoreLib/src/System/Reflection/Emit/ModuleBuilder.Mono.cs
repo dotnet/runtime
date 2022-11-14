@@ -540,7 +540,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
-                throw new ArgumentException(string.Format(SR.Argument_CannotBeByRefType, nameof(type)));
+                throw new ArgumentException(SR.Argument_CannotBeByRefType, nameof(type));
             return type.MetadataToken;
         }
 

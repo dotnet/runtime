@@ -192,9 +192,9 @@ namespace System.Reflection.Emit
             {
                 ArgumentNullException.ThrowIfNull(modifier, name);
                 if (modifier.IsArray)
-                    throw new ArgumentException(string.Format(SR.Argument_ArraysInvalid, name));
+                    throw new ArgumentException(SR.Argument_ArraysInvalid, name);
                 if (modifier.ContainsGenericParameters)
-                    throw new ArgumentException(string.Format(SR.Argument_OpenGenericTypeNotPermitted, name));
+                    throw new ArgumentException(SR.Argument_OpenGenericTypeNotPermitted, name);
             }
         }
 

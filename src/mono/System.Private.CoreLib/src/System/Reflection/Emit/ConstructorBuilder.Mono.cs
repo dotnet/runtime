@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
                     if (parameterTypes[i] == null)
-                        throw new ArgumentException(string.Format(SR.Argument_NullParameterTypes, nameof(parameterTypes)));
+                        throw new ArgumentException(SR.Argument_NullParameterTypes, nameof(parameterTypes));
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
