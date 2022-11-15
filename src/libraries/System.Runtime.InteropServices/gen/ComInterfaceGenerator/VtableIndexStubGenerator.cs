@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -39,6 +40,12 @@ namespace Microsoft.Interop
             public const string GenerateManagedToNativeStub = nameof(GenerateManagedToNativeStub);
             public const string GenerateNativeToManagedStub = nameof(GenerateNativeToManagedStub);
         }
+
+        private static readonly ContainingSyntax NativeTypeContainingSyntax = new(
+                                    TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)),
+                                    SyntaxKind.InterfaceDeclaration,
+                                    Identifier("Native"),
+                                    null);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -91,8 +98,11 @@ namespace Microsoft.Interop
 
             context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = generateStubInformation
-                .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+            IncrementalValuesProvider<IncrementalStubGenerationContext> nativeToManagedStubContexts =
+                generateStubInformation
+                .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
+
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
                 )
@@ -110,6 +120,14 @@ namespace Microsoft.Interop
                 .Select(static (context, ct) => GenerateNativeInterfaceMetadata(context));
 
             context.RegisterConcatenatedSyntaxOutputs(generateNativeInterface, "NativeInterfaces.g.cs");
+
+            IncrementalValuesProvider<MemberDeclarationSyntax> populateVTable =
+                nativeToManagedStubContexts
+                .Collect()
+                .SelectMany(static (data, ct) => data.GroupBy(stub => stub.ContainingSyntaxContext))
+                .Select(static (vtable, ct) => GeneratePopulateVTableMethod(vtable));
+
+            context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
         }
 
         private static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
@@ -390,11 +408,7 @@ namespace Microsoft.Interop
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
-                    new ContainingSyntax(
-                        TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)),
-                        SyntaxKind.InterfaceDeclaration,
-                        Identifier("Native"),
-                        null))
+                    NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
                     PrintGeneratedSource(
                         methodStub.StubMethodSyntaxTemplate,
@@ -404,33 +418,19 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
+        private const string ThisParameterIdentifier = "@this";
+
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
             IncrementalStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();
-
-            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(methodStub.SignatureContext.ElementTypeInformation.Length + 1);
-
-            // Add the "this" parameter to our parameter list so it gets marshalled correctly.
-            const string thisParameterIdentifier = "@this";
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.TypeKeyType))
-            {
-                InstanceIdentifier = thisParameterIdentifier,
-                NativeIndex = 0,
-            });
-            foreach (var element in methodStub.SignatureContext.ElementTypeInformation)
-            {
-                elements.Add(element with
-                {
-                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
-                });
-            }
+            ImmutableArray<TypePositionInfo> elements = AddThisParameterToElementInfo(methodStub);
 
             // Generate stub code
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
-                elements.MoveToImmutable(),
+                elements,
                 (elementInfo, ex) =>
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
@@ -439,7 +439,7 @@ namespace Microsoft.Interop
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(thisParameterIdentifier),
+                    IdentifierName(ThisParameterIdentifier),
                     IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
 
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
@@ -467,14 +467,32 @@ namespace Microsoft.Interop
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
-                    new ContainingSyntax(
-                        TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)),
-                        SyntaxKind.InterfaceDeclaration,
-                        Identifier("Native"),
-                        null))
+                    NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
                     unmanagedToManagedStub),
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+        }
+
+        private static ImmutableArray<TypePositionInfo> AddThisParameterToElementInfo(IncrementalStubGenerationContext methodStub)
+        {
+            ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
+
+            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 1);
+
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.TypeKeyType))
+            {
+                InstanceIdentifier = ThisParameterIdentifier,
+                NativeIndex = 0,
+            });
+            foreach (var element in originalElements)
+            {
+                elements.Add(element with
+                {
+                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
+                });
+            }
+
+            return elements.MoveToImmutable();
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
@@ -514,6 +532,54 @@ namespace Microsoft.Interop
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)))
                 .WithBaseList(BaseList(SingletonSeparatedList((BaseTypeSyntax)SimpleBaseType(IdentifierName(context.ContainingSyntax[0].Identifier)))))
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))))));
+        }
+
+        private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalStubGenerationContext> vtableMethods)
+        {
+            const string vtableParameter = "vtable";
+            ContainingSyntaxContext containingSyntax = vtableMethods.Key.AddContainingSyntax(NativeTypeContainingSyntax);
+            MethodDeclarationSyntax populateVtableMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)),
+                "PopulateUnmanagedVirtualMethodTable")
+                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
+                .AddParameterListParameters(
+                    Parameter(Identifier(vtableParameter))
+                    .WithType(GenericName(TypeNames.System_Span).AddTypeArgumentListArguments(IdentifierName("nint"))));
+
+            foreach (var method in vtableMethods)
+            {
+                var stubGenerator = new UnmanagedToManagedStubGenerator(
+                    method.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
+                    method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
+                    AddThisParameterToElementInfo(method),
+                    // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
+                    (elementInfo, ex) => { },
+                    method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
+
+                List<FunctionPointerParameterSyntax> functionPointerParameters = new();
+                var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();
+                functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+                functionPointerParameters.Add(FunctionPointerParameter(retType));
+
+                // delegate* unmanaged<...>
+                ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = method.CallingConvention.Array;
+                FunctionPointerTypeSyntax functionPointerType = FunctionPointerType(
+                        FunctionPointerCallingConvention(Token(SyntaxKind.UnmanagedKeyword), callConv.IsEmpty ? null : FunctionPointerUnmanagedCallingConventionList(SeparatedList(callConv))),
+                        FunctionPointerParameterList(SeparatedList(functionPointerParameters)));
+
+                // <vtableParameter>[<index>] = (nint)(<functionPointerType>)&ABI_<methodIdentifier>;
+                populateVtableMethod = populateVtableMethod.AddBodyStatements(
+                    ExpressionStatement(
+                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                            ElementAccessExpression(
+                                IdentifierName(vtableParameter))
+                            .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
+                            CastExpression(IdentifierName("nint"),
+                                CastExpression(functionPointerType,
+                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
+                                        IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));
+            }
+
+            return containingSyntax.WrapMemberInContainingSyntaxWithUnsafeModifier(populateVtableMethod);
         }
     }
 }

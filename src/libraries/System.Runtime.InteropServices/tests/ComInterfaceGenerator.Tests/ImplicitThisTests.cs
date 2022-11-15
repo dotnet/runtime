@@ -26,8 +26,7 @@ namespace ComInterfaceGenerator.Tests
                     {
                         if (s_vtable[0] == null)
                         {
-                            s_vtable[0] = (delegate* unmanaged<void*, int>)&Native.ABI_GetData;
-                            s_vtable[1] = (delegate* unmanaged<void*, int, void>)&Native.ABI_SetData;
+                            Native.PopulateUnmanagedVirtualMethodTable(new Span<IntPtr>(s_vtable, 2));
                         }
                         return s_vtable;
                     }
