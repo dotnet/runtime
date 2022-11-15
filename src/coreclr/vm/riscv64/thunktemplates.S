@@ -6,22 +6,22 @@
 
 LEAF_ENTRY StubPrecodeCode
     auipc t2, 0x1
-    addi t1, t2, 0x6 // 6, for Type encoding.
-    ld t2,(StubPrecodeData__MethodDesc - 0x6)(t1)
-    ld t1,(StubPrecodeData__Target - 0x6)(t1)
+    addi t1, t2, 0x4 // 4, for Type encoding.
+    ld t2,(StubPrecodeData__MethodDesc - 0x4)(t1)
+    ld t1,(StubPrecodeData__Target - 0x4)(t1)
     jalr x0,t1,0
 LEAF_END_MARKED StubPrecodeCode
 
 LEAF_ENTRY FixupPrecodeCode
     auipc t2, 0x1
-    addi t1, t2, 0x5 // 5, for Type encoding.
-    ld t2, (FixupPrecodeData__Target - 5)(t1)
+    addi t1, t2, 0x3 // 3, for Type encoding.
+    ld t2, (FixupPrecodeData__Target - 3)(t1)
     jalr x0, t2,0
 
     auipc t2, 0x1
-    addi t1, t2, 0x5 // 5, for Type encoding.
-    ld t2, (FixupPrecodeData__MethodDesc - 5 - 16)(t1)
-    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 5 - 16)(t1)
+    addi t1, t2, 0x3 // 3, for Type encoding.
+    ld t2, (FixupPrecodeData__MethodDesc - 3 - 16)(t1)
+    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 3 - 16)(t1)
     jalr x0, t1, 0
 LEAF_END_MARKED FixupPrecodeCode
 

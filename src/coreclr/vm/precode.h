@@ -106,7 +106,7 @@ struct StubPrecode
     static const int Type = 0x4;
     static const int CodeSize = 24;
 #elif defined(HOST_RISCV64)
-    static const int Type = 0x6;
+    static const int Type = 0x4;
     static const int CodeSize = 24;
 #endif // HOST_AMD64
 
@@ -245,9 +245,9 @@ struct FixupPrecode
     static const int CodeSize = 32;
     static const int FixupCodeOffset = 12;
 #elif defined(HOST_RISCV64)
-    static const int Type = 0x5;
-    static const int CodeSize = 32; // TODO RISCV64
-    static const int FixupCodeOffset = 8;
+    static const int Type = 0x3;
+    static const int CodeSize = 40;
+    static const int FixupCodeOffset = 16;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -436,10 +436,14 @@ public:
 
 #ifdef OFFSETOF_PRECODE_TYPE
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         short type = *((short*)m_data);
         type >>= 5;
+#elif defined(TARGET_RISCV64)
+        assert(6 == OFFSETOF_PRECODE_TYPE);
+        BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
+        type >>= 4;
 #else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif
