@@ -3681,7 +3681,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData("foo ", "bar ")]
         [InlineData("foo", " bar")]
         [InlineData("foo", "bar\t")]
