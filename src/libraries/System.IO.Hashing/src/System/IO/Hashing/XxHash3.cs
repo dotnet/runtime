@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -712,8 +713,8 @@ namespace System.IO.Hashing
                 {
                     for (int i = 0; i < SecretLengthBytes; i += sizeof(ulong) * 2)
                     {
-                        Unsafe.WriteUnaligned(destinationSecret + i, Unsafe.ReadUnaligned<ulong>(defaultSecret + i) + seed);
-                        Unsafe.WriteUnaligned(destinationSecret + i + 8, Unsafe.ReadUnaligned<ulong>(defaultSecret + i + 8) - seed);
+                        WriteUInt64LE(destinationSecret + i, ReadUInt64LE(defaultSecret + i) + seed);
+                        WriteUInt64LE(destinationSecret + i + 8, ReadUInt64LE(defaultSecret + i + 8) - seed);
                     }
                 }
             }
@@ -896,15 +897,30 @@ namespace System.IO.Hashing
             Vector128<uint> sourceKey = sourceVec ^ secret;
 
             // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
-            Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
             Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
             Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
-            Vector128<ulong> product = Sse2.IsSupported ?
-                Sse2.Multiply(sourceKey, sourceKeyLow) :
-                (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
 
+            Vector128<ulong> product = MultiplyWideningLower(sourceKey);
             accVec = product + sum;
             return accVec;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> MultiplyWideningLower(Vector128<uint> source)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(0u, 2, 0, 0)).GetLower();
+                Vector64<uint> sourceHigh = Vector128.Shuffle(source, Vector128.Create(1u, 3, 0, 0)).GetLower();
+                return AdvSimd.MultiplyWideningLower(sourceLow, sourceHigh);
+            }
+            else
+            {
+                Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
+                return Sse2.IsSupported ?
+                    Sse2.Multiply(source, sourceLow) :
+                    (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+            }
         }
 #endif
 
@@ -986,6 +1002,16 @@ namespace System.IO.Hashing
             BitConverter.IsLittleEndian ?
                 Unsafe.ReadUnaligned<ulong>(data) :
                 BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(data));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteUInt64LE(byte* data, ulong value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(data, value);
+        }
 
         [StructLayout(LayoutKind.Auto)]
         private struct State

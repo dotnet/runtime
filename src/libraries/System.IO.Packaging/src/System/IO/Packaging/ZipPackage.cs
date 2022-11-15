@@ -169,7 +169,7 @@ namespace System.IO.Packaging
                             // part, it will be detected at this point because the part's Uri (which
                             // is independent of interleaving) will already be in the dictionary.
                             parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
-                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
+                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo()));
                         }
                     }
                     //If not valid part uri we can completely ignore this zip file item. Even if later someone adds
@@ -452,7 +452,7 @@ namespace System.IO.Packaging
         }
 
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to XPS CompressionOption
-        private static CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
+        private static CompressionOption GetCompressionOptionFromZipFileInfo()
         {
             // Note: we can't determine compression method / level from the ZipArchiveEntry.
             CompressionOption result = CompressionOption.Normal;
@@ -653,7 +653,7 @@ namespace System.IO.Packaging
                         _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
                     }
 
-                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite))
+                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite))
                     {
                         // use UTF-8 encoding by default
                         using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
@@ -810,7 +810,7 @@ namespace System.IO.Packaging
                 if (_contentTypeZipArchiveEntry != null)
                 {
                     _contentTypeStreamExists = true;
-                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite);
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite);
                 }
 
                 // No content type stream was found.

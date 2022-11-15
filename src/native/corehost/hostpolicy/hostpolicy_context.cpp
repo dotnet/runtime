@@ -127,6 +127,10 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         return StatusCode::ResolverInitFailure;
     }
 
+    // Store the root framework's rid fallback graph so that we can
+    // use it for future dependency resolutions
+    hostpolicy_init.root_rid_fallback_graph = resolver.get_root_deps().get_rid_fallback_graph();
+
     probe_paths_t probe_paths;
 
     // Setup breadcrumbs.
@@ -191,42 +195,33 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         probe_paths.tpa.append(corelib_path);
     }
 
-    const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
-
     pal::string_t fx_deps_str;
     if (resolver.is_framework_dependent())
     {
         // Use the root fx to define FX_DEPS_FILE
-        fx_deps_str = get_root_framework(fx_definitions).get_deps_file();
+        fx_deps_str = resolver.get_root_deps().get_deps_file();
     }
 
-    fx_definition_vector_t::iterator fx_begin;
-    fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
-
     pal::string_t app_context_deps_str;
-    fx_definition_vector_t::iterator fx_curr = fx_begin;
-    while (fx_curr != fx_end)
+    resolver.enum_app_context_deps_files([&](const pal::string_t& deps_file)
     {
-        if (fx_curr != fx_begin)
+        if (!app_context_deps_str.empty())
             app_context_deps_str += _X(';');
 
         // For the application's .deps.json if this is single file, 3.1 backward compat
         // then the path used internally is the bundle path, but externally we need to report
         // the path to the extraction folder.
-        if (fx_curr == fx_begin && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
+        if (app_context_deps_str.empty() && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
         {
             pal::string_t deps_path = bundle::runner_t::app()->extraction_path();
-            append_path(&deps_path, get_filename((*fx_curr)->get_deps_file()).c_str());
+            append_path(&deps_path, get_filename(deps_file).c_str());
             app_context_deps_str += deps_path;
         }
         else
         {
-            app_context_deps_str += (*fx_curr)->get_deps_file();
+            app_context_deps_str += deps_file;
         }
-
-        ++fx_curr;
-    }
+    });
 
     // Build properties for CoreCLR instantiation
     pal::string_t app_base;

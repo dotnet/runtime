@@ -273,6 +273,7 @@ namespace System
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped<TNegator>(ref short searchSpace, ref short current0, ref short current1, Vector128<byte> result)
             where TNegator : struct, INegator
@@ -287,6 +288,7 @@ namespace System
             }
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<TNegator>(ref short searchSpace, ref short current, Vector128<byte> result)

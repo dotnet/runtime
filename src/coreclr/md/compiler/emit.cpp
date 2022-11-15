@@ -1236,13 +1236,11 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineModuleRef
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
 HRESULT RegMeta::_DefineModuleRef(        // S_OK or error.
     LPCWSTR     szName,                 // [IN] DLL name
     mdModuleRef *pmur)                  // [OUT] returned module ref token
 {
-#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return E_NOTIMPL;
-#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT     hr = S_OK;
     ModuleRefRec *pModuleRef = 0;       // The ModuleRef record.
     RID         iModuleRef;             // Rid of new ModuleRef record.
@@ -1287,8 +1285,8 @@ HRESULT RegMeta::_DefineModuleRef(        // S_OK or error.
 ErrExit:
 
     return hr;
-#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::_DefineModuleRef
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 
 //*****************************************************************************
 // Set the parent for the specified MemberRef.

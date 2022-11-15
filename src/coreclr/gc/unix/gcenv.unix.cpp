@@ -641,7 +641,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
-    if (pRetVal != NULL)
+    if (pRetVal != MAP_FAILED)
     {
         void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
         size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
@@ -663,9 +663,10 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         // Do not include reserved memory in coredump.
         madvise(pRetVal, size, MADV_DONTDUMP);
 #endif
+        return pRetVal;
     }
 
-    return pRetVal;
+    return NULL; // return NULL if mmap failed
 }
 
 // Reserve virtual memory range.

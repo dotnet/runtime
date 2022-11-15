@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
         }
 
         // Implementations below based on internal MemoryMarshal.GetNonNullPinnableReference methods.
-
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe ref readonly byte GetNonNullPinnableReference(ReadOnlySpan<byte> buffer)
             => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
@@ -120,5 +120,6 @@ namespace System.Security.Cryptography
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe ref byte GetNonNullPinnableReference(Span<byte> buffer)
             => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+#pragma warning restore
     }
 }

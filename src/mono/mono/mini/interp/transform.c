@@ -2072,6 +2072,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					*op = MINT_ATAN;
 				} else if (strcmp (tm, "Atanh") == 0){
 					*op = MINT_ATANH;
+				} else if (strcmp (tm, "Abs") == 0) {
+					*op = MINT_ABS;
 				}
 			} else if (tm [0] == 'C') {
 				if (strcmp (tm, "Ceiling") == 0) {
@@ -2115,6 +2117,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_ATAN2;
 			else if (strcmp (tm, "Pow") == 0)
 				*op = MINT_POW;
+			else if (strcmp (tm, "Min") == 0)
+				*op = MINT_MIN;
+			else if (strcmp (tm, "Max") == 0)
+				*op = MINT_MAX;
 		} else if (csignature->param_count == 3 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type && csignature->params [2]->type == param_type) {
 			if (strcmp (tm, "FusedMultiplyAdd") == 0)
 				*op = MINT_FMA;
@@ -6034,12 +6040,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
 					g_assert (!m_field_is_from_update (field));
 					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
-					if (td->sp->type == STACK_TYPE_O) {
+					if (td->sp->type == STACK_TYPE_O || td->sp->type == STACK_TYPE_I) {
 						interp_add_ins (td, MINT_LDFLDA);
 						td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
 					} else {
 						int sp_type = td->sp->type;
-						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
+						g_assert (sp_type == STACK_TYPE_MP);
 						if (foffset) {
 							interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 							td->last_ins->data [0] = GINT_TO_UINT16 (foffset);
@@ -9876,6 +9882,9 @@ interp_fix_localloc_ret (TransformData *td)
 					case MINT_TYPE_U2: opcode = MINT_CONV_U2_I4; break;
 					default: g_assert_not_reached ();
 				}
+
+				td->cbb = bb;
+
 				// This path should be rare enough not to bother with specific opcodes
 				// Add implicit conversion and then return
 				interp_clear_ins (ins);

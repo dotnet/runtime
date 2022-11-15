@@ -281,7 +281,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
+        internal SocketError DoOperationConnect(SafeSocketHandle handle)
         {
             // Called for connectionless protocols.
             SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer, _socketAddress.Size);

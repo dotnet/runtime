@@ -30,6 +30,8 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
+#pragma warning disable IDE0060
+
 namespace Internal.JitInterface
 {
     internal enum CompilationResult
@@ -2749,6 +2751,36 @@ namespace Internal.JitInterface
 
             // If the common parent is type1, then type2 is more specific.
             return merged == type1;
+        }
+
+        private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
+        {
+            Debug.Assert(cls != null);
+
+            if (underlyingType != null)
+            {
+                *underlyingType = null;
+            }
+
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsGenericParameter)
+            {
+                return TypeCompareState.May;
+            }
+
+            if (type.IsEnum)
+            {
+                if (underlyingType != null)
+                {
+                    *underlyingType = ObjectToHandle(type.UnderlyingType);
+                }
+                return TypeCompareState.Must;
+            }
+            else
+            {
+                return TypeCompareState.MustNot;
+            }
         }
 
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
