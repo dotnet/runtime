@@ -8,22 +8,33 @@ For building libraries or testing them without debugging, read:
 
 Run the selected library tests in the browser, e.g. `System.Collections.Concurrent.Tests` this way:
 ```
-dotnet run -r browser-wasm -c Release --project src/libraries/System.Collections.Concurrent/tests/System.Collections.Concurrent.Tests.csproj --debug --host browser -p:DebuggerSupport=true
+dotnet run -r browser-wasm -c Debug --project src/libraries/System.Collections/tests/System.Collections.Tests.csproj --debug --host browser -p:DebuggerSupport=true
 ```
 where we choose `browser-wasm` as the runtime and by setting `DebuggerSupport=true` we ensure that tests won't start execution before the debugger will get attached. In the output, among others you should see:
 
 ```
-Debug proxy for chrome now listening on http://127.0.0.1:PORT/. And expecting chrome at http://localhost:9222/
+Debug proxy for chrome now listening on http://127.0.0.1:58346/. And expecting chrome at http://localhost:9222/
+App url: http://127.0.0.1:9000/index.html?arg=--debug&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Concurrent.Tests.dll
 ```
 Copy the proxy's url, you will need it in the next step.
 
 ## Attach an IDE
 You may need to close all Chrome instances. Then, start the browser with debugging mode enabled:
 
-`chrome --remote-debugging-port=9222 <PROXY'S_URL>`
+`chrome --remote-debugging-port=9222 <APP_URL>`
 
-Open the tests in an IDE, e.g. VS and choose the option: `Debug -> Attach to process -> choose the test's process`. If you have problems with choosing the right process's name, check the PID on `PORT` with:
+Open `chrome://inspect/#devices` in a new tab in the browser you started. Select `Configure`:
 
-`netstat -aon | findstr <PORT>` and the name with `tasklist | findstr <PID>`.
+![image](https://user-images.githubusercontent.com/32700855/201867874-7f707eb1-e859-441c-8205-abb70a7a0d0b.png)
 
-Use the IDE to debug the tests.
+and paste the address of proxy that was provided in the program output.
+
+![image](https://user-images.githubusercontent.com/32700855/201862487-df76a06c-b24d-41a0-bf06-6959bba59a58.png)
+
+New remote targets will be displayed, select the address you opened in the other tab by clicking `Inspect`.
+
+![image](https://user-images.githubusercontent.com/32700855/201863048-6a4fe20b-a215-435d-b594-47750fcb2872.png)
+
+A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. Initially, the tests are stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+
+
