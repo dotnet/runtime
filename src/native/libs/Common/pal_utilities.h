@@ -83,7 +83,7 @@ inline static int ToFileDescriptorUnchecked(intptr_t fd)
 */
 inline static int ToFileDescriptor(intptr_t fd)
 {
-#if !TARGET_WASI
+#ifndef TARGET_WASI
     assert(0 <= fd && fd < sysconf(_SC_OPEN_MAX));
 #endif
 
