@@ -8232,7 +8232,7 @@ interp_mark_reachable_bblocks (TransformData *td)
 	// FIXME There is no need to force eh bblocks to remain alive
 	current = td->entry_bb;
 	while (current != NULL) {
-		if (current->eh_block) {
+		if (current->eh_block || current->patchpoint_data) {
 			queue [next_position++] = current;
 			current->reachable = TRUE;
 		} else {
@@ -8338,7 +8338,7 @@ interp_optimize_bblocks (TransformData *td)
 				g_print ("Removed BB%d\n", next_bb->index);
 			needs_cprop |= interp_remove_bblock (td, next_bb, bb);
 			continue;
-		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->eh_block) {
+		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->eh_block && !next_bb->patchpoint_data) {
 			g_assert (next_bb->in_bb [0] == bb);
 			interp_merge_bblocks (td, bb, next_bb);
 			if (td->verbose_level)
