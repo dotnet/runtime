@@ -2146,7 +2146,7 @@ typedef struct {
 } InterpEntryData;
 
 static gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method)
+is_method_multicastdelegate_invoke (MonoMethod *method)
 {
 	return m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke");
 }
@@ -2180,7 +2180,7 @@ interp_entry (InterpEntryData *data)
 
 	method = rmethod->method;
 
-	if (mono_interp_is_method_multicastdelegate_invoke(method)) {
+	if (is_method_multicastdelegate_invoke(method)) {
 		/*
 		 * This happens when AOT code for the invoke wrapper is not found.
 		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
