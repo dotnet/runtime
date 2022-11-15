@@ -163,6 +163,7 @@ INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",   
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLSITE)
 INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(THROW_BLOCK,               bool,   "throw exception block",                FATAL,       CALLSITE)
 
 // ------ Call Site Performance -------
 

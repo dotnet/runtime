@@ -5261,6 +5261,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // Don't inline anything in BBJ_THROW
+    if (compCurBB->KindIs(BBJ_THROW))
+    {
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_THROW_BLOCK);
+        return;
+    }
+
     // Don't inline into callers that use the NextCallReturnAddress intrinsic.
     if (info.compHasNextCallRetAddr)
     {
