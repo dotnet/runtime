@@ -1,3 +1,6 @@
+#ifndef __MONO_MINI_JITERPRETER_H__
+#define __MONO_MINI_JITERPRETER_H__
+
 #ifdef HOST_BROWSER
 
 // enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
@@ -81,16 +84,12 @@ mono_jiterp_do_jit_call_indirect (
 	gpointer cb, gpointer arg, gboolean *out_thrown
 );
 
-
-#ifndef JITERPRETER_IMPLEMENTATION
-
 extern gboolean jiterpreter_traces_enabled;
 extern gboolean jiterpreter_interp_entry_enabled;
 extern gboolean jiterpreter_jit_call_enabled;
 extern gboolean jiterpreter_wasm_eh_enabled;
 extern WasmDoJitCall jiterpreter_do_jit_call;
 
-#endif
+#endif // HOST_BROWSER
 
-
-#endif
+#endif // __MONO_MINI_JITERPRETER_H__

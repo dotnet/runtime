@@ -41,7 +41,6 @@ void jiterp_preserve_module (void);
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
 
-#define JITERPRETER_IMPLEMENTATION
 #include "jiterpreter.h"
 
 static gint32 jiterpreter_abort_counts[MINT_LASTOP + 1] = { 0 };
@@ -910,6 +909,9 @@ should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
 	return FALSE;
 }
 
+InterpInst*
+mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
  * The first basic block of the function,
@@ -957,7 +959,7 @@ jiterp_insert_entry_points (void *_td)
 
 		if (enabled && should_generate) {
 			td->cbb = bb;
-			interp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+			mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
 			// Note that we only clear enter_at_next here, after generating a trace.
 			// This means that the flag will stay set intentionally if we keep failing
 			//  to generate traces, perhaps due to a string of small basic blocks

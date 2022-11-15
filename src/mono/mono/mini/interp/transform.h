@@ -269,9 +269,10 @@ mono_test_interp_generate_code (TransformData *td, MonoMethod *method, MonoMetho
 void
 mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header);
 
-/* used by jiterpreter */
+#if HOST_BROWSER
 InterpInst*
-interp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+#endif
 
 /* debugging aid */
 void

@@ -260,7 +260,7 @@ interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_
 }
 
 /* Inserts a new instruction after prev_ins. prev_ins must be in cbb */
-InterpInst*
+static InterpInst*
 interp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode)
 {
 	return interp_insert_ins_bb (td, td->cbb, prev_ins, opcode);
@@ -10317,3 +10317,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	// FIXME: Add a different callback ?
 	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 }
+
+#if HOST_BROWSER
+
+InterpInst*
+mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode)
+{
+	return interp_insert_ins (td, prev_ins, opcode);
+}
+
+#endif
