@@ -813,7 +813,7 @@ namespace System.Net.Security
                     {
                         status = SslStreamPal.AcceptSecurityContext(
 #if TARGET_ANDROID
-                                      new SslStream.JavaProxy(this),
+                                      sslStreamProxy: new JavaProxy(this),
 #endif
                                       ref _credentialsHandle!,
                                       ref _securityContext,
@@ -825,7 +825,7 @@ namespace System.Net.Security
                     {
                         status = SslStreamPal.InitializeSecurityContext(
 #if TARGET_ANDROID
-                                       new SslStream.JavaProxy(this),
+                                       sslStreamProxy: new JavaProxy(this),
 #endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,

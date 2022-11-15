@@ -513,7 +513,7 @@ namespace System.Net.Security
             // we shouldn't run it repeatedly and honor the existing validation result.
             // It's possible that the validation result isn't set (for example the client didn't send a certificate)
             // in which case we still need to run the verification.
-            if (_securityContext?.ValidationResult is SslStream.JavaProxy.RemoteCertificateValidationResult result)
+            if (_securityContext?.ValidationResult is JavaProxy.RemoteCertificateValidationResult result)
             {
                 sslPolicyErrors = result.SslPolicyErrors;
                 chainStatus = result.ChainStatus;
