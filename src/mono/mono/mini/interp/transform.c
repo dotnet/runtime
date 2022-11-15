@@ -6229,7 +6229,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						td->ip += 5;
 						break;
 					}
-						
 					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
