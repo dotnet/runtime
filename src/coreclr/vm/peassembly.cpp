@@ -1115,7 +1115,7 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
     PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        pBinder = pHostAssembly->GetBinder();
     }
     else
     {
