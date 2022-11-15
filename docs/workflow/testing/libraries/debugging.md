@@ -17,7 +17,7 @@ Debug proxy for chrome now listening on http://127.0.0.1:58346/. And expecting c
 Content root path: ...\artifacts\bin\System.Collections.Tests\Debug\net7.0\browser-wasm\AppBundle
 App url: http://127.0.0.1:9000/index.html?arg=--debug&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Concurrent.Tests.dll
 ```
-The proxy's url/port will be used in the next step. If you choose VS Code to debug, `Current root path` will be needed as well.
+The proxy's url/port will be used in the next step.
 
 You may need to close all Chrome instances. Then, start the browser with debugging mode enabled:
 
@@ -49,8 +49,7 @@ Add following configuration to your `.vscode/launch.json`:
             "request": "attach",
             "type": "chrome",
             "address": "localhost",
-            "port": <PROXY'S_PORT>,
-            "webRoot": "${workspaceFolder}\\<CURRENT_ROOT_PATH>"
+            "port": <PROXY'S_PORT>
         }
 ```
 Run the configuration and wait till VS Code will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
