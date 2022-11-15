@@ -935,6 +935,61 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public override void UnannotatedGenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
 			}
 
+			interface IBaseWithDefault
+			{
+				void DefaultMethod (Type type);
+			}
+
+			interface IDerivedWithDefault : IBaseWithDefault
+			{
+				[ExpectedWarning ("IL2092")]
+				void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
+			}
+
+			class ImplDerivedWithDefault : IDerivedWithDefault
+			{
+			}
+
+			interface IGvmBase
+			{
+				Type UnannotatedGvm<T> (Type type);
+				Type UnannotatedGvmCalledThroughBase<T> (Type type);
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				static abstract Type AnnotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type);
+
+				static virtual Type UnannotatedStaticGvm<T> (Type type) => null;
+			}
+
+			class ImplIGvmBase : IGvmBase
+			{
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type UnannotatedGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type UnannotatedGvmCalledThroughBase<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				public static Type AnnotatedStaticGvm<T> (Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static Type UnannotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+			}
+
+			static void CallStaticGvm<TGvmBase> () where TGvmBase : IGvmBase
+			{
+				TGvmBase.AnnotatedStaticGvm<string> (typeof (string));
+				TGvmBase.UnannotatedStaticGvm<string> (typeof (string));
+			}
+
 			public static void Test ()
 			{
 				Base instance = new Derived ();
@@ -944,6 +999,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				instance.GenericVirtual<string> ();
 				instance.UnannotatedAbstract (typeof (string));
 				instance.UnannotatedGenericAbstract<string> ();
+
+				((IBaseWithDefault)(new ImplDerivedWithDefault ())).DefaultMethod (typeof (string));
+
+				ImplIGvmBase impl = new ImplIGvmBase ();
+				impl.UnannotatedGvm<string> (typeof (string));
+
+				IGvmBase ibase = (IGvmBase) impl;
+				ibase.UnannotatedGvmCalledThroughBase<string> (typeof (string));
+
+				CallStaticGvm<ImplIGvmBase> ();
 			}
 		}
 	}
