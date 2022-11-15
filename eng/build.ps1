@@ -288,7 +288,7 @@ if ($os -eq "WASI") {
   $arch = "wasm"
 
   if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need need ninja for WASI-SDK."
+    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
     exit 1
   }
 }
