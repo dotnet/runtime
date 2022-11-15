@@ -2464,10 +2464,12 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
         }
     }
 
-    if(node->gtOp1->IsIntegralConst(0)) {
+    if (node->gtOp1->IsIntegralConst(0))
+    {
         MakeSrcContained(node, node->gtOp1);
     }
-    if(node->gtOp2->IsIntegralConst(0)) {
+    if (node->gtOp2->IsIntegralConst(0))
+    {
         MakeSrcContained(node, node->gtOp2);
     }
 }
