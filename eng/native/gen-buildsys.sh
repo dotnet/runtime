@@ -94,7 +94,7 @@ fi
 
 if [[ "$host_arch" == "wasm" && "$2" =~ "-Browser-" ]]; then
     cmake_command="emcmake $cmake_command"
-elif [[ "$host_arch" == "wasm" && "$2" =~ "-Wasi-" ]]; then
+elif [[ "$host_arch" == "wasm" && "$2" =~ "-WASI-" ]]; then
     true
 fi
 

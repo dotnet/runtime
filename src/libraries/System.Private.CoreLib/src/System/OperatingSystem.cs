@@ -154,7 +154,7 @@ namespace System
         /// Indicates whether the current application is running as WASI.
         /// </summary>
         [NonVersionable]
-        public static bool IsWasi() =>
+        public static bool IsWASI() =>
 #if TARGET_WASI
             true;
 #else
