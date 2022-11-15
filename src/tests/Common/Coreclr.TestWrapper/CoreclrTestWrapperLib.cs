@@ -290,10 +290,29 @@ namespace CoreclrTestLib
                 Console.WriteLine(ex.ToString());
                 return false;
             }
+            Console.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
             outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
 
+            try
+            {
+                Console.WriteLine($"Checking permission of '{crashReportJsonFile}'");
+                // File.Open also returns FileStream
+                // there are also two "shortcut" methods: File.OpenRead, File.OpenWrite
+                using (var fs = File.Open(crashReportJsonFile, FileMode.Open)) {
+                    var canRead = fs.CanRead;
+                    var canWrite = fs.CanWrite;
+                    Console.WriteLine($"Permission: canRead: {canRead}, canWrite: {canWrite}.");
+                }
+            } catch (Exception ex)
+            {
+                Console.WriteLine($"Got exception while checking the permission '{ex.ToString()}'");
+            }
+
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+
+            Console.WriteLine($"Reading file'{crashReportJsonFile}'");
             string contents = File.ReadAllText(crashReportJsonFile);
+            Console.WriteLine($"File read '{crashReportJsonFile}'");
 
             dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
             var threads = crashReport["payload"]["threads"];
