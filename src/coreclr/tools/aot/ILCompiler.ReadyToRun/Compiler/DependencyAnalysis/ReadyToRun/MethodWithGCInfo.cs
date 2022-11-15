@@ -30,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
+        private DependencyList _nonRelocationDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -95,8 +96,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
-
-        public IEnumerable<ISymbolNode> SynthesizedPgoDataDependencies { get; set; }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
@@ -275,15 +274,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
-            if (SynthesizedPgoDataDependencies != null)
+            if (_nonRelocationDependencies != null)
             {
-                // This should only be non-null when we are actually embedding things physically, otherwise computing the dependencies is a waste of cycles.
-                Debug.Assert(factory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to exist with synthesized PGO data dependency");
-
-                foreach (ISymbolNode node in SynthesizedPgoDataDependencies)
-                {
-                    dependencyList.Add(node, "Dependency of synthesized PGO data");
-                }
+                dependencyList.AddRange(_nonRelocationDependencies);
             }
 
             return dependencyList;
@@ -394,6 +387,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _inlinedMethods = inlinedMethods;
             if (this.Marked)
                 RegisterInlineeModuleIndices(factory);
+        }
+
+        public void InitializeNonRelocationDependencies(DependencyList dependencies)
+        {
+            _nonRelocationDependencies = dependencies;
         }
 
         public int Offset => 0;

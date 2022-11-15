@@ -30,6 +30,8 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 #pragma warning disable IDE0060
 
 namespace Internal.JitInterface
@@ -560,12 +562,11 @@ namespace Internal.JitInterface
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
-                _methodCodeNode.SynthesizedPgoDataDependencies = _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_synthesizedPgoDependencies);
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -575,6 +576,8 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
+
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
         }
 
         private void PublishROData()
@@ -665,12 +668,12 @@ namespace Internal.JitInterface
 
             _gcInfo = null;
             _ehClauses = null;
+            _additionalDependencies = null;
 
 #if !READYTORUN
             _debugInfo = null;
-
-            _additionalDependencies = null;
 #endif
+
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
@@ -3433,6 +3436,8 @@ namespace Internal.JitInterface
 
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
+
+        private DependencyList _additionalDependencies;
 
         private void allocMem(ref AllocMemArgs args)
         {

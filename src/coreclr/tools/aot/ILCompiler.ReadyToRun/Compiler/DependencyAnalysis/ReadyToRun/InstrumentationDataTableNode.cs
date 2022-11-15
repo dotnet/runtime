@@ -183,9 +183,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstrumentationDataTable");
         }
 
-        // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and return
-        // the appropriate dependencies of the embedding.
-        public IEnumerable<ISymbolNode> EmbedSynthesizedPgoDataForMethods(IEnumerable<MethodDesc> mds)
+        // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and add
+        // the appropriate dependencies of the embedding to a dependency list.
+        public void EmbedSynthesizedPgoDataForMethods(ref DependencyList dependencies, IEnumerable<MethodDesc> mds)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
             foreach (MethodDesc md in mds)
@@ -201,7 +201,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
             }
 
-            return pgoEmitter.ReferencedImports;
+            foreach (Import imp in pgoEmitter.ReferencedImports)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(imp, "Dependency of synthesized PGO data");
+            }
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
