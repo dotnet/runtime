@@ -3543,7 +3543,8 @@ static long total_executed_opcodes;
  *  improves performance for FP math a lot in some cases.
  */
 static float
-min_f (float lhs, float rhs) {
+min_f (float lhs, float rhs)
+{
 	if (mono_isnan (lhs))
 		return lhs;
 	else if (mono_isnan (rhs))
@@ -3555,7 +3556,8 @@ min_f (float lhs, float rhs) {
 }
 
 static float
-max_f (float lhs, float rhs) {
+max_f (float lhs, float rhs)
+{
 	if (mono_isnan (lhs))
 		return lhs;
 	else if (mono_isnan (rhs))
@@ -3567,7 +3569,8 @@ max_f (float lhs, float rhs) {
 }
 
 static double
-min_d (double lhs, double rhs) {
+min_d (double lhs, double rhs)
+{
 	if (mono_isnan (lhs))
 		return lhs;
 	else if (mono_isnan (rhs))
@@ -3579,7 +3582,8 @@ min_d (double lhs, double rhs) {
 }
 
 static double
-max_d (double lhs, double rhs) {
+max_d (double lhs, double rhs)
+{
 	if (mono_isnan (lhs))
 		return lhs;
 	else if (mono_isnan (rhs))
