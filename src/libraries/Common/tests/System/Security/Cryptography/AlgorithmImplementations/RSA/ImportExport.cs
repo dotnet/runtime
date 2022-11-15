@@ -311,7 +311,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true)]
         [InlineData(false)]
         public static void ImportZeroModulus(bool includePrivateParameters)
