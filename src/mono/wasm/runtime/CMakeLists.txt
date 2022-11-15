@@ -22,7 +22,6 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-component-marshal-ilgen-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-ee-interp.a
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
-    ${MONO_ARTIFACTS_DIR}/libmono-ilgen.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a

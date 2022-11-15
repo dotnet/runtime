@@ -215,7 +215,6 @@
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
