@@ -305,10 +305,23 @@ namespace System.Runtime.CompilerServices
             if (value is IFormattable)
             {
                 // If the value can format itself directly into our buffer, do so.
+
                 if (value is ISpanFormattable)
                 {
                     int charsWritten;
                     while (!((ISpanFormattable)value).TryFormat(_chars.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                    {
+                        Grow();
+                    }
+
+                    _pos += charsWritten;
+                    return;
+                }
+
+                if (typeof(T).IsEnum)
+                {
+                    int charsWritten;
+                    while (!Enum.TryFormatUnconstrained(value, _chars.Slice(_pos), out charsWritten))
                     {
                         Grow();
                     }
@@ -329,6 +342,7 @@ namespace System.Runtime.CompilerServices
                 AppendStringDirect(s);
             }
         }
+
         /// <summary>Writes the specified value to the handler.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="format">The format string.</param>
@@ -357,6 +371,18 @@ namespace System.Runtime.CompilerServices
                 {
                     int charsWritten;
                     while (!((ISpanFormattable)value).TryFormat(_chars.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                    {
+                        Grow();
+                    }
+
+                    _pos += charsWritten;
+                    return;
+                }
+
+                if (typeof(T).IsEnum)
+                {
+                    int charsWritten;
+                    while (!Enum.TryFormatUnconstrained(value, _chars.Slice(_pos), out charsWritten, format))
                     {
                         Grow();
                     }

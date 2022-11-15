@@ -2640,6 +2640,17 @@ namespace System.Text
                             AppendFormattedWithTempSpace(value, 0, format: null);
                         }
                     }
+                    else if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format: null);
+                        }
+                    }
                     else
                     {
                         _stringBuilder.Append(((IFormattable)value).ToString(format: null, _provider)); // constrained call avoiding boxing for value types
@@ -2690,6 +2701,17 @@ namespace System.Text
                         {
                             // Not enough room in the current chunk.  Take the slow path that formats into temporary space
                             // and then copies the result into the StringBuilder.
+                            AppendFormattedWithTempSpace(value, 0, format);
+                        }
+                    }
+                    else if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten, format))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
                             AppendFormattedWithTempSpace(value, 0, format);
                         }
                     }
