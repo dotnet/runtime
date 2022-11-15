@@ -351,6 +351,7 @@ void SystemNative_Exit(int32_t exitCode)
 {
     printf ("TODOWASI %s\n", __FUNCTION__);
     assert(false);
+    abort();
 }
 
 __attribute__((noreturn))
@@ -358,5 +359,6 @@ void SystemNative_Abort(void)
 {
     printf ("TODOWASI %s\n", __FUNCTION__);
     assert(false);
+    abort();
 }
 #endif /* TARGET_WASI */
