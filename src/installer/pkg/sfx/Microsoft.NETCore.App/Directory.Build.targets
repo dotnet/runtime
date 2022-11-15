@@ -6,10 +6,6 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <PackageVersion>$(ProductVersion)</PackageVersion>
-  </PropertyGroup>
-
   <Target Name="ReturnProductVersion" Returns="$(Version)" />
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'">
