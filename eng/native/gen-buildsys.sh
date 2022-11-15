@@ -100,7 +100,7 @@ if [[ "$host_arch" == "wasm" ]]; then
         true
     else
         echo "target_os was not specified"
-        exit(1)
+        exit 1
     fi
 fi
 
