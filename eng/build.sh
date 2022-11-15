@@ -503,11 +503,11 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
+if [[ "$os" == "Browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
-if [[ "$os" == "WASI" && "$arch" != "wasm" ]]; then
+if [[ "$os" == "WASI" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
