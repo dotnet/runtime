@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx1_Vector128
 {
     public static partial class Program
     {
-        private static void PermuteVarDouble()
+        [Fact]
+        public static void PermuteVarDouble()
         {
             var test = new SimpleBinaryOpTest__PermuteVarDouble();
 

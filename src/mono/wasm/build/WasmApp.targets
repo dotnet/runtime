@@ -75,7 +75,7 @@
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
       - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
-                                    Eg. <WasmExtraConfig Include="enableProfiler" Value="true" />
+                                    Eg. <WasmExtraConfig Include="xxx" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
 
@@ -120,6 +120,9 @@
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
+
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Include="browser" />
   </ItemGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">

@@ -241,6 +241,14 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<EndOfStreamException>(() => reader.GetNextEntry());
         }
 
+        [Fact]
+        public void ReadDataStreamOfGoLangTarGzGnu()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.GZip, "golang_tar", "pax-bad-hdr-large");
+            using GZipStream decompressor = new GZipStream(archiveStream, CompressionMode.Decompress);
+            VerifyDataStreamOfTarInternal(decompressor, copyData: false);
+        }
+
         [Theory]
         [InlineData("tar-rs", "spaces")]
         [InlineData("golang_tar", "v7")]

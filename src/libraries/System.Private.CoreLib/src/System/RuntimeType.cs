@@ -267,66 +267,7 @@ namespace System
             if (typeCode != TypeCode.Empty)
                 return typeCode;
 
-            CorElementType corElementType = RuntimeTypeHandle.GetCorElementType(this);
-            switch (corElementType)
-            {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    typeCode = TypeCode.Boolean; break;
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    typeCode = TypeCode.Char; break;
-                case CorElementType.ELEMENT_TYPE_I1:
-                    typeCode = TypeCode.SByte; break;
-                case CorElementType.ELEMENT_TYPE_U1:
-                    typeCode = TypeCode.Byte; break;
-                case CorElementType.ELEMENT_TYPE_I2:
-                    typeCode = TypeCode.Int16; break;
-                case CorElementType.ELEMENT_TYPE_U2:
-                    typeCode = TypeCode.UInt16; break;
-                case CorElementType.ELEMENT_TYPE_I4:
-                    typeCode = TypeCode.Int32; break;
-                case CorElementType.ELEMENT_TYPE_U4:
-                    typeCode = TypeCode.UInt32; break;
-                case CorElementType.ELEMENT_TYPE_I8:
-                    typeCode = TypeCode.Int64; break;
-                case CorElementType.ELEMENT_TYPE_U8:
-                    typeCode = TypeCode.UInt64; break;
-                case CorElementType.ELEMENT_TYPE_R4:
-                    typeCode = TypeCode.Single; break;
-                case CorElementType.ELEMENT_TYPE_R8:
-                    typeCode = TypeCode.Double; break;
-#if !CORECLR
-                case CorElementType.ELEMENT_TYPE_STRING:
-                    typeCode = TypeCode.String; break;
-#endif
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (ReferenceEquals(this, typeof(decimal)))
-                        typeCode = TypeCode.Decimal;
-                    else if (ReferenceEquals(this, typeof(DateTime)))
-                        typeCode = TypeCode.DateTime;
-                    else if (IsActualEnum)
-                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
-                    else
-                        typeCode = TypeCode.Object;
-                    break;
-                default:
-#if CORECLR
-                    // GetSignatureCorElementType returns E_T_CLASS for E_T_STRING
-                    if (ReferenceEquals(this, typeof(string)))
-                    {
-                        typeCode = TypeCode.String;
-                        break;
-                    }
-#endif
-                    if (ReferenceEquals(this, typeof(DBNull)))
-                    {
-                        typeCode = TypeCode.DBNull;
-                        break;
-                    }
-
-                    typeCode = TypeCode.Object;
-                    break;
-            }
-
+            typeCode = Type.GetRuntimeTypeCode(this);
             Cache.TypeCode = typeCode;
 
             return typeCode;

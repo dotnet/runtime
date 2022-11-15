@@ -322,6 +322,7 @@ namespace System.Text.RegularExpressions
                 {
                     result[(int)de.Value!] = (int)de.Key;
                 }
+                Array.Sort(result);
             }
 
             return result;

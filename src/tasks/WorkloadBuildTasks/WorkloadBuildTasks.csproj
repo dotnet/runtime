@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
-    <OutputType>Library</OutputType>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
@@ -11,9 +10,4 @@
 
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
-
-  <Target Name="PublishBuilder"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
-
 </Project>

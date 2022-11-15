@@ -1170,9 +1170,19 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableNam
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
 
-                string? namingPolicyInit = options.PropertyNamingPolicy == JsonKnownNamingPolicy.CamelCase
+                string? namingPolicyName = options.PropertyNamingPolicy switch
+                {
+                    JsonKnownNamingPolicy.CamelCase => nameof(JsonNamingPolicy.CamelCase),
+                    JsonKnownNamingPolicy.SnakeCaseLower => nameof(JsonNamingPolicy.SnakeCaseLower),
+                    JsonKnownNamingPolicy.SnakeCaseUpper => nameof(JsonNamingPolicy.SnakeCaseUpper),
+                    JsonKnownNamingPolicy.KebabCaseLower => nameof(JsonNamingPolicy.KebabCaseLower),
+                    JsonKnownNamingPolicy.KebabCaseUpper => nameof(JsonNamingPolicy.KebabCaseUpper),
+                    _ => null,
+                };
+
+                string? namingPolicyInit = namingPolicyName != null
                     ? $@"
-            PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.CamelCase"
+            PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.{namingPolicyName}"
                     : null;
 
                 return $@"

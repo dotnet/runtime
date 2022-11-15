@@ -339,13 +339,8 @@ cmd /c $(InputAssemblyName)
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
       ]]></BatchCLRTestLaunchCmds>
-
-      <BatchCLRTestPostCommands><![CDATA[
-$(BatchDisasmCheckPostCommands)
-$(CLRTestBatchPostCommands)
-      ]]></BatchCLRTestPostCommands>
-
     </PropertyGroup>
+
     <PropertyGroup>
       <BatchEnvironmentVariables>
 @(CLRTestBatchEnvironmentVariable -> 'set %(Identity)=%(Value)', '%0d%0a')
@@ -453,7 +448,7 @@ $(CLRTestBatchPreCommands)
 REM Launch
 $(BatchCLRTestLaunchCmds)
 REM PostCommands
-$(BatchCLRTestPostCommands)
+$(CLRTestBatchPostCommands)
 $(BatchCLRTestExitCodeCheck)
       ]]></_CLRTestExecutionScriptText>
     </PropertyGroup>

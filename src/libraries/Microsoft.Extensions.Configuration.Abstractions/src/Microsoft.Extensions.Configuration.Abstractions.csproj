@@ -5,20 +5,15 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <PackageDescription>Abstractions of key-value pair based configuration.
-
-Commonly Used Types:
-Microsoft.Extensions.Configuration.IConfiguration
-Microsoft.Extensions.Configuration.IConfigurationBuilder
-Microsoft.Extensions.Configuration.IConfigurationProvider
-Microsoft.Extensions.Configuration.IConfigurationRoot
-Microsoft.Extensions.Configuration.IConfigurationSection</PackageDescription>
+    <PackageDescription>Provides abstractions of key-value pair based configuration. Interfaces defined in this package are implemented by classes in Microsoft.Extensions.Configuration and other configuration packages.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Aes
 {
     public static partial class Program
     {
-        private static void Encrypt_Vector128_Byte()
+        [Fact]
+        public static void Encrypt_Vector128_Byte()
         {
             var test = new AesBinaryOpTest__Encrypt_Vector128_Byte();
 

@@ -102,10 +102,6 @@ PEImage::~PEImage()
 
     if (m_pMDImport)
         m_pMDImport->Release();
-#ifdef METADATATRACKER_ENABLED
-    if (m_pMDTracker != NULL)
-        m_pMDTracker->Deactivate();
-#endif // METADATATRACKER_ENABLED
 
 }
 
@@ -317,12 +313,6 @@ void PEImage::OpenMDImport()
 
         if(pMeta==NULL)
             return;
-
-#if METADATATRACKER_ENABLED
-        m_pMDTracker = MetaDataTracker::GetOrCreateMetaDataTracker((BYTE *)pMeta,
-                                                               cMeta,
-                                                               GetPath().GetUnicode());
-#endif // METADATATRACKER_ENABLED
 
         IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
                                                  cMeta,
@@ -652,9 +642,6 @@ PEImage::PEImage():
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
-#ifdef METADATATRACKER_DATA
-    m_pMDTracker(NULL),
-#endif // METADATATRACKER_DATA
     m_pMDImport(NULL)
 {
     CONTRACTL

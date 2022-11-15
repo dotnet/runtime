@@ -836,7 +836,7 @@ Possible constructors are: '{2}'.</value>
     <value>Rate must be from -10 through 10.</value>
   </data>
   <data name="EndSilenceOutOfRange" xml:space="preserve">
-    <value>Property cannot be negative or greater than 100 seconds.</value>
+    <value>Property cannot be negative or greater than 10 seconds.</value>
   </data>
   <data name="RejectionThresholdOutOfRange" xml:space="preserve">
     <value>RejectionThreshold must be between 0.0 and 1.0.</value>

@@ -83,9 +83,9 @@ namespace System.Reflection.PortableExecutable
             {
                 decompressed = new NativeHeapMemoryBlock(decompressedSize);
             }
-            catch
+            catch (Exception e)
             {
-                throw new BadImageFormatException(SR.DataTooBig);
+                throw new BadImageFormatException(SR.DataTooBig, e);
             }
 
             bool success = false;
@@ -110,7 +110,7 @@ namespace System.Reflection.PortableExecutable
                     }
                     catch (Exception e)
                     {
-                        throw new BadImageFormatException(e.Message, e.InnerException);
+                        throw new BadImageFormatException(e.Message, e);
                     }
 
                     if (actualLength != decompressed.Size)

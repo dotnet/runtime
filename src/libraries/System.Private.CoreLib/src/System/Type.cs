@@ -104,7 +104,7 @@ namespace System
         public bool IsContextful => IsContextfulImpl();
         protected virtual bool IsContextfulImpl() => false;
 
-        public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
+        public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
@@ -438,9 +438,57 @@ namespace System
             return cls;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeCode GetTypeCode(Type? type)
         {
+            if (RuntimeHelpers.IsKnownConstant(type) && type is RuntimeType)
+            {
+                return GetRuntimeTypeCode((RuntimeType)type);
+            }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
+        {
+            RuntimeType underlyingType = type;
+            if (type.IsActualEnum)
+                underlyingType = (RuntimeType)type.GetEnumUnderlyingType();
+
+            if (underlyingType == typeof(sbyte))
+                return TypeCode.SByte;
+            else if (underlyingType == typeof(byte))
+                return TypeCode.Byte;
+            else if (underlyingType == typeof(short))
+                return TypeCode.Int16;
+            else if (underlyingType == typeof(ushort))
+                return TypeCode.UInt16;
+            else if (underlyingType == typeof(int))
+                return TypeCode.Int32;
+            else if (underlyingType == typeof(uint))
+                return TypeCode.UInt32;
+            else if (underlyingType == typeof(long))
+                return TypeCode.Int64;
+            else if (underlyingType == typeof(ulong))
+                return TypeCode.UInt64;
+            else if (underlyingType == typeof(bool))
+                return TypeCode.Boolean;
+            else if (underlyingType == typeof(char))
+                return TypeCode.Char;
+            else if (underlyingType == typeof(float))
+                return TypeCode.Single;
+            else if (underlyingType == typeof(double))
+                return TypeCode.Double;
+            else if (underlyingType == typeof(decimal))
+                return TypeCode.Decimal;
+            else if (underlyingType == typeof(DateTime))
+                return TypeCode.DateTime;
+            else if (underlyingType == typeof(string))
+                return TypeCode.String;
+            else if (underlyingType == typeof(DBNull))
+                return TypeCode.DBNull;
+            else
+                return TypeCode.Object;
         }
 
         protected virtual TypeCode GetTypeCodeImpl()
@@ -503,6 +551,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]
+        [Intrinsic]
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)

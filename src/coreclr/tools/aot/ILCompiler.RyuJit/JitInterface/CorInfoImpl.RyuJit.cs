@@ -21,6 +21,8 @@ using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
 using RyuJitCompilation = ILCompiler.Compilation;
 #endif
 
+#pragma warning disable IDE0060
+
 namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl
@@ -1818,17 +1820,25 @@ namespace Internal.JitInterface
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+            pResult.compileTimeHandle = null;
+
             switch (method.Name)
             {
                 case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
                 case "DefaultConstructorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
                     break;
                 case "AllocatorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
+                    break;
+                default:
+                    Debug.Fail("Unexpected raw handle intrinsic");
                     break;
             }
         }
@@ -2204,7 +2214,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
@@ -2257,7 +2267,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);
             return obj switch
@@ -2269,14 +2279,14 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static
         {
             // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
             return null;
         }
 
-        private bool isObjectImmutable(void* objPtr)
+        private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);
             return obj switch
@@ -2284,6 +2294,17 @@ namespace Internal.JitInterface
                 FrozenStringNode => true,
                 FrozenObjectNode frozenObj => frozenObj.IsKnownImmutable,
                 _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
+            };
+        }
+
+        private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        {
+            object obj = HandleToObject(objHnd);
+            return obj switch
+            {
+                FrozenStringNode frozenStr => frozenStr.Data.Length,
+                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
+                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
             };
         }
     }
