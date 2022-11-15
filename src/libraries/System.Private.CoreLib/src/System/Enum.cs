@@ -57,56 +57,42 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // optimizes into a single TryFormat call for all types expressible in C#
-        private static bool TryAsNumberToString<TEnum>(TEnum value, Span<char> destination, out int charsWritten) where TEnum : struct, Enum
+        private static bool TryAsNumberToString<TEnum>(TEnum value, Span<char> destination, out int charsWritten)
         {
-            switch (Type.GetTypeCode(typeof(TEnum)))
+            Type underlyingType = GetUnderlyingType(typeof(TEnum));
+
+            if (underlyingType == typeof(int)) return Unsafe.As<TEnum, int>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(uint)) return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(byte)) return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(sbyte)) return Unsafe.As<TEnum, sbyte>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(long)) return Unsafe.As<TEnum, long>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(ulong)) return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(short)) return Unsafe.As<TEnum, short>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(ushort)) return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(nint)) return Unsafe.As<TEnum, nint>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(nuint)) return Unsafe.As<TEnum, nuint>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(float)) return Unsafe.As<TEnum, float>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(double)) return Unsafe.As<TEnum, double>(ref value).TryFormat(destination, out charsWritten);
+
+            if (underlyingType == typeof(bool)) return Unsafe.As<TEnum, bool>(ref value).TryFormat(destination, out charsWritten);
+            if (underlyingType == typeof(char))
             {
-                case TypeCode.SByte:
-                    return Unsafe.As<TEnum, sbyte>(ref value).TryFormat(destination, out charsWritten);
+                if (!destination.IsEmpty)
+                {
+                    destination[0] = Unsafe.As<TEnum, char>(ref value);
+                    charsWritten = 1;
+                    return true;
+                }
+                charsWritten = 0;
+                return false;
+            }
 
-                case TypeCode.Byte:
-                    return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Boolean:
-                    return Unsafe.As<TEnum, bool>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Int16:
-                    return Unsafe.As<TEnum, short>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.UInt16:
-                    return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Char:
-                    if (!destination.IsEmpty)
-                    {
-                        destination[0] = Unsafe.As<TEnum, char>(ref value);
-                        charsWritten = 1;
-                        return true;
-                    }
-                    charsWritten = 0;
-                    return false;
-
-                case TypeCode.UInt32:
-                    return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Int32:
-                    return Unsafe.As<TEnum, int>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.UInt64:
-                    return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Int64:
-                    return Unsafe.As<TEnum, long>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Single:
-                    return Unsafe.As<TEnum, float>(ref value).TryFormat(destination, out charsWritten);
-
-                case TypeCode.Double:
-                    return Unsafe.As<TEnum, double>(ref value).TryFormat(destination, out charsWritten);
-
-                default:
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            };
+            throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 
         private string AsNumberToHexString()
@@ -152,32 +138,46 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // optimizes into a single TryFormat call for all types expressible in C#
-        private static bool TryAsNumberToHexString<TEnum>(TEnum value, Span<char> destination, out int charsWritten) where TEnum : struct, Enum
+        private static bool TryAsNumberToHexString<TEnum>(TEnum value, Span<char> destination, out int charsWritten)
         {
-            switch (Type.GetTypeCode(typeof(TEnum)))
+            Type underlyingType = GetUnderlyingType(typeof(TEnum));
+
+            if (underlyingType == typeof(int) || underlyingType == typeof(uint)
+#if TARGET_32BIT
+                || underlyingType == typeof(nint) || underlyingType == typeof(nuint)
+#endif
+                )
             {
-                case TypeCode.Byte or TypeCode.SByte:
-                    return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten, "X2");
+                return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten, "X8");
+            }
 
-                case TypeCode.Boolean:
-                    {
-                        bool copied = (Unsafe.As<TEnum, bool>(ref value) ? "01" : "00").TryCopyTo(destination);
-                        charsWritten = copied ? 2 : 0;
-                        return copied;
-                    }
+            if (underlyingType == typeof(byte) || underlyingType == typeof(sbyte))
+            {
+                return Unsafe.As<TEnum, byte>(ref value).TryFormat(destination, out charsWritten, "X2");
+            }
 
-                case TypeCode.UInt16 or TypeCode.Int16 or TypeCode.Char:
-                    return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten, "X4");
+            if (underlyingType == typeof(long) || underlyingType == typeof(ulong)
+#if TARGET_64BIT
+                || underlyingType == typeof(nint) || underlyingType == typeof(nuint)
+#endif
+                )
+            {
+                return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten, "X16");
+            }
 
-                case TypeCode.UInt32 or TypeCode.Int32:
-                    return Unsafe.As<TEnum, uint>(ref value).TryFormat(destination, out charsWritten, "X8");
+            if (underlyingType == typeof(short) || underlyingType == typeof(ushort) || underlyingType == typeof(char))
+            {
+                return Unsafe.As<TEnum, ushort>(ref value).TryFormat(destination, out charsWritten, "X4");
+            }
 
-                case TypeCode.UInt64 or TypeCode.Int64:
-                    return Unsafe.As<TEnum, ulong>(ref value).TryFormat(destination, out charsWritten, "X16");
+            if (underlyingType == typeof(bool))
+            {
+                bool copied = (Unsafe.As<TEnum, bool>(ref value) ? "01" : "00").TryCopyTo(destination);
+                charsWritten = copied ? 2 : 0;
+                return copied;
+            }
 
-                default:
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            };
+            throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 
         private static string AsNumberToHexString(object value) =>
@@ -196,17 +196,15 @@ namespace System
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
 
-        internal static string? GetEnumName(RuntimeType enumType, ulong ulValue)
-        {
-            return GetEnumName(GetEnumInfo(enumType), ulValue);
-        }
+        internal static string? GetEnumName(RuntimeType enumType, ulong ulValue) =>
+            GetEnumName(GetEnumInfo(enumType), ulValue);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
+            string[] names = enumInfo.Names;
             if (enumInfo.ValuesAreSequentialFromZero)
             {
-                string[] names = enumInfo.Names;
                 if (ulValue < (ulong)names.Length)
                 {
                     return names[(uint)ulValue];
@@ -215,9 +213,32 @@ namespace System
             else
             {
                 int index = FindDefinedIndex(enumInfo.Values, ulValue);
-                if (index >= 0)
+                if ((uint)index < (uint)names.Length)
                 {
                     return enumInfo.Names[index];
+                }
+            }
+
+            return null; // return null so the caller knows to .ToString() the input
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string? GetEnumName<TEnum>(ulong ulValue)
+        {
+            string[] names = GenericEnumInfo<TEnum>.Names;
+            if (GenericEnumInfo<TEnum>.ValuesAreSequentialFromZero)
+            {
+                if (ulValue < (ulong)names.Length)
+                {
+                    return names[(uint)ulValue];
+                }
+            }
+            else
+            {
+                int index = FindDefinedIndex(GenericEnumInfo<TEnum>.Values, ulValue);
+                if ((uint)index < (uint)names.Length)
+                {
+                    return names[index];
                 }
             }
 
@@ -432,26 +453,35 @@ namespace System
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
 
-        private static ulong ToUInt64<TEnum>(TEnum value) where TEnum : struct, Enum =>
-            Type.GetTypeCode(typeof(TEnum)) switch
-            {
-                TypeCode.SByte => (ulong)Unsafe.As<TEnum, sbyte>(ref value),
-                TypeCode.Byte => Unsafe.As<TEnum, byte>(ref value),
-                TypeCode.Boolean => Unsafe.As<TEnum, bool>(ref value) ? 1UL : 0UL,
-                TypeCode.Int16 => (ulong)Unsafe.As<TEnum, short>(ref value),
-                TypeCode.UInt16 => Unsafe.As<TEnum, ushort>(ref value),
-                TypeCode.Char => Unsafe.As<TEnum, char>(ref value),
-                TypeCode.UInt32 => Unsafe.As<TEnum, uint>(ref value),
-                TypeCode.Int32 => (ulong)Unsafe.As<TEnum, int>(ref value),
-                TypeCode.UInt64 => Unsafe.As<TEnum, ulong>(ref value),
-                TypeCode.Int64 => (ulong)Unsafe.As<TEnum, long>(ref value),
-                _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
-            };
-        #endregion
+        private static ulong ToUInt64<TEnum>(TEnum value)
+        {
+            Type underlyingType = GetUnderlyingType(typeof(TEnum));
+
+            if (underlyingType == typeof(int)) return (ulong)Unsafe.As<TEnum, int>(ref value);
+            if (underlyingType == typeof(uint)) return Unsafe.As<TEnum, uint>(ref value);
+
+            if (underlyingType == typeof(byte)) return Unsafe.As<TEnum, byte>(ref value);
+            if (underlyingType == typeof(sbyte)) return (ulong)Unsafe.As<TEnum, sbyte>(ref value);
+
+            if (underlyingType == typeof(long)) return (ulong)Unsafe.As<TEnum, long>(ref value);
+            if (underlyingType == typeof(ulong)) return Unsafe.As<TEnum, ulong>(ref value);
+
+            if (underlyingType == typeof(short)) return (ulong)Unsafe.As<TEnum, short>(ref value);
+            if (underlyingType == typeof(ushort)) return Unsafe.As<TEnum, ushort>(ref value);
+
+            if (underlyingType == typeof(nint)) return (ulong)Unsafe.As<TEnum, nint>(ref value);
+            if (underlyingType == typeof(nuint)) return Unsafe.As<TEnum, nuint>(ref value);
+
+            if (underlyingType == typeof(bool)) return Unsafe.As<TEnum, bool>(ref value) ? 1UL : 0UL;
+            if (underlyingType == typeof(char)) return Unsafe.As<TEnum, char>(ref value);
+
+            throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+        }
+#endregion
 
         #region Public Static Methods
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum =>
-            GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
+            GetEnumName<TEnum>(ToUInt64(value));
 
         public static string? GetName(Type enumType, object value)
         {
@@ -460,7 +490,7 @@ namespace System
         }
 
         public static string[] GetNames<TEnum>() where TEnum : struct, Enum =>
-            new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
+            new ReadOnlySpan<string>(GenericEnumInfo<TEnum>.Names).ToArray();
 
         public static string[] GetNames(Type enumType)
         {
@@ -588,16 +618,12 @@ namespace System
 
         public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
         {
-            RuntimeType enumType = (RuntimeType)typeof(TEnum);
-            EnumInfo info = GetEnumInfo(enumType, getNames: false);
-            ulong ulValue = ToUInt64(value);
-            ulong[] ulValues = info.Values;
-
             // If the enum's values are all sequentially numbered starting from 0, then we can
             // just return if the requested index is in range. Otherwise, search for the value.
+            ulong ulValue = ToUInt64(value);
             return
-                info.ValuesAreSequentialFromZero ? ulValue < (ulong)ulValues.Length :
-                FindDefinedIndex(ulValues, ulValue) >= 0;
+                GenericEnumInfo<TEnum>.ValuesAreSequentialFromZero ? ulValue < (ulong)GenericEnumInfo<TEnum>.Values.Length :
+                FindDefinedIndex(GenericEnumInfo<TEnum>.Values, ulValue) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -888,57 +914,71 @@ namespace System
             bool parsed;
             RuntimeType rt = (RuntimeType)typeof(TEnum);
 
-            switch (Type.GetTypeCode(typeof(TEnum)))
+            Type underlyingType = GetUnderlyingType(typeof(TEnum));
+
+            if (underlyingType == typeof(int))
             {
-                case TypeCode.SByte:
-                    parsed = TryParseInt32Enum(rt, value, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, TypeCode.SByte, out intResult);
-                    sbyte sbyteResult = (sbyte)intResult;
-                    result = Unsafe.As<sbyte, TEnum>(ref sbyteResult);
-                    return parsed;
-
-                case TypeCode.Int16:
-                    parsed = TryParseInt32Enum(rt, value, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int16, out intResult);
-                    short shortResult = (short)intResult;
-                    result = Unsafe.As<short, TEnum>(ref shortResult);
-                    return parsed;
-
-                case TypeCode.Int32:
-                    parsed = TryParseInt32Enum(rt, value, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int32, out intResult);
-                    result = Unsafe.As<int, TEnum>(ref intResult);
-                    return parsed;
-
-                case TypeCode.Byte:
-                    parsed = TryParseUInt32Enum(rt, value, byte.MaxValue, ignoreCase, throwOnFailure, TypeCode.Byte, out uintResult);
-                    byte byteResult = (byte)uintResult;
-                    result = Unsafe.As<byte, TEnum>(ref byteResult);
-                    return parsed;
-
-                case TypeCode.UInt16:
-                    parsed = TryParseUInt32Enum(rt, value, ushort.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt16, out uintResult);
-                    ushort ushortResult = (ushort)uintResult;
-                    result = Unsafe.As<ushort, TEnum>(ref ushortResult);
-                    return parsed;
-
-                case TypeCode.UInt32:
-                    parsed = TryParseUInt32Enum(rt, value, uint.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt32, out uintResult);
-                    result = Unsafe.As<uint, TEnum>(ref uintResult);
-                    return parsed;
-
-                case TypeCode.Int64:
-                    parsed = TryParseInt64Enum(rt, value, ignoreCase, throwOnFailure, out long longResult);
-                    result = Unsafe.As<long, TEnum>(ref longResult);
-                    return parsed;
-
-                case TypeCode.UInt64:
-                    parsed = TryParseUInt64Enum(rt, value, ignoreCase, throwOnFailure, out ulong ulongResult);
-                    result = Unsafe.As<ulong, TEnum>(ref ulongResult);
-                    return parsed;
-
-                default:
-                    parsed = TryParseRareEnum(rt, value, ignoreCase, throwOnFailure, out object? objectResult);
-                    result = parsed ? (TEnum)objectResult! : default;
-                    return parsed;
+                parsed = TryParseInt32Enum(rt, value, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int32, out intResult);
+                result = Unsafe.As<int, TEnum>(ref intResult);
+                return parsed;
             }
+
+            if (underlyingType == typeof(uint))
+            {
+                parsed = TryParseUInt32Enum(rt, value, uint.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt32, out uintResult);
+                result = Unsafe.As<uint, TEnum>(ref uintResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(byte))
+            {
+                parsed = TryParseUInt32Enum(rt, value, byte.MaxValue, ignoreCase, throwOnFailure, TypeCode.Byte, out uintResult);
+                byte byteResult = (byte)uintResult;
+                result = Unsafe.As<byte, TEnum>(ref byteResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(sbyte))
+            {
+                parsed = TryParseInt32Enum(rt, value, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, TypeCode.SByte, out intResult);
+                sbyte sbyteResult = (sbyte)intResult;
+                result = Unsafe.As<sbyte, TEnum>(ref sbyteResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(long))
+            {
+                parsed = TryParseInt64Enum(rt, value, ignoreCase, throwOnFailure, out long longResult);
+                result = Unsafe.As<long, TEnum>(ref longResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(ulong))
+            {
+                parsed = TryParseUInt64Enum(rt, value, ignoreCase, throwOnFailure, out ulong ulongResult);
+                result = Unsafe.As<ulong, TEnum>(ref ulongResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(short))
+            {
+                parsed = TryParseInt32Enum(rt, value, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int16, out intResult);
+                short shortResult = (short)intResult;
+                result = Unsafe.As<short, TEnum>(ref shortResult);
+                return parsed;
+            }
+
+            if (underlyingType == typeof(ushort))
+            {
+                parsed = TryParseUInt32Enum(rt, value, ushort.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt16, out uintResult);
+                ushort ushortResult = (ushort)uintResult;
+                result = Unsafe.As<ushort, TEnum>(ref ushortResult);
+                return parsed;
+            }
+
+            parsed = TryParseRareEnum(rt, value, ignoreCase, throwOnFailure, out object? objectResult);
+            result = parsed ? (TEnum)objectResult! : default;
+            return parsed;
         }
 
         /// <summary>Tries to parse the value of an enum with known underlying types that fit in an Int32 (Int32, Int16, and SByte).</summary>
@@ -1301,21 +1341,29 @@ namespace System
         /// <param name="format">A span containing the character that represents the standard format string that defines the acceptable format of destination. This may be empty, or "g", "d", "f", or "x".</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/> if the destination span wasn't large enough to contain the formatted value.</returns>
         /// <exception cref="FormatException">The format parameter contains an invalid value.</exception>
+        public static bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct, Enum =>
+            TryFormatUnconstrained(value, destination, out charsWritten, format);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // format is most frequently a constant, and we want it exposed to the implementation; this should be inlined automatically, anyway
-        public static bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct, Enum
+        internal static bool TryFormatUnconstrained<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default)
         {
+            Debug.Assert(typeof(TEnum).IsEnum);
+            Debug.Assert(value is not null);
+
             return format.IsEmpty ?
                 TryFormatDefault(value, destination, out charsWritten) :
                 TryFormatNonDefault(value, destination, out charsWritten, format);
 
             static bool TryFormatDefault(TEnum value, Span<char> destination, out int charsWritten)
             {
-                EnumInfo enumInfo = GetEnumInfo((RuntimeType)typeof(TEnum));
+                Debug.Assert(typeof(TEnum).IsEnum);
+                Debug.Assert(value is not null);
+
                 ulong ulongValue = ToUInt64(value);
 
-                if (!enumInfo.HasFlagsAttribute)
+                if (!GenericEnumInfo<TEnum>.HasFlagsAttribute)
                 {
-                    if (GetEnumName(enumInfo, ulongValue) is string enumName)
+                    if (GetEnumName<TEnum>(ulongValue) is string enumName)
                     {
                         if (enumName.TryCopyTo(destination))
                         {
@@ -1330,7 +1378,7 @@ namespace System
                 else
                 {
                     bool destinationIsTooSmall = false;
-                    if (TryFormatFlagNames(enumInfo, ulongValue, destination, out charsWritten, ref destinationIsTooSmall) || destinationIsTooSmall)
+                    if (TryFormatFlagNames(GenericEnumInfo<TEnum>.EnumInfo, ulongValue, destination, out charsWritten, ref destinationIsTooSmall) || destinationIsTooSmall)
                     {
                         return !destinationIsTooSmall;
                     }
@@ -1341,6 +1389,9 @@ namespace System
 
             static bool TryFormatNonDefault(TEnum value, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format)
             {
+                Debug.Assert(typeof(TEnum).IsEnum);
+                Debug.Assert(value is not null);
+
                 if (format.Length == 1)
                 {
                     switch (format[0] | 0x20)
@@ -1356,7 +1407,7 @@ namespace System
 
                         case 'f':
                             bool destinationIsTooSmall = false;
-                            if (TryFormatFlagNames(GetEnumInfo((RuntimeType)typeof(TEnum)), ToUInt64(value), destination, out charsWritten, ref destinationIsTooSmall) ||
+                            if (TryFormatFlagNames(GenericEnumInfo<TEnum>.EnumInfo, ToUInt64(value), destination, out charsWritten, ref destinationIsTooSmall) ||
                                 destinationIsTooSmall)
                             {
                                 return !destinationIsTooSmall;
@@ -1803,5 +1854,14 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/78300
         private static Exception CreateInvalidFormatSpecifierException() =>
             new FormatException(SR.Format_InvalidEnumFormatSpecification);
+
+        private static class GenericEnumInfo<TEnum>
+        {
+            public static readonly EnumInfo EnumInfo = GetEnumInfo((RuntimeType)typeof(TEnum));
+            public static readonly bool HasFlagsAttribute = EnumInfo.HasFlagsAttribute;
+            public static readonly string[] Names = EnumInfo.Names;
+            public static readonly ulong[] Values = EnumInfo.Values;
+            public static readonly bool ValuesAreSequentialFromZero = EnumInfo.ValuesAreSequentialFromZero;
+        }
     }
 }
