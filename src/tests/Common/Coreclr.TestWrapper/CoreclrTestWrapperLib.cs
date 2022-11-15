@@ -278,6 +278,29 @@ namespace CoreclrTestLib
         static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
         {
             Console.WriteLine($"Running TryPrintStackTraceFromCrashReport() for {crashReportJsonFile}");
+            Console.WriteLine($"Set the permission to make sure {crashReportJsonFile} can be read.");
+
+
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                Process chownProcess = new Process();
+
+                chownProcess.StartInfo.FileName = "sudo";
+                chownProcess.StartInfo.Arguments = $"chown $USER {crashReportJsonFile}";
+                chownProcess.StartInfo.UseShellExecute = false;
+                chownProcess.StartInfo.RedirectStandardOutput = true;
+                chownProcess.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
+                chownProcess.Start();
+                if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+                {
+                    chownProcess.Kill(true);
+                    Console.WriteLine("Failed to change ownership");
+                    return false;
+                }
+            }
+
             try
             {
                 if (!File.Exists(crashReportJsonFile))
