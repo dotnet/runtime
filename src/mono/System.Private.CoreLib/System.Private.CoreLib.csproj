@@ -85,7 +85,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Wasi'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

@@ -20,7 +20,7 @@
     <HostOS>$(_hostOS)</HostOS>
     <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
-    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Wasi'">true</TargetsMobile>
     <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
   </PropertyGroup>
 
@@ -157,6 +157,7 @@
     <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Solaris' or '$(TargetOS)' == 'Solaris'">solaris</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'Wasi'">wasi</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iossimulator</_portableOS>
@@ -217,6 +218,7 @@
     <TargetstvOSSimulator Condition="'$(TargetOS)' == 'tvOSSimulator'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
     <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
+    <TargetsWasi Condition="'$(TargetOS)' == 'Wasi'">true</TargetsWasi>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>

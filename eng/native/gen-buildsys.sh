@@ -92,8 +92,10 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
-if [[ "$host_arch" == "wasm" ]]; then
+if [[ "$host_arch" == "wasm" && "$2" =~ "-Browser-" ]]; then
     cmake_command="emcmake $cmake_command"
+elif [[ "$host_arch" == "wasm" && "$2" =~ "-Wasi-" ]]; then
+    true
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
