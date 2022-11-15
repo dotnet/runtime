@@ -19232,7 +19232,10 @@ GenTree* Compiler::gtNewSimdAbsNode(
         {
             for (unsigned i = 0; i < (simdSize / 4); i++)
             {
-                bitMask->gtSimd32Val.f32[i] = -0.0f;
+                // This is -0.0f. We use the bit pattern to avoid
+                // compiler issues on some platforms.
+
+                bitMask->gtSimd32Val.u32[i] = 0x80000000;
             }
         }
         else
@@ -19241,7 +19244,10 @@ GenTree* Compiler::gtNewSimdAbsNode(
 
             for (unsigned i = 0; i < (simdSize / 8); i++)
             {
-                bitMask->gtSimd32Val.f64[i] = -0.0;
+                // This is -0.0. We use the bit pattern to avoid
+                // compiler issues on some platforms.
+
+                bitMask->gtSimd32Val.u64[i] = 0x8000000000000000;
             }
         }
 
