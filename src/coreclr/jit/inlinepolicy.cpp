@@ -1317,6 +1317,10 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_HasProfileWeights = value;
             break;
 
+        case InlineObservation::CALLSITE_INSIDE_THROW_BLOCK:
+            m_InsideThrowBlock = value;
+            break;
+
         case InlineObservation::CALLSITE_IN_NORETURN_REGION:
             m_IsCallsiteInNoReturnRegion = value;
             break;
@@ -1351,12 +1355,20 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
             }
 
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                alwaysInlineSize /= 2;
+                maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
+            }
+
             if (m_IsForceInline)
             {
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            else if (m_CodeSize <= alwaysInlineSize)
             {
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
@@ -1793,6 +1805,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_NonGenericCallsGeneric)
     XATTR_B(m_IsCallsiteInNoReturnRegion)
     XATTR_B(m_HasProfileWeights)
+    XATTR_B(m_InsideThrowBlock)
 }
 #endif
 
