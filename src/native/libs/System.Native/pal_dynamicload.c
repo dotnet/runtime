@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #endif
 #include <string.h>
+#include <stdio.h>
 
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>

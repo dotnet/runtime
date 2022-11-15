@@ -8,22 +8,19 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #define INVARIANT_GLOBALIZATION 1
 
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
-#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/loader.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
-#include <mono/metadata/metadata.h>
-#include <mono/metadata/class.h>
-#include <mono/metadata/appdomain.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>
 
 #include <mono/metadata/mono-private-unstable.h>
@@ -38,6 +35,8 @@
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
 #endif
+#include "../../wasm/runtime/gc-common.h"
+
 
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
@@ -83,13 +82,13 @@ static MonoDomain *root_domain;
 static void
 wasi_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-    printf("[wasi_trace_logger] %s\n", message);
+	printf("[wasi_trace_logger] %s\n", message);
 	if (fatal) {
 		// make it trap so we could see the stack trace
 		// (*(int*)(void*)-1)++;
 		exit(1);
 	}
-	
+
 }
 
 typedef uint32_t target_mword;
@@ -137,39 +136,10 @@ struct WasmSatelliteAssembly_ {
 static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
 
-int32_t time(int32_t x) {
-	// In the current prototype, libSystem.Native.a is built using Emscripten, whereas the WASI-enabled runtime is being built
-	// using WASI SDK. Emscripten says that time() returns int32, whereas WASI SDK says it returns int64.
-	// TODO: Build libSystem.Native.a using WASI SDK.
-	// In the meantime, as a workaround we can define an int32-returning implementation for time() here.
-	struct timeval time;
-	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
-}
-
-typedef struct
-{
-    int32_t Flags;     // flags for testing if some members are present (see FileStatusFlags)
-    int32_t Mode;      // file mode (see S_I* constants above for bit values)
-    uint32_t Uid;      // user ID of owner
-    uint32_t Gid;      // group ID of owner
-    int64_t Size;      // total size, in bytes
-    int64_t ATime;     // time of last access
-    int64_t ATimeNsec; //     nanosecond part
-    int64_t MTime;     // time of last modification
-    int64_t MTimeNsec; //     nanosecond part
-    int64_t CTime;     // time of last status change
-    int64_t CTimeNsec; //     nanosecond part
-    int64_t BirthTime; // time the file was created
-    int64_t BirthTimeNsec; // nanosecond part
-    int64_t Dev;       // ID of the device containing the file
-    int64_t Ino;       // inode number of the file
-    uint32_t UserFlags; // user defined flags
-} FileStatus;
-
 char* gai_strerror(int code) {
-    char* result = malloc(256);
-    sprintf(result, "Error code %i", code);
-    return result;
+	char* result = malloc(256);
+	sprintf(result, "Error code %i", code);
+	return result;
 }
 
 void
@@ -221,7 +191,83 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	return NULL;
 }
 
+#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
+#ifndef LINK_ICALLS
+// FIXME: llvm+interp mode needs this to call icalls
+#define NEED_NORMAL_ICALL_TABLES 1
+#endif
+#endif
+
+#ifdef LINK_ICALLS
+
+#include "icall-table.h"
+
+static int
+compare_int (const void *k1, const void *k2)
+{
+	return *(int*)k1 - *(int*)k2;
+}
+
+static void*
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
+{
+	uint32_t token = mono_method_get_token (method);
+	assert (token);
+	assert ((token & MONO_TOKEN_METHOD_DEF) == MONO_TOKEN_METHOD_DEF);
+	uint32_t token_idx = token - MONO_TOKEN_METHOD_DEF;
+
+	int *indexes = NULL;
+	int indexes_size = 0;
+	uint8_t *flags = NULL;
+	void **funcs = NULL;
+
+	*out_flags = 0;
+
+	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
+
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		flags = corlib_icall_flags;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
+#ifdef ICALL_TABLE_System
+	if (!strcmp (image_name, "System")) {
+		indexes = System_icall_indexes;
+		indexes_size = sizeof (System_icall_indexes) / 4;
+		flags = System_icall_flags;
+		funcs = System_icall_funcs;
+	}
+#endif
+	assert (indexes);
+
+	void *p = bsearch (&token_idx, indexes, indexes_size, 4, compare_int);
+	if (!p) {
+		return NULL;
+		printf ("wasm: Unable to lookup icall: %s\n", mono_method_get_name (method));
+		exit (1);
+	}
+
+	uint32_t idx = (int*)p - indexes;
+	*out_flags = flags [idx];
+
+	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
+
+	return funcs [idx];
+}
+
+static const char*
+icall_table_lookup_symbol (void *func)
+{
+	assert (0);
+	return NULL;
+}
+
+#endif
 
 /*
  * get_native_to_interp:
@@ -233,6 +279,9 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
+	void *addr;
+
+	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
 	MonoAssembly *assembly = mono_image_get_assembly (image);
@@ -251,9 +300,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 			key [i] = '_';
 	}
 
-    assert(0); return 0;
-	//void *addr = wasm_dl_get_native_to_interp (key, extra_arg);
-	//return addr;
+	addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	MONO_EXIT_GC_UNSAFE;
+	return addr;
 }
 
 void
@@ -273,6 +322,8 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
+void mono_wasm_link_icu_shim (void);
+
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
@@ -281,7 +332,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 void
-mono_wasm_load_runtime (const char *argv, int debug_level)
+mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -294,13 +345,12 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
-    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-    // output will be sent to the console.  Right now this is the only way to emit debug logging from
-    // corlib assemblies.
-	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
+	// output will be sent to the console.  Right now this is the only way to emit debug logging from
+	// corlib assemblies.
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 
-#if TODOWASI
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
 	{
@@ -322,6 +372,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 	const char *appctx_values[2];
 	appctx_values [0] = "/";
 	appctx_values [1] = "wasi-wasm";
+
 	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
@@ -338,27 +389,57 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 	} else {
 		free (file_path);
 	}
-	monovm_initialize (2, appctx_keys, appctx_values);
-#else
-	monovm_initialize (0, NULL, NULL);
-#endif /* TODOWASI */
 
-#if TODOWASI
+	monovm_initialize (2, appctx_keys, appctx_values);
+
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
-#endif /* TODOWASI */
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
-	
+
 #ifdef GEN_PINVOKE
 	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
 #endif
 
+#ifdef ENABLE_AOT
+	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
+
+	// Defined in driver-gen.c
+	register_aot_modules ();
+#ifdef EE_MODE_LLVMONLY_INTERP
+	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
+#else
+	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
+#endif
+#else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
-#ifdef LINK_ICALLS
-	#error /* TODOWASI */
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
+		// Disable optimizations which interfere with debugging
+		interp_opts = "-all";
+		mono_wasm_enable_debugging (debug_level);
+	}
+
 #endif
+
+#ifdef LINK_ICALLS
+	/* Link in our own linked icall table */
+	static const MonoIcallTableCallbacks mono_icall_table_callbacks =
+	{
+		MONO_ICALL_TABLE_CALLBACKS_VERSION,
+		icall_table_lookup,
+		icall_table_lookup_symbol
+	};
+	mono_install_icall_table_callbacks (&mono_icall_table_callbacks);
+#endif
+
 #ifdef NEED_NORMAL_ICALL_TABLES
 	mono_icall_table_init ();
 #endif
@@ -390,10 +471,9 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+	assert (name);
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
-	if (!name)
-		return NULL;
 
 	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
@@ -401,68 +481,65 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-MonoClass*
-mono_wasm_find_corlib_class (const char *namespace, const char *name)
+MonoAssembly*
+mono_wasm_get_corlib (const char *namespace, const char *name)
 {
-	return mono_class_from_name (mono_get_corlib (), namespace, name);
+	MonoAssembly* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_image_get_assembly (mono_get_corlib());
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
-	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+	assert (assembly);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
-	return mono_class_get_method_from_name (klass, name, arguments);
+	assert (klass);
+	MonoMethod* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_method_from_name (klass, name, arguments);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
-MonoMethod*
-mono_wasm_get_delegate_invoke (MonoObject *delegate)
-{
-	return mono_get_delegate_invoke(mono_object_get_class (delegate));
-}
-
-MonoObject*
-mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
-{
-	if (!klass)
-		return NULL;
-
-	MonoType *type = mono_class_get_type (klass);
-	int alignment;
-	if (mono_type_size (type, &alignment) > value_size)
-		return NULL;
-
-	// TODO: use mono_value_box_checked and propagate error out
-	return mono_value_box (root_domain, klass, value);
-}
 
 void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
 {
-	MonoObject* temp_exc = NULL;
+	PPVOLATILE(MonoObject) out_exc = _out_exc;
+	PVOLATILE(MonoObject) temp_exc = NULL;
 	if (out_exc)
 		*out_exc = NULL;
 	else
 		out_exc = &temp_exc;
 
+	MONO_ENTER_GC_UNSAFE;
 	if (out_result) {
 		*out_result = NULL;
-		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
+		store_volatile(out_result, invoke_result);
 	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
 	}
 
 	if (*out_exc && out_result) {
-		MonoObject *exc2 = NULL;
-		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
 		if (exc2)
-			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return;
+			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 MonoMethod*
@@ -471,10 +548,11 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	MonoImage *image;
 	MonoMethod *method;
 
+	MONO_ENTER_GC_UNSAFE;
 	image = mono_assembly_get_image (assembly);
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
-		return NULL;
+		goto end;
 
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
@@ -491,9 +569,10 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		int name_length = strlen (name);
 
 		if ((*name != '<') || (name [name_length - 1] != '>'))
-			return method;
+			goto end;
 
 		MonoClass *klass = mono_method_get_class (method);
+		assert(klass);
 		char *async_name = malloc (name_length + 2);
 		snprintf (async_name, name_length + 2, "%s$", name);
 
@@ -502,7 +581,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
 		if (async_method != NULL) {
 			free (async_name);
-			return async_method;
+			method = async_method;
+			goto end;
 		}
 
 		// look for "Name" by trimming the first and last character of "<Name>"
@@ -511,24 +591,12 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 		free (async_name);
 		if (async_method != NULL)
-			return async_method;
+			method = async_method;
 	}
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
 	return method;
-}
-
-char *
-mono_wasm_string_get_utf8 (MonoString *str)
-{
-	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
-}
-
-MonoString *
-mono_wasm_string_from_js (const char *str)
-{
-	if (str)
-		return mono_string_new (root_domain, str);
-	else
-		return NULL;
 }
 
 int
@@ -556,49 +624,18 @@ mono_unbox_int (MonoObject *obj)
 		return *(unsigned int*)ptr;
 	case MONO_TYPE_CHAR:
 		return *(short*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
 	default:
 		printf ("Invalid type %d to mono_unbox_int\n", mono_type_get_type (type));
 		return 0;
 	}
 }
 
-int
-mono_wasm_array_length (MonoArray *array)
-{
-	return mono_array_length (array);
-}
-
-MonoObject*
-mono_wasm_array_get (MonoArray *array, int idx)
-{
-	return mono_array_get (array, MonoObject*, idx);
-}
-
-MonoArray*
-mono_wasm_obj_array_new (int size)
-{
-	return mono_array_new (root_domain, mono_get_object_class (), size);
-}
-
-void
-mono_wasm_obj_array_set (MonoArray *array, int idx, MonoObject *obj)
-{
-	mono_array_setref (array, idx, obj);
-}
-
-MonoArray*
-mono_wasm_string_array_new (int size)
-{
-	return mono_array_new (root_domain, mono_get_string_class (), size);
-}
 
 void
 mono_wasm_string_get_data_ref (
 	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
+	MONO_ENTER_GC_UNSAFE;
 	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
@@ -606,16 +643,15 @@ mono_wasm_string_get_data_ref (
 			*outLengthBytes = 0;
 		if (outIsInterned)
 			*outIsInterned = 1;
-		return;
-	}
-
+	} else {
 	if (outChars)
 		*outChars = mono_string_chars (*string);
 	if (outLengthBytes)
 		*outLengthBytes = mono_string_length (*string) * 2;
 	if (outIsInterned)
 		*outIsInterned = mono_string_instance_is_interned (*string);
-	return;
+	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 void
@@ -626,54 +662,54 @@ mono_wasm_string_get_data (
 }
 
 void add_assembly(const char* base_dir, const char *name) {
-    FILE *fileptr;
-    unsigned char *buffer;
-    long filelen;
-    char filename[256];
-    sprintf(filename, "%s/%s", base_dir, name);
-    // printf("Loading %s...\n", filename);
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "%s/%s", base_dir, name);
+	// printf("Loading %s...\n", filename);
 
-    fileptr = fopen(filename, "rb");
-    if (fileptr == 0) {
-        printf("Failed to load %s\n", filename);
-        fflush(stdout);
-    }
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
 
-    fseek(fileptr, 0, SEEK_END);
-    filelen = ftell(fileptr);
-    rewind(fileptr);
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
 
-    buffer = (unsigned char *)malloc(filelen * sizeof(char));
-    if(!fread(buffer, filelen, 1, fileptr)) {
-        printf("Failed to load %s\n", filename);
-        fflush(stdout);
-    }
-    fclose(fileptr);
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
 
-    assert(mono_wasm_add_assembly(name, buffer, filelen));
+	assert(mono_wasm_add_assembly(name, buffer, filelen));
 }
 
 MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespace, const char* type_name, const char* method_name, int num_params) {
-    MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
+	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
 	assert (assembly);
-    MonoClass* class = mono_wasm_assembly_find_class (assembly, namespace, type_name);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespace, type_name);
 	assert (class);
-    MonoMethod* method = mono_wasm_assembly_find_method (class, method_name, num_params);
+	MonoMethod* method = mono_wasm_assembly_find_method (class, method_name, num_params);
 	assert (method);
 	return method;
 }
 
 int main() {
-    // Assume the runtime pack has been copied into the output directory as 'runtime'
-    // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-    mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
-    mono_wasm_load_runtime("", 0);
+	// Assume the runtime pack has been copied into the output directory as 'runtime'
+	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
+	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+	mono_wasm_load_runtime("", 0);
 
-    MonoAssembly* assembly = mono_wasm_assembly_load ("WASI.Console.Sample");
-    MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
-    MonoObject* out_exc;
-    MonoObject* out_res;
-    mono_wasm_invoke_method_ref (entry_method, NULL, NULL, &out_exc, &out_res);
+	MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");
+	MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
+	MonoObject* out_exc;
+	MonoObject* out_res;
+	mono_wasm_invoke_method_ref (entry_method, NULL, NULL, &out_exc, &out_res);
 	if (out_exc)
 	{
 		mono_print_unhandled_exception(out_exc);

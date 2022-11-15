@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasi\build\WASIApp.InTree.targets" />
+  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets" />
 
   <PropertyGroup>
     <ShouldProvisionWasmtime Condition="!Exists('$(MonoProjectRoot)/wasi/wasmtime')">true</ShouldProvisionWasmtime>

@@ -45,8 +45,12 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
 
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
 
 static int32_t load_icu_data(const void* pData);
 
@@ -76,7 +80,7 @@ void mono_wasm_link_icu_shim(void)
 {
 }
 
-#endif
+#endif /* TARGET_BROWSER || TARGET_WASI */
 
 static int32_t load_icu_data(const void* pData)
 {
