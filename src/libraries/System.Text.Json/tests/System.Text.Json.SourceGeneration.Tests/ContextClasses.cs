@@ -55,6 +55,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<TypeWithValidationAttributes> TypeWithValidationAttributes { get; }
         public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
         public JsonTypeInfo<PolymorphicClass> PolymorphicClass { get; }
+        public JsonTypeInfo<PocoWithNumberHandlingAttr> PocoWithNumberHandlingAttr { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

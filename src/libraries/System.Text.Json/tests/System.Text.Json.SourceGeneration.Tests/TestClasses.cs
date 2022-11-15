@@ -287,4 +287,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         public ClassWithDictionaryProperty(Dictionary<string, object?> property) => DictionaryProperty = property;
         public Dictionary<string, object?> DictionaryProperty { get; }
     }
+
+    [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
+    public class PocoWithNumberHandlingAttr
+    {
+        public int Id { get; set; }
+    }
 }

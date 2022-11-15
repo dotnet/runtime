@@ -51,6 +51,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -100,6 +101,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -150,6 +152,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;

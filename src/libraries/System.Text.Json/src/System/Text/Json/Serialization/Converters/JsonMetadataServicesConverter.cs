@@ -66,6 +66,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo.CanUseSerializeHandler &&
+                !JsonSerializer.NumberHandlingNeedWhenWriting(state.Current.NumberHandling) &&
                 !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
                 Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);

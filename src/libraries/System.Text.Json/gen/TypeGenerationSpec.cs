@@ -289,9 +289,14 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
+            if (NumberHandling is not null)
+            {
+                return false;
+            }
+
             if (ClassType == ClassType.Object)
             {
-                if (ExtensionDataPropertyTypeSpec != null)
+                if (ExtensionDataPropertyTypeSpec is not null)
                 {
                     return false;
                 }
@@ -301,8 +306,7 @@ namespace System.Text.Json.SourceGeneration
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {
                     if (property.TypeGenerationSpec.Type.IsObjectType() ||
-                        property.NumberHandling == JsonNumberHandling.AllowNamedFloatingPointLiterals ||
-                        property.NumberHandling == JsonNumberHandling.WriteAsString ||
+                        property.NumberHandling is not null ||
                         property.ConverterInstantiationLogic is not null)
                     {
                         return false;

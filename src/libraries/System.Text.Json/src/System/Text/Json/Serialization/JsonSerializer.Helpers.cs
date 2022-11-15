@@ -78,5 +78,10 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool NumberHandlingNeedWhenWriting(JsonNumberHandling? handling) =>
+            handling is null
+                ? false
+                : (handling & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) != 0;
     }
 }

@@ -51,6 +51,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;

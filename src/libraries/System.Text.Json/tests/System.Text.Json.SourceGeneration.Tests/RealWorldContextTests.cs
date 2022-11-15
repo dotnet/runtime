@@ -1044,5 +1044,18 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.True(derivedResult.Boolean);
             }
         }
+
+        [Fact]
+        public void NumberHandlingHonoredOnPoco()
+        {
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
+            }
+            else
+            {
+                JsonTestHelper.AssertJsonEqual(@"{""Id"":""0""}", JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
+            }
+        }
     }
 }
