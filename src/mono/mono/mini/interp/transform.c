@@ -8257,6 +8257,20 @@ interp_mark_reachable_bblocks (TransformData *td)
 	}
 }
 
+static gboolean
+interp_prev_ins_defines_var (InterpInst *ins, int var1, int var2)
+{
+	// Check max of 5 instructions
+	for (int i = 0; i < 5; i++) {
+		ins = interp_prev_ins (ins);
+		if (!ins)
+			return FALSE;
+		if (mono_interp_op_dregs [ins->opcode] && (ins->dreg == var1 || ins->dreg == var2))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static void
 interp_reorder_bblocks (TransformData *td)
 {
@@ -8267,10 +8281,11 @@ interp_reorder_bblocks (TransformData *td)
 		if (first && MINT_IS_CONDITIONAL_BRANCH (first->opcode)) {
 			// This means this bblock has a single instruction, the conditional branch
 			int i = 0;
+			int lookup_var2 = (mono_interp_op_dregs [first->opcode] > 1) ? first->sregs [1] : -1;
 			while (i < bb->in_count) {
 				InterpBasicBlock *in_bb = bb->in_bb [i];
 				InterpInst *last_ins = interp_last_ins (in_bb);
-				if (last_ins && last_ins->opcode == MINT_BR) {
+				if (last_ins && last_ins->opcode == MINT_BR && interp_prev_ins_defines_var (last_ins, first->sregs [0], lookup_var2)) {
 					// This bblock is reached unconditionally from one of its parents
 					// Move the conditional branch inside the parent to facilitate propagation
 					// of condition value.
