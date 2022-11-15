@@ -204,7 +204,7 @@ namespace System.Reflection.Emit
                 return;
 
             if (custom_modifiers.Length != n)
-                throw new ArgumentException(string.Format(SR.Argument_CustomModifierLengthInvalidLength, custom_modifiers.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierLengthInvalidLength, custom_modifiers.Length));
 
             foreach (Type[] parameter_modifiers in custom_modifiers)
             {

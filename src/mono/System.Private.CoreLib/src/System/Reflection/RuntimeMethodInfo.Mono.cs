@@ -622,11 +622,11 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException(string.Format(SR.Arg_NotGenericMethodDefinition, nameof(methodInstantiation)));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, nameof(methodInstantiation)));
 
             /*FIXME add GetGenericArgumentsLength() internal vcall to speed this up*/
             if (GetGenericArguments().Length != methodInstantiation.Length)
-                throw new ArgumentException(string.Format(SR.Argument_IncorrectLength, nameof(methodInstantiation)));
+                throw new ArgumentException(SR.Format(SR.Argument_IncorrectLength, nameof(methodInstantiation)));
 
             bool hasUserType = false;
             foreach (Type type in methodInstantiation)
@@ -647,7 +647,7 @@ namespace System.Reflection
 
             MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
             if (ret == null)
-                throw new ArgumentException(string.Format(SR.Argument_GenericArgumentsOverflow, GetGenericArguments().Length, methodInstantiation.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_GenericArgumentsOverflow, GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
         }
 

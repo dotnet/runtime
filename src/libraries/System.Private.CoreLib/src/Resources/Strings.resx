@@ -936,6 +936,9 @@
   <data name="Argument_CannotCreateByrefTypeOfExistingByrefType" xml:space="preserve">
     <value>Cannot create a byref type of an already byref type.</value>
   </data>
+  <data name="Argument_CannotCreateArrayOfByrefType" xml:space="preserve">
+    <value>Cannot create an array type of a byref type.</value>
+  </data>
   <data name="Argument_CannotCreatePointerTypeOfByref" xml:space="preserve">
     <value>Can't have a pointer to a byref type.</value>
   </data>

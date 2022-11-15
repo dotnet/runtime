@@ -917,7 +917,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < num_fixups; ++i)
             {
                 if (labels![fixups![i].label_idx].addr < 0)
-                    throw new ArgumentException(string.Format(SR.Argument_LabelUnmarked, fixups[i].label_idx + 1, mb.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_LabelUnmarked, fixups[i].label_idx + 1, mb.Name));
                 // Diff is the offset from the end of the jump instruction to the address of the label
                 int diff = labels[fixups[i].label_idx].addr - (fixups[i].pos + fixups[i].offset);
                 if (fixups[i].offset == 1)

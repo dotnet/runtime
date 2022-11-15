@@ -208,7 +208,7 @@ namespace System.Reflection.Emit
             aname = (AssemblyName)n.Clone();
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
+                throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     "Argument value {0} is not valid.", (int)access),
                     nameof(access));
 
@@ -336,7 +336,7 @@ namespace System.Reflection.Emit
             if (res is TypeBuilder)
             {
                 if (throwOnError)
-                    throw new TypeLoadException(string.Format("Could not load type '{0}' from assembly '{1}'", name, this.name));
+                    throw new TypeLoadException(SR.Format("Could not load type '{0}' from assembly '{1}'", name, this.name));
                 return null;
             }
             return res;

@@ -256,7 +256,7 @@ namespace System.Reflection
                 {
                     return GetMetadataToken();
                 }
-                throw new ArgumentException(string.Format(SR.NoMetadataTokenAvailable, MemberImpl.GetType()));
+                throw new ArgumentException(SR.Format(SR.NoMetadataTokenAvailable, MemberImpl.GetType()));
             }
         }
 

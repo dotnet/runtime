@@ -384,7 +384,7 @@ namespace System
                                    ref stackMark,
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException(string.Format(SR.TypeLoad_TypeNotLoaded, typeName));
+                    throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotLoaded, typeName));
             }
             return t;
         }

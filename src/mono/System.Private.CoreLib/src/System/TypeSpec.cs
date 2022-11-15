@@ -472,7 +472,7 @@ namespace System
                                         if (name[pos] == ']')
                                             ++pos;
                                         else
-                                            throw new ArgumentException(string.Format(SR.Argument_UnclosedAssemblyQualifiedTypeName, name[pos]), "typeName");
+                                            throw new ArgumentException(SR.Format(SR.Argument_UnclosedAssemblyQualifiedTypeName, name[pos]), "typeName");
                                         BoundCheck(pos, name);
                                     }
 
@@ -481,7 +481,7 @@ namespace System
                                     if (name[pos] == ',')
                                         ++pos; // skip ',' to the start of the next arg
                                     else
-                                        throw new ArgumentException(string.Format(SR.Argument_InvalidGenericArgumentsSeparator, name[pos]), "typeName");
+                                        throw new ArgumentException(SR.Format(SR.Argument_InvalidGenericArgumentsSeparator, name[pos]), "typeName");
 
                                 }
                                 if (pos >= name.Length || name[pos] != ']')
@@ -501,7 +501,7 @@ namespace System
                                         bound = true;
                                     }
                                     else if (name[pos] != ',')
-                                        throw new ArgumentException(string.Format(SR.Argument_InvalidCharInArraySpecification, name[pos]), "typeName");
+                                        throw new ArgumentException(SR.Format(SR.Argument_InvalidCharInArraySpecification, name[pos]), "typeName");
                                     else
                                         ++dimensions;
 
@@ -524,7 +524,7 @@ namespace System
                             }
                             throw new ArgumentException(SR.Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName, "typeName");
                         default:
-                            throw new ArgumentException(string.Format(SR.Argument_BadTypeDef, name[pos], pos), "typeName");
+                            throw new ArgumentException(SR.Format(SR.Argument_BadTypeDef, name[pos], pos), "typeName");
                     }
                 }
             }

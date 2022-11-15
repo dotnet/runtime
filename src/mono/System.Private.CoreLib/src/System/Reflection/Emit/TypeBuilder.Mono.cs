@@ -756,19 +756,19 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsSealed)
-                    throw new TypeLoadException(string.Format(SR.TypeLoad_AssemblySealedParentTypeError, fullname.DisplayName, Assembly));
+                    throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblySealedParentTypeError, fullname.DisplayName, Assembly));
                 if (parent.IsGenericTypeDefinition)
                     throw new BadImageFormatException();
             }
 
             if (parent == typeof(Enum) && methods != null)
-                throw new TypeLoadException(string.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, fullname.DisplayName, Assembly));
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, fullname.DisplayName, Assembly));
             if (interfaces != null)
             {
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException(string.Format( SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName ));
+                        throw new TypeLoadException(SR.Format( SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName ));
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
@@ -785,7 +785,7 @@ namespace System.Reflection.Emit
                 {
                     MethodBuilder mb = (MethodBuilder)(methods[i]);
                     if (is_concrete && mb.IsAbstract)
-                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_AbstractMethod, mb));
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_AbstractMethod, mb));
                     mb.check_override();
                     mb.fixup();
                 }
@@ -1308,7 +1308,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(string.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length), nameof(typeArguments));
+                throw new ArgumentException(SR.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
@@ -1801,7 +1801,7 @@ namespace System.Reflection.Emit
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
-                throw new ArgumentException(string.Format(SR.Argument_MethodNotFoundInType, method.Name, type));
+                throw new ArgumentException(SR.Format(SR.Argument_MethodNotFoundInType, method.Name, type));
 
             return res;
         }
@@ -1960,7 +1960,7 @@ namespace System.Reflection.Emit
                         destValue = ticks;
                         return true;
                     default:
-                        throw new ArgumentException(string.Format(SR.Argument_ConstantNotSupported, type!.ToString()));
+                        throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type!.ToString()));
                 }
             }
             else

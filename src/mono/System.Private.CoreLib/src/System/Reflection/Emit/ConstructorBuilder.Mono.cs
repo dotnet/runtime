@@ -319,7 +319,7 @@ namespace System.Reflection.Emit
             if (((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0))
             {
                 if ((ilgen == null) || (ilgen.ILOffset == 0))
-                    throw new InvalidOperationException(string.Format(SR.InvalidOperation_MethodDoesNotHaveBody, Name));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_MethodDoesNotHaveBody, Name));
             }
             if (IsStatic &&
                 ((call_conv & CallingConventions.VarArgs) != 0 ||

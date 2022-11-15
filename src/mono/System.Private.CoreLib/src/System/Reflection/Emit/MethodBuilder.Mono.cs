@@ -351,7 +351,7 @@ namespace System.Reflection.Emit
                 foreach (MethodInfo m in override_methods)
                 {
                     if (m.IsVirtual && !IsVirtual)
-                        throw new TypeLoadException(string.Format("Method '{0}' override '{1}' but it is not virtual", name, m));
+                        throw new TypeLoadException(SR.Format("Method '{0}' override '{1}' but it is not virtual", name, m));
                 }
             }
         }
@@ -363,7 +363,7 @@ namespace System.Reflection.Emit
                 // do not allow zero length method body on MS.NET 2.0 (and higher)
                 if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
                     throw new InvalidOperationException(
-                                         string.Format("Method '{0}.{1}' does not have a method body.",
+                                         SR.Format("Method '{0}.{1}' does not have a method body.",
                                                 DeclaringType!.FullName, Name));
             }
             ilgen?.label_fixup(this);

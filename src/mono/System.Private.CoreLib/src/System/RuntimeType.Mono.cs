@@ -1636,7 +1636,7 @@ namespace System
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
             if (IsAbstract)
             {
-                throw new MissingMethodException(string.Format(SR.MissingMethod_CannotCreateAbstractClass, FullName));
+                throw new MissingMethodException(SR.Format(SR.MissingMethod_CannotCreateAbstractClass, FullName));
             }
 
             unsafe
@@ -1970,7 +1970,7 @@ namespace System
         public override Type MakePointerType()
         {
             if (IsByRef)
-                throw new TypeLoadException(string.Format(SR.ClassLoad_General, GetType(), AssemblyQualifiedName));
+                throw new TypeLoadException(SR.Format(SR.ClassLoad_General, GetType(), AssemblyQualifiedName));
             Type? type = null;
             var base_type = this;
             make_pointer_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));

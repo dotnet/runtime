@@ -198,11 +198,11 @@ namespace System.Reflection.Emit
             {
                 Type t = fi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
-                    throw new ArgumentException(string.Format(SR.Argument_FieldDoesNotBelongToConstructorClass, fi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotBelongToConstructorClass, fi.Name));
                 if (!IsValidType(fi.FieldType))
-                    throw new ArgumentException(string.Format(SR.Argument_FieldDoesNotHaveAValidType, fi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotHaveAValidType, fi.Name));
                 if (!IsValidValue(fi.FieldType, fieldValues[i]))
-                    throw new ArgumentException(string.Format(SR.Argument_FieldDoesNotHaveAValidValue, fi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotHaveAValidValue, fi.Name));
                 // FIXME: Check enums and TypeBuilders as well
                 if (fieldValues[i] != null)
                     // IsEnum does not seem to work on TypeBuilders
@@ -213,7 +213,7 @@ namespace System.Reflection.Emit
                         // MS.NET allows this
                         //
                         if (!fi.FieldType.IsArray)
-                            throw new ArgumentException(string.Format(SR.Argument_UnmatchedFieldValueAndType, fi.Name, fi.FieldType));
+                            throw new ArgumentException(SR.Format(SR.Argument_UnmatchedFieldValueAndType, fi.Name, fi.FieldType));
                     }
                 i++;
             }
@@ -222,19 +222,19 @@ namespace System.Reflection.Emit
             foreach (PropertyInfo pi in namedProperties)
             {
                 if (!pi.CanWrite)
-                    throw new ArgumentException(string.Format(SR.Argument_PropertyMissingSetter, pi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyMissingSetter, pi.Name));
                 Type t = pi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
-                    throw new ArgumentException(string.Format(SR.Argument_PropertyClassUnmatchedWithConstructor, pi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyClassUnmatchedWithConstructor, pi.Name));
                 if (!IsValidType(pi.PropertyType))
-                    throw new ArgumentException(string.Format(SR.Argument_PropertyInvalidType, pi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyInvalidType, pi.Name));
                 if (!IsValidValue(pi.PropertyType, propertyValues[i]))
-                    throw new ArgumentException(string.Format(SR.Argument_PropertyInvalidValue, pi.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyInvalidValue, pi.Name));
                 if (propertyValues[i] != null)
                 {
                     if (!(pi.PropertyType is TypeBuilder) && !pi.PropertyType.IsEnum && !pi.PropertyType.IsInstanceOfType(propertyValues[i]))
                         if (!pi.PropertyType.IsArray)
-                            throw new ArgumentException(string.Format(SR.Argument_PropertyUnmatchingPropertyType, pi.Name, pi.PropertyType, propertyValues[i]));
+                            throw new ArgumentException(SR.Format(SR.Argument_PropertyUnmatchingPropertyType, pi.Name, pi.PropertyType, propertyValues[i]));
                 }
                 i++;
             }
@@ -246,17 +246,17 @@ namespace System.Reflection.Emit
                 {
                     Type paramType = pi.ParameterType;
                     if (!IsValidType(paramType))
-                        throw new ArgumentException(string.Format(SR.Argument_ParameterInvalidType, i));
+                        throw new ArgumentException(SR.Format(SR.Argument_ParameterInvalidType, i));
                     if (!IsValidValue(paramType, constructorArgs[i]))
-                        throw new ArgumentException(string.Format(SR.Argument_ParameterInvalidValue, i));
+                        throw new ArgumentException(SR.Format(SR.Argument_ParameterInvalidValue, i));
 
                     if (constructorArgs[i] != null)
                     {
                         if (!(paramType is TypeBuilder) && !paramType.IsEnum && !paramType.IsInstanceOfType(constructorArgs[i]))
                             if (!paramType.IsArray)
-                                throw new ArgumentException(string.Format(SR.Argument_ParameterHasUnmatchedArgumentValue, i, paramType, constructorArgs[i]));
+                                throw new ArgumentException(SR.Format(SR.Argument_ParameterHasUnmatchedArgumentValue, i, paramType, constructorArgs[i]));
                         if (!IsValidParam(constructorArgs[i]!, paramType))
-                            throw new ArgumentException(string.Format(SR.Argument_CustomAttributeInvalidType, constructorArgs[i]!.GetType()));
+                            throw new ArgumentException(SR.Format(SR.Argument_CustomAttributeInvalidType, constructorArgs[i]!.GetType()));
                     }
                 }
                 i++;
@@ -401,7 +401,7 @@ namespace System.Reflection.Emit
                         marshalCookie = decode_string(data, pos, out pos)!;
                         break;
                     default:
-                        throw new Exception(string.Format(SR.Exception_UnknownMarshalAsAttributeField, named_name));
+                        throw new Exception(SR.Format(SR.Exception_UnknownMarshalAsAttributeField, named_name));
                 }
             }
 
@@ -449,7 +449,7 @@ namespace System.Reflection.Emit
                 0x0c => typeof(float),
                 0x0d => typeof(double),
                 0x0e => typeof(string),
-                _ => throw new Exception(string.Format(SR.Exception_UnknownElementType, elementType)),
+                _ => throw new Exception(SR.Format(SR.Exception_UnknownElementType, elementType)),
             };
 
         private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
@@ -478,9 +478,9 @@ namespace System.Reflection.Emit
                     if (subtype >= 0x02 && subtype <= 0x0e)
                         return decode_cattr_value(elementTypeToType(subtype), data, pos, out rpos);
                     else
-                        throw new Exception(string.Format(SR.Exception_UnhandledSubType, subtype));
+                        throw new Exception(SR.Format(SR.Exception_UnhandledSubType, subtype));
                 default:
-                    throw new Exception(string.Format(SR.Exception_UnhandledFixMeType, t));
+                    throw new Exception(SR.Format(SR.Exception_UnhandledFixMeType, t));
             }
         }
 
@@ -506,7 +506,7 @@ namespace System.Reflection.Emit
 
             // Prolog
             if (data.Length < 2)
-                throw new Exception(string.Format(SR.Exception_InvalidCustomAttributeLength, data.Length));
+                throw new Exception(SR.Format(SR.Exception_InvalidCustomAttributeLength, data.Length));
             if ((data[0] != 0x1) || (data[1] != 0x00))
                 throw new Exception(SR.Exception_InvalidProlog);
             pos = 2;
@@ -545,7 +545,7 @@ namespace System.Reflection.Emit
                     /* Field */
                     FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (fi == null)
-                        throw new Exception(string.Format(SR.Exception_EmptyFieldForCustomAttributeType, ctor.DeclaringType, name));
+                        throw new Exception(SR.Format(SR.Exception_EmptyFieldForCustomAttributeType, ctor.DeclaringType, name));
 
                     object? val = decode_cattr_value(fi.FieldType, data, pos, out pos);
                     if (enum_type_name != null)
@@ -558,7 +558,7 @@ namespace System.Reflection.Emit
                 }
                 else
                     // FIXME:
-                    throw new Exception(string.Format(SR.Exception_UnknownNamedType, named_type));
+                    throw new Exception(SR.Format(SR.Exception_UnknownNamedType, named_type));
             }
 
             return info;

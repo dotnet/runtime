@@ -203,7 +203,7 @@ namespace System.Reflection
                 if (obj == null)
                     throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
 
             if (!IsLiteral)
@@ -214,7 +214,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return string.Format("{0} {1}", FieldType, name);
+            return SR.Format("{0} {1}", FieldType, name);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -227,7 +227,7 @@ namespace System.Reflection
                 if (obj == null)
                     throw new TargetException(SR.Target_NonStaticFieldRequirement);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
                 throw new FieldAccessException(SR.FieldAccess_CannotSetConstantField);
