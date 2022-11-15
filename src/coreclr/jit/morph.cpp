@@ -11084,7 +11084,71 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         }
     }
 
+    if (cast->CastOp()->OperIsSimple())
+    {
+        fgOptimizeCastOfSmpOp(cast);
+    }
+
     return cast;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeCastOfSmpOp: Optimizes the supplied GT_CAST of GTK_SMPOP tree.
+//
+// Arguments:
+//    cast - the cast tree to optimize
+//
+void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
+{
+    GenTree*      castOp     = cast->CastOp();
+    var_types     castToType = cast->CastToType();
+    var_types     srcType    = castOp->TypeGet();
+
+    assert(castOp->OperIsSimple());
+
+    if (gtIsActiveCSE_Candidate(cast) || gtIsActiveCSE_Candidate(castOp))
+        return;
+
+    if (cast->gtOverflow())
+        return;
+
+    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+        return;
+
+    // Only optimize if the castToType is a small integer type.
+    if (!varTypeIsSmall(castToType) || !varTypeIsIntegral(srcType))
+        return;
+
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+    {
+        // This removes the casts as it prevents zero/sign-extended 'mov's before the op.
+
+        if (castOp->gtGetOp1()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
+                (castToType == op1->CastToType()) && !gtIsActiveCSE_Candidate(op1))
+            {
+                castOp->AsOp()->gtOp1 = op1->CastOp();
+
+                DEBUG_DESTROY_NODE(op1);
+            }
+        }
+
+        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
+                (castToType == op2->CastToType()) && !gtIsActiveCSE_Candidate(op2))
+            {
+                castOp->AsOp()->gtOp2 = op2->CastOp();
+                
+                DEBUG_DESTROY_NODE(op2);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
