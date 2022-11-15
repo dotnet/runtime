@@ -6,6 +6,7 @@
 #pragma once
 #include "pal_types.h"
 
+#undef BN_is_zero
 #undef SSL_CTX_set_options
 #undef SSL_set_options
 #undef SSL_session_reused
