@@ -54,11 +54,11 @@ gboolean jiterpreter_traces_enabled       = FALSE,
 	jiterpreter_jit_call_enabled      = FALSE,
 #else
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-gboolean jiterpreter_traces_enabled       = TRUE,
+gboolean jiterpreter_traces_enabled       = FALSE,
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
-	jiterpreter_interp_entry_enabled  = TRUE,
+	jiterpreter_interp_entry_enabled  = FALSE,
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
-	jiterpreter_jit_call_enabled      = TRUE,
+	jiterpreter_jit_call_enabled      = FALSE,
 #endif
 // if enabled, we will insert trace entry points at backwards branch targets, so that we can
 //  JIT loop bodies
@@ -908,9 +908,6 @@ should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
 
 	return FALSE;
 }
-
-InterpInst*
-mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
 
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
