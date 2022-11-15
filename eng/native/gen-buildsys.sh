@@ -7,7 +7,7 @@ scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
-  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <Os> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
   echo "Specify the host architecture (the architecture the built tools should run on)."
@@ -20,7 +20,8 @@ if [[ "$#" -lt 4 ]]; then
 fi
 
 host_arch="$3"
-compiler="$4"
+target_os="$4"
+compiler="$5"
 
 if [[ "$compiler" != "default" ]]; then
     nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
@@ -39,7 +40,7 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:5}"; do
+for i in "${@:6}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
@@ -92,10 +93,15 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
-if [[ "$host_arch" == "wasm" && "$2" =~ "-Browser-" ]]; then
-    cmake_command="emcmake $cmake_command"
-elif [[ "$host_arch" == "wasm" && "$2" =~ "-WASI-" ]]; then
-    true
+if [[ "$host_arch" == "wasm" ]]; then
+    if [[ "$target_os" == "Browser" ]]; then
+        cmake_command="emcmake $cmake_command"
+    elif [[ "$target_os" == "WASI" ]]; then
+        true
+    else
+        echo "target_os was not specified"
+        exit(1)
+    fi
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
