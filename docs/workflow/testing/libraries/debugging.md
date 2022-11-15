@@ -14,15 +14,18 @@ where we choose `browser-wasm` as the runtime and by setting `DebuggerSupport=tr
 
 ```
 Debug proxy for chrome now listening on http://127.0.0.1:58346/. And expecting chrome at http://localhost:9222/
+Content root path: ...\artifacts\bin\System.Collections.Tests\Debug\net7.0\browser-wasm\AppBundle
 App url: http://127.0.0.1:9000/index.html?arg=--debug&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Concurrent.Tests.dll
 ```
-Copy the proxy's url, you will need it in the next step.
+The proxy's url/port will be used in the next step. If you choose VS Code to debug, `Current root path` will be needed as well.
 
-## Attach an IDE
 You may need to close all Chrome instances. Then, start the browser with debugging mode enabled:
 
 `chrome --remote-debugging-port=9222 <APP_URL>`
 
+Now you can choose an IDE to start debugging.
+
+## Debug with Chrome DevTools
 Open `chrome://inspect/#devices` in a new tab in the browser you started. Select `Configure`:
 
 ![image](https://user-images.githubusercontent.com/32700855/201867874-7f707eb1-e859-441c-8205-abb70a7a0d0b.png)
@@ -37,4 +40,18 @@ New remote targets will be displayed, select the address you opened in the other
 
 A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. Initially, the tests are stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
 
+## Debug with VS Code
 
+Add following configuration to your `.vscode/launch.json`:
+```
+        {
+            "name": "Libraries",
+            "request": "attach",
+            "type": "chrome",
+            "address": "localhost",
+            "port": <PROXY'S_PORT>,
+            "webRoot": "${workspaceFolder}\\<CURRENT_ROOT_PATH>"
+        }
+```
+Run the configuration and wait till VS Code will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+![image](https://user-images.githubusercontent.com/32700855/201890837-5c338ce1-2957-4dcf-aa3b-78045d131f0a.png)
