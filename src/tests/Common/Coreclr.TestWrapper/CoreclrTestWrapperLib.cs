@@ -286,7 +286,7 @@ namespace CoreclrTestLib
                 Process chownProcess = new Process();
 
                 chownProcess.StartInfo.FileName = "sudo";
-                chownProcess.StartInfo.Arguments = $"chown $USER {crashReportJsonFile}";
+                chownProcess.StartInfo.Arguments = $"ls -l {crashReportJsonFile}";
                 chownProcess.StartInfo.UseShellExecute = false;
                 chownProcess.StartInfo.RedirectStandardOutput = true;
                 chownProcess.StartInfo.RedirectStandardError = true;
@@ -295,9 +295,41 @@ namespace CoreclrTestLib
                 chownProcess.Start();
                 if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
                 {
+                    Console.WriteLine("stderr:");
+                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
                     chownProcess.Kill(true);
-                    Console.WriteLine("Failed to change ownership");
+                    Console.WriteLine("Failed to ls -l");
                     return false;
+                }
+                else
+                {
+                    Console.WriteLine("stdout:");
+                    Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
+                    Console.WriteLine("stderr:");
+                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+                }
+                Console.WriteLine("=========================================");
+                chownProcess.StartInfo.Arguments = $"chmod 744 {crashReportJsonFile}";
+                chownProcess.StartInfo.UseShellExecute = false;
+                chownProcess.StartInfo.RedirectStandardOutput = true;
+                chownProcess.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
+                chownProcess.Start();
+                if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+                {
+                    Console.WriteLine("stderr:");
+                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+                    chownProcess.Kill(true);
+                    Console.WriteLine("Failed to chmod");
+                    return false;
+                }
+                else
+                {
+                    Console.WriteLine("stdout:");
+                    Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
+                    Console.WriteLine("stderr:");
+                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
                 }
             }
 
