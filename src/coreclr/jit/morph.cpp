@@ -12777,10 +12777,15 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //
 GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 {
-    JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
-
     assert(tree->OperIs(GT_MOD, GT_UMOD));
     assert(tree->gtOp2->IsIntegralConst(1));
+
+    // Do not transform this if there are side effects and we are not in global morph.
+    // If we want to allow this, we need to update value numbers for the GT_COMMA.
+    if (!fgGlobalMorph && ((tree->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) != 0))
+        return nullptr;
+
+    JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -12794,11 +12799,6 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
     if (op1SideEffects != nullptr)
     {
-        // Do not transform this if there are side effects and we are not in global morph.
-        // If we want to allow this, we need to update value numbers for the GT_COMMA.
-        if (!fgGlobalMorph)
-            return nullptr;
-
         GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
 
 #ifdef DEBUG
