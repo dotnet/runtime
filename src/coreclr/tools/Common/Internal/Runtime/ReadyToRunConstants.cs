@@ -359,6 +359,8 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        GetLazyStringLiteralFromHandle,
     }
 
     // Enum used for HFA type recognition.

@@ -55,6 +55,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SharedCodeHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StringLiteralHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>

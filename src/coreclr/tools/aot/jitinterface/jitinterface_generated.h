@@ -146,6 +146,7 @@ struct JitInterfaceCallbacks
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
     void* (* getMethodSync)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
+    void* (* getLazyStringLiteralHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     CorInfoHelpFunc (* getLazyStringLiteralHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle);
     CORINFO_MODULE_HANDLE (* embedModuleHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle, void** ppIndirection);
     CORINFO_CLASS_HANDLE (* embedClassHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE handle, void** ppIndirection);
@@ -1496,6 +1497,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     void* temp = _callbacks->getMethodSync(_thisHandle, &pException, ftn, ppIndirection);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual void* getLazyStringLiteralHandle(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    void* temp = _callbacks->getLazyStringLiteralHandle(_thisHandle, &pException, module, metaTOK);
     if (pException != nullptr) throw pException;
     return temp;
 }

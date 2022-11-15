@@ -416,7 +416,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
     CORINFO_HELP_STRCNS,            // create a new string literal
-    CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
+    CORINFO_HELP_STRCNS_FROM_HANDLE, // create a new string literal from a handle (used by NativeAOT)
 
     /* Object model */
 
@@ -3082,6 +3082,11 @@ public:
                     CORINFO_METHOD_HANDLE               ftn,
                     void                  **ppIndirection = NULL
                     ) = 0;
+
+    // gets the handle to use with CORINFO_HELP_STRCNS_FROM_HANDLE
+    virtual void* getLazyStringLiteralHandle(
+                    CORINFO_MODULE_HANDLE module,
+                    unsigned metaTOK) = 0;
 
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.

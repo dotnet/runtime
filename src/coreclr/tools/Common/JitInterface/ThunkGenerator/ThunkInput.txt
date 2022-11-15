@@ -291,6 +291,7 @@ FUNCTIONS
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP *  pResult);
     void* getMethodSync(CORINFO_METHOD_HANDLE               ftn, void                  **ppIndirection);
+    void* getLazyStringLiteralHandle(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);

@@ -946,6 +946,13 @@ void* interceptor_ICJI::getMethodSync(
     return original_ICorJitInfo->getMethodSync(ftn, ppIndirection);
 }
 
+void* interceptor_ICJI::getLazyStringLiteralHandle(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK)
+{
+    return original_ICorJitInfo->getLazyStringLiteralHandle(module, metaTOK);
+}
+
 CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle)
 {

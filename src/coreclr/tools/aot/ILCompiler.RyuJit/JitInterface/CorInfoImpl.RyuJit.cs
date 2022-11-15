@@ -755,6 +755,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DISPATCH_INDIRECT_CALL:
                     return _compilation.NodeFactory.ExternIndirectSymbol("__guard_dispatch_icall_fptr");
 
+                case CorInfoHelpFunc.CORINFO_HELP_STRCNS_FROM_HANDLE:
+                    id = ReadyToRunHelper.GetLazyStringLiteralFromHandle;
+                    break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -824,6 +828,20 @@ namespace Internal.JitInterface
             }
             ppValue = (void*)ObjectToHandle(stringObject);
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: condition on the helper existing in CoreLib
+            return CorInfoHelpFunc.CORINFO_HELP_STRCNS_FROM_HANDLE;
+        }
+
+        private void* getLazyStringLiteralHandle(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        {
+            string literal = (string)HandleToObject(module).GetObject((int)metaTOK);
+            return (void*)ObjectToHandle(_compilation.NodeFactory.LazyStringLiteralData(literal));
         }
 
         private enum RhEHClauseKind

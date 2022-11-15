@@ -1322,6 +1322,16 @@ void* WrapICorJitInfo::getMethodSync(
     return temp;
 }
 
+void* WrapICorJitInfo::getLazyStringLiteralHandle(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK)
+{
+    API_ENTER(getLazyStringLiteralHandle);
+    void* temp = wrapHnd->getLazyStringLiteralHandle(module, metaTOK);
+    API_LEAVE(getLazyStringLiteralHandle);
+    return temp;
+}
+
 CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle)
 {

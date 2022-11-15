@@ -319,6 +319,7 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\LazyStringNode.cs" />
     <Compile Include="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />

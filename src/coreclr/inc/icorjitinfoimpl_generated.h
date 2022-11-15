@@ -550,6 +550,10 @@ void* getMethodSync(
           CORINFO_METHOD_HANDLE ftn,
           void** ppIndirection) override;
 
+void* getLazyStringLiteralHandle(
+          CORINFO_MODULE_HANDLE module,
+          unsigned metaTOK) override;
+
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
 

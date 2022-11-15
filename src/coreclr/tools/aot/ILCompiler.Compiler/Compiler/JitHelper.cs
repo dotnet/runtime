@@ -301,6 +301,10 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System", "Environment").GetKnownMethod("get_CurrentManagedThreadId", null);
                     break;
 
+                case ReadyToRunHelper.GetLazyStringLiteralFromHandle:
+                    methodDesc = context.GetHelperEntryPoint("StringLiteralHelpers", "GetStringLiteral");
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }

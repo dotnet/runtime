@@ -1268,6 +1268,17 @@ namespace Internal.JitInterface
             return InfoAccessType.IAT_PPVALUE;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: Lazy string literal helper
+            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+        }
+
+        private void* getLazyStringLiteralHandle(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        { throw new NotImplementedException("getLazyStringLiteralHandle"); }
+
         enum EHInfoFields
         {
             Flags = 0,

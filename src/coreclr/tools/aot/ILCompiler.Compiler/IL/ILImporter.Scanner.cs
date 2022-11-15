@@ -1076,6 +1076,10 @@ namespace Internal.IL
         {
             // If we care, this can include allocating the frozen string node.
             _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
+
+            // RyuJIT could choose to import this as a lazy string literal too
+            // TODO: condition on the helper existing in CoreLib
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetLazyStringLiteralFromHandle), "ldstr");
         }
 
         private void ImportBox(int token)

@@ -8565,10 +8565,12 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         {
             // For un-important blocks, we want to construct the string lazily
 
-            if (helper == CORINFO_HELP_STRCNS_CURRENT_MODULE)
+            if (helper == CORINFO_HELP_STRCNS_FROM_HANDLE)
             {
-                tree = gtNewHelperCallNode(helper, TYP_REF,
-                                           gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT));
+                void* handle = info.compCompHnd->getLazyStringLiteralHandle(tree->AsStrCon()->gtScpHnd,
+                                                                            tree->AsStrCon()->gtSconCPX);
+                tree         = gtNewHelperCallNode(helper, TYP_REF,
+                                                   gtNewIconEmbHndNode(handle, nullptr, GTF_ICON_GLOBAL_PTR, handle));
             }
             else
             {
