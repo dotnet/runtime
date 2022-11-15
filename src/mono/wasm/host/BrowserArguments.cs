@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Mono.Options;
+using System.Linq;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -19,10 +20,8 @@ internal sealed class BrowserArguments
     public BrowserArguments(CommonConfiguration commonConfig)
     {
         CommonConfig = commonConfig;
-        List<string> appArgs = GetOptions().Parse(commonConfig.RemainingArgs);
-        if (CommonConfig.Debugging)
-            appArgs.Add("--debug");
-        AppArgs = appArgs.ToArray();
+        var appArgs = GetOptions().Parse(commonConfig.RemainingArgs);
+        AppArgs = CommonConfig.Debugging ? new List<string> {"--debug"}.Concat(appArgs).ToArray() : appArgs.ToArray();
 
         ParseJsonProperties(CommonConfig.HostConfig.Properties);
     }
