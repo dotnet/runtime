@@ -44,9 +44,5 @@ typedef struct {
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentMarshalILgen* mono_component_marshal_ilgen_init (void);
-
-void
-mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb);
-
  
 #endif // __MARSHAL_ILGEN_H__

@@ -1,4 +1,5 @@
 #include "mono/component/marshal-ilgen.h"
+#include "mono/component/marshal-ilgen-internals.h"
 #include "mono/component/marshal-ilgen-noilgen.h"
 
 #ifndef ENABLE_ILGEN
