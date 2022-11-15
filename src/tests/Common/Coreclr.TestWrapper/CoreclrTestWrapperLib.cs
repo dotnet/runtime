@@ -316,21 +316,25 @@ namespace CoreclrTestLib
                 }
 
                 Console.WriteLine("=========================================");
-                if (!RunProcess("sudo", $"chown $USER {crashReportJsonFile}"))
+                string userName = Environment.GetEnvironmentVariable("USER");
+                if (!string.IsNullOrEmpty(userName))
                 {
-                    return false;
-                }
+                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}"))
+                    {
+                        return false;
+                    }
 
-                Console.WriteLine("=========================================");
-                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
-                {
-                    return false;
-                }
+                    Console.WriteLine("=========================================");
+                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
+                    {
+                        return false;
+                    }
 
-                Console.WriteLine("=========================================");
-                if (!RunProcess("ls", $"-l {crashReportJsonFile}"))
-                {
-                    return false;
+                    Console.WriteLine("=========================================");
+                    if (!RunProcess("ls", $"-l {crashReportJsonFile}"))
+                    {
+                        return false;
+                    }
                 }
             }
 
