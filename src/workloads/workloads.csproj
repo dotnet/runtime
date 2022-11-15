@@ -111,7 +111,9 @@
     <ItemGroup>
       <!-- Set SupportsMachineArch metadata to true if a specific manifest needs to support arm64 for Visual Studio. DO NOT set if for all feature bands as
            it changes the SWIX authoring and older versions of Visual Studio will fail to install. -->
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity).*.nupkg"
+                        MsiVersion="$(MsiVersion)"
+                        SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>
 
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
