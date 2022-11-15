@@ -109,7 +109,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
             case PAL_POLLIN:
                 pollfds[i].events = POLLIN;
                 break;
-#ifdef POLLPRI // not available in Wasi
+#ifdef POLLPRI // not available in WASI
             case PAL_POLLPRI:
                 pollfds[i].events = POLLPRI;
                 break;
@@ -159,7 +159,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
             case POLLIN:
                 pollEvents[i].TriggeredEvents = PAL_POLLIN;
                 break;
-#ifdef POLLPRI // not available in Wasi
+#ifdef POLLPRI // not available in WASI
             case POLLPRI:
                 pollEvents[i].TriggeredEvents = PAL_POLLPRI;
                 break;

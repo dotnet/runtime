@@ -10,11 +10,11 @@ The mechanism for executing .NET code in a WASI runtime environment is equivalen
 
 on Linux:
 ```.sh
-./build.sh -bl -os Wasi -subset mono+libs -c Debug
+./build.sh -bl -os WASI -subset mono+libs -c Debug
 ```
 or for just native rebuild
 ```.sh
-./build.sh -bl -os Wasi -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
+./build.sh -bl -os WASI -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
 ```
 
 ### 3. Run it
@@ -22,7 +22,7 @@ or for just native rebuild
 Finally, you can build and run the sample:
 
 ```
-./dotnet.sh build /p:TargetOS=Wasi /p:Configuration=Debug /t:RunSample src/mono/sample/wasi/console
+./dotnet.sh build /p:TargetOS=WASI /p:Configuration=Debug /t:RunSample src/mono/sample/wasi/console
 ```
 
 ### 4. Debug it

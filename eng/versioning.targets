@@ -86,7 +86,7 @@
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'tvOS'" Include="tvOS" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
                                   '$(TargetPlatformIdentifier)' != 'Browser' and
-                                  '$(TargetPlatformIdentifier)' != 'Wasi' and
+                                  '$(TargetPlatformIdentifier)' != 'WASI' and
                                   '$(TargetPlatformIdentifier)' != 'windows'" Include="Unix" />
   </ItemGroup>
 

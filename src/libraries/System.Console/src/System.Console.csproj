@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Wasi;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-WASI;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_SystemConsole</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Wasi'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'WASI'">
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -159,7 +159,7 @@
              Link="Common\System\IO\Win32Marshal.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'WASI'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
@@ -210,7 +210,7 @@
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs"
              Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" 
-             Condition="'$(TargetPlatformIdentifier)' != 'Wasi'"
+             Condition="'$(TargetPlatformIdentifier)' != 'WASI'"
              />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs"
              Link="Common\Interop\Unix\Interop.SetSignalForBreak.cs" />

@@ -1,6 +1,6 @@
 parameters:
   alwaysRun: false
-  buildAndRunWasi: false
+  buildAndRunWASI: false
   extraBuildArgs: ''
   extraHelixArgs: ''
   isExtraPlatformsBuild: false

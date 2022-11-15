@@ -53,7 +53,7 @@ if [[ "$__TargetOS" == Browser ]]; then
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
     export CLR_CC=$(which emcc)
-elif [[ "$__TargetOS" == Wasi ]]; then
+elif [[ "$__TargetOS" == WASI ]]; then
     if [[ -z "$WASI_SDK_PATH" ]]; then
         if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk/ ]]; then
             export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk/
@@ -65,7 +65,7 @@ elif [[ "$__TargetOS" == Wasi ]]; then
 
     export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
-    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=Wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"
+    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=WASI -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true

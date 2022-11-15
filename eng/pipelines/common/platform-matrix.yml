@@ -374,18 +374,18 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Wasi WebAssembly
+# WASI WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'Wasi_wasm') }}:
+- ${{ if containsValue(parameters.platforms, 'WASI_wasm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Wasi
+      osGroup: WASI
       archType: wasm
       targetRid: wasi-wasm
-      platform: Wasi_wasm
+      platform: WASI_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container: Linux_x64
       jobParameters:

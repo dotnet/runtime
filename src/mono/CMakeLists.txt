@@ -743,7 +743,7 @@ elseif(GC_SUSPEND STREQUAL "default")
     # use preemptive
   elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
     # use preemptive
-  elseif(TARGET_SYSTEM_NAME STREQUAL "Wasi")
+  elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
     # use preemptive
   else()
     set(ENABLE_HYBRID_SUSPEND 1)

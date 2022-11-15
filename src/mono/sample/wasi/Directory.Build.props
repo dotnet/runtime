@@ -15,7 +15,7 @@
     <OutputPath>bin</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <WasiNativeStrip>false</WasiNativeStrip>
+    <WASINativeStrip>false</WASINativeStrip>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -33,5 +33,5 @@
   </ItemGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
-  <Import Project="$(MonoProjectRoot)wasi\build\WasiApp.InTree.props" />
+  <Import Project="$(MonoProjectRoot)wasi\build\WASIApp.InTree.props" />
 </Project>

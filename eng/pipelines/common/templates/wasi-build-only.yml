@@ -8,7 +8,7 @@ parameters:
 jobs:
 
 #
-# Build for Wasi/wasm and test it
+# Build for WASI/wasm and test it
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

@@ -45,10 +45,10 @@
   </PropertyGroup>
 
   <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
-  <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasi', 'wasi-sdk'))</ProvisionWasiSdkDir>
-    <WASI_SDK_PATH Condition="Exists('$(ProvisionWasiSdkDir)') and '$(WASI_SDK_PATH)' == ''">$(ProvisionWasiSdkDir.Replace('\', '/'))</WASI_SDK_PATH>
-    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists('$(ProvisionWasiSdkDir)')">true</ShouldProvisionWasiSdk>
+  <PropertyGroup Condition="'$(TargetsWASI)' == 'true'">
+    <ProvisionWASISdkDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasi', 'wasi-sdk'))</ProvisionWASISdkDir>
+    <WASI_SDK_PATH Condition="Exists('$(ProvisionWASISdkDir)') and '$(WASI_SDK_PATH)' == ''">$(ProvisionWASISdkDir.Replace('\', '/'))</WASI_SDK_PATH>
+    <ShouldProvisionWASISdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists('$(ProvisionWASISdkDir)')">true</ShouldProvisionWASISdk>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -60,7 +60,7 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsMacCatalyst)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <!-- TODOWASI
-    <MonoAOTEnableLLVM Condition="'$(TargetsWasi)' == 'true'">true</MonoAOTEnableLLVM>
+    <MonoAOTEnableLLVM Condition="'$(TargetsWASI)' == 'true'">true</MonoAOTEnableLLVM>
     -->
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">true</_MonoUseLLVMPackage>

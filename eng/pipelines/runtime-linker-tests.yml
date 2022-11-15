@@ -106,14 +106,14 @@ extends:
               extraTestArgs: '/p:WasmBuildNative=false'
 
     #
-    # Build Release config vertical for Wasi-wasm
+    # Build Release config vertical for WASI-wasm
     #
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         platforms:
-        - Wasi_wasm
+        - WASI_wasm
         jobParameters:
           testGroup: innerloop
           timeoutInMinutes: 120

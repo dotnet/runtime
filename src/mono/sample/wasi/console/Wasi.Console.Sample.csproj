@@ -4,8 +4,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasi.Console.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasi.Console.Sample.dll</_SampleAssembly>
+    <_SampleProject>WASI.Console.Sample.csproj</_SampleProject>
+    <_SampleAssembly>WASI.Console.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithWasmtime" />

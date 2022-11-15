@@ -669,7 +669,7 @@ int main() {
     mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
     mono_wasm_load_runtime("", 0);
 
-    MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");
+    MonoAssembly* assembly = mono_wasm_assembly_load ("WASI.Console.Sample");
     MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
     MonoObject* out_exc;
     MonoObject* out_res;
