@@ -268,6 +268,33 @@ namespace CoreclrTestLib
         private static string SKIP_LINE_TAG = "# <SKIP_LINE>";
 
 
+        static bool RunProcess(string fileName, string arguments)
+        {
+            Process chownProcess = new Process();
+
+            chownProcess.StartInfo.FileName = fileName;
+            chownProcess.StartInfo.Arguments = arguments;
+            chownProcess.StartInfo.UseShellExecute = false;
+            chownProcess.StartInfo.RedirectStandardOutput = true;
+            chownProcess.StartInfo.RedirectStandardError = true;
+
+            Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
+            chownProcess.Start();
+            if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+            {
+                Console.WriteLine("stderr:");
+                Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+                chownProcess.Kill(true);
+                Console.WriteLine($"Failed to run '{fileName} {arguments}");
+                return false;
+            }
+            Console.WriteLine("stdout:");
+            Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
+            Console.WriteLine("stderr:");
+            Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+            return true;
+        }
+
         /// <summary>
         ///     Parse crashreport.json file, use llvm-symbolizer to extract symbols
         ///     and recreate the stacktrace that is printed on the console.
@@ -283,53 +310,27 @@ namespace CoreclrTestLib
 
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
-                Process chownProcess = new Process();
-
-                chownProcess.StartInfo.FileName = "sudo";
-                chownProcess.StartInfo.Arguments = $"ls -l {crashReportJsonFile}";
-                chownProcess.StartInfo.UseShellExecute = false;
-                chownProcess.StartInfo.RedirectStandardOutput = true;
-                chownProcess.StartInfo.RedirectStandardError = true;
-
-                Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
-                chownProcess.Start();
-                if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
                 {
-                    Console.WriteLine("stderr:");
-                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
-                    chownProcess.Kill(true);
-                    Console.WriteLine("Failed to ls -l");
                     return false;
                 }
-                else
-                {
-                    Console.WriteLine("stdout:");
-                    Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
-                    Console.WriteLine("stderr:");
-                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
-                }
+
                 Console.WriteLine("=========================================");
-                chownProcess.StartInfo.Arguments = $"chmod 744 {crashReportJsonFile}";
-                chownProcess.StartInfo.UseShellExecute = false;
-                chownProcess.StartInfo.RedirectStandardOutput = true;
-                chownProcess.StartInfo.RedirectStandardError = true;
-
-                Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
-                chownProcess.Start();
-                if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+                if (!RunProcess("sudo", $"chown $USER {crashReportJsonFile}"))
                 {
-                    Console.WriteLine("stderr:");
-                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
-                    chownProcess.Kill(true);
-                    Console.WriteLine("Failed to chmod");
                     return false;
                 }
-                else
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
                 {
-                    Console.WriteLine("stdout:");
-                    Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
-                    Console.WriteLine("stderr:");
-                    Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("ls", $"-l {crashReportJsonFile}"))
+                {
+                    return false;
                 }
             }
 
