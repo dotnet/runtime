@@ -369,6 +369,18 @@ namespace System.Reflection.Metadata
                 Assert.Equal (32768.2, x2.GetDoubleField);
                 Assert.Equal ((object)32768.2, fi.GetValueDirect (tr));
 
+                Assert.Equal("abcd", x2.GetStringProp);
+
+                var propInfo = x2.GetType().GetProperty("AddedStringAutoProp", BindingFlags.Public | BindingFlags.Instance);
+
+                Assert.NotNull(propInfo);
+                Assert.Equal("abcd", propInfo.GetMethod.Invoke (x2, new object[] {}));
+
+                x2.TestMethod();
+
+                Assert.Equal("abcdTest", x2.GetStringProp);
+
+
             });
         }
 

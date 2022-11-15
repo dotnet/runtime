@@ -17,6 +17,8 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             // a little bit ldflda testing
             IncRefDouble (ref NewStructField.D);
             IncRefDouble (ref _doubleField2);
+
+            AddedStringAutoProp = "abcd";
         }
 
         public void IncRefDouble (ref double d)
@@ -40,6 +42,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             _stringField2 = "4567";
             _doubleField = 2.71828;
             _doubleField2 = 0.707106;
+            AddedStringAutoProp = AddedStringAutoProp + "Test";
         }
 
         public int GetIntArrayLength() => _intArrayFieldWithInit2?.Length ?? -1;
@@ -52,5 +55,11 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         }
 
         public NewStruct NewStructField;
+
+        public string GetStringProp => AddedStringAutoProp;
+
+        public string AddedStringAutoProp { get; set; }
+
+
     }
 }

@@ -31,5 +31,6 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             d += 1.0;
         }
 
+        public string GetStringProp => string.Empty;
     }
 }
