@@ -6,7 +6,7 @@
     <IsPublishable>false</IsPublishable>
     <EnableCoverageSupport>false</EnableCoverageSupport>
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
-    <IsBrowserProject>false</IsBrowserProject>
+    <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>

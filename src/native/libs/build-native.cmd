@@ -86,7 +86,7 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
-call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
@@ -96,6 +96,8 @@ set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
 ) else if [%__TargetOS%] == [Browser] (
+    set __generatorArgs=
+) else if [%__TargetOS%] == [WASI] (
     set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
