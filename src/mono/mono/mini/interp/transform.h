@@ -133,6 +133,9 @@ struct _InterpBasicBlock {
 	// optimized method we will map the bb_index to the corresponding native offset.
 	int patchpoint_data: 1;
 	int emit_patchpoint: 1;
+	// used by jiterpreter
+	int backwards_branch_target: 1;
+	int contains_call_instruction: 1;
 };
 
 typedef enum {
@@ -265,6 +268,11 @@ gboolean
 mono_test_interp_generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 void
 mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header);
+
+#if HOST_BROWSER
+InterpInst*
+mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+#endif
 
 /* debugging aid */
 void
