@@ -7840,9 +7840,8 @@ public:
             reg     = REG_T8;
             regMask = RBM_T8;
 #elif defined(TARGET_RISCV64)
-            _ASSERTE(!"TODO RISCV NYI");
-            reg     = REG_T6;
-            regMask = RBM_T6;
+            reg     = REG_T5;
+            regMask = RBM_T5;
 #else
 #error Unsupported or unset target architecture
 #endif
