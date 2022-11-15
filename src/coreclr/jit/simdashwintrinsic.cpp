@@ -452,7 +452,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_CreateBroadcast:
         case NI_VectorT256_CreateBroadcast:
         {
-            if (varTypeIsLong(simdBaseType) && !impStackTop(1).val->IsIntegralConst())
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
                 // instruction, which takes a 64-bit memory address and
