@@ -14,7 +14,6 @@ where we choose `browser-wasm` as the runtime and by setting `DebuggerSupport=tr
 
 ```
 Debug proxy for chrome now listening on http://127.0.0.1:58346/. And expecting chrome at http://localhost:9222/
-Content root path: ...\artifacts\bin\System.Collections.Tests\Debug\net7.0\browser-wasm\AppBundle
 App url: http://127.0.0.1:9000/index.html?arg=--debug&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Concurrent.Tests.dll
 ```
 The proxy's url/port will be used in the next step.
@@ -38,7 +37,7 @@ New remote targets will be displayed, select the address you opened in the other
 
 ![image](https://user-images.githubusercontent.com/32700855/201863048-6a4fe20b-a215-435d-b594-47750fcb2872.png)
 
-A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. Initially, the tests are stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. It can take some time to load the files. When the IDE is ready the tests will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
 
 ## Debug with VS Code
 
@@ -52,5 +51,5 @@ Add following configuration to your `.vscode/launch.json`:
             "port": <PROXY'S_PORT>
         }
 ```
-Run the configuration and wait till VS Code will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
-![image](https://user-images.githubusercontent.com/32700855/201890837-5c338ce1-2957-4dcf-aa3b-78045d131f0a.png)
+Run the configuration and be patient, it can take some time. Wait till VS Code will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+![image](https://user-images.githubusercontent.com/32700855/201894003-fc5394ad-9848-4d07-a132-f687ecd17c50.png)
