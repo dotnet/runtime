@@ -47,7 +47,7 @@ jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamPro
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (int)sslStreamProxyHandle);
+            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, sslStreamProxyHandle);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[dotnetProxyTrustManager]);

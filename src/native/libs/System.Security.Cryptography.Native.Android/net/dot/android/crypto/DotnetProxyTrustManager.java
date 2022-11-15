@@ -4,10 +4,16 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
-class DotnetProxyTrustManager implements X509TrustManager {
-    private int sslStreamProxyHandle;
+/**
+ * This class is meant to replace the built-in X509TrustManager.
+ * Its sole responsibility is to invoke the C# code in the SslStream
+ * class during TLS handshakes to perform the validation of the remote
+ * peer's certificate.
+ */
+public class DotnetProxyTrustManager implements X509TrustManager {
+    private long sslStreamProxyHandle;
 
-    public DotnetProxyTrustManager(int sslStreamProxyHandle) {
+    public DotnetProxyTrustManager(long sslStreamProxyHandle) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
     }
 
@@ -27,5 +33,5 @@ class DotnetProxyTrustManager implements X509TrustManager {
         return new X509Certificate[0];
     }
 
-    static native boolean verifyRemoteCertificate(int sslStreamProxyHandle);
+    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle);
 }
