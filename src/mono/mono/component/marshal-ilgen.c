@@ -44,7 +44,7 @@ marshal_ilgen_available (void)
 
 static MonoComponentMarshalILgen component_func_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &marshal_ilgen_available },
-	&mono_marshal_ilgen_init_internal,
+	&ilgen_init_internal,
 	&mono_emit_marshal_ilgen,
 	&mono_marshal_ilgen_install_callbacks_mono,
 #ifndef ENABLE_ILGEN
@@ -2833,8 +2833,8 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-void
-mono_marshal_ilgen_init_internal (void)
+static void
+ilgen_init_internal (void)
 {
 
 	MonoMarshalILgenCallbacks cb;
