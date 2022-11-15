@@ -48,7 +48,5 @@ MonoComponentMarshalILgen* mono_component_marshal_ilgen_init (void);
 void
 mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb);
 
-void
-mono_marshal_ilgen_install_callbacks_mono (IlgenCallbacksToMono *callbacks);
  
 #endif // __MARSHAL_ILGEN_H__
