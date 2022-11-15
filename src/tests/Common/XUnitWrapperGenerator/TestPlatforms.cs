@@ -20,8 +20,9 @@ namespace Xunit
         Android = 512,
         Browser = 1024,
         MacCatalyst = 2048,
-        WASI = 4096,
-        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser | WASI,
+        LinuxBionic = 4096,
+        WASI = 8192,
+        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser | LinuxBionic | WASI,
         Any = ~0
     }
 }

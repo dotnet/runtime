@@ -83,14 +83,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'WASI'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
-  </PropertyGroup>
 
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">

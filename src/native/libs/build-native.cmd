@@ -97,6 +97,8 @@ if [%__Ninja%] == [1] (
     set __generatorArgs=
 ) else if [%__TargetOS%] == [Browser] (
     set __generatorArgs=
+) else if [%__TargetOS%] == [WASI] (
+    set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
 )
