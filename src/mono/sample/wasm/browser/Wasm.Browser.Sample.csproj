@@ -5,4 +5,8 @@
     <WasmNativeStrip>false</WasmNativeStrip>
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="capture.js" />
+    <WasmExtraFilesToDeploy Include="importNode.js" />
+  </ItemGroup>
 </Project>

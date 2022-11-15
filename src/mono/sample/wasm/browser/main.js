@@ -11,22 +11,9 @@ async function exportMemory(memory) {
     donwloadLink.click()
 }
 
-// async function exportMemory(memory) { // NodeJS
-//     const require = await import('module').then(mod => mod.createRequire(import.meta.url));
-//     const fs = require("fs");
-//     fs.promises.writeFile("./memory.dat", memory);
-// }
-
-// async function importMemory() { // Browser
-//     const response = await fetch("/memory.dat");
-//     const buffer = await response.arrayBuffer();
-//     return new Int8Array(buffer);
-// }
-
-async function importMemory() { // NodeJS
-    const require = await import('module').then(mod => mod.createRequire(import.meta.url));
-    const fs = require("fs");
-    const buffer = await fs.promises.readFile("./memory.dat");
+async function importMemory() {
+    const response = await fetch("/memory.dat");
+    const buffer = await response.arrayBuffer();
     return new Int8Array(buffer);
 }
 
@@ -69,9 +56,9 @@ async function runtime2() {
 }
 
 
-// const runtimeParam = new URLSearchParams(location.search).get("runtime");
-// if (runtimeParam === "1") {
-    // runtime1();
-// } else {
+const runtimeParam = new URLSearchParams(location.search).get("runtime");
+if (runtimeParam === "1") {
+    runtime1();
+} else {
     runtime2();
-// }
+}
