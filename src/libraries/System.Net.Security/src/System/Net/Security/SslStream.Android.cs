@@ -32,13 +32,12 @@ namespace System.Net.Security
 
         internal sealed class JavaProxy : IDisposable
         {
-            private static object s_initializationLock = new();
             private static bool s_initialized;
 
             private readonly SslStream _sslStream;
             private GCHandle? _handle;
 
-            public unsafe JavaProxy(SslStream sslStream)
+            public JavaProxy(SslStream sslStream)
             {
                 RegisterRemoteCertificateValidationCallback();
 
@@ -56,13 +55,10 @@ namespace System.Net.Security
 
             private static unsafe void RegisterRemoteCertificateValidationCallback()
             {
-                lock (s_initializationLock)
+                if (!s_initialized)
                 {
-                    if (!s_initialized)
-                    {
-                        Interop.AndroidCrypto.RegisterRemoteCertificateValidationCallback(&VerifyRemoteCertificate);
-                        s_initialized = true;
-                    }
+                    Interop.AndroidCrypto.RegisterRemoteCertificateValidationCallback(&VerifyRemoteCertificate);
+                    s_initialized = true;
                 }
             }
 
