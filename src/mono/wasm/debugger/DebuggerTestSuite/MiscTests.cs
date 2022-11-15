@@ -964,7 +964,7 @@ namespace DebuggerTests
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ąłÅ.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
             string classWithNamespace, string expectedFileLocation)
         {

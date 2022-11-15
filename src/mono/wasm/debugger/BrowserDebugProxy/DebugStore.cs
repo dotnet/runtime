@@ -1207,11 +1207,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 switch (c)
                 {
-                    case var _ when c >= 'a' && c <= 'z':
-                    case var _ when c >= 'A' && c <= 'Z':
-                    case var _ when char.IsDigit(c):
+                    case var _ when char.IsLetterOrDigit(c):
                     case var _ when c > 255:
-                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~':
+                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~' || c == '´' || c == '`' || c == '^' || c == '¨':
                         builder.Append(c);
                         break;
                     case var _ when c == Path.DirectorySeparatorChar:
@@ -1220,12 +1218,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         builder.Append(c);
                         break;
                     default:
-                        builder.Append(string.Format($"%{((int)c):X2}"));
+                        builder.AppendFormat("%{0:X2}", (int)c);
                         break;
                 }
             }
             return builder.ToString();
         }
+
 
         internal void AddMethod(MethodInfo mi)
         {
