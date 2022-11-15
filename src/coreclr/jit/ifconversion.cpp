@@ -563,6 +563,7 @@ bool OptIfConversionDsc::optIfConvert()
     {
         return false;
     }
+    assert(m_thenOperation.node->gtOper == GT_ASG || m_thenOperation.node->gtOper == GT_RETURN);
     if (m_doElseConversion)
     {
         if (!IfConvertCheckStmts(m_startBlock->bbJumpDest, &m_elseOperation))
