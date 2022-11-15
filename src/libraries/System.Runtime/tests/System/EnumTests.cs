@@ -2179,54 +2179,57 @@ namespace System.Tests
             // "F": Flags Attribute
             TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": SByte
-            TryFormat(SByteEnum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((SByteEnum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(SByteEnum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            foreach (string defaultFormatSpecifier in new[] { "G", null, "" })
+            {
+                // "G": SByte
+                TryFormat(SByteEnum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SByteEnum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(SByteEnum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": Byte
-            TryFormat(ByteEnum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((ByteEnum)0xff, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((ByteEnum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(ByteEnum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": Byte
+                TryFormat(ByteEnum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((ByteEnum)0xff, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((ByteEnum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(ByteEnum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": Int16
-            TryFormat(Int16Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((Int16Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(Int16Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": Int16
+                TryFormat(Int16Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int16Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int16Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": UInt16
-            TryFormat(UInt16Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((UInt16Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(UInt16Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": UInt16
+                TryFormat(UInt16Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt16Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt16Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": Int32
-            TryFormat(Int32Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((Int32Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(Int32Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": Int32
+                TryFormat(Int32Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int32Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int32Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": UInt32
-            TryFormat(UInt32Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((UInt32Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(UInt32Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": UInt32
+                TryFormat(UInt32Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt32Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt32Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": Int64
-            TryFormat(Int64Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((Int64Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(Int64Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": Int64
+                TryFormat(Int64Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int64Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int64Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": UInt64
-            TryFormat(UInt64Enum.Min, "G", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((UInt64Enum)3, "G", "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
-            TryFormat(UInt64Enum.Max, "G", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": UInt64
+                TryFormat(UInt64Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt64Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt64Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
 
-            // "G": SimpleEnum
-            TryFormat((SimpleEnum)99, "G", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((SimpleEnum)99, "G", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
-            TryFormat((SimpleEnum)0, "G", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // Not found
+                // "G": SimpleEnum
+                TryFormat((SimpleEnum)99, defaultFormatSpecifier, "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SimpleEnum)99, defaultFormatSpecifier, "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SimpleEnum)0, defaultFormatSpecifier, "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // Not found
 
-            // "G": Flags Attribute
-            TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, "G", "Class, Delegate", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                // "G": Flags Attribute
+                TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, defaultFormatSpecifier, "Class, Delegate", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            }
         }
 
 #pragma warning disable 618 // ToString with IFormatProvider is marked as Obsolete.
@@ -2313,6 +2316,11 @@ namespace System.Tests
             {
                 TryFormat_WithValidParameters_ReturnsTrueWithExpected(value, format, expected);
             }
+
+            if (format.Length == 1 && char.IsAsciiLetterUpper(format[0]))
+            {
+                TryFormat(value, (ReadOnlySpan<char>)new char[1] { char.ToLowerInvariant(format[0]) }, expected, validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            }
         }
 
         private static void TryFormat_WithValidParameters_ReturnsTrueWithExpected<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
@@ -2326,7 +2334,7 @@ namespace System.Tests
 
         private static void TryFormat_WithDestinationSpanSizeTooSmall_ReturnsFalseWithNoCharsWritten<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
         {
-            var oneLessThanExpectedLength = expected.Length - 1;
+            int oneLessThanExpectedLength = expected.Length - 1;
             Span<char> destination = new char[oneLessThanExpectedLength];
 
             Assert.False(Enum.TryFormat(value, destination, out int charsWritten, format));
@@ -2336,7 +2344,7 @@ namespace System.Tests
 
         private static void TryFormat_WithDestinationSpanLargerThanExpected_ReturnsTrueWithExpectedAndExtraSpaceNotFilled<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
         {
-            var oneMoreThanExpectedLength = expected.Length + 1;
+            int oneMoreThanExpectedLength = expected.Length + 1;
             Span<char> destination = new char[oneMoreThanExpectedLength];
 
             Assert.True(Enum.TryFormat(value, destination, out int charsWritten, format));
@@ -2355,8 +2363,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("")]
         [InlineData(" ")]
         [InlineData("  ")]
         [InlineData("   \t")]
@@ -2367,14 +2373,15 @@ namespace System.Tests
         [InlineData("dd")]
         [InlineData("xx")]
         [InlineData("ff")]
-        private static void TryFormat_WithInvalidFormat_ReturnsFalseWithNoCharsWritten(string format)
+        private static void TryFormat_WithInvalidFormat_ThrowsWithNoCharsWritten(string format)
         {
-            var expecedEnum = SimpleEnum.Green;
+            SimpleEnum expecedEnum = SimpleEnum.Green;
             string expected = nameof(expecedEnum);
-            Span<char> destination = new char[expected.Length];
+            int charsWritten = 0;
+            char[] destination = new char[expected.Length];
 
-            Assert.False(Enum.TryFormat(expecedEnum, destination, out int charsWritten, format));
-            Assert.Equal(new string('\0', expected.Length), destination.ToString());
+            Assert.Throws<FormatException>(() => Enum.TryFormat(expecedEnum, destination, out charsWritten, format));
+            Assert.Equal(new string('\0', expected.Length), new string(destination));
             Assert.Equal(0, charsWritten);
         }
 
