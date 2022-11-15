@@ -629,22 +629,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIDamOnAllMissing : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				// So it doesn't matter that the annotations are not in-sync since the access will validate
+				// the annotations on the implementation method - it doesn't even see the base method in this case.
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				public static Type AbstractMethod<T> (Type type) => null;
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				public static Type VirtualMethod<T> (Type type) => null;
 			}
 
 			class ImplIDamOnAllMismatch : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -653,9 +658,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					Type type)
 				{ return null; }
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -698,9 +704,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIDamOnNoneMismatch : IDamOnNone
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -709,9 +716,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					Type type)
 				{ return null; }
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -739,7 +747,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			class ImplIAnnotatedMethodsMismatch : Library.IAnnotatedMethods
 			{
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				public static void GenericWithMethodsStatic<T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -760,7 +769,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIUnannotatedMethodsMismatch : Library.IUnannotatedMethods
 			{
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				public static void GenericStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -859,6 +869,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
+				// Access the interfaces as well - otherwise NativeAOT can decide
+				// to not look for overrides since it knows it's making a direct access
+				// to a method and it doesn't need to know about the base method
+				// which leads to some warnings not being generated.
+				typeof (Library.IAnnotatedMethods).RequiresAll ();
+				typeof (Library.IUnannotatedMethods).RequiresAll ();
+
 				typeof (ImplIUnannotatedMethodsMismatch).RequiresPublicMethods ();
 				typeof (ImplIAnnotatedMethodsMismatch).RequiresPublicMethods ();
 				typeof (DerivedFromAnnotatedMismatch).RequiresPublicMethods ();

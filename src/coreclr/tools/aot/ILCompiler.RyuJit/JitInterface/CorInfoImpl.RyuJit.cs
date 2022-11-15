@@ -419,6 +419,8 @@ namespace Internal.JitInterface
                     // TODO
                     ThrowHelper.ThrowInvalidProgramException();
                 }
+
+                _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(interfaceMethod, targetMethod);
             }
 
             // We better come up with the same method that getCallInfo came up with, with the only difference being
@@ -1220,6 +1222,8 @@ namespace Internal.JitInterface
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
                     exactType = directMethod.OwningType;
+
+                    _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {
