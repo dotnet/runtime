@@ -49,6 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (ImplementationOfTwoInterfacesWithOneMethod));
 			StaticInterfaceMethods.Test ();
 			BaseInPreservedScope.Test ();
+			DirectCall.Test ();
 		}
 
 		static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -562,7 +563,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_ () { }
 		}
 
-
 		interface IBaseImplementedInterface
 		{
 			Type ReturnValueBaseWithInterfaceWithout ();
@@ -884,6 +884,66 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (ImplIAnnotatedMethodsMatch).RequiresPublicMethods ();
 				typeof (DerivedFromAnnotatedMatch).RequiresPublicMethods ();
 				typeof (DerivedFromUnannotatedMatch).RequiresPublicMethods ();
+			}
+		}
+
+		// This is mostly for Native AOT - in that compiler it matters how a method
+		// is referenced as it will take a different code path to do some of these validations
+		// The above tests all rely on reflection marking so this test also uses direct calls
+		class DirectCall
+		{
+			abstract class Base
+			{
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public abstract Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public virtual Type NonGenericVirtual ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
+
+				public abstract void GenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+
+				public virtual void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				public abstract Type UnannotatedAbstract (Type type);
+
+				public abstract void UnannotatedGenericAbstract<T> ();
+			}
+
+			class Derived : Base
+			{
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				public override Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+				public override Type NonGenericVirtual (Type type) => null;
+
+				[ExpectedWarning ("IL2095")]
+				public override void GenericAbstract<T> () { }
+
+				[ExpectedWarning ("IL2095")]
+				public override void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public override Type UnannotatedAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+
+				[ExpectedWarning ("IL2095")]
+				public override void UnannotatedGenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+			}
+
+			public static void Test ()
+			{
+				Base instance = new Derived ();
+				instance.NonGenericAbstract (typeof (string));
+				instance.NonGenericVirtual (typeof (string));
+				instance.GenericAbstract<string> ();
+				instance.GenericVirtual<string> ();
+				instance.UnannotatedAbstract (typeof (string));
+				instance.UnannotatedGenericAbstract<string> ();
 			}
 		}
 	}
