@@ -419,9 +419,6 @@ namespace Internal.JitInterface
                     // TODO
                     ThrowHelper.ThrowInvalidProgramException();
                 }
-
-                if (!targetMethod.IsRuntimeDeterminedExactMethod)
-                    _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(interfaceMethod, targetMethod);
             }
 
             // We better come up with the same method that getCallInfo came up with, with the only difference being
@@ -1224,8 +1221,7 @@ namespace Internal.JitInterface
 
                     exactType = directMethod.OwningType;
 
-                    if (!directMethod.IsRuntimeDeterminedExactMethod)
-                        _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(method, directMethod);
+                    _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {

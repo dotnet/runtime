@@ -943,6 +943,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			interface IDerivedWithDefault : IBaseWithDefault
 			{
 				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // https://github.com/dotnet/linker/issues/3121
 				void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 			}
 
@@ -963,6 +964,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIGvmBase : IGvmBase
 			{
+				// NativeAOT doesn't validate overrides when it can resolve them as direct calls
+				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				public Type UnannotatedGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
 
@@ -1000,7 +1005,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				instance.UnannotatedAbstract (typeof (string));
 				instance.UnannotatedGenericAbstract<string> ();
 
-				((IBaseWithDefault)(new ImplDerivedWithDefault ())).DefaultMethod (typeof (string));
+				((IBaseWithDefault) (new ImplDerivedWithDefault ())).DefaultMethod (typeof (string));
 
 				ImplIGvmBase impl = new ImplIGvmBase ();
 				impl.UnannotatedGvm<string> (typeof (string));
