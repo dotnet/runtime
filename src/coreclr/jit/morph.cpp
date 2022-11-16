@@ -4871,48 +4871,6 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
 
     noway_assert(!(tree->gtFlags & GTF_VAR_DEF) || isLocation); // GTF_VAR_DEF should always imply isLocation.
 
-    //if (!isLocation && varDsc->lvNormalizeOnLoad())
-    //{
-    //    // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
-    //    // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
-    //    // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
-    //    // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
-    //    // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
-    //    // This quirk preserves the previous behavior.
-    //    // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
-    //    var_types lclVarType  = varDsc->TypeGet();
-    //    bool      isBoolQuirk = lclVarType == TYP_BOOL;
-
-    //    // Assertion prop can tell us to omit adding a cast here. This is
-    //    // useful when the local is a small-typed parameter that is passed in a
-    //    // register: in that case, the ABI specifies that the upper bits might
-    //    // be invalid, but the assertion guarantees us that we have normalized
-    //    // when we wrote it.
-    //    if (optLocalAssertionProp && !isBoolQuirk &&
-    //        optAssertionIsSubrange(tree, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
-    //    {
-    //        // The previous assertion can guarantee us that if this node gets
-    //        // assigned a register, it will be normalized already. It is still
-    //        // possible that this node ends up being in memory, in which case
-    //        // normalization will still be needed, so we better have the right
-    //        // type.
-    //        assert(tree->TypeGet() == varDsc->TypeGet());
-    //        return tree;
-    //    }
-
-    //    // Small-typed arguments and aliased locals are normalized on load.
-    //    // Other small-typed locals are normalized on store.
-    //    // Also, under the debugger as the debugger could write to the variable.
-    //    // If this is one of the former, insert a narrowing cast on the load.
-    //    //         ie. Convert: var-short --> cast-short(var-int)
-
-    //    tree->gtType = TYP_INT;
-    //    fgMorphTreeDone(tree);
-    //    tree = gtNewCastNode(TYP_INT, tree, false, lclVarType);
-    //    fgMorphTreeDone(tree);
-    //    return tree;
-    //}
-
     return tree;
 }
 
