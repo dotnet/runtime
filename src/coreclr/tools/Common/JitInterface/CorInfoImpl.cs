@@ -3237,6 +3237,32 @@ namespace Internal.JitInterface
             }
         }
 
+        public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
+        {
+            ReadyToRunHelperId res;
+            switch (helper)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
+                    res = ReadyToRunHelperId.CctorTrigger;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetNonGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                    break;
+                default:
+                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
+            }
+            return res;
+        }
+
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
