@@ -10138,16 +10138,6 @@ DONE_MORPHING_CHILDREN:
         case GT_ASG:
             fgAssignSetVarDef(tree);
 
-            if (op2->OperIs(GT_CAST))
-            {
-                tree = fgOptimizeCastOnAssignment(tree->AsOp());
-
-                assert(tree->OperIs(GT_ASG));
-
-                op1 = tree->gtGetOp1();
-                op2 = tree->gtGetOp2();
-            }
-
             // Location nodes cannot be CSEd.
             op1->gtFlags |= GTF_DONT_CSE;
             break;
@@ -11107,22 +11097,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
             }
         }
     }
-}
-
-//------------------------------------------------------------------------
-// fgOptimizeCastOnAssignment: Optimizes the supplied GT_ASG tree with a GT_CAST node.
-//
-// Arguments:
-//    tree - the cast tree to optimize
-//
-// Return Value:
-//    The optimized tree (must be GT_ASG).
-//
-GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
-{
-    assert(asg->OperIs(GT_ASG));
-
-    return asg;
 }
 
 //------------------------------------------------------------------------
