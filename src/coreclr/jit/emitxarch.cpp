@@ -486,10 +486,9 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // If there are no instructions in this IG, we can look back at
-    // the previous IG's instructions if this IG is an extension.
+    // Only consider if safe
     //
-    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -569,8 +568,9 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -652,8 +652,9 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -3257,9 +3258,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
             if (!EBPbased)
             {
                 assert((int)offs >= 0);
-
-                offsIsUpperBound = false; // since #temps can increase
-                offs += emitMaxTmpSize;
             }
         }
         else
@@ -3300,13 +3298,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
                 assert(emitComp->lvaTempsHaveLargerOffsetThanVars());
 
-                // lvaInlinedPInvokeFrameVar and lvaStubArgumentVar are placed below the temps
-                if (unsigned(var) == emitComp->lvaInlinedPInvokeFrameVar ||
-                    unsigned(var) == emitComp->lvaStubArgumentVar)
-                {
-                    offs -= emitMaxTmpSize;
-                }
-
                 // Check whether we can use compressed displacement if EVEX.
                 if (TakesEvexPrefix(id->idIns()))
                 {
@@ -3327,11 +3318,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                     return size + ((offs <= SCHAR_MAX) ? sizeof(char) : sizeof(int));
                 }
 #endif
-            }
-
-            if (emitComp->lvaTempsHaveLargerOffsetThanVars() == false)
-            {
-                offs += emitMaxTmpSize;
             }
         }
     }
@@ -3355,9 +3341,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    //  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
-    //         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
 
     bool useSmallEncoding = false;
     if (TakesEvexPrefix(id->idIns()))
@@ -5717,13 +5700,10 @@ bool emitter::IsRedundantMov(
         return true;
     }
 
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (isFirstInstrInBlock ||               // Don't optimize if instruction is the first instruction in IG.
-        (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
+    if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
         (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
         (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
@@ -8410,14 +8390,10 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
         return false;
     }
 
-    bool hasSideEffect = HasSideEffect(ins, size);
-
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (isFirstInstrInBlock ||             // Don't optimize if instruction is the first instruction in IG.
-        (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
+    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
         (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
         (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
     {
@@ -8433,6 +8409,8 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     regNumber lastReg1 = emitLastIns->idReg1();
     int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
     int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+
+    const bool hasSideEffect = HasSideEffect(ins, size);
 
     // Check if the last instruction and current instructions use the same register and local memory.
     if (varNum == varx && lastReg1 == ireg && lastOffs == offs)

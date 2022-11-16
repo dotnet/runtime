@@ -18,6 +18,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandlerStage? _handler;
+        private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
         private void CheckDisposedOrStarted()
@@ -62,6 +63,7 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
+                EnsureDecompressionHandlerFactory();
                 _settings._automaticDecompression = value;
             }
         }
@@ -511,7 +513,8 @@ namespace System.Net.Http
 
             if (settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new DecompressionHandler(settings._automaticDecompression, handler);
+                Debug.Assert(_decompressionHandlerFactory is not null);
+                handler = _decompressionHandlerFactory(settings, handler);
             }
 
             // Ensure a single handler is used for all requests.
@@ -521,6 +524,13 @@ namespace System.Net.Http
             }
 
             return _handler;
+        }
+
+        // Allows for DecompressionHandler (and its compression dependencies) to be trimmed when
+        // AutomaticDecompression is not being used.
+        private void EnsureDecompressionHandlerFactory()
+        {
+            _decompressionHandlerFactory ??= (settings, handler) => new DecompressionHandler(settings._automaticDecompression, handler);
         }
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,

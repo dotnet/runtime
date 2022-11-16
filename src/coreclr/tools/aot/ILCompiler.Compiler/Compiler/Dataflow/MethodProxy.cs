@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using ILCompiler;
 using ILCompiler.Dataflow;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 #nullable enable
 
@@ -26,16 +25,26 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool IsDeclaredOnType(string fullTypeName) => Method.IsDeclaredOnType(fullTypeName);
 
-        internal partial bool HasParameters() => Method.Signature.Length > 0;
+        internal partial bool HasMetadataParameters() => GetMetadataParametersCount() > 0;
 
-        internal partial int GetParametersCount() => Method.Signature.Length;
+        /// <summary>
+        /// Gets the number of entries in the 'Parameters' section of a method's metadata (i.e. excludes the implicit 'this' from the count)
+        /// </summary>
+        internal partial int GetMetadataParametersCount() => Method.GetMetadataParametersCount();
 
-        internal partial bool HasParameterOfType(int parameterIndex, string fullTypeName) => Method.HasParameterOfType(parameterIndex, fullTypeName);
+        internal partial int GetParametersCount() => Method.GetParametersCount();
 
-        internal partial string GetParameterDisplayName(int parameterIndex) =>
-            (Method is EcmaMethod ecmaMethod)
-                ? ecmaMethod.GetParameterDisplayName(parameterIndex)
-                : $"#{parameterIndex}";
+        /// <summary>
+        /// Use only when iterating over all parameters. When wanting to index, use GetParameters(ParameterIndex)
+        /// </summary>
+        internal partial ParameterProxyEnumerable GetParameters() => new ParameterProxyEnumerable(0, Method.GetParametersCount(), Method);
+
+        internal partial ParameterProxy GetParameter(ParameterIndex index)
+        {
+            return GetParametersCount() <= (int)index || (int)index < 0
+                ? throw new InvalidOperationException($"Cannot get parameter #{(int)index} of method {GetDisplayName()} with {GetParametersCount()} parameters")
+                : new ParameterProxy(this, index);
+        }
 
         internal partial bool HasGenericParameters() => Method.HasInstantiation;
 
@@ -43,13 +52,13 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
         {
-            var methodDef = Method.GetMethodDefinition();
+            MethodDesc methodDef = Method.GetMethodDefinition();
 
             if (!methodDef.HasInstantiation)
                 return ImmutableArray<GenericParameterProxy>.Empty;
 
-            var builder = ImmutableArray.CreateBuilder<GenericParameterProxy>(methodDef.Instantiation.Length);
-            foreach (var genericParameter in methodDef.Instantiation)
+            ImmutableArray<GenericParameterProxy>.Builder builder = ImmutableArray.CreateBuilder<GenericParameterProxy>(methodDef.Instantiation.Length);
+            foreach (TypeDesc? genericParameter in methodDef.Instantiation)
             {
                 builder.Add(new GenericParameterProxy((GenericParameterDesc)genericParameter));
             }
@@ -59,11 +68,11 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool IsStatic() => Method.Signature.IsStatic;
 
+        internal partial bool HasImplicitThis() => !Method.Signature.IsStatic;
+
         internal partial bool ReturnsVoid() => Method.Signature.ReturnType.IsVoid;
 
         public override string ToString() => Method.ToString();
-
-        public ReferenceKind ParameterReferenceKind(int index) => Method.ParameterReferenceKind(Method.Signature.IsStatic ? index : index + 1);
 
         public bool Equals(MethodProxy other) => Method.Equals(other.Method);
 
