@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Numerics\Decimal32.cs" />
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
@@ -22,12 +23,9 @@
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
-             Link="System\Globalization\FormatProvider.Number.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="CoreLib\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs" Link="System\Globalization\FormatProvider.Number.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="CoreLib\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
