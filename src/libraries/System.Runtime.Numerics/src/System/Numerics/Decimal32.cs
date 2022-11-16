@@ -14,13 +14,16 @@ namespace System.Numerics
         : IComparable<Decimal32>,
           IComparable,
           ISpanFormattable,
-          ISpanParsable,
+          ISpanParsable<Decimal32>,
           IEquatable<Decimal32>,
-          IConvertible,
           IDecimalFloatingPointIeee754<Decimal32>,
           IMinMaxValue<Decimal32>
     {
         private readonly uint _value;
+
+        public static Decimal32 MaxValue => throw new NotImplementedException();
+
+        public static Decimal32 MinValue => throw new NotImplementedException();
 
         public static Decimal32 Epsilon => throw new NotImplementedException();
 
@@ -100,10 +103,10 @@ namespace System.Numerics
         public static Decimal32 MaxMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 MinMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 MinMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
-        public static Decimal32 Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
         public static Decimal32 Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
+        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        public static Decimal32 Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 Quantize(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 Quantum(Decimal32 x) => throw new NotImplementedException();
@@ -120,24 +123,24 @@ namespace System.Numerics
         public static Decimal32 Tan(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 Tanh(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 TanPi(Decimal32 x) => throw new NotImplementedException();
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertFromChecked<TOther>(TOther value, out Decimal32 result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertToChecked<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertToSaturating<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
         static bool INumberBase<Decimal32>.TryConvertToTruncating<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
-        public int CompareTo(object? obj) => throw new NotImplementedException();
         public int CompareTo(Decimal32 other) => throw new NotImplementedException();
+        public int CompareTo(object? obj) => throw new NotImplementedException();
         public bool Equals(Decimal32 other) => throw new NotImplementedException();
         public int GetExponentByteCount() => throw new NotImplementedException();
         public int GetExponentShortestBitLength() => throw new NotImplementedException();
         public int GetSignificandBitLength() => throw new NotImplementedException();
         public int GetSignificandByteCount() => throw new NotImplementedException();
-        public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+        public TypeCode GetTypeCode() => throw new NotImplementedException();
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
         public bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
         public bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
@@ -159,5 +162,17 @@ namespace System.Numerics
         public static bool operator >(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static bool operator <=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static bool operator >=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            return obj is Decimal32 && Equals((Decimal32)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
     }
 }
