@@ -408,14 +408,14 @@ namespace System
 
         public static void Reverse(ref int buf, nuint length)
         {
-            Debug.Assert(length > 0);
-            ref int first = ref buf;
-            ref int last = ref Unsafe.NullRef<int>();
-            nuint lastOffset = length;
+            Debug.Assert(length > 1);
 
-            if (Avx2.IsSupported && lastOffset >= (nuint)Vector256<int>.Count * 2)
+            ref int first = ref buf;
+            nint lastOffset = (nint)length;
+
+            if (Avx2.IsSupported && lastOffset >= Vector256<int>.Count * 2)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector256<int>.Count);
+                ref int last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), (nuint)Vector256<int>.Count);
                 do
                 {
                     // Load the values into vectors
@@ -437,14 +437,14 @@ namespace System
                     tempLast.StoreUnsafe(ref first);
                     tempFirst.StoreUnsafe(ref last);
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector256<int>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<int>.Count);
-                    lastOffset -= (nuint)Vector256<int>.Count * 2;
-                } while (lastOffset >= (nuint)Vector256<int>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector256<int>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector256<int>.Count);
+                    lastOffset -= (nint)Vector256<int>.Count * 2;
+                } while (lastOffset >= (nint)Vector256<long>.Count * 2);
             }
-            else if (Vector128.IsHardwareAccelerated && lastOffset >= (nuint)Vector128<int>.Count * 2)
+            else if (Vector128.IsHardwareAccelerated && lastOffset >= Vector128<int>.Count * 2)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<int>.Count);
+                ref int last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector128<int>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
@@ -466,26 +466,29 @@ namespace System
                     tempLast.StoreUnsafe(ref first);
                     tempFirst.StoreUnsafe(ref last);
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector128<int>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector128<int>.Count);
-                    lastOffset -= (nuint)Vector128<int>.Count * 2;
-                } while (lastOffset >= (nuint)Vector128<int>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector128<int>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector128<int>.Count);
+                    lastOffset -= (nint)Vector128<int>.Count * 2;
+                } while (lastOffset >= (nint)Vector128<int>.Count * 2);
             }
 
             // Store any remaining values one-by-one
-            ReverseInner(ref first, lastOffset);
+            if (lastOffset > 1)
+            {
+                ReverseInner(ref first, (nuint)lastOffset);
+            }
         }
 
         public static void Reverse(ref long buf, nuint length)
         {
-            Debug.Assert(length > 0);
-            ref long first = ref buf;
-            ref long last = ref Unsafe.NullRef<long>();
-            nuint lastOffset = length;
+            Debug.Assert(length > 1);
 
-            if (Avx2.IsSupported && lastOffset >= (nuint)Vector256<long>.Count * 2)
+            ref long first = ref buf;
+            nint lastOffset = (nint)length;
+
+            if (Avx2.IsSupported && lastOffset >= Vector256<long>.Count * 2)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector256<long>.Count);
+                ref long last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), (nuint)Vector256<long>.Count);
                 do
                 {
                     // Load the values into vectors
@@ -507,14 +510,14 @@ namespace System
                     tempLast.StoreUnsafe(ref first);
                     tempFirst.StoreUnsafe(ref last);
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector256<long>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<long>.Count);
-                    lastOffset -= (nuint)Vector256<long>.Count * 2;
-                } while (lastOffset >= (nuint)Vector256<long>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector256<long>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector256<long>.Count);
+                    lastOffset -= (nint)Vector256<long>.Count * 2;
+                } while (lastOffset >= (nint)Vector256<long>.Count * 2);
             }
-            else if (Vector128.IsHardwareAccelerated && lastOffset >= (nuint)Vector128<long>.Count * 2)
+            else if (Vector128.IsHardwareAccelerated && lastOffset >= Vector128<long>.Count * 2)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<long>.Count);
+                ref long last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector128<long>.Count);
                 do
                 {
                     // Load in values from beginning and end of the array.
@@ -536,20 +539,24 @@ namespace System
                     tempLast.StoreUnsafe(ref first);
                     tempFirst.StoreUnsafe(ref last);
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector128<long>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector128<long>.Count);
-                    lastOffset -= (nuint)Vector128<long>.Count * 2;
-                } while (lastOffset >= (nuint)Vector128<long>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector128<long>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector128<long>.Count);
+                    lastOffset -= (nint)Vector128<long>.Count * 2;
+                } while (lastOffset >= (nint)Vector128<long>.Count * 2);
             }
 
             // Store any remaining values one-by-one
-            ReverseInner(ref first, lastOffset);
+            if (lastOffset > 1)
+            {
+                ReverseInner(ref first, (nuint)lastOffset);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(ref T elements, nuint length)
         {
-            Debug.Assert(length > 0);
+            Debug.Assert(length > 1);
+
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
@@ -581,10 +588,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
-            if (length <= 1)
-                return;
+            Debug.Assert(length > 1);
+
             ref T first = ref elements;
-            ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)length), 1);
+            ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, length), 1);
             do
             {
                 T temp = first;

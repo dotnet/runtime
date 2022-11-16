@@ -733,26 +733,28 @@ namespace System
 
         public static void Reverse(ref char buf, nuint length)
         {
-            Debug.Assert(length > 0);
-            ref char first = ref buf;
-            ref char last = ref Unsafe.NullRef<char>();
-            nuint lastOffset = length;
+            Debug.Assert(length > 1);
 
-            if (Avx2.IsSupported && lastOffset >= (nuint)Vector256<short>.Count * 2)
+            ref char first = ref buf;
+            nint lastOffset = (nint)length;
+
+            // Used to make sure we can only overlap once. Any consecutive overlap would reverse twice
+            byte needTwoParts = 0;
+
+            // This can overlap once between 16-32 items
+            if (Avx2.IsSupported && lastOffset >= Vector256<ushort>.Count)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector256<short>.Count);
+                needTwoParts = 1;
 
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
                     14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1); // second 128-bit lane
+
+                ref char last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), (nuint)Vector256<ushort>.Count);
                 do
                 {
-                    ref byte firstByte = ref Unsafe.As<char, byte>(ref first);
-                    ref byte lastByte = ref Unsafe.As<char, byte>(ref last);
-
-                    // Load the values into vectors
-                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref firstByte);
-                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref lastByte);
+                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref first));
+                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref last));
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -773,27 +775,25 @@ namespace System
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref firstByte);
-                    tempFirst.StoreUnsafe(ref lastByte);
+                    tempLast.StoreUnsafe(ref Unsafe.As<char, byte>(ref first));
+                    tempFirst.StoreUnsafe(ref Unsafe.As<char, byte>(ref last));
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector256<short>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<short>.Count);
-                    lastOffset -= (nuint)Vector256<short>.Count * 2;
-                } while (lastOffset >= (nuint)Vector256<short>.Count * 2);
+                    first = ref Unsafe.Add(ref first, (nuint)Vector256<ushort>.Count);
+                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<ushort>.Count);
+                    lastOffset -= (nint)Vector256<ushort>.Count * 2;
+                } while (lastOffset >= (nint)Vector256<ushort>.Count * 2);
             }
 
-            if (Vector128.IsHardwareAccelerated && lastOffset >= (nuint)Vector128<short>.Count * 2)
+            // This can overlap once between 8-16 items
+            // needTwoParts = 0 -> we can overlap (require 1x)
+            // needTwoParts = 1 -> we cannot overlap (require 2x)
+            if (Vector128.IsHardwareAccelerated && lastOffset >= (Vector128<ushort>.Count << needTwoParts))
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector128<short>.Count);
-
+                ref char last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector128<ushort>.Count);
                 do
                 {
-                    ref short firstByte = ref Unsafe.As<char, short>(ref first);
-                    ref short lastByte = ref Unsafe.As<char, short>(ref last);
-
-                    // Load the values into vectors
-                    Vector128<short> tempFirst = Vector128.LoadUnsafe(ref firstByte);
-                    Vector128<short> tempLast = Vector128.LoadUnsafe(ref lastByte);
+                    Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref first));
+                    Vector128<ushort> tempLast = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref last));
 
                     // Shuffle to reverse each vector:
                     //     +-------------------------------+
@@ -803,21 +803,24 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref firstByte);
-                    tempFirst.StoreUnsafe(ref lastByte);
+                    tempLast.StoreUnsafe(ref Unsafe.As<char, ushort>(ref first));
+                    tempFirst.StoreUnsafe(ref Unsafe.As<char, ushort>(ref last));
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector128<short>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector128<short>.Count);
-                    lastOffset -= (nuint)Vector128<short>.Count * 2;
-                } while (lastOffset >= (nuint)Vector128<short>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector128<ushort>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector128<ushort>.Count);
+                    lastOffset -= (nint)Vector128<ushort>.Count * 2;
+                } while (lastOffset >= (nint)Vector128<ushort>.Count * 2);
             }
 
             // Store any remaining values one-by-one
-            ReverseInner(ref first, lastOffset);
+            if (lastOffset > 1)
+            {
+                ReverseInner(ref first, (nuint)lastOffset);
+            }
         }
     }
 }

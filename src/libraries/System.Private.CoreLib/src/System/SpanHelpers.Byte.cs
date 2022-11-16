@@ -1130,18 +1130,24 @@ namespace System
 
         public static void Reverse(ref byte buf, nuint length)
         {
-            Debug.Assert(length > 0);
-            ref byte first = ref buf;
-            ref byte last = ref Unsafe.NullRef<byte>();
-            nuint lastOffset = length;
+            Debug.Assert(length > 1);
 
-            if (Avx2.IsSupported && lastOffset >= (nuint)Vector256<byte>.Count * 2)
+            ref byte first = ref buf;
+            nint lastOffset = (nint)length;
+
+            // Used to make sure we can only overlap once. Any consecutive overlap would reverse twice
+            byte needTwoParts = 0;
+
+            // This can overlap once between 32-64 items
+            if (Avx2.IsSupported && lastOffset >= Vector256<byte>.Count)
             {
+                needTwoParts = 1;
+
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
                     15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
 
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)Vector256<byte>.Count);
+                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector256<byte>.Count);
                 do
                 {
                     // Load the values into vectors
@@ -1176,16 +1182,20 @@ namespace System
                     tempLast.StoreUnsafe(ref first);
                     tempFirst.StoreUnsafe(ref last);
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector256<byte>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<byte>.Count);
-                    lastOffset -= (nuint)Vector256<byte>.Count * 2;
-                } while (lastOffset >= (nuint)Vector256<byte>.Count * 2);
+                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
+                    lastOffset -= (nint)Vector256<byte>.Count * 2;
+                } while (lastOffset >= (nint)Vector256<byte>.Count * 2);
             }
 
-            // Use ReverseEndianness on 8 bytes pairs
-            if (lastOffset >= (sizeof(long) * 2))
+            // This can overlap once between 8-16 items
+            // needTwoParts = 0 -> we can overlap (require 1x)
+            // needTwoParts = 1 -> we cannot overlap (require 2x)
+            if (lastOffset >= ((nint)sizeof(long) << needTwoParts))
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)sizeof(long));
+                needTwoParts = 1;
+
+                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), sizeof(long));
                 do
                 {
                     long tempFirst = Unsafe.ReadUnaligned<long>(ref first);
@@ -1195,16 +1205,19 @@ namespace System
                     Unsafe.WriteUnaligned(ref first, BinaryPrimitives.ReverseEndianness(tempLast));
                     Unsafe.WriteUnaligned(ref last, BinaryPrimitives.ReverseEndianness(tempFirst));
 
-                    first = ref Unsafe.Add(ref first, (nuint)sizeof(long));
-                    last = ref Unsafe.Subtract(ref last, (nuint)sizeof(long));
-                    lastOffset -= sizeof(long) * 2;
-                } while (lastOffset >= (sizeof(long) * 2));
+                    first = ref Unsafe.Add(ref first, sizeof(long));
+                    last = ref Unsafe.Subtract(ref last, sizeof(long));
+                    lastOffset -= (nint)sizeof(long) * 2;
+                } while (lastOffset >= (nint)sizeof(long) * 2);
             }
 
-            // Use ReverseEndianness on 4 bytes pairs
-            if (lastOffset >= (sizeof(int) * 2))
+            // This can overlap once between 4-8 items
+            // needTwoParts = 0 -> we can overlap (require 1x)
+            // needTwoParts = 1 -> we cannot overlap (require 2x)
+            if (lastOffset >= ((nint)sizeof(int) << needTwoParts))
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), (nuint)sizeof(int));
+                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), sizeof(int));
+
                 do
                 {
                     int tempFirst = Unsafe.ReadUnaligned<int>(ref first);
@@ -1214,14 +1227,16 @@ namespace System
                     Unsafe.WriteUnaligned(ref first, BinaryPrimitives.ReverseEndianness(tempLast));
                     Unsafe.WriteUnaligned(ref last, BinaryPrimitives.ReverseEndianness(tempFirst));
 
-                    first = ref Unsafe.Add(ref first, (nuint)sizeof(int));
-                    last = ref Unsafe.Subtract(ref last, (nuint)sizeof(int));
-                    lastOffset -= sizeof(int) * 2;
-                } while (lastOffset >= (sizeof(int) * 2));
+                    first = ref Unsafe.Add(ref first, sizeof(int));
+                    last = ref Unsafe.Subtract(ref last, sizeof(int));
+                    lastOffset -= (nint)sizeof(int) * 2;
+                } while (lastOffset >= (nint)sizeof(int) * 2);
             }
 
-            // Store any remaining values one-by-one
-            ReverseInner(ref first, lastOffset);
+            if (lastOffset > 1)
+            {
+                ReverseInner(ref first, (nuint)lastOffset);
+            }
         }
     }
 }
