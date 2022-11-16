@@ -10,7 +10,7 @@ import {
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions
+    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions, recordFailure
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -389,7 +389,8 @@ export function mono_interp_flush_jitcall_queue () : void {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        console.error(`jit failed: ${exc}`);
+        console.error(`MONO_WASM: jit_call code generation failed: ${exc}`);
+        recordFailure();
     } finally {
         const finished = _now();
         if (compileStarted) {

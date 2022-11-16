@@ -31,6 +31,8 @@ typedef struct {
 	int cmd_name_len;
 } OptionData;
 
+int mono_options_version = 0;
+
 static OptionData option_meta[] = {
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) \
 	{ option_type, &mono_opt_##c_name, cmd_name, sizeof (cmd_name) - 1 },
@@ -85,6 +87,36 @@ mono_options_print_usage (void)
 #include "options-def.h"
 }
 
+static GHashTable *_option_hash = NULL;
+
+static GHashTable *
+get_option_hash ()
+{
+	GHashTable *result;
+
+	if (_option_hash)
+		return _option_hash;
+
+	/* Compute a hash to avoid n^2 behavior */
+	result = g_hash_table_new (g_str_hash, g_str_equal);
+	for (size_t i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
+		g_hash_table_insert (result, (gpointer)option_meta [i].cmd_name, &option_meta [i]);
+	}
+
+	/*
+	 * We lost a data race. Accept our fate and free our copy of the table.
+	 * FIXME: It's possible to lose the race with precise timing and fail to free the extra table.
+	*/
+	if (_option_hash) {
+		g_hash_table_destroy(result);
+		result = _option_hash;
+	} else {
+		_option_hash = result;
+	}
+
+	return _option_hash;
+}
+
 /*
  * mono_options_parse_options:
  *
@@ -101,6 +133,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 	int aindex = 0;
 	GHashTable *option_hash = NULL;
 
+	mono_options_version++;
+
 	while (aindex < argc) {
 		const char *arg = argv [aindex];
 
@@ -110,13 +144,7 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 		}
 		arg = arg + 2;
 
-		if (option_hash == NULL) {
-			/* Compute a hash to avoid n^2 behavior */
-			option_hash = g_hash_table_new (g_str_hash, g_str_equal);
-			for (size_t i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
-				g_hash_table_insert (option_hash, (gpointer)option_meta [i].cmd_name, &option_meta [i]);
-			}
-		}
+		option_hash = get_option_hash ();
 
 		/* Compute flag name */
 		char *arg_copy = g_strdup (arg);
@@ -156,7 +184,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 				break;
 			}
 			if (option->option_type == MONO_OPTION_BOOL_READONLY) {
-				mono_error_set_error (error, 1, "Unable to set option '%s' as it's read-only.\n", arg);
+				if (error)
+					mono_error_set_error (error, 1, "Unable to set option '%s' as it's read-only.\n", arg);
 				break;
 			}
 			*(gboolean*)option->addr = negate ? FALSE : TRUE;
@@ -170,7 +199,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			if (len == option->cmd_name_len) {
 				// --option value
 				if (aindex + 1 == argc) {
-					mono_error_set_error (error, 1, "Missing value for option '%s'.\n", option->cmd_name);
+					if (error)
+						mono_error_set_error (error, 1, "Missing value for option '%s'.\n", option->cmd_name);
 					break;
 				}
 				value = argv [aindex + 1];
@@ -191,7 +221,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 				char *endp;
 				long v = strtol (value, &endp, 10);
 				if (!value [0] || *endp) {
-					mono_error_set_error (error, 1, "Invalid value for option '%s': '%s'.\n", option->cmd_name, value);
+					if (error)
+						mono_error_set_error (error, 1, "Invalid value for option '%s': '%s'.\n", option->cmd_name, value);
 					break;
 				}
 				*(int*)option->addr = (int)v;
@@ -203,14 +234,12 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			break;
 		}
 
-		if (!is_ok (error))
+		if (error && !is_ok (error))
 			break;
 		aindex ++;
 	}
 
-	if (option_hash)
-		g_hash_table_destroy (option_hash);
-	if (!is_ok (error))
+	if (error && !is_ok (error))
 		return;
 
 	/* Remove processed arguments */
@@ -220,4 +249,91 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			argv [aindex ++] = argv [i];
 	}
 	*out_argc = aindex;
+}
+
+static char *
+strncat_safe (char *destination, const char *source, char *end)
+{
+	if (destination >= end)
+		return end;
+
+	return strncat(destination, source, end - destination);
+}
+
+static char *
+strncat_option_json (char *destination, MonoOptionType type, const void *value, char *end)
+{
+	switch (type) {
+	case MONO_OPTION_BOOL:
+	case MONO_OPTION_BOOL_READONLY:
+		return strncat_safe(destination, *(gboolean*)value ? "true" : "false", end);
+
+	case MONO_OPTION_INT: {
+		char * buf = option_value_to_str(type, value);
+		char * result = strncat_safe(destination, buf, end);
+		g_free(buf);
+		return result;
+	}
+
+	case MONO_OPTION_STRING: {
+		char ch;
+		const char * src = *(char**)value;
+		if (!src)
+			return strncat_safe(destination, "\"\"", end);
+
+		while ((ch = *src) != 0) {
+			if (destination >= (end - 1))
+				return destination;
+
+			switch (ch) {
+				case '\'':
+				case '\"':
+				case '\\':
+					*destination++ = '\\';
+					*destination++ = ch;
+					break;
+				default:
+					if (ch < 32) {
+						char * buf = g_strdup_printf ("\\u%04X", ch);
+						destination = strncat_safe(destination, buf, end);
+						g_free(buf);
+					} else
+						*destination++ = *src;
+					break;
+			}
+
+			src++;
+		}
+	}
+
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
+void
+mono_options_get_as_json (char *result_buffer, int result_buffer_size)
+{
+	char *end = result_buffer + result_buffer_size - 1,
+		*destination = result_buffer;
+	gboolean need_comma = FALSE;
+
+	*destination = 0;
+	strncpy(destination, "{\n", result_buffer_size);
+
+#define DEFINE_OPTION_READONLY(option_type, ctype, c_name, cmd_name, def_value, comment) DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment)
+#define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) do { \
+		if (need_comma) \
+			destination = strncat_safe(destination, ",\n", end); \
+		destination = strncat_safe(destination, "  \"", end); \
+		destination = strncat_safe(destination, cmd_name, end); \
+		destination = strncat_safe(destination, "\": ", end); \
+		destination = strncat_option_json(destination, option_type, &mono_opt_##c_name, end); \
+		need_comma = TRUE; \
+	} while (0);
+
+#include "options-def.h"
+
+	destination = strncat_safe(destination, need_comma ? "\n}" : "}", end);
 }
