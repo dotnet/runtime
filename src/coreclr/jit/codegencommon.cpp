@@ -1874,7 +1874,7 @@ void CodeGen::genGenerateMachineCode()
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
-                            !compiler->opts.OptLevelIs(OPT_SizeAndThroughput) &&
+                            !compiler->opts.OptLevelIs(Compiler::OPT_SizeAndThroughput) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
                                 );
