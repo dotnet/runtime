@@ -151,7 +151,7 @@ initDistroRidGlobal()
         if [ "$targetOs" = "Browser" ]; then
             __DistroRid=browser-wasm
             export __DistroRid
-        elif [ "$targetOs" = "WASI" ]; then
+        elif [ "$targetOs" = "wasi" ]; then
             __DistroRid=wasi-wasm
             export __DistroRid
         fi
@@ -191,7 +191,7 @@ initDistroRidGlobal()
                 distroRid="android-$buildArch"
             elif [ "$targetOs" = "Browser" ]; then
                 distroRid="browser-$buildArch"
-            elif [ "$targetOs" = "WASI" ]; then
+            elif [ "$targetOs" = "wasi" ]; then
                 distroRid="wasi-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"

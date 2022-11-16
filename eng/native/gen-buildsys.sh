@@ -96,7 +96,7 @@ fi
 if [[ "$host_arch" == "wasm" ]]; then
     if [[ "$target_os" == "Browser" ]]; then
         cmake_command="emcmake $cmake_command"
-    elif [[ "$target_os" == "WASI" ]]; then
+    elif [[ "$target_os" == "wasi" ]]; then
         true
     else
         echo "target_os was not specified"

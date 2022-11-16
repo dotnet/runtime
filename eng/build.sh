@@ -31,7 +31,7 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, WASI, NetBSD, illumos or Solaris."
+  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, Wasi, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -281,14 +281,14 @@ while [[ $# > 0 ]]; do
         browser)
           os="Browser" ;;
         wasi)
-          os="WASI" ;;
+          os="wasi" ;;
         illumos)
           os="illumos" ;;
         solaris)
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, WASI, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, Wasi, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -507,7 +507,7 @@ if [[ "$os" == "Browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
-if [[ "$os" == "WASI" ]]; then
+if [[ "$os" == "wasi" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
