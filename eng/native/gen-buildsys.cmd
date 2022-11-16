@@ -46,7 +46,7 @@ if /i "%__Arch%" == "wasm" (
         echo Error: Please add target OS parameter
         exit /B 1
     )
-    if "%__Os%" == "Browser" (
+    if /i "%__Os%" == "Browser" (
         if "%EMSDK_PATH%" == "" (
             if not exist "%__repoRoot%src\mono\wasm\emsdk" (
                 echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
