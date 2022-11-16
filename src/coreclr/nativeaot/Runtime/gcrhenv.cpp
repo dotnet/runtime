@@ -575,25 +575,6 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
-{
-    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
-    if (cbSrc != cbDest)
-        return;
-
-    ASSERT(pobjDest->get_EEType()->HasReferenceFields() == pobjSrc->get_EEType()->HasReferenceFields());
-
-    if (pobjDest->get_EEType()->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pobjDest, pobjSrc, cbDest);
-    }
-    else
-    {
-        memcpy(pobjDest, pobjSrc, cbDest);
-    }
-}
-
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
     ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
