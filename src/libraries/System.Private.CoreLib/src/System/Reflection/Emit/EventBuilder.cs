@@ -3,7 +3,7 @@
 
 namespace System.Reflection.Emit
 {
-    public class EventBuilder
+    public abstract class EventBuilder
     {
         protected EventBuilder()
         {

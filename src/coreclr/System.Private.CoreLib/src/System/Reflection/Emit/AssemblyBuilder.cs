@@ -19,8 +19,6 @@ namespace System.Reflection.Emit
 {
     public partial class AssemblyBuilder
     {
-        internal static bool s_useManagedReflectionEmit = true;
-
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
@@ -32,7 +30,7 @@ namespace System.Reflection.Emit
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => DefineDynamicAssembly(name, access, null, Assembly.GetCallingAssembly());
+                => DefineDynamicAssembly(name, access, assemblyAttributes, Assembly.GetCallingAssembly());
 
         private static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
@@ -40,11 +38,6 @@ namespace System.Reflection.Emit
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
             Assembly? callingAssembly)
         {
-            if (s_useManagedReflectionEmit)
-            {
-                return (s_defineDynamicAssembly ?? InitDefineDynamicAssembly())(name, access, assemblyAttributes, callingAssembly);
-            }
-
             ArgumentNullException.ThrowIfNull(name);
 
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
@@ -68,29 +61,6 @@ namespace System.Reflection.Emit
             }
 
             return new RuntimeAssemblyBuilder(name, access, assemblyLoadContext, assemblyAttributes);
-        }
-
-        private static Func<AssemblyName, AssemblyBuilderAccess, IEnumerable<CustomAttributeBuilder>?, Assembly?, AssemblyBuilder>? s_defineDynamicAssembly;
-        private static Func<AssemblyName, AssemblyBuilderAccess, IEnumerable<CustomAttributeBuilder>?, Assembly?, AssemblyBuilder> InitDefineDynamicAssembly()
-        {
-            Type assemblyBuilderType = Type.GetType(
-                    "System.Reflection.Emit.RuntimeAssemblyBuilder, System.Reflection.Emit",
-                    throwOnError: true)!;
-
-            MethodInfo? defineDynamicAssemblyMethod = assemblyBuilderType.GetMethod(
-                "DefineDynamicAssembly",
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
-                null,
-                new Type[] { typeof(AssemblyName), typeof(AssemblyBuilderAccess), typeof(IEnumerable<CustomAttributeBuilder>), typeof(Assembly) },
-                null);
-
-            if (defineDynamicAssemblyMethod == null)
-            {
-                throw new MissingMethodException(assemblyBuilderType.FullName, "DefineDynamicAssembly");
-            }
-
-            return s_defineDynamicAssembly = defineDynamicAssemblyMethod.
-                CreateDelegate<Func<AssemblyName, AssemblyBuilderAccess,  IEnumerable<CustomAttributeBuilder>?, Assembly?, AssemblyBuilder>>();
         }
     }
 

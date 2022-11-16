@@ -61,36 +61,36 @@ namespace System.Reflection.Emit
         Run = 1,
         RunAndCollect = 9,
     }
-    public sealed partial class ConstructorBuilder : System.Reflection.ConstructorInfo
+    public abstract partial class ConstructorBuilder : System.Reflection.ConstructorInfo
     {
-        internal ConstructorBuilder() { }
+        protected ConstructorBuilder() { }
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
-        public bool InitLocals { get { throw null; } set { } }
+        public abstract bool InitLocals { get; set; }
         public override int MetadataToken { get { throw null; } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-        public System.Reflection.Emit.ParameterBuilder DefineParameter(int iSequence, System.Reflection.ParameterAttributes attributes, string? strParamName) { throw null; }
+        public abstract System.Reflection.Emit.ParameterBuilder DefineParameter(int iSequence, System.Reflection.ParameterAttributes attributes, string? strParamName);
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
-        public System.Reflection.Emit.ILGenerator GetILGenerator() { throw null; }
-        public System.Reflection.Emit.ILGenerator GetILGenerator(int streamSize) { throw null; }
+        public abstract System.Reflection.Emit.ILGenerator GetILGenerator();
+        public abstract System.Reflection.Emit.ILGenerator GetILGenerator(int streamSize);
         public override System.Reflection.MethodImplAttributes GetMethodImplementationFlags() { throw null; }
         public override System.Reflection.ParameterInfo[] GetParameters() { throw null; }
         public override object Invoke(object? obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override object Invoke(System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes);
         public override string ToString() { throw null; }
     }
-    public sealed partial class EnumBuilder : System.Reflection.TypeInfo
+    public abstract partial class EnumBuilder : System.Reflection.TypeInfo
     {
-        internal EnumBuilder() { }
+        protected EnumBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
         public override string? AssemblyQualifiedName { get { throw null; } }
         public override System.Type? BaseType { get { throw null; } }
@@ -106,13 +106,13 @@ namespace System.Reflection.Emit
         public override string? Namespace { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
-        public System.Reflection.Emit.FieldBuilder UnderlyingField { get { throw null; } }
+        public abstract System.Reflection.Emit.FieldBuilder UnderlyingField { get; }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type? CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public System.Reflection.TypeInfo? CreateTypeInfo() { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue) { throw null; }
+        public abstract System.Reflection.TypeInfo? CreateTypeInfo();
+        public abstract System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue);
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         protected override System.Reflection.ConstructorInfo? GetConstructorImpl(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
@@ -171,22 +171,22 @@ namespace System.Reflection.Emit
         public override System.Type MakeArrayType(int rank) { throw null; }
         public override System.Type MakeByRefType() { throw null; }
         public override System.Type MakePointerType() { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
     }
-    public sealed partial class EventBuilder
+    public abstract partial class EventBuilder
     {
-        internal EventBuilder() { }
-        public void AddOtherMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
-        public void SetAddOnMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetRaiseMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
-        public void SetRemoveOnMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
+        protected EventBuilder() { }
+        public abstract void AddOtherMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
+        public abstract void SetAddOnMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetRaiseMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
+        public abstract void SetRemoveOnMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
     }
-    public sealed partial class FieldBuilder : System.Reflection.FieldInfo
+    public abstract partial class FieldBuilder : System.Reflection.FieldInfo
     {
-        internal FieldBuilder() { }
+        protected FieldBuilder() { }
         public override System.Reflection.FieldAttributes Attributes { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
         public override System.RuntimeFieldHandle FieldHandle { get { throw null; } }
@@ -199,10 +199,10 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public override object? GetValue(object? obj) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        public void SetConstant(object? defaultValue) { }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetOffset(int iOffset) { }
+        public abstract void SetConstant(object? defaultValue);
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetOffset(int iOffset);
         public override void SetValue(object? obj, object? val, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, System.Globalization.CultureInfo? culture) { }
     }
     public sealed partial class GenericTypeParameterBuilder : System.Reflection.TypeInfo
@@ -305,14 +305,14 @@ namespace System.Reflection.Emit
         public void SetInterfaceConstraints(params System.Type[]? interfaceConstraints) { }
         public override string ToString() { throw null; }
     }
-    public sealed partial class MethodBuilder : System.Reflection.MethodInfo
+    public abstract partial class MethodBuilder : System.Reflection.MethodInfo
     {
-        internal MethodBuilder() { }
+        protected MethodBuilder() { }
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override bool ContainsGenericParameters { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
-        public bool InitLocals { get { throw null; } set { } }
+        public abstract bool InitLocals { get; set; }
         public override bool IsGenericMethod { get { throw null; } }
         public override bool IsGenericMethodDefinition { get { throw null; } }
         public override bool IsSecurityCritical { get { throw null; } }
@@ -326,8 +326,8 @@ namespace System.Reflection.Emit
         public override System.Reflection.ParameterInfo ReturnParameter { get { throw null; } }
         public override System.Type ReturnType { get { throw null; } }
         public override System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw null; } }
-        public System.Reflection.Emit.GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names) { throw null; }
-        public System.Reflection.Emit.ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, string? strParamName) { throw null; }
+        public abstract System.Reflection.Emit.GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names);
+        public abstract System.Reflection.Emit.ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, string? strParamName);
         public override bool Equals(object? obj) { throw null; }
         public override System.Reflection.MethodInfo GetBaseDefinition() { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
@@ -335,8 +335,8 @@ namespace System.Reflection.Emit
         public override System.Type[] GetGenericArguments() { throw null; }
         public override System.Reflection.MethodInfo GetGenericMethodDefinition() { throw null; }
         public override int GetHashCode() { throw null; }
-        public System.Reflection.Emit.ILGenerator GetILGenerator() { throw null; }
-        public System.Reflection.Emit.ILGenerator GetILGenerator(int size) { throw null; }
+        public abstract System.Reflection.Emit.ILGenerator GetILGenerator();
+        public abstract System.Reflection.Emit.ILGenerator GetILGenerator(int size);
         public override System.Reflection.MethodImplAttributes GetMethodImplementationFlags() { throw null; }
         public override System.Reflection.ParameterInfo[] GetParameters() { throw null; }
         public override object Invoke(object? obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
@@ -344,17 +344,17 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
-        public void SetParameters(params System.Type[] parameterTypes) { }
-        public void SetReturnType(System.Type? returnType) { }
-        public void SetSignature(System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes);
+        public abstract void SetParameters(params System.Type[] parameterTypes);
+        public abstract void SetReturnType(System.Type? returnType);
+        public abstract void SetSignature(System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers);
         public override string ToString() { throw null; }
     }
-    public partial class ModuleBuilder : System.Reflection.Module
+    public abstract partial class ModuleBuilder : System.Reflection.Module
     {
-        internal ModuleBuilder() { }
+        protected ModuleBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
         public override string FullyQualifiedName { get { throw null; } }
@@ -364,26 +364,26 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
         public override string Name { get { throw null; } }
         public override string ScopeName { get { throw null; } }
-        public void CreateGlobalFunctions() { }
-        public System.Reflection.Emit.EnumBuilder DefineEnum(string name, System.Reflection.TypeAttributes visibility, System.Type underlyingType) { throw null; }
+        public abstract void CreateGlobalFunctions();
+        public abstract System.Reflection.Emit.EnumBuilder DefineEnum(string name, System.Reflection.TypeAttributes visibility, System.Type underlyingType);
         public System.Reflection.Emit.MethodBuilder DefineGlobalMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
-        public System.Reflection.Emit.MethodBuilder DefineGlobalMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? requiredReturnTypeCustomModifiers, System.Type[]? optionalReturnTypeCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? requiredParameterTypeCustomModifiers, System.Type[][]? optionalParameterTypeCustomModifiers) { throw null; }
+        public abstract System.Reflection.Emit.MethodBuilder DefineGlobalMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? requiredReturnTypeCustomModifiers, System.Type[]? optionalReturnTypeCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? requiredParameterTypeCustomModifiers, System.Type[][]? optionalParameterTypeCustomModifiers);
         public System.Reflection.Emit.MethodBuilder DefineGlobalMethod(string name, System.Reflection.MethodAttributes attributes, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineInitializedData(string name, byte[] data, System.Reflection.FieldAttributes attributes) { throw null; }
+        public abstract System.Reflection.Emit.FieldBuilder DefineInitializedData(string name, byte[] data, System.Reflection.FieldAttributes attributes);
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
+        public abstract System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet);
         public System.Reflection.Emit.TypeBuilder DefineType(string name) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, int typesize) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packsize) { throw null; }
-        public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packingSize, int typesize) { throw null; }
-        public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces) { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes) { throw null; }
+        public abstract System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packingSize, int typesize);
+        public abstract System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces);
+        public abstract System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes);
         public override bool Equals(object? obj) { throw null; }
-        public System.Reflection.MethodInfo GetArrayMethod(System.Type arrayClass, string methodName, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
+        public abstract System.Reflection.MethodInfo GetArrayMethod(System.Type arrayClass, string methodName, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes);
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
@@ -419,12 +419,21 @@ namespace System.Reflection.Emit
         public override string ResolveString(int metadataToken) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public override System.Type ResolveType(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+
+        public abstract int GetTypeToken(Type type, bool getGenericDefinition = true);
+        public abstract int GetFieldToken(FieldInfo field);
+        public abstract int GetConstructorToken(ConstructorInfo con);
+        public abstract int GetSignatureToken(SignatureHelper sigHelper);
+        public abstract int GetStringConstant(string str);
+        public abstract ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor);
+        public abstract FieldInfo GetField(Type type, FieldInfo field);
+        public abstract MethodInfo GetMethod(Type type, MethodInfo method);
     }
-    public sealed partial class PropertyBuilder : System.Reflection.PropertyInfo
+    public abstract partial class PropertyBuilder : System.Reflection.PropertyInfo
     {
-        internal PropertyBuilder() { }
+        protected PropertyBuilder() { }
         public override System.Reflection.PropertyAttributes Attributes { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
@@ -433,7 +442,7 @@ namespace System.Reflection.Emit
         public override string Name { get { throw null; } }
         public override System.Type PropertyType { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-        public void AddOtherMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
+        public abstract void AddOtherMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
         public override System.Reflection.MethodInfo[] GetAccessors(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
@@ -443,17 +452,17 @@ namespace System.Reflection.Emit
         public override object GetValue(object? obj, object?[]? index) { throw null; }
         public override object GetValue(object? obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        public void SetConstant(object? defaultValue) { }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetGetMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
-        public void SetSetMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
+        public abstract void SetConstant(object? defaultValue);
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetGetMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
+        public abstract void SetSetMethod(System.Reflection.Emit.MethodBuilder mdBuilder);
         public override void SetValue(object? obj, object? value, object?[]? index) { }
         public override void SetValue(object? obj, object? value, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture) { }
     }
-    public sealed partial class TypeBuilder : System.Reflection.TypeInfo
+    public abstract partial class TypeBuilder : System.Reflection.TypeInfo
     {
-        internal TypeBuilder() { }
+        protected TypeBuilder() { }
         public const int UnspecifiedTypeSize = 0;
         public override System.Reflection.Assembly Assembly { get { throw null; } }
         public override string? AssemblyQualifiedName { get { throw null; } }
@@ -478,49 +487,49 @@ namespace System.Reflection.Emit
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override string? Namespace { get { throw null; } }
-        public System.Reflection.Emit.PackingSize PackingSize { get { throw null; } }
+        public abstract System.Reflection.Emit.PackingSize PackingSize { get; }
         public override System.Type? ReflectedType { get { throw null; } }
-        public int Size { get { throw null; } }
+        public abstract int Size { get; }
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
-        public void AddInterfaceImplementation([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type interfaceType) { }
+        public abstract void AddInterfaceImplementation([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type interfaceType);
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type? CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public System.Reflection.TypeInfo? CreateTypeInfo() { throw null; }
+        public abstract System.Reflection.TypeInfo? CreateTypeInfo();
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes) { throw null; }
-        public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers) { throw null; }
-        public System.Reflection.Emit.ConstructorBuilder DefineDefaultConstructor(System.Reflection.MethodAttributes attributes) { throw null; }
-        public System.Reflection.Emit.EventBuilder DefineEvent(string name, System.Reflection.EventAttributes attributes, System.Type eventtype) { throw null; }
+        public abstract System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers);
+        public abstract System.Reflection.Emit.ConstructorBuilder DefineDefaultConstructor(System.Reflection.MethodAttributes attributes);
+        public abstract System.Reflection.Emit.EventBuilder DefineEvent(string name, System.Reflection.EventAttributes attributes, System.Type eventtype);
         public System.Reflection.Emit.FieldBuilder DefineField(string fieldName, System.Type type, System.Reflection.FieldAttributes attributes) { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineField(string fieldName, System.Type type, System.Type[]? requiredCustomModifiers, System.Type[]? optionalCustomModifiers, System.Reflection.FieldAttributes attributes) { throw null; }
-        public System.Reflection.Emit.GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names) { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineInitializedData(string name, byte[] data, System.Reflection.FieldAttributes attributes) { throw null; }
+        public abstract System.Reflection.Emit.FieldBuilder DefineField(string fieldName, System.Type type, System.Type[]? requiredCustomModifiers, System.Type[]? optionalCustomModifiers, System.Reflection.FieldAttributes attributes);
+        public abstract System.Reflection.Emit.GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names);
+        public abstract System.Reflection.Emit.FieldBuilder DefineInitializedData(string name, byte[] data, System.Reflection.FieldAttributes attributes);
         public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes) { throw null; }
         public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention) { throw null; }
         public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
-        public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers) { throw null; }
+        public abstract System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers);
         public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Type? returnType, System.Type[]? parameterTypes) { throw null; }
-        public void DefineMethodOverride(System.Reflection.MethodInfo methodInfoBody, System.Reflection.MethodInfo methodInfoDeclaration) { }
+        public abstract void DefineMethodOverride(System.Reflection.MethodInfo methodInfoBody, System.Reflection.MethodInfo methodInfoDeclaration);
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, int typeSize) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packSize) { throw null; }
-        public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packSize, int typeSize) { throw null; }
-        public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces) { throw null; }
+        public abstract System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packSize, int typeSize);
+        public abstract System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces);
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
+        public abstract System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet);
         public System.Reflection.Emit.PropertyBuilder DefineProperty(string name, System.Reflection.PropertyAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[]? parameterTypes) { throw null; }
-        public System.Reflection.Emit.PropertyBuilder DefineProperty(string name, System.Reflection.PropertyAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers) { throw null; }
+        public abstract System.Reflection.Emit.PropertyBuilder DefineProperty(string name, System.Reflection.PropertyAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers);
         public System.Reflection.Emit.PropertyBuilder DefineProperty(string name, System.Reflection.PropertyAttributes attributes, System.Type returnType, System.Type[]? parameterTypes) { throw null; }
         public System.Reflection.Emit.PropertyBuilder DefineProperty(string name, System.Reflection.PropertyAttributes attributes, System.Type returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers) { throw null; }
-        public System.Reflection.Emit.ConstructorBuilder DefineTypeInitializer() { throw null; }
-        public System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes) { throw null; }
+        public abstract System.Reflection.Emit.ConstructorBuilder DefineTypeInitializer();
+        public abstract System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes);
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
         public static System.Reflection.ConstructorInfo GetConstructor(System.Type type, System.Reflection.ConstructorInfo constructor) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -574,7 +583,7 @@ namespace System.Reflection.Emit
         public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
-        public bool IsCreated() { throw null; }
+        public abstract bool IsCreated();
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
@@ -588,9 +597,9 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public override System.Type MakePointerType() { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetParent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetParent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent);
         public override string ToString() { throw null; }
     }
 }
