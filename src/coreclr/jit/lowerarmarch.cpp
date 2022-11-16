@@ -2463,6 +2463,15 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
             ContainCheckCompare(startOfChain->AsOp());
         }
     }
+
+    if (node->gtOp1->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp1);
+    }
+    if (node->gtOp2->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp2);
+    }
 }
 
 #endif // TARGET_ARM64

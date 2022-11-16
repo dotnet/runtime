@@ -129,7 +129,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source, long seed = 0)
         {
             byte[] result = new byte[HashLengthInBytes];
-            BinaryPrimitives.WriteInt64BigEndian(result, HashToInt64(source, seed));
+            ulong hash = HashToUInt64(source, seed);
+            BinaryPrimitives.WriteUInt64BigEndian(result, hash);
             return result;
         }
 
@@ -159,7 +160,7 @@ namespace System.IO.Hashing
         {
             if (destination.Length >= sizeof(long))
             {
-                long hash = HashToInt64(source, seed);
+                ulong hash = HashToUInt64(source, seed);
 
                 if (BitConverter.IsLittleEndian)
                 {
@@ -175,28 +176,32 @@ namespace System.IO.Hashing
             return false;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/76279: Make this public.
-        private static long HashToInt64(ReadOnlySpan<byte> source, long seed = 0)
+        /// <summary>Computes the XXH3 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation.</param>
+        /// <returns>The computed XXH3 hash.</returns>
+        [CLSCompliant(false)]
+        public static ulong HashToUInt64(ReadOnlySpan<byte> source, long seed = 0)
         {
             uint length = (uint)source.Length;
             fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
             {
                 if (length <= 16)
                 {
-                    return (long)HashLength0To16(sourcePtr, length, (ulong)seed);
+                    return HashLength0To16(sourcePtr, length, (ulong)seed);
                 }
 
                 if (length <= 128)
                 {
-                    return (long)HashLength17To128(sourcePtr, length, (ulong)seed);
+                    return HashLength17To128(sourcePtr, length, (ulong)seed);
                 }
 
                 if (length <= MidSizeMaxBytes)
                 {
-                    return (long)HashLength129To240(sourcePtr, length, (ulong)seed);
+                    return HashLength129To240(sourcePtr, length, (ulong)seed);
                 }
 
-                return (long)HashLengthOver240(sourcePtr, length, (ulong)seed);
+                return HashLengthOver240(sourcePtr, length, (ulong)seed);
             }
         }
 
@@ -311,6 +316,15 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
+            ulong hash = GetCurrentHashAsUInt64();
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+        }
+
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public ulong GetCurrentHashAsUInt64()
+        {
             ulong current;
 
             if (_state.TotalLength > MidSizeMaxBytes)
@@ -352,11 +366,11 @@ namespace System.IO.Hashing
             {
                 fixed (byte* buffer = _state.Buffer)
                 {
-                    current = (ulong)HashToInt64(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
+                    current = HashToUInt64(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
                 }
             }
 
-            BinaryPrimitives.WriteUInt64BigEndian(destination, current);
+            return current;
 
             void DigestLong(ulong* accumulators, byte* secret)
             {
