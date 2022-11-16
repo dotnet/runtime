@@ -252,6 +252,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
+    // Write-barriers are no-op for frozen objects (as values)
     if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         // Ignore frozen objects

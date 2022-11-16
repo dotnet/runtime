@@ -92,6 +92,7 @@ public:
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    bool          TieredPGO_InstrumentOnlyHotCode(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_InstrumentOnlyHotCode; }
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -658,6 +659,7 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
+    bool tieredPGO_InstrumentOnlyHotCode;
 #endif
 
 #if defined(FEATURE_READYTORUN)

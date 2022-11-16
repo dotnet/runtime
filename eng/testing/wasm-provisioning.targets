@@ -1,0 +1,127 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)ProvisioningVersions.props" />
+
+  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
+    <ChromeDirName>chrome-linux</ChromeDirName>
+    <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
+    <ChromeBinaryName>chrome</ChromeBinaryName>
+    <ChromeDriverBinaryName>chromedriver</ChromeDriverBinaryName>
+    <_ChromeOSPrefix>Linux_x64</_ChromeOSPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
+    <ChromeDirName>chrome-win</ChromeDirName>
+    <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
+    <ChromeBinaryName>chrome.exe</ChromeBinaryName>
+    <ChromeDriverBinaryName>chromedriver.exe</ChromeDriverBinaryName>
+    <_ChromeOSPrefix>Win_x64</_ChromeOSPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
+    <ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromeDirName), $(ChromeBinaryName)))</ChromeBinaryPath>
+    <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
+  </PropertyGroup>
+
+  <Target Name="DownloadAndInstallChrome"
+          AfterTargets="GetChromeVersion"
+          Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
+
+    <RemoveDir Directories="$(ChromeDir)" />
+
+    <Message Text="** Installing chrome version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
+             Importance="High" />
+
+    <DownloadFile SourceUrl="$(ChromeUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
+
+    <Error Text="Cannot find chrome at $(ChromeBinaryPath) in the downloaded copy"
+           Condition="!Exists($(ChromeBinaryPath))" />
+
+    <Exec Command="chmod +x $(ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallChromeDriver"
+          AfterTargets="GetChromeVersion"
+          Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
+
+    <RemoveDir Directories="$(ChromeDriverDir)" />
+
+    <Message Text="** Installing chromedriver version $(ChromeVersion), rev: $(ChromeRevision). To disable this set the msuild property InstallChromeForTests=false ."
+             Importance="High" />
+
+    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="false">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDriverDir)" />
+
+    <Error Text="Cannot find chromedriver at $(ChromeDriverBinaryPath) in the downloaded copy"
+           Condition="!Exists($(ChromeDriverBinaryPath))" />
+
+    <Exec Command="chmod +x $(ChromeDriverBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <Touch Files="$(ChromeDriverStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallFirefox"
+          AfterTargets="Build"
+          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
+    <ItemGroup>
+      <_StampFile Include="$(_BrowserStampDir).install-firefox*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(FirefoxDir)" />
+
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
+    <Exec Command="rm -rf $(_DownloadedFile)"/>
+
+    <PropertyGroup>
+      <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_FirefoxBinaryPath))" />
+
+    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
+
+    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)"
+             TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
+
+  <Target Name="GetChromeVersion" AfterTargets="Build" Condition="'$(InstallChromeForTests)' == 'true'">
+    <GetChromeVersions
+                OSIdentifier="$(ChromeOSIdentifier)"
+                OSPrefix="$(_ChromeOSPrefix)"
+                Channel="$(ChromeChannel)"
+                IntermediateOutputPath="$(ArtifactsObjDir)">
+      <Output TaskParameter="ChromeVersion"      PropertyName="ChromeVersion" />
+      <Output TaskParameter="V8Version"          PropertyName="V8Version" />
+      <Output TaskParameter="BranchPosition"     PropertyName="ChromeRevision" />
+      <Output TaskParameter="BaseSnapshotUrl"    PropertyName="_ChromeBaseSnapshotUrl" />
+    </GetChromeVersions>
+
+    <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
+      <ChromeUrl>$(_ChromeBaseSnapshotUrl)/chrome-linux.zip</ChromeUrl>
+      <ChromeDriverUrl>$(_ChromeBaseSnapshotUrl)/chromedriver_linux64.zip</ChromeDriverUrl>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
+      <ChromeUrl>$(_ChromeBaseSnapshotUrl)/chrome-win.zip</ChromeUrl>
+      <ChromeDriverUrl>$(_ChromeBaseSnapshotUrl)/chromedriver_win32.zip</ChromeDriverUrl>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <ChromeStampFile>$([MSBuild]::NormalizePath('$(ChromeDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeStampFile>
+      <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(ChromeDriverDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeDriverStampFile>
+    </PropertyGroup>
+  </Target>
+</Project>

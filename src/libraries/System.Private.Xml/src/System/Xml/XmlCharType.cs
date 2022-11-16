@@ -155,17 +155,10 @@ namespace System.Xml
         internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
-            Debug.Assert(startPos + len <= str.Length);
             Debug.Assert(startPos <= str.Length);
+            Debug.Assert(startPos + len <= str.Length);
 
-            for (int i = startPos; i < startPos + len; i++)
-            {
-                if (!char.IsAsciiDigit(str[i]))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return str.AsSpan(startPos, len).IndexOfAnyExceptInRange('0', '9') < 0;
         }
 
         internal static int IsPublicId(string str)

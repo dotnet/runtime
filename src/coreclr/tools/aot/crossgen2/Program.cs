@@ -577,6 +577,7 @@ namespace ILCompiler
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
+                        .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseILProvider(ilProvider)
@@ -691,8 +692,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, singleMethodName, singleMethodTypeName));
 
-            if (method.HasInstantiation != (singleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, singleMethodName, singleMethodTypeName));

@@ -86,7 +86,9 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? obj = RuntimeImports.RhHandleGet(wo.Handle);
+            object? obj = RuntimeImports.RhHandleGet(wo.WeakHandle);
+            KeepAlive(wo);
+
             if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));
@@ -186,14 +188,14 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(maxGenerationThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             if (largeObjectHeapThreshold < 1 || largeObjectHeapThreshold > 99)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(largeObjectHeapThreshold),
-                    string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
             }
 
             // This is not documented on MSDN, but CoreCLR throws when the GC's
@@ -637,8 +639,8 @@ namespace System
         /// <summary>
         /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't necessarily have to be the same as the ones that are passed by the user.
         /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
-        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
             GCConfigurationContext context = new GCConfigurationContext

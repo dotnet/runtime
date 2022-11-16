@@ -142,12 +142,14 @@ namespace System.Text.Json
         {
             private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
 
-            public CachingContext(JsonSerializerOptions options)
+            public CachingContext(JsonSerializerOptions options, int hashCode)
             {
                 Options = options;
+                HashCode = hashCode;
             }
 
             public JsonSerializerOptions Options { get; }
+            public int HashCode { get; }
             // Property only accessed by reflection in testing -- do not remove.
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
@@ -164,37 +166,39 @@ namespace System.Text.Json
         /// <summary>
         /// Defines a cache of CachingContexts; instead of using a ConditionalWeakTable which can be slow to traverse
         /// this approach uses a fixed-size array of weak references of <see cref="CachingContext"/> that can be looked up lock-free.
-        /// Relevant caching contexts are looked up by linear traversal using the equality comparison defined by
-        /// <see cref="AreEquivalentOptions(JsonSerializerOptions, JsonSerializerOptions)"/>.
+        /// Relevant caching contexts are looked up by linear traversal using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
         internal static class TrackedCachingContexts
         {
             private const int MaxTrackedContexts = 64;
             private static readonly WeakReference<CachingContext>?[] s_trackedContexts = new WeakReference<CachingContext>[MaxTrackedContexts];
+            private static readonly EqualityComparer s_optionsComparer = new();
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
-                if (TryGetContext(options, out int firstUnpopulatedIndex, out CachingContext? result))
+                int hashCode = s_optionsComparer.GetHashCode(options);
+
+                if (TryGetContext(options, hashCode, out int firstUnpopulatedIndex, out CachingContext? result))
                 {
                     return result;
                 }
                 else if (firstUnpopulatedIndex < 0)
                 {
                     // Cache is full; return a fresh instance.
-                    return new CachingContext(options);
+                    return new CachingContext(options, hashCode);
                 }
 
                 lock (s_trackedContexts)
                 {
-                    if (TryGetContext(options, out firstUnpopulatedIndex, out result))
+                    if (TryGetContext(options, hashCode, out firstUnpopulatedIndex, out result))
                     {
                         return result;
                     }
 
-                    var ctx = new CachingContext(options);
+                    var ctx = new CachingContext(options, hashCode);
 
                     if (firstUnpopulatedIndex >= 0)
                     {
@@ -218,6 +222,7 @@ namespace System.Text.Json
 
             private static bool TryGetContext(
                 JsonSerializerOptions options,
+                int hashCode,
                 out int firstUnpopulatedIndex,
                 [NotNullWhen(true)] out CachingContext? result)
             {
@@ -235,7 +240,7 @@ namespace System.Text.Json
                             firstUnpopulatedIndex = i;
                         }
                     }
-                    else if (AreEquivalentOptions(options, ctx.Options))
+                    else if (hashCode == ctx.HashCode && s_optionsComparer.Equals(options, ctx.Options))
                     {
                         result = ctx;
                         return true;
@@ -252,52 +257,114 @@ namespace System.Text.Json
         /// If two instances are equivalent, they should generate identical metadata caches;
         /// the converse however does not necessarily hold.
         /// </summary>
-        private static bool AreEquivalentOptions(JsonSerializerOptions left, JsonSerializerOptions right)
+        private sealed class EqualityComparer : IEqualityComparer<JsonSerializerOptions>
         {
-            Debug.Assert(left != null && right != null);
-
-            return
-                left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
-                left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&
-                left._readCommentHandling == right._readCommentHandling &&
-                left._referenceHandler == right._referenceHandler &&
-                left._encoder == right._encoder &&
-                left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
-                left._numberHandling == right._numberHandling &&
-                left._unknownTypeHandling == right._unknownTypeHandling &&
-                left._defaultBufferSize == right._defaultBufferSize &&
-                left._maxDepth == right._maxDepth &&
-                left._allowTrailingCommas == right._allowTrailingCommas &&
-                left._ignoreNullValues == right._ignoreNullValues &&
-                left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
-                left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
-                left._includeFields == right._includeFields &&
-                left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
-                left._writeIndented == right._writeIndented &&
-                left._typeInfoResolver == right._typeInfoResolver &&
-                CompareLists(left._converters, right._converters);
-
-            static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
+            public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
-                int n;
-                if ((n = left.Count) != right.Count)
-                {
-                    return false;
-                }
+                Debug.Assert(left != null && right != null);
 
-                for (int i = 0; i < n; i++)
+                return
+                    left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
+                    left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&
+                    left._readCommentHandling == right._readCommentHandling &&
+                    left._referenceHandler == right._referenceHandler &&
+                    left._encoder == right._encoder &&
+                    left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
+                    left._numberHandling == right._numberHandling &&
+                    left._unknownTypeHandling == right._unknownTypeHandling &&
+                    left._defaultBufferSize == right._defaultBufferSize &&
+                    left._maxDepth == right._maxDepth &&
+                    left._allowTrailingCommas == right._allowTrailingCommas &&
+                    left._ignoreNullValues == right._ignoreNullValues &&
+                    left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
+                    left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
+                    left._includeFields == right._includeFields &&
+                    left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
+                    left._writeIndented == right._writeIndented &&
+                    left._typeInfoResolver == right._typeInfoResolver &&
+                    CompareLists(left._converters, right._converters);
+
+                static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
+                    where TValue : class?
                 {
-                    TValue? leftElem = left[i];
-                    TValue? rightElem = right[i];
-                    bool areEqual = leftElem is null ? rightElem is null : leftElem.Equals(rightElem);
-                    if (!areEqual)
+                    int n;
+                    if ((n = left.Count) != right.Count)
                     {
                         return false;
                     }
+
+                    for (int i = 0; i < n; i++)
+                    {
+                        if (left[i] != right[i])
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            public int GetHashCode(JsonSerializerOptions options)
+            {
+                HashCode hc = default;
+
+                AddHashCode(ref hc, options._dictionaryKeyPolicy);
+                AddHashCode(ref hc, options._jsonPropertyNamingPolicy);
+                AddHashCode(ref hc, options._readCommentHandling);
+                AddHashCode(ref hc, options._referenceHandler);
+                AddHashCode(ref hc, options._encoder);
+                AddHashCode(ref hc, options._defaultIgnoreCondition);
+                AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._unknownTypeHandling);
+                AddHashCode(ref hc, options._defaultBufferSize);
+                AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options._allowTrailingCommas);
+                AddHashCode(ref hc, options._ignoreNullValues);
+                AddHashCode(ref hc, options._ignoreReadOnlyProperties);
+                AddHashCode(ref hc, options._ignoreReadonlyFields);
+                AddHashCode(ref hc, options._includeFields);
+                AddHashCode(ref hc, options._propertyNameCaseInsensitive);
+                AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._typeInfoResolver);
+                AddListHashCode(ref hc, options._converters);
+
+                return hc.ToHashCode();
+
+                static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
+                {
+                    int n = list.Count;
+                    for (int i = 0; i < n; i++)
+                    {
+                        AddHashCode(ref hc, list[i]);
+                    }
                 }
 
-                return true;
+                static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
+                {
+                    if (typeof(TValue).IsValueType)
+                    {
+                        hc.Add(value);
+                    }
+                    else
+                    {
+                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        hc.Add(RuntimeHelpers.GetHashCode(value));
+                    }
+                }
             }
+
+#if !NETCOREAPP
+            /// <summary>
+            /// Polyfill for System.HashCode.
+            /// </summary>
+            private struct HashCode
+            {
+                private int _hashCode;
+                public void Add<T>(T? value) => _hashCode = (_hashCode, value).GetHashCode();
+                public int ToHashCode() => _hashCode;
+            }
+#endif
         }
     }
 }

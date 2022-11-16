@@ -9,7 +9,7 @@
     <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
+    <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the Windows event log service.
 
 Commonly Used Types:
 System.Diagnostics.EventLog</PackageDescription>

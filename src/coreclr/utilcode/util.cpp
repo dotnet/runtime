@@ -513,94 +513,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return pResult;
 }
 
-//******************************************************************************
-// NumaNodeInfo
-//******************************************************************************
-#if !defined(FEATURE_NATIVEAOT)
-
-/*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
-                         DWORD allocType, DWORD prot, DWORD node)
-{
-    return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
-}
-
 #ifdef HOST_WINDOWS
-/*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
-{
-    return ::GetNumaProcessorNodeEx(proc_no, node_no);
-}
-/*static*/ bool NumaNodeInfo::GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node)
-{
-    if (m_enableGCNumaAware)
-    {
-        DWORD currentProcsOnNode = 0;
-        for (uint16_t i = 0; i < m_nNodes; i++)
-        {
-            GROUP_AFFINITY processorMask;
-            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
-            {
-                DWORD procsOnNode = 0;
-                uintptr_t mask = (uintptr_t)processorMask.Mask;
-                while (mask)
-                {
-                    procsOnNode++;
-                    mask &= mask - 1;
-                }
-
-                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
-            }
-        }
-
-        *max_procs_per_node = currentProcsOnNode;
-        *total_nodes = m_nNodes;
-        return true;
-    }
-
-    return false;
-}
-#else // HOST_WINDOWS
-/*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no)
-{
-    return PAL_GetNumaProcessorNode(proc_no, node_no);
-}
-#endif // HOST_WINDOWS
-#endif
-
-/*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
-/*static*/ uint16_t NumaNodeInfo::m_nNodes = 0;
-/*static*/ BOOL NumaNodeInfo::InitNumaNodeInfoAPI()
-{
-#if !defined(FEATURE_NATIVEAOT)
-    //check for numa support if multiple heaps are used
-    ULONG highest = 0;
-
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCNumaAware) == 0)
-        return FALSE;
-
-    // fail to get the highest numa node number
-    if (!::GetNumaHighestNodeNumber(&highest) || (highest == 0))
-        return FALSE;
-
-    m_nNodes = (USHORT)(highest + 1);
-
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-/*static*/ BOOL NumaNodeInfo::CanEnableGCNumaAware()
-{
-    return m_enableGCNumaAware;
-}
-
-/*static*/ void NumaNodeInfo::InitNumaNodeInfo()
-{
-    m_enableGCNumaAware = InitNumaNodeInfoAPI();
-}
-
-#ifdef HOST_WINDOWS
-
 //******************************************************************************
 // CPUGroupInfo
 //******************************************************************************
@@ -2895,7 +2808,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[39];
+            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

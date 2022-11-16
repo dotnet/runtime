@@ -894,7 +894,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool ShouldShareSymbol(ObjectNode node)
         {
             // Foldable sections are always COMDATs
-            ObjectNodeSection section = node.Section;
+            ObjectNodeSection section = node.GetSection(_nodeFactory);
             if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
                 section == ObjectNodeSection.FoldableReadOnlyDataSection)
@@ -1006,7 +1006,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
 
-                    ObjectNodeSection section = node.Section;
+                    ObjectNodeSection section = node.GetSection(factory);
                     if (objectWriter.ShouldShareSymbol(node))
                     {
                         section = GetSharedSection(section, ((ISymbolNode)node).GetMangledName(factory.NameMangler));

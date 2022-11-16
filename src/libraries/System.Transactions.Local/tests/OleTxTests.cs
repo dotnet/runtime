@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Transactions.Tests;
@@ -492,6 +492,80 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             Retry(() => Assert.Equal(TransactionStatus.Committed, tx.TransactionInformation.Status));
         });
 
+    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    public void Distributed_transactions_require_ImplicitDistributedTransactions_true()
+    {
+        // Temporarily skip on 32-bit where we have an issue.
+        if (!Environment.Is64BitProcess)
+        {
+            return;
+        }
+
+        using var _ = RemoteExecutor.Invoke(() =>
+        {
+            Assert.False(TransactionManager.ImplicitDistributedTransactions);
+
+            using var tx = new CommittableTransaction();
+
+            Assert.Throws<NotSupportedException>(MinimalOleTxScenario);
+        });
+    }
+
+    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    public void ImplicitDistributedTransactions_cannot_be_changed_after_being_set()
+    {
+        // Temporarily skip on 32-bit where we have an issue.
+        if (!Environment.Is64BitProcess)
+        {
+            return;
+        }
+
+        using var _ = RemoteExecutor.Invoke(() =>
+        {
+            TransactionManager.ImplicitDistributedTransactions = true;
+
+            Assert.Throws<InvalidOperationException>(() => TransactionManager.ImplicitDistributedTransactions = false);
+        });
+    }
+
+    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    public void ImplicitDistributedTransactions_cannot_be_changed_after_being_read_as_true()
+    {
+        // Temporarily skip on 32-bit where we have an issue.
+        if (!Environment.Is64BitProcess)
+        {
+            return;
+        }
+
+        using var _ = RemoteExecutor.Invoke(() =>
+        {
+            TransactionManager.ImplicitDistributedTransactions = true;
+
+            Test(MinimalOleTxScenario);
+
+            Assert.Throws<InvalidOperationException>(() => TransactionManager.ImplicitDistributedTransactions = false);
+            TransactionManager.ImplicitDistributedTransactions = true;
+        });
+    }
+
+    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    public void ImplicitDistributedTransactions_cannot_be_changed_after_being_read_as_false()
+    {
+        // Temporarily skip on 32-bit where we have an issue.
+        if (!Environment.Is64BitProcess)
+        {
+            return;
+        }
+
+        using var _ = RemoteExecutor.Invoke(() =>
+        {
+            Assert.Throws<NotSupportedException>(MinimalOleTxScenario);
+
+            Assert.Throws<InvalidOperationException>(() => TransactionManager.ImplicitDistributedTransactions = true);
+            TransactionManager.ImplicitDistributedTransactions = false;
+        });
+    }
+
     private static void Test(Action action)
     {
         // Temporarily skip on 32-bit where we have an issue.
@@ -500,10 +574,17 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             return;
         }
 
+        if (s_isTestSuiteDisabled)
+        {
+            return;
+        }
+
+        TransactionManager.ImplicitDistributedTransactions = true;
+
         // In CI, we sometimes get XACT_E_TMNOTAVAILABLE; when it happens, it's typically on the very first
         // attempt to connect to MSDTC (flaky/slow on-demand startup of MSDTC), though not only.
-        // This catches that error and retries.
-        int nRetries = 60;
+        // This catches that error and retries: 5 minutes of retries, with a second between them.
+        int nRetries = 60 * 5;
 
         while (true)
         {
@@ -512,14 +593,27 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
                 action();
                 return;
             }
-            catch (TransactionException e) when (e.InnerException is TransactionManagerCommunicationException)
+            catch (Exception e) when (e is TransactionManagerCommunicationException or TransactionException { InnerException: TransactionManagerCommunicationException })
             {
-                if (--nRetries == 0)
+                if (--nRetries > 0)
                 {
-                    throw;
+                    Thread.Sleep(1000);
+
+                    continue;
                 }
 
-                Thread.Sleep(500);
+                // We've continuously gotten XACT_E_TMNOTAVAILABLE for the entire retry window - MSDTC is unavailable in some way.
+                // We don't want this to make our CI flaky, so we swallow the exception and skip all subsequent tests.
+                if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_CI")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HELIX_WORKITEM_ROOT")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AGENT_OS")))
+                {
+                    s_isTestSuiteDisabled = true;
+
+                    return;
+                }
+
+                throw;
             }
         }
     }
@@ -528,7 +622,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     // so allow some time for assertions to succeed.
     private static void Retry(Action action)
     {
-        const int Retries = 50;
+        const int Retries = 100;
 
         for (var i = 0; i < Retries; i++)
         {
@@ -549,23 +643,27 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         }
     }
 
+    static void MinimalOleTxScenario()
+    {
+        using var tx = new CommittableTransaction();
+
+        var enlistment1 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
+        var enlistment2 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
+
+        tx.EnlistDurable(Guid.NewGuid(), enlistment1, EnlistmentOptions.None);
+        tx.EnlistDurable(Guid.NewGuid(), enlistment2, EnlistmentOptions.None);
+
+        tx.Commit();
+    }
+
     public class OleTxFixture
     {
         // In CI, we sometimes get XACT_E_TMNOTAVAILABLE on the very first attempt to connect to MSDTC;
         // this is likely due to on-demand slow startup of MSDTC. Perform pre-test connecting with retry
         // to ensure that MSDTC is properly up when the first test runs.
         public OleTxFixture()
-            => Test(() =>
-            {
-                using var tx = new CommittableTransaction();
-
-                var enlistment1 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
-                var enlistment2 = new TestEnlistment(Phase1Vote.Prepared, EnlistmentOutcome.Committed);
-
-                tx.EnlistDurable(Guid.NewGuid(), enlistment1, EnlistmentOptions.None);
-                tx.EnlistDurable(Guid.NewGuid(), enlistment2, EnlistmentOptions.None);
-
-                tx.Commit();
-            });
+            => Test(MinimalOleTxScenario);
     }
+
+    private static bool s_isTestSuiteDisabled;
 }

@@ -1467,34 +1467,26 @@ namespace System.Globalization
             private ReadOnlySpan<char> _str;
             private char _ch;
             private int _pos;
-            private int _len;
 
             internal void NextChar()
             {
-                if (_pos < _len)
+                ReadOnlySpan<char> str = _str;
+
+                if (_pos < str.Length)
                 {
                     _pos++;
                 }
 
-                _ch = _pos < _len ?
-                    _str[_pos] :
+                int pos = _pos;
+                _ch = (uint)pos < (uint)str.Length ?
+                    str[pos] :
                     (char)0;
             }
 
             internal char NextNonDigit()
             {
-                int i = _pos;
-                while (i < _len)
-                {
-                    char ch = _str[i];
-                    if (!char.IsAsciiDigit(ch))
-                    {
-                        return ch;
-                    }
-                    i++;
-                }
-
-                return (char)0;
+                int i = _str.Slice(_pos).IndexOfAnyExceptInRange('0', '9');
+                return i < 0 ? (char)0 : _str[_pos + i];
             }
 
             internal bool TryParse(ReadOnlySpan<char> input, ref TimeSpanResult result)
@@ -1502,7 +1494,6 @@ namespace System.Globalization
                 result.parsedTimeSpan = default;
 
                 _str = input;
-                _len = input.Length;
                 _pos = -1;
                 NextChar();
                 SkipBlanks();
@@ -1561,7 +1552,7 @@ namespace System.Globalization
 
                 SkipBlanks();
 
-                if (_pos < _len)
+                if (_pos < _str.Length)
                 {
                     return result.SetBadTimeSpanFailure();
                 }

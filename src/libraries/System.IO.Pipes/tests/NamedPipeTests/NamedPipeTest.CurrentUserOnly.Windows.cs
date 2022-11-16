@@ -102,8 +102,9 @@ namespace System.IO.Pipes.Tests
             {
                 WindowsIdentity.RunImpersonated(_testAccountTokenHandle, () =>
                 {
-                    using (WindowsIdentity clientIdentity = WindowsIdentity.GetCurrent())
-                        Assert.NotEqual(serverIdentity.Name, clientIdentity.Name);
+                    using WindowsIdentity clientIdentity = WindowsIdentity.GetCurrent();
+                    Assert.NotEqual(serverIdentity.Name, clientIdentity.Name);
+                    Assert.False(new WindowsPrincipal(clientIdentity).IsInRole(WindowsBuiltInRole.Administrator));
 
                     action();
                 });
@@ -132,13 +133,51 @@ namespace System.IO.Pipes.Tests
         }
 
         [OuterLoop]
+        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
+        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_InvalidClientConnectionAttempts_DoNotBlockSuccessfulClient()
+        {
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
+            bool invalidClientShouldStop = false;
+            bool invalidClientIsRunning = false;
+
+            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            Task serverWait = server.WaitForConnectionAsync();
+
+            Task invalidClient = Task.Run(() =>
+            {
+                // invalid non-current user tries to connect to server.
+                _testAccountImpersonator.RunImpersonated(() =>
+                {
+                    while (!Volatile.Read(ref invalidClientShouldStop))
+                    {
+                        using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+                        Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+                        Volatile.Write(ref invalidClientIsRunning, true);
+                    }
+                });
+            });
+
+            Assert.False(serverWait.IsCompleted);
+            while (!Volatile.Read(ref invalidClientIsRunning)) ; // Wait until the invalid client starts running.
+
+            // valid client tries to connect and succeeds.
+            using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+            client.Connect();
+            await serverWait;
+            Volatile.Write(ref invalidClientShouldStop, true);
+        }
+
+        [OuterLoop]
         [ConditionalTheory(nameof(IsAdminOnSupportedWindowsVersions))]
-        [InlineData(PipeOptions.None, PipeOptions.None)]
-        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly)]
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)] // Fails even without CurrentUserOnly, because under the default pipe ACL, other users are denied Write access, and client is requesting PipeDirection.InOut
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
         public void Connection_UnderDifferentUsers_BehavesAsExpected(
-            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
+            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientDirection)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var cts = new CancellationTokenSource())
@@ -148,16 +187,25 @@ namespace System.IO.Pipes.Tests
 
                 _testAccountImpersonator.RunImpersonated(() =>
                 {
-                    using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, clientPipeOptions))
+                    using (var client = new NamedPipeClientStream(".", name, clientDirection, clientPipeOptions))
                     {
                         Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
                     }
                 });
 
-                // Server is expected to not have received any request.
-                cts.Cancel();
-                AggregateException e = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
-                Assert.IsType<TaskCanceledException>(e.InnerException);
+                if (serverPipeOptions == PipeOptions.None && clientPipeOptions == PipeOptions.CurrentUserOnly && clientDirection == PipeDirection.In)
+                {
+                    // When CurrentUserOnly is only on client side and asks for ReadOnly access, the connection is not rejected
+                    // but we get the UnauthorizedAccessException on the client regardless.
+                    Assert.True(serverTask.IsCompletedSuccessfully);
+                }
+                else
+                {
+                    // Server is expected to not have received any request.
+                    cts.Cancel();
+                    AggregateException ex = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
+                    Assert.IsType<TaskCanceledException>(ex.InnerException);
+                }
             }
         }
 

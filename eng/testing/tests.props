@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
-    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
   </ItemGroup>
 
   <!--
