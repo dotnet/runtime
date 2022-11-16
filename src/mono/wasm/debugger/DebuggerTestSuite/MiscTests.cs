@@ -965,7 +965,7 @@ namespace DebuggerTests
             "debugger-test-special-char-in-path-%23%40/test%23.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ąłÅ.cs",
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-%C4%85%C5%82%C3%85.cs",
             "debugger-test-special-char-in-path-%23%40/non-ascii-test-ąłÅ.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
             string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
@@ -977,6 +977,7 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
+            Console.WriteLine("olha thays - " + ret["callFrames"][0]["url"].Value<string>());
             Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 

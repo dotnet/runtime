@@ -1183,13 +1183,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
             this.docHandle = docHandle;
             this.url = url;
-            var urlWithSpecialCharCodedHex = EscapeAscii(url);
-            this.DebuggerFileName = urlWithSpecialCharCodedHex.Replace("\\", "/").Replace(":", "");
+
+            this.DebuggerFileName = EscapeAscii(url);
             this.BreakableLines = new List<int>();
 
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
+            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + DebuggerFileName, UriKind.RelativeOrAbsolute);
+            if (SourceUri.IsFile && File.Exists(url))
             {
                 this.Url = this.SourceUri.ToString();
             }
@@ -1202,24 +1202,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapeAscii(string path)
         {
             var builder = new StringBuilder();
-            foreach (char c in path)
+            foreach (var part in Regex.Split(path, @"([:\\/])"))
             {
-                switch (c)
-                {
-                    case var _ when char.IsLetterOrDigit(c):
-                    case var _ when c > 255:
-                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~' || c == '´' || c == '`' || c == '^' || c == '¨':
-                        builder.Append(c);
-                        break;
-                    case var _ when c == Path.DirectorySeparatorChar:
-                    case var _ when c == Path.AltDirectorySeparatorChar:
-                    case var _ when c == '\\':
-                        builder.Append(c);
-                        break;
-                    default:
-                        builder.AppendFormat("%{0:X2}", (int)c);
-                        break;
-                }
+                if (part == ":")
+                    builder.Append(part);
+                else if (part == "\\" || part == "/")
+                    builder.Append('/');
+                else
+                    builder.Append(Uri.EscapeDataString(part));
             }
             return builder.ToString();
         }
