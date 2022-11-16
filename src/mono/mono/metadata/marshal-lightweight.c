@@ -3149,8 +3149,5 @@ mono_marshal_lightweight_init (void)
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
 	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
-#ifdef DISABLE_NONBLITTABLE
-	mono_marshal_noilgen_init_blittable (&cb);
-#endif
 	mono_install_marshal_callbacks (&cb);
 }

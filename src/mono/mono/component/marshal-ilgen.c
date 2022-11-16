@@ -126,10 +126,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			cb_to_mono->methodBuilder.emit_icall_id (mb, cb_to_mono->conv_to_icall (MONO_MARSHAL_CONV_ARRAY_LPARRAY, NULL));
 			cb_to_mono->methodBuilder.emit_stloc (mb, conv_arg);
 		} else {
-#ifdef DISABLE_NONBLITTABLE
-			char *msg = g_strdup ("Non-blittable marshalling conversion is disabled");
-			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
-#else
 			guint32 label1, label2, label3;
 			int index_var, src_var, dest_ptr, esize;
 			MonoMarshalConv conv;
@@ -241,13 +237,11 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 
 			cb_to_mono->methodBuilder.patch_branch (mb, label1);
-#endif
 		}
 
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT: {
-#ifndef DISABLE_NONBLITTABLE
 		gboolean need_convert, need_free;
 		/* Unicode character arrays are implicitly marshalled as [Out] under MS.NET */
 		need_convert = ((eklass == cb_to_mono->mono_defaults->char_class) && (encoding == MONO_NATIVE_LPWSTR)) || (eklass == cb_to_mono->try_get_stringbuilder_class ()) || (t->attrs & PARAM_ATTRIBUTE_OUT);
@@ -387,7 +381,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			cb_to_mono->methodBuilder.patch_branch (mb, label1);
 			cb_to_mono->methodBuilder.patch_branch (mb, label3);
 		}
-#endif
 
 		if (m_class_is_blittable (eklass)) {
 			/* free memory allocated (if any) by MONO_MARSHAL_CONV_ARRAY_LPARRAY */
@@ -474,7 +467,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* FIXME: Optimize blittable case */
 
-#ifndef DISABLE_NONBLITTABLE
 		if (eklass == cb_to_mono->mono_defaults->string_class) {
 			is_string = TRUE;
 			gboolean need_free;
@@ -487,7 +479,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		else
 			conv = MONO_MARSHAL_CONV_INVALID;
-#endif
 
 		cb_to_mono->load_type_info (eklass);
 
@@ -570,12 +561,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			cb_to_mono->methodBuilder.patch_branch (mb, label1);
 			break;
 		}
-#ifdef DISABLE_NONBLITTABLE
-		else {
-			char *msg = g_strdup ("Non-blittable marshalling conversion is disabled");
-			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
-		}
-#else
 		/* Emit marshalling loop */
 		index_var = cb_to_mono->methodBuilder.add_local (mb, int_type);
 		cb_to_mono->methodBuilder.emit_byte (mb, CEE_LDC_I4_0);
@@ -612,7 +597,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		cb_to_mono->methodBuilder.patch_branch (mb, label1);
 		cb_to_mono->methodBuilder.patch_branch (mb, label3);
-#endif
 
 		break;
 	}
@@ -646,7 +630,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* FIXME: Optimize blittable case */
 
-#ifndef DISABLE_NONBLITTABLE
 		if (eklass == cb_to_mono->mono_defaults->string_class) {
 			is_string = TRUE;
 			conv = cb_to_mono->get_string_to_ptr_conv (m->piinfo, spec);
@@ -657,7 +640,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		else
 			conv = MONO_MARSHAL_CONV_INVALID;
-#endif
 
 		cb_to_mono->load_type_info (eklass);
 
@@ -694,7 +676,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-#ifndef DISABLE_NONBLITTABLE
 		/* Emit marshalling loop */
 		index_var = cb_to_mono->methodBuilder.add_local (mb, int_type);
 		cb_to_mono->methodBuilder.emit_byte (mb, CEE_LDC_I4_0);
@@ -735,12 +716,10 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		cb_to_mono->methodBuilder.patch_branch (mb, label1);
 		cb_to_mono->methodBuilder.patch_branch (mb, label3);
-#endif
 
 		break;
 	}
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
-#ifndef DISABLE_NONBLITTABLE
 		guint32 label1, label2, label3;
 		int index_var, src, dest, esize;
 		MonoMarshalConv conv = MONO_MARSHAL_CONV_INVALID;
@@ -832,7 +811,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		cb_to_mono->methodBuilder.patch_branch (mb, label3);
 		cb_to_mono->methodBuilder.patch_branch (mb, label1);
-#endif
 		break;
 	}
 	default:
@@ -2862,9 +2840,6 @@ ilgen_init_internal (void)
 	cb.emit_marshal_asany = emit_marshal_asany_ilgen;
 	cb.emit_marshal_handleref = emit_marshal_handleref_ilgen;
 
-#ifdef DISABLE_NONBLITTABLE
-	mono_marshal_noilgen_init_blittable (&cb);
-#endif
 	mono_install_marshal_callbacks_ilgen (&cb);
 }
 

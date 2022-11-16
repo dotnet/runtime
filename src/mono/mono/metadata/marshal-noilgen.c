@@ -260,24 +260,3 @@ mono_marshal_noilgen_init_lightweight (void)
 
 #endif
 
-#ifdef DISABLE_NONBLITTABLE
-void
-mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb)
-{
-	cb->emit_marshal_boolean = emit_marshal_boolean_noilgen;
-	cb->emit_marshal_char = emit_marshal_char_noilgen;
-	cb->emit_marshal_custom = emit_marshal_custom_noilgen;
-	cb->emit_marshal_asany = emit_marshal_asany_noilgen;
-	cb->emit_marshal_vtype = emit_marshal_vtype_noilgen;
-	cb->emit_marshal_string = emit_marshal_string_noilgen;
-	cb->emit_marshal_safehandle = emit_marshal_safehandle_noilgen;
-	cb->emit_marshal_handleref = emit_marshal_handleref_noilgen;
-	cb->emit_marshal_object = emit_marshal_object_noilgen;
-	cb->emit_marshal_variant = emit_marshal_variant_noilgen;
-}
-#else
-void
-mono_marshal_noilgen_init_blittable (MonoMarshalLightweightCallbacks *cb)
-{
-}
-#endif
