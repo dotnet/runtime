@@ -238,7 +238,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     GenTree* op2 = tree->gtGetOp2();
 
                     // Only one per operation per block can be conditionally executed.
-                    if (found || op2->OperIs(GT_SELECT))
+                    if (found)
                     {
                         return false;
                     }
@@ -280,7 +280,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     }
 
                     // Only one per operation per block can be conditionally executed.
-                    if (found || op1 == nullptr || op1->OperIs(GT_SELECT))
+                    if (found || op1 == nullptr)
                     {
                         return false;
                     }
