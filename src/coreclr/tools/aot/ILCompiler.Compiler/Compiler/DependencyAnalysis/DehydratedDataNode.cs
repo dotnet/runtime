@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             var relocs = new Dictionary<ISymbolNode, int>(relocSort);
 
             // Walk all the ObjectDatas and generate the dehydrated instruction stream.
-            byte[] buff = new byte[5];
+            byte[] buff = new byte[4];
             int dehydratedSegmentPosition = 0;
             foreach (ObjectData o in factory.MetadataManager.GetDehydratableData())
             {
@@ -138,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
                     // comes first).
                     while (bytesToCopy > 0)
                     {
-                        // Try to identify a continuos run of zeros. If we find one, split this run of
+                        // Try to identify a continuous run of zeros. If we find one, split this run of
                         // bytes into chunks of data interleaved with zero fill instructions.
                         int chunkLength = 0;
                         int numZeros = 0;

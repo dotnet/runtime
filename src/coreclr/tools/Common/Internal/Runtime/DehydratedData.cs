@@ -11,7 +11,7 @@ namespace Internal.Runtime
     /// <remarks>
     /// The instructions use a variable length encoding and are split in two parts:
     /// the instruction command kind and command data (payload).
-    /// The payload is an integer. Instruction kind and payload can fit into a single
+    /// The payload is an integer. If the instruction kind and payload can fit into a single
     /// byte, the encoding is one byte. Bigger payloads produce bigger instructions.
     /// </remarks>
     internal static class DehydratedDataCommand
