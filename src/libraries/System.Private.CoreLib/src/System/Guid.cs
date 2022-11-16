@@ -50,7 +50,7 @@ namespace System
         {
             if (b.Length != 16)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+                ThrowArgumentException();
             }
 
             if (BitConverter.IsLittleEndian)
@@ -60,17 +60,32 @@ namespace System
             }
 
             // slower path for BigEndian:
-            _k = b[15];  // hoist bounds checks
-            _a = BinaryPrimitives.ReadInt32LittleEndian(b);
-            _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
-            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6));
-            _d = b[8];
-            _e = b[9];
-            _f = b[10];
-            _g = b[11];
-            _h = b[12];
-            _i = b[13];
-            _j = b[14];
+            this = ReadGuidLittleEndian(b);
+
+            static void ThrowArgumentException()
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+            }
+
+            static Guid ReadGuidLittleEndian(ReadOnlySpan<byte> b)
+            {
+                // hoist bounds checks
+                byte k = b[15];
+
+                return new Guid(
+                    BinaryPrimitives.ReadInt32LittleEndian(b),
+                    BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4)),
+                    BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6)),
+                    b[8],
+                    b[9],
+                    b[10],
+                    b[11],
+                    b[12],
+                    b[13],
+                    b[14],
+                    k
+                );
+            }
         }
 
         [CLSCompliant(false)]
