@@ -2,11 +2,15 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
+    <WasmDebugLevel>0</WasmDebugLevel>
+    <EmccInitialHeapSize>52625408</EmccInitialHeapSize>
+    <!-- 
     <WasmNativeStrip>false</WasmNativeStrip>
+    -->
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="capture.js" />
-    <WasmExtraFilesToDeploy Include="importNode.js" />
+    <WasmExtraFilesToDeploy Include="node-capture.js" />
+    <WasmExtraFilesToDeploy Include="node-import.js" />
   </ItemGroup>
 </Project>
