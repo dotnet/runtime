@@ -16,6 +16,7 @@ namespace ComInterfaceGenerator.Tests
 
             internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>
             {
+                static int IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.VirtualMethodTableLength => 2;
                 static void* IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.VirtualMethodTableManagedImplementation => null;
 
                 static void* IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.GetUnmanagedWrapperForObject(IStaticMethodTable obj) => null;
@@ -40,7 +41,8 @@ namespace ComInterfaceGenerator.Tests
                     _vtableStart = vtableStart;
                 }
 
-                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, 2));
+                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) =>
+                    new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<IStaticMethodTable>()));
             }
 
             [CustomMarshaller(typeof(StaticMethodTable), MarshalMode.ManagedToUnmanagedOut, typeof(StaticMethodTableMarshaller))]

@@ -17,16 +17,18 @@ namespace ComInterfaceGenerator.Tests
 
             internal partial interface INativeObject : IUnmanagedInterfaceType<INativeObject, NoCasting>
             {
+                static int IUnmanagedInterfaceType<INativeObject, NoCasting>.VirtualMethodTableLength => 2;
+
                 static NoCasting IUnmanagedInterfaceType<INativeObject, NoCasting>.TypeKey => default;
 
-                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 2);
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<INativeObject>());
                 static void* IUnmanagedInterfaceType<INativeObject, NoCasting>.VirtualMethodTableManagedImplementation
                 {
                     get
                     {
                         if (s_vtable[0] == null)
                         {
-                            Native.PopulateUnmanagedVirtualMethodTable(new Span<IntPtr>(s_vtable, 2));
+                            Native.PopulateUnmanagedVirtualMethodTable(new Span<IntPtr>(s_vtable, IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<INativeObject>()));
                         }
                         return s_vtable;
                     }

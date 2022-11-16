@@ -37,6 +37,12 @@ namespace System.Runtime.InteropServices
             return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
         }
 
+        public static int GetVirtualMethodTableLength<TUnmanagedInterfaceType>()
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+        {
+            return TUnmanagedInterfaceType.VirtualMethodTableLength;
+        }
+
         public static void* GetVirtualMethodTableManagedImplementation<TUnmanagedInterfaceType>()
             where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
         {
@@ -60,6 +66,8 @@ namespace System.Runtime.InteropServices
         where TInterface : IUnmanagedInterfaceType<TInterface, TKey>
         where TKey : IEquatable<TKey>
     {
+        public static abstract int VirtualMethodTableLength { get; }
+
         public static abstract void* VirtualMethodTableManagedImplementation { get; }
 
         public static abstract void* GetUnmanagedWrapperForObject(TInterface obj);

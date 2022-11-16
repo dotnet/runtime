@@ -16,7 +16,7 @@ namespace ComInterfaceGenerator.Tests
     {
         public static void* Allocate(TUnmanagedInterface obj)
         {
-            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * 2);
+            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * (nuint)IUnmanagedVirtualMethodTableProvider<TKey>.GetVirtualMethodTableLength<TUnmanagedInterface>());
             unmanaged[0] = TUnmanagedInterface.VirtualMethodTableManagedImplementation;
             unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj));
             return unmanaged;

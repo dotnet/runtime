@@ -18,6 +18,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl = """
+                static int IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableLength => 1;
                 static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableManagedImplementation => null;
                 static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
                 static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
