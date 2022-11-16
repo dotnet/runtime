@@ -4311,6 +4311,7 @@ namespace System
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsBrowser() { throw null; }
+        // TODO public static bool IsWasi() { throw null; } see https://github.com/dotnet/runtime/issues/78389
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]

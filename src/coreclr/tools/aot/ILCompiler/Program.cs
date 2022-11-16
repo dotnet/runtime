@@ -615,8 +615,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException($"Method '{singleMethodName}' not found in '{singleMethodTypeName}'");
 
-            if (method.HasInstantiation != (singleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     $"Expected {method.Instantiation.Length} generic arguments for method '{singleMethodName}' on type '{singleMethodTypeName}'");

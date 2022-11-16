@@ -6660,6 +6660,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             //
             inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS,
                                    compiler->fgHaveSufficientProfileWeights());
+            inlineResult->NoteBool(InlineObservation::CALLSITE_INSIDE_THROW_BLOCK,
+                                   compiler->compCurBB->KindIs(BBJ_THROW));
 
             bool const forceInline = (pParam->methAttr & CORINFO_FLG_FORCEINLINE) != 0;
 

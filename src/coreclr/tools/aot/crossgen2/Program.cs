@@ -513,10 +513,24 @@ namespace ILCompiler
                         // For normal compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(
-                                module,
-                                profileDataManager,
-                                profileDrivenPartialNGen: partial));
+                            compilationRoots.Add(new ReadyToRunProfilingRootProvider(module, profileDataManager));
+                            // If we're doing partial precompilation, only use profile data.
+                            if (!partial)
+                            {
+                                if (ReadyToRunVisibilityRootProvider.UseVisibilityBasedRootProvider(module))
+                                {
+                                    compilationRoots.Add(new ReadyToRunVisibilityRootProvider(module));
+
+                                    if (ReadyToRunXmlRootProvider.TryCreateRootProviderFromEmbeddedDescriptorFile(module, out ReadyToRunXmlRootProvider xmlProvider))
+                                    {
+                                        compilationRoots.Add(xmlProvider);
+                                    }
+                                }
+                                else
+                                {
+                                    compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
+                                }
+                            }
 
                             if (!_command.CompositeOrInputBubble)
                             {
