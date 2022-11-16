@@ -5553,10 +5553,10 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     compFrameInfo = {0};
 #endif
 
-    bool isNativeAot = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    bool isNativeAot     = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(isNativeAot);
-    m_preferredInitCctor = isNativeAot ? CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE
-                                       : CORINFO_HELP_READYTORUN_CCTOR_TRIGGER;
+    m_preferredInitCctor =
+        isNativeAot ? CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE : CORINFO_HELP_READYTORUN_CCTOR_TRIGGER;
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
