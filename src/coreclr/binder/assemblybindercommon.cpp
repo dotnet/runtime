@@ -16,8 +16,8 @@
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
-#include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
 #include "utils.hpp"
@@ -1055,8 +1055,18 @@ namespace BINDER_SPACE
         {
             if (pContextEntry == NULL)
             {
+                SAFE_NEW(pContextEntry, ContextEntry);
+
+                pContextEntry->SetIsInTPA(pBindResult->GetIsInTPA());
+                pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
+                pContextEntry->SetAssembly(pBindResult->GetAssembly());
+                if (pBindResult->GetIsFirstRequest())
+                {
+                    pContextEntry->SetIsFirstRequest(TRUE);
+                }
+
                 ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
-                IF_FAIL_GO(pExecutionContext->Register(pBindResult));
+                pExecutionContext->Add(pContextEntry);
             }
             else
             {
