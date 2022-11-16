@@ -10,7 +10,7 @@ namespace GcInfoTransitions
 
         }
 
-        static void Main(string[] args)
+        static void Main()
         {
             abc(new string('1',1));
             abc(new string('2', 1));

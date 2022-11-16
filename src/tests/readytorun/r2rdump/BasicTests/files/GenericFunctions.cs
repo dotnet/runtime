@@ -28,7 +28,7 @@ namespace GenericFunctions
             return t;
         }
 
-        static void Main(string[] args)
+        static void Main()
         {
             string str = "hello";
             UserDefinedStruct userDefinedStruct = new UserDefinedStruct(2);

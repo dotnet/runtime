@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 unsafe class Runtime_74117
 {
-    public unsafe static int Main(string[] args)
+    public unsafe static int Main()
     {
         byte a = 5;
         Problem(ref a, 0);

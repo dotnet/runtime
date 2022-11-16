@@ -15344,7 +15344,7 @@ internal class Program
         }
     }  // end of test case 0018
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {
