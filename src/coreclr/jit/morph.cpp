@@ -11006,6 +11006,11 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         return cast;
     }
 
+    if (cast->CastOp()->OperIsSimple())
+    {
+        fgOptimizeCastOfSmpOp(cast);
+    }
+
     // See if we can discard the cast.
     if (varTypeIsIntegral(cast) && varTypeIsIntegral(src))
     {
@@ -11084,11 +11089,6 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         }
     }
 
-    if (cast->CastOp()->OperIsSimple())
-    {
-        fgOptimizeCastOfSmpOp(cast);
-    }
-
     return cast;
 }
 
@@ -11133,6 +11133,8 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp1 = op1->CastOp();
 
                 DEBUG_DESTROY_NODE(op1);
+
+                //castOp->SetDoNotCSE();
             }
         }
 
@@ -11146,6 +11148,8 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp2 = op2->CastOp();
                 
                 DEBUG_DESTROY_NODE(op2);
+
+                //castOp->SetDoNotCSE();
             }
         }
     }
