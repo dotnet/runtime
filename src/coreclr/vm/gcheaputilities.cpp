@@ -169,7 +169,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
     libPath.Append(libFileName);
 
     LPCWSTR libraryName = libPath.GetUnicode();
-    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", libraryName));
+    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %s\n", libPath.GetUTF8()));
     return CLRLoadLibrary(libraryName);
 }
 #endif // FEATURE_STANDALONE_GC

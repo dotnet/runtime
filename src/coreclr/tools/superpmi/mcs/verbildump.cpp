@@ -909,8 +909,7 @@ char* DumpAttributeToConsoleBare(DWORD attribute)
 #define ifPrint(s, t)                                                                                                  \
     else if ((s & attribute) == s)                                                                                     \
     {                                                                                                                  \
-        printf(t);                                                                                                     \
-        printf(" ");                                                                                                   \
+        printf("%s ", t);                                                                                              \
     }
 
     if (0)
