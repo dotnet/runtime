@@ -778,8 +778,11 @@ struct Agnostic_PrintResult
     // Required size of a buffer to contain everything including null terminator.
     // UINT_MAX if it was not determined during recording.
     DWORD requiredBufferSize;
-    DWORD buffer;
-    DWORD bufferSize;
+    // Index of stored string buffer. We always store this without null terminator.
+    // May be UINT_MAX if no buffer was stored.
+    DWORD stringBuffer;
+    // The size of the buffer stored by stringBuffer.
+    DWORD stringBufferSize;
 };
 
 #pragma pack(pop)

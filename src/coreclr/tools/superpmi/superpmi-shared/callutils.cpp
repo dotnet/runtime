@@ -227,22 +227,16 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
         return kHelperName[GetHelperNum(hnd)];
     }
 
-    char classNameBuffer[256];
-    char methodNameBuffer[256];
-
-    const char* className = "CLASS";
-    const char* methodName = "METHOD";
+    std::string className = "CLASS";
+    std::string methodName = "METHOD";
 
     if (!ignoreMethodName)
     {
-        mc->repPrintClassName(mc->repGetMethodClass(hnd), classNameBuffer, sizeof(classNameBuffer));
-        mc->repPrintMethodName(hnd, methodNameBuffer, sizeof(methodNameBuffer));
-
-        className = classNameBuffer;
-        methodName = methodNameBuffer;
+        className = getClassName(mc, mc->repGetMethodClass(hnd));
+        methodName = getMethodName(mc, hnd);
     }
 
-    size_t   length = 0;
+    size_t   length = className.size();
     unsigned i;
 
     /* Generating the full signature is a two-pass process. First we have to walk
@@ -254,17 +248,8 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 
     /* initialize length with length of className and '.' */
 
-    if (className != nullptr)
-        length = strlen(className) + 1;
-    else
-    {
-        // Tweaked to avoid using CRT assertions
-        Assert(strlen("<NULL>.") == 7);
-        length = 7;
-    }
-
     /* add length of methodName and opening bracket */
-    length += strlen(methodName) + 1;
+    length += methodName.size() + 1;
 
     CORINFO_ARG_LIST_HANDLE argList = sig.args;
 
@@ -308,17 +293,10 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 
     /* Now generate the full signature string in the allocated buffer */
 
-    if (className)
-    {
-        strcpy_s(retName, length, className);
-        strcat_s(retName, length, ":");
-    }
-    else
-    {
-        strcpy_s(retName, length, "<NULL>.");
-    }
+    strcpy_s(retName, length, className.c_str());
+    strcat_s(retName, length, ":");
 
-    strcat_s(retName, length, methodName);
+    strcat_s(retName, length, methodName.c_str());
 
     // append the signature
     strcat_s(retName, length, "(");

@@ -38,9 +38,8 @@ static void printInFull(TPrinter print)
 
     if (requiredSize > sizeof(buffer))
     {
-        char* alloced = new char[requiredSize];
-        print(alloced, requiredSize, nullptr);
-        delete[] alloced;
+        std::vector<char> vec(requiredSize);
+        print(vec.data(), requiredSize, nullptr);
     }
 }
 

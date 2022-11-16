@@ -2275,14 +2275,23 @@ public:
     //
     // Arguments:
     //    handle     -          Direct object handle
-    //    buffer     -          Pointer to buffer
-    //    bufferSize -          Buffer size
-    //    pRequiredBufferSize - Full length of the textual UTF8 representation, can be used to call this
-    //                          API again with a bigger buffer to get the full string if the first buffer
-    //                          from that first attempt was not big enough.
+    //    buffer     -          Pointer to buffer. Can be nullptr.
+    //    bufferSize -          Buffer size (in bytes).
+    //    pRequiredBufferSize - Full length of the textual UTF8 representation, in bytes.
+    //                          Includes the null terminator, so the value is always at least 1,
+    //                          where 1 indicates an empty string.
+    //                          Can be used to call this API again with a bigger buffer to get the full
+    //                          string.
     //
     // Return Value:
-    //    Bytes written to the given buffer excluding the null terminator. The range is [0..bufferSize).
+    //    Bytes written to the buffer, excluding the null terminator. The range is [0..bufferSize).
+    //    If bufferSize is 0, returns 0.
+    //
+    // Remarks:
+    //    buffer and bufferSize can be respectively nullptr and 0 to query just the required buffer size.
+    //
+    //    If the return value is less than bufferSize - 1 then the full string was written. In this case
+    //    it is guaranteed that return value == *pRequiredBufferSize - 1.
     //
     virtual size_t printObjectDescription (
             CORINFO_OBJECT_HANDLE       handle,                       /* IN  */

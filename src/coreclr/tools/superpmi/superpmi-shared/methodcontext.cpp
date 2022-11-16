@@ -6479,33 +6479,33 @@ void MethodContext::recPrint(
             res.requiredBufferSize = requiredBufferSize;
         }
 
-        if (bytesWritten > res.bufferSize)
+        if (bytesWritten > res.stringBufferSize)
         {
             // Always stored without null terminator.
-            res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
-            res.bufferSize = (UINT)bytesWritten;
+            res.stringBuffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
+            res.stringBufferSize = (UINT)bytesWritten;
         }
 
         map->Update(index, res);
 
-        dmpPrint(name, map, handle, res);
+        DEBUG_REC(dmpPrint(name, map, handle, res));
         return;
     }
 
     if (buffer != nullptr)
     {
-        res.buffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
+        res.stringBuffer = map->AddBuffer((unsigned char*)buffer, static_cast<unsigned>(bytesWritten));
     }
     else
     {
-        res.buffer = UINT_MAX;
+        res.stringBuffer = UINT_MAX;
     }
 
-    res.bufferSize = (UINT)bytesWritten;
+    res.stringBufferSize = (UINT)bytesWritten;
     res.requiredBufferSize = requiredBufferSize;
 
     map->Add(handle, res);
-    dmpPrint(name, map, handle, res);
+    DEBUG_REC(dmpPrint(name, map, handle, res));
 }
 
 void MethodContext::dmpPrint(
@@ -6514,7 +6514,7 @@ void MethodContext::dmpPrint(
     DWORDLONG key,
     const Agnostic_PrintResult& value)
 {
-    printf("%s key hnd-%016llX, bufferSize-%u, requiredBufferSize-%u", name, key, value.bufferSize, value.requiredBufferSize);
+    printf("%s key hnd-%016llX, stringBufferSize-%u, requiredBufferSize-%u", name, key, value.stringBufferSize, value.requiredBufferSize);
     buffer->Unlock();
 }
 
@@ -6541,10 +6541,13 @@ size_t MethodContext::repPrint(
         *pRequiredBufferSize = res.requiredBufferSize;
     }
 
-    // requiredBufferSize is with null terminator, but buffer is stored without null terminator.
-    // Determine if we have enough data to answer the call losslessly.
-    bool haveFullBuffer = (res.requiredBufferSize != UINT_MAX) && ((res.bufferSize + 1) >= res.requiredBufferSize);
-    if (!haveFullBuffer && (bufferSize > static_cast<size_t>(res.bufferSize) + 1))
+    // requiredBufferSize is with null terminator, but buffer is stored without
+    // null terminator. Determine if we have enough data to answer the query
+    // losslessly.
+    // Note that requiredBufferSize is always set by recording side if we had
+    // enough information to determine it.
+    bool haveFullBuffer = (res.requiredBufferSize != UINT_MAX) && ((res.stringBufferSize + 1) >= res.requiredBufferSize);
+    if (!haveFullBuffer && (bufferSize > static_cast<size_t>(res.stringBufferSize) + 1))
     {
         LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (not enough buffer data for %s key %016llx)", name, handle);
     }
@@ -6552,9 +6555,15 @@ size_t MethodContext::repPrint(
     size_t bytesWritten = 0;
     if ((buffer != nullptr) && (bufferSize > 0))
     {
-        char* storedBuffer = (char*)map->GetBuffer(res.buffer);
-        bytesWritten = min(bufferSize - 1, res.bufferSize);
-        memcpy(buffer, storedBuffer, bytesWritten);
+        bytesWritten = min(bufferSize - 1, res.stringBufferSize);
+        if (bytesWritten > 0)
+        {
+            // The "full buffer" check above ensures this given that
+            // res.stringBuffer == UINT_MAX implies res.stringBufferSize == 0.
+            Assert(res.stringBuffer != UINT_MAX);
+            char* storedBuffer = (char*)map->GetBuffer(res.stringBuffer);
+            memcpy(buffer, storedBuffer, bytesWritten);
+        }
         buffer[bytesWritten] = '\0';
     }
 
