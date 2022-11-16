@@ -133,6 +133,11 @@
   <PropertyGroup>
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <RunAnalyzers Condition="'$(TargetPlatformIdentifier)' == 'wasi'">false</RunAnalyzers><!-- TODOWASI -->
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1416</NoWarn><!-- TODOWASI -->
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
