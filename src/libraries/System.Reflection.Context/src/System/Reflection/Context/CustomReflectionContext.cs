@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Reflection.Context.Custom;
 using System.Reflection.Context.Projection;
 using System.Reflection.Context.Virtual;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Context
 {
