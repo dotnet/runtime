@@ -20,6 +20,9 @@ set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
+# This is always enabled now, and we should go through the code to remove the case here it is not defined
+set(ENABLE_ILGEN 1)
+
 if(NOT MONO_LIB_NAME)
   set(MONO_LIB_NAME "monosgen-2.0")
 endif()
@@ -74,9 +77,6 @@ set(DISABLE_COM 1)
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
-endif()
-if(NOT DISABLE_INTERPRETER OR NOT DISABLE_JIT)
-  set(ENABLE_ILGEN 1)
 endif()
 if(NOT DISABLE_EVENTPIPE)
   set(ENABLE_PERFTRACING 1)

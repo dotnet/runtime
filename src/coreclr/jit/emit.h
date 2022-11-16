@@ -564,7 +564,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        size_t            idMemCookie;   // for display of method name  (also used by switch table)
+        size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'

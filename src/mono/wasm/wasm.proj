@@ -122,6 +122,8 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="FS_readFile" />
+      <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
@@ -157,6 +159,8 @@
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <!-- for jiterpreter -->
+      <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
