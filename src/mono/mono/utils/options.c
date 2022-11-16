@@ -257,7 +257,7 @@ strncat_safe (char *destination, const char *source, char *end)
 	if (destination >= end)
 		return end;
 
-	return strncat(destination, source, end - destination);
+	return strncat (destination, source, end - destination);
 }
 
 static char *
@@ -266,11 +266,11 @@ strncat_option_json (char *destination, MonoOptionType type, const void *value, 
 	switch (type) {
 	case MONO_OPTION_BOOL:
 	case MONO_OPTION_BOOL_READONLY:
-		return strncat_safe(destination, *(gboolean*)value ? "true" : "false", end);
+		return strncat_safe (destination, *(gboolean*)value ? "true" : "false", end);
 
 	case MONO_OPTION_INT: {
-		char * buf = option_value_to_str(type, value);
-		char * result = strncat_safe(destination, buf, end);
+		char * buf = option_value_to_str (type, value);
+		char * result = strncat_safe (destination, buf, end);
 		g_free(buf);
 		return result;
 	}
@@ -279,7 +279,7 @@ strncat_option_json (char *destination, MonoOptionType type, const void *value, 
 		char ch;
 		const char * src = *(char**)value;
 		if (!src)
-			return strncat_safe(destination, "\"\"", end);
+			return strncat_safe (destination, "\"\"", end);
 
 		while ((ch = *src) != 0) {
 			if (destination >= (end - 1))
@@ -295,7 +295,7 @@ strncat_option_json (char *destination, MonoOptionType type, const void *value, 
 				default:
 					if (ch < 32) {
 						char * buf = g_strdup_printf ("\\u%04X", ch);
-						destination = strncat_safe(destination, buf, end);
+						destination = strncat_safe (destination, buf, end);
 						g_free(buf);
 					} else
 						*destination++ = *src;
@@ -320,20 +320,20 @@ mono_options_get_as_json (char *result_buffer, int result_buffer_size)
 	gboolean need_comma = FALSE;
 
 	*destination = 0;
-	strncpy(destination, "{\n", result_buffer_size);
+	strncpy (destination, "{\n", result_buffer_size);
 
 #define DEFINE_OPTION_READONLY(option_type, ctype, c_name, cmd_name, def_value, comment) DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment)
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) do { \
 		if (need_comma) \
-			destination = strncat_safe(destination, ",\n", end); \
-		destination = strncat_safe(destination, "  \"", end); \
-		destination = strncat_safe(destination, cmd_name, end); \
-		destination = strncat_safe(destination, "\": ", end); \
-		destination = strncat_option_json(destination, option_type, &mono_opt_##c_name, end); \
+			destination = strncat_safe (destination, ",\n", end); \
+		destination = strncat_safe (destination, "  \"", end); \
+		destination = strncat_safe (destination, cmd_name, end); \
+		destination = strncat_safe (destination, "\": ", end); \
+		destination = strncat_option_json (destination, option_type, &mono_opt_##c_name, end); \
 		need_comma = TRUE; \
 	} while (0);
 
 #include "options-def.h"
 
-	destination = strncat_safe(destination, need_comma ? "\n}" : "}", end);
+	destination = strncat_safe (destination, need_comma ? "\n}" : "}", end);
 }

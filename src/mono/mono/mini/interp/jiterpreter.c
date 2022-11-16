@@ -939,9 +939,7 @@ mono_jiterp_parse_option (const char *option)
 
 	const char *arr[2] = { option, NULL };
 	int temp;
-	mono_options_parse_options(arr, 1, &temp, NULL);
-
-	mono_options_version++;
+	mono_options_parse_options (arr, 1, &temp, NULL);
 	return TRUE;
 }
 
@@ -956,8 +954,8 @@ mono_jiterp_get_options_version ()
 EMSCRIPTEN_KEEPALIVE char *
 mono_jiterp_get_options_as_json ()
 {
-	char * buf = g_malloc0(8192);
-	mono_options_get_as_json(buf, 8192);
+	char * buf = g_malloc0 (8192);
+	mono_options_get_as_json (buf, 8192);
 	return buf;
 }
 
