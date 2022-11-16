@@ -60,20 +60,15 @@ namespace System
             {
                 Marshal.StructureToPtr(shareInfo, infoBuffer, false);
 
+                const int NERR_DuplicateShare = 2118;
                 int shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
-                switch (shareResult)
+                if (shareResult == NERR_DuplicateShare)
                 {
-                    case 0:
-                        break;
-                    case 2118:
-                        NetShareDel(string.Empty, _shareName, 0);
-                        shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
-                        break;
-                    default:
-                        throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
+                    NetShareDel(string.Empty, _shareName, 0);
+                    shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
                 }
 
-                if (shareResult != 0 && shareResult != 2118) // is a failure that is not a NERR_DuplicateShare
+                if (shareResult != 0 && shareResult != NERR_DuplicateShare)
                 {
                     throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
                 }
