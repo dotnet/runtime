@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Keep these in sync with ILLinkTasksAssembly in Microsoft.NET.ILLInk.Tasks.props. -->
+    <!-- Keep the net#.0 TFM in sync with the Mono.Linker.csproj condition below. -->
+    <!-- Keep the net#.0 TFM in sync with the code in LinkTask.cs in method ILLink.ILLinkPath. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Description>MSBuild tasks for running the IL Linker</Description>
+    <IsPackable>true</IsPackable>
+    <!-- Removing the package id to be able to build the linker inside runtime 
+         This will become unnecessary once we use live bits -->
+    <!-- PackageId>Microsoft.NET.ILLink.Tasks</PackageId -->
+    <!-- We want to package the tasks package together with its
+         transitive dependencies and the linker, without marking them
+         as dependencies in the tasks package. -->
+    <IncludePublishOutput>true</IncludePublishOutput>
+    <!-- Include deps.json and runtimeconfig.json since we run illink.dll as a separate process. -->
+    <IncludeJsonFilesInPackage>true</IncludeJsonFilesInPackage>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <!-- Recommended by arcade for tools projects. generates an assembly version that includes patch number derived from date and build revision -->
+    <!-- Set AutoGenerateAssemblyVersion to false until runtime uses illink live bits and removes dependencies https://github.com/dotnet/runtime/issues/78076 -->
+    <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
+    <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Nullable>disable</Nullable>
+    <!-- Targets don't match the package id. This is intentional. -->
+    <NoWarn>$(NoWarn);NU5129</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CombineLinkerXmlFiles.cs" />
+    <Compile Include="LinkTask.cs" />
+    <Compile Include="ComputeManagedAssemblies.cs" />
+    <Compile Include="CreateRuntimeRootDescriptorFile.cs" />
+    <Compile Include="Utils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="sdk/Sdk.props" PackagePath="Sdk/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="build/Microsoft.NET.ILLink.Tasks.props" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- Note: this should not match the package name, because we don't want the targets
+         to be imported by nuget. The SDK will import them in the right order. -->
+    <Content Include="build/Microsoft.NET.ILLink.targets" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="build/6.0_suppressions.xml" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == '$(NetCoreAppToolCurrent)' " />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- We use private assets for the Microsoft.Build packages to
+         prevent them from being published with the tasks dll, because
+         these are already a part of the SDK. -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" PrivateAssets="All" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="All" ExcludeAssets="Runtime" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" Condition=" '$(TargetFramework)' == 'net472' " PrivateAssets="All" Publish="True" />
+
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.2" />
+  </ItemGroup>
+</Project>

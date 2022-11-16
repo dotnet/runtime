@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="libfwd">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredExportedTypeIsKept_Used1" preserve="fields" required="false"/>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredExportedTypeIsKept_Used2" preserve="methods" required="false"/>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredExportedTypeIsKept_Used3" preserve="all" required="false"/>
+    </assembly>
+</linker>
