@@ -82,5 +82,27 @@ namespace System.Formats.Tar.Tests
                 Assert.Throws<InvalidOperationException>(() => entry.ExtractToFile(Path.Join(root.Path, "file"), overwrite: true));
             }
         }
+
+        [Theory]
+        [InlineData("key", "value")]
+        [InlineData("key     ", "   value    ")]
+        [InlineData("      key     ", "   value    ")]
+        [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
+        public void GlobalExtendedAttribute_Roundtrips(string key, string value)
+        {
+            var stream = new MemoryStream();
+            using (var writer = new TarWriter(stream, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>() { { key, value } }));
+            }
+
+            stream.Position = 0;
+            using (var reader = new TarReader(stream))
+            {
+                PaxGlobalExtendedAttributesTarEntry entry = Assert.IsType<PaxGlobalExtendedAttributesTarEntry>(reader.GetNextEntry());
+                Assert.Equal(1, entry.GlobalExtendedAttributes.Count);
+                Assert.Equal(KeyValuePair.Create(key.TrimStart(), value), entry.GlobalExtendedAttributes.First());
+            }
+        }
     }
 }
