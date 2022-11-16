@@ -481,7 +481,7 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true, allow: true);
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true);
                 }
             }
 
@@ -490,33 +490,26 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
-                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false, allow: true);
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false);
                 }
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add, bool allow)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
         {
-            if (!string.IsNullOrWhiteSpace(filePath))
-            {
-                FileInfo fileInfo = new FileInfo(filePath);
-                FileSecurity fileSecurity = fileInfo.GetAccessControl();
-                Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add, allow);
-                fileInfo.SetAccessControl(fileSecurity);
-            }
+            FileInfo fileInfo = new FileInfo(filePath);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
+            fileInfo.SetAccessControl(fileSecurity);
 
-            if (!string.IsNullOrWhiteSpace(directoryPath))
-            {
-                DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
-                DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
-                Apply(userName, directorySecurity, FileSystemRights.Read, add, allow);
-                directoryInfo.SetAccessControl(directorySecurity);
-            }
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+            Apply(userName, directorySecurity, FileSystemRights.Read, add);
+            directoryInfo.SetAccessControl(directorySecurity);
 
-            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add, bool allow)
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
             {
-                AccessControlType accessControlType = allow ? AccessControlType.Allow : AccessControlType.Deny;
-                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, accessControlType);
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
 
                 if (add)
                 {

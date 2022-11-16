@@ -13,10 +13,12 @@ namespace System.Diagnostics.Tests
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
             => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
-        public void TestUserNetworkCredentialsPropertiesOnWindows()
+        [InlineData(false, -1)]
+        [InlineData(true, RemoteExecutor.SuccessExitCode)]
+        public void TestUserNetworkCredentialsPropertiesOnWindows(bool authorizeUserToAccessTestFile, int expectedExitCode)
         {
             string testFilePath = GetTestFilePath();
             Assert.False(string.IsNullOrWhiteSpace(testFilePath), $"Path to test file should not be empty: {testFilePath}");
@@ -32,19 +34,15 @@ namespace System.Diagnostics.Tests
             const string UncPath = nameof(UncPath);
             using Process p = CreateProcess(() =>
             {
-                // Read file content using network credentials and output it for assertion comparison
-                _ = File.ReadAllText(Environment.GetEnvironmentVariable(UncPath));
                 try
                 {
-                    // Read file content using current user - should fail, because current user
-                    // explicitly forbidden from accessing the file.
-                    _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
-
-                    return -1;
+                    // Read file content using network credentials and output it for assertion comparison
+                    _ = File.ReadAllText(Environment.GetEnvironmentVariable(UncPath));
+                    return RemoteExecutor.SuccessExitCode;
                 }
                 catch (Exception ex) when (ex is SecurityException or UnauthorizedAccessException)
                 {
-                    return RemoteExecutor.SuccessExitCode;
+                    return -1;
                 }
             });
             p.StartInfo.Environment[LocalPath] = testFilePath;
@@ -56,25 +54,23 @@ namespace System.Diagnostics.Tests
             string processUserName = Helpers.GetProcessUserName(p);
             Assert.True(p.WaitForExit(WaitInMS));
 
-            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+            Assert.Equal(expectedExitCode, p.ExitCode);
             Assert.Equal(Environment.UserName, processUserName);
 
             void Setup(string username, string _)
             {
-                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                if (authorizeUserToAccessTestFile && PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true, allow: true);
-                    SetAccessControl(Environment.UserName, testFilePath, null, add: true, allow: false);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
                 }
             }
 
             void Cleanup(string username, string _)
             {
-                if (PlatformDetection.IsNotWindowsServerCore)
+                if (authorizeUserToAccessTestFile && PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false, allow: true);
-                    SetAccessControl(Environment.UserName, testFilePath, null, add: false, allow: false);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
             }
         }
