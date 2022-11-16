@@ -36,8 +36,8 @@ int main(const int argc, const char *argv[])
     printf("Timeout Given: %ld\n", config.timeout);
     printf("Corerun Path Given: %s\n", config.corerun_path);
     printf("Corerun Arguments Given:\n");
-    int r = run_timed_process(config);
-    printf("%d\n", r);
+    int exit_code = run_timed_process(config);
+    printf("Test Process exited with code: %d\n", exit_code);
     return EXIT_SUCCESS;
 }
 
@@ -133,10 +133,6 @@ static int run_timed_process(configuration& config)
         program_args[i+1] = (char *) config.corerun_argv.at(i);
     }
 
-    for (int j = 0; j <= corerun_argc; j++)
-        printf("At [%d]: %s\n", j, program_args[j]);
-    return 100;
-
     child_pid = fork();
 
     if (child_pid < 0)
@@ -151,6 +147,7 @@ static int run_timed_process(configuration& config)
 
         // Run the test binary and exit unsuccessfully if it's killed or dies for
         // whatever reason.
+        printf("Aboutta execute test\n");
         execv(program_args[0], &program_args[0]);
         _exit(EXIT_FAILURE);
     }
@@ -163,6 +160,7 @@ static int run_timed_process(configuration& config)
         do
         {
             w = waitpid(child_pid, &child_status, WNOHANG);
+            printf("Waiting...\n");
 
             // Something went very wrong.
             if (w == -1)
@@ -178,6 +176,7 @@ static int run_timed_process(configuration& config)
                 if (WIFEXITED(child_status))
                 {
                     // Our test run completed successfully.
+                    printf("Exited successfully...\n");
                     return WEXITSTATUS(child_status);
                 }
             }
