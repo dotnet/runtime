@@ -445,7 +445,7 @@ namespace R2RDump
                 {
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
-
+                    r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
                     if (disasm)
                     {
                         disassembler = new Disassembler(r2r, model);
