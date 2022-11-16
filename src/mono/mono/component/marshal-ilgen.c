@@ -57,9 +57,6 @@ static MonoComponentMarshalILgen component_func_table = {
 	&ilgen_init_internal,
 	&emit_marshal_ilgen,
 	&ilgen_install_callbacks_mono,
-#ifndef ENABLE_ILGEN
-	&mono_marshal_noilgen_init_heavyweight
-#endif
 }; 
 
 
