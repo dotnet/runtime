@@ -46,22 +46,26 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>8.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+
+    <!-- The previous supported .NET version. -->
+    <NetCoreAppPreviousVersion>7.0</NetCoreAppPreviousVersion>
+    <NetCoreAppPrevious>net$(NetCoreAppPreviousVersion)</NetCoreAppPrevious>
+    <NetCoreAppPrevious Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
+    <NetCoreAppPreviousPackageBaselineVersion>$(NetCoreAppPreviousVersion).0</NetCoreAppPreviousPackageBaselineVersion>
+
+    <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
     <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
-
-    <NetCoreAppLatestStableVersion>6.0</NetCoreAppLatestStableVersion>
-    <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
-    <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
 
     <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
