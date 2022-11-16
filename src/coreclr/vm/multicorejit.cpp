@@ -155,7 +155,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     {
         CFileStream fileStream;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName)))
+        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
         {
             hr = WriteOutput(& fileStream);
         }
@@ -919,7 +919,7 @@ HRESULT MulticoreJitRecorder::StopProfile(bool appDomainShutdown)
         hr = WriteOutput();
     }
 
-    MulticoreJitTrace(("StopProfile: Save new profile to %s, hr=0x%x", m_fullFileName.GetUTF8(), hr));
+    MulticoreJitTrace(("StopProfile: Save new profile to %s, hr=0x%x", m_fullFileName.GetUnicode(), hr));
 
     return hr;
 }
@@ -1049,7 +1049,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 player.SuppressRelease();
             }
 
-            MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUTF8(), hr1));
+            MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUnicode(), hr1));
 
             // Ignore error, even when we can't play back the file, we can still record new one
 
