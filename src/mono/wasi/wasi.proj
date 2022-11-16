@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>wasi-wasm</PackageRID>
@@ -242,6 +241,4 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\wasm"
           SkipUnchangedFiles="true" />
   </Target>
-
-
 </Project>

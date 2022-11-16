@@ -52,7 +52,6 @@
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/marshal-lightweight.h>
-#include <mono/metadata/marshal-noilgen.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -4491,22 +4490,9 @@ mini_init (const char *filename)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
-#ifdef ENABLE_ILGEN
 	mono_marshal_lightweight_init ();
   	mono_component_marshal_ilgen()->ilgen_init_internal ();
 	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
-#else
-	if (mono_marshal_is_ilgen_requested ())
-  	{
-		mono_marshal_lightweight_init ();
-  		mono_component_marshal_ilgen()->ilgen_init_internal ();
-		mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
- 	}
-	else{
-		mono_marshal_noilgen_init_lightweight();
-		mono_component_marshal_ilgen()->noilgen_init_heavyweight ();
-	}
-#endif
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
