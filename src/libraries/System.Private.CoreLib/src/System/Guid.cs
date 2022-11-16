@@ -53,20 +53,14 @@ namespace System
                 ThrowArgumentException();
             }
 
-            if (BitConverter.IsLittleEndian)
-            {
-                this = MemoryMarshal.Read<Guid>(b);
-                return;
-            }
-
-            // slower path for BigEndian:
-            this = ReadGuidLittleEndian(b);
+            this = BitConverter.IsLittleEndian ? MemoryMarshal.Read<Guid>(b) : ReadGuidLittleEndian(b);
 
             static void ThrowArgumentException()
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             }
 
+            // slower path for BigEndian:
             static Guid ReadGuidLittleEndian(ReadOnlySpan<byte> b)
             {
                 // hoist bounds checks
