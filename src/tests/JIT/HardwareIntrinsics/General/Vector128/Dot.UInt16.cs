@@ -70,7 +70,7 @@ namespace JIT.HardwareIntrinsics.General._Vector128
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<UInt16>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<UInt16>();
-                if (!int.IsPow2(alignment) || (alignment > 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
+                if ((alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -293,7 +293,20 @@ namespace JIT.HardwareIntrinsics.General._Vector128
         {
             bool succeeded = true;
 
-            UInt16 actualResult = ComputeExpectedResult(left, right);
+            UInt16 actualResult = default;
+            UInt16 intermResult = default;
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                if ((i % Vector128<UInt16>.Count) == 0)
+                {
+                    actualResult += intermResult;
+                    intermResult = default;
+                }
+                intermResult += (UInt16)(left[i] * right[i]);
+            }
+
+            actualResult += intermResult;
 
             if (actualResult != result)
             {
@@ -309,31 +322,6 @@ namespace JIT.HardwareIntrinsics.General._Vector128
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
-            }
-        }
-
-        private UInt16 ComputeExpectedResult(ReadOnlySpan<UInt16> left, ReadOnlySpan<UInt16> right)
-        {
-            // We need to do pairwise addition to compute the result. However, we need this done for the vector chunks
-            // as well. So we'll just recurse down to 1 element. This ensures that:
-            // * Vector512<T> is Vector256<T> + Vector256<T>
-            // * Vector256<T> is Vector128<T> + Vector128<T>
-            // * Vector128<T> is Vector64<T>  + Vector64<T>
-            // * etc
-            // This continues down to `(left[n] * right[n]) + (left[n + 1] * right[n + 1])`
-
-            if (left.Length != 1)
-            {
-                int half = left.Length / 2;
-
-                return (UInt16)(
-                    ComputeExpectedResult(left.Slice(0, half), right.Slice(0, half)) +
-                    ComputeExpectedResult(left.Slice(half), right.Slice(half))
-                );
-            }
-            else
-            {
-                return (UInt16)(left[0] * right[0]);
             }
         }
     }

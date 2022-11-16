@@ -2,6 +2,10 @@
   <PropertyGroup>
     <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- https://github.com/dotnet/runtime/issues/57352 -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

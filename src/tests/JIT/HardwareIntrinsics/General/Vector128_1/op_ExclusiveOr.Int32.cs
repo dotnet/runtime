@@ -73,7 +73,7 @@ namespace JIT.HardwareIntrinsics.General._Vector128_1
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Int32>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Int32>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Int32>();
-                if (!int.IsPow2(alignment) || (alignment > 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }

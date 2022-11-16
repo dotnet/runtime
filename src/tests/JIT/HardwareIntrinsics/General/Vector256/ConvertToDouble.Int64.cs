@@ -70,7 +70,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Int64>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Double>();
-                if (!int.IsPow2(alignment) || (alignment > 32) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -287,6 +287,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
 
             if (result[0] != (double)(firstOp[0]))
             {
+                Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                 succeeded = false;
             }
             else
@@ -295,6 +296,7 @@ namespace JIT.HardwareIntrinsics.General._Vector256
                 {
                     if (result[i] != (double)(firstOp[i]))
                     {
+                        Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                         succeeded = false;
                         break;
                     }
