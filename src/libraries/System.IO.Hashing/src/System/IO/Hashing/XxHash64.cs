@@ -11,6 +11,10 @@ namespace System.IO.Hashing
     /// <summary>
     ///   Provides an implementation of the XxHash64 algorithm.
     /// </summary>
+    /// <remarks>
+    /// For methods that persist the computed numerical hash value as bytes,
+    /// the value is written in the Big Endian byte order.
+    /// </remarks>
     public sealed partial class XxHash64 : NonCryptographicHashAlgorithm
     {
         private const int HashSize = sizeof(ulong);

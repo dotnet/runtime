@@ -11,8 +11,9 @@ namespace System.IO.Hashing
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     This implementation emits the answer in the Little Endian byte order so that
-    ///     the CRC residue relationship (CRC(message concat CRC(message))) is a fixed value) holds.
+    ///     For methods that return byte arrays or that write into spans of bytes, this implementation
+    ///     emits the answer in the Little Endian byte order so that the CRC residue relationship
+    ///     (CRC(message concat CRC(message))) is a fixed value) holds.
     ///     For CRC-32 this stable output is the byte sequence <c>{ 0x1C, 0xDF, 0x44, 0x21 }</c>,
     ///     the Little Endian representation of <c>0x2144DF1C</c>.
     ///   </para>

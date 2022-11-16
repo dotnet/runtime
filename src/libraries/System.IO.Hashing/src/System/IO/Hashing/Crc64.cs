@@ -10,7 +10,8 @@ namespace System.IO.Hashing
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     This implementation emits the answer in the Big Endian byte order so that
+    ///     For methods that return byte arrays or that write into spans of bytes,
+    ///     this implementation emits the answer in the Big Endian byte order so that
     ///     the CRC residue relationship (CRC(message concat CRC(message))) is a fixed value) holds.
     ///     For CRC-64 this stable output is the byte sequence
     ///     <c>{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }</c>.
