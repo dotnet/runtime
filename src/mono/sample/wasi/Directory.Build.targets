@@ -25,14 +25,14 @@
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=WASI $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
+    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=wasi $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-      <WASIRuntimeFiles Include="$(RepoRoot)artifacts/bin/microsoft.netcore.app.runtime.wasi-wasm/$(Configuration)/runtimes/wasi-wasm/**/*.*"/>
+      <WasiRuntimeFiles Include="$(RepoRoot)artifacts/bin/microsoft.netcore.app.runtime.wasi-wasm/$(Configuration)/runtimes/wasi-wasm/**/*.*"/>
     </ItemGroup>
 
-    <Copy SourceFiles="@(WASIRuntimeFiles)"
-          DestinationFiles="@(WASIRuntimeFiles->'bin/publish/runtime/%(RecursiveDir)%(Filename)%(Extension)')"
+    <Copy SourceFiles="@(WasiRuntimeFiles)"
+          DestinationFiles="@(WasiRuntimeFiles->'bin/publish/runtime/%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 

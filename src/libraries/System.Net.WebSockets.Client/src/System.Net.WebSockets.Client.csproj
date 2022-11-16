@@ -7,7 +7,7 @@
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'WASI'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
 

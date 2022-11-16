@@ -376,16 +376,16 @@ jobs:
 
 # WASI WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'WASI_wasm') }}:
+- ${{ if containsValue(parameters.platforms, 'wasi_wasm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: WASI
+      osGroup: wasi
       archType: wasm
       targetRid: wasi-wasm
-      platform: WASI_wasm
+      platform: wasi_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container: Linux_x64
       jobParameters:

@@ -168,9 +168,6 @@ build_native()
             echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
             $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
             exit_code="$?"
-        elif [[ "$build_arch" == "wasm" ]]; then
-            echo "!!!!!!!!!!!!!!! TODOWASI !!!!!!!!!!!!!!"
-            exit 1
         else
             # For non-wasm Unix scenarios, we may have to use an old version of CMake that doesn't support
             # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.

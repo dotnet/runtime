@@ -113,7 +113,7 @@ extends:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         platforms:
-        - WASI_wasm
+        - wasi_wasm
         jobParameters:
           testGroup: innerloop
           timeoutInMinutes: 120

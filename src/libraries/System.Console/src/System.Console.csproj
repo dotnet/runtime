@@ -8,7 +8,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_SystemConsole</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'WASI'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -159,7 +159,7 @@
              Link="Common\System\IO\Win32Marshal.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'WASI'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
@@ -210,7 +210,7 @@
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs"
              Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" 
-             Condition="'$(TargetPlatformIdentifier)' != 'WASI'"
+             Condition="'$(TargetPlatformIdentifier)' != 'wasi'"
              />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs"
              Link="Common\Interop\Unix\Interop.SetSignalForBreak.cs" />

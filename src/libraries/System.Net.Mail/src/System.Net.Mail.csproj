@@ -78,12 +78,12 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'WASI'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\Mail\SmtpClient.Browser.cs" />
   </ItemGroup>
 
   <!-- Non Browser specific files - internal and security -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'WASI'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="System\Net\Mail\SmtpClient.cs" />
     <Compile Include="System\Net\Mail\ISmtpAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\SmtpAuthenticationManager.cs" />

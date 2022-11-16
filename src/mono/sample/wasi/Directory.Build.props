@@ -15,7 +15,7 @@
     <OutputPath>bin</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <WASINativeStrip>false</WASINativeStrip>
+    <WasiNativeStrip>false</WasiNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">

@@ -18,9 +18,9 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'WASI'">$(DefineConstants);TARGET_WASI</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
     <!-- TODOWASI -->
-    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'WASI'">$(NoWarn);CA1418</NoWarn>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
