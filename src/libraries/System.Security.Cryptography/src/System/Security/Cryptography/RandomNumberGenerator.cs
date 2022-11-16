@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -163,6 +164,199 @@ namespace System.Security.Cryptography
             byte[] ret = new byte[count];
             RandomNumberGeneratorImplementation.FillSpan(ret);
             return ret;
+        }
+
+        /// <summary>
+        ///   Fills the elements of a specified span with items chosen at random from choices.
+        /// </summary>
+        /// <param name="choices">The items to use to fill the buffer.</param>
+        /// <param name="destination">The buffer to receive the items.</param>
+        /// <typeparam name="T">The type of items.</typeparam>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="choices" /> is empty.
+        /// </exception>
+        /// <seealso cref="GetString" />
+        /// <seealso cref="GetHexString(Span{char}, bool)" />
+        public static void GetItems<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        {
+            if (choices.IsEmpty)
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+
+            GetItemsCore<T>(choices, destination);
+        }
+
+        /// <summary>
+        ///   Creates an array populated with items chosen at random from choices.
+        /// </summary>
+        /// <param name="choices">The items to use to populate the array.</param>
+        /// <param name="length">The length of array to return populated with items.</param>
+        /// <returns>An array populated with random choices.</returns>
+        /// <typeparam name="T">The type of items.</typeparam>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="choices" /> is empty.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is not zero or a positive number.
+        /// </exception>
+        /// <seealso cref="GetString" />
+        /// <seealso cref="GetHexString(Span{char}, bool)" />
+        public static T[] GetItems<T>(ReadOnlySpan<T> choices, int length)
+        {
+            if (choices.IsEmpty)
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            T[] result = new T[length];
+            GetItemsCore<T>(choices, result);
+            return result;
+        }
+
+        /// <summary>
+        ///   Creates a string populated with characters chosen at random from choices.
+        /// </summary>
+        /// <param name="choices">The characters to use to populate the string.</param>
+        /// <param name="length">The length of string to return.</param>
+        /// <returns>A string populated with random choices.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="choices" /> is empty.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is not zero or a positive number.
+        /// </exception>
+        /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, Span{T})" />
+        /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, int)" />
+        /// <seealso cref="GetHexString(Span{char}, bool)" />
+        public static unsafe string GetString(ReadOnlySpan<char> choices, int length)
+        {
+            if (choices.IsEmpty)
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            fixed (char* pChoices = choices)
+            {
+                return string.Create(length,
+                    (ChoicesPointer: (IntPtr)pChoices, ChoicesLength: choices.Length),
+                    static (destination, state) =>
+                    {
+                        ReadOnlySpan<char> choices = new ReadOnlySpan<char>(state.ChoicesPointer.ToPointer(), state.ChoicesLength);
+                        GetItemsCore(choices, destination);
+                    });
+            }
+        }
+
+        /// <summary>
+        /// Fills a buffer with cryptographically random hexadecimal characters.
+        /// </summary>
+        /// <param name="destination">The buffer to receive the characters.</param>
+        /// <param name="lowercase">
+        ///   <see langword="true" /> if the hexadecimal characters should be uppercase; <see langword="true" /> if lowercase.
+        ///   The default is <see langword="false" />.
+        /// </param>
+        /// <remarks>
+        ///   The behavior of this is the same as using <seealso cref="GetItems{T}(ReadOnlySpan{T}, Span{T})" /> and
+        ///   specifying hexadecimal characters as the choices. This implementation is optimized specifically for
+        ///   hexadecimal characters.
+        /// </remarks>
+        public static void GetHexString(Span<char> destination, bool lowercase = false)
+        {
+            if (destination.IsEmpty)
+                return;
+
+            GetHexStringCore(destination, lowercase);
+        }
+
+        /// <summary>
+        /// Creates a string filled with cryptographically random hexadecimal characters.
+        /// </summary>
+        /// <param name="stringLength">The length of string to create.</param>
+        /// <param name="lowercase">
+        ///   <see langword="true" /> if the hexadecimal characters should be uppercase; <see langword="true" /> if lowercase.
+        ///   The default is <see langword="false" />.
+        /// </param>
+        /// <returns>A string populated with random hexadecimal characters.</returns>
+        /// <remarks>
+        ///   The behavior of this is the same as using <seealso cref="GetString" /> and
+        ///   specifying hexadecimal characters as the choices. This implementation is optimized specifically for
+        ///   hexadecimal characters.
+        /// </remarks>
+        public static string GetHexString(int stringLength, bool lowercase = false)
+        {
+            if (stringLength == 0)
+                return string.Empty;
+
+            return string.Create(stringLength, lowercase, GetHexStringCore);
+        }
+
+        /// <summary>
+        ///   Performs an in-place shuffle of a span using cryptographically random number generation.
+        /// </summary>
+        /// <param name="values">The span to shuffle.</param>
+        /// <typeparam name="T">The type of span.</typeparam>
+        public static void Shuffle<T>(Span<T> values)
+        {
+            int n = values.Length;
+
+            for (int i = 0; i <= n - 2; i++)
+            {
+                int j = GetInt32(i, n);
+                T temp = values[i];
+                values[i] = values[j];
+                values[j] = temp;
+            }
+        }
+
+        private static void GetHexStringCore(Span<char> destination, bool lowercase)
+        {
+            Debug.Assert(!destination.IsEmpty);
+
+            Span<char> remaining = destination;
+            const int RandomBufferSize = 64; // If this changes, the tests need to be updated since they try to exercise boundary conditions.
+            const int ChunkSize = RandomBufferSize * 2;
+            Span<byte> randomBuffer = stackalloc byte[RandomBufferSize];
+            HexConverter.Casing casing = lowercase ? HexConverter.Casing.Lower : HexConverter.Casing.Upper;
+            int blocks = destination.Length / ChunkSize;
+
+            // Fill in the whole blocks.
+            for (int i = 0; i < blocks; i++)
+            {
+                RandomNumberGeneratorImplementation.FillSpan(randomBuffer);
+                HexConverter.EncodeToUtf16(randomBuffer, remaining, casing);
+                remaining = remaining.Slice(ChunkSize);
+            }
+
+            // There might be an odd amount remaining, so round up when dividing by two.
+            RandomNumberGeneratorImplementation.FillSpan(randomBuffer.Slice(0, (remaining.Length + 1) / 2));
+
+            // The HexConverter can only write in multiples of two, so if we are odd then we the last character needs to
+            // be handled separately.
+            int evenRemaining = remaining.Length & ~1;
+            Span<char> chunk = remaining.Slice(0, evenRemaining);
+            Span<char> tail = remaining.Slice(evenRemaining);
+            int randomRequiredForChunk = chunk.Length / 2;
+
+            HexConverter.EncodeToUtf16(randomBuffer.Slice(0, randomRequiredForChunk), chunk, casing);
+            Debug.Assert(tail.Length is 0 or 1);
+
+            if (!tail.IsEmpty)
+            {
+                // The numeric value of the HexConverter.Casing enumeration lets us use it as a mask to convert it from
+                // Upper to Lower. The Upper value is 0, so nothing nothing gets ORed. The Lower value is 0x2020. Since
+                // we are only dealing with one character, mask off the lower bits needed and OR it to change our upper
+                // to lower.
+                tail[0] = (char)(HexConverter.ToCharUpper(randomBuffer[randomRequiredForChunk]) | (0xFFU & (uint)casing));
+            }
+        }
+
+        private static void GetItemsCore<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        {
+            for (int i = 0; i < destination.Length; i++)
+            {
+                destination[i] = choices[GetInt32(choices.Length)];
+            }
         }
 
         internal static void VerifyGetBytes(byte[] data, int offset, int count)
