@@ -153,6 +153,15 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
+static uint32_t
+hot_reload_member_parent (MonoImage *base_image, uint32_t member_token);
+
+static MonoClassMetadataUpdateProperty *
+add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t property_token, uint32_t property_flags);
+
+static void
+add_semantic_method_to_existing_property (MonoImage *image_base, BaselineInfo *base_info, uint32_t semantics, uint32_t klass_token, uint32_t prop_token, uint32_t method_token);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -2281,6 +2290,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, prop_cols, MONO_PROPERTY_MAP_SIZE);
 
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", prop_cols [MONO_PROPERTY_MAP_PARENT], prop_cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+			/* FIXME: is prop_cols [MONO_PROPERTY_MAP_PROPERTY_LIST] an index into the delta? should we store it in the parent? */
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
@@ -2309,7 +2319,11 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					}
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new property 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_property_klass), m_class_get_name (add_property_klass));
 
-					/* TODO: metadata-update: add a new MonoClassMetadataUpdatePropertyInfo to added_props */
+					add_member_parent (base_info, parent_type_token, log_token);
+
+					uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
+					uint32_t property_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_PROPERTY], mapped_token - 1, MONO_PROPERTY_FLAGS);
+					add_property_to_existing_class (image_base, base_info, generation, delta_info, add_property_klass, log_token, property_flags);
 					break;
 				}
 
@@ -2413,6 +2427,36 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		case MONO_TABLE_INTERFACEIMPL: {
 			g_assert (is_addition);
 			/* added rows ok (for added classes). will be processed when the MonoClass is created. */
+			break;
+		}
+		case MONO_TABLE_METHODSEMANTICS: {
+			g_assert (is_addition);
+			/* added rows ok (for new or existing classes). modifications rejected by pass1 */
+			uint32_t sema_cols[MONO_METHOD_SEMA_SIZE];
+
+			uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
+
+			mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_METHODSEMANTICS], mapped_token - 1, sema_cols, MONO_METHOD_SEMA_SIZE);
+
+			uint32_t assoc_idx = sema_cols [MONO_METHOD_SEMA_ASSOCIATION] >> MONO_HAS_SEMANTICS_BITS;
+			/* prop or event */
+			gboolean is_prop = (sema_cols [MONO_METHOD_SEMA_ASSOCIATION] & MONO_HAS_SEMANTICS_MASK) == MONO_HAS_SEMANTICS_PROPERTY;
+			uint32_t method_idx = sema_cols [MONO_METHOD_SEMA_METHOD];
+			uint32_t semantics = sema_cols [MONO_METHOD_SEMA_SEMANTICS];
+			uint32_t assoc_token = mono_metadata_make_token (is_prop ? MONO_TABLE_PROPERTY : MONO_TABLE_EVENT, assoc_idx);
+			uint32_t method_token = mono_metadata_make_token (MONO_TABLE_METHOD, method_idx);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "MethodSemantics [0x%08x] = { method_idx = 0x%08x, semantics = 0x%08x, association = 0x%08x (idx = 0x%08x, is_prop = %s)} ", log_token, method_idx, semantics, sema_cols [MONO_METHOD_SEMA_ASSOCIATION], assoc_idx, is_prop ? "true" : "false");
+			/* class that owns the property or event */
+			uint32_t klass_token = hot_reload_member_parent (image_base, assoc_token);
+			if (klass_token == 0)
+				break; /* FIXME: these all seems to be from existing properties. Is this because we're ignoring the PropertyMap update, and we're actually getting new contiguous rows ? */
+			if (pass2_context_is_skeleton (ctx, klass_token)) {
+				/* nothing to do, the semantics rows for the new class are contiguous and will be inited when the class is created */
+			} else {
+				/* attach the new method to the correct place on the property/event */
+				g_assert (is_prop); /* TODO: event */
+				add_semantic_method_to_existing_property (image_base, base_info, semantics, klass_token, assoc_token, method_token);
+			}
 			break;
 		}
 		default: {
@@ -2943,6 +2987,20 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 	return NULL;
 }
 
+static MonoProperty *
+hot_reload_get_property (MonoClass *klass, uint32_t property_token)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
+	g_assert (mono_metadata_token_table (property_token) == MONO_TABLE_PROPERTY);
+	GSList *added_props = info->added_props;
+
+	for (GSList *p = added_props; p; p = p->next) {
+		MonoClassMetadataUpdateProperty *prop = (MonoClassMetadataUpdateProperty*)p->data;
+		if (prop->token == property_token)
+			return &prop->prop;
+	}
+	return NULL;
+}
 
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags)
@@ -2975,6 +3033,69 @@ metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *bas
 	parent_info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_fields, field);
 
 	return field;
+}
+
+MonoClassMetadataUpdateProperty *
+add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t property_token, uint32_t property_flags)
+{
+	if (!m_class_is_inited (parent_klass))
+		mono_class_init_internal (parent_klass);
+
+	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
+
+	MonoClassMetadataUpdateProperty *prop = mono_class_alloc0 (parent_klass, sizeof (MonoClassMetadataUpdateProperty));
+
+	prop->prop.parent = parent_klass;
+
+	uint32_t name_idx = mono_metadata_decode_table_row_col (image_base, MONO_TABLE_PROPERTY, mono_metadata_token_index (property_token) - 1, MONO_PROPERTY_NAME);
+	prop->prop.name = mono_metadata_string_heap (image_base, name_idx);
+
+	prop->prop.attrs = property_flags | MONO_PROPERTY_META_FLAG_FROM_UPDATE;
+	/* get and set will be set when we process the added MethodSemantics rows */
+
+
+	prop->token = property_token;
+
+	parent_info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_props, prop);
+
+	return prop;
+	
+}
+
+void
+add_semantic_method_to_existing_property (MonoImage *image_base, BaselineInfo *base_info, uint32_t semantics, uint32_t klass_token, uint32_t prop_token, uint32_t method_token)
+{
+	ERROR_DECL (error);
+	gboolean is_getter;
+	switch (semantics) {
+	case METHOD_SEMANTIC_GETTER:
+		is_getter = TRUE;
+		break;
+	case METHOD_SEMANTIC_SETTER:
+		is_getter = FALSE;
+		break;
+	default:
+		g_error ("EnC: Expected getter or setter semantic but got 0x%08x for method 0x%08x", semantics, method_token);
+	}
+
+	MonoClass *klass = mono_class_get_checked (image_base, klass_token, error);
+	mono_error_assert_ok (error);
+	g_assert (klass);
+
+	MonoProperty *prop = hot_reload_get_property (klass, prop_token);
+	g_assert (prop != NULL);
+
+	g_assert (m_property_is_from_update (prop));
+
+	MonoMethod **dest = is_getter ? &prop->get : &prop->set;
+
+	g_assert (*dest == NULL);
+
+	MonoMethod *method = mono_get_method_checked (image_base, method_token, klass, NULL, error);
+	mono_error_assert_ok (error);
+	g_assert (method != NULL);
+
+	*dest = method;
 }
 
 static void

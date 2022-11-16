@@ -3587,6 +3587,11 @@ mono_class_setup_properties (MonoClass *klass)
 		first = ginfo->first;
 		count = ginfo->count;
 	} else {
+                /*
+                 * metadata-update: note this is only adding properties from the base image. new
+                 * properties added to an existing class won't be here since they're not in the
+                 * contiguous rows [first,last].
+                 */
 		first = mono_metadata_properties_from_typedef (klass->image, mono_metadata_token_index (klass->type_token) - 1, &last);
 		g_assert ((last - first) >= 0);
 		count = last - first;
