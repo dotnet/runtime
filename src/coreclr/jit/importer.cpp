@@ -6978,14 +6978,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* if it is a struct assignment, make certain we don't overflow the buffer */
                 assert(lclTyp != TYP_STRUCT || lvaLclSize(lclNum) >= info.compCompHnd->getClassSize(clsHnd));
 
-                if (lvaTable[lclNum].lvNormalizeOnLoad())
-                {
-                    lclTyp = lvaGetRealType(lclNum);
-                }
-                else
-                {
-                    lclTyp = lvaGetActualType(lclNum);
-                }
+                lclTyp = lvaGetRealType(lclNum);
 
             _PopValue:
                 /* Pop the value being assigned */
@@ -7124,8 +7117,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
-                    assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
-                    op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum));
+                    op1 = gtNewLclvNode(lclNum, lvaGetRealType(lclNum));
 
                     goto _PUSH_ADRVAR;
                 }
@@ -11140,16 +11132,7 @@ void Compiler::impPushVar(GenTree* op, typeInfo tiRetVal)
 //
 GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset))
 {
-    var_types lclTyp;
-
-    if (lvaTable[lclNum].lvNormalizeOnLoad())
-    {
-        lclTyp = lvaGetRealType(lclNum);
-    }
-    else
-    {
-        lclTyp = lvaGetActualType(lclNum);
-    }
+    var_types lclTyp = lvaGetRealType(lclNum);
 
     return gtNewLclvNode(lclNum, lclTyp DEBUGARG(offset));
 }
@@ -11220,11 +11203,6 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
         /* Have we allocated a temp for this local? */
 
         unsigned lclNum = impInlineFetchLocal(ilLclNum DEBUGARG("Inline ldloc first use temp"));
-
-        // All vars of inlined methods should be !lvNormalizeOnLoad()
-
-        assert(!lvaTable[lclNum].lvNormalizeOnLoad());
-        lclTyp = genActualType(lclTyp);
 
         impPushVar(gtNewLclvNode(lclNum, lclTyp), tiRetVal);
     }
@@ -13665,18 +13643,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             }
             else if (genTypeSize(sigType) < TARGET_POINTER_SIZE)
             {
-                // Narrowing cast.
-                if (inlArgNode->OperIs(GT_LCL_VAR))
-                {
-                    const unsigned lclNum = inlArgNode->AsLclVarCommon()->GetLclNum();
-                    if (!lvaTable[lclNum].lvNormalizeOnLoad() && sigType == lvaGetRealType(lclNum))
-                    {
-                        // We don't need to insert a cast here as the variable
-                        // was assigned a normalized value of the right type.
-                        continue;
-                    }
-                }
-
                 inlArgNode = gtNewCastNode(TYP_INT, inlArgNode, false, sigType);
 
                 inlArgInfo[i].argIsLclVar = false;

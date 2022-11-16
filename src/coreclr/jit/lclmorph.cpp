@@ -919,7 +919,7 @@ private:
                 if (indir->TypeGet() != varDsc->TypeGet())
                 {
                     assert(genTypeSize(indir) == genTypeSize(varDsc)); // BOOL <-> UBYTE.
-                    indir->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+                    indir->ChangeType(varDsc->TypeGet());
                 }
                 indir->ChangeOper(GT_LCL_VAR);
                 indir->AsLclVar()->SetLclNum(lclNum);

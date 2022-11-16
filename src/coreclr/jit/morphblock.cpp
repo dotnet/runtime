@@ -615,7 +615,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_USHORT:
                 // Promoted fields are expected to be "normalize on load". If that changes then
                 // we may need to adjust this code to widen the constant correctly.
-                assert(fieldDesc->lvNormalizeOnLoad());
+             //   assert(fieldDesc->lvNormalizeOnLoad());
                 FALLTHROUGH;
             case TYP_INT:
             {
@@ -699,7 +699,7 @@ void MorphInitBlockHelper::TryPrimitiveInit()
             m_src->BashToZeroConst(lclVarType);
         }
 
-        m_dst->ChangeType(m_dstVarDsc->lvNormalizeOnLoad() ? lclVarType : genActualType(lclVarType));
+        m_dst->ChangeType(lclVarType);
         m_dst->ChangeOper(GT_LCL_VAR);
         m_dst->AsLclVar()->SetLclNum(m_dstLclNum);
         m_dst->gtFlags |= GTF_VAR_DEF;

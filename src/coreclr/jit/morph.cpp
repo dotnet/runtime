@@ -4871,47 +4871,47 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
 
     noway_assert(!(tree->gtFlags & GTF_VAR_DEF) || isLocation); // GTF_VAR_DEF should always imply isLocation.
 
-    if (!isLocation && varDsc->lvNormalizeOnLoad())
-    {
-        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
-        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
-        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
-        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
-        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
-        // This quirk preserves the previous behavior.
-        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
-        var_types lclVarType  = varDsc->TypeGet();
-        bool      isBoolQuirk = lclVarType == TYP_BOOL;
+    //if (!isLocation && varDsc->lvNormalizeOnLoad())
+    //{
+    //    // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
+    //    // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
+    //    // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
+    //    // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
+    //    // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
+    //    // This quirk preserves the previous behavior.
+    //    // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
+    //    var_types lclVarType  = varDsc->TypeGet();
+    //    bool      isBoolQuirk = lclVarType == TYP_BOOL;
 
-        // Assertion prop can tell us to omit adding a cast here. This is
-        // useful when the local is a small-typed parameter that is passed in a
-        // register: in that case, the ABI specifies that the upper bits might
-        // be invalid, but the assertion guarantees us that we have normalized
-        // when we wrote it.
-        if (optLocalAssertionProp && !isBoolQuirk &&
-            optAssertionIsSubrange(tree, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
-        {
-            // The previous assertion can guarantee us that if this node gets
-            // assigned a register, it will be normalized already. It is still
-            // possible that this node ends up being in memory, in which case
-            // normalization will still be needed, so we better have the right
-            // type.
-            assert(tree->TypeGet() == varDsc->TypeGet());
-            return tree;
-        }
+    //    // Assertion prop can tell us to omit adding a cast here. This is
+    //    // useful when the local is a small-typed parameter that is passed in a
+    //    // register: in that case, the ABI specifies that the upper bits might
+    //    // be invalid, but the assertion guarantees us that we have normalized
+    //    // when we wrote it.
+    //    if (optLocalAssertionProp && !isBoolQuirk &&
+    //        optAssertionIsSubrange(tree, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
+    //    {
+    //        // The previous assertion can guarantee us that if this node gets
+    //        // assigned a register, it will be normalized already. It is still
+    //        // possible that this node ends up being in memory, in which case
+    //        // normalization will still be needed, so we better have the right
+    //        // type.
+    //        assert(tree->TypeGet() == varDsc->TypeGet());
+    //        return tree;
+    //    }
 
-        // Small-typed arguments and aliased locals are normalized on load.
-        // Other small-typed locals are normalized on store.
-        // Also, under the debugger as the debugger could write to the variable.
-        // If this is one of the former, insert a narrowing cast on the load.
-        //         ie. Convert: var-short --> cast-short(var-int)
+    //    // Small-typed arguments and aliased locals are normalized on load.
+    //    // Other small-typed locals are normalized on store.
+    //    // Also, under the debugger as the debugger could write to the variable.
+    //    // If this is one of the former, insert a narrowing cast on the load.
+    //    //         ie. Convert: var-short --> cast-short(var-int)
 
-        tree->gtType = TYP_INT;
-        fgMorphTreeDone(tree);
-        tree = gtNewCastNode(TYP_INT, tree, false, lclVarType);
-        fgMorphTreeDone(tree);
-        return tree;
-    }
+    //    tree->gtType = TYP_INT;
+    //    fgMorphTreeDone(tree);
+    //    tree = gtNewCastNode(TYP_INT, tree, false, lclVarType);
+    //    fgMorphTreeDone(tree);
+    //    return tree;
+    //}
 
     return tree;
 }
@@ -11133,8 +11133,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp1 = op1->CastOp();
 
                 DEBUG_DESTROY_NODE(op1);
-
-                cast->SetDoNotCSE();
             }
         }
 
@@ -11148,8 +11146,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp2 = op2->CastOp();
                 
                 DEBUG_DESTROY_NODE(op2);
-
-                cast->SetDoNotCSE();
             }
         }
     }
@@ -11167,64 +11163,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
 GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
 {
     assert(asg->OperIs(GT_ASG));
-
-    GenTree* const op1 = asg->gtGetOp1();
-    GenTree* const op2 = asg->gtGetOp2();
-
-    assert(op2->OperIs(GT_CAST));
-
-    GenTree* const effectiveOp1 = op1->gtEffectiveVal();
-
-    if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD))
-        return asg;
-
-    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
-        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
-        return asg;
-
-    if (op2->gtOverflow())
-        return asg;
-
-    if (gtIsActiveCSE_Candidate(op2))
-        return asg;
-
-    GenTreeCast* cast         = op2->AsCast();
-    var_types    castToType   = cast->CastToType();
-    var_types    castFromType = cast->CastFromType();
-
-    if (gtIsActiveCSE_Candidate(cast->CastOp()))
-        return asg;
-
-    if (!varTypeIsSmall(effectiveOp1))
-        return asg;
-
-    if (!varTypeIsSmall(castToType))
-        return asg;
-
-    if (!varTypeIsIntegral(castFromType))
-        return asg;
-
-    // If we are performing a narrowing cast and
-    // castToType is larger or the same as op1's type
-    // then we can discard the cast.
-    if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
-        return asg;
-
-    if (genActualType(castFromType) == genActualType(castToType))
-    {
-        // If the cast is marked as do-not-cse, then
-        // we should not remove it to imply an implicit cast.
-        if (cast->gtFlags & GTF_DONT_CSE)
-            return asg;
-
-        // Removes the cast.
-        asg->gtOp2 = cast->CastOp();
-    }
-    else
-    {
-        // This is a type-changing cast so we cannot remove it entirely.
-        cast->gtCastType = genActualType(castToType);
-    }
 
     return asg;
 }

@@ -518,21 +518,6 @@ PhaseStatus Compiler::optAddCopies()
             continue;
         }
 
-        /* For lvNormalizeOnLoad(), we need to add a cast to the copy-assignment
-           like "copyLclNum = int(varDsc)" and optAssertionGen() only
-           tracks simple assignments. The same goes for lvNormalizedOnStore as
-           the cast is generated in fgMorphSmpOpAsg. This boils down to not having
-           a copy until optAssertionGen handles this*/
-        if (varDsc->lvNormalizeOnLoad() || varDsc->lvNormalizeOnStore())
-        {
-            continue;
-        }
-
-        if (varTypeIsSmall(varDsc->TypeGet()) || typ == TYP_BOOL)
-        {
-            continue;
-        }
-
         // If locals must be initialized to zero, that initialization counts as a second definition.
         // VB in particular allows usage of variables not explicitly initialized.
         // Note that this effectively disables this optimization for all local variables
