@@ -1029,7 +1029,16 @@ namespace System
                     byte c = bufPtr[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
-                        IncrementX();
+                        left++;
+
+                        // After printing in the last column, setting CursorLeft is expected to
+                        // place the cursor back in that same row.
+                        // Invalidate the cursor position rather than moving it to the next row.
+                        if (left >= width)
+                        {
+                            InvalidateCachedCursorPosition();
+                            return;
+                        }
                     }
                     else if (c == (byte)'\r')
                     {
@@ -1038,7 +1047,12 @@ namespace System
                     else if (c == (byte)'\n')
                     {
                         left = 0;
-                        IncrementY();
+                        top++;
+
+                        if (top >= height)
+                        {
+                            top = height - 1;
+                        }
                     }
                     else if (c == (byte)'\b')
                     {
@@ -1056,25 +1070,6 @@ namespace System
 
                 // We pass cursorVersion because it may have changed the earlier check by calling GetWindowSize.
                 SetCachedCursorPosition(left, top, cursorVersion);
-
-                void IncrementY()
-                {
-                    top++;
-                    if (top >= height)
-                    {
-                        top = height - 1;
-                    }
-                }
-
-                void IncrementX()
-                {
-                    left++;
-                    if (left >= width)
-                    {
-                        left = 0;
-                        IncrementY();
-                    }
-                }
             }
         }
 
