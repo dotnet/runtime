@@ -7,7 +7,6 @@ using System.IO.Pipes;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.ServiceProcess;
 using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
@@ -78,41 +77,17 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
-    [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
+    [ConditionalClass(typeof(WindowsTestFileShare), nameof(WindowsTestFileShare.CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
-        private TestFileShare _testShare;
-
-        public static bool CanShareFiles => _canShareFiles.Value;
-
-        private static Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
-        {
-            if (!PlatformDetection.IsWindowsAndElevated)
-            {
-                return false;
-            }
-
-            try
-            {
-                // the "Server Service" allows for file sharing. It can be disabled on some machines.
-                using (ServiceController sharingService = new ServiceController("Server"))
-                {
-                    return sharingService.Status == ServiceControllerStatus.Running;
-                }
-            }
-            catch (InvalidOperationException)
-            {
-                // The service is not installed.
-                return false;
-            }
-        });
+        private WindowsTestFileShare _testShare;
 
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
             string testDirectoryPath = Path.GetFullPath(TestDirectory);
             string shareName = new DirectoryInfo(testDirectoryPath).Name;
             string fileName = GetTestFileName(index, memberName, lineNumber);
-            _testShare = new TestFileShare(shareName, testDirectoryPath);
+            _testShare = new WindowsTestFileShare(shareName, testDirectoryPath);
 
             // now once the folder has been shared we can use "localhost" to access it:
             // both type of slashes are valid, so let's test one for Debug and another for other configs

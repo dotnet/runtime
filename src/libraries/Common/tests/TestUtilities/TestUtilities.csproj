@@ -35,7 +35,6 @@
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
     <Compile Include="System\PlatformDetection.Windows.cs" />
-    <Compile Include="System\TestFileShare.cs" />
     <Compile Include="System\WindowsIdentityFixture.cs" />
 
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"

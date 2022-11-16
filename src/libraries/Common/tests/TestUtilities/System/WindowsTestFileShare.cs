@@ -2,23 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.ServiceProcess;
 
 namespace System
 {
-    public sealed partial class TestFileShare : IDisposable
+    public sealed partial class WindowsTestFileShare : IDisposable
     {
+        private static readonly Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
+        {
+            if (!PlatformDetection.IsWindowsAndElevated)
+            {
+                return false;
+            }
+
+            try
+            {
+                // the "Server Service" allows for file sharing. It can be disabled on some machines.
+                using (ServiceController sharingService = new ServiceController("Server"))
+                {
+                    return sharingService.Status == ServiceControllerStatus.Running;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // The service is not installed.
+                return false;
+            }
+        });
+
         private readonly string _shareName;
 
         private readonly string _path;
 
         private bool _disposedValue;
 
-        public TestFileShare(string shareName, string path)
+        public WindowsTestFileShare(string shareName, string path)
         {
             _shareName = shareName;
             _path = path;
             Initialize();
         }
+
+        public static bool CanShareFiles => _canShareFiles.Value;
 
         private void Initialize()
         {

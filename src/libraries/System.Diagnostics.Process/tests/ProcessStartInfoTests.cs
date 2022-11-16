@@ -28,6 +28,9 @@ namespace System.Diagnostics.Tests
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
             => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
+        private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
+            => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
+
         [Fact]
         public void TestEnvironmentProperty()
         {
@@ -1343,7 +1346,7 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         public void TestUserNetworkCredentialsPropertiesOnWindows()
@@ -1353,7 +1356,7 @@ namespace System.Diagnostics.Tests
 
             string testFilePathRoot = Path.GetPathRoot(testFilePath);
             const string ShareName = "testForDotNet";
-            using TestFileShare fileShare = new TestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
+            using WindowsTestFileShare fileShare = new WindowsTestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
             string testFileUncPath = $"\\\\localhost\\{ShareName}\\{Path.GetFileName(testFilePath)}";
             string testFileContent = "42";
             File.WriteAllText(testFilePath, testFileContent);
