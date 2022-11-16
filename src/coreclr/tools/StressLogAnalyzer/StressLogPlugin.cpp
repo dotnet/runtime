@@ -563,7 +563,6 @@ static volatile LONG64 s_totalMsgCount = 0;
 static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
 static const char* s_outputFileName = nullptr;
-static WCHAR* s_outputFileNameW = nullptr;
 
 static StressLog::StressLogHeader* s_hdr;
 
@@ -780,11 +779,7 @@ bool ParseOptions(int argc, char* argv[])
             case 'O':
                 if (arg[2] == ':')
                 {
-                    WCHAR* buffer = new WCHAR[1000];
-                    if (MultiByteToWideChar(CP_ACP, 0, &arg[3], -1, buffer, 1000) == 0)
-                        return false;
                     s_outputFileName = &arg[3];
-                    s_outputFileNameW = buffer;
                 }
                 else
                 {
@@ -1220,7 +1215,6 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_timeFilterStart = 0;
     s_timeFilterEnd = 0;
     s_outputFileName = nullptr;
-    s_outputFileNameW = nullptr;
     s_fPrintFormatStrings = false;
     s_showAllMessages = false;
     s_maxHeapNumberSeen = -1;
@@ -1400,9 +1394,9 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
 
     CorClrData corClrData(hdr);
     FILE* outputFile = stdout;
-    if (s_outputFileNameW != nullptr)
+    if (s_outputFileName != nullptr)
     {
-        if (_wfopen_s(&outputFile, s_outputFileNameW, W("w")) != 0)
+        if (fopen_s(&outputFile, s_outputFileName, "w") != 0)
         {
             printf("could not create output file %s\n", s_outputFileName);
             outputFile = stdout;
