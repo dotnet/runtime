@@ -133,7 +133,7 @@ namespace System.Threading.Tasks
         {
             // Browser hosts do not support synchronous Wait so we want to run the
             //  replicated task directly instead of going through Task infrastructure
-            if (OperatingSystem.IsBrowser()) {
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("Wasi")) {
                 // Since we are running on a single thread, we don't want the action to time out
                 var timeout = int.MaxValue - 1;
                 var state = default(TState)!;

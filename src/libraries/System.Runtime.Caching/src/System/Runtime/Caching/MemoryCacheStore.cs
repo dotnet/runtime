@@ -27,8 +27,8 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
 #if NETCOREAPP
-        [UnsupportedOSPlatformGuard("browser")]
-        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+        [UnsupportedOSPlatformGuard("browser"), UnsupportedOSPlatformGuard("wasi")]
+        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsOSPlatform("Wasi");
 #else
         private static bool _countersSupported => true;
 #endif

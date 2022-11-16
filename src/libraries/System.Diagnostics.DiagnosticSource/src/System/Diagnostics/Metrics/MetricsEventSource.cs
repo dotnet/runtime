@@ -236,13 +236,13 @@ namespace System.Diagnostics.Metrics
                         return;
                     }
 #endif
-#if OS_ISWASI_SUPPORT
+//#if OS_ISWASI_SUPPORT TODOWASI
                     if (OperatingSystem.IsOSPlatform("Wasi")) // TODO replace with https://github.com/dotnet/runtime/issues/78389
                     {
                         Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on WASI");
                         return;
                     }
-#endif
+//#endif
                     if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable ||
                         command.Command == EventCommand.Enable)
                     {

@@ -238,7 +238,7 @@ namespace System.Threading.Tasks
                 // If we've gotten this far, it's time to process the actions.
 
                 // Web browsers need special treatment that is implemented in TaskReplicator
-                if (OperatingSystem.IsBrowser() ||
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("Wasi") ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)

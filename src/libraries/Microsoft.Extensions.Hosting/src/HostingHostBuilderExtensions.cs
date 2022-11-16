@@ -280,7 +280,7 @@ namespace Microsoft.Extensions.Hosting
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
 #if NETCOREAPP
-                if (!OperatingSystem.IsBrowser())
+                if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsOSPlatform("Wasi"))
 #endif
                 {
                     logging.AddConsole();

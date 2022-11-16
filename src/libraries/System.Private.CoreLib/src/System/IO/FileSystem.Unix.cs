@@ -395,7 +395,7 @@ namespace System.IO
 
             // When the path ends with a directory separator, it must not be a file.
             // On Unix 'rename' fails with ENOTDIR, on wasm we need to manually check.
-            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
+            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("Wasi")) && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
             {
                 throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
             }

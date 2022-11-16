@@ -38,8 +38,8 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NETCOREAPP
-        [UnsupportedOSPlatformGuard("browser")]
-        private static bool _configSupported => !OperatingSystem.IsBrowser();
+        [UnsupportedOSPlatformGuard("browser"), UnsupportedOSPlatformGuard("wasi")]
+        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsOSPlatform("Wasi");
 #else
         private static bool _configSupported => true;
 #endif

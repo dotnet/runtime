@@ -99,7 +99,7 @@ namespace System.Runtime.Caching
                 if (fcn == null)
                 {
 #if NETCOREAPP
-                    if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                    if (OperatingSystem.IsOSPlatform("Wasi") || OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
                     }

@@ -30,7 +30,7 @@ public static class RunnerEntryPoint
         {
             entryPoint = new AppleEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionList);
         }
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("Wasi"))
         {
             entryPoint = new WasmEntryPoint(runTestsCallback, assemblyName, filter, testExclusionList);
         }
@@ -42,7 +42,7 @@ public static class RunnerEntryPoint
         entryPoint.TestsCompleted += (o, e) => anyFailedTests = e.FailedTests > 0;
         await entryPoint.RunAsync();
 
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("Wasi"))
         {
             // Browser expects all xharness processes to exit with 0, even in case of failure
             return 0;
