@@ -107,12 +107,10 @@ get_option_hash ()
 	 * We lost a data race. Accept our fate and free our copy of the table.
 	 * FIXME: It's possible to lose the race with precise timing and fail to free the extra table.
 	*/
-	if (_option_hash) {
+	if (_option_hash)
 		g_hash_table_destroy(result);
-		result = _option_hash;
-	} else {
+	else
 		_option_hash = result;
-	}
 
 	return _option_hash;
 }
