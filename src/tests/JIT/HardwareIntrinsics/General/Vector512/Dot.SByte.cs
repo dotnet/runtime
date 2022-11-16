@@ -70,7 +70,7 @@ namespace JIT.HardwareIntrinsics.General._Vector512
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<SByte>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<SByte>();
-                if ((alignment != 64 && alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
+                if (!int.IsPow2(alignment) || (alignment > 64) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }

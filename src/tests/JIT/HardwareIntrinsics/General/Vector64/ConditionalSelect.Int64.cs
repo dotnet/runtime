@@ -76,7 +76,7 @@ namespace JIT.HardwareIntrinsics.General._Vector64
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Int64>();
                 int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<Int64>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Int64>();
-                if ((alignment != 64 && alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
+                if (!int.IsPow2(alignment) || (alignment > 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
