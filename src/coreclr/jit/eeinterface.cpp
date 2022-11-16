@@ -94,6 +94,34 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 }
 
 //------------------------------------------------------------------------
+// eeAppendPrint:
+//   Append the output of one of the JIT-EE 'print' functions to a StringPrinter.
+//
+// Arguments:
+//    printer - the printer
+//    print   - A functor to print the string that follows the conventions of the JIT-EE print* functions.
+//
+template <typename TPrint>
+void Compiler::eeAppendPrint(StringPrinter* printer, TPrint print)
+{
+    size_t requiredBufferSize;
+    char   buffer[256];
+    size_t printed = print(buffer, sizeof(buffer), &requiredBufferSize);
+    if (requiredBufferSize <= sizeof(buffer))
+    {
+        assert(printed == requiredBufferSize - 1);
+        printer->Append(buffer);
+    }
+    else
+    {
+        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
+        printed       = print(pBuffer, requiredBufferSize, nullptr);
+        assert(printed == requiredBufferSize - 1);
+        printer->Append(pBuffer);
+    }
+}
+
+//------------------------------------------------------------------------
 // eePrintType:
 //   Print a type given by a class handle.
 //
@@ -128,23 +156,9 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
         return;
     }
 
-    size_t requiredBufferSize;
-    char   buffer[256];
-    size_t writtenBytes = info.compCompHnd->printClassName(clsHnd, buffer, sizeof(buffer), &requiredBufferSize);
-    if (writtenBytes <= 0)
-    {
-        printer->Append("<unnamed>");
-    }
-    else if (requiredBufferSize <= sizeof(buffer))
-    {
-        printer->Append(buffer);
-    }
-    else
-    {
-        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
-        info.compCompHnd->printClassName(clsHnd, pBuffer, requiredBufferSize);
-        printer->Append(pBuffer);
-    }
+    eeAppendPrint(printer, [&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return info.compCompHnd->printClassName(clsHnd, buffer, bufferSize, requiredBufferSize);
+    });
 
     if (!includeInstantiation)
     {
@@ -241,19 +255,9 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         printer->Append(':');
     }
 
-    size_t requiredBufferSize;
-    char   buffer[256];
-    info.compCompHnd->printMethodName(methHnd, buffer, sizeof(buffer), &requiredBufferSize);
-    if (sizeof(buffer) <= requiredBufferSize)
-    {
-        printer->Append(buffer);
-    }
-    else
-    {
-        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
-        info.compCompHnd->printMethodName(methHnd, pBuffer, requiredBufferSize);
-        printer->Append(pBuffer);
-    }
+    eeAppendPrint(printer, [&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return info.compCompHnd->printMethodName(methHnd, buffer, bufferSize, requiredBufferSize);
+    });
 
     if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
     {
@@ -360,19 +364,9 @@ void Compiler::eePrintField(StringPrinter* printer, CORINFO_FIELD_HANDLE fld, bo
         printer->Append(':');
     }
 
-    size_t requiredBufferSize;
-    char   buffer[256];
-    info.compCompHnd->printFieldName(fld, buffer, sizeof(buffer), &requiredBufferSize);
-    if (sizeof(buffer) <= requiredBufferSize)
-    {
-        printer->Append(buffer);
-    }
-    else
-    {
-        char* pBuffer = new (this, CMK_DebugOnly) char[requiredBufferSize];
-        info.compCompHnd->printFieldName(fld, pBuffer, requiredBufferSize);
-        printer->Append(pBuffer);
-    }
+    eeAppendPrint(printer, [&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return info.compCompHnd->printFieldName(fld, buffer, bufferSize, requiredBufferSize);
+    });
 }
 
 //------------------------------------------------------------------------

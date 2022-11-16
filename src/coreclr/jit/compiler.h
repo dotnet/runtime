@@ -7588,6 +7588,8 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
+    template <typename TPrint>
+    void eeAppendPrint(class StringPrinter* printer, TPrint print);
     // Conventions: the "base" primitive printing functions take StringPrinter*
     // and do not do any SPMI handling. There are then convenience printing
     // functions exposed on top that have SPMI handling and additional buffer
