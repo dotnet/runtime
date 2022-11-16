@@ -1055,6 +1055,7 @@ namespace BINDER_SPACE
         {
             if (pContextEntry == NULL)
             {
+                hr = S_OK; // FindInExecutionContext returns S_FALSE when not found - reset to S_OK
                 SAFE_NEW(pContextEntry, ContextEntry);
 
                 pContextEntry->SetIsInTPA(pBindResult->GetIsInTPA());
