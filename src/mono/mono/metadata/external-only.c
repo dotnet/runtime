@@ -742,3 +742,8 @@ mono_method_get_unmanaged_callers_only_ftnptr (MonoMethod *method, MonoError *er
 {
  	MONO_EXTERNAL_ONLY_GC_UNSAFE (gpointer, mono_method_get_unmanaged_wrapper_ftnptr_internal (method, TRUE, error));
 }
+
+void
+mono_marshal_ilgen_init (void)
+{
+}
