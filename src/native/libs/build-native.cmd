@@ -33,7 +33,7 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
-if /i [%1] == [WASI] ( set __TargetOS=WASI&&shift&goto Arg_Loop)
+if /i [%1] == [wasi] ( set __TargetOS=wasi&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
@@ -97,7 +97,7 @@ if [%__Ninja%] == [1] (
     set __generatorArgs=
 ) else if [%__TargetOS%] == [Browser] (
     set __generatorArgs=
-) else if [%__TargetOS%] == [WASI] (
+) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065

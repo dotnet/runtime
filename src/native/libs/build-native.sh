@@ -54,7 +54,7 @@ if [[ "$__TargetOS" == Browser ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
-elif [[ "$__TargetOS" == WASI ]]; then
+elif [[ "$__TargetOS" == wasi ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
