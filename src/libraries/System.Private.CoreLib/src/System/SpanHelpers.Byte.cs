@@ -1179,9 +1179,9 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<byte>.Count)) / sizeof(byte);
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<byte>.Count));
             }
             else if (remainder >= sizeof(long))
             {
@@ -1197,9 +1197,9 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, sizeof(long));
                     last = ref Unsafe.Subtract(ref last, sizeof(long));
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(long))) / sizeof(byte);
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(long)));
             }
             else if (remainder >= sizeof(int))
             {
@@ -1215,9 +1215,9 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, sizeof(int));
                     last = ref Unsafe.Subtract(ref last, sizeof(int));
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(int))) / sizeof(byte);
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(int)));
             }
 
             if (remainder > 1)

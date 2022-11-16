@@ -441,9 +441,10 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector256<int>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector256<int>.Count);
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = (nint)Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<int>.Count)) / sizeof(int);
+                // Shift instead of divide is fine here since we don't care about what the negative numbers are
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<int>.Count)) >> 2;
             }
             else if (Vector128.IsHardwareAccelerated && length >= (nuint)Vector128<int>.Count)
             {
@@ -471,9 +472,10 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector128<int>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector128<int>.Count);
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = (nint)Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector128<int>.Count)) / sizeof(int);
+                // Shift instead of divide is fine here since we don't care about what the negative numbers are
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector128<int>.Count)) >> 2;
             }
 
             // Store any remaining values one-by-one
@@ -517,9 +519,9 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector256<long>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector256<long>.Count);
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = (nint)Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<long>.Count)) / sizeof(long);
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<long>.Count)) >> 3;
             }
             else if (Vector128.IsHardwareAccelerated && length >= (nuint)Vector128<long>.Count)
             {
@@ -547,9 +549,9 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector128<long>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector128<long>.Count);
-                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                } while (!Unsafe.IsAddressGreaterThan(ref first, ref last));
 
-                remainder = (nint)Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector128<long>.Count)) / sizeof(long);
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector128<long>.Count)) >> 3;
             }
 
             // Store any remaining values one-by-one
