@@ -6103,45 +6103,6 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 	return res;
 }
 
-/*
- * The mono_win32_compat_* functions are implementations of inline
- * Windows kernel32 APIs, which are DllImport-able under MS.NET,
- * although not exported by kernel32.
- *
- * We map the appropriate kernel32 entries to these functions using
- * dllmaps declared in the global etc/mono/config.
- */
-
-void
-mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memcpy (dest, source, length);
-}
-
-void
-mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill)
-{
-	memset (dest, fill, length);
-}
-
-void
-mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memmove (dest, source, length);
-}
-
-void
-mono_win32_compat_ZeroMemory (gpointer dest, gsize length)
-{
-	memset (dest, 0, length);
-}
-
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask)
 {
