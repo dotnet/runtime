@@ -472,12 +472,30 @@ namespace System.Diagnostics.Tests
             using Process longRunning = CreateProcessLong();
             longRunning.StartInfo.LoadUserProfile = true;
 
-            using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning);
+            using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning, Setup, Cleanup);
 
             string username = testAccountCleanup.ProcessAccountName.Split('\\').Last();
             Assert.Equal(username, Helpers.GetProcessUserName(longRunning));
             bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
             Assert.True(isProfileLoaded);
+
+            void Setup(string username, string workingDirectory)
+            {
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true);
+                }
+            }
+
+            void Cleanup(string username, string workingDirectory)
+            {
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    // remove the access
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false);
+                }
+            }
         }
 
         private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
@@ -1384,13 +1402,13 @@ namespace System.Diagnostics.Tests
             p.StartInfo.Environment[UncPath] = testFileUncPath;
             p.StartInfo.UseCredentialsForNetworkingOnly = true;
 
-            using var processInfo = CreateUserAndExecute(p, true, Setup, Cleanup);
+            using var processInfo = CreateUserAndExecute(p, Setup, Cleanup);
 
             string processUserName = Helpers.GetProcessUserName(p);
             Assert.True(p.WaitForExit(WaitInMS));
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
-            Assert.Equal(processInfo.ImpersonationAccountName?.Split('\\')?.LastOrDefault(), processUserName);
+            Assert.Equal(Environment.UserName, processUserName);
 
             void Setup(string username, string _)
             {
@@ -1398,7 +1416,7 @@ namespace System.Diagnostics.Tests
                 {
                     SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
                 }
-            };
+            }
 
             void Cleanup(string username, string _)
             {
@@ -1407,12 +1425,11 @@ namespace System.Diagnostics.Tests
                     // remove the access
                     SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
-            };
+            }
         }
 
         private TestProcessState CreateUserAndExecute(
             Process process,
-            bool runImpersonated = false,
             Action<string, string> additionalSetup = null,
             Action<string, string> additionalCleanup = null,
             [CallerMemberName] string memberName = "")
@@ -1420,20 +1437,11 @@ namespace System.Diagnostics.Tests
             string callerIntials = new string(memberName.Where(c => char.IsUpper(c)).Take(18).ToArray());
 
             WindowsTestAccount processAccount = new WindowsTestAccount(string.Concat("d", callerIntials));
-            WindowsTestAccount impersonationAccount =
-                runImpersonated
-                ? new WindowsTestAccount(string.Concat("i", callerIntials))
-                : null;
             string workingDirectory = string.IsNullOrEmpty(process.StartInfo.WorkingDirectory)
                     ? Directory.GetCurrentDirectory()
                     : process.StartInfo.WorkingDirectory;
-            if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
-            {
-                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                SetAccessControl((impersonationAccount ?? processAccount).AccountName, process.StartInfo.FileName, workingDirectory, add: true);
-            }
 
-            additionalSetup?.Invoke(processAccount.AccountName, impersonationAccount?.AccountName);
+            additionalSetup?.Invoke(processAccount.AccountName, workingDirectory);
 
             process.StartInfo.UserName = processAccount.AccountName.Split('\\').Last();
             process.StartInfo.Domain = processAccount.AccountName.Split('\\').First();
@@ -1441,19 +1449,8 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                bool hasStarted;
-                if (runImpersonated)
-                {
-                    hasStarted = WindowsIdentity.RunImpersonated(
-                        impersonationAccount.AccountTokenHandle,
-                        process.Start);
-                }
-                else
-                {
-                    hasStarted = process.Start();
-                }
-
-                return new TestProcessState(process, hasStarted, processAccount, impersonationAccount, workingDirectory, additionalCleanup);
+                bool hasStarted = process.Start();
+                return new TestProcessState(process, hasStarted, processAccount, workingDirectory, additionalCleanup);
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
             {
@@ -1469,8 +1466,6 @@ namespace System.Diagnostics.Tests
 
             private readonly WindowsTestAccount _processAccount;
 
-            private readonly WindowsTestAccount _processImpersonationAccount;
-
             private readonly string _workingDirectory;
 
             private readonly Action<string, string> _additionalCleanup;
@@ -1479,21 +1474,17 @@ namespace System.Diagnostics.Tests
                 Process process,
                 bool hasStarted,
                 WindowsTestAccount processAccount,
-                WindowsTestAccount processImpersonationAccount,
                 string workingDirectory,
                 Action<string, string> additionalCleanup)
             {
                 _process = process;
                 _hasStarted = hasStarted;
                 _processAccount = processAccount;
-                _processImpersonationAccount = processImpersonationAccount;
                 _workingDirectory = workingDirectory;
                 _additionalCleanup = additionalCleanup;
             }
 
             public string ProcessAccountName => _processAccount?.AccountName;
-
-            public string ImpersonationAccountName => _processImpersonationAccount?.AccountName;
 
             public void Dispose()
             {
@@ -1504,15 +1495,8 @@ namespace System.Diagnostics.Tests
                     Assert.True(_process.WaitForExit(WaitInMS));
                 }
 
-                if (PlatformDetection.IsNotWindowsServerCore)
-                {
-                    // remove the access
-                    SetAccessControl((_processImpersonationAccount ?? _processAccount).AccountName, _process.StartInfo.FileName, _workingDirectory, add: false);
-                }
-
-                _additionalCleanup?.Invoke(_processAccount?.AccountName, _processImpersonationAccount?.AccountName);
+                _additionalCleanup?.Invoke(_processAccount?.AccountName, _workingDirectory);
                 _processAccount?.Dispose();
-                _processImpersonationAccount?.Dispose();
             }
         }
     }
