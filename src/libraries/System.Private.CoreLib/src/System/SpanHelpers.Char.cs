@@ -736,21 +736,16 @@ namespace System
             Debug.Assert(length > 1);
 
             ref char first = ref buf;
-            nint lastOffset = (nint)length;
+            ref char last = ref Unsafe.Add(ref first, length);
+            nint remainder = (nint)length;
 
-            // Used to make sure we can only overlap once. Any consecutive overlap would reverse twice
-            byte needTwoParts = 0;
-
-            // This can overlap once between 16-32 items
-            if (Avx2.IsSupported && lastOffset >= Vector256<ushort>.Count)
+            if (Avx2.IsSupported && length >= (nuint)Vector256<ushort>.Count)
             {
-                needTwoParts = 1;
-
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
                     14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1); // second 128-bit lane
 
-                ref char last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), (nuint)Vector256<ushort>.Count);
+                last = ref Unsafe.Subtract(ref last, Vector256<ushort>.Count);
                 do
                 {
                     Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref first));
@@ -778,18 +773,15 @@ namespace System
                     tempLast.StoreUnsafe(ref Unsafe.As<char, byte>(ref first));
                     tempFirst.StoreUnsafe(ref Unsafe.As<char, byte>(ref last));
 
-                    first = ref Unsafe.Add(ref first, (nuint)Vector256<ushort>.Count);
-                    last = ref Unsafe.Subtract(ref last, (nuint)Vector256<ushort>.Count);
-                    lastOffset -= (nint)Vector256<ushort>.Count * 2;
-                } while (lastOffset >= (nint)Vector256<ushort>.Count * 2);
-            }
+                    first = ref Unsafe.Add(ref first, Vector256<ushort>.Count);
+                    last = ref Unsafe.Subtract(ref last, Vector256<ushort>.Count);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last));
 
-            // This can overlap once between 8-16 items
-            // needTwoParts = 0 -> we can overlap (require 1x)
-            // needTwoParts = 1 -> we cannot overlap (require 2x)
-            if (Vector128.IsHardwareAccelerated && lastOffset >= (Vector128<ushort>.Count << needTwoParts))
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<ushort>.Count)) / sizeof(ushort);
+            }
+            else if (Vector128.IsHardwareAccelerated && length >= (nuint)Vector128<ushort>.Count)
             {
-                ref char last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector128<ushort>.Count);
+                last = ref Unsafe.Subtract(ref last, Vector128<ushort>.Count);
                 do
                 {
                     Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref first));
@@ -812,14 +804,15 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector128<ushort>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector128<ushort>.Count);
-                    lastOffset -= (nint)Vector128<ushort>.Count * 2;
-                } while (lastOffset >= (nint)Vector128<ushort>.Count * 2);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector128<ushort>.Count)) / sizeof(ushort);
             }
 
             // Store any remaining values one-by-one
-            if (lastOffset > 1)
+            if (remainder > 1)
             {
-                ReverseInner(ref first, (nuint)lastOffset);
+                ReverseInner(ref first, (nuint)remainder);
             }
         }
     }

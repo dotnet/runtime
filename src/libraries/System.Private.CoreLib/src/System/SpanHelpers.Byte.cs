@@ -1133,21 +1133,16 @@ namespace System
             Debug.Assert(length > 1);
 
             ref byte first = ref buf;
-            nint lastOffset = (nint)length;
+            ref byte last = ref Unsafe.Add(ref first, length);
+            nint remainder = (nint)length;
 
-            // Used to make sure we can only overlap once. Any consecutive overlap would reverse twice
-            byte needTwoParts = 0;
-
-            // This can overlap once between 32-64 items
-            if (Avx2.IsSupported && lastOffset >= Vector256<byte>.Count)
+            if (Avx2.IsSupported && length >= (nuint)Vector256<byte>.Count)
             {
-                needTwoParts = 1;
-
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
                     15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
 
-                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), Vector256<byte>.Count);
+                last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
                 do
                 {
                     // Load the values into vectors
@@ -1184,18 +1179,13 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
                     last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
-                    lastOffset -= (nint)Vector256<byte>.Count * 2;
-                } while (lastOffset >= (nint)Vector256<byte>.Count * 2);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, Vector256<byte>.Count)) / sizeof(byte);
             }
-
-            // This can overlap once between 8-16 items
-            // needTwoParts = 0 -> we can overlap (require 1x)
-            // needTwoParts = 1 -> we cannot overlap (require 2x)
-            if (lastOffset >= ((nint)sizeof(long) << needTwoParts))
+            else if (remainder >= sizeof(long))
             {
-                needTwoParts = 1;
-
-                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), sizeof(long));
+                last = ref Unsafe.Subtract(ref last, sizeof(long));
                 do
                 {
                     long tempFirst = Unsafe.ReadUnaligned<long>(ref first);
@@ -1207,17 +1197,13 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, sizeof(long));
                     last = ref Unsafe.Subtract(ref last, sizeof(long));
-                    lastOffset -= (nint)sizeof(long) * 2;
-                } while (lastOffset >= (nint)sizeof(long) * 2);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(long))) / sizeof(byte);
             }
-
-            // This can overlap once between 4-8 items
-            // needTwoParts = 0 -> we can overlap (require 1x)
-            // needTwoParts = 1 -> we cannot overlap (require 2x)
-            if (lastOffset >= ((nint)sizeof(int) << needTwoParts))
+            else if (remainder >= sizeof(int))
             {
-                ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, lastOffset), sizeof(int));
-
+                last = ref Unsafe.Subtract(ref last, sizeof(int));
                 do
                 {
                     int tempFirst = Unsafe.ReadUnaligned<int>(ref first);
@@ -1229,13 +1215,14 @@ namespace System
 
                     first = ref Unsafe.Add(ref first, sizeof(int));
                     last = ref Unsafe.Subtract(ref last, sizeof(int));
-                    lastOffset -= (nint)sizeof(int) * 2;
-                } while (lastOffset >= (nint)sizeof(int) * 2);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last));
+
+                remainder = Unsafe.ByteOffset(ref first, ref Unsafe.Add(ref last, sizeof(int))) / sizeof(byte);
             }
 
-            if (lastOffset > 1)
+            if (remainder > 1)
             {
-                ReverseInner(ref first, (nuint)lastOffset);
+                ReverseInner(ref first, (nuint)remainder);
             }
         }
     }
