@@ -188,7 +188,7 @@ MonoDl*
 mono_dl_open_self (MonoError *error)
 {
 
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
 	module = (MonoDl *) g_malloc (sizeof (MonoDl));
 	if (!module) {

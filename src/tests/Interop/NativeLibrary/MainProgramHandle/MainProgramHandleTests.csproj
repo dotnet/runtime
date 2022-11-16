@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' or '$(RuntimeVariant)' == 'monointerpreter'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MainProgramHandleTests.cs" />
