@@ -53,7 +53,7 @@ if [[ "$__TargetOS" == Browser ]]; then
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
     export CLR_CC=$(which emcc)
-elif [[ "$__TargetOS" == WASI ]]; then
+elif [[ "$__TargetOS" == wasi ]]; then
     if [[ -z "$WASI_SDK_PATH" ]]; then
         if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk/ ]]; then
             export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk/

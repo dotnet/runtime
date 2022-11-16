@@ -4,7 +4,7 @@
     },
     "Browser" : {
     },
-    "WASI" : {
+    "wasi" : {
     },
     "Linux": {
       "#import": [

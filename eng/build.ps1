@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Android","Browser","WASI")][string]$os,
+  [ValidateSet("windows","Linux","OSX","Android","Browser","wasi")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -40,7 +40,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android, WASI or Browser."
+  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android, wasi or Browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -283,8 +283,8 @@ if ($os -eq "Browser") {
   }
 }
 
-if ($os -eq "WASI") {
-  # override default arch for WASI, we only support wasm
+if ($os -eq "wasi") {
+  # override default arch for wasi, we only support wasm
   $arch = "wasm"
 
   if ($msbuild -eq $True) {
@@ -299,7 +299,7 @@ foreach ($config in $configuration) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
     if ($os -eq "Browser") {
       $env:__DistroRid="browser-$singleArch"
-    } elseif ($os -eq "WASI") {
+    } elseif ($os -eq "wasi") {
       $env:__DistroRid="wasi-$singleArch"
     } else {
       $env:__DistroRid="win-$singleArch"

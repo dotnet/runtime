@@ -60,7 +60,7 @@ if /i "%__Arch%" == "wasm" (
         set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
         set __UseEmcmake=1
     )
-    if "%__Os%" == "WASI" (
+    if "%__Os%" == "wasi" (
         echo Error: WASI build not implemented on Windows yet
         exit /B 1
     )
