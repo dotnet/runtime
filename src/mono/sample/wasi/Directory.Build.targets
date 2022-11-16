@@ -3,7 +3,7 @@
   <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets" />
 
   <PropertyGroup>
-    <ShouldProvisionWasmtime Condition="!Exists('$(MonoProjectRoot)/wasi/wasmtime')">true</ShouldProvisionWasmtime>
+    <ShouldProvisionWasmtime Condition="!Exists($(WasmtimeDir))">true</ShouldProvisionWasmtime>
   </PropertyGroup>
 
 
@@ -49,7 +49,13 @@
       <WasmtimeURL Condition="'$(HostOS)' == 'osx'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-macos.tar.xz</WasmtimeURL>
     </PropertyGroup>
 
-    <Exec WorkingDirectory="$(MonoProjectRoot)/wasi" Command="mkdir wasmtime &amp;&amp; curl -L -o- $(WasmtimeURL) | tar -Jxv --strip-components=1 -C wasmtime/ &amp;&amp; cp wasmtime-version.txt wasmtime/wasmtime-version.txt" />
+    <DownloadFile SourceUrl="$(WasmtimeURL)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+
+    <MakeDir Directories="$(WasmtimeDir)" />
+    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" />
+    <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir).stamp-wasmtime-version.txt" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="RunSampleWithWasmtime" DependsOnTargets="ProvisionWasmtime;BuildSampleInTree">
@@ -58,7 +64,7 @@
   -->
     <Exec 
     WorkingDirectory="bin/publish"
-    Command="$(MonoProjectRoot)wasi/wasmtime/wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />
+    Command="$(WasmtimeDir)wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />
   </Target>
 
 </Project>
