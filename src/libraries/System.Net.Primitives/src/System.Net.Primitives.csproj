@@ -12,6 +12,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_NetPrimitives</GeneratePlatformNotSupportedAssemblyMessage>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\AuthenticationSchemes.cs" />

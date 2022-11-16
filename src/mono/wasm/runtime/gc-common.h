@@ -1,7 +1,7 @@
 #define PVOLATILE(T) T* volatile
 #define PPVOLATILE(T) T* volatile *
 
-#if !defined(TARGET_BROWSER)
+#if !defined(TARGET_BROWSER) && !defined(EMSCRIPTEN_KEEPALIVE)
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 

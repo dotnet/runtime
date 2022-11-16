@@ -48,7 +48,7 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #if defined(TARGET_BROWSER) || defined(TARGET_WASI)
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#else
+#elif !defined(EMSCRIPTEN_KEEPALIVE)
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 

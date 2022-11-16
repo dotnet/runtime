@@ -3,12 +3,11 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-wasi</TargetFrameworks>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418;CA1416</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
-    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

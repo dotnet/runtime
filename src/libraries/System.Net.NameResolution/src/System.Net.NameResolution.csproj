@@ -8,6 +8,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'wasi'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="System\Net\Dns.cs" />

@@ -7,6 +7,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_WebSockets</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\WebSockets\AsyncMutex.cs" />

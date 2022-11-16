@@ -6,6 +6,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'wasi'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="System\Net\WebClient.cs" />

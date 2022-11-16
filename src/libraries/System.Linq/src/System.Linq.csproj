@@ -6,6 +6,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</OptimizeForSize>
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(NoWarn);CA1418</NoWarn><!-- TODOWASI -->
   </PropertyGroup>
   <ItemGroup Condition="'$(OptimizeForSize)' == true">
     <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
