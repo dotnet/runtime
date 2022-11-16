@@ -53,8 +53,9 @@
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
 
-    <Exec Command="tar -Jxv --strip-components=1 -C $(WasmtimeDir) $(_DownloadedFile)" />
-    <Copy SourceFiles="$(MonoProjectRoot)/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir)/.stamp-wasmtime-version.txt" />
+    <MakeDir Directories="$(WasmtimeDir)" />
+    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" />
+    <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir).stamp-wasmtime-version.txt" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="RunSampleWithWasmtime" DependsOnTargets="ProvisionWasmtime;BuildSampleInTree">
@@ -63,7 +64,7 @@
   -->
     <Exec 
     WorkingDirectory="bin/publish"
-    Command="$(MonoProjectRoot)wasi/wasmtime/wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />
+    Command="$(WasmtimeDir)wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />
   </Target>
 
 </Project>
