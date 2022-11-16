@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessModuleTests.Windows.cs" />
+    <Compile Include="ProcessStartInfoTests.Windows.cs" />
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs"
