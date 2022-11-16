@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public static class CorInfoHelpers
     {
-        public static ReadyToRunHelperId getRunHelperIdFromHelperFunc(CorInfoHelpFunc helper)
+        public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
         {
             ReadyToRunHelperId res;
             switch (helper)
