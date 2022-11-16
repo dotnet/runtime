@@ -33,8 +33,6 @@ static void emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 
 static void mono_marshal_ilgen_legacy_init (void);
 
-static MonoMarshalILgenCallbacks ilgen_marshal_cb;
-
 static IlgenCallbacksToMono *cb_to_mono;
 
 static void ilgen_init_internal (void);
@@ -64,18 +62,6 @@ MonoComponentMarshalILgen*
 mono_component_marshal_ilgen_init (void) 
 {
 	return &component_func_table;
-}
-
-static gboolean ilgen_cb_inited = FALSE;
-static MonoMarshalILgenCallbacks ilgen_marshal_cb;
-
-void
-mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb)
-{
-	g_assert (!ilgen_cb_inited);
-	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalILgenCallbacks));
-	ilgen_cb_inited = TRUE;
 }
 
 static void
@@ -2735,37 +2721,30 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 
-static MonoMarshalILgenCallbacks *
-get_marshal_cb (void)
-{
-	g_assert(ilgen_cb_inited);
-	return &ilgen_marshal_cb;
-}
-
 static int
 emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalSpec *spec, int conv_arg,
 		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb)
 {
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
-		return get_marshal_cb ()->emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_custom_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	if (spec && spec->native == MONO_NATIVE_ASANY)
-		return get_marshal_cb ()->emit_marshal_asany (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_asany_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass == cb_to_mono->class_try_get_handleref_class ())
-			return get_marshal_cb ()->emit_marshal_handleref (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return emit_marshal_handleref_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-		return get_marshal_cb ()->emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_STRING:
-		return get_marshal_cb ()->emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_string_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 #if !defined(DISABLE_COM)
 		if (spec && spec->native == MONO_NATIVE_STRUCT)
-			return get_marshal_cb ()->emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return emit_marshal_variant_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 #endif
 
 #if !defined(DISABLE_COM)
@@ -2782,18 +2761,18 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (cb_to_mono->try_get_safehandle_class () != NULL && t->data.klass &&
 		    cb_to_mono->is_subclass_of_internal (t->data.klass,  cb_to_mono->try_get_safehandle_class (), FALSE))
-			return get_marshal_cb ()->emit_marshal_safehandle (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return emit_marshal_safehandle_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-		return get_marshal_cb ()->emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_object_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
-		return get_marshal_cb ()->emit_marshal_array (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_array_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_BOOLEAN:
-		return get_marshal_cb ()->emit_marshal_boolean (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_boolean_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_PTR:
-		return get_marshal_cb ()->emit_marshal_ptr (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_ptr_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CHAR:
-		return get_marshal_cb ()->emit_marshal_char (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return emit_marshal_char_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
@@ -2810,9 +2789,9 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		return lightweigth_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_GENERICINST:
 		if (mono_type_generic_inst_is_valuetype (t))
-			return get_marshal_cb ()->emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		else
-			return get_marshal_cb ()->emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return emit_marshal_object_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	default:
 		return conv_arg;
 	}
@@ -2821,23 +2800,6 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static void
 ilgen_init_internal (void)
 {
-
-	MonoMarshalILgenCallbacks cb;
-	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
-	cb.emit_marshal_array = emit_marshal_array_ilgen;
-	cb.emit_marshal_ptr = emit_marshal_ptr_ilgen;
-	cb.emit_marshal_char = emit_marshal_char_ilgen;
-	cb.emit_marshal_vtype = emit_marshal_vtype_ilgen;
-	cb.emit_marshal_string = emit_marshal_string_ilgen;
-	cb.emit_marshal_variant = emit_marshal_variant_ilgen;
-	cb.emit_marshal_safehandle = emit_marshal_safehandle_ilgen;
-	cb.emit_marshal_object = emit_marshal_object_ilgen;
-	cb.emit_marshal_boolean = emit_marshal_boolean_ilgen;
-	cb.emit_marshal_custom = emit_marshal_custom_ilgen;
-	cb.emit_marshal_asany = emit_marshal_asany_ilgen;
-	cb.emit_marshal_handleref = emit_marshal_handleref_ilgen;
-
-	mono_install_marshal_callbacks_ilgen (&cb);
 }
 
 
