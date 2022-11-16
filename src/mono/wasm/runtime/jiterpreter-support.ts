@@ -791,7 +791,6 @@ export function getOptions () {
 function updateOptions () {
     const pJson = cwraps.mono_jiterp_get_options_as_json();
     const json = Module.UTF8ToString(<any>pJson);
-    // console.log(`options=${json}`);
     Module._free(<any>pJson);
     const blob = JSON.parse(json);
 
@@ -800,6 +799,4 @@ function updateOptions () {
         const info = optionNames[k];
         (<any>optionTable)[k] = blob[info];
     }
-
-    // console.log(`optionTable=${JSON.stringify(optionTable)}`);
 }

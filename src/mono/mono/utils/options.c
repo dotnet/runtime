@@ -281,8 +281,8 @@ strncat_option_json (char *destination, MonoOptionType type, const void *value, 
 
 		destination = strncat_safe (destination, "\"", end);
 		while ((ch = *src) != 0) {
-			if (destination >= (end - 1))
-				return destination;
+			if (destination >= (end - 2))
+				break;
 
 			switch (ch) {
 				case '\'':
@@ -303,7 +303,9 @@ strncat_option_json (char *destination, MonoOptionType type, const void *value, 
 
 			src++;
 		}
+
 		destination = strncat_safe (destination, "\"", end);
+		return destination;
 	}
 
 	default:
