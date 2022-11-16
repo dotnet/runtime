@@ -183,9 +183,9 @@
     <_toolsRID Condition="'$(_toolsRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolsRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser'">linux-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
