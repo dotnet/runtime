@@ -172,7 +172,6 @@ HRESULT EEConfig::Init()
     fSuppressChecks = false;
     fConditionalContracts = false;
     fEnableFullDebug = false;
-    iExposeExceptionsInCOM = 0;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -605,8 +604,6 @@ HRESULT EEConfig::sync()
     fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
 
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
-
-    iExposeExceptionsInCOM = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExposeExceptionsInCOM, iExposeExceptionsInCOM);
 #endif
 
 #ifdef FEATURE_COMINTEROP
