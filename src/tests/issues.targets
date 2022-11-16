@@ -189,10 +189,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
-        <!-- Arm32 does not support hardware intrinsics -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -230,17 +226,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
         </ExcludeList>
-        <!-- Arm64 does not support Vector256 -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <!-- Arm64 does not support X86 hardware intrinsics -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
           <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
         </ExcludeList>
@@ -260,17 +245,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_34094/Test34094/*">
             <Issue>https://github.com/dotnet/runtime/issues/57458</Issue>
-        </ExcludeList>
-        <!-- X64 does not support Vector64 -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <!-- X64 does not support Arm hardware intrinsics -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -305,17 +279,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_34094/Test34094/*">
             <Issue>https://github.com/dotnet/runtime/issues/57458</Issue>
-        </ExcludeList>
-        <!-- X86 does not support Vector64 -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <!-- X86 does not support Arm hardware intrinsics -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -616,17 +579,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19601/Github_19601/*">
             <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <!-- X64 does not support Vector64 -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
-        </ExcludeList>
-        <!-- X64 does not support Arm hardware intrinsics -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/**">
-            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1460,10 +1412,6 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/CompareVectorWithZero/**">
-            <Issue>https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324</Issue>
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/DivToMul/**">
@@ -2720,90 +2668,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi1.X64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2.X64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/IsSupported_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/IsSupported_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorArray_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Sse_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Sse_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1.X64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2/Sse2_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2/Sse2_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/Sse2.X64_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/Sse2.X64_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/Sse3_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/Sse3_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41.X64/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41_Overloaded/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>
     </ItemGroup>
 
