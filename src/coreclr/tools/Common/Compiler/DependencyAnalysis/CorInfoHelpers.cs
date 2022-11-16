@@ -6,7 +6,7 @@ using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class CorInfoHelpers
+    public static class CorInfoHelpers
     {
         public static ReadyToRunHelperId getRunHelperIdFromHelperFunc(CorInfoHelpFunc helper)
         {
