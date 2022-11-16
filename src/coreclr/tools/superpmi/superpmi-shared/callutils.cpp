@@ -236,7 +236,8 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
         methodName = getMethodName(mc, hnd);
     }
 
-    size_t   length = className.size();
+    // Class name and colon
+    size_t   length = className.size() + 1;
     unsigned i;
 
     /* Generating the full signature is a two-pass process. First we have to walk
