@@ -484,7 +484,7 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true);
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true, allow: true);
                 }
             }
 
@@ -493,26 +493,33 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
-                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false);
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false, allow: true);
                 }
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add, bool allow)
         {
-            FileInfo fileInfo = new FileInfo(filePath);
-            FileSecurity fileSecurity = fileInfo.GetAccessControl();
-            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
-            fileInfo.SetAccessControl(fileSecurity);
-
-            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
-            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
-            Apply(userName, directorySecurity, FileSystemRights.Read, add);
-            directoryInfo.SetAccessControl(directorySecurity);
-
-            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
+            if (!string.IsNullOrWhiteSpace(filePath))
             {
-                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
+                FileInfo fileInfo = new FileInfo(filePath);
+                FileSecurity fileSecurity = fileInfo.GetAccessControl();
+                Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add, allow);
+                fileInfo.SetAccessControl(fileSecurity);
+            }
+
+            if (!string.IsNullOrWhiteSpace(directoryPath))
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+                DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+                Apply(userName, directorySecurity, FileSystemRights.Read, add, allow);
+                directoryInfo.SetAccessControl(directorySecurity);
+            }
+
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add, bool allow)
+            {
+                AccessControlType accessControlType = allow ? AccessControlType.Allow : AccessControlType.Deny;
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, accessControlType);
 
                 if (add)
                 {
@@ -1375,7 +1382,7 @@ namespace System.Diagnostics.Tests
             string testFilePathRoot = Path.GetPathRoot(testFilePath);
             const string ShareName = "testForDotNet";
             using WindowsTestFileShare fileShare = new WindowsTestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
-            string testFileUncPath = $"\\\\localhost\\{ShareName}\\{Path.GetFileName(testFilePath)}";
+            string testFileUncPath = $"\\\\{Environment.MachineName}\\{ShareName}\\{Path.GetFileName(testFilePath)}";
             string testFileContent = "42";
             File.WriteAllText(testFilePath, testFileContent);
 
@@ -1387,8 +1394,8 @@ namespace System.Diagnostics.Tests
                 _ = File.ReadAllText(Environment.GetEnvironmentVariable(UncPath));
                 try
                 {
-                    // Read file content using current user - should fail, because impersonated user
-                    // isn't explicitly authorized to access the file.
+                    // Read file content using current user - should fail, because current user
+                    // explicitly forbidden from accessing the file.
                     _ = File.ReadAllText(Environment.GetEnvironmentVariable(LocalPath));
 
                     return -1;
@@ -1414,7 +1421,8 @@ namespace System.Diagnostics.Tests
             {
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true, allow: true);
+                    SetAccessControl(Environment.UserName, testFilePath, null, add: true, allow: false);
                 }
             }
 
@@ -1423,12 +1431,13 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
-                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
+                    SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false, allow: true);
+                    SetAccessControl(Environment.UserName, testFilePath, null, add: false, allow: false);
                 }
             }
         }
 
-        private TestProcessState CreateUserAndExecute(
+        private static TestProcessState CreateUserAndExecute(
             Process process,
             Action<string, string> additionalSetup = null,
             Action<string, string> additionalCleanup = null,
