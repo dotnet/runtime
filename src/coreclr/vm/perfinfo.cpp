@@ -27,7 +27,7 @@ PerfInfo::PerfInfo(int pid)
 }
 
 // Logs image loads into the process' perfinfo-%d.map file
-void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
+void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
 {
     CONTRACTL
     {
