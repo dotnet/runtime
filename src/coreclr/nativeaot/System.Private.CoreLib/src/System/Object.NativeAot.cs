@@ -26,9 +26,24 @@ namespace System
         }
 
         [Intrinsic]
-        protected object MemberwiseClone()
+        protected internal unsafe object MemberwiseClone()
         {
-            return RuntimeImports.RhMemberwiseClone(this);
+            object clone = this.GetMethodTable()->IsArray ?
+                RuntimeExports.RhNewArray(this.GetMethodTable(), Unsafe.As<Array>(this).Length) :
+                RuntimeExports.RhNewObject(this.GetMethodTable());
+
+            // copy contents of "this" to the clone
+
+            nuint byteCount = RuntimeHelpers.GetRawObjectDataSize(this);
+            ref byte src = ref this.GetRawData();
+            ref byte dst = ref clone.GetRawData();
+
+            if (this.GetMethodTable()->HasGCPointers)
+                Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+            else
+                Buffer.Memmove(ref dst, ref src, byteCount);
+
+            return clone;
         }
     }
 }
