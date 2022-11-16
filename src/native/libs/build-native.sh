@@ -45,7 +45,7 @@ source "$__RepoRootDir"/eng/native/build-commons.sh
 if [[ "$__TargetOS" == Browser ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
         if [[ -d "$__RepoRootDir"/src/mono/wasm/emsdk/ ]]; then
-            export EMSDK_PATH="$__RepoRootDir"/src/mono/wasm/emsdk/
+            export EMSDK_PATH="$__RepoRootDir"/src/mono/wasm/emsdk/"
         else
             echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
             exit 1
