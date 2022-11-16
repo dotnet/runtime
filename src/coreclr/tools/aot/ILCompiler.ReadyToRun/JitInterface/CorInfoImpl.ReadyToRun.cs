@@ -1565,7 +1565,8 @@ namespace Internal.JitInterface
                         {
                             pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetGCStaticBase;
-                        } else
+                        }
+                        else
                         {
                             pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetNonGCStaticBase;
