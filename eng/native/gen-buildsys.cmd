@@ -46,7 +46,7 @@ if /i "%__Arch%" == "wasm" (
         echo Error: Please add target OS parameter
         exit /B 1
     )
-    if "%__Os%" == "Browser" (
+    if /i "%__Os%" == "Browser" (
         if "%EMSDK_PATH%" == "" (
             if not exist "%__repoRoot%src\mono\wasm\emsdk" (
                 echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
@@ -60,7 +60,7 @@ if /i "%__Arch%" == "wasm" (
         set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
         set __UseEmcmake=1
     )
-    if "%__Os%" == "wasi" (
+    if /i "%__Os%" == "wasi" (
         echo Error: WASI build not implemented on Windows yet
         exit /B 1
     )

@@ -508,7 +508,7 @@ if [[ "$os" == "Browser" ]]; then
     arch=wasm
 fi
 if [[ "$os" == "wasi" ]]; then
-    # override default arch for Browser, we only support wasm
+    # override default arch for wasi, we only support wasm
     arch=wasm
 fi
 
