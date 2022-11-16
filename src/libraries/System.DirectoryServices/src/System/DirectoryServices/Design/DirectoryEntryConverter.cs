@@ -38,7 +38,7 @@ namespace System.DirectoryServices.Design
                     {
                         newEntry = new DirectoryEntry(text);
                         s_componentsCreated[text] = newEntry;
-                        context?.Container.Add(newEntry);
+                        context?.Container?.Add(newEntry);
 
                         return newEntry;
                     }
