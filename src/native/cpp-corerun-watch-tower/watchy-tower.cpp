@@ -4,6 +4,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdarg>
+#include <vector>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 struct configuration
 {
@@ -11,11 +17,12 @@ struct configuration
 
     long int timeout;
     const char *corerun_path;
-    const char *corerun_args;
+    std::vector<const char *> corerun_argv;
 };
 
 static void display_usage();
 static bool parse_args(const int, const char *[], configuration&);
+static int run_timed_process(configuration&);
 
 int main(const int argc, const char *argv[])
 {
@@ -24,9 +31,13 @@ int main(const int argc, const char *argv[])
     if (!parse_args(argc, argv, config))
         return EXIT_FAILURE;
 
+    // These printf's are just for general info during development. They will
+    // be removed before merging the PR.
     printf("Timeout Given: %ld\n", config.timeout);
     printf("Corerun Path Given: %s\n", config.corerun_path);
-    printf("Corerun Arguments Given: %s\n", config.corerun_args);
+    printf("Corerun Arguments Given:\n");
+    int r = run_timed_process(config);
+    printf("%d\n", r);
     return EXIT_SUCCESS;
 }
 
@@ -75,14 +86,13 @@ static bool parse_args(const int argc, const char *argv[], configuration& config
         }
         else if (strcmp(arg, "-args") == 0 || strcmp(arg, "--args") == 0)
         {
-            if (++i < argc)
+            // The args flag has to come last, since we can't know beforehand
+            // how many of the following arguments belong to this flag. So, making
+            // it last-only, we can assume it's until we're done processing
+            // the argument vector.
+            while (++i < argc)
             {
-                config.corerun_args = argv[i];
-            }
-            else
-            {
-                fprintf(stderr, "Option '%s': Missing arguments for corerun.\n", arg);
-                return false;
+                config.corerun_argv.push_back(argv[i]);
             }
         }
         else if (strcmp(arg, "-h") == 0 || strcmp(arg, "--h") == 0 || strcmp(arg, "-?") == 0)
@@ -99,86 +109,82 @@ static bool parse_args(const int argc, const char *argv[], configuration& config
     return true;
 }
 
-/* Little example of forking a child process, and finishing it instantly if it
- * takes longer than a certain amount of time.
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-#include <sys/wait.h>
-
-int run_timed_process(const long, const int, const char *[]);
-
-int main(const int argc, const char *argv[])
+static int run_timed_process(configuration& config)
 {
-    int result = run_timed_process(3000L, argc-1, &argv[1]);
-    printf("App Exit Code: %d\n", result);
-    return 0;
-}
-
-int run_timed_process(const long timeout_ms, const int program_argc, const char *program_argv[])
-{
-//     for (int i = 0; i < program_argc; i++)
-//         printf("Argv[%d] = %s\n", i, program_argv[i]);
-//
-    const int check_interval = 1000;
+    const int check_interval_ms = 1000;
     int check_count = 0;
-    char *args[program_argc];
+    int corerun_argc = config.corerun_argv.size();
+
+    // Since our corerun_argv only contains the actual arguments to corerun,
+    // but the execv() call expects a list including the name of the executable,
+    // we make an additional slot in our list to add it.
+    char *program_args[corerun_argc + 1];
+    program_args[0] = (char *) config.corerun_path;
 
     pid_t child_pid;
     int child_status;
     int w;
 
-    for (int i = 0; i < program_argc; i++)
+    // The calls to execute child processes require a char * array.
+    for (int i = 0; i < corerun_argc; i++)
     {
-        args[i] = (char *)program_argv[i];
+        // We're using index+1 to account for the corerun executable path stored
+        // at index 0.
+        program_args[i+1] = (char *) config.corerun_argv.at(i);
     }
 
-    printf("Forking!\n");
+    for (int j = 0; j <= corerun_argc; j++)
+        printf("At [%d]: %s\n", j, program_args[j]);
+    return 100;
+
     child_pid = fork();
 
     if (child_pid < 0)
     {
-        // Fork failed. No memory remaining available :(
-        printf("Fork failed... Returning ENOMEM.\n");
+        // Fork failed. No memory available.
+        printf("Fork failed... Out of memory.\n");
         return ENOMEM;
     }
     else if (child_pid == 0)
     {
-        // Instructions for child process!
-        printf("Fork successful! Running child process now...\n");
-        execv(args[0], &args[0]);
+        // Instructions for the child process!
+
+        // Run the test binary and exit unsuccessfully if it's killed or dies for
+        // whatever reason.
+        execv(program_args[0], &program_args[0]);
         _exit(EXIT_FAILURE);
     }
     else
     {
+        // Instructions for the parent process!
+
+        // Wait for the child process (running test) to finish, while keeping
+        // track of how long it's been running.
         do
         {
-            // Instructions for the parent process!
             w = waitpid(child_pid, &child_status, WNOHANG);
 
+            // Something went very wrong.
             if (w == -1)
                 return EINVAL;
 
-            usleep(check_interval * 1000);
+            // Wait a bit before checking the test process' status again.
+            // Usleep() takes its argument in microseconds, hence we multiply
+            // by 1000 our interval in milliseconds.
+            usleep(check_interval_ms * 1000);
 
             if (w)
             {
                 if (WIFEXITED(child_status))
                 {
-                    printf("Child process exited by signal %d.\n", WEXITSTATUS(child_status));
+                    // Our test run completed successfully.
                     return WEXITSTATUS(child_status);
                 }
             }
-        } while (check_count++ < (timeout_ms / check_interval));
+        } while (check_count++ < (config.timeout / check_interval_ms));
     }
 
-    printf("Child process took too long. Timed out... Exiting...\n");
+    printf("Test process took too long to complete, and timed out.\n");
     kill(child_pid, SIGKILL);
     return ETIMEDOUT;
 }
-
-*/
