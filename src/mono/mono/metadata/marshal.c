@@ -44,7 +44,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
-#include "mono/metadata/marshal-noilgen.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
