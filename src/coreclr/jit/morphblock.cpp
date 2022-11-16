@@ -613,9 +613,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_UBYTE:
             case TYP_SHORT:
             case TYP_USHORT:
-                // Promoted fields are expected to be "normalize on load". If that changes then
-                // we may need to adjust this code to widen the constant correctly.
-             //   assert(fieldDesc->lvNormalizeOnLoad());
                 FALLTHROUGH;
             case TYP_INT:
             {
