@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
         /// for OpenSSL 1.0.x this is the result of <code>SSLeay()</code>.
         /// </remarks>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]

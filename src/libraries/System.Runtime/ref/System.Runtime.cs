@@ -14070,9 +14070,9 @@ namespace System.Text
     {
         FormC = 1,
         FormD = 2,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         FormKC = 5,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         FormKD = 6,
     }
     public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.ISpanFormattable
@@ -14514,15 +14514,15 @@ namespace System.Threading.Tasks
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
         public bool Wait(System.TimeSpan timeout) { throw null; }
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static void WaitAll(System.Threading.Tasks.Task[] tasks, System.Threading.CancellationToken cancellationToken) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, System.TimeSpan timeout) { throw null; }
         public static int WaitAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static int WaitAny(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }
@@ -14548,7 +14548,7 @@ namespace System.Threading.Tasks
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
         public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
     }

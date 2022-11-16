@@ -18,7 +18,7 @@ namespace System.Security.Authentication.ExtendedProtection
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))

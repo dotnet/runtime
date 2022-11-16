@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
     public sealed partial class DSAOpenSsl : DSA
     {
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>DSA*</c></exception>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
         /// <param name="handle">A pointer to an OpenSSL <c>DSA*</c></param>
         /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]

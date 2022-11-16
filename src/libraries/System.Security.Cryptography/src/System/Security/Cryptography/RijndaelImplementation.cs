@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
     {
         private readonly Aes _impl;
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         internal RijndaelImplementation()
         {
             LegalBlockSizesValue = new KeySizes[] { new KeySizes(minSize: 128, maxSize: 128, skipSize: 0) };

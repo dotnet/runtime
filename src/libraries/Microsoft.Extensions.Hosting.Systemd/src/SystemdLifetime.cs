@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// Provides notification messages for application started and stopping, and configures console logging to the systemd format.
     /// </summary>
     [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]

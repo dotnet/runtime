@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new RC2 Create()
         {
             return new RC2Implementation();

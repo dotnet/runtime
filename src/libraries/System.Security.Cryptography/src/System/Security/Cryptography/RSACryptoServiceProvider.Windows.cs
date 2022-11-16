@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider()
             : this(0, new CspParameters(CapiHelper.DefaultRsaProviderType,
                                        null,
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider(int dwKeySize)
             : this(dwKeySize,
                   new CspParameters(CapiHelper.DefaultRsaProviderType,

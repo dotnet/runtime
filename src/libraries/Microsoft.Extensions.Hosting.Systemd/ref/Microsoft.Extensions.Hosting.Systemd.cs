@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         public static bool IsSystemdService() { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class SystemdNotifier : Microsoft.Extensions.Hosting.Systemd.ISystemdNotifier
     {
         public SystemdNotifier() { }

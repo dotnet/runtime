@@ -546,7 +546,7 @@ namespace System.Runtime.InteropServices
         public string Value { get { throw null; } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     [System.CLSCompliantAttribute(false)]
@@ -1369,7 +1369,7 @@ namespace System.Runtime.InteropServices
     {
         internal PosixSignalRegistration() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }

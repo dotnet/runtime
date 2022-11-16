@@ -450,19 +450,19 @@ namespace System.Net.Http
 
         #region Advanced Send Overloads
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public HttpResponseMessage Send(HttpRequestMessage request) =>
             Send(request, DefaultCompletionOption, cancellationToken: default);
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption) =>
             Send(request, completionOption, cancellationToken: default);
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Send(request, DefaultCompletionOption, cancellationToken);
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
         {
             CheckRequestBeforeSend(request);

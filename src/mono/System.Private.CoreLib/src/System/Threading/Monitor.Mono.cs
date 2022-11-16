@@ -60,7 +60,7 @@ namespace System.Threading
             return IsEnteredNative(obj);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);

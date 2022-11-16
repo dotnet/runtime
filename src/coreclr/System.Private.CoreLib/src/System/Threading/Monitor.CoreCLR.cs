@@ -147,7 +147,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool ObjWait(int millisecondsTimeout, object obj);
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             if (obj == null)

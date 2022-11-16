@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     /// Listens for Ctrl+C or SIGTERM and initiates shutdown.
     /// </summary>
     [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     public partial class ConsoleLifetime : IHostLifetime, IDisposable

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             FeedbackSizeValue = BlockSizeValue;
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new DES Create()
         {
             return new DesImplementation();

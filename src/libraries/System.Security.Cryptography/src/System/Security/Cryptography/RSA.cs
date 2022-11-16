@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new partial RSA Create();
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
             return (RSA?)CryptoConfig.CreateFromName(algName);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static RSA Create(int keySizeInBits)
         {
             RSA rsa = Create();
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static RSA Create(RSAParameters parameters)
         {
             RSA rsa = Create();

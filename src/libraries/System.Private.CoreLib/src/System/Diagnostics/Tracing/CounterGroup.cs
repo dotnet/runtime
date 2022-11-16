@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tracing
 {
 #if !ES_BUILD_STANDALONE
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
 #endif
     internal sealed class CounterGroup

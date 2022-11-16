@@ -19,14 +19,14 @@ namespace System.Net.WebSockets
 
         #region HTTP Settings
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         // Note that some headers are restricted like Host.
         public void SetRequestHeader(string headerName, string headerValue)
         {
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool UseDefaultCredentials
         {
             get => throw new PlatformNotSupportedException();
@@ -36,53 +36,53 @@ namespace System.Net.WebSockets
         public Version HttpVersion
         {
             get => Net.HttpVersion.Version11;
-            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
             set => throw new PlatformNotSupportedException();
         }
 
         public System.Net.Http.HttpVersionPolicy HttpVersionPolicy
         {
             get => HttpVersionPolicy.RequestVersionOrLower;
-            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public System.Net.ICredentials Credentials
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public System.Net.IWebProxy Proxy
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509CertificateCollection ClientCertificates
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public System.Net.Security.RemoteCertificateValidationCallback RemoteCertificateValidationCallback
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public System.Net.CookieContainer Cookies
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool CollectHttpResponseDetails
         {
             get => throw new PlatformNotSupportedException();
@@ -115,27 +115,27 @@ namespace System.Net.WebSockets
 
         internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public TimeSpan KeepAliveInterval
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public WebSocketDeflateOptions? DangerousDeflateOptions
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
         {
             throw new PlatformNotSupportedException();

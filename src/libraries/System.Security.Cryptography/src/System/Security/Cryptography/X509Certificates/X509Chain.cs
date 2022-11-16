@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool Build(X509Certificate2 certificate)
         {
             return Build(certificate, true);

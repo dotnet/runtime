@@ -14,7 +14,7 @@ namespace System.Threading
     // Windows-specific implementation of ThreadPool
     //
 #if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {

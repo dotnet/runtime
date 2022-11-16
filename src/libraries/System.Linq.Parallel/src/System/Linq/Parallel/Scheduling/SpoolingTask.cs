@@ -82,7 +82,7 @@ namespace System.Linq.Parallel
         //     taskScheduler   - the task manager on which to execute
         //
 
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         internal static void SpoolPipeline<TInputOutput, TIgnoreKey>(
             QueryTaskGroupState groupState, PartitionedStream<TInputOutput, TIgnoreKey> partitions,
             AsynchronousChannel<TInputOutput>[] channels, TaskScheduler taskScheduler)
@@ -262,7 +262,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     /// <typeparam name="TIgnoreKey"></typeparam>
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     internal sealed class PipelineSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase
     {
         // The data source from which to pull data.

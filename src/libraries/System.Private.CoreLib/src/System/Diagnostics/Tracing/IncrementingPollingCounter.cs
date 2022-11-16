@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
 #if !ES_BUILD_STANDALONE
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
 #endif
     public partial class IncrementingPollingCounter : DiagnosticCounter

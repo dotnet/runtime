@@ -47,7 +47,7 @@ namespace System.Net.WebSockets
         public Version HttpVersion
         {
             get => _version;
-            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
             set
             {
                 ThrowIfReadOnly();
@@ -61,7 +61,7 @@ namespace System.Net.WebSockets
         public HttpVersionPolicy HttpVersionPolicy
         {
             get => _versionPolicy;
-            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
             set
             {
                 ThrowIfReadOnly();
@@ -69,7 +69,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         // Note that some headers are restricted like Host.
         public void SetRequestHeader(string headerName, string? headerValue)
         {
@@ -83,7 +83,7 @@ namespace System.Net.WebSockets
 
         internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool UseDefaultCredentials
         {
             get => _useDefaultCredentials;
@@ -94,7 +94,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public ICredentials? Credentials
         {
             get => _credentials;
@@ -105,7 +105,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public IWebProxy? Proxy
         {
             get => _proxy;
@@ -116,7 +116,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates ??= new X509CertificateCollection();
@@ -128,7 +128,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
         {
             get => _remoteCertificateValidationCallback;
@@ -139,7 +139,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public CookieContainer? Cookies
         {
             get => _cookies;
@@ -171,7 +171,7 @@ namespace System.Net.WebSockets
             subprotocols.Add(subProtocol);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public TimeSpan KeepAliveInterval
         {
             get => _keepAliveInterval;
@@ -197,13 +197,13 @@ namespace System.Net.WebSockets
         /// It is strongly advised to turn off compression when sending data containing secrets by
         /// specifying <see cref="WebSocketMessageFlags.DisableCompression" /> flag for such messages.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }
 
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             ThrowIfReadOnly();
@@ -221,7 +221,7 @@ namespace System.Net.WebSockets
             _buffer = null;
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
         {
             ThrowIfReadOnly();
@@ -248,7 +248,7 @@ namespace System.Net.WebSockets
         /// <summary>
         /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
         /// </summary>
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public bool CollectHttpResponseDetails
         {
             get => _collectHttpResponseDetails;

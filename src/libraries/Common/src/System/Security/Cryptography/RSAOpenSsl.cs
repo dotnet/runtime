@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         private Lazy<SafeEvpPKeyHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]

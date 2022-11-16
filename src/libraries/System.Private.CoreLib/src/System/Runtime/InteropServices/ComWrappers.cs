@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
     [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]

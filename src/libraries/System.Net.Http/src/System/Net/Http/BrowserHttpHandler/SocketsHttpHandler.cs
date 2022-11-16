@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http
 {
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         [UnsupportedOSPlatformGuard("browser")]

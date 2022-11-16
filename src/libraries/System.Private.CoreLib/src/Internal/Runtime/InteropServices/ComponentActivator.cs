@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices
         private const string NativeAOTIncompatibleWarningMessage = "The native code for the method requested might not be available at runtime.";
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -53,7 +53,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -167,7 +167,7 @@ namespace Internal.Runtime.InteropServices
 
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)

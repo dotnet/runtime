@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new TripleDES Create()
         {
             return new TripleDesImplementation();

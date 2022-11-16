@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         };
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RC2CryptoServiceProvider()
         {
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();

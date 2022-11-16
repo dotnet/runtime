@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
         /// <param name="curve">The <see cref="ECCurve"/> representing the curve.</param>
         /// <exception cref="ArgumentNullException">if <paramref name="curve" /> is null.</exception>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
         ///     Create an ECDsaOpenSsl algorithm with a random 521 bit key pair.
         /// </summary>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="keySize">Size of the key to generate, in bits.</param>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]

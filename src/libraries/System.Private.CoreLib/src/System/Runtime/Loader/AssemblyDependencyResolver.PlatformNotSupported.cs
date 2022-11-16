@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.Loader
 {
     [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     public sealed class AssemblyDependencyResolver

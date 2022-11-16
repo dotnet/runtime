@@ -6,7 +6,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     public sealed partial class ChaCha20Poly1305 : IDisposable

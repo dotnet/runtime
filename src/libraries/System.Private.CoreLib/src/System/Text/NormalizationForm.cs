@@ -9,9 +9,9 @@ namespace System.Text
     {
         FormC = 1,
         FormD = 2,
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         FormKC = 5,
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         FormKD = 6
     }
 }

@@ -14,11 +14,11 @@ namespace System.Security.Cryptography
         private readonly RSA _impl;
         private bool _publicOnly;
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider()
             : this(DefaultKeySize) { }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider(int dwKeySize)
         {
             if (dwKeySize < 0)

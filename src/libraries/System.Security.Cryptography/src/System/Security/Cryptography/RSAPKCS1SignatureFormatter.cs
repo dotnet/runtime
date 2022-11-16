@@ -6,7 +6,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public class RSAPKCS1SignatureFormatter : AsymmetricSignatureFormatter
     {
         private RSA? _rsaKey;

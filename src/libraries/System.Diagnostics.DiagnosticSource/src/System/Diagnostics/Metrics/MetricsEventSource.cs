@@ -236,6 +236,13 @@ namespace System.Diagnostics.Metrics
                         return;
                     }
 #endif
+#if OS_ISWASI_SUPPORT
+                    if (OperatingSystem.IsOSPlatform("Wasi")) // TODO replace with https://github.com/dotnet/runtime/issues/78389
+                    {
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on WASI");
+                        return;
+                    }
+#endif
                     if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable ||
                         command.Command == EventCommand.Enable)
                     {
@@ -379,7 +386,7 @@ namespace System.Diagnostics.Metrics
 
             private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
-            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
             private void ParseSpecs(string? metricsSpecs)
             {
                 if (metricsSpecs == null)

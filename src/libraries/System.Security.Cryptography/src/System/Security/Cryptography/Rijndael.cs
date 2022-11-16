@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class Rijndael : SymmetricAlgorithm
     {
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new Rijndael Create()
         {
             return new RijndaelImplementation();

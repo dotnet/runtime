@@ -15,7 +15,7 @@ namespace Internal.Runtime.InteropServices
     /// dependencies within the ALC and not pollute the default ALC.
     ///</summary>
     [UnsupportedOSPlatform("android")]
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]

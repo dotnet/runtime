@@ -18,7 +18,7 @@ using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     internal sealed class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.

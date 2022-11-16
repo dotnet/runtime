@@ -45,13 +45,13 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate()
         {
         }
 
         // Null turns into the empty span here, which is correct for compat.
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(byte[] data)
             : this(new ReadOnlySpan<byte>(data))
         {
@@ -69,20 +69,20 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(byte[] rawData, string? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(IntPtr handle)
         {
             Pal = CertificatePal.FromHandle(handle);
@@ -136,26 +136,26 @@ namespace System.Security.Cryptography.X509Certificates
             Pal = pal;
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(string fileName)
             : this(fileName, (string?)null, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(string fileName, string? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate(string fileName, SecureString? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
 #pragma warning disable SYSLIB0026
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate(X509Certificate cert)
         {
             ArgumentNullException.ThrowIfNull(cert);
@@ -214,13 +214,13 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate CreateFromCertFile(string filename)
         {
             return new X509Certificate(filename);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate CreateFromSignedFile(string filename)
         {
             return new X509Certificate(filename);

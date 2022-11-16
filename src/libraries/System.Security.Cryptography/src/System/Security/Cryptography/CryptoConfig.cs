@@ -299,7 +299,7 @@ namespace System.Security.Cryptography
         }
 #endif
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static void AddAlgorithm(Type algorithm, params string[] names)
         {
 #if BROWSER
@@ -496,7 +496,7 @@ namespace System.Security.Cryptography
             return CreateFromName(name, null);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static void AddOID(string oid, params string[] names)
         {
 #if BROWSER
@@ -526,7 +526,7 @@ namespace System.Security.Cryptography
 #endif
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static string? MapNameToOID(string name)
         {
 #if BROWSER
@@ -550,7 +550,7 @@ namespace System.Security.Cryptography
 #endif
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {

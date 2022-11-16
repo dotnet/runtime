@@ -462,7 +462,7 @@ namespace System.ComponentModel
         /// Derived classes can override this method and call base.Clone to get proper cloning semantics but must
         /// implement the full-parameter constructor (passing parameters to the base constructor as well).
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public object Clone()
         {
             MaskedTextProvider clonedProvider;

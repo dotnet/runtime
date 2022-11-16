@@ -13,19 +13,19 @@ namespace System.Threading
         public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken)
             => TryEnter(obj, WaitHandle.ToTimeoutMilliseconds(timeout), ref lockTaken);
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj) => Wait(obj, Timeout.Infinite);
 
         // Remoting is not supported, exitContext argument is unused
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
             => Wait(obj, millisecondsTimeout);
 
         // Remoting is not supported, exitContext argument is unused
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
     }

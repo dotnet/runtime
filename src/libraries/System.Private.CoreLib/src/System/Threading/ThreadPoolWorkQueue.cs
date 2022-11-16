@@ -1374,7 +1374,7 @@ namespace System.Threading
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
@@ -1391,7 +1391,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
@@ -1408,7 +1408,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1424,7 +1424,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1440,7 +1440,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1458,7 +1458,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1476,7 +1476,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
@@ -1495,7 +1495,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,

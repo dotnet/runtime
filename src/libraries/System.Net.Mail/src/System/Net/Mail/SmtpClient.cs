@@ -32,7 +32,7 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public class SmtpClient : IDisposable
     {
         private string? _host;

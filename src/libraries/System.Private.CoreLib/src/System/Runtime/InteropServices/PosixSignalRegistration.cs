@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
         /// On Unix, terminal configuration can be canceled for <see cref="PosixSignal.SIGCHLD"/> and <see cref="PosixSignal.SIGCONT"/>.
         /// </remarks>
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)

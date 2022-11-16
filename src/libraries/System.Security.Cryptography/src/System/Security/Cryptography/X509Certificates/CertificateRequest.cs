@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
     /// allowing callers to create self-signed or chain-signed X.509 Public-Key Certificates, as well as
     /// create a certificate signing request blob to send to a Certificate Authority (CA).
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public sealed partial class CertificateRequest
     {
         private readonly AsymmetricAlgorithm? _key;

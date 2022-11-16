@@ -27,7 +27,7 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public class SmtpClient : IDisposable
     {
 #pragma warning disable CS0067      // Field is not used

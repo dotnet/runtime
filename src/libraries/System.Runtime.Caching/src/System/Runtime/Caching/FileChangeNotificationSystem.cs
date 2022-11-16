@@ -12,7 +12,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.Caching
 {
 #if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [SupportedOSPlatform("maccatalyst")]

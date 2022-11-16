@@ -42,38 +42,38 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2()
             : base()
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(byte[] rawData)
             : base(rawData)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(byte[] rawData, string? password)
             : base(rawData, password)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString? password)
             : base(rawData, password)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The certificate data to process.
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(ReadOnlySpan<byte> rawData)
             : base(rawData)
         {
@@ -107,13 +107,13 @@ namespace System.Security.Cryptography.X509Certificates
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(rawData, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(IntPtr handle)
             : base(handle)
         {
@@ -124,45 +124,45 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(string fileName)
             : base(fileName)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(string fileName, string? password)
             : base(fileName, password)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password)
             : base(fileName, password)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public X509Certificate2(X509Certificate certificate)
             : base(certificate)
         {
@@ -376,7 +376,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509ContentType GetCertContentType(byte[] rawData)
         {
             if (rawData == null || rawData.Length == 0)
@@ -394,7 +394,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>
         ///   One of the enumeration values that indicate the content type of the provided data.
         /// </returns>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
         {
             if (rawData.Length == 0)
@@ -403,7 +403,7 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.GetCertContentType(rawData);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509ContentType GetCertContentType(string fileName)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -818,7 +818,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// For password protected PEM-encoded keys, use <see cref="CreateFromEncryptedPemFile" /> to specify a password.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = default)
         {
             ArgumentNullException.ThrowIfNull(certPemFilePath);
@@ -884,7 +884,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// For PEM-encoded keys without a password, use <see cref="CreateFromPemFile" />.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath, ReadOnlySpan<char> password, string? keyPemFilePath = default)
         {
             ArgumentNullException.ThrowIfNull(certPemFilePath);
@@ -934,7 +934,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// For password protected PEM-encoded keys, use <see cref="CreateFromEncryptedPem" /> to specify a password.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem)
         {
             using (X509Certificate2 certificate = CreateFromPem(certPem))
@@ -1005,7 +1005,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// For PEM-encoded keys without a password, use <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate2 CreateFromEncryptedPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem, ReadOnlySpan<char> password)
         {
             using (X509Certificate2 certificate = CreateFromPem(certPem))
@@ -1070,7 +1070,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// For PEM-encoded certificates in a file, use <see cref="X509Certificate2(string)" />.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))

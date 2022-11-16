@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
             ModeValue = CipherMode.CBC;
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public static new Aes Create()
         {
             return new AesImplementation();

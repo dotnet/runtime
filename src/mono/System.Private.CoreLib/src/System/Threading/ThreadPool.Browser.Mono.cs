@@ -14,7 +14,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.Threading
 {
 #if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {

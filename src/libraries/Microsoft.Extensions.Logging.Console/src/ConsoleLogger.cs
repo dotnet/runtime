@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// A logger that writes messages in the console.
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     internal sealed class ConsoleLogger : ILogger
     {
         private readonly string _name;

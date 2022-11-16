@@ -734,9 +734,9 @@ namespace System.ComponentModel
         internal LicenseManager() { }
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static object? CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public static object? CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
@@ -919,7 +919,7 @@ namespace System.ComponentModel
         public bool Add(string input, out int testPosition, out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
         public void Clear() { }
         public void Clear(out System.ComponentModel.MaskedTextResultHint resultHint) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public object Clone() { throw null; }
         public int FindAssignedEditPositionFrom(int position, bool direction) { throw null; }
         public int FindAssignedEditPositionInRange(int startPosition, int endPosition, bool direction) { throw null; }
@@ -2350,7 +2350,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ExtendedProtectionPolicyTypeConverter() { }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
 }

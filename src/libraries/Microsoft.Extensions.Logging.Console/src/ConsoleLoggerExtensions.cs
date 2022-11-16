@@ -15,7 +15,7 @@ using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     public static class ConsoleLoggerExtensions
     {
         internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     internal sealed class ConsoleLoggerFormatterConfigureOptions<TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions> : ConfigureFromConfigurationOptions<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
     internal sealed class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter

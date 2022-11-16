@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             return (DSA?)CryptoConfig.CreateFromName(algName);
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public static new DSA Create()
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
             return CreateCore();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public static DSA Create(int keySizeInBits)
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)

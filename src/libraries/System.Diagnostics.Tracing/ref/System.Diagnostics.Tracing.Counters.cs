@@ -4,7 +4,7 @@
 namespace System.Diagnostics.Tracing
 {
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     public abstract partial class DiagnosticCounter : System.IDisposable
     {
@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tracing
         public void Dispose() { }
     }
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     public partial class PollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
@@ -25,7 +25,7 @@ namespace System.Diagnostics.Tracing
         public override string ToString() { throw null; }
     }
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     public partial class IncrementingEventCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
         public override string ToString() { throw null; }
     }
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     public partial class IncrementingPollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
@@ -44,7 +44,7 @@ namespace System.Diagnostics.Tracing
         public override string ToString() { throw null; }
     }
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser"), System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     public partial class EventCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {

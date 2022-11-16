@@ -353,7 +353,7 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void Wait()
         {
             Wait(Timeout.Infinite, CancellationToken.None);
@@ -374,7 +374,7 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public void Wait(CancellationToken cancellationToken)
         {
             Wait(Timeout.Infinite, cancellationToken);
@@ -395,7 +395,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -427,7 +427,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -452,7 +452,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -476,7 +476,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();

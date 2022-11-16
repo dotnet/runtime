@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSA? GetRSAPublicKey()
         {
             if (_oid.Value != Oids.Rsa)
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public DSA? GetDSAPublicKey()
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public ECDsa? GetECDsaPublicKey()
         {
             if (_oid.Value != Oids.EcPublicKey)
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         /// The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public ECDiffieHellman? GetECDiffieHellmanPublicKey()
         {
             if (_oid.Value != Oids.EcPublicKey)

@@ -8,13 +8,13 @@ namespace System.Security.Cryptography
 {
     public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm
     {
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider()
         {
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
         public RSACryptoServiceProvider(int dwKeySize)
         {
             throw new PlatformNotSupportedException();
