@@ -14,7 +14,7 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions
+    JiterpreterOptions, getOptions, recordFailure
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -631,7 +631,8 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        console.error(`MONO_WASM: ${traceName} failed: ${exc} ${exc.stack}`);
+        console.error(`MONO_WASM: ${traceName} code generation failed: ${exc} ${exc.stack}`);
+        recordFailure();
         return 0;
     } finally {
         const finished = _now();
