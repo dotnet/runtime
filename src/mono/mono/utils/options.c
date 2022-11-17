@@ -249,93 +249,78 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 	*out_argc = aindex;
 }
 
-static char *
-strncat_safe (char *destination, const char *source, char *end)
-{
-	if (destination >= end)
-		return end;
-
-	return strncat (destination, source, end - destination);
-}
-
-static char *
-strncat_option_json (char *destination, MonoOptionType type, const void *value, char *end)
+static void
+string_append_option_json (GString *destination, MonoOptionType type, const void *value)
 {
 	switch (type) {
 	case MONO_OPTION_BOOL:
 	case MONO_OPTION_BOOL_READONLY:
-		return strncat_safe (destination, *(gboolean*)value ? "true" : "false", end);
+		g_string_append (destination, *(gboolean*)value ? "true" : "false");
+		return;
 
-	case MONO_OPTION_INT: {
-		char * buf = option_value_to_str (type, value);
-		char * result = strncat_safe (destination, buf, end);
-		g_free(buf);
-		return result;
-	}
+	case MONO_OPTION_INT:
+		g_string_append_printf (destination, "%d", *(int*)value);
+		return;
 
 	case MONO_OPTION_STRING: {
 		char ch;
 		const char * src = *(char**)value;
-		if (!src || !*src)
-			return strncat_safe (destination, "\"\"", end);
+		if (!src || !*src) {
+			g_string_append (destination, "\"\"");
+			return;
+		}
 
-		destination = strncat_safe (destination, "\"", end);
+		g_string_append (destination, "\"");
 		while ((ch = *src) != 0) {
-			if (destination >= (end - 2))
-				break;
-
 			switch (ch) {
 				case '\'':
 				case '\"':
 				case '\\':
-					*destination++ = '\\';
-					*destination++ = ch;
+					g_string_append_c (destination, '\\');
+					g_string_append_c (destination, ch);
 					break;
 				default:
-					if (ch < 32) {
-						char * buf = g_strdup_printf ("\\u%04X", ch);
-						destination = strncat_safe (destination, buf, end);
-						g_free(buf);
-					} else
-						*destination++ = *src;
+					if (ch < 32)
+						g_string_append_printf (destination, "\\u%04X", ch);
+					else
+						g_string_append_c (destination, ch);
 					break;
 			}
 
 			src++;
 		}
 
-		destination = strncat_safe (destination, "\"", end);
-		return destination;
+		g_string_append (destination, "\"");
+		return;
 	}
 
 	default:
 		g_assert_not_reached ();
-		return NULL;
+		return;
 	}
 }
 
-void
-mono_options_get_as_json (char *result_buffer, int result_buffer_size)
+char *
+mono_options_get_as_json (void)
 {
-	char *end = result_buffer + result_buffer_size - 1,
-		*destination = result_buffer;
+	char *result_str;
+	GString *result = g_string_new("{\n");
 	gboolean need_comma = FALSE;
-
-	*destination = 0;
-	strncpy (destination, "{\n", result_buffer_size);
 
 #define DEFINE_OPTION_READONLY(option_type, ctype, c_name, cmd_name, def_value, comment) DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment)
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) do { \
 		if (need_comma) \
-			destination = strncat_safe (destination, ",\n", end); \
-		destination = strncat_safe (destination, "  \"", end); \
-		destination = strncat_safe (destination, cmd_name, end); \
-		destination = strncat_safe (destination, "\": ", end); \
-		destination = strncat_option_json (destination, option_type, &mono_opt_##c_name, end); \
+			g_string_append (result, ",\n"); \
+		g_string_append_printf (result, "  \"%s\": ", cmd_name); \
+		string_append_option_json (result, option_type, &mono_opt_##c_name); \
 		need_comma = TRUE; \
 	} while (0);
 
 #include "options-def.h"
 
-	destination = strncat_safe (destination, need_comma ? "\n}" : "}", end);
+	g_string_append(result, "\n}");
+
+	result_str = result->str;
+	g_string_free(result, FALSE);
+	return result_str;
 }

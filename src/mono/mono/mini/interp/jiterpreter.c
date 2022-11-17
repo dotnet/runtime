@@ -954,9 +954,7 @@ mono_jiterp_get_options_version ()
 EMSCRIPTEN_KEEPALIVE char *
 mono_jiterp_get_options_as_json ()
 {
-	char * buf = g_malloc0 (8192);
-	mono_options_get_as_json (buf, 8192);
-	return buf;
+	return mono_options_get_as_json ();
 }
 
 EMSCRIPTEN_KEEPALIVE void
