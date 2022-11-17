@@ -256,11 +256,11 @@ string_append_option_json (GString *destination, MonoOptionType type, const void
 	case MONO_OPTION_BOOL:
 	case MONO_OPTION_BOOL_READONLY:
 		g_string_append (destination, *(gboolean*)value ? "true" : "false");
-		return;
+		break;
 
 	case MONO_OPTION_INT:
 		g_string_append_printf (destination, "%d", *(int*)value);
-		return;
+		break;
 
 	case MONO_OPTION_STRING: {
 		char ch;
@@ -291,12 +291,12 @@ string_append_option_json (GString *destination, MonoOptionType type, const void
 		}
 
 		g_string_append (destination, "\"");
-		return;
+		break;
 	}
 
 	default:
 		g_assert_not_reached ();
-		return;
+		break;
 	}
 }
 
