@@ -27,14 +27,9 @@ namespace BINDER_SPACE
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
         inline Assembly *GetAssembly(BOOL fAddRef = FALSE);
 
-        inline BOOL GetIsInTPA();
-        inline void SetIsInTPA(BOOL fIsInTPA);
         inline BOOL GetIsContextBound();
-        inline void SetIsContextBound(BOOL fIsContextBound);
-        inline BOOL GetIsFirstRequest();
-        inline void SetIsFirstRequest(BOOL fIsFirstRequest);
 
-        inline void SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound = TRUE);
+        inline void SetResult(ContextEntry *pContextEntry);
         inline void SetResult(Assembly *pAssembly);
         inline void SetResult(BindResult *pBindResult);
 
@@ -67,7 +62,7 @@ namespace BINDER_SPACE
         const AttemptResult* GetAttempt(bool foundInContext) const;
 
     protected:
-        DWORD m_dwResultFlags;
+        bool m_isContextBound;
         AssemblyName *m_pAssemblyName;
         ReleaseHolder<Assembly> m_pAssembly;
 

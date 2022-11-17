@@ -21,7 +21,7 @@ namespace BINDER_SPACE
 {
 BindResult::BindResult()
 {
-    m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
+    m_isContextBound = false;
     m_pAssemblyName = NULL;
     m_pAssembly = NULL;
 }
@@ -55,63 +55,16 @@ Assembly *BindResult::GetAssembly(BOOL fAddRef /* = FALSE */)
     return pAssembly;
 }
 
-BOOL BindResult::GetIsInTPA()
-{
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_IN_TPA) != 0);
-}
-
-void BindResult::SetIsInTPA(BOOL fIsInTPA)
-{
-    if (fIsInTPA)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_IS_IN_TPA;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_IS_IN_TPA;
-    }
-}
-
 BOOL BindResult::GetIsContextBound()
 {
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_CONTEXT_BOUND) != 0);
+    return m_isContextBound;
 }
 
-void BindResult::SetIsContextBound(BOOL fIsContextBound)
-{
-    if (fIsContextBound)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_CONTEXT_BOUND;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_CONTEXT_BOUND;
-    }
-}
-
-BOOL BindResult::GetIsFirstRequest()
-{
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_FIRST_REQUEST) != 0);
-}
-
-void BindResult::SetIsFirstRequest(BOOL fIsFirstRequest)
-{
-    if (fIsFirstRequest)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_FIRST_REQUEST;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_FIRST_REQUEST;
-    }
-}
-
-void BindResult::SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound /* = TRUE */)
+void BindResult::SetResult(ContextEntry *pContextEntry)
 {
     _ASSERTE(pContextEntry != NULL);
 
-    SetIsInTPA(pContextEntry->GetIsInTPA());
-    SetIsContextBound(fIsContextBound);
+    m_isContextBound = true;
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pContextEntry->GetAssemblyName(TRUE /* fAddRef */);
     m_pAssembly = pContextEntry->GetAssembly(TRUE /* fAddRef */);
@@ -121,7 +74,6 @@ void BindResult::SetResult(Assembly *pAssembly)
 {
     _ASSERTE(pAssembly != NULL);
 
-    SetIsInTPA(pAssembly->GetIsInTPA());
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pAssembly->GetAssemblyName(TRUE /* fAddRef */);
     pAssembly->AddRef();
@@ -132,7 +84,7 @@ void BindResult::SetResult(BindResult *pBindResult)
 {
     _ASSERTE(pBindResult != NULL);
 
-    m_dwResultFlags = pBindResult->m_dwResultFlags;
+    m_isContextBound = pBindResult->m_isContextBound;
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pBindResult->GetAssemblyName(TRUE /* fAddRef */);
     m_pAssembly = pBindResult->GetAssembly(TRUE /* fAddRef */);
@@ -160,7 +112,7 @@ void BindResult::Reset()
 {
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssembly = NULL;
-    m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
+    m_isContextBound = false;
     m_inContextAttempt.Reset();
     m_applicationAssembliesAttempt.Reset();
 }

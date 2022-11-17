@@ -14,67 +14,22 @@
 #ifndef __BINDER__CONTEXT_ENTRY_HPP__
 #define __BINDER__CONTEXT_ENTRY_HPP__
 
-#include "assemblyentry.hpp"
 #include "assembly.hpp"
 
 namespace BINDER_SPACE
 {
-    class ContextEntry : public AssemblyEntry
+    class ContextEntry final
     {
     public:
-        typedef enum
-        {
-            RESULT_FLAG_NONE             = 0x00,
-            //RESULT_FLAG_IS_DYNAMIC_BIND  = 0x01,
-            RESULT_FLAG_IS_IN_TPA        = 0x02,
-            //RESULT_FLAG_FROM_MANIFEST    = 0x04,
-            RESULT_FLAG_CONTEXT_BOUND    = 0x08,
-            RESULT_FLAG_FIRST_REQUEST    = 0x10,
-        } ResultFlags;
-
-        ContextEntry() : AssemblyEntry()
-        {
-            m_dwResultFlags = RESULT_FLAG_NONE;
-            m_pAssembly = NULL;
-        }
+        ContextEntry()
+            : m_pAssembly { NULL }
+            , m_pAssemblyName { NULL }
+        { }
 
         ~ContextEntry()
         {
             SAFE_RELEASE(m_pAssembly);
-        }
-
-        BOOL GetIsInTPA()
-        {
-            return ((m_dwResultFlags & RESULT_FLAG_IS_IN_TPA) != 0);
-        }
-
-        void SetIsInTPA(BOOL fIsInTPA)
-        {
-            if (fIsInTPA)
-            {
-                m_dwResultFlags |= RESULT_FLAG_IS_IN_TPA;
-            }
-            else
-            {
-                m_dwResultFlags &= ~RESULT_FLAG_IS_IN_TPA;
-            }
-        }
-
-        BOOL GetIsFirstRequest()
-        {
-            return ((m_dwResultFlags & RESULT_FLAG_FIRST_REQUEST) != 0);
-        }
-
-        void SetIsFirstRequest(BOOL fIsFirstRequest)
-        {
-            if (fIsFirstRequest)
-            {
-                m_dwResultFlags |= RESULT_FLAG_FIRST_REQUEST;
-            }
-            else
-            {
-                m_dwResultFlags &= ~RESULT_FLAG_FIRST_REQUEST;
-            }
+            SAFE_RELEASE(m_pAssemblyName);
         }
 
         Assembly *GetAssembly(BOOL fAddRef = FALSE)
@@ -101,9 +56,31 @@ namespace BINDER_SPACE
             m_pAssembly = pAssembly;
         }
 
-    protected:
-        DWORD m_dwResultFlags;
+        AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE)
+        {
+            AssemblyName *pAssemblyName = m_pAssemblyName;
+
+            if (fAddRef && (pAssemblyName != NULL))
+            {
+                pAssemblyName->AddRef();
+            }
+            return pAssemblyName;
+        }
+
+        void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE)
+        {
+            SAFE_RELEASE(m_pAssemblyName);
+
+            if (fAddRef && (pAssemblyName != NULL))
+            {
+                pAssemblyName->AddRef();
+            }
+
+            m_pAssemblyName = pAssemblyName;
+        }
+    private:
         Assembly *m_pAssembly;
+        AssemblyName *m_pAssemblyName;
     };
 };
 

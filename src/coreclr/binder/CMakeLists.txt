@@ -21,7 +21,6 @@ set(BINDER_COMMON_HEADERS
     inc/assembly.hpp
     inc/assembly.inl
     inc/assemblybindercommon.hpp
-    inc/assemblyentry.hpp
     inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp
     inc/assemblyname.hpp

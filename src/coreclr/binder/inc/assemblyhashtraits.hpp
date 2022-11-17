@@ -28,9 +28,9 @@ namespace BINDER_SPACE
         // GetKey, Equals and Hash can throw due to SString
         static const bool s_NoThrow = false;
 
-        static key_t GetKey(const element_t& pAssemblyEntry)
+        static key_t GetKey(const element_t& entry)
         {
-            return pAssemblyEntry->GetAssemblyName();
+            return entry->GetAssemblyName();
         }
         static BOOL Equals(key_t pAssemblyName1, key_t pAssemblyName2)
         {
