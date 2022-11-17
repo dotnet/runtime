@@ -15,34 +15,30 @@
 #define __BINDER__ASSEMBLY_HASH_TRAITS_HPP__
 
 #include "bindertypes.hpp"
-#include "assemblyentry.hpp"
+#include "contextentry.hpp"
 #include "shash.h"
 
 namespace BINDER_SPACE
 {
-    template<typename HashEntry, DWORD dwAssemblyNameFlags>
-    class AssemblyHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<HashEntry> >
+    class AssemblyHashTraits : public DeleteElementsOnDestructSHashTraits<NoRemoveSHashTraits<DefaultSHashTraits<ContextEntry*>>>
     {
     public:
-        typedef typename NoRemoveSHashTraits<DefaultSHashTraits<HashEntry> >::element_t element_t;
-        typedef typename NoRemoveSHashTraits<DefaultSHashTraits<HashEntry> >::count_t count_t;
-
         typedef AssemblyName* key_t;
 
         // GetKey, Equals and Hash can throw due to SString
         static const bool s_NoThrow = false;
 
-        static key_t GetKey(element_t pAssemblyEntry)
+        static key_t GetKey(const element_t& pAssemblyEntry)
         {
             return pAssemblyEntry->GetAssemblyName();
         }
         static BOOL Equals(key_t pAssemblyName1, key_t pAssemblyName2)
         {
-            return pAssemblyName1->Equals(pAssemblyName2, dwAssemblyNameFlags);
+            return pAssemblyName1->Equals(pAssemblyName2, AssemblyName::INCLUDE_DEFAULT);
         }
         static count_t Hash(key_t pAssemblyName)
         {
-            return pAssemblyName->Hash(dwAssemblyNameFlags);
+            return pAssemblyName->Hash(AssemblyName::INCLUDE_DEFAULT);
         }
         static element_t Null()
         {

@@ -3,6 +3,7 @@
   "defaultOnFailure": "fail",
   "localRerunCount": 2,
   "retryOnRules": [
-    { "testAssembly": { "wildcard": "System.Net.*" } }
+    { "testAssembly": { "wildcard": "System.Net.*" } },
+    { "failureMessage": { "wildcard": "Timed out after * waiting for the browser to be ready" } }
   ]
 }
