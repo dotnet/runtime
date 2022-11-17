@@ -4051,7 +4051,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
     static const unsigned ITER_LIMIT[4] = {
         0,  // OPT_MinOpts
-        0,  // OPT_SizeAndThroughput
+        0,  // OPT_Quick
         10, // OPT_Blended
         20, // OPT_Speed
     };
@@ -4068,7 +4068,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
     static const unsigned UNROLL_LIMIT_SZ[4] = {
         0,   // OPT_MinOpts
-        0,   // OPT_SizeAndThroughput
+        0,   // OPT_Quick
         300, // OPT_Blended
         600, // OPT_Speed
     };

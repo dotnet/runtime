@@ -9129,7 +9129,7 @@ public:
     {
         // Order is important
         OPT_MinOpts,
-        OPT_SizeAndThroughput,
+        OPT_Quick,
         OPT_Blended,
         OPT_Speed
     };

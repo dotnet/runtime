@@ -1746,7 +1746,7 @@ public:
 
     bool SmallCode()
     {
-        return codeOptLevel <= Compiler::OPT_SizeAndThroughput;
+        return codeOptLevel <= Compiler::OPT_Quick;
     }
 
     bool MadeChanges() const

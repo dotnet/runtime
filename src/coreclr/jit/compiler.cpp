@@ -2408,7 +2408,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
     else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     {
-        opts.compOptLevel = OPT_SizeAndThroughput;
+        opts.compOptLevel = OPT_Quick;
     }
     else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
     {
@@ -3277,8 +3277,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             case OPT_MinOpts:
                 printf("OPTIONS: OptLevel() = MinOpts\n");
                 break;
-            case OPT_SizeAndThroughput:
-                printf("OPTIONS: OptLevel() = SizeAndThroughput\n");
+            case OPT_Quick:
+                printf("OPTIONS: OptLevel() = Quick\n");
                 break;
             case OPT_Blended:
                 printf("OPTIONS: OptLevel() = Blended\n");

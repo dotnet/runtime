@@ -2710,7 +2710,7 @@ PhaseStatus Compiler::fgAddInternal()
         //
         if (stressMerging)
         {
-            // TODO-OptLevel: opts.OptLevelIs(OPT_SizeAndThroughput) candidate
+            // TODO-OptLevel: opts.OptLevelIs(OPT_Quick) candidate
             // Under stress or for Small_Code case we always
             // generate a single return block when we have multiple
             // return points

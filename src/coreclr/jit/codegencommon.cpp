@@ -1716,7 +1716,7 @@ void CodeGen::genGenerateMachineCode()
             case Compiler::OPT_MinOpts:
                 printf("MinOpts code");
                 break;
-            case Compiler::OPT_SizeAndThroughput:
+            case Compiler::OPT_Quick:
                 printf("quick and small code");
                 break;
             case Compiler::OPT_Blended:
@@ -1874,7 +1874,7 @@ void CodeGen::genGenerateMachineCode()
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
-                            !compiler->opts.OptLevelIs(Compiler::OPT_SizeAndThroughput) &&
+                            !compiler->opts.OptLevelIs(Compiler::OPT_Quick) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
                                 );
