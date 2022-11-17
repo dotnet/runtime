@@ -100,4 +100,7 @@ mono_metadata_update_get_method_params (MonoImage *image, uint32_t methoddef_tok
 MONO_COMPONENT_API gpointer
 mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
 
+MonoProperty *
+mono_metadata_update_added_properties_iter (MonoClass *klass, gpointer *iter);
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

@@ -2599,6 +2599,7 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 static int
 mono_property_get_index (MonoProperty *prop)
 {
+	g_assert (!m_property_is_from_update (prop));
 	MonoClassPropertyInfo *info = mono_class_get_property_info (prop->parent);
 	int index = GPTRDIFF_TO_INT (prop - info->properties);
 
@@ -5222,19 +5223,28 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 		MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 		/* start from the first */
 		if (info->count) {
-			*iter = &info->properties [0];
-			return (MonoProperty *)*iter;
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx + 1);
+			return (MonoProperty *)&info->properties [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY (!m_class_get_image (klass)->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	property = (MonoProperty *)*iter;
-	property++;
+	// invariant: idx is one past the field we previously returned
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
-	if (property < &info->properties [info->count]) {
-		*iter = property;
-		return (MonoProperty *)*iter;
+	if (idx < info->count) {
+		MonoProperty *property = &info->properties [idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
+		return property;
+	}
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		return mono_metadata_update_added_properties_iter (klass, iter);
 	}
 	return NULL;
 }

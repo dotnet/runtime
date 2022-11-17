@@ -242,3 +242,10 @@ mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_t
 {
 	return mono_component_hot_reload()->added_field_ldflda (instance, field_type, fielddef_token, error);
 }
+
+
+MonoProperty *
+mono_metadata_update_added_properties_iter (MonoClass *klass, gpointer *iter)
+{
+	return mono_component_hot_reload()->added_properties_iter (klass, iter);
+}

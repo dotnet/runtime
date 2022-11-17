@@ -150,6 +150,9 @@ hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, u
 static gpointer
 hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
 
+static MonoProperty *
+hot_reload_added_properties_iter (MonoClass *klass, gpointer *iter);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
@@ -197,6 +200,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_capabilities,
 	&hot_reload_get_method_params,
 	&hot_reload_added_field_ldflda,
+	&hot_reload_added_properties_iter,
 };
 
 MonoComponentHotReload *
@@ -3413,4 +3417,35 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
 	else
 		result = (gpointer)&field_store->_loc;
 	return result;
+}
+
+static MonoProperty *
+hot_reload_added_properties_iter (MonoClass *klass, gpointer *iter)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return NULL;
+
+	GSList *added_props = info->added_props;
+
+	// invariant: idx is one past the field we previously returned.
+	uint32_t idx = GPOINTER_TO_UINT(*iter);
+
+	MonoClassPropertyInfo *prop_info = mono_class_get_property_info (klass);
+	g_assert (idx >= prop_info->count);
+
+	uint32_t prop_idx = idx - prop_info->count;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added properties of 0x%08x idx = %u", m_class_get_type_token (klass), prop_idx);
+
+	GSList *prop_node = g_slist_nth (added_props, prop_idx);
+
+	/* we reached the end, we're done */
+	if (!prop_node)
+		return NULL;
+	MonoClassMetadataUpdateProperty *prop = (MonoClassMetadataUpdateProperty *)prop_node->data;
+
+	idx++;
+	*iter = GUINT_TO_POINTER (idx);
+	return &prop->prop;
 }
