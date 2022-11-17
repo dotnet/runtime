@@ -72,6 +72,7 @@ namespace System
             _i = b[13];
             _j = b[14];
 
+            [StackTraceHidden]
             static void ThrowArgumentException()
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
