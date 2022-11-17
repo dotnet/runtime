@@ -8357,8 +8357,8 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             GenTree* effectiveLhs = lhs->gtEffectiveVal();
             if (effectiveLhs->OperIs(GT_LCL_VAR) && lvaGetDesc(effectiveLhs->AsLclVarCommon())->lvNormalizeOnLoad())
             {
-                rhsVNPair = vnStore->VNPairForImplicitCastForNormalizeOnLoad(rhsVNPair, effectiveLhs->TypeGet(),
-                                                                             rhs->TypeGet());
+                rhsVNPair =
+                    vnStore->VNPairForImplicitCastNormalizeOnLoad(rhsVNPair, effectiveLhs->TypeGet(), rhs->TypeGet());
             }
             else
             {
