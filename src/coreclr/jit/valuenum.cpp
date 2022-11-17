@@ -8354,15 +8354,13 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         {
             // This means that there is an implicit cast on the rhs value
             // We will add a cast function to reflect the possible narrowing of the rhs value
-            GenTree* effectiveLhs = lhs->gtEffectiveVal();
-            if (effectiveLhs->OperIs(GT_LCL_VAR) && lvaGetDesc(effectiveLhs->AsLclVarCommon())->lvNormalizeOnLoad())
+            if (lhs->OperIs(GT_LCL_VAR) && lvaGetDesc(lhs->AsLclVarCommon())->lvNormalizeOnLoad())
             {
-                rhsVNPair =
-                    vnStore->VNPairForImplicitCastNormalizeOnLoad(rhsVNPair, effectiveLhs->TypeGet(), rhs->TypeGet());
+                rhsVNPair = vnStore->VNPairForImplicitCastNormalizeOnLoad(rhsVNPair, lhs->TypeGet(), rhs->TypeGet());
             }
             else
             {
-                rhsVNPair = vnStore->VNPairForCast(rhsVNPair, effectiveLhs->TypeGet(), rhs->TypeGet());
+                rhsVNPair = vnStore->VNPairForCast(rhsVNPair, lhs->TypeGet(), rhs->TypeGet());
             }
 
 #ifdef DEBUG
