@@ -55,11 +55,6 @@ namespace System.Runtime.InteropServices
         /// </exception>
         public static void SetCount<T>(List<T> list, int count)
         {
-            if (list is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
-            }
-
             if (count < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
@@ -77,9 +72,9 @@ namespace System.Runtime.InteropServices
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     Array.Clear(list._items, count, list._size - count);
-                    list._size = count;
                 }
 
+                list._size = count;
                 return;
             }
 
