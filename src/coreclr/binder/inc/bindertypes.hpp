@@ -24,7 +24,6 @@ namespace BINDER_SPACE
     class Assembly;
 
     class ContextEntry;
-    class ExecutionContext;
 
     class ApplicationContext;
 

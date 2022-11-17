@@ -206,7 +206,7 @@ class Test
         return 100;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))

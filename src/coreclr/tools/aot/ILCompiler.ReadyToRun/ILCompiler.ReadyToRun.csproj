@@ -16,12 +16,18 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
     <RunAnalyzers>false</RunAnalyzers>
+    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +61,13 @@
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\GenericParameterProxy.cs" Link="Compiler\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\MethodProxy.cs" Link="Compiler\Dataflow\MethodProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\ParameterProxy.cs" Link="Compiler\Dataflow\ParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Compiler\Dataflow\TypeProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
@@ -94,6 +107,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\DisplayNameHelpers.cs" Link="Compiler\DisplayNameHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
@@ -101,8 +115,13 @@
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Compiler\ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\EventPseudoDesc.cs" Link="Compiler\EventPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\PseudoDescExtensions.cs" Link="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
@@ -110,6 +129,16 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
+    <Compile Include="..\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
+    <Compile Include="..\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
+    <Compile Include="..\ILLink.Shared\TrimAnalysis\ReferenceKind.cs" Link="ILLink.Shared\TrimAnalysis\ReferenceKind.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" Link="ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\MethodProxy.cs" Link="ILLink.Shared\TypeSystemProxy\MethodProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
+    <Compile Include="..\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
@@ -117,6 +146,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -198,6 +229,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
+    <Compile Include="Compiler\EffectiveVisibility.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
     <Compile Include="Compiler\PettisHansenSort\CallGraphNode.cs" />
@@ -220,6 +252,7 @@
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunStandaloneMethodMetadata.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="Compiler\ReadyToRunXmlRootProvider.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />

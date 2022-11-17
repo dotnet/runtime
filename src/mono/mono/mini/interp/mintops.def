@@ -744,6 +744,9 @@ OPDEF(MINT_SQRT, "sqrt", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_SINH, "sinh", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TAN, "tan", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TANH, "tanh", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_ABS, "abs_d", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MIN, "min_d", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MAX, "max_d", 4, 1, 2, MintOpNoArgs)
 
 // float. These must be kept in the same order as their double counterpart
 OPDEF(MINT_ASINF, "asinf", 3, 1, 1, MintOpNoArgs)
@@ -770,6 +773,9 @@ OPDEF(MINT_SQRTF, "sqrtf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_SINHF, "sinhf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TANF, "tanf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TANHF, "tanhf", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_ABSF, "abs_f", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_MINF, "min_f", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MAXF, "max_f", 4, 1, 2, MintOpNoArgs)
 
 OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_EXIT, "prof_exit", 5, 0, 1, MintOpShortAndInt)
@@ -793,3 +799,8 @@ OPDEF(MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII, "intrins_ordinal_ignore_case_ascii
 OPDEF(MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII, "intrins_64ordinal_ignore_case_ascii", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_U32_TO_DECSTR, "intrins_u32_to_decstr", 5, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_INTRINS_WIDEN_ASCII_TO_UTF16, "intrins_widen_ascii_to_utf16", 5, 1, 3, MintOpNoArgs)
+
+// TODO: Make this wasm only
+OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
+OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
+OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)

@@ -694,9 +694,9 @@ namespace System.ComponentModel
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
-        System.ComponentModel.IContainer Container { get; }
-        object Instance { get; }
-        System.ComponentModel.PropertyDescriptor PropertyDescriptor { get; }
+        System.ComponentModel.IContainer? Container { get; }
+        object? Instance { get; }
+        System.ComponentModel.PropertyDescriptor? PropertyDescriptor { get; }
         void OnComponentChanged();
         bool OnComponentChanging();
     }

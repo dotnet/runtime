@@ -3258,9 +3258,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
             if (!EBPbased)
             {
                 assert((int)offs >= 0);
-
-                offsIsUpperBound = false; // since #temps can increase
-                offs += emitMaxTmpSize;
             }
         }
         else
@@ -3301,13 +3298,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
                 assert(emitComp->lvaTempsHaveLargerOffsetThanVars());
 
-                // lvaInlinedPInvokeFrameVar and lvaStubArgumentVar are placed below the temps
-                if (unsigned(var) == emitComp->lvaInlinedPInvokeFrameVar ||
-                    unsigned(var) == emitComp->lvaStubArgumentVar)
-                {
-                    offs -= emitMaxTmpSize;
-                }
-
                 // Check whether we can use compressed displacement if EVEX.
                 if (TakesEvexPrefix(id->idIns()))
                 {
@@ -3328,11 +3318,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                     return size + ((offs <= SCHAR_MAX) ? sizeof(char) : sizeof(int));
                 }
 #endif
-            }
-
-            if (emitComp->lvaTempsHaveLargerOffsetThanVars() == false)
-            {
-                offs += emitMaxTmpSize;
             }
         }
     }
@@ -3356,9 +3341,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-
-    //  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
-    //         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
 
     bool useSmallEncoding = false;
     if (TakesEvexPrefix(id->idIns()))
@@ -9644,7 +9626,7 @@ void emitter::emitDispReloc(ssize_t value)
     }
     else
     {
-        printf("(reloc 0x%Ix)", emitComp->dspPtr(value));
+        printf("(reloc 0x%zx)", emitComp->dspPtr(value));
     }
 }
 
@@ -10181,11 +10163,11 @@ void emitter::emitDispIns(
                 }
                 else if ((val > 0) || (val < -0xFFFFFF))
                 {
-                    printf("0x%IX", (ssize_t)val);
+                    printf("0x%zX", (ssize_t)val);
                 }
                 else
                 { // (val < 0)
-                    printf("-0x%IX", (ssize_t)-val);
+                    printf("-0x%zX", (ssize_t)-val);
                 }
                 emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }
@@ -10259,8 +10241,7 @@ void emitter::emitDispIns(
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispAddrMode(id);
 
-            emitDispCommentForHandle(emitGetInsAmdAny(id), id->idDebugOnlyInfo()->idMemCookie,
-                                     id->idDebugOnlyInfo()->idFlags);
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_RRW_ARD_CNS:

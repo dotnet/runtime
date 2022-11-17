@@ -14,15 +14,12 @@ namespace System.IO
         private FileInfo() { }
 
         public FileInfo(string fileName)
-            : this(fileName, isNormalized: false)
+            : this(fileName ?? throw new ArgumentNullException(nameof(fileName)), isNormalized: false)
         {
         }
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            ArgumentNullException.ThrowIfNull(originalPath);
-
-            // Want to throw the original argument name
             OriginalPath = originalPath;
 
             fullPath ??= originalPath;

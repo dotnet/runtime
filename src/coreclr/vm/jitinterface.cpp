@@ -4529,6 +4529,57 @@ bool CEEInfo::isMoreSpecificType(
 }
 
 /*********************************************************************/
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState CEEInfo::isEnum(
+        CORINFO_CLASS_HANDLE        cls,
+        CORINFO_CLASS_HANDLE*       underlyingType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    if (underlyingType != nullptr)
+    {
+        *underlyingType = nullptr;
+    }
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle th(cls);
+
+    _ASSERTE(!th.IsNull());
+
+    if (!th.IsGenericVariable())
+    {
+        if (!th.IsTypeDesc() && th.AsMethodTable()->IsEnum())
+        {
+            result = TypeCompareState::Must;
+            if (underlyingType != nullptr)
+            {
+                CorElementType elemType = th.AsMethodTable()->GetInternalCorElementType();
+                TypeHandle underlyingHandle(CoreLibBinder::GetElementType(elemType));
+                *underlyingType = CORINFO_CLASS_HANDLE(underlyingHandle.AsPtr());
+            }
+        }
+        else
+        {
+            result = TypeCompareState::MustNot;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+    return result;
+}
+
+/*********************************************************************/
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.
 // Returns 0 if System.Object is passed in.
@@ -8123,15 +8174,15 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         if (dontInline(inlineResult))
         {
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', inline of '%S' into '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode(), reason));
+                 "While compiling '%s', inline of '%s' into '%s' failed because: '%s'.\n",
+                 currentMethodName.GetUTF8(), inlineeMethodName.GetUTF8(),
+                 inlinerMethodName.GetUTF8(), reason));
         }
         else if(inlineResult == INLINE_PASS)
         {
-            LOG((LF_JIT, LL_INFO100000, "While compiling '%S', inline of '%S' into '%S' succeeded.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode()));
+            LOG((LF_JIT, LL_INFO100000, "While compiling '%s', inline of '%s' into '%s' succeeded.\n",
+                 currentMethodName.GetUTF8(), inlineeMethodName.GetUTF8(),
+                 inlinerMethodName.GetUTF8()));
 
         }
     }
@@ -8368,9 +8419,9 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         if (tailCallResult == TAILCALL_FAIL)
         {
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', %Splicit tail call from '%S' to '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), reason));
+                 "While compiling '%s', %splicit tail call from '%s' to '%s' failed because: '%s'.\n",
+                 currentMethodName.GetUTF8(), fIsTailPrefix ? "ex" : "im",
+                 callerMethodName.GetUTF8(), calleeMethodName.GetUTF8(), reason));
         }
         else
         {
@@ -8379,9 +8430,9 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
             };
             _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < ARRAY_SIZE(tailCallType));
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', %Splicit tail call from '%S' to '%S' generated as a %s.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), tailCallType[tailCallResult]));
+                 "While compiling '%s', %splicit tail call from '%s' to '%s' generated as a %s.\n",
+                 currentMethodName.GetUTF8(), fIsTailPrefix ? "ex" : "im",
+                 callerMethodName.GetUTF8(), calleeMethodName.GetUTF8(), tailCallType[tailCallResult]));
 
         }
     }
@@ -13047,7 +13098,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (LoggingOn(LF_JIT, LL_INFO10000))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
     }
 
 #if 0
@@ -13082,7 +13133,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (LoggingOn(LF_VERIFIER, LL_INFO100))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
     }
 #endif //_DEBUG
 
