@@ -8,7 +8,8 @@ import {
     getU16, getI16,
     getU32, getI32, getF32, getF64,
 } from "./memory";
-import { MintOpcode, OpcodeInfo, WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode } from "./jiterpreter-opcodes";
+import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,

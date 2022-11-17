@@ -518,13 +518,11 @@ add_custom_command(
   VERBATIM
 )
 
-if (FALSE)
 add_custom_target(GENERATE_MINTOPS_TYPESCRIPT ALL
-  ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py "${CMAKE_CURRENT_SOURCE_DIR}/interp/mintops.def" "${CMAKE_CURRENT_SOURCE_DIR}/../wasm/runtime/mintops.ts"
+  ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py "${CMAKE_CURRENT_SOURCE_DIR}/interp/mintops.def" "${CMAKE_CURRENT_SOURCE_DIR}/../../wasm/runtime/mintops.ts"
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py interp/mintops.def
   VERBATIM
 )
-endif()
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
