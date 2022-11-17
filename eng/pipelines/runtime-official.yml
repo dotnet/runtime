@@ -127,6 +127,7 @@ extends:
           - Linux_arm64
           - Linux_musl_x64
           - Browser_wasm
+          - wasi_wasm
           - Linux_bionic_arm64
           - Linux_bionic_x64
           # - Linux_musl_arm
