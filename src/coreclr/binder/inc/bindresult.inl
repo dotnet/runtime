@@ -14,7 +14,6 @@
 #ifndef __BINDER__BIND_RESULT_INL__
 #define __BINDER__BIND_RESULT_INL__
 
-#include "contextentry.hpp"
 #include "assembly.hpp"
 
 namespace BINDER_SPACE
@@ -51,20 +50,13 @@ BOOL BindResult::GetIsContextBound()
     return m_isContextBound;
 }
 
-void BindResult::SetResult(ContextEntry *pContextEntry)
-{
-    _ASSERTE(pContextEntry != NULL);
-
-    m_isContextBound = true;
-    m_pAssembly = pContextEntry->GetAssembly(TRUE /* fAddRef */);
-}
-
-void BindResult::SetResult(Assembly *pAssembly)
+void BindResult::SetResult(Assembly *pAssembly, bool isInContext)
 {
     _ASSERTE(pAssembly != NULL);
 
     pAssembly->AddRef();
     m_pAssembly = pAssembly;
+    m_isContextBound = isInContext;
 }
 
 void BindResult::SetResult(BindResult *pBindResult)
@@ -101,25 +93,15 @@ void BindResult::Reset()
     m_applicationAssembliesAttempt.Reset();
 }
 
-void BindResult::SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry)
-{
-    Assembly *assembly = nullptr;
-    if (pContextEntry != nullptr)
-        assembly = pContextEntry->GetAssembly(TRUE /* fAddRef */);
-
-    m_inContextAttempt.Assembly = assembly;
-    m_inContextAttempt.HResult = hr;
-    m_inContextAttempt.Attempted = true;
-}
-
-void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly)
+void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly, bool isInContext)
 {
     if (pAssembly != nullptr)
         pAssembly->AddRef();
 
-    m_applicationAssembliesAttempt.Assembly = pAssembly;
-    m_applicationAssembliesAttempt.HResult = hr;
-    m_applicationAssembliesAttempt.Attempted = true;
+    BindResult::AttemptResult &result = isInContext ? m_inContextAttempt : m_applicationAssembliesAttempt;
+    result.Assembly = pAssembly;
+    result.HResult = hr;
+    result.Attempted = true;
 }
 
 const BindResult::AttemptResult* BindResult::GetAttempt(bool foundInContext) const

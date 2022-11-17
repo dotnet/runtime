@@ -48,7 +48,6 @@ set(BINDER_HEADERS
     ${BINDER_COMMON_HEADERS}
     inc/activitytracker.h
     inc/customassemblybinder.h
-    inc/contextentry.hpp
 )
 
 if (CLR_CMAKE_TARGET_WIN32)

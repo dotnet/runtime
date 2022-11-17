@@ -28,8 +28,7 @@ namespace BINDER_SPACE
 
         inline BOOL GetIsContextBound();
 
-        inline void SetResult(ContextEntry *pContextEntry);
-        inline void SetResult(Assembly *pAssembly);
+        inline void SetResult(Assembly *pAssembly, bool isInContext = false);
         inline void SetResult(BindResult *pBindResult);
 
         inline void SetNoResult();
@@ -52,11 +51,8 @@ namespace BINDER_SPACE
             }
         };
 
-        // Set attempt result for binding to existing context entry
-        void SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry);
-
-        // Set attempt result for binding to platform assemblies
-        void SetAttemptResult(HRESULT hr, Assembly *pAssembly);
+        // Set attempt result for binding to existing context entry or platform assemblies
+        void SetAttemptResult(HRESULT hr, Assembly *pAssembly, bool isInContext = false);
 
         const AttemptResult* GetAttempt(bool foundInContext) const;
 
