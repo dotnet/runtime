@@ -132,7 +132,7 @@ class bug178119
         return result;
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         Console.WriteLine(foo1());
         return 100;

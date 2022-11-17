@@ -88,7 +88,7 @@ class Program
         AssertEquals(expected, actual);
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         long[] values = 
             {

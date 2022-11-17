@@ -54,4 +54,4 @@ The common operation in the custom steps is to run additional checks on the IL t
 required constraints. The outcome of such operation is then usually some indication to the end user about
 the incompatible code. This can be done by reporting the error or warning message using `context.LogMessage`
 method. It's good practice to use error or warning code which does not conflict with existing codes as
-listed [here](/docs/error-codes.md).
+listed [here](error-codes.md).
