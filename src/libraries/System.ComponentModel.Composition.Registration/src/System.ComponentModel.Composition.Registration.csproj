@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>

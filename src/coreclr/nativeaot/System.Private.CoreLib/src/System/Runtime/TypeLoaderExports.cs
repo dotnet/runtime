@@ -381,5 +381,9 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(IntPtr pfn, string[] arg0)
             => ((delegate*<string[], T>)pfn)(arg0);
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static ref byte Call(IntPtr pfn, void* arg1, ref byte arg2, ref byte arg3, void* arg4)
+            => ref ((delegate*<void*, ref byte, ref byte, void*, ref byte>)pfn)(arg1, ref arg2, ref arg3, arg4);
     }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
@@ -19,7 +18,7 @@ namespace ILCompiler
         private readonly InstructionSetFlags _unsupportedInstructionSets;
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) : 
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
             this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
         {
         }
@@ -124,8 +123,8 @@ namespace ILCompiler
 
     public class InstructionSetSupportBuilder
     {
-        static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> s_instructionSetSupport = ComputeInstructionSetSupport();
-        static Dictionary<TargetArchitecture, InstructionSetFlags> s_nonSpecifiableInstructionSets = ComputeNonSpecifiableInstructionSetSupport();
+        private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> s_instructionSetSupport = ComputeInstructionSetSupport();
+        private static Dictionary<TargetArchitecture, InstructionSetFlags> s_nonSpecifiableInstructionSets = ComputeNonSpecifiableInstructionSetSupport();
 
         private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
@@ -190,7 +189,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Add a supported instruction set to the specified list. 
+        /// Add a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool AddSupportedInstructionSet(string instructionSet)
@@ -225,7 +224,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Removes a supported instruction set to the specified list. 
+        /// Removes a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool RemoveInstructionSetSupport(string instructionSet)
@@ -267,13 +266,13 @@ namespace ILCompiler
 
                 foreach (string unsupported in _unsupportedInstructionSets)
                 {
-                    InstructionSetFlags checkForExplictUnsupport = new InstructionSetFlags();
-                    checkForExplictUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
-                    checkForExplictUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
-                    checkForExplictUnsupport.Set64BitInstructionSetVariants(_architecture);
+                    InstructionSetFlags checkForExplicitUnsupport = new InstructionSetFlags();
+                    checkForExplicitUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
+                    checkForExplicitUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
+                    checkForExplicitUnsupport.Set64BitInstructionSetVariants(_architecture);
 
                     InstructionSetFlags supportedTemp = supportedInstructionSets;
-                    supportedTemp.Remove(checkForExplictUnsupport);
+                    supportedTemp.Remove(checkForExplicitUnsupport);
 
                     // If removing the explicitly unsupported instruction sets, changes the set of
                     // supported instruction sets, then the parameter is invalid

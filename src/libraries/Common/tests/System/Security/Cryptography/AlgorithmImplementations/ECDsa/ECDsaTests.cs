@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.Tests;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
@@ -131,11 +132,19 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         protected bool VerifyData(ECDsa ecdsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
             VerifyData(ecdsa, data, 0, data.Length, signature, hashAlgorithm);
+
         protected abstract bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm);
 
         protected byte[] SignData(ECDsa ecdsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             SignData(ecdsa, data, 0, data.Length, hashAlgorithm);
+
         protected abstract byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
+
+        protected virtual byte[] SignHash(ECDsa ecdsa, byte[] hash, int offset, int count) =>
+            throw new SkipTestException("SignHash not implemented.");
+
+        protected virtual bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
+            throw new SkipTestException("VerifyHash not implemented.");
 
         public static IEnumerable<object[]> RealImplementations() =>
             new[] {
@@ -198,6 +207,40 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Assert.Throws<ObjectDisposedException>(
                 () => VerifyData(ecdsa, data, sig, HashAlgorithmName.SHA256));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_Roundtrip(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_TamperedSignature(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            signature[0] ^= 0xFF;
+
+            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(RealImplementations))]
+        public void SignHash_DifferentHashes(ECDsa ecdsa)
+        {
+            byte[] hash = RandomNumberGenerator.GetBytes(32);
+            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+
+            hash[0] ^= 0xFF;
+
+            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
         [Theory]
@@ -305,7 +348,14 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.True(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify 4");
             }
 
-            int distinctSignatures = signatures.Distinct(new ByteArrayComparer()).Count();
+            int distinctSignatures = signatures.Distinct(EqualityComparer<byte[]>.Create(
+                (x, y) => x.SequenceEqual(y),
+                x =>
+                {
+                    HashCode hc = default;
+                    hc.AddBytes(x);
+                    return hc.ToHashCode();
+                })).Count();
             Assert.True(distinctSignatures == signatures.Count, "Signing should be randomized");
 
             foreach (byte[] signature in signatures)
@@ -314,26 +364,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.False(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify Tampered 1");
                 Assert.False(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify Tampered 4");
             }
-        }
-
-        private class ByteArrayComparer : IEqualityComparer<byte[]>
-        {
-            public bool Equals(byte[] x, byte[] y)
-            {
-                return x.SequenceEqual(y);
-            }
-
-            public int GetHashCode(byte[] obj)
-            {
-                int h = 5381;
-
-                foreach (byte b in obj)
-                {
-                    h = unchecked((h << 5) + h) ^ b.GetHashCode();
-                }
-
-                return h;
-           }
         }
     }
 }

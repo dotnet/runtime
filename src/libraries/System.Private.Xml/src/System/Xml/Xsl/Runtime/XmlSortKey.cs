@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     internal abstract class XmlSortKey : IComparable
     {
         private int _priority;           // Original input ordering used to ensure that sort is stable
-        private XmlSortKey _nextKey;     // Next sort key if there are multiple keys (null otherwise)
+        private XmlSortKey? _nextKey;     // Next sort key if there are multiple keys (null otherwise)
 
         /// <summary>
         /// Get or set this key's index, relative to other keys involved in a sort.  This priority will
@@ -27,7 +26,7 @@ namespace System.Xml.Xsl.Runtime
             set
             {
                 // All linked keys have same priority
-                XmlSortKey key = this;
+                XmlSortKey? key = this;
 
                 while (key != null)
                 {
@@ -80,9 +79,9 @@ namespace System.Xml.Xsl.Runtime
         /// Compare a non-empty key (this) to an empty key (obj).  The empty sequence always sorts either before all
         /// other values, or after all other values.
         /// </summary>
-        protected int CompareToEmpty(object obj)
+        protected int CompareToEmpty(object? obj)
         {
-            XmlEmptySortKey that = obj as XmlEmptySortKey;
+            XmlEmptySortKey? that = obj as XmlEmptySortKey;
             Debug.Assert(that != null && !(this is XmlEmptySortKey));
             return that.IsEmptyGreatest ? -1 : 1;
         }
@@ -90,7 +89,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Base internal class is abstract and doesn't actually implement CompareTo; derived classes must do this.
         /// </summary>
-        public abstract int CompareTo(object that);
+        public abstract int CompareTo(object? that);
     }
 
 
@@ -116,15 +115,15 @@ namespace System.Xml.Xsl.Runtime
             get { return _isEmptyGreatest; }
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlEmptySortKey that = obj as XmlEmptySortKey;
+            XmlEmptySortKey? that = obj as XmlEmptySortKey;
 
             if (that == null)
             {
                 // Empty compared to non-empty
                 Debug.Assert(obj is XmlSortKey);
-                return -(obj as XmlSortKey).CompareTo(this);
+                return -(obj as XmlSortKey)!.CompareTo(this);
             }
 
             // Empty compared to empty
@@ -146,9 +145,9 @@ namespace System.Xml.Xsl.Runtime
             _decVal = collation.DescendingOrder ? -value : value;
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlDecimalSortKey that = obj as XmlDecimalSortKey;
+            XmlDecimalSortKey? that = obj as XmlDecimalSortKey;
             int cmp;
 
             if (that == null)
@@ -176,9 +175,9 @@ namespace System.Xml.Xsl.Runtime
             _longVal = collation.DescendingOrder ? ~value : value;
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlIntegerSortKey that = obj as XmlIntegerSortKey;
+            XmlIntegerSortKey? that = obj as XmlIntegerSortKey;
 
             if (that == null)
                 return CompareToEmpty(obj);
@@ -204,9 +203,9 @@ namespace System.Xml.Xsl.Runtime
             _intVal = collation.DescendingOrder ? ~value : value;
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlIntSortKey that = obj as XmlIntSortKey;
+            XmlIntSortKey? that = obj as XmlIntSortKey;
 
             if (that == null)
                 return CompareToEmpty(obj);
@@ -223,8 +222,8 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class XmlStringSortKey : XmlSortKey
     {
-        private readonly SortKey _sortKey;
-        private readonly byte[] _sortKeyBytes;
+        private readonly SortKey? _sortKey;
+        private readonly byte[]? _sortKeyBytes;
         private readonly bool _descendingOrder;
 
         public XmlStringSortKey(SortKey sortKey, bool descendingOrder)
@@ -239,9 +238,9 @@ namespace System.Xml.Xsl.Runtime
             _descendingOrder = descendingOrder;
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlStringSortKey that = obj as XmlStringSortKey;
+            XmlStringSortKey? that = obj as XmlStringSortKey;
             int idx, cntCmp, result;
 
             if (that == null)
@@ -318,15 +317,15 @@ namespace System.Xml.Xsl.Runtime
             }
         }
 
-        public override int CompareTo(object obj)
+        public override int CompareTo(object? obj)
         {
-            XmlDoubleSortKey that = obj as XmlDoubleSortKey;
+            XmlDoubleSortKey? that = obj as XmlDoubleSortKey;
 
             if (that == null)
             {
                 // Compare to empty sequence
                 if (_isNaN)
-                    return BreakSortingTie(obj as XmlSortKey);
+                    return BreakSortingTie((obj as XmlSortKey)!);
 
                 return CompareToEmpty(obj);
             }

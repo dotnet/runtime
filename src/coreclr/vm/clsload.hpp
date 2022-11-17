@@ -370,7 +370,7 @@ public:
         kNormalAccessNoTransparency,
 
         // Used by DynamicMethods with restrictedSkipVisibility in full trust CoreCLR
-        // CoreCLR: Do RestrictedMemberAcess visibility checks but bypass transparency checks.
+        // CoreCLR: Do RestrictedMemberAccess visibility checks but bypass transparency checks.
         kRestrictedMemberAccessNoTransparency,
 
     };

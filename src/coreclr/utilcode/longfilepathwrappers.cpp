@@ -223,48 +223,6 @@ GetFileAttributesExWrapper(
     return ret;
 }
 
-BOOL
-DeleteFileWrapper(
-        _In_ LPCWSTR lpFileName
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL   ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = DeleteFileW(
-                    path.GetUnicode()
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD
 SearchPathWrapper(
         _In_opt_ LPCWSTR lpPath,
@@ -457,47 +415,6 @@ DWORD WINAPI GetTempPathWrapper(
     return ret;
 }
 
-DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString&  lpBuffer
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DWORD ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-
-        ret = GetCurrentDirectoryW(
-            size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
-            );
-
-        lastError = GetLastError();
-        lpBuffer.CloseBuffer(ret);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
     _Out_opt_ SString&  lpBuffer
@@ -526,7 +443,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
         // We loop round getting the length of the env var and then trying to copy
         // the value into a the allocated buffer. Usually we'll go through this loop
-        // precisely once, but the caution is ncessary in case the variable mutates
+        // precisely once, but the caution is necessary in case the variable mutates
         // beneath us, as the environment variable can be modified by another thread
         //between two calls to GetEnvironmentVariableW
 

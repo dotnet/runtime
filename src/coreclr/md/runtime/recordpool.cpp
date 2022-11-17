@@ -56,7 +56,7 @@ RecordPool::InitNew(
 //*****************************************************************************
 // Load a Record heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new Records.
+// be used to eliminate duplicates with new Records.
 //*****************************************************************************
 HRESULT
 RecordPool::InitOnMem(

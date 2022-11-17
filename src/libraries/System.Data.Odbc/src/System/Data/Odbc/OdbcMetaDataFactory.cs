@@ -328,7 +328,7 @@ namespace System.Data.Odbc
                         case ODBC32.SQL_TYPE.SS_UDT:
                         default:
                             // for User defined types don't know if its long or if it is
-                            // varaible length or not so leave the fields null
+                            // variable length or not so leave the fields null
                             break;
                     }
                 }

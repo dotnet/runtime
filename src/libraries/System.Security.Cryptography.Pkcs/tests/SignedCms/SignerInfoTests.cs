@@ -529,7 +529,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo signer = cms.SignerInfos[0];
             SignerInfo counterSigner = signer.CounterSignerInfos[1];
 
-            // This succeeeds, but reduces the real count to 1.
+            // This succeeds, but reduces the real count to 1.
             signer.RemoveCounterSignature(counterSigner);
             Assert.Equal(2, signer.CounterSignerInfos.Count);
             Assert.Single(cms.SignerInfos[0].CounterSignerInfos);

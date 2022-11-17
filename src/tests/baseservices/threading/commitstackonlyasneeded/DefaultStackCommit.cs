@@ -11,7 +11,7 @@ namespace StackCommitTest
 {
     class DefaultStackCommit
     {
-        static int Main(string[] args)
+        static int Main()
         {
             int result = 1;
             bool commitEnabled = false;

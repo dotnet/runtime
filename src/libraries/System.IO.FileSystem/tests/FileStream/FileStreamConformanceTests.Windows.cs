@@ -85,15 +85,23 @@ namespace System.IO.Tests
 
         private static Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
         {
-            if (!PlatformDetection.IsWindowsAndElevated || PlatformDetection.IsWindowsNanoServer)
+            if (!PlatformDetection.IsWindowsAndElevated)
             {
                 return false;
             }
 
-            // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.
-            using (ServiceController sharingService = new ServiceController("Server"))
+            try
             {
-                return sharingService.Status == ServiceControllerStatus.Running;
+                // the "Server Service" allows for file sharing. It can be disabled on some machines.
+                using (ServiceController sharingService = new ServiceController("Server"))
+                {
+                    return sharingService.Status == ServiceControllerStatus.Running;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // The service is not installed.
+                return false;
             }
         });
 
@@ -231,7 +239,7 @@ namespace System.IO.Tests
                 uint deviceIndex = 0;
                 while (SetupDiEnumDeviceInfo(deviceInfoSet, deviceIndex++, ref deviceInfoData))
                 {
-                    if (Marshal.GetLastWin32Error() == ERROR_NO_MORE_ITEMS)
+                    if (Marshal.GetLastPInvokeError() == ERROR_NO_MORE_ITEMS)
                     {
                         break;
                     }

@@ -122,7 +122,7 @@ namespace Internal.TypeSystem
                     return 16;
                 }
 
-                // 256-bit vector is the type with the higest alignment we support
+                // 256-bit vector is the type with the highest alignment we support
                 return 32;
             }
         }
@@ -332,5 +332,10 @@ namespace Internal.TypeSystem
                 return 4;
             }
         }
+
+        /// <summary>
+        /// CodeDelta - encapsulate the fact that ARM requires a thumb bit
+        /// </summary>
+        public int CodeDelta { get => (Architecture == TargetArchitecture.ARM) ? 1 : 0; }
     }
 }

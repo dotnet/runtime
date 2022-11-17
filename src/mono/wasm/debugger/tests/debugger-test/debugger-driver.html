@@ -6,23 +6,24 @@
 	<script type='text/javascript'>
 		var App = {
 			static_method_table: {},
-			init: function () {
-				this.int_add = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:IntAdd");
-				this.use_complex = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:UseComplex");
-				this.delegates_test = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:DelegatesTest");
-				this.generic_types_test = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:GenericTypesTest");
-				this.outer_method = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:OuterMethod");
-				this.async_method = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
-				this.method_with_structs = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
-				this.run_all = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
-				this.static_method_table = {};
-				console.log ("ready");
+			init: async () => {
+				const exports = await App.runtime.getAssemblyExports("debugger-test.dll");
+				App.int_add = exports.Math.IntAdd;
+				App.use_complex = exports.Math.UseComplex;
+				App.delegates_test = exports.Math.DelegatesTest;
+				App.generic_types_test = exports.Math.GenericTypesTest;
+				App.outer_method = exports.Math.OuterMethod;
+				App.async_method = exports.Math.NestedInMath.AsyncTest;
+				App.method_with_structs = exports.DebuggerTests.ValueTypesTest.MethodWithLocalStructs;
+				App.run_all = exports.DebuggerTest.run_all;
+				App.static_method_table = {};
+				console.debug ("#debugger-app-ready#"); console.log ("ready"); // HACK: firefox tests are looking for this "ready"
 			},
 		};
 		function invoke_static_method (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined)
-				method = App.static_method_table [method_name] = getDotnetRuntime(0).INTERNAL.mono_bind_static_method (method_name);
+				method = App.static_method_table[method_name] = App.runtime.BINDING.bind_static_method(method_name);
 
 			return method (...args);
 		}
@@ -30,7 +31,7 @@
 		async function invoke_static_method_async (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined) {
-				method = App.static_method_table [method_name] = getDotnetRuntime(0).INTERNAL.mono_bind_static_method (method_name);
+				method = App.static_method_table[method_name] = App.runtime.BINDING.bind_static_method(method_name);
 			}
 
 			return await method (...args);
@@ -90,6 +91,10 @@
 		function load_wasm_page_without_assets () {
 			console.log("load_wasm_page_without_assets")
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
+		}
+		function load_non_wasm_page_forcing_runtime_ready () {
+			console.log("load_non_wasm_page_forcing_runtime_ready")
+			window.location.replace("http://localhost:9400/non-wasm-page-forcing-runtime-ready.html");
 		}
 		</script>
 

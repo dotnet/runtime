@@ -6,32 +6,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using ILCompiler;
-using ILCompiler.Dataflow;
 using ILCompiler.Logging;
-using Mono.Linker.Tests.TestCasesRunner;
 using Internal.TypeSystem;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
-using Mono.Linker.Tests.Cases.RequiresCapability;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ResultChecker
 	{
-		readonly BaseAssemblyResolver _originalsResolver;
-		readonly ReaderParameters _originalReaderParameters;
-		readonly ReaderParameters _linkedReaderParameters;
+		private readonly BaseAssemblyResolver _originalsResolver;
+		private readonly ReaderParameters _originalReaderParameters;
+		private readonly ReaderParameters _linkedReaderParameters;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (),
@@ -64,7 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
+		private void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 		}
@@ -83,13 +76,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyLoggedMessages (original, linkResult.LogWriter, checkRemainingErrors);
 		}
 
-		static bool IsProducedByNativeAOT (CustomAttribute attr)
+		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.NativeAot);
 		}
 
-		static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
+		private static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
 		{
 			foreach (var testType in assembly.AllDefinedTypes ()) {
 				foreach (var provider in testType.AllMembers ())
@@ -104,12 +97,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
+		private void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString() is String mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
+				if (attrProvider.ToString () is string mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
 					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
@@ -145,7 +138,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 								Assert.True (
 									isLogged (),
-									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
 							}
 						}
 						break;
@@ -220,7 +213,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
 
-										string actualName = methodDesc.OwningType.ToString ().Replace("+", ".") + "." + methodDesc.Name;
+										string actualName = methodDesc.OwningType.ToString ().Replace ("+", ".") + "." + methodDesc.Name;
 										if (actualName.Contains (expectedMember.DeclaringType.FullName.Replace ("/", ".")) &&
 											actualName.Contains ("<" + expectedMember.Name + ">")) {
 											expectedWarningFound = true;
@@ -311,7 +304,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.False (remainingErrors.Any (), $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
 			}
 
-			bool LogMessageHasSameOriginMember (MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)
+			static bool LogMessageHasSameOriginMember (MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)
 			{
 				var origin = mc.Origin;
 				Debug.Assert (origin != null);
@@ -386,11 +379,33 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					value = value.Replace (", ", ",");
 				}
 
-				return value;
+				// Split it into . separated parts and if one is ending with > rewrite it to `1 format
+				// ILC folows the reflection format which doesn't actually use generic instantiations on anything but the last type
+				// in nested hierarchy - it's difficult to replicate this with Cecil as it has different representation so just strip that info
+				var parts = value.Split ('.');
+				StringBuilder sb = new StringBuilder ();
+				foreach (var part in parts) {
+					if (sb.Length > 0)
+						sb.Append ('.');
+
+					if (part.EndsWith ('>')) {
+						int i = part.LastIndexOf ('<');
+						if (i >= 0) {
+							sb.Append (part.AsSpan (0, i));
+							sb.Append ('`');
+							sb.Append (part.Substring (i + 1).Where (c => c == ',').Count () + 1);
+							continue;
+						}
+					}
+
+					sb.Append (part);
+				}
+
+				return sb.ToString ();
 			}
 		}
 
-		static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+		private static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{
 			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
 				return assembly.EntryPoint.DeclaringType.CustomAttributes

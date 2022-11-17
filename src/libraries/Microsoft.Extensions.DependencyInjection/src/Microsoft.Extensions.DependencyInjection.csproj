@@ -1,21 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>false</ILEmitBackendSaveAssemblies>
-    <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwaded down.-->
+    <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwarded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <IsPackable>true</IsPackable>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
-  
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <ILEmitBackend Condition="'$(TargetFramework)' != 'netstandard2.0'">true</ILEmitBackend>
     <DefineConstants Condition="'$(ILEmitBackend)' == 'true'">$(DefineConstants);IL_EMIT</DefineConstants>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework' and
-                                '$(ILEmitBackendSaveAssemblies)' == 'true'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>  
+                                '$(ILEmitBackendSaveAssemblies)' == 'true'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,7 +35,11 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
-  
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="**\*.cs" />
     <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
@@ -44,7 +49,7 @@
     <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
              Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>

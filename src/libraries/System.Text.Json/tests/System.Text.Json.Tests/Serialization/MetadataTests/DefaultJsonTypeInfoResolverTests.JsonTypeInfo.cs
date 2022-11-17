@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
@@ -34,6 +36,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo ti = r.GetTypeInfo(type, o);
 
+            Assert.False(ti.IsReadOnly);
             Assert.Same(o, ti.Options);
             Assert.NotNull(ti.Properties);
 
@@ -398,16 +401,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(typeof(T), typeInfo.Type);
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
-            JsonPropertyInfo prop = typeInfo.CreateJsonPropertyInfo(typeof(string), "foo");
+            Assert.True(typeInfo.IsReadOnly);
             Assert.True(typeInfo.Properties.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateJsonPropertyInfo(typeof(string), "foo"));
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateJsonPropertyInfo(typeof(string), "foo"));
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
-            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(prop));
-            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Insert(0, prop));
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+
+            if (typeInfo.Properties.Count > 0)
+            {
+                JsonPropertyInfo prop = typeInfo.Properties[0];
+                Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(prop));
+                Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Insert(0, prop));
+                Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.RemoveAt(0));
+            }
 
             if (typeInfo.PolymorphismOptions is JsonPolymorphismOptions jpo)
             {
@@ -430,13 +441,75 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(property.ShouldSerialize);
                 Assert.Null(typeInfo.NumberHandling);
 
-                Assert.Throws<InvalidOperationException>(() => property.CustomConverter = property.CustomConverter);
-                Assert.Throws<InvalidOperationException>(() => property.Name = property.Name);
-                Assert.Throws<InvalidOperationException>(() => property.Get = property.Get);
-                Assert.Throws<InvalidOperationException>(() => property.Set = property.Set);
-                Assert.Throws<InvalidOperationException>(() => property.ShouldSerialize = property.ShouldSerialize);
-                Assert.Throws<InvalidOperationException>(() => property.NumberHandling = property.NumberHandling);
+                foreach (PropertyInfo propertyInfo in typeof(JsonPropertyInfo).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    // We don't have any set only properties, if this ever changes we will need to update this code
+                    if (propertyInfo.GetSetMethod() == null)
+                    {
+                        continue;
+                    }
+
+                    TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => propertyInfo.SetValue(property, propertyInfo.GetValue(property)));
+                    Assert.NotNull(exception.InnerException);
+                    Assert.IsType<InvalidOperationException>(exception.InnerException);
+                }
             }
+        }
+
+        [Theory]
+        [InlineData(typeof(ICollection<int>), typeof(List<int>), false)]
+        [InlineData(typeof(IList), typeof(List<int>), false)]
+        [InlineData(typeof(IList<int>), typeof(List<int>), false)]
+        [InlineData(typeof(List<int>), typeof(List<int>), false)]
+        [InlineData(typeof(ISet<int>), typeof(HashSet<int>), false)]
+        [InlineData(typeof(Queue<int>), typeof(Queue<int>), false)]
+        [InlineData(typeof(Stack<int>), typeof(Stack<int>), false)]
+        [InlineData(typeof(IDictionary), typeof(Hashtable), true)]
+        [InlineData(typeof(IDictionary<string, int>), typeof(ConcurrentDictionary<string, int>), true)]
+        public static void JsonTypeInfo_CreateObject_SupportedCollection(Type collectionType, Type runtimeType, bool isDictionary)
+        {
+            bool isDelegateInvoked = false;
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type == collectionType)
+                            {
+                                jsonTypeInfo.CreateObject = () =>
+                                {
+                                    isDelegateInvoked = true;
+                                    return Activator.CreateInstance(runtimeType);
+                                };
+                            }
+                        }
+                    }
+                }
+            };
+
+            string json = isDictionary ? "{}" : "[]";
+            object result = JsonSerializer.Deserialize(json, collectionType, options);
+            Assert.IsType(runtimeType, result);
+            Assert.True(isDelegateInvoked);
+        }
+
+        [Theory]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(ImmutableArray<int>))]
+        [InlineData(typeof(IEnumerable))]
+        [InlineData(typeof(IEnumerable<int>))]
+        [InlineData(typeof(IAsyncEnumerable<int>))]
+        [InlineData(typeof(IReadOnlyDictionary<string, int>))]
+        [InlineData(typeof(ImmutableDictionary<string, int>))]
+        public static void JsonTypeInfo_CreateObject_UnsupportedCollection_ThrowsInvalidOperationException(Type collectionType)
+        {
+            var options = new JsonSerializerOptions();
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(collectionType, options);
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.CreateObject = () => new object());
         }
 
         [Theory]
@@ -942,7 +1015,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("bar", deserialized.C);
             Assert.True(deserialized.E);
         }
-
 
         [Theory]
         [InlineData(typeof(ICollection<string>))]

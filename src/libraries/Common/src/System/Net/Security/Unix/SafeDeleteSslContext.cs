@@ -13,55 +13,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal sealed class SafeDeleteSslContext : SafeDeleteContext
+    internal class SafeDeleteSslContext : SafeDeleteContext
     {
-        private SafeSslHandle _sslContext;
-
-        public SafeSslHandle SslContext
+        public SafeDeleteSslContext(IntPtr handle) : base(handle, true)
         {
-            get
-            {
-                return _sslContext;
-            }
         }
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-            : base(credential)
+        public SafeDeleteSslContext(IntPtr handle, bool ownsHandle) : base(handle, ownsHandle)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
-            try
-            {
-                _sslContext = Interop.OpenSsl.AllocateSslHandle(credential, sslAuthenticationOptions);
-            }
-            catch (Exception ex)
-            {
-                Debug.Write("Exception Caught. - " + ex);
-                Dispose();
-                throw;
-            }
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return (null == _sslContext) || _sslContext.IsInvalid;
-            }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (null != _sslContext)
-                {
-                    _sslContext.Dispose();
-                    _sslContext = null!;
-                }
-            }
-
-            base.Dispose(disposing);
         }
     }
 }

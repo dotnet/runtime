@@ -24,7 +24,7 @@ namespace Microsoft.Interop.Analyzers
             public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "1057";
             public const string InvalidNativeMarshallingAttributeUsage = Prefix + "1058";
             public const string MissingAllocatingMarshallingFallback = Prefix + "1059";
-            public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "1060";
+            public const string InvalidMarshallerType = Prefix + "1060";
             public const string InvalidSignaturesInMarshallerShape = Prefix + "1061";
         }
 

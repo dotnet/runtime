@@ -206,7 +206,7 @@ void* FieldDesc::GetStaticAddress(void *base)
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
         // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so derefernce and unbox.
+        // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);

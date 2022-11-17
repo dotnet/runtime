@@ -1,6 +1,6 @@
 # powerpc cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the regsiter allocator, the scheduler
+# about the cpu instructions that may be used by the register allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
 #
 # An opcode name is followed by a colon and optional specifiers.
@@ -348,4 +348,4 @@ atomic_cas_i4: src1:b src2:i src3:i dest:i len:38
 
 liverange_start: len:0
 liverange_end: len:0
-gc_safe_point: len:0
+gc_safe_point: clob:c src1:i len:44

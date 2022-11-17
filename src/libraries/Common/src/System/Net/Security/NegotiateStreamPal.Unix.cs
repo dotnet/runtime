@@ -29,7 +29,7 @@ namespace System.Net.Security
         // defined in winerror.h
         private const int NTE_FAIL = unchecked((int)0x80090020);
 
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext _ /*securityContext*/)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
@@ -134,7 +134,7 @@ namespace System.Net.Security
           out byte[]? resultBuffer,
           ref ContextFlagsPal outFlags)
         {
-            bool isNtlmOnly = credential.IsNtlmOnly;
+            Interop.NetSecurityNative.PackageType packageType = credential.PackageType;
 
             resultBuffer = null;
 
@@ -142,7 +142,11 @@ namespace System.Net.Security
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    string protocol = isNtlmOnly ? "NTLM" : "SPNEGO";
+                    string protocol = packageType switch {
+                        Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
+                        Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
+                        _ => "SPNEGO"
+                    };
                     NetEventSource.Info(context, $"requested protocol = {protocol}, target = {targetName}");
                 }
 
@@ -172,7 +176,7 @@ namespace System.Net.Security
                     status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                       credential.GssCredential,
                                                                       ref contextHandle,
-                                                                      isNtlmOnly,
+                                                                      packageType,
                                                                       cbtAppData,
                                                                       cbtAppDataSize,
                                                                       negoContext.TargetName,
@@ -187,7 +191,7 @@ namespace System.Net.Security
                     status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                       credential.GssCredential,
                                                                       ref contextHandle,
-                                                                      isNtlmOnly,
+                                                                      packageType,
                                                                       negoContext.TargetName,
                                                                       (uint)inputFlags,
                                                                       incomingBlob,
@@ -216,7 +220,11 @@ namespace System.Net.Security
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
+                        string protocol = packageType switch {
+                            Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
+                            Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
+                            _ => isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos"
+                        };
                         NetEventSource.Info(context, $"actual protocol = {protocol}");
                     }
 
@@ -288,6 +296,7 @@ namespace System.Net.Security
             return status;
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal AcceptSecurityContext(
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
@@ -379,6 +388,7 @@ namespace System.Net.Security
                 negoContext.SetGssContext(contextHandle);
             }
         }
+#pragma warning restore IDE0060
 
         // https://www.gnu.org/software/gss/reference/gss.pdf (page 25)
         private static SecurityStatusPalErrorCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
@@ -426,11 +436,13 @@ namespace System.Net.Security
             return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
+#pragma warning disable IDE0060
         internal static int QueryMaxTokenSize(string package)
         {
             // This value is not used on Unix
             return 0;
         }
+#pragma warning restore IDE0060
 
         internal static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
         {
@@ -441,24 +453,36 @@ namespace System.Net.Security
         {
             bool isEmptyCredential = string.IsNullOrWhiteSpace(credential.UserName) ||
                                      string.IsNullOrWhiteSpace(credential.Password);
-            bool ntlmOnly = string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase);
-            if (ntlmOnly && isEmptyCredential && !isServer)
-            {
-                // NTLM authentication is not possible with default credentials which are no-op
-                throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
-            }
+            Interop.NetSecurityNative.PackageType packageType;
 
-            if (!ntlmOnly && !string.Equals(package, NegotiationInfoClass.Negotiate))
+            if (string.Equals(package, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase))
             {
-                // Native shim currently supports only NTLM and Negotiate
+                packageType = Interop.NetSecurityNative.PackageType.Negotiate;
+            }
+            else if (string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
+            {
+                packageType = Interop.NetSecurityNative.PackageType.NTLM;
+                if (isEmptyCredential && !isServer)
+                {
+                    // NTLM authentication is not possible with default credentials which are no-op
+                    throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
+                }
+            }
+            else if (string.Equals(package, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase))
+            {
+                packageType = Interop.NetSecurityNative.PackageType.Kerberos;
+            }
+            else
+            {
+                // Native shim currently supports only NTLM, Negotiate and Kerberos
                 throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
             }
 
             try
             {
                 return isEmptyCredential ?
-                    new SafeFreeNegoCredentials(ntlmOnly, string.Empty, string.Empty, string.Empty) :
-                    new SafeFreeNegoCredentials(ntlmOnly, credential.UserName, credential.Password, credential.Domain);
+                    new SafeFreeNegoCredentials(packageType, string.Empty, string.Empty, string.Empty) :
+                    new SafeFreeNegoCredentials(packageType, credential.UserName, credential.Password, credential.Domain);
             }
             catch (Exception ex)
             {
@@ -466,12 +490,14 @@ namespace System.Net.Security
             }
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal CompleteAuthToken(
             ref SafeDeleteContext? securityContext,
             ReadOnlySpan<byte> incomingBlob)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,

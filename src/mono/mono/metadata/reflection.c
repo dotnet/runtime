@@ -29,6 +29,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -489,7 +490,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	 * The second Bar will be encoded a generic instance of Bar with <A> as parameter.
 	 * On all other places, Bar<A> will be encoded as the GTD itself. This is an implementation
 	 * artifact of how generics are encoded and should be transparent to managed code so we
-	 * need to weed out this diference when retrieving managed System.Type objects.
+	 * need to weed out this difference when retrieving managed System.Type objects.
 	 */
 	norm_type = mono_type_normalize (type);
 	if (norm_type != type) {
@@ -511,7 +512,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		/* This can happen if a TypeBuilder for a generic class K<T,U>
 		 * had reflection_create_generic_class) called on it, but not
 		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
-		 * if the K`2 is refernced from a generic instantiation
+		 * if the K`2 is referenced from a generic instantiation
 		 * (e.g. K<int,string>) that appears as type argument
 		 * (e.g. Dict<string,K<int,string>>), field (e.g. K<int,string>
 		 * Foo) or method signature, parent class or any of the above
@@ -1391,7 +1392,6 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	MonoMethodSignature *methodsig = mono_method_signature_internal (method);
 
 	MonoTableInfo *constt;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
 	if (!methodsig->param_count)
@@ -1411,22 +1411,16 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 		return;
 	}
 
-	methodt = &image->tables [MONO_TABLE_METHOD];
 	paramt = &image->tables [MONO_TABLE_PARAM];
 	constt = &image->tables [MONO_TABLE_CONSTANT];
 
 	idx = mono_method_get_index (method);
 	g_assert (idx != 0);
 
-	/* lastp is the starting param index for the next method in the table, or
-	 * one past the last row if this is the last method
-	 */
-	/* FIXME: metadata-update : will this work with added methods ? */
-	param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
-	if (!mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx + 1))
-		lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (paramt) + 1;
+	param_index = mono_metadata_get_method_params (image, idx, &lastp);
+
+	if (!param_index)
+		return;
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 paramseq;
@@ -2371,7 +2365,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
  * \param name type name.
  * \param alc the AssemblyLoadContext to check/load into
  * \param image a metadata context (can be NULL).
- * \param error set on errror.
+ * \param error set on error.
  * Retrieves a MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.  On failure returns NULL and sets \p error.

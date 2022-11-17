@@ -42,11 +42,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Console.WriteLine($"### FRAMEWORK: Version={Environment.Version} Description={RuntimeInformation.FrameworkDescription.Trim()}");
 
             string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
+            string binariesLocationFormat = string.IsNullOrEmpty(binariesLocation) ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
             Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
 
             string tempPathLocation = Path.GetTempPath();
-            string tempPathLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
+            string tempPathLocationFormat = string.IsNullOrEmpty(binariesLocation) ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
             Console.WriteLine($"### TEMP PATH: {tempPathLocation} (drive format {tempPathLocationFormat})");
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");

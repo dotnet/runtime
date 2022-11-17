@@ -2,29 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO.Compression.Tests;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.IO.Compression
 {
     public abstract class CompressionStreamUnitTestBase : CompressionStreamTestBase
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
-
-        public enum TestScenario
-        {
-            ReadByte,
-            ReadByteAsync,
-            Read,
-            ReadAsync,
-            Copy,
-            CopyAsync,
-        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
@@ -60,7 +47,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task FlushAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -88,7 +74,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task FlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
@@ -130,7 +115,6 @@ namespace System.IO.Compression
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());
@@ -149,7 +133,6 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read(string testFile)
         {
             var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
@@ -185,7 +168,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read_EndOfStreamPosition()
         {
             var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -205,7 +187,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task Read_BaseStreamSlowly()
         {
             string testFile = UncompressedTestFile();
@@ -339,7 +320,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task TestLeaveOpenAfterValidDecompress()
         {
             //Create the Stream
@@ -414,7 +394,6 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task BaseStream_Modify(CompressionMode mode)
         {
             using (var baseStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile())))
@@ -446,7 +425,6 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
             var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
@@ -487,85 +465,16 @@ namespace System.IO.Compression
             Assert.True(fastestLength >= optimalLength);
             Assert.True(optimalLength >= smallestLength);
         }
+    }
 
-        [Theory]
-        [InlineData(TestScenario.ReadAsync)]
-        [InlineData(TestScenario.Read)]
-        [InlineData(TestScenario.Copy)]
-        [InlineData(TestScenario.CopyAsync)]
-        [InlineData(TestScenario.ReadByte)]
-        [InlineData(TestScenario.ReadByteAsync)]
-        public async Task StreamTruncation_IsDetected(TestScenario scenario)
-        {
-            var buffer = new byte[16];
-            byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
-            byte[] compressedData;
-            using (var compressed = new MemoryStream())
-            using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))
-            {
-                foreach (byte b in source)
-                {
-                    compressor.WriteByte(b);
-                }
-
-                compressor.Dispose();
-                compressedData = compressed.ToArray();
-            }
-
-            for (var i = 1; i <= compressedData.Length; i += 1)
-            {
-                bool expectException = i < compressedData.Length;
-                using (var compressedStream = new MemoryStream(compressedData.Take(i).ToArray()))
-                {
-                    using (Stream decompressor = CreateStream(compressedStream, CompressionMode.Decompress))
-                    {
-                        var decompressedStream = new MemoryStream();
-
-                        try
-                        {
-                            switch (scenario)
-                            {
-                                case TestScenario.Copy:
-                                    decompressor.CopyTo(decompressedStream);
-                                    break;
-
-                                case TestScenario.CopyAsync:
-                                    await decompressor.CopyToAsync(decompressedStream);
-                                    break;
-
-                                case TestScenario.Read:
-                                    while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
-                                    break;
-
-                                case TestScenario.ReadAsync:
-                                    while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
-                                    break;
-
-                                case TestScenario.ReadByte:
-                                    while (decompressor.ReadByte() != -1) { }
-                                    break;
-
-                                case TestScenario.ReadByteAsync:
-                                    while (await decompressor.ReadByteAsync() != -1) { }
-                                    break;
-                            }
-                        }
-                        catch (InvalidDataException e)
-                        {
-                            if (expectException)
-                                continue;
-
-                            throw new XunitException($"An unexpected error occurred while decompressing data:{e}");
-                        }
-
-                        if (expectException)
-                        {
-                            throw new XunitException($"Truncated stream was decompressed successfully but exception was expected: length={i}/{compressedData.Length}");
-                        }
-                    }
-                }
-            }
-        }
+    public enum TestScenario
+    {
+        ReadByte,
+        ReadByteAsync,
+        Read,
+        ReadAsync,
+        Copy,
+        CopyAsync
     }
 
     internal sealed class BadWrappedStream : MemoryStream

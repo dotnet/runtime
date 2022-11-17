@@ -190,7 +190,7 @@ mono_bitset_size (const MonoBitSet *set) {
 }
 
 /*
- * should test wich version is faster.
+ * should test which version is faster.
  */
 #if 1
 

@@ -139,7 +139,7 @@ enum class ProfilerCallbackType
 //     is always read with a memory barrier
 //
 // The DoProfilerCallback/IterateProfilers functions automate this process for you, you should use
-// them unless you are absoultely sure you know what you're doing
+// them unless you are absolutely sure you know what you're doing
 class EvacuationCounterHolder
 {
 private:

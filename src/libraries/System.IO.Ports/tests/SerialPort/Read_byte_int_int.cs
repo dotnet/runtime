@@ -317,7 +317,7 @@ namespace System.IO.Ports.Tests
                 asyncReadTask.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarantee that we are executing code in SerialPort
                 com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
 
                 asyncRead.ReadCompletedEvent.WaitOne();
@@ -391,7 +391,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random();
                 byte[] bytesToWrite = new byte[numberOfBytesToRead];
 
-                //Genrate random bytes
+                // Generate random bytes
                 for (int i = 0; i < bytesToWrite.Length; i++)
                 {
                     byte randByte = (byte)rndGen.Next(0, 256);
@@ -399,7 +399,7 @@ namespace System.IO.Ports.Tests
                     bytesToWrite[i] = randByte;
                 }
 
-                //Genrate some random bytes in the buffer
+                // Generate some random bytes in the buffer
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     byte randByte = (byte)rndGen.Next(0, 256);

@@ -11,6 +11,13 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 
+#if defined(HOST_OSX)
+#include <mach/mach.h>
+#include <mach/mach_error.h>
+#include <mach/exception.h>
+#include <mach/task.h>
+#endif
+
 #if !HAVE_SIGINFO_T
 #error Cannot handle hardware exceptions on this platform
 #endif
@@ -281,7 +288,7 @@ bool IsDivByZeroAnIntegerOverflow(void* context)
 
     uint8_t code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;
@@ -586,6 +593,27 @@ bool InitializeHardwareExceptionHandling()
     {
         return false;
     }
+
+#if defined(HOST_OSX)
+	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+	// exceptions first to any registered "activation" handler and then to
+	// any registered task handler before dispatching the exception to a
+	// host-wide Mach exception handler that does translation to POSIX
+	// signals. This makes it impossible to use LLDB with implicit null
+    // checks in NativeAOT; continuing execution after LLDB traps an
+    // EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler being
+    // invoked again. This also interferes with the translation of SIGFPEs
+    // to .NET-level ArithmeticExceptions. Work around this here by
+	// installing a no-op task-wide Mach exception handler for
+	// EXC_BAD_ACCESS and EXC_ARITHMETIC.
+	kern_return_t kr = task_set_exception_ports(
+		mach_task_self(),
+		EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
+		MACH_PORT_NULL,
+		EXCEPTION_STATE_IDENTITY,
+		MACHINE_THREAD_STATE);
+    ASSERT(kr == KERN_SUCCESS);
+#endif
 
     return true;
 }

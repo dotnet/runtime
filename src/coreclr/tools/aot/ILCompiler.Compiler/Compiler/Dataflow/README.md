@@ -10,5 +10,5 @@ Standard updates when taking files from the linker:
 * Note: These rules apply only to the DataFlow directory, the files which we share verbatime should remain exactly as-is in linker for now
 * Use the runtime's version of the license header in the file (starts with `Licensed to the .NET Foundation`)
 * Use the formatting from runtime repo - in VS this can be done by reformatting the whole document: Edit -> Advanced -> Format whole document.
-* Add `#nullable enable` since nullable is not globaly enabled in ILC yet
+* Add `#nullable enable` since nullable is not globally enabled in ILC yet
 

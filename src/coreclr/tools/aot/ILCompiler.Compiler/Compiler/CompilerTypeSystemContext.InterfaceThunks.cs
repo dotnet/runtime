@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.IL;
@@ -62,7 +60,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler
 {
     // Contains functionality related to instantiating thunks for default interface methods
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         private const int UseContextFromRuntime = -1;
 
@@ -127,7 +125,7 @@ namespace ILCompiler
             }
         }
 
-        private class DefaultInterfaceMethodImplementationInstantiationThunkHashtable : LockFreeReaderHashtable<DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey, DefaultInterfaceMethodImplementationInstantiationThunk>
+        private sealed class DefaultInterfaceMethodImplementationInstantiationThunkHashtable : LockFreeReaderHashtable<DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey, DefaultInterfaceMethodImplementationInstantiationThunk>
         {
             protected override int GetKeyHashCode(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
@@ -139,12 +137,12 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key, DefaultInterfaceMethodImplementationInstantiationThunk value)
             {
-                return Object.ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
+                return ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
                     key.InterfaceIndex == value.InterfaceIndex;
             }
             protected override bool CompareValueToValue(DefaultInterfaceMethodImplementationInstantiationThunk value1, DefaultInterfaceMethodImplementationInstantiationThunk value2)
             {
-                return Object.ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
+                return ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
                     value1.InterfaceIndex == value2.InterfaceIndex;
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
@@ -158,7 +156,7 @@ namespace ILCompiler
         /// <summary>
         /// Represents a thunk to call shared instance method on generic interfaces.
         /// </summary>
-        private partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
+        private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
         {
             private readonly MethodDesc _targetMethod;
             private readonly DefaultInterfaceMethodImplementationWithHiddenParameter _nakedTargetMethod;
@@ -254,7 +252,7 @@ namespace ILCompiler
         /// signature. This is so that we can refer to the parameter from IL. References to this method will
         /// be replaced by the actual instance method after codegen is done.
         /// </summary>
-        internal partial class DefaultInterfaceMethodImplementationWithHiddenParameter : MethodDesc
+        internal sealed partial class DefaultInterfaceMethodImplementationWithHiddenParameter : MethodDesc
         {
             private readonly MethodDesc _methodRepresented;
             private readonly TypeDesc _owningType;

@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
@@ -87,7 +88,7 @@ namespace System.Diagnostics.Metrics
                 MeasurementsCompleted = (instrument, cookie) =>
                 {
                     _endInstrumentMeasurements(instrument);
-                    RemoveInstrumentState(instrument, (InstrumentState)cookie!);
+                    RemoveInstrumentState(instrument);
                 }
             };
             _listener.SetMeasurementEventCallback<double>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
@@ -217,7 +218,7 @@ namespace System.Diagnostics.Metrics
             _listener.Dispose();
         }
 
-        private void RemoveInstrumentState(Instrument instrument, InstrumentState state)
+        private void RemoveInstrumentState(Instrument instrument)
         {
             _instrumentStates.TryRemove(instrument, out _);
         }
@@ -249,6 +250,8 @@ namespace System.Diagnostics.Metrics
             return instrumentState;
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is creating instances over reference types that works fine in AOT.")]
         internal InstrumentState? BuildInstrumentState(Instrument instrument)
         {
             Func<Aggregator?>? createAggregatorFunc = GetAggregatorFactory(instrument);

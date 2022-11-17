@@ -12,19 +12,19 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "unicode_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "ushort_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
         public static partial uint ReturnUnicodeAsUInt(char input);
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
         public static partial char ReturnUIntAsUnicode(uint input);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_Ref(uint input, ref char res);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_Out(uint input, out char res);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_In(uint input, in char res);
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Utf8)]

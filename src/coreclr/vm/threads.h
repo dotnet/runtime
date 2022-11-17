@@ -39,7 +39,7 @@
 //
 // The runtime keeps a table of all threads that have ever run managed code in the code:ThreadStore table.
 // The ThreadStore table holds a list of Thread objects (see code:#ThreadClass). This object holds all
-// infomation about managed threads. Cooperative mode is defined as the mode the thread is in when the field
+// information about managed threads. Cooperative mode is defined as the mode the thread is in when the field
 // code:Thread.m_fPreemptiveGCDisabled is non-zero. When this field is zero the thread is said to be in
 // Preemptive mode (named because if you preempt the thread in this mode, it is guaranteed to be in a place
 // where a GC can occur).
@@ -77,8 +77,8 @@
 //     * The CPU is running code elsewhere (which should only be in mscorwks.dll, because everywhere else a
 //         transition to preemptive mode should have happened first)
 //
-// * #PartiallyInteruptibleCode
-// * #FullyInteruptibleCode
+// * #PartiallyInterruptibleCode
+// * #FullyInterruptibleCode
 //
 // If the Instruction pointer (x86/x64: EIP, ARM: R15/PC) is in JIT compiled code, we can detect this because we have tables that
 // map the ranges of every method back to their code:MethodDesc (this the code:ICodeManager interface). In
@@ -1034,7 +1034,7 @@ public:
         TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
 #endif // FEATURE_COMINTEROP
 
-        TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechansim during
+        TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
         TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
@@ -2496,7 +2496,7 @@ private:
 
 public:
     void MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType);
-    void UnmarkThreadForAbort();
+    void UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType = EEPolicy::TA_Rude);
 
     static ULONGLONG GetNextSelfAbortEndTime()
     {
@@ -3432,10 +3432,6 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 private:
-    UINT32 m_workerThreadPoolCompletionCount;
-    static UINT64 s_workerThreadPoolCompletionCountOverflow;
-    UINT32 m_ioThreadPoolCompletionCount;
-    static UINT64 s_ioThreadPoolCompletionCountOverflow;
     UINT32 m_monitorLockContentionCount;
     static UINT64 s_monitorLockContentionCountOverflow;
 
@@ -3489,38 +3485,6 @@ private:
     static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 
 public:
-    static void IncrementWorkerThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetWorkerThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalWorkerThreadPoolCompletionCount()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetTotalCount(offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static void IncrementIOThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_ioThreadPoolCompletionCount), &s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetIOThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalThreadPoolCompletionCount();
-
     static void IncrementMonitorLockContentionCount(Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -3774,6 +3738,9 @@ public:
             // If the pointer lives in the GC heap, than it is protected, and thus valid.
             if (dac_cast<TADDR>(g_lowest_address) <= val && val < dac_cast<TADDR>(g_highest_address))
                 return(true);
+            // Same for frozen segments
+            if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*(Object**)ref))
+                return(true);
             return(false);
         }
 
@@ -3837,7 +3804,7 @@ public:
 #endif
     }
 
-    void UnmarkRedirectContextInUse(PTR_CONTEXT pCtx)
+    bool UnmarkRedirectContextInUse(PTR_CONTEXT pCtx)
     {
         LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
@@ -3848,6 +3815,7 @@ public:
             m_RedirectContextInUse = false;
         }
 #endif
+        return (pCtx == m_pSavedRedirectContext);
     }
 #endif //DACCESS_COMPILE
 
@@ -3934,7 +3902,7 @@ public:
 
 private:
     //-----------------------------------------------------------------------------
-    // AVInRuntimeImplOkay : its okay to have an AV in Runtime implemetation while
+    // AVInRuntimeImplOkay : its okay to have an AV in Runtime implementation while
     // this holder is in effect.
     //
     //  {
@@ -4187,20 +4155,6 @@ public:
     }
 
 private:
-    //
-    //This context is used for optimizations on I/O thread pool thread. In case the
-    //overlapped structure is from a different appdomain, it is stored in this structure
-    //to be processed later correctly by entering the right domain.
-    PVOID m_pIOCompletionContext;
-    BOOL AllocateIOCompletionContext();
-    VOID FreeIOCompletionContext();
-public:
-    inline PVOID GetIOCompletionContext()
-    {
-        return m_pIOCompletionContext;
-    }
-
-private:
     // Inside a host, we don't own a thread handle, and we avoid DuplicateHandle call.
     // If a thread is dying after we obtain the thread handle, our SuspendThread may fail
     // because the handle may be closed and reused for a completely different type of handle.
@@ -4306,7 +4260,7 @@ public:
 
     // GC calls this when creating special threads that also happen to have an EE Thread
     // object associated with them (e.g., the bgc thread).
-    void SetGCSpecial(bool fGCSpecial);
+    void SetGCSpecial();
 
 private:
 
@@ -6003,10 +5957,6 @@ struct ManagedThreadBase
     // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
-    // the ThreadPool
-    static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
     // The Finalizer thread uses this path
     static void FinalizerBase(ADCallBackFcnType pTarget);

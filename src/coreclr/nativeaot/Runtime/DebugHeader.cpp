@@ -57,10 +57,10 @@ static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 //   - Removing a field from this structure
 //   - Reordering fields in the structure
 //   - Changing the data type of a field in this structure
-//   - Changing the data type of a field in another structure that is being refered to here with
+//   - Changing the data type of a field in another structure that is being referred to here with
 //       the offsetof() operator
 //   - Changing the data type of a global whose address is recorded in this structure
-//   - Changing the meaning of a field or global refered to in this structure so that it can no longer
+//   - Changing the meaning of a field or global referred to in this structure so that it can no longer
 //     be used in the manner the format specification describes.
 struct DotNetRuntimeDebugHeader
 {
@@ -76,7 +76,7 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 1;
+    const uint16_t MajorVersion = 2;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
@@ -199,7 +199,7 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(MethodTable);
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_uBaseSize);
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_usComponentSize);
-    MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_usFlags);
+    MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_uFlags);
     MAKE_DEBUG_ENTRY(MethodTable, m_pBaseType, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_pBaseType));
     MAKE_DEBUG_ENTRY(MethodTable, m_ppBaseTypeViaIAT, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_ppBaseTypeViaIAT));
     MAKE_DEBUG_ENTRY(MethodTable, m_pCanonicalType, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_pCanonicalType));
@@ -269,12 +269,12 @@ extern "C" void PopulateDebugHeaders()
     DotNetRuntimeDebugHeader.DebugTypeEntries = &s_DebugEntries;
     DotNetRuntimeDebugHeader.GlobalEntries = &s_GlobalEntries;
 
-    static_assert(MethodTable::Flags::EETypeKindMask         == 0x0003, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::RelatedTypeViaIATFlag  == 0x0004, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::HasFinalizerFlag       == 0x0010, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::HasPointersFlag        == 0x0020, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::GenericVarianceFlag    == 0x0080, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::IsGenericFlag          == 0x0400, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::ElementTypeMask        == 0xf800, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::ElementTypeShift       == 11,     "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::EETypeKindMask         == 0x00030000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::RelatedTypeViaIATFlag  == 0x00040000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::HasFinalizerFlag       == 0x00100000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::HasPointersFlag        == 0x00200000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::GenericVarianceFlag    == 0x00800000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::IsGenericFlag          == 0x02000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::ElementTypeMask        == 0x7C000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::ElementTypeShift       == 26,         "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
 }

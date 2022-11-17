@@ -13,7 +13,6 @@
 #include "mdfileformat.h"
 #include "metamodelro.h"
 #include "liteweightstgdb.h"
-#include "metadatatracker.h"
 
 __checkReturn
 HRESULT _CallInitOnMemHelper(CLiteWeightStgdb<CMiniMd> *pStgdb, ULONG cbData, LPCVOID pData)
@@ -98,7 +97,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         // String pool.
         if (strcmp(pStream->GetName(), STRING_POOL_STREAM_A) == 0)
         {
-            METADATATRACKER_ONLY(MetaDataTracker::NoteSection(TBL_COUNT + MDPoolStrings, pvCurrentData, cbCurrentData, 1));
             // String pool has to end with a null-terminator, therefore we don't have to check string pool content on access.
             // Shrink size of the pool to the last null-terminator found.
             while (cbCurrentData != 0)
@@ -120,7 +118,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         // Literal String Blob pool.
         else if (strcmp(pStream->GetName(), US_BLOB_POOL_STREAM_A) == 0)
         {
-            METADATATRACKER_ONLY(MetaDataTracker::NoteSection(TBL_COUNT + MDPoolUSBlobs, pvCurrentData, cbCurrentData, 1));
             // Initialize user string heap with block of data
             IfFailGo(m_MiniMd.m_UserStringHeap.Initialize(
                 MetaData::DataBlob((BYTE *)pvCurrentData, cbCurrentData),
@@ -130,7 +127,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         // GUID pool.
         else if (strcmp(pStream->GetName(), GUID_POOL_STREAM_A) == 0)
         {
-            METADATATRACKER_ONLY(MetaDataTracker::NoteSection(TBL_COUNT + MDPoolGuids, pvCurrentData, cbCurrentData, 1));
             // Initialize guid heap with block of data
             IfFailGo(m_MiniMd.m_GuidHeap.Initialize(
                 MetaData::DataBlob((BYTE *)pvCurrentData, cbCurrentData),
@@ -140,7 +136,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         // Blob pool.
         else if (strcmp(pStream->GetName(), BLOB_POOL_STREAM_A) == 0)
         {
-            METADATATRACKER_ONLY(MetaDataTracker::NoteSection(TBL_COUNT + MDPoolBlobs, pvCurrentData, cbCurrentData, 1));
             // Initialize blob heap with block of data
             IfFailGo(m_MiniMd.m_BlobHeap.Initialize(
                 MetaData::DataBlob((BYTE *)pvCurrentData, cbCurrentData),

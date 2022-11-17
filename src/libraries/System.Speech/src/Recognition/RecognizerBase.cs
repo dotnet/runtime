@@ -2741,7 +2741,7 @@ ISpGrammarResourceLoader
                 if (_bookmarkTable.Count == 0)
                 {
                     // Now reset the _nextBookmarkId.
-                    // Remember that several values are predefined and must not be used, so reset to _intialBookmarkId
+                    // Remember that several values are predefined and must not be used, so reset to _initialBookmarkId
                     _nextBookmarkId = _firstUnusedBookmarkId;
                     _prevMaxBookmarkId = _firstUnusedBookmarkId - 1;
                 }

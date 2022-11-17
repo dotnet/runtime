@@ -1,6 +1,6 @@
 <Project>
   <Import Project="..\Directory.Build.targets" />
-  
+
   <PropertyGroup>
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <NativeWithSymbolFile Include="@(NativeBinary)">
+      <NativeWithSymbolFile Include="@(NativeBinary)" Condition="'$(PackageTargetRuntime)'!=''">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       </NativeWithSymbolFile>
       <NativeWithSymbolFile Include="@(ArchitectureSpecificToolFile)">

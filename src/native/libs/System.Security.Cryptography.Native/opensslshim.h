@@ -486,6 +486,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
+    REQUIRED_FUNCTION(SSL_CTX_set_session_id_context) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
@@ -603,6 +604,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_STORE_CTX_new) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_flags) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_verify_cb) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_set_ex_data) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_get_ex_data) \
     REQUIRED_FUNCTION(X509_STORE_free) \
     FALLBACK_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
@@ -965,6 +968,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
+#define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
@@ -1084,6 +1088,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_STORE_CTX_new X509_STORE_CTX_new_ptr
 #define X509_STORE_CTX_set_flags X509_STORE_CTX_set_flags_ptr
 #define X509_STORE_CTX_set_verify_cb X509_STORE_CTX_set_verify_cb_ptr
+#define X509_STORE_CTX_set_ex_data X509_STORE_CTX_set_ex_data_ptr
+#define X509_STORE_CTX_get_ex_data X509_STORE_CTX_get_ex_data_ptr
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr

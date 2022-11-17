@@ -935,7 +935,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72187")]
         [MemberData(nameof(PolymorphicClass_WithBaseTypeDiscriminator.GetTestData), MemberType = typeof(PolymorphicClass_WithBaseTypeDiscriminator))]
         public async Task PolymorphicClass_BoxedSerialization_DoesNotUseTypeDiscriminators(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
         {

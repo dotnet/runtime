@@ -322,7 +322,7 @@ namespace Microsoft.Interop
         /// <param name="entryType">The marshaller type.</param>
         /// <param name="compilation">The compilation to use to make new type symbols.</param>
         /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
-        private static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
+        public static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
         {
             if (!entryType.IsGenericType)
             {
@@ -389,7 +389,7 @@ namespace Microsoft.Interop
             return null;
         }
 
-        private static bool ModeUsesManagedToUnmanagedShape(MarshalMode mode)
+        public static bool ModeUsesManagedToUnmanagedShape(MarshalMode mode)
             => mode is MarshalMode.Default
                 or MarshalMode.ManagedToUnmanagedIn
                 or MarshalMode.UnmanagedToManagedOut
@@ -398,7 +398,7 @@ namespace Microsoft.Interop
                 or MarshalMode.UnmanagedToManagedRef
                 or MarshalMode.ElementRef;
 
-        private static bool ModeUsesUnmanagedToManagedShape(MarshalMode mode)
+        public static bool ModeUsesUnmanagedToManagedShape(MarshalMode mode)
             => mode is MarshalMode.Default
                 or MarshalMode.ManagedToUnmanagedOut
                 or MarshalMode.UnmanagedToManagedIn

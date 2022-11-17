@@ -141,6 +141,8 @@ namespace System.Drawing
                 {
                     GC.KeepAlive(_managed);
                 }
+
+                public void Free() {}
             }
         }
 #endif

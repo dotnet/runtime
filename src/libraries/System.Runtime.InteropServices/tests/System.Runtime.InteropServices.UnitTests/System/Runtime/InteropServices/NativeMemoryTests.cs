@@ -558,5 +558,81 @@ namespace System.Runtime.InteropServices.Tests
 
             // This test method just needs to check that no exceptions are thrown
         }
+
+        [Fact]
+        public void CopyNullBlockShouldNoOpTest()
+        {
+            // This should not throw
+            NativeMemory.Copy(null, null, 0);
+        }
+
+        [Fact]
+        public void CopyEmptyBlockShouldNoOpTest()
+        {
+            int* source = stackalloc int[1] { 42 };
+            int* destination = stackalloc int[1] { 0 };
+
+            NativeMemory.Copy(source, destination, 0);
+
+            Assert.Equal(0, destination[0]);
+        }
+
+        [Theory]
+        [InlineData(1, 1, 1)]
+        [InlineData(7, 9, 5)]
+        [InlineData(1, 16, 1)]
+        [InlineData(16, 16, 16)]
+        [InlineData(29, 37, 19)]
+        [InlineData(1024, 16, 16)]
+        public void CopyTest(int sourceSize, int destinationSize, int byteCount)
+        {
+            void* source = NativeMemory.AllocZeroed((nuint)sourceSize);
+            void* destination = NativeMemory.AllocZeroed((nuint)destinationSize);
+
+            new Span<byte>(source, sourceSize).Fill(0b10101010);
+
+            NativeMemory.Copy(source, destination, (nuint)byteCount);
+
+            Equals(byteCount - 1, new Span<byte>(destination, destinationSize).LastIndexOf<byte>(0b10101010));
+
+            NativeMemory.Free(source);
+            NativeMemory.Free(destination);
+        }
+
+        [Theory]
+        [InlineData(311, 100, 50)]
+        [InlineData(33, 0, 12)]
+        [InlineData(150, 50, 100)]
+        public void CopyToOverlappedMemoryTest(int size, int offset, int byteCount)
+        {
+            byte* source = (byte*)NativeMemory.AllocZeroed((nuint)size);
+
+            var expectedBlock = new byte[byteCount];
+            Random.Shared.NextBytes(expectedBlock);
+            expectedBlock.CopyTo(new Span<byte>(source, byteCount));
+
+            NativeMemory.Copy(source, source + offset, (nuint)byteCount);
+
+            Assert.True(expectedBlock.AsSpan().SequenceEqual(new ReadOnlySpan<byte>(source + offset, byteCount)));
+
+            NativeMemory.Free(source);
+        }
+
+        [Fact]
+        public void FillNullMemoryBlockShouldNoOpTest()
+        {
+            // This should not throw
+            NativeMemory.Fill(null, 0, 42);
+        }
+
+        [Fact]
+        public void FillEmptyMemoryBlockShouldNoOpTest()
+        {
+            void* source = stackalloc byte[7] { 0, 0, 0, 0, 0, 0, 0 };
+
+            NativeMemory.Fill(source, 0, 42);
+
+            Assert.Equal(-1, new Span<byte>(source, 7).IndexOf<byte>(42));
+        }
     }
 }

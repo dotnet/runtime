@@ -12,7 +12,7 @@ namespace System.DirectoryServices.Protocols
         internal static int AddDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_add(ldapHandle, dn, attrs, servercontrol, clientcontrol, ref messageNumber);
 
-        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
+        internal static int CompareDirectoryEntries(ConnectionHandle ldapHandle, string dn, string attributeName, string _ /*strValue*/, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
                                 Interop.Ldap.ldap_compare(ldapHandle, dn, attributeName, binaryValue, servercontrol, clientcontrol, ref messageNumber);
 
         internal static void FreeDirectoryControl(IntPtr control) => Interop.Ldap.ldap_control_free(control);
@@ -90,9 +90,20 @@ namespace System.DirectoryServices.Protocols
 
         internal static int ResultToErrorCode(ConnectionHandle ldapHandle, IntPtr result, int freeIt) => Interop.Ldap.ldap_result2error(ldapHandle, result, freeIt);
 
-        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber) =>
-                                Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, timelimit, sizelimit, ref messageNumber);
+        internal static int SearchDirectory(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber)
+        {
+            LDAP_TIMEVAL searchTimeout = new LDAP_TIMEVAL
+            {
+                tv_sec = timelimit
+            };
 
+            //zero must not be passed otherwise libldap runtime returns LDAP_PARAM_ERROR
+            if (searchTimeout.tv_sec < 1)
+                //-1 means no time limit
+                searchTimeout.tv_sec = -1;
+
+            return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
+        }
         internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
 
         // This option is not supported in Linux, so it would most likely throw.
@@ -109,7 +120,7 @@ namespace System.DirectoryServices.Protocols
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
-        internal static int BindToDirectory(ConnectionHandle ld, string who, string passwd)
+        internal static unsafe int BindToDirectory(ConnectionHandle ld, string who, string passwd)
         {
             IntPtr passwordPtr = IntPtr.Zero;
             try
@@ -117,7 +128,7 @@ namespace System.DirectoryServices.Protocols
                 passwordPtr = LdapPal.StringToPtr(passwd);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = passwd?.Length ?? 0,
+                    bv_len = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)passwordPtr).Length,
                     bv_val = passwordPtr,
                 };
 
@@ -156,7 +167,7 @@ namespace System.DirectoryServices.Protocols
         }
 
         // openldap doesn't have a ldap_stop_tls function. Returning true as no-op for Linux.
-        internal static byte StopTls(ConnectionHandle ldapHandle) => 1;
+        internal static byte StopTls(ConnectionHandle _/*ldapHandle*/) => 1;
 
         internal static void FreeValue(IntPtr referral) => Interop.Ldap.ldap_value_free(referral);
 
@@ -166,12 +177,13 @@ namespace System.DirectoryServices.Protocols
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
         /// that get passed in by using the defaults that we get passed in.
         /// </summary>
         /// <param name="ldapHandle">The connection handle to the LDAP server.</param>
-        /// <param name="flags">Flags that control the interaction used to retrieve any necessary Sasl authentication parameters</param>
+        /// <param name="flags"></param>
         /// <param name="defaultsPtr">Pointer to the defaults structure that was sent to sasl_interactive_bind</param>
         /// <param name="interactPtr">Pointer to the challenge we need to resolve</param>
         /// <returns></returns>
@@ -220,5 +232,6 @@ namespace System.DirectoryServices.Protocols
 
             return 0;
         }
+#pragma warning restore IDE0060
     }
 }

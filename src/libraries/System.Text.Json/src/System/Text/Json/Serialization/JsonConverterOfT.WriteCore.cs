@@ -13,14 +13,14 @@ namespace System.Text.Json.Serialization
         {
             if (
 #if NETCOREAPP
-                // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
+                // Treated as a constant by recent versions of the JIT.
                 typeof(T).IsValueType)
 #else
                 IsValueType)
 #endif
             {
                 // Value types can never have a null except for Nullable<T>.
-                if (value == null && Nullable.GetUnderlyingType(TypeToConvert) == null)
+                if (default(T) is not null && value is null)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -142,10 +141,7 @@ namespace ILCompiler
             else
             {
                 // Use the typical field definition in case this is an instantiated generic type
-                field = field.GetTypicalFieldDefinition();
-                int fieldTypePack = (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1;
-                return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                    ((EcmaField)field).GetFieldRvaData(), Math.Max(NodeFactory.Target.PointerSize, fieldTypePack));
+                return NodeFactory.FieldRvaData((EcmaField)field.GetTypicalFieldDefinition());
             }
         }
 
@@ -222,6 +218,11 @@ namespace ILCompiler
             return _devirtualizationManager.IsEffectivelySealed(type);
         }
 
+        public TypeDesc[] GetImplementingClasses(TypeDesc type)
+        {
+            return _devirtualizationManager.GetImplementingClasses(type);
+        }
+
         public bool IsEffectivelySealed(MethodDesc method)
         {
             return _devirtualizationManager.IsEffectivelySealed(method);
@@ -264,7 +265,7 @@ namespace ILCompiler
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
             bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
-            bool creationAllowed = DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type);
+            bool creationAllowed = ConstructedEETypeNode.CreationAllowed(type);
             return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
@@ -518,17 +519,11 @@ namespace ILCompiler
 
         CompilationResults ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
-            if (dumper != null)
-            {
-                dumper.Begin();
-            }
+            dumper?.Begin();
 
             CompileInternal(outputFile, dumper);
 
-            if (dumper != null)
-            {
-                dumper.End();
-            }
+            dumper?.End();
 
             return new CompilationResults(_dependencyGraph, _nodeFactory);
         }
@@ -552,18 +547,18 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(MethodDesc key, MethodILData value)
             {
-                return Object.ReferenceEquals(key, value.Method);
+                return ReferenceEquals(key, value.Method);
             }
             protected override bool CompareValueToValue(MethodILData value1, MethodILData value2)
             {
-                return Object.ReferenceEquals(value1.Method, value2.Method);
+                return ReferenceEquals(value1.Method, value2.Method);
             }
             protected override MethodILData CreateValueFromKey(MethodDesc key)
             {
                 return new MethodILData() { Method = key, MethodIL = ILProvider.GetMethodIL(key) };
             }
 
-            internal class MethodILData
+            internal sealed class MethodILData
             {
                 public MethodDesc Method;
                 public MethodIL MethodIL;

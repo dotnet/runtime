@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.Dataflow
 {
-    interface IValueWithStaticType
+    internal interface IValueWithStaticType
     {
         /// <summary>
         /// The IL type of the value, represented as closely as possible, but not always exact.  It can be null, for

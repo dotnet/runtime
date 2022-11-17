@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Also reset/set below
 set -x
 
 source_directory=$BUILD_SOURCESDIRECTORY
@@ -23,6 +24,8 @@ monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
+perf_fork=""
+perf_fork_branch="main"
 run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
@@ -35,6 +38,9 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+use_local_commit_time=false
+only_sanity=false
+dotnet_versions=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -145,6 +151,10 @@ while (($# > 0)); do
       use_latest_dotnet=true
       shift 1
       ;;
+    --dotnetversions)
+      dotnet_versions="$2"
+      shift 2
+      ;;
     --iosmono)
       iosmono=true
       shift 1
@@ -156,6 +166,22 @@ while (($# > 0)); do
     --mauiversion)
       maui_version=$2
       shift 2
+      ;;
+    --uselocalcommittime)
+      use_local_commit_time=true
+      shift 1
+      ;;
+    --perffork)
+      perf_fork=$2
+      shift 2
+      ;;
+    --perfforkbranch)
+      perf_fork_branch=$2
+      shift 2
+      ;;
+    --only-sanity)
+      only_sanity=true
+      shift 1
       ;;
     *)
       echo "Common settings:"
@@ -181,12 +207,14 @@ while (($# > 0)); do
       echo "  --wasmbundle                   Path to the wasm bundle containing the dotnet, and data needed for helix payload"
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
+      echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo ""
-      exit 0
+      exit 1
       ;;
   esac
 done
@@ -295,13 +323,26 @@ fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
+if [[ "$internal" != true ]]; then
+    setup_arguments="$setup_arguments --not-in-lab"
+fi
+
+if [[ "$use_local_commit_time" == true ]]; then
+    local_commit_time=$(git show -s --format=%ci $commit_sha)
+    setup_arguments="$setup_arguments --commit-time \"$local_commit_time\""
+fi
+
 if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    if [[ -n "$perf_fork" ]]; then
+        git clone --branch $perf_fork_branch --depth 1 --quiet $perf_fork $performance_directory
+    else
+        git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -329,6 +370,10 @@ if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
+fi
+
+if [[ -n "$dotnet_versions" ]]; then
+    setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
 fi
 
 if [[ "$monoaot" == "true" ]]; then
@@ -390,6 +435,9 @@ ci=true
 _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
 
+# Prevent vso[task.setvariable to be erroneously processed
+set +x
+
 # Make sure all of our variables are available for future steps
 Write-PipelineSetVariable -name "UseCoreRun" -value "$use_core_run" -is_multi_job_variable false
 Write-PipelineSetVariable -name "UseBaselineCoreRun" -value "$use_baseline_core_run" -is_multi_job_variable false
@@ -413,3 +461,7 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
+
+# Put it back to what was set on top of this script
+set -x

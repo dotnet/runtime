@@ -10,21 +10,30 @@ namespace System.Runtime.InteropServices.JavaScript
     public partial struct JSMarshalerArgument
     {
         /// <summary>
-        /// Helps with marshaling of the Task result or Function arguments.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Assists in marshalling of Task results and Function arguments.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">Type of the marshaled value.</typeparam>
+        /// <param name="arg">The low-level argument representation.</param>
+        /// <param name="value">The value to be marshaled.</param>
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
         /// <summary>
-        /// Helps with marshaling of the Task result or Function arguments.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Assists in marshalling of Task results and Function arguments.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">Type of the marshaled value.</typeparam>
+        /// <param name="arg">The low-level argument representation.</param>
+        /// <param name="value">The value to be marshaled.</param>
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
         /// <summary>
         /// Implementation of the argument marshaling.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToManaged(out Task? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -40,24 +49,18 @@ namespace System.Runtime.InteropServices.JavaScript
             TaskCompletionSource tcs = new TaskCompletionSource(gcHandle);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
-                ref JSMarshalerArgument arg_exception = ref arguments_buffer[0];
-                try
+                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                // arg_3 set by caller when this is SetResult call, un-used here
+                if (arg_2.slot.Type != MarshalerType.None)
                 {
-                    if (arg_exception.slot.Type != MarshalerType.None)
-                    {
-                        arg_exception.ToManaged(out Exception? fail);
-                        tcs.SetException(fail!);
-                    }
-                    else
-                    {
-                        tcs.SetResult();
-                    }
-                    arg_exception.slot.Type = MarshalerType.None;
+                    arg_2.ToManaged(out Exception? fail);
+                    tcs.SetException(fail!);
                 }
-                catch (Exception ex)
+                else
                 {
-                    arg_exception.ToJS(ex);
+                    tcs.SetResult();
                 }
+                // eventual exception is handled by caller
             };
             holder.Callback = callback;
             value = tcs.Task;
@@ -67,6 +70,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="System.Threading.Tasks.Task"/>.</param>
+        /// <typeparam name="T">Type of marshaled result of the <see cref="System.Threading.Tasks.Task"/>.</typeparam>
         public unsafe void ToManaged<T>(out Task<T>? value, ArgumentToManagedCallback<T> marshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -82,27 +88,20 @@ namespace System.Runtime.InteropServices.JavaScript
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(gcHandle);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
-                ref JSMarshalerArgument arg_exception = ref arguments_buffer[0];
-                ref JSMarshalerArgument arg1 = ref arguments_buffer[2];
-                try
+                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
+                if (arg_2.slot.Type != MarshalerType.None)
                 {
-                    if (arg_exception.slot.Type != MarshalerType.None)
-                    {
-                        arg_exception.ToManaged(out Exception? fail);
-                        if (fail == null) throw new NullReferenceException("Exception");
-                        tcs.SetException(fail);
-                    }
-                    else
-                    {
-                        marshaler(ref arg1, out T result);
-                        tcs.SetResult(result);
-                    }
-                    arg_exception.slot.Type = MarshalerType.None;
+                    arg_2.ToManaged(out Exception? fail);
+                    if (fail == null) throw new NullReferenceException("Exception");
+                    tcs.SetException(fail);
                 }
-                catch (Exception ex)
+                else
                 {
-                    arg_exception.ToJS(ex);
+                    marshaler(ref arg_3, out T result);
+                    tcs.SetResult(result);
                 }
+                // eventual exception is handled by caller
             };
             holder.Callback = callback;
             value = tcs.Task;
@@ -138,7 +137,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 
@@ -188,9 +187,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        public void ToJS(Task value)
+        /// <param name="value">The value to be marshaled.</param>
+        public void ToJS(Task? value)
         {
-            Task task = value;
+            Task? task = value;
 
             if (task == null)
             {
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 
@@ -259,6 +259,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="System.Threading.Tasks.Task"/>.</param>
+        /// <typeparam name="T">Type of marshaled result of the <see cref="System.Threading.Tasks.Task"/>.</typeparam>
         public void ToJS<T>(Task<T>? value, ArgumentToJSCallback<T> marshaler)
         {
             Task<T>? task = value;
@@ -289,7 +292,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 

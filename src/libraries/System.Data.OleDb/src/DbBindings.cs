@@ -179,10 +179,10 @@ namespace System.Data.OleDb
             {
                 Debug.Assert(0 <= value, "invalid MaxLen");
 
-                _dbbindings[_index].obStatus = (IntPtr)(_dataBufferSize + 0);
-                _dbbindings[_index].obLength = (IntPtr)(_dataBufferSize + ADP.PtrSize);
-                _dbbindings[_index].obValue = (IntPtr)(_dataBufferSize + ADP.PtrSize + ADP.PtrSize);
-                _dataBufferSize += ADP.PtrSize + ADP.PtrSize;
+                _dbbindings[_index].obStatus = (IntPtr)(_dataBufferSize);
+                _dbbindings[_index].obLength = (IntPtr)(_dataBufferSize + IntPtr.Size);
+                _dbbindings[_index].obValue = (IntPtr)(_dataBufferSize + IntPtr.Size + IntPtr.Size);
+                _dataBufferSize += IntPtr.Size + IntPtr.Size;
 
                 switch (DbType)
                 {
@@ -293,7 +293,7 @@ namespace System.Data.OleDb
                 }
                 else
                 {
-                    // always set ouput only and return value parameter values to null when executing
+                    // always set output only and return value parameter values to null when executing
                     parameters[i].Value = null;
 
                     //columnBindings[i].SetValueEmpty();

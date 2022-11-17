@@ -6,7 +6,7 @@ This document aims to provide a specification for how a standalone GC fires
 events that can be collected by trace collectors. Such a feature is highly desirable
 for a standalone GC since it is the primary way that is used to reason about
 GC performance. Since a standalone GC is not permitted to link against the rest of the runtime, all
-communication betwene the runtime and the GC most pass through dynamically-dispatched interfaces.
+communication between the runtime and the GC most pass through dynamically-dispatched interfaces.
 
 ## Definitions
 

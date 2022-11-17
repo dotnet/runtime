@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices
     public interface ICustomMarshaler
     {
 #if MONO
-        // ILLinker marks all methods of this type equaly so the attribute can be on any of them
+        // ILLinker marks all methods of this type equally so the attribute can be on any of them
         [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Marshal.GetCustomMarshalerInstance), typeof(Marshal))]
 #endif
         object MarshalNativeToManaged(IntPtr pNativeData);

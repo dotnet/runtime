@@ -1605,7 +1605,7 @@ Assert.False(true);
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Serialize()
         {
-            // Create an array with multiple elements refering to
+            // Create an array with multiple elements referring to
             // the one Singleton object.
             DataTable dt = new DataTable();
 
@@ -2794,7 +2794,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -2874,7 +2874,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -2931,7 +2931,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 

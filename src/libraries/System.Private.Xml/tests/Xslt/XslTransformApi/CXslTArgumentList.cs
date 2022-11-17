@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
-using System.Dynamic;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslTransformApiTests
 {
     /***********************************************************/
     /*               XsltArgumentList.GetParam                 */
@@ -2453,7 +2454,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Unitialized and NULL return values from the methods in the extension object")]
+        //[Variation("Uninitialized and NULL return values from the methods in the extension object")]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Reader, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
@@ -2788,9 +2789,9 @@ namespace System.Xml.Tests
         public void AddExtObject19(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
-		Overloaded Double: Int Overlaod
-		Overloaded Int: Int Overlaod
-		Overloaded String: String Overlaod</result>";
+		Overloaded Double: Int Overload
+		Overloaded Int: Int Overload
+		Overloaded String: String Overload</result>";
 
             MyObject obj = new MyObject(19, _output);
             m_xsltArg = new XsltArgumentList();

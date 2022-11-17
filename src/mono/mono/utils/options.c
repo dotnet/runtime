@@ -31,6 +31,8 @@ typedef struct {
 	int cmd_name_len;
 } OptionData;
 
+int mono_options_version = 0;
+
 static OptionData option_meta[] = {
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) \
 	{ option_type, &mono_opt_##c_name, cmd_name, sizeof (cmd_name) - 1 },
@@ -85,6 +87,34 @@ mono_options_print_usage (void)
 #include "options-def.h"
 }
 
+static GHashTable *_option_hash = NULL;
+
+static GHashTable *
+get_option_hash ()
+{
+	GHashTable *result;
+
+	if (_option_hash)
+		return _option_hash;
+
+	/* Compute a hash to avoid n^2 behavior */
+	result = g_hash_table_new (g_str_hash, g_str_equal);
+	for (size_t i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
+		g_hash_table_insert (result, (gpointer)option_meta [i].cmd_name, &option_meta [i]);
+	}
+
+	/*
+	 * We lost a data race. Accept our fate and free our copy of the table.
+	 * FIXME: It's possible to lose the race with precise timing and fail to free the extra table.
+	*/
+	if (_option_hash)
+		g_hash_table_destroy(result);
+	else
+		_option_hash = result;
+
+	return _option_hash;
+}
+
 /*
  * mono_options_parse_options:
  *
@@ -101,6 +131,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 	int aindex = 0;
 	GHashTable *option_hash = NULL;
 
+	mono_options_version++;
+
 	while (aindex < argc) {
 		const char *arg = argv [aindex];
 
@@ -110,13 +142,7 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 		}
 		arg = arg + 2;
 
-		if (option_hash == NULL) {
-			/* Compute a hash to avoid n^2 behavior */
-			option_hash = g_hash_table_new (g_str_hash, g_str_equal);
-			for (size_t i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
-				g_hash_table_insert (option_hash, (gpointer)option_meta [i].cmd_name, &option_meta [i]);
-			}
-		}
+		option_hash = get_option_hash ();
 
 		/* Compute flag name */
 		char *arg_copy = g_strdup (arg);
@@ -156,7 +182,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 				break;
 			}
 			if (option->option_type == MONO_OPTION_BOOL_READONLY) {
-				mono_error_set_error (error, 1, "Unable to set option '%s' as it's read-only.\n", arg);
+				if (error)
+					mono_error_set_error (error, 1, "Unable to set option '%s' as it's read-only.\n", arg);
 				break;
 			}
 			*(gboolean*)option->addr = negate ? FALSE : TRUE;
@@ -170,7 +197,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			if (len == option->cmd_name_len) {
 				// --option value
 				if (aindex + 1 == argc) {
-					mono_error_set_error (error, 1, "Missing value for option '%s'.\n", option->cmd_name);
+					if (error)
+						mono_error_set_error (error, 1, "Missing value for option '%s'.\n", option->cmd_name);
 					break;
 				}
 				value = argv [aindex + 1];
@@ -191,7 +219,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 				char *endp;
 				long v = strtol (value, &endp, 10);
 				if (!value [0] || *endp) {
-					mono_error_set_error (error, 1, "Invalid value for option '%s': '%s'.\n", option->cmd_name, value);
+					if (error)
+						mono_error_set_error (error, 1, "Invalid value for option '%s': '%s'.\n", option->cmd_name, value);
 					break;
 				}
 				*(int*)option->addr = (int)v;
@@ -203,14 +232,12 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			break;
 		}
 
-		if (!is_ok (error))
+		if (error && !is_ok (error))
 			break;
 		aindex ++;
 	}
 
-	if (option_hash)
-		g_hash_table_destroy (option_hash);
-	if (!is_ok (error))
+	if (error && !is_ok (error))
 		return;
 
 	/* Remove processed arguments */
@@ -220,4 +247,80 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 			argv [aindex ++] = argv [i];
 	}
 	*out_argc = aindex;
+}
+
+static void
+string_append_option_json (GString *destination, MonoOptionType type, const void *value)
+{
+	switch (type) {
+	case MONO_OPTION_BOOL:
+	case MONO_OPTION_BOOL_READONLY:
+		g_string_append (destination, *(gboolean*)value ? "true" : "false");
+		break;
+
+	case MONO_OPTION_INT:
+		g_string_append_printf (destination, "%d", *(int*)value);
+		break;
+
+	case MONO_OPTION_STRING: {
+		char ch;
+		const char * src = *(char**)value;
+		if (!src || !*src) {
+			g_string_append (destination, "\"\"");
+			return;
+		}
+
+		g_string_append (destination, "\"");
+		while ((ch = *src) != 0) {
+			switch (ch) {
+				case '\'':
+				case '\"':
+				case '\\':
+					g_string_append_c (destination, '\\');
+					g_string_append_c (destination, ch);
+					break;
+				default:
+					if (ch < 32)
+						g_string_append_printf (destination, "\\u%04X", ch);
+					else
+						g_string_append_c (destination, ch);
+					break;
+			}
+
+			src++;
+		}
+
+		g_string_append (destination, "\"");
+		break;
+	}
+
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+char *
+mono_options_get_as_json (void)
+{
+	char *result_str;
+	GString *result = g_string_new("{\n");
+	gboolean need_comma = FALSE;
+
+#define DEFINE_OPTION_READONLY(option_type, ctype, c_name, cmd_name, def_value, comment) DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment)
+#define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) do { \
+		if (need_comma) \
+			g_string_append (result, ",\n"); \
+		g_string_append_printf (result, "  \"%s\": ", cmd_name); \
+		string_append_option_json (result, option_type, &mono_opt_##c_name); \
+		need_comma = TRUE; \
+	} while (0);
+
+#include "options-def.h"
+
+	g_string_append(result, "\n}");
+
+	result_str = result->str;
+	g_string_free(result, FALSE);
+	return result_str;
 }

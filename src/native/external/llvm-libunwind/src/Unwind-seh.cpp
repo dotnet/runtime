@@ -1,4 +1,4 @@
-//===--------------------------- Unwind-seh.cpp ---------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -46,18 +46,6 @@ using namespace libunwind;
 /// handling.
 #define STATUS_GCC_UNWIND MAKE_GCC_EXCEPTION(1) // 0x21474343
 
-/// Class of foreign exceptions based on unrecognized SEH exceptions.
-static const uint64_t kSEHExceptionClass = 0x434C4E4753454800; // CLNGSEH\0
-
-/// Exception cleanup routine used by \c _GCC_specific_handler to
-/// free foreign exceptions.
-static void seh_exc_cleanup(_Unwind_Reason_Code urc, _Unwind_Exception *exc) {
-  (void)urc;
-  if (exc->exception_class != kSEHExceptionClass)
-    _LIBUNWIND_ABORT("SEH cleanup called on non-SEH exception");
-  free(exc);
-}
-
 static int __unw_init_seh(unw_cursor_t *cursor, CONTEXT *ctx);
 static DISPATCHER_CONTEXT *__unw_seh_get_disp_ctx(unw_cursor_t *cursor);
 static void __unw_seh_set_disp_ctx(unw_cursor_t *cursor,
@@ -69,7 +57,7 @@ static void __unw_seh_set_disp_ctx(unw_cursor_t *cursor,
 ///  b) Initiate a collided unwind to halt unwinding.
 _LIBUNWIND_EXPORT EXCEPTION_DISPOSITION
 _GCC_specific_handler(PEXCEPTION_RECORD ms_exc, PVOID frame, PCONTEXT ms_ctx,
-                      DISPATCHER_CONTEXT *disp, __personality_routine pers) {
+                      DISPATCHER_CONTEXT *disp, _Unwind_Personality_Fn pers) {
   unw_cursor_t cursor;
   _Unwind_Exception *exc;
   _Unwind_Action action;
@@ -108,10 +96,10 @@ _GCC_specific_handler(PEXCEPTION_RECORD ms_exc, PVOID frame, PCONTEXT ms_ctx,
     }
   } else {
     // Foreign exception.
-    exc = (_Unwind_Exception *)malloc(sizeof(_Unwind_Exception));
-    exc->exception_class = kSEHExceptionClass;
-    exc->exception_cleanup = seh_exc_cleanup;
-    memset(exc->private_, 0, sizeof(exc->private_));
+    // We can't interact with them (we don't know the original target frame
+    // that we should pass on to RtlUnwindEx in _Unwind_Resume), so just
+    // pass without calling our destructors here.
+    return ExceptionContinueSearch;
   }
   if (!ctx) {
     __unw_init_seh(&cursor, disp->ContextRecord);
@@ -181,8 +169,8 @@ _GCC_specific_handler(PEXCEPTION_RECORD ms_exc, PVOID frame, PCONTEXT ms_ctx,
     __unw_get_reg(&cursor, UNW_ARM_R1, &exc->private_[3]);
 #elif defined(__aarch64__)
     exc->private_[2] = disp->TargetPc;
-    __unw_get_reg(&cursor, UNW_ARM64_X0, &retval);
-    __unw_get_reg(&cursor, UNW_ARM64_X1, &exc->private_[3]);
+    __unw_get_reg(&cursor, UNW_AARCH64_X0, &retval);
+    __unw_get_reg(&cursor, UNW_AARCH64_X1, &exc->private_[3]);
 #endif
     __unw_get_reg(&cursor, UNW_REG_IP, &target);
     ms_exc->ExceptionCode = STATUS_GCC_UNWIND;
@@ -256,6 +244,7 @@ unwind_phase2_forced(unw_context_t *uc,
       return _URC_FATAL_PHASE2_ERROR;
     }
 
+#ifndef NDEBUG
     // When tracing, print state information.
     if (_LIBUNWIND_TRACING_UNWINDING) {
       char functionBuf[512];
@@ -271,6 +260,7 @@ unwind_phase2_forced(unw_context_t *uc,
           (void *)exception_object, frameInfo.start_ip, functionName,
           frameInfo.lsda, frameInfo.handler);
     }
+#endif
 
     // Call stop function at each frame.
     _Unwind_Action action =
@@ -290,8 +280,8 @@ unwind_phase2_forced(unw_context_t *uc,
 
     // If there is a personality routine, tell it we are unwinding.
     if (frameInfo.handler != 0) {
-      __personality_routine p =
-          (__personality_routine)(intptr_t)(frameInfo.handler);
+      _Unwind_Personality_Fn p =
+          (_Unwind_Personality_Fn)(intptr_t)(frameInfo.handler);
       _LIBUNWIND_TRACE_UNWINDING(
           "unwind_phase2_forced(ex_ojb=%p): calling personality function %p",
           (void *)exception_object, (void *)(uintptr_t)p);

@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement
                                                     out bufferSize,
                                                     IntPtr.Zero
                                                     );
-                        if (!f && (bufferSize > 0) && (Marshal.GetLastWin32Error() == 122) /*ERROR_INSUFFICIENT_BUFFER*/)
+                        if (!f && (bufferSize > 0) && (Marshal.GetLastPInvokeError() == 122) /*ERROR_INSUFFICIENT_BUFFER*/)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting info from ctx (size={0})", bufferSize);
 
@@ -155,23 +155,23 @@ namespace System.DirectoryServices.AccountManagement
                             }
                             else
                             {
-                                lastError = Marshal.GetLastWin32Error();
+                                lastError = Marshal.GetLastPInvokeError();
                             }
                         }
                         else
                         {
-                            lastError = Marshal.GetLastWin32Error();
+                            lastError = Marshal.GetLastPInvokeError();
                             Debug.Fail("With a zero-length buffer, this should have never succeeded");
                         }
                     }
                     else
                     {
-                        lastError = Marshal.GetLastWin32Error();
+                        lastError = Marshal.GetLastPInvokeError();
                     }
                 }
                 else
                 {
-                    lastError = Marshal.GetLastWin32Error();
+                    lastError = Marshal.GetLastPInvokeError();
                 }
 
                 if (!f)

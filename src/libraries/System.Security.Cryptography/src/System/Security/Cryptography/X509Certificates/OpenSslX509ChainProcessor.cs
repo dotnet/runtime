@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
@@ -634,7 +635,32 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private WorkingChain BuildWorkingChain()
+        [UnmanagedCallersOnly]
+        private static unsafe int VerifyCallback(int ok, IntPtr ctx)
+        {
+            if (ok != 0)
+            {
+                return ok;
+            }
+
+            try
+            {
+                using (var storeCtx = new SafeX509StoreCtxHandle(ctx, ownsHandle: false))
+                {
+                    void* appData = Interop.Crypto.X509StoreCtxGetAppData(storeCtx);
+
+                    ref WorkingChain workingChain = ref Unsafe.As<byte, WorkingChain>(ref *(byte*)appData);
+
+                    return workingChain.VerifyCallback(storeCtx);
+                }
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private unsafe WorkingChain BuildWorkingChain()
         {
             if (_workingChain != null)
             {
@@ -645,8 +671,8 @@ namespace System.Security.Cryptography.X509Certificates
             WorkingChain? extraDispose = null;
 
             Interop.Crypto.X509StoreCtxReset(_storeCtx);
-            Interop.Crypto.X509StoreVerifyCallback workingCallback = workingChain.VerifyCallback;
-            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
 
             bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
 
@@ -658,14 +684,11 @@ namespace System.Security.Cryptography.X509Certificates
                 // Reset to a WorkingChain that won't fail.
                 extraDispose = workingChain;
                 workingChain = new WorkingChain(abortOnSignatureError: false);
-                workingCallback = workingChain.VerifyCallback;
-                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
 
                 verify = Interop.Crypto.X509VerifyCert(_storeCtx);
             }
-
-            // Keep the bound delegate alive until X509_verify_cert isn't going to call it any longer.
-            GC.KeepAlive(workingCallback);
 
             // Because our callback tells OpenSSL that every problem is ignorable, it should tell us that the
             // chain is just fine (unless it returned a negative code for an exception)
@@ -1337,66 +1360,50 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            internal int VerifyCallback(int ok, IntPtr ctx)
+            internal int VerifyCallback(SafeX509StoreCtxHandle storeCtx)
             {
-                if (ok != 0)
+                Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
+                int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
+
+                if (AbortOnSignatureError &&
+                    errorCode == X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_SIGNATURE_FAILURE)
                 {
-                    return ok;
+                    AbortedForSignatureError = true;
+                    return 0;
                 }
 
-                try
+                // * We don't report "OK" as an error.
+                // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
+                // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
+                //   which will trigger OCSP, so is ignorable.
+                if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
                 {
-                    using (var storeCtx = new SafeX509StoreCtxHandle(ctx, ownsHandle: false))
+                    if (_errors == null)
                     {
-                        Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
-                        int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
+                        int size = Math.Max(DefaultChainCapacity, errorDepth + 1);
+                        // Since ErrorCollection is a non-public type, this is a private pool.
+                        _errors = ArrayPool<ErrorCollection>.Shared.Rent(size);
 
-                        if (AbortOnSignatureError &&
-                            errorCode == X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_SIGNATURE_FAILURE)
-                        {
-                            AbortedForSignatureError = true;
-                            return 0;
-                        }
+                        // We only do spares writes.
+                        _errors.AsSpan().Clear();
+                    }
+                    else if (errorDepth >= _errors.Length)
+                    {
+                        ErrorCollection[] toReturn = _errors;
+                        _errors = ArrayPool<ErrorCollection>.Shared.Rent(errorDepth + 1);
+                        toReturn.AsSpan().CopyTo(_errors);
 
-                        // * We don't report "OK" as an error.
-                        // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
-                        // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
-                        //   which will trigger OCSP, so is ignorable.
-                        if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
-                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
-                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
-                        {
-                            if (_errors == null)
-                            {
-                                int size = Math.Max(DefaultChainCapacity, errorDepth + 1);
-                                // Since ErrorCollection is a non-public type, this is a private pool.
-                                _errors = ArrayPool<ErrorCollection>.Shared.Rent(size);
-
-                                // We only do spares writes.
-                                _errors.AsSpan().Clear();
-                            }
-                            else if (errorDepth >= _errors.Length)
-                            {
-                                ErrorCollection[] toReturn = _errors;
-                                _errors = ArrayPool<ErrorCollection>.Shared.Rent(errorDepth + 1);
-                                toReturn.AsSpan().CopyTo(_errors);
-
-                                // We only do spares writes, clear the remainder.
-                                _errors.AsSpan(toReturn.Length).Clear();
-                                ArrayPool<ErrorCollection>.Shared.Return(toReturn);
-                            }
-
-                            LastError = Math.Max(errorDepth, LastError);
-                            _errors[errorDepth].Add(errorCode);
-                        }
+                        // We only do spares writes, clear the remainder.
+                        _errors.AsSpan(toReturn.Length).Clear();
+                        ArrayPool<ErrorCollection>.Shared.Return(toReturn);
                     }
 
-                    return 1;
+                    LastError = Math.Max(errorDepth, LastError);
+                    _errors[errorDepth].Add(errorCode);
                 }
-                catch
-                {
-                    return -1;
-                }
+                return 1;
             }
         }
 

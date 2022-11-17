@@ -820,7 +820,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Contains("ConnectTimeout", connectTimeoutException.Message);
 
             Assert.Null(connectTimeoutException.InnerException);
-            Assert.DoesNotContain("42", e.ToString());
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
         }
 
         [Fact]
@@ -836,7 +836,7 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Null(e.InnerException);
             Assert.Equal("Foo", e.Message);
-            Assert.DoesNotContain("42", e.ToString());
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
         }
 
         [Fact]

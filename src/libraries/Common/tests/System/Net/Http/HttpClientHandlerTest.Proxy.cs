@@ -499,14 +499,15 @@ namespace System.Net.Http.Functional.Tests
             string proxyConfigString = $"{failingEndPoint.Address}:{failingEndPoint.Port} {succeedingProxyServer.Uri.Host}:{succeedingProxyServer.Uri.Port}";
 
             // Create a WinInetProxyHelper and override its values with our own.
-            object winInetProxyHelper = Activator.CreateInstance(typeof(HttpClient).Assembly.GetType("System.Net.Http.WinInetProxyHelper", true), true);
-            winInetProxyHelper.GetType().GetField("_autoConfigUrl", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
-            winInetProxyHelper.GetType().GetField("_autoDetect", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, false);
-            winInetProxyHelper.GetType().GetField("_proxy", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, proxyConfigString);
-            winInetProxyHelper.GetType().GetField("_proxyBypass", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
+            Type winInetProxyHelperType = Type.GetType("System.Net.Http.WinInetProxyHelper, System.Net.Http", true);
+            object winInetProxyHelper = Activator.CreateInstance(winInetProxyHelperType, true);
+            winInetProxyHelperType.GetField("_autoConfigUrl", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
+            winInetProxyHelperType.GetField("_autoDetect", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, false);
+            winInetProxyHelperType.GetField("_proxy", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, proxyConfigString);
+            winInetProxyHelperType.GetField("_proxyBypass", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
 
             // Create a HttpWindowsProxy with our custom WinInetProxyHelper.
-            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpWindowsProxy", true), Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper, null }, null);
+            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper, null }, null);
 
             Task<bool> nextFailedConnection = null;
 

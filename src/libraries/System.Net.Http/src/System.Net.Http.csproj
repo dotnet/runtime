@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -134,12 +134,12 @@
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs"
              Link="Common\System\Net\HttpDateParser.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
-             Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
@@ -210,8 +210,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
-             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
@@ -226,6 +224,8 @@
              Link="Common\System\Net\DebugSafeHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
+             Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   <!-- Header support -->
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs">
       <Link>Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs</Link>

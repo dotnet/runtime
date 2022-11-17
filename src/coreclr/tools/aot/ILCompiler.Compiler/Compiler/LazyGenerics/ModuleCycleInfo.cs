@@ -16,7 +16,7 @@ namespace ILCompiler
 {
     internal static partial class LazyGenericsSupport
     {
-        private class ModuleCycleInfo
+        private sealed class ModuleCycleInfo
         {
             private readonly HashSet<TypeSystemEntity> _entitiesInCycles;
 
@@ -38,7 +38,7 @@ namespace ILCompiler
             }
         }
 
-        private class CycleInfoHashtable : LockFreeReaderHashtable<EcmaModule, ModuleCycleInfo>
+        private sealed class CycleInfoHashtable : LockFreeReaderHashtable<EcmaModule, ModuleCycleInfo>
         {
             protected override bool CompareKeyToValue(EcmaModule key, ModuleCycleInfo value) => key == value.Module;
             protected override bool CompareValueToValue(ModuleCycleInfo value1, ModuleCycleInfo value2) => value1.Module == value2.Module;
@@ -70,7 +70,7 @@ namespace ILCompiler
             }
         }
 
-        internal class GenericCycleDetector
+        internal sealed class GenericCycleDetector
         {
             private readonly CycleInfoHashtable _hashtable = new CycleInfoHashtable();
 
@@ -215,8 +215,6 @@ namespace ILCompiler
 
             public void LogWarnings(Logger logger)
             {
-                var problems = new List<KeyValuePair<EntityPair, ModuleCycleInfo>>(_actualProblems);
-
                 // Might need to sort these if we care about warning determinism, but we probably don't.
 
                 var reportedProblems = new HashSet<EntityPair>();

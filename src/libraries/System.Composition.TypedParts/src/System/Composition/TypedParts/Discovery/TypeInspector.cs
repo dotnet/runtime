@@ -192,7 +192,7 @@ namespace System.Composition.TypedParts.Discovery
                     var mappedType = ifce;
                     if (!(mappedType == partType || mappedType.GenericTypeArguments.SequenceEqual(partType.GenericTypeParameters)))
                     {
-                        string message = SR.Format(SR.TypeInspector_ArgumentMissmatch, contractType.Name, partType.Name);
+                        string message = SR.Format(SR.TypeInspector_ArgumentMismatch, contractType.Name, partType.Name);
                         throw new CompositionFailedException(message);
                     }
 

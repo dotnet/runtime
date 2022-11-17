@@ -102,8 +102,6 @@ namespace System
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
                                                            bool ignoreCase,
@@ -125,8 +123,10 @@ namespace System
                 assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
             }
 
+            // Issues IL2026 warning.
             Type? type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
+            // Issues IL2072 warning.
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 
             return o != null ? new ObjectHandle(o) : null;

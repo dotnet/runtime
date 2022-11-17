@@ -53,10 +53,9 @@ C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
 
 inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((uint64_t)returnKind << 32);
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 32);
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
@@ -76,10 +75,9 @@ C_ASSERT(PTFF_RDX_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 16));
 
 inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_RAX | PTFF_SAVE_RDX | ((uint64_t)returnKind << 16);
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 16);
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
@@ -167,50 +165,50 @@ enum class AssociatedDataFlags : unsigned char
 class ICodeManager
 {
 public:
-    virtual bool IsSafePoint(PTR_VOID pvAddress) = 0;
+    virtual bool IsSafePoint(PTR_VOID pvAddress) PURE_VIRTUAL
 
     virtual bool FindMethodInfo(PTR_VOID        ControlPC,
-                                MethodInfo *    pMethodInfoOut) = 0;
+                                MethodInfo *    pMethodInfoOut) PURE_VIRTUAL
 
-    virtual bool IsFunclet(MethodInfo * pMethodInfo) = 0;
+    virtual bool IsFunclet(MethodInfo * pMethodInfo) PURE_VIRTUAL
 
     virtual PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
-                                     REGDISPLAY *   pRegisterSet) = 0;
+                                     REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
 
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
                             GCEnumContext * hCallback,
-                            bool            isActiveStackFrame) = 0;
+                            bool            isActiveStackFrame) PURE_VIRTUAL
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
-                                  PInvokeTransitionFrame**      ppPreviousTransitionFrame) = 0;   // out
+                                  PInvokeTransitionFrame**      ppPreviousTransitionFrame) PURE_VIRTUAL   // out
 
     virtual uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
-                                                                REGDISPLAY *   pRegisterSet) = 0;
+                                                                REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
 
-    virtual bool IsUnwindable(PTR_VOID pvAddress) = 0;
+    virtual bool IsUnwindable(PTR_VOID pvAddress) PURE_VIRTUAL
 
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                             REGDISPLAY *    pRegisterSet,           // in
                                             PTR_PTR_VOID *  ppvRetAddrLocation,     // out
-                                            GCRefKind *     pRetValueKind) = 0;     // out
+                                            GCRefKind *     pRetValueKind) PURE_VIRTUAL     // out
 
-    virtual PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC) = 0;
+    virtual PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC) PURE_VIRTUAL
 
-    virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) = 0;
+    virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) PURE_VIRTUAL
 
-    virtual bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause) = 0;
+    virtual bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause) PURE_VIRTUAL
 
-    virtual PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo) = 0;
+    virtual PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo) PURE_VIRTUAL
 
-    virtual PTR_VOID GetOsModuleHandle() = 0;
+    virtual PTR_VOID GetOsModuleHandle() PURE_VIRTUAL
 
-    virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
+    virtual void * GetClasslibFunction(ClasslibFunctionId functionId) PURE_VIRTUAL
 
     // Returns any custom data attached to the method. Format:
     //      AssociatedDataFlags        // 1 byte. Flags describing the data stored
     //      Data (stream of bytes)     // Variable size (depending on flags). Custom data associated with method
-    virtual PTR_VOID GetAssociatedData(PTR_VOID ControlPC) = 0;
+    virtual PTR_VOID GetAssociatedData(PTR_VOID ControlPC) PURE_VIRTUAL
 };

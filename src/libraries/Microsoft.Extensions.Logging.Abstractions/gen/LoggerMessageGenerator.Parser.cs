@@ -248,9 +248,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                         }
 
-                                        if (method.Body != null)
+                                        CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
+                                        if (methodBody != null)
                                         {
-                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, method.Body.GetLocation());
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
                                             keepMethod = false;
                                         }
 
@@ -536,29 +537,33 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 string? loggerField = null;
 
-                foreach (MemberDeclarationSyntax m in classDec.Members)
+                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
+
+                bool onMostDerivedType = true;
+
+                while (classType is { SpecialType: not SpecialType.System_Object })
                 {
-                    if (m is FieldDeclarationSyntax fds)
+                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
                     {
-                        foreach (VariableDeclaratorSyntax v in fds.Declaration.Variables)
+                        if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
                         {
-                            var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
-                            if (fs != null)
+                            continue;
+                        }
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                        {
+                            if (loggerField == null)
                             {
-                                if (IsBaseOrIdentity(fs.Type, loggerSymbol))
-                                {
-                                    if (loggerField == null)
-                                    {
-                                        loggerField = v.Identifier.Text;
-                                    }
-                                    else
-                                    {
-                                        return (null, true);
-                                    }
-                                }
+                                loggerField = fs.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
                             }
                         }
                     }
+
+                    onMostDerivedType = false;
+                    classType = classType.BaseType;
                 }
 
                 return (loggerField, false);

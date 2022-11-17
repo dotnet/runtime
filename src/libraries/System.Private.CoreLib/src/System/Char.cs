@@ -63,21 +63,21 @@ namespace System
         {
         //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x8E, 0x8E, 0x8E, 0x8E, 0x0E, 0x0E, // U+0000..U+000F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0010..U+001F
-            0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0020..U+002F
-            0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x18, 0x18, 0x19, 0x19, 0x19, 0x18, // U+0030..U+003F
-            0x18, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+0040..U+004F
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x14, 0x18, 0x15, 0x1B, 0x12, // U+0050..U+005F
-            0x1B, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+0060..U+006F
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0070..U+007F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0080..U+008F
-            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0090..U+009F
-            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+00A0..U+00AF
-            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+00C0..U+00CF
-            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+00D0..U+00DF
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00E0..U+00EF
-            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00F0..U+00FF
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0001..U+001F
+            0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0002..U+002F
+            0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x18, 0x18, 0x19, 0x19, 0x19, 0x18, // U+0003..U+003F
+            0x18, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+0004..U+004F
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x14, 0x18, 0x15, 0x1B, 0x12, // U+0005..U+005F
+            0x1B, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+0006..U+006F
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0007..U+007F
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0008..U+008F
+            0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0009..U+009F
+            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+000A..U+00AF
+            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+000B..U+00BF
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+000C..U+00CF
+            0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+000D..U+00DF
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000E..U+00EF
+            0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x19, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+000F..U+00FF
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
@@ -268,27 +268,27 @@ namespace System
         /// </remarks>
         public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
 
-        /// <summary>Indicates whether a character is categorized as an ASCII hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigit(char c) => HexConverter.IsHexChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'A' through 'F', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitUpper(char c) => HexConverter.IsHexUpperChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a lower-case hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a lower-case hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'a' through 'f', inclusive.
@@ -1179,6 +1179,104 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.TrailingZeroCount(char value) => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<char>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out char value)
+        {
+            char result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(char))
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
+
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = (char)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<char>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out char value)
+        {
+            char result = default;
+
+            if (source.Length != 0)
+            {
+                if (!isUnsigned && sbyte.IsNegative((sbyte)source[^1]))
+                {
+                    // When we are signed and the sign bit is set, we are negative and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                {
+                    // When we have any non-zero leading data, we are a large positive and therefore
+                    // definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= sizeof(char))
+                {
+                    // We have at least 2 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We only have 1-byte so read it directly
+                    result = (char)sourceRef;
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<char>.GetShortestBitLength() => (sizeof(char) * 8) - ushort.LeadingZeroCount(m_value);
 
@@ -1617,7 +1715,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToChecked<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToChecked<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1684,14 +1782,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToSaturating<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToSaturating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1758,14 +1856,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<char>.TryConvertToTruncating<TOther>(char value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<char>.TryConvertToTruncating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1832,7 +1930,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

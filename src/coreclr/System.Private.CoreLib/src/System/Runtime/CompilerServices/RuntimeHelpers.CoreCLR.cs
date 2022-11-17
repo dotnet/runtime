@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -37,7 +38,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
@@ -331,8 +332,8 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
-            IntPtr retVal)
+            delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+            ref byte retVal)
         {
             IntPtr callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
@@ -354,7 +355,7 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    callTarget(tls->ArgBuffer, retVal, &newFrame);
+                    callTarget(tls->ArgBuffer, ref retVal, &newFrame);
                     callTarget = newFrame.NextCall;
                 } while (callTarget != null);
             }
@@ -488,6 +489,9 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
+        // WFLAGS_LOW_ENUM
+        private const uint enum_flag_HasDefaultCtor = 0x00000200;
+
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
@@ -556,6 +560,14 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasTypeEquivalence) != 0;
+            }
+        }
+
+        public bool HasDefaultConstructor
+        {
+            get
+            {
+                return ((HasComponentSize ? 0 : Flags) & enum_flag_HasDefaultCtor) != 0;
             }
         }
 
@@ -663,7 +675,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct PortableTailCallFrame
     {
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
+        public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

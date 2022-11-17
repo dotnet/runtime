@@ -826,7 +826,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date.ToString()));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparsablePosixMDateString, date.ToString()));
                 }
 
                 return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);

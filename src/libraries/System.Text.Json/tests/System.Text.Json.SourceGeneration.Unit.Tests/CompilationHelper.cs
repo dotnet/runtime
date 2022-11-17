@@ -19,9 +19,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public class CompilationHelper
     {
         private static readonly CSharpParseOptions s_parseOptions =
-            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse)
-            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
-            .WithLanguageVersion(LanguageVersion.Preview);
+            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
 
 #if NETCOREAPP
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
@@ -31,7 +29,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source,
             MetadataReference[] additionalReferences = null,
             string assemblyName = "TestAssembly",
-            bool includeSTJ = true)
+            bool includeSTJ = true,
+            Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
         {
 
             List<MetadataReference> references = new List<MetadataReference> {
@@ -63,9 +62,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
+            configureParseOptions ??= (options) => options;
+            var parseOptions = configureParseOptions(s_parseOptions);
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, s_parseOptions) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
@@ -278,7 +279,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithInitOnlyProperties()
         {
             string source = @"
@@ -335,7 +336,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = @"
@@ -363,7 +364,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithRecordPositionalParameters()
         {
             string source = @"
@@ -393,7 +394,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
         {
             string source = @"
@@ -451,9 +452,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-            public static Compilation CreateReferencedSimpleLibRecordCompilation()
-            {
-                string source = @"
+        public static Compilation CreateReferencedSimpleLibRecordCompilation()
+        {
+            string source = @"
             using System.Text.Json.Serialization;
 
             namespace ReferencedAssembly
@@ -475,7 +476,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
 ";
 
-                return CreateCompilation(source);
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateReferencedModelWithFullyDocumentedProperties()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class Model
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property1 { get; set; }
+
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property2 { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
         }
 
         internal static void CheckDiagnosticMessages(

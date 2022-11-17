@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.Collections;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslTransformApiTests
 {
     //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslTransform methods")]
     public class CNullArgumentTest : XsltApiTestCaseBase
@@ -347,9 +348,18 @@ namespace System.Xml.Tests
     public class CXmlResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CXmlResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _resolverContext.Dispose();
+            base.Dispose(disposing);
         }
 
         //[Variation("Set XmlResolver property to null, load style sheet with import/include, should not affect transform")]
@@ -368,32 +378,29 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver1(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            using (new AllowDefaultResolverContext())
-            {
-                string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
-                try
+            try
+            {
+                if (LoadXSL("XmlResolver_Main.xsl", inputType, readerType) == 1)
                 {
-                    if (LoadXSL("XmlResolver_Main.xsl", inputType, readerType) == 1)
+                    xslt.XmlResolver = null;
+                    if (Transform("fruits.xml", transformType, docType) == 1)
                     {
-                        xslt.XmlResolver = null;
-                        if (Transform("fruits.xml", transformType, docType) == 1)
-                        {
-                            VerifyResult(expected);
-                            return;
-                        }
-                        else
-                            Assert.True(false);
+                        VerifyResult(expected);
+                        return;
                     }
+                    else
+                        Assert.True(false);
                 }
-                catch (Exception e)
-                {
-                    _output.WriteLine("Should not throw error loading stylesheet with include/import when resolver property is set to NULL!");
-                    _output.WriteLine(e.ToString());
-                    Assert.True(false);
-                }
+            }
+            catch (Exception e)
+            {
+                _output.WriteLine("Should not throw error loading stylesheet with include/import when resolver property is set to NULL!");
+                _output.WriteLine(e.ToString());
                 Assert.True(false);
             }
+            Assert.True(false);
         }
 
         //[Variation("Set XmlResolver property to null, load style sheet with document function, should not resolve during transform")]
@@ -1019,7 +1026,8 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { "" });
+                var absoluteUri = new Uri(Path.Combine(Environment.CurrentDirectory, FullFilePath("XmlResolver_Include.xsl"))).AbsoluteUri;
+                CheckExpectedError(e.InnerException, "System.Xml", "Xml_NullResolver", new string[] { absoluteUri });
                 return;
             }
             _output.WriteLine("Exception not thrown for null resolver");
@@ -1104,7 +1112,9 @@ namespace System.Xml.Tests
             Assert.False(isEnabled);
             var e = Assert.Throws<XsltCompileException>(() => LoadXSL("XmlResolver_Main.xsl", inputType, readerType));
             var xmlException = Assert.IsType<XmlException>(e.InnerException);
-            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", Array.Empty<string>());
+
+            var absoluteUri = new Uri(Path.Combine(Environment.CurrentDirectory, FullFilePath("XmlResolver_Include.xsl"))).AbsoluteUri;
+            CheckExpectedError(xmlException, "System.Xml", "Xml_NullResolver", new string[] { absoluteUri });
         }
 
         //[Variation("Load with resolver with credentials, then load XSL that does not need cred.")]
@@ -2002,9 +2012,18 @@ namespace System.Xml.Tests
     public class CTransformResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _resolverContext.Dispose();
+            base.Dispose(disposing);
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
@@ -2470,7 +2489,7 @@ namespace System.Xml.Tests
 
             if (iCount.Equals(2))
                 return;
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2490,7 +2509,7 @@ namespace System.Xml.Tests
                 return;
             }
 
-            _output.WriteLine("Exception not generated for invalid ouput destination");
+            _output.WriteLine("Exception not generated for invalid output destination");
             Assert.True(false);
         }
 
@@ -2536,9 +2555,18 @@ namespace System.Xml.Tests
     public class CTransformStrStrResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            _resolverContext.Dispose();
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
@@ -2706,13 +2734,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             else
                 Assert.True(false);
         }
-    }
-
-    internal sealed class AllowDefaultResolverContext : IDisposable
-    {
-        private const string SwitchName = "Switch.System.Xml.AllowDefaultResolver";
-        public AllowDefaultResolverContext() => AppContext.SetSwitch(SwitchName, isEnabled: true);
-        public void Dispose() => AppContext.SetSwitch(SwitchName, isEnabled: false);
     }
 
     internal class MyArrayIterator : XPathNodeIterator

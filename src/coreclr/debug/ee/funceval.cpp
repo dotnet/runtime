@@ -686,7 +686,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
 
 
 /*
- * GetRegsiterValueAndReturnAddress
+ * GetRegisterValueAndReturnAddress
  *
  * This routine takes out a value from a register, or set of registers, into one of
  * the given buffers (depending on size), and returns a pointer to the filled in
@@ -2168,7 +2168,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
             // object ref as the stack.
             //
             // Note that we are passing ELEMENT_TYPE_END in the last parameter because we want to
-            // supress the valid object ref check.
+            // suppress the valid object ref check.
             //
             GetFuncEvalArgValue(pDE,
                                 &(argData[0]),
@@ -3158,7 +3158,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
  * domain (steps 1a & 1b).  This has to be a separate function from GCProtectArgsAndDoNormalFuncEval
  * because otherwise we can't reliably find the right GCFrames to pop when unwinding the stack due to
  * an exception on 64-bit platforms (we have some GCFrames outside of the TRY, and some inside,
- * and they won't necesarily be layed out sequentially on the stack if they are all in the same function).
+ * and they won't necessarily be laid out sequentially on the stack if they are all in the same function).
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
@@ -3301,7 +3301,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
         ThrowHR(COR_E_OVERFLOW);
     }
     FuncEvalArgInfo * pFEArgInfo = (FuncEvalArgInfo *)_alloca(cbAllocSize);
-    memset(pFEArgInfo, 0, cbAllocSize);
+    *pFEArgInfo = {};
 
     GatherFuncEvalArgInfo(pDE, mSig, argData, pFEArgInfo);
 
@@ -3483,7 +3483,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
         ThrowHR(COR_E_OVERFLOW);
     }
     OBJECTREF * pObjectRefArray = (OBJECTREF*)_alloca(cbAllocSize);
-    memset(pObjectRefArray, 0, cbAllocSize);
+    *pObjectRefArray = {};
     GCPROTECT_ARRAY_BEGIN(*pObjectRefArray, pDE->m_argCount);
 
     //
@@ -3579,7 +3579,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
         GCX_FORBID();
         RecordFuncEvalException( pDE, ppException);
     }
-    // Note: we need to catch all exceptioins here because they all get reported as the result of
+    // Note: we need to catch all exceptions here because they all get reported as the result of
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH(SwallowAllExceptions);
 
@@ -3888,7 +3888,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     if (pDE->m_thread->IsAbortRequested())
     {
-        // noone else shoud be requesting aborts,
+        // noone else should be requesting aborts,
         // so this must be our request that did not have a chance to run.
         _ASSERTE((pDE->m_aborting != DebuggerEval::FE_ABORT_NONE) && !pDE->m_aborted);
 
@@ -3994,32 +3994,34 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 #if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
 
 EXTERN_C EXCEPTION_DISPOSITION
-FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                       BIT64_ARG(IN     ULONG64             MemoryStackFp)
-                   NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
+FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                                 IN     PVOID               pEstablisherFrame,
                                  IN OUT PCONTEXT            pContextRecord,
                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                 )
 {
-    DebuggerEval* pDE = NULL;
+    // The offset of the DebuggerEval pointer relative to the establisher frame.
+    SIZE_T debuggerEvalPtrOffset = 0;
 #if defined(TARGET_AMD64)
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame);
+    // On AMD64 the establisher frame is the SP of FuncEvalHijack itself.
+    // In FuncEvalHijack we store RCX at the current SP.
+    debuggerEvalPtrOffset = 0;
 #elif defined(TARGET_ARM)
-    // on ARM the establisher frame is the SP of the caller of FuncEvalHijack, on other platforms it's FuncEvalHijack's SP.
-    // in FuncEvalHijack we allocate 8 bytes of stack space and then store R0 at the current SP, so if we subtract 8 from
+    // On ARM the establisher frame is the SP of the FuncEvalHijack's caller.
+    // In FuncEvalHijack we allocate 8 bytes of stack space and then store R0 at the current SP, so if we subtract 8 from
     // the establisher frame we can get the stack location where R0 was stored.
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 8);
-
+    debuggerEvalPtrOffset = 8;
 #elif defined(TARGET_ARM64)
-    // on ARM64 the establisher frame is the SP of the caller of FuncEvalHijack.
-    // in FuncEvalHijack we allocate 32 bytes of stack space and then store R0 at the current SP + 16, so if we subtract 16 from
-    // the establisher frame we can get the stack location where R0 was stored.
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 16);
+    // On ARM64 the establisher frame is the SP of the FuncEvalHijack's caller.
+    // In FuncEvalHijack we allocate 32 bytes of stack space and then store X0 at the current SP + 16, so if we subtract 16 from
+    // the establisher frame we can get the stack location where X0 was stored.
+    debuggerEvalPtrOffset = 16;
 #else
     _ASSERTE(!"NYI - FuncEvalHijackPersonalityRoutine()");
 #endif
 
-    FixupDispatcherContext(pDispatcherContext, &(pDE->m_context), pContextRecord);
+    DebuggerEval* pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - debuggerEvalPtrOffset);
+    FixupDispatcherContext(pDispatcherContext, &(pDE->m_context));
 
     // Returning ExceptionCollidedUnwind will cause the OS to take our new context record and
     // dispatcher context and restart the exception dispatching on this call frame, which is

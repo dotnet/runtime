@@ -751,7 +751,7 @@ static BOOL VIRTUALStoreAllocationInfo(
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
-        /* Set the intial allocation state, and initial allocation protection. */
+        /* Set the initial allocation state, and initial allocation protection. */
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),
@@ -1276,7 +1276,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 #ifdef HOST_64BIT
     PERF_ENTRY(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     ENTRY(
-        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu, fStoreAllocationInfo = %d)\n",
+        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %zu, fStoreAllocationInfo = %d)\n",
         lpBeginAddress,
         lpEndAddress,
         dwSize,

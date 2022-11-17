@@ -39,14 +39,14 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
+        public TypeInfo CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
         {
             return m_typeBuilder.CreateType();
         }

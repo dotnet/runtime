@@ -96,7 +96,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.Rollback);
                 }
 
                 // Send the Rollback notification to the enlistment
@@ -147,7 +147,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.SinglePhaseCommit);
                 }
 
                 // Send the Commit notification to the enlistment
@@ -218,7 +218,7 @@ namespace System.Transactions
     }
 
     // Delegated state for a durable enlistment represents an enlistment that was
-    // origionally a PromotableSinglePhaseEnlisment that where promotion has happened.
+    // originally a PromotableSinglePhaseEnlisment that where promotion has happened.
     // These enlistments don't need to participate in the commit process anymore.
     internal sealed class DurableEnlistmentDelegated : DurableEnlistmentState
     {

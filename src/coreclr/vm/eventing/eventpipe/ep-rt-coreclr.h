@@ -11,7 +11,6 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
-#include "win32threadpool.h"
 #include "clrversion.h"
 
 #undef EP_INFINITE_WAIT
@@ -1661,15 +1660,6 @@ ep_rt_config_value_get_output_streaming (void)
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
 }
 
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ThreadpoolMgr::UsePortableThreadPool ();
-}
-
 /*
  * EventPipeSampleProfiler.
  */
@@ -2022,28 +2012,43 @@ ep_rt_thread_create (
 
 	EX_TRY
 	{
-		rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
-		if (thread_params) {
-			thread_params->thread_params.thread_type = thread_type;
-			if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING) {
+		if (thread_type == EP_THREAD_TYPE_SERVER)
+		{
+			DWORD thread_id = 0;
+			HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
+			if (server_thread != NULL)
+			{
+				if (id)
+				{
+					*reinterpret_cast<DWORD *>(id) = thread_id;
+				}
+				::CloseHandle (server_thread);
+				result = true;
+			}
+		}
+		else if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING)
+		{
+			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
+			if (thread_params)
+			{
+				thread_params->thread_params.thread_type = thread_type;
 				thread_params->thread_params.thread = SetupUnstartedThread ();
 				thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
 				thread_params->thread_params.thread_params = params;
-				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params)) {
+
+				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params))
+				{
+					if (id)
+					{
+						*reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
+					}
 					thread_params->thread_params.thread->SetBackground (TRUE);
 					thread_params->thread_params.thread->StartThread ();
-					if (id)
-						*reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
 					result = true;
 				}
-			} else if (thread_type == EP_THREAD_TYPE_SERVER) {
-				DWORD thread_id = 0;
-				HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
-				if (server_thread != NULL) {
-					::CloseHandle (server_thread);
-					if (id)
-						*reinterpret_cast<DWORD *>(id) = thread_id;
-					result = true;
+				else
+				{
+					delete thread_params;
 				}
 			}
 		}
@@ -2055,6 +2060,14 @@ ep_rt_thread_create (
 	EX_END_CATCH(SwallowAllExceptions);
 
 	return result;
+}
+
+static
+inline
+void
+ep_rt_set_server_name(void)
+{
+	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
 }
 
 static

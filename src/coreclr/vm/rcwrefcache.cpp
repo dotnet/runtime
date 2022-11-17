@@ -150,7 +150,7 @@ void RCWRefCache::ShrinkDependentHandles()
             m_depHndList.ReSizeNoThrow(newSize);
 
             //
-            // Reset shrink hint as we've just shrinked
+            // Reset shrink hint as we've just shrunk
             //
             m_dwShrinkHint = 0;
             LOG((LF_INTEROP, LL_INFO100, "\t[RCWRefCache 0x%p] Reset m_dwShrinkHint = 0\n", this));

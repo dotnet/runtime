@@ -311,7 +311,7 @@ namespace System.Management
             if (hModule == IntPtr.Zero)
             {
                 // This is unlikely, so having the TypeInitializationException wrapping it is fine.
-                throw new Win32Exception(Marshal.GetLastWin32Error(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
+                throw new Win32Exception(Marshal.GetLastPInvokeError(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
             }
 
             if (LoadDelegate(ref ResetSecurity_f, hModule, "ResetSecurity") &&
@@ -1500,7 +1500,7 @@ namespace System.Management
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the desitnation type, this will
+        ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </summary>
         /// <param name='context'>An ITypeDescriptorContext that provides a format context.</param>

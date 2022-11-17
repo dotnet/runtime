@@ -9,7 +9,7 @@
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <AppHostRuntimeIdentifier>$(OutputRid)</AppHostRuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst' or
       '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
       '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
@@ -34,6 +34,13 @@
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
+    </Exec>
+
+    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $LDFLAGS' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DnneLinkerCommand" />
     </Exec>
   </Target>
 
@@ -61,7 +68,7 @@
 
     <PropertyGroup>
       <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
-      <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags.Replace(';',' '))</DnneLinkerUserFlags>
+      <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerCommand) $(DnneLinkerUserFlags.Replace(';',' '))</DnneLinkerUserFlags>
       <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags.Replace(';',' '))</DnneCompilerUserFlags>
     </PropertyGroup>
   </Target>

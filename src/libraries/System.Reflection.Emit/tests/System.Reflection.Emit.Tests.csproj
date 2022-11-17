@@ -73,7 +73,7 @@
     <Compile Include="PropertyBuilder\PropertyBuilderSetGetMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderSetSetMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderSetValue.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementaion.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementation.cs" />
     <Compile Include="TypeBuilder\TypeBuilderAssemblyQualifiedName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateTypeInfo.cs" />

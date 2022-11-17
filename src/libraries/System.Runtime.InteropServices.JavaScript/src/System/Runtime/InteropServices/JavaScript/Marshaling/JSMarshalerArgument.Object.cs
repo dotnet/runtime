@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // Methods in this file are marshaling System.Object signature to Any JS signature dynamicaly.
-    // In order to do that, we are refering to all well know marshaled types
+    // Methods in this file are marshaling System.Object signature to Any JS signature dynamically.
+    // In order to do that, we are referring to all well know marshaled types
     // therefore they could not be linked out during AOT, when user uses System.Object signature in his [JSImport] or [JSExport]
     // it is pay for play
 
@@ -17,6 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out object? value)
         {
@@ -108,6 +109,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(object? value)
         {
@@ -316,7 +318,7 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 slot.Type = MarshalerType.Object;
-                slot.GCHandle = JavaScriptExports.GetJSOwnedObjectGCHandleRef(value);
+                slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value);
             }
         }
 
@@ -324,6 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out object?[]? value)
         {
@@ -350,6 +353,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(object?[] value)
         {

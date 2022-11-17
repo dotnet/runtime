@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
         public void Guid_TypeCreated()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            enumBuilder.CreateTypeInfo().AsType();
+            enumBuilder.CreateType();
             Assert.NotEqual(Guid.Empty, enumBuilder.GUID);
         }
 

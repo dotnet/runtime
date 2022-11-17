@@ -30,6 +30,8 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 }
 
 #include "gcenv.h"
+#include "gcenv.ee.h"
+#include "gcconfig.h"
 
 
 #define REDHAWK_PALEXPORT extern "C"
@@ -71,30 +73,36 @@ void InitializeCurrentProcessCpuCount()
     }
     else
     {
-        DWORD_PTR pmask, smask;
-
-        if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+        if (GCToOSInterface::CanEnableGCCPUGroups())
         {
-            count = 1;
+            count = GCToOSInterface::GetTotalProcessorCount();
         }
         else
         {
-            pmask &= smask;
-            count = 0;
+            DWORD_PTR pmask, smask;
 
-            while (pmask)
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
             {
-                pmask &= (pmask - 1);
-                count++;
+                count = 1;
             }
+            else
+            {
+                count = 0;
 
-            // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-            // than 64 processors, which would leave us with a count of 0.  Since the GC
-            // expects there to be at least one processor to run on (and thus at least one
-            // heap), we'll return 64 here if count is 0, since there are likely a ton of
-            // processors available in that case.
-            if (count == 0)
-                count = 64;
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
         }
 
         JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
@@ -120,10 +128,7 @@ void InitializeCurrentProcessCpuCount()
 
             if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
             {
-                SYSTEM_INFO systemInfo;
-                GetSystemInfo(&systemInfo);
-
-                DWORD cpuLimit = (maxRate * systemInfo.dwNumberOfProcessors + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                DWORD cpuLimit = (maxRate * GCToOSInterface::GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
                 if (cpuLimit < count)
                     count = cpuLimit;
             }
@@ -145,6 +150,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
+
+    GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
     {
@@ -209,6 +216,16 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
 
     FlsSetValue(g_flsIndex, NULL);
     return true;
+}
+
+extern "C" uint64_t PalQueryPerformanceCounter()
+{
+    return GCToOSInterface::QueryPerformanceCounter();
+}
+
+extern "C" uint64_t PalQueryPerformanceFrequency()
+{
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
@@ -556,6 +573,31 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     return TRUE;
 }
 
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
+{
+    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hMod == NULL)
+        return FALSE;
+
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX512) == 0)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
@@ -590,6 +632,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
+}
+
+REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+{
+    FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)

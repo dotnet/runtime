@@ -983,7 +983,7 @@ extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTyp
     GCX_COOP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
-    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_NATIVE_COM);
+    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_SIZEDREF);
     objHandle = AppDomain::GetCurrentDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
@@ -2228,7 +2228,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //  - static or instance method on a generic value type
 // The Reflection policy is to always hand out instantiating stubs in these cases
 //
-// For methods on non-generic value types we can use either the cannonical method or the unboxing stub
+// For methods on non-generic value types we can use either the canonical method or the unboxing stub
 // The Reflection policy is to always hand out unboxing stubs if the methods are virtual methods
 // The reason for this is that in the current implementation of the class loader, the v-table slots for
 // those methods point to unboxing stubs already. Note that this is just a implementation choice

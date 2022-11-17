@@ -52,6 +52,8 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
+elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+  set(PAL_ARCH_SOURCES_DIR riscv64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
@@ -169,7 +171,6 @@ set(SOURCES
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
-  numa/numa.cpp
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp
@@ -191,9 +192,7 @@ set(SOURCES
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
   safecrt/strtok_s.cpp
-  safecrt/swprintf.cpp
   safecrt/vsprintf.cpp
-  safecrt/vswprint.cpp
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp

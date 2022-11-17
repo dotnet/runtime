@@ -72,12 +72,14 @@ namespace System.Runtime
             private IntPtr _dummy; // For alignment
         }
 
+#pragma warning disable IDE0060
         // This is a fail-fast function used by the runtime as a last resort that will terminate the process with
         // as little effort as possible. No guarantee is made about the semantics of this fail-fast.
         internal static void FallbackFailFast(RhFailFastReason reason, object unhandledException)
         {
             InternalCalls.RhpFallbackFailFast();
         }
+#pragma warning restore IDE0060
 
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast
         // function and invoke it.  Any failure to find and invoke the function, or if it returns, results in
@@ -208,7 +210,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 
-            // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
+            // The classlib's function should never return and should not throw. If it does, then we fail our way...
             FallbackFailFast(reason, unhandledException);
         }
 
@@ -588,7 +590,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
-        private static void DispatchEx(ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
+        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
@@ -847,7 +849,7 @@ namespace System.Runtime
             AssertNotRuntimeObject(pClauseType);
 #endif
 
-            return TypeCast.IsInstanceOfClass(pClauseType, exception) != null;
+            return TypeCast.IsInstanceOfException(pClauseType, exception);
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
@@ -921,6 +923,7 @@ namespace System.Runtime
             }
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallConvs = new Type[] { typeof(CallConvCdecl) })]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
@@ -931,5 +934,7 @@ namespace System.Runtime
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, classlibBreadcrumb);
         }
+#pragma warning restore IDE0060
+
     } // static class EH
 }

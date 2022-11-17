@@ -1488,7 +1488,7 @@ inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
 
 //----------------------------------------------------------------------------
 // Assert helper
-// Asser that the iterator is within the given string.
+// Assert that the iterator is within the given string.
 //----------------------------------------------------------------------------
 inline CHECK SString::CheckIteratorRange(const CIterator &i) const
 {
@@ -1500,7 +1500,7 @@ inline CHECK SString::CheckIteratorRange(const CIterator &i) const
 
 //----------------------------------------------------------------------------
 // Assert helper
-// Asser that the iterator is within the given string.
+// Assert that the iterator is within the given string.
 //----------------------------------------------------------------------------
 inline CHECK SString::CheckIteratorRange(const CIterator &i, COUNT_T length) const
 {

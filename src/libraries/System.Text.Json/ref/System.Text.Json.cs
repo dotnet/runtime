@@ -130,6 +130,7 @@ namespace System.Text.Json
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.ReadOnlySpan<byte> EncodedUtf8Bytes { get { throw null; } }
+        public string Value { get { throw null; } }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(string value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
@@ -156,6 +157,10 @@ namespace System.Text.Json
     {
         protected JsonNamingPolicy() { }
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
     }
     public readonly partial struct JsonProperty
@@ -350,6 +355,7 @@ namespace System.Text.Json
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public bool IsReadOnly { get { throw null; } }
         public int MaxDepth { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
@@ -364,6 +370,7 @@ namespace System.Text.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type) { throw null; }
+        public void MakeReadOnly() { }
     }
     public enum JsonTokenType : byte
     {
@@ -716,6 +723,7 @@ namespace System.Text.Json.Nodes
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.Nodes.JsonNode (sbyte value) { throw null; }
         public static implicit operator System.Text.Json.Nodes.JsonNode (float value) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static implicit operator System.Text.Json.Nodes.JsonNode? (string? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.Nodes.JsonNode (ushort value) { throw null; }
@@ -797,6 +805,7 @@ namespace System.Text.Json.Nodes
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Nodes.JsonValue Create(sbyte value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue Create(float value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static System.Text.Json.Nodes.JsonValue? Create(string? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create(System.Text.Json.JsonElement value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -909,6 +918,10 @@ namespace System.Text.Json.Serialization
     {
         Unspecified = 0,
         CamelCase = 1,
+        SnakeCaseLower = 2,
+        SnakeCaseUpper = 3,
+        KebabCaseLower = 4,
+        KebabCaseUpper = 5,
     }
     [System.FlagsAttribute]
     public enum JsonNumberHandling
@@ -944,6 +957,11 @@ namespace System.Text.Json.Serialization
         public JsonPropertyOrderAttribute(int order) { }
         public int Order { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    public sealed partial class JsonRequiredAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonRequiredAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -978,7 +996,7 @@ namespace System.Text.Json.Serialization
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }
-    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Consider authoring a custom converter that is not a factory to work around the issue. See https://github.com/dotnet/runtime/issues/73124.")]
     public partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
         public JsonStringEnumConverter() { }
@@ -1152,6 +1170,7 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
         public System.Func<object, object?>? Get { get { throw null; } set { } }
         public bool IsExtensionData { get { throw null; } set { } }
+        public bool IsRequired { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
@@ -1184,7 +1203,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo() { }
         public System.Text.Json.Serialization.JsonConverter Converter { get { throw null; } }
         public System.Func<object>? CreateObject { get { throw null; } set { } }
+        public bool IsReadOnly { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
+        public void MakeReadOnly() { throw null; }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Action<object>? OnDeserialized { get { throw null; } set { } }
         public System.Action<object>? OnDeserializing { get { throw null; } set { } }

@@ -271,7 +271,7 @@ ep_fast_serializer_write_string (
 	// Write the string length.
 	ep_fast_serializer_write_uint32_t (fast_serializer, contents_len);
 
-	//Wirte the string contents.
+	// Write the string contents.
 	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)contents, contents_len);
 }
 

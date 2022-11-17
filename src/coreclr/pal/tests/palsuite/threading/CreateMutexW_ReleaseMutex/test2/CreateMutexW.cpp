@@ -16,7 +16,7 @@
 **            not block.
 **          - Create Named mutex with empty string ("")
 **          - Create Named mutex with string of MAX_LONGPATH length
-**          - Calling RelaseMutex with invalid Mutex handles and
+**          - Calling ReleaseMutex with invalid Mutex handles and
 **            valid but unowned Mutexes.
 **
 ** Dependencies: CreateThread

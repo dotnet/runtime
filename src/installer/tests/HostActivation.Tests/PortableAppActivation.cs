@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        // https://github.com/dotnet/core-setup/issues/6914
+        // https://github.com/dotnet/runtime/issues/3654
         [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
         {
@@ -101,7 +101,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail();
         }
 
-        // https://github.com/dotnet/core-setup/issues/6914
+        // https://github.com/dotnet/runtime/issues/3654
         [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_With_AdditionalProbingPath_Succeeds()
         {
@@ -126,7 +126,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        // https://github.com/dotnet/core-setup/issues/6914
+        // https://github.com/dotnet/runtime/issues/3654
         [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so the additional probing path is no longer needed.")]
         public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
         {

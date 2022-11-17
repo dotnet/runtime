@@ -117,6 +117,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal partial class DictionaryTypeContext : JsonSerializerContext { }
 
     [JsonSerializable(typeof(JsonMessage))]
+    [JsonSerializable(typeof(PublicClassWithDifferentAccessibilitiesProperties))]
+    [JsonSerializable(typeof(JsonConverter))]
+    [JsonSerializable(typeof(JsonSerializerOptions))]
     public partial class PublicContext : JsonSerializerContext { }
 
     [JsonSerializable(typeof(JsonMessage))]
@@ -126,6 +129,18 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         [JsonSerializable(typeof(JsonMessage))]
         public partial class NestedInGenericContainerContext : JsonSerializerContext { }
+
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class NestedGenericInGenericContainerContext<T1> : JsonSerializerContext { }
+
+        public partial class NestedGenericContainer<T1>
+        {
+            [JsonSerializable(typeof(JsonMessage))]
+            public partial class NestedInNestedGenericContainerContext : JsonSerializerContext { }
+
+            [JsonSerializable(typeof(JsonMessage))]
+            public partial class NestedGenericInNestedGenericContainerContext<T2> : JsonSerializerContext { }
+        }
     }
 
     [JsonSerializable(typeof(MyContainingClass.MyNestedClass.MyNestedNestedClass))]
@@ -136,5 +151,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedClass.MyNestedNestedGenericClass<int>))]
     [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedClass))]
     [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
+    [JsonSerializable(typeof(MyContainingGenericClass<MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
     internal partial class NestedGenericTypesContext : JsonSerializerContext { }
 }

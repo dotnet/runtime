@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <clrconfignocache.h>
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
@@ -88,6 +89,12 @@ CrashInfo::QueryInterface(
         AddRef();
         return S_OK;
     }
+    else if (InterfaceId == IID_ICLRDataLoggingCallback)
+    {
+        *Interface = (ICLRDataLoggingCallback*)this;
+        AddRef();
+        return S_OK;
+    }
     else
     {
         *Interface = nullptr;
@@ -119,6 +126,14 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ ULONG32 size)
 {
     m_enumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE
+CrashInfo::LogMessage(
+    /* [in] */ LPCSTR message)
+{
+    Trace("%s", message);
     return S_OK;
 }
 
@@ -314,24 +329,34 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
-        // Since on both Linux and MacOS all the RW regions will be added for heap
-        // dumps by createdump, the only thing differentiating a MiniDumpNormal and
-        // a MiniDumpWithPrivateReadWriteMemory is that the later uses the EnumMemory
-        // APIs. This is kind of expensive on larger applications (4 minutes, or even
-        // more), and this should already be in RW pages. Change the dump type to the
-        // faster normal one. This one already ensures necessary DAC globals, etc.
-        // without the costly assembly, module, class, type runtime data structures
-        // enumeration.
+        // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
+        // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
+        // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
+        // applications (4 minutes, or even more), and this should already be in RW pages. Change
+        // the dump type to the faster normal one. This one already ensures necessary DAC globals,
+        // etc. without the costly assembly, module, class, type runtime data structures enumeration.
+        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_DEFAULT;
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
-            char* fastHeapDumps = getenv("COMPlus_DbgEnableFastHeapDumps");
-            if (fastHeapDumps != nullptr && strcmp(fastHeapDumps, "1") == 0)
+            // This is the old fast heap env var for backwards compatibility for VS4Mac.
+            CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
+            DWORD val = 0;
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
                 minidumpType = MiniDumpNormal;
             }
+            // This the new variable that also skips the expensive (in both time and memory usage)
+            // enumeration of the low level data structures and adds all the loader allocator heaps
+            // instead. The above original env var didn't generate a complete enough heap dump on
+            // Linux and this new one does.
+            fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
+            {
+                flags = CLRDATA_ENUM_MEM_HEAP2;
+            }
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
-        HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
+        HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, flags);
         if (FAILED(hr))
         {
             printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
@@ -520,7 +545,7 @@ CrashInfo::GetBaseAddressFromName(const char* moduleName)
     {
         std::string name = GetFileName(moduleInfo->ModuleName());
 #ifdef __APPLE__
-        // Module names are case insenstive on MacOS
+        // Module names are case insensitive on MacOS
         if (strcasecmp(name.c_str(), moduleName) == 0)
 #else
         if (name.compare(moduleName) == 0)

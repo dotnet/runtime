@@ -31,7 +31,7 @@ public:
         CORJIT_FLAG_DEBUG_CODE              = 2, // generate "debuggable" code (no code-mangling optimizations)
         CORJIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
-        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
+        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necessarily debuggable code)
         CORJIT_FLAG_ENABLE_CFG              = 6, // generate control-flow guard checks
         CORJIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
@@ -92,7 +92,7 @@ public:
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
 #if defined(TARGET_ARM)
-        CORJIT_FLAG_SOFTFP_ABI              = 43, // JIT should generate PC-relative address computations instead of EE relocation records
+        CORJIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
 #else // !defined(TARGET_ARM)
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
@@ -202,9 +202,19 @@ public:
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    uint64_t GetInstructionSetFlagsRaw()
+    uint64_t* GetInstructionSetFlagsRaw()
     {
         return instructionSetFlags.GetFlagsRaw();
+    }
+
+    CORINFO_InstructionSetFlags GetInstructionSetFlags()
+    {
+        return instructionSetFlags;
+    }
+
+    const int GetInstructionFlagsFieldCount()
+    {
+        return instructionSetFlags.GetInstructionFlagsFieldCount();
     }
 
 private:

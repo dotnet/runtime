@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
-                    Assert.Null(env.ApplicationName);
+                    Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -194,7 +194,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
-                Assert.Null(env.ApplicationName);
+                Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -246,7 +246,6 @@ namespace Microsoft.Extensions.Hosting.Tests
             var config = builder.Build();
 
             var expected = "MY_TEST_ENVIRONMENT";
-
 
             using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(configBuilder => configBuilder.AddConfiguration(config))
@@ -644,7 +643,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var hostBuilder = Host.CreateDefaultBuilder();
             var host = hostBuilder.Build();
 
-            var type = hostBuilder.GetType();
+            // Use typeof so that trimming can see the field being used below
+            var type = typeof(HostBuilder);
+            Assert.Equal(hostBuilder.GetType(), type);
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);
@@ -661,6 +662,28 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var expectedContentRootPath = Directory.GetCurrentDirectory();
             Assert.Equal(expectedContentRootPath, env.ContentRootPath);
+        }
+
+        [Fact]
+        public void HostBuilderConfigureDefaultsDoesntThrowInDevelopment()
+        {
+            using (var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "MyProjectReference"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, Environments.Development)
+                    });
+                })
+                .Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Equal("MyProjectReference", env.ApplicationName);
+                Assert.Equal(Environments.Development, env.EnvironmentName);
+            }
         }
 
         [Theory]

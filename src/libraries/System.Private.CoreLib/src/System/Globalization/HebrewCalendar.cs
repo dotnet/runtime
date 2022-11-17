@@ -51,7 +51,7 @@ namespace System.Globalization
     ///     Gregorian   1583/01/01  2239/09/29
     ///     Hebrew      5343/04/07  5999/13/29
     ///
-    /// Includes CHebrew implemetation;i.e All the code necessary for converting
+    /// Includes CHebrew implementation;i.e All the code necessary for converting
     /// Gregorian to Hebrew Lunar from 1583 to 2239.
     /// </remarks>
     public class HebrewCalendar : Calendar

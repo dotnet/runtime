@@ -90,7 +90,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
             }
         }

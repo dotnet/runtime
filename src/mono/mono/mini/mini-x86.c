@@ -210,8 +210,8 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 
 static void
 add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
-	       gboolean is_return,
-	       guint32 *gr, const guint32 *param_regs, guint32 *fr, guint32 *stack_size)
+			   gboolean is_return,
+			   guint32 *gr, const guint32 *param_regs, guint32 *fr, guint32 *stack_size)
 {
 	guint32 size;
 	MonoClass *klass;
@@ -868,16 +868,11 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 		*exclude_mask |= MONO_OPT_CMOV;
 	}
 
-	if (mono_hwcap_x86_has_sse2)
-		opts |= MONO_OPT_SSE2;
-	else
-		*exclude_mask |= MONO_OPT_SSE2;
+	/* The fp code requires SSE2 */
+	g_assertf (mono_hwcap_x86_has_sse2, "SSE2 is required.");
+	g_assertf (mono_hwcap_x86_has_fcmov, "FCMOV is required.");
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-		/*SIMD intrinsics require at least SSE2.*/
-		if (!mono_hwcap_x86_has_sse2)
-			*exclude_mask |= MONO_OPT_SIMD;
-#endif
+	opts |= MONO_OPT_SSE2;
 
 	return opts;
 }
@@ -1482,6 +1477,25 @@ emit_gc_param_slot_def (MonoCompile *cfg, int sp_offset, MonoType *t)
 	}
 }
 
+static MonoInst*
+alloc_double_spill_var (MonoCompile *cfg)
+{
+	if (!cfg->fconv_to_r8_x_var) {
+		cfg->fconv_to_r8_x_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.double_class), OP_LOCAL);
+		cfg->fconv_to_r8_x_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
+	}
+	return cfg->fconv_to_r8_x_var;
+}
+
+static MonoInst*
+get_double_spill_var (MonoCompile *cfg)
+{
+	MonoInst *var = cfg->fconv_to_r8_x_var;
+	g_assert (var);
+	g_assert (var->opcode == OP_REGOFFSET);
+	return var;
+}
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1683,6 +1697,20 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	call->stack_usage = cinfo->stack_usage;
 	call->stack_align_amount = cinfo->stack_align_amount;
+
+	switch (call->inst.opcode) {
+	case OP_FCALL:
+	case OP_FCALL_REG:
+	case OP_FCALL_MEMBASE:
+	case OP_RCALL:
+	case OP_RCALL_REG:
+	case OP_RCALL_MEMBASE:
+		/* Needed to move the return value from the fp stack to a sse reg */
+		alloc_double_spill_var (cfg);
+		break;
+	default:
+		break;
+	}
 }
 
 void
@@ -1739,14 +1767,20 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 
 	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
-			if (COMPILE_LLVM (cfg))
+			if (COMPILE_LLVM (cfg)) {
 				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
-			/* Nothing to do */
+			} else {
+				alloc_double_spill_var (cfg);
+				MONO_EMIT_NEW_UNALU (cfg, OP_X86_MOVE_R4_TO_FPSTACK, -1, val->dreg);
+			}
 			return;
 		} else if (ret->type == MONO_TYPE_R8) {
-			if (COMPILE_LLVM (cfg))
+			if (COMPILE_LLVM (cfg)) {
 				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
-			/* Nothing to do */
+			} else {
+				alloc_double_spill_var (cfg);
+				MONO_EMIT_NEW_UNALU (cfg, OP_X86_MOVE_R8_TO_FPSTACK, -1, val->dreg);
+			}
 			return;
 		} else if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			if (COMPILE_LLVM (cfg))
@@ -1829,6 +1863,49 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 
 	x86_call_code (code, 0);
 
+	return code;
+}
+
+static guint8*
+emit_r8const (MonoCompile *cfg, guint8* code, int dreg, double *p)
+{
+	double d = *p;
+
+	if ((d == 0.0) && (mono_signbit (d) == 0)) {
+		x86_sse_xorpd_reg_reg (code, dreg, dreg);
+	} else {
+		if (cfg->compile_aot) {
+			guint32 *val = (guint32*)&d;
+			x86_push_imm (code, val [1]);
+			x86_push_imm (code, val [0]);
+			x86_sse_movsd_reg_membase (code, dreg, X86_ESP, 0);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
+		} else {
+			mono_add_patch_info (cfg, code - cfg->native_code + X86_SSE_REG_MEM_OFFSET, MONO_PATCH_INFO_R8, p);
+			x86_sse_movsd_reg_mem (code, dreg, (gsize)NULL);
+		}
+	}
+	return code;
+}
+
+static guint8*
+emit_r4const (MonoCompile *cfg, guint8* code, int dreg, float *p)
+{
+	float f = *p;
+
+	if ((f == 0.0) && (mono_signbit (f) == 0)) {
+		x86_sse_xorps_reg_reg (code, dreg, dreg);
+	} else {
+		if (cfg->compile_aot) {
+			guint32 val = *(guint32*)p;
+			x86_push_imm (code, val);
+			x86_sse_movss_reg_membase (code, dreg, X86_ESP, 0);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+		} else {
+			mono_add_patch_info (cfg, code - cfg->native_code + X86_SSE_REG_MEM_OFFSET, MONO_PATCH_INFO_R4, p);
+			x86_sse_movss_reg_mem (code, dreg, (gsize)NULL);
+		}
+	}
 	return code;
 }
 
@@ -2059,45 +2136,13 @@ cc_signed_table [] = {
 };
 
 static unsigned char*
-emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
+emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
-#define XMM_TEMP_REG 0
-	/*This SSE2 optimization must not be done which OPT_SIMD in place as it clobbers xmm0.*/
-	/*The xmm pass decomposes OP_FCONV_ ops anyway anyway.*/
-	if (cfg->opt & MONO_OPT_SSE2 && size < 8 && !(cfg->opt & MONO_OPT_SIMD)) {
-		/* optimize by assigning a local var for this use so we avoid
-		 * the stack manipulations */
-		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-		x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
-		x86_movsd_reg_membase (code, XMM_TEMP_REG, X86_ESP, 0);
-		x86_cvttsd2si (code, dreg, XMM_TEMP_REG);
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-		if (size == 1)
-			x86_widen_reg (code, dreg, dreg, is_signed, FALSE);
-		else if (size == 2)
-			x86_widen_reg (code, dreg, dreg, is_signed, TRUE);
-		return code;
-	}
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-	x86_fnstcw_membase(code, X86_ESP, 0);
-	x86_mov_reg_membase (code, dreg, X86_ESP, 0, 2);
-	x86_alu_reg_imm (code, X86_OR, dreg, 0xc00);
-	x86_mov_membase_reg (code, X86_ESP, 2, dreg, 2);
-	x86_fldcw_membase (code, X86_ESP, 2);
-	if (size == 8) {
-		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-		x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
-		x86_pop_reg (code, dreg);
-		/* FIXME: need the high register
-		 * x86_pop_reg (code, dreg_high);
-		 */
-	} else {
-		x86_push_reg (code, X86_EAX); // SP = SP - 4
-		x86_fist_pop_membase (code, X86_ESP, 0, FALSE);
-		x86_pop_reg (code, dreg);
-	}
-	x86_fldcw_membase (code, X86_ESP, 0);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+	// Use 8 as register size to get Nan/Inf conversion to uint result truncated to 0
+	if (size == 8 || (!is_signed && size == 4))
+		x86_sse_cvttsd2si_reg_reg (code, dreg, sreg);
+	else
+		x86_sse_cvttsd2si_reg_reg_size (code, dreg, sreg, 4);
 
 	if (size == 1)
 		x86_widen_reg (code, dreg, dreg, is_signed, FALSE);
@@ -2229,6 +2274,24 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_CALL_MEMBASE:
 		x86_mov_reg_reg (code, ins->dreg, X86_EAX);
 		break;
+	case OP_FCALL:
+	case OP_FCALL_REG:
+	case OP_FCALL_MEMBASE: {
+		/* The return value is on the fp stack */
+		MonoInst *var = get_double_spill_var (cfg);
+		x86_fst_membase (code, var->inst_basereg, var->inst_offset, TRUE, TRUE);
+		x86_sse_movsd_reg_membase (code, ins->dreg, var->inst_basereg, var->inst_offset);
+		break;
+	}
+	case OP_RCALL:
+	case OP_RCALL_REG:
+	case OP_RCALL_MEMBASE: {
+		/* The return value is on the fp stack */
+		MonoInst *var = get_double_spill_var (cfg);
+		x86_fst_membase (code, var->inst_basereg, var->inst_offset, FALSE, TRUE);
+		x86_sse_movss_reg_membase (code, ins->dreg, var->inst_basereg, var->inst_offset);
+		break;
+	}
 	default:
 		break;
 	}
@@ -3129,11 +3192,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CHECK_THIS:
-			/* ensure ins->sreg1 is not NULL
-			 * note that cmp DWORD PTR [eax], eax is one byte shorter than
-			 * cmp DWORD PTR [eax], 0
-		         */
-			x86_alu_membase_reg (code, X86_CMP, ins->sreg1, 0, ins->sreg1);
+			/* ensure ins->sreg1 is not NULL */
+			x86_alu_membase8_reg (code, X86_CMP, ins->sreg1, 0, ins->sreg1);
 			break;
 		case OP_ARGLIST: {
 			int hreg = ins->sreg1 == X86_EAX? X86_ECX: X86_EAX;
@@ -3144,18 +3204,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FCALL:
+		case OP_FCALL_REG:
+		case OP_FCALL_MEMBASE:
+		case OP_RCALL:
+		case OP_RCALL_REG:
+		case OP_RCALL_MEMBASE:
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VCALL2:
 		case OP_VOIDCALL:
 		case OP_CALL:
-		case OP_FCALL_REG:
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
 		case OP_VCALL2_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
-		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
@@ -3168,6 +3231,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			switch (ins->opcode) {
 			case OP_FCALL:
+			case OP_RCALL:
 			case OP_LCALL:
 			case OP_VCALL:
 			case OP_VCALL2:
@@ -3178,6 +3242,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			case OP_FCALL_REG:
+			case OP_RCALL_REG:
 			case OP_LCALL_REG:
 			case OP_VCALL_REG:
 			case OP_VCALL2_REG:
@@ -3186,6 +3251,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_call_reg (code, ins->sreg1);
 				break;
 			case OP_FCALL_MEMBASE:
+			case OP_RCALL_MEMBASE:
 			case OP_LCALL_MEMBASE:
 			case OP_VCALL_MEMBASE:
 			case OP_VCALL2_MEMBASE:
@@ -3393,129 +3459,131 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		/* floating point opcodes */
-		case OP_R8CONST: {
-			double d = *(double *)ins->inst_p0;
-
-			if ((d == 0.0) && (mono_signbit (d) == 0)) {
-				x86_fldz (code);
-			} else if (d == 1.0) {
-				x86_fld1 (code);
-			} else {
-				if (cfg->compile_aot) {
-					guint32 *val = (guint32*)&d;
-					x86_push_imm (code, val [1]);
-					x86_push_imm (code, val [0]);
-					x86_fld_membase (code, X86_ESP, 0, TRUE);
-					x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-				}
-				else {
-					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R8, ins->inst_p0);
-					x86_fld (code, (gsize)NULL, TRUE);
-				}
-			}
+		case OP_R8CONST:
+			code = emit_r8const (cfg, code, ins->dreg, (double*)ins->inst_p0);
 			break;
-		}
-		case OP_R4CONST: {
-			float f = *(float *)ins->inst_p0;
-
-			if ((f == 0.0) && (mono_signbit (f) == 0)) {
-				x86_fldz (code);
-			} else if (f == 1.0) {
-				x86_fld1 (code);
-			} else {
-				if (cfg->compile_aot) {
-					guint32 val = *(guint32*)&f;
-					x86_push_imm (code, val);
-					x86_fld_membase (code, X86_ESP, 0, FALSE);
-					x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-				}
-				else {
-					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R4, ins->inst_p0);
-					x86_fld (code, (gsize)NULL, FALSE);
-				}
-			}
+		case OP_R4CONST:
+			code = emit_r4const (cfg, code, ins->dreg, (float*)ins->inst_p0);
 			break;
-		}
 		case OP_STORER8_MEMBASE_REG:
-			x86_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, TRUE, TRUE);
+			x86_sse_movsd_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			break;
 		case OP_LOADR8_MEMBASE:
-			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
+			x86_sse_movsd_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			x86_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, FALSE, TRUE);
+			x86_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			break;
 		case OP_LOADR4_MEMBASE:
-			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
+			x86_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
+		case OP_X86_MOVE_R8_TO_FPSTACK: {
+			/* Move a value from an SSE register to the top of the fp stack */
+			MonoInst *var = get_double_spill_var (cfg);
+			x86_sse_movsd_membase_reg (code, var->inst_basereg, var->inst_offset, ins->sreg1);
+			x86_fld_membase (code, var->inst_basereg, var->inst_offset, TRUE);
+			break;
+		}
+		case OP_X86_MOVE_R4_TO_FPSTACK: {
+			/* Move a value from an SSE register to the top of the fp stack */
+			MonoInst *var = get_double_spill_var (cfg);
+			x86_sse_movss_membase_reg (code, var->inst_basereg, var->inst_offset, ins->sreg1);
+			x86_fld_membase (code, var->inst_basereg, var->inst_offset, FALSE);
+			break;
+		}
 		case OP_ICONV_TO_R4:
-			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, FALSE);
-			/* Change precision */
-			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, FALSE);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			x86_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_ICONV_TO_R8:
-			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, FALSE);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			x86_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_ICONV_TO_R_UN:
 			x86_push_imm (code, 0);
 			x86_push_reg (code, ins->sreg1);
 			x86_fild_membase (code, X86_ESP, 0, TRUE);
+			x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
+			x86_sse_movsd_reg_membase (code, ins->dreg, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			break;
-		case OP_X86_FP_LOAD_I8:
-			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
-			break;
-		case OP_X86_FP_LOAD_I4:
-			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
-			break;
 		case OP_FCONV_TO_R4:
-			/* Change precision */
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, FALSE);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_I1:
-			code = emit_float_to_int (cfg, code, ins->dreg, 1, TRUE);
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
 		case OP_FCONV_TO_U1:
-			code = emit_float_to_int (cfg, code, ins->dreg, 1, FALSE);
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, FALSE);
 			break;
 		case OP_FCONV_TO_I2:
-			code = emit_float_to_int (cfg, code, ins->dreg, 2, TRUE);
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, TRUE);
 			break;
 		case OP_FCONV_TO_U2:
-			code = emit_float_to_int (cfg, code, ins->dreg, 2, FALSE);
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
 			break;
 		case OP_FCONV_TO_I4:
-			code = emit_float_to_int (cfg, code, ins->dreg, 4, TRUE);
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
 			break;
 		case OP_FCONV_TO_I8:
+		case OP_RCONV_TO_I8:
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 			x86_fnstcw_membase(code, X86_ESP, 0);
 			x86_mov_reg_membase (code, ins->dreg, X86_ESP, 0, 2);
 			x86_alu_reg_imm (code, X86_OR, ins->dreg, 0xc00);
 			x86_mov_membase_reg (code, X86_ESP, 2, ins->dreg, 2);
 			x86_fldcw_membase (code, X86_ESP, 2);
+
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+			if (ins->opcode == OP_FCONV_TO_I8) {
+				x86_sse_movsd_membase_reg (code, X86_ESP, 0, ins->sreg1);
+			} else {
+				x86_sse_cvtss2sd_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
+				x86_sse_movsd_membase_reg (code, X86_ESP, 0, MONO_ARCH_FP_SCRATCH_REG);
+			}
+			x86_fld_membase (code, X86_ESP, 0, TRUE);
 			x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
 			x86_pop_reg (code, ins->dreg);
 			x86_pop_reg (code, ins->backend.reg3);
 			x86_fldcw_membase (code, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			break;
+		case OP_RCONV_TO_I1:
+			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, FALSE);
+			break;
+		case OP_RCONV_TO_U1:
+			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			break;
+		case OP_RCONV_TO_I2:
+			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, TRUE);
+			break;
+		case OP_RCONV_TO_U2:
+			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
+			break;
+		case OP_RCONV_TO_I4:
+		case OP_RCONV_TO_I:
+			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case OP_RCONV_TO_U4:
+			// FIXME:
+			x86_sse_cvtss2si_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_RCONV_TO_R8:
+			x86_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_RCONV_TO_R4:
+			if (ins->dreg != ins->sreg1)
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
 		case OP_LCONV_TO_R8_2:
 			x86_push_reg (code, ins->sreg2);
 			x86_push_reg (code, ins->sreg1);
 			x86_fild_membase (code, X86_ESP, 0, TRUE);
-			/* Change precision */
 			x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, TRUE);
+			x86_sse_movsd_reg_membase (code, ins->dreg, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			break;
 		case OP_LCONV_TO_R4_2:
@@ -3524,7 +3592,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fild_membase (code, X86_ESP, 0, TRUE);
 			/* Change precision */
 			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, FALSE);
+			x86_sse_movss_reg_membase (code, ins->dreg, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			break;
 		case OP_LCONV_TO_R_UN_2: {
@@ -3554,12 +3622,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			x86_patch (br, code);
 
-			/* Change precision */
+			/* Move from the fp stack to dreg and change precision */
 			x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, TRUE);
-
+			x86_sse_movsd_reg_membase (code, ins->dreg, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-
 			break;
 		}
 		case OP_LCONV_TO_OVF_I:
@@ -3606,81 +3672,71 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FMOVE:
-			/* Not needed on the fp stack */
+			if (ins->dreg != ins->sreg1)
+				x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_RMOVE:
+			if (ins->dreg != ins->sreg1)
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
-			x86_mov_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, 4);
+			x86_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_MOVE_I4_TO_F:
-			x86_mov_membase_reg (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1, 4);
-			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE);
+			x86_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_FADD:
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
+			x86_sse_addsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
 		case OP_FSUB:
-			x86_fp_op_reg (code, X86_FSUB, 1, TRUE);
+			x86_sse_subsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
-		case OP_FMUL:
-			x86_fp_op_reg (code, X86_FMUL, 1, TRUE);
-			break;
-		case OP_FDIV:
-			x86_fp_op_reg (code, X86_FDIV, 1, TRUE);
-			break;
-		case OP_FNEG:
-			x86_fchs (code);
-			break;
-		case OP_ABS:
-			x86_fabs (code);
-			break;
-		case OP_TAN: {
-			/*
-			 * it really doesn't make sense to inline all this code,
-			 * it's here just to show that things may not be as simple
-			 * as they appear.
-			 */
-			guchar *check_pos, *end_tan, *pop_jump;
-			x86_push_reg (code, X86_EAX);
-			x86_fptan (code);
-			x86_fnstsw (code);
-			x86_test_reg_imm (code, X86_EAX, X86_FP_C2);
-			check_pos = code;
-			x86_branch8 (code, X86_CC_NE, 0, FALSE);
-			x86_fstp (code, 0); /* pop the 1.0 */
-			end_tan = code;
-			x86_jump8 (code, 0);
-			x86_fldpi (code);
-			x86_fp_op (code, X86_FADD, 0);
-			x86_fxch (code, 1);
-			x86_fprem1 (code);
-			x86_fstsw (code);
-			x86_test_reg_imm (code, X86_EAX, X86_FP_C2);
-			pop_jump = code;
-			x86_branch8 (code, X86_CC_NE, 0, FALSE);
-			x86_fstp (code, 1);
-			x86_fptan (code);
-			x86_patch (pop_jump, code);
-			x86_fstp (code, 0); /* pop the 1.0 */
-			x86_patch (check_pos, code);
-			x86_patch (end_tan, code);
-			x86_fldz (code);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			x86_pop_reg (code, X86_EAX);
+		case OP_FNEG: {
+			static double r8_0 = -0.0;
+
+			g_assert (ins->sreg1 == ins->dreg);
+
+			code = emit_r8const (cfg, code, MONO_ARCH_FP_SCRATCH_REG, &r8_0);
+			x86_sse_xorpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
 			break;
 		}
-		case OP_ATAN:
-			x86_fld1 (code);
-			x86_fpatan (code);
-			x86_fldz (code);
-			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
+		case OP_ABS: {
+			static guint64 d = 0x7fffffffffffffffUL;
+
+			g_assert (ins->sreg1 == ins->dreg);
+
+			code = emit_r8const (cfg, code, MONO_ARCH_FP_SCRATCH_REG, (double*)&d);
+			x86_sse_andpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
 			break;
-		case OP_SQRT:
-			x86_fsqrt (code);
+		}
+		case OP_FMUL:
+			x86_sse_mulsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
-		case OP_ROUND:
-			x86_frndint (code);
+		case OP_FDIV:
+			x86_sse_divsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
+		case OP_RADD:
+			x86_sse_addss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_RSUB:
+			x86_sse_subss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_RMUL:
+			x86_sse_mulss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_RDIV:
+			x86_sse_divss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_RNEG: {
+			static float r4_0 = -0.0;
+
+			g_assert (ins->sreg1 == ins->dreg);
+
+			code = emit_r4const (cfg, code, MONO_ARCH_FP_SCRATCH_REG, &r4_0);
+			x86_sse_xorps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			break;
+		}
+
 		case OP_IMIN:
 			g_assert (cfg->opt & MONO_OPT_CMOV);
 			g_assert (ins->dreg == ins->sreg1);
@@ -3711,379 +3767,255 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_FXCH:
 			x86_fxch (code, ins->inst_imm);
 			break;
-		case OP_FREM: {
-			guint8 *l1, *l2;
+		case OP_FCOMPARE:
+			/*
+			 * The two arguments are swapped because the fbranch instructions
+			 * depend on this for the non-sse case to work.
+			 * FIXME: Get rid of this.
+			 */
+			x86_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			break;
+		case OP_RCOMPARE:
+			/*
+			 * FIXME: Get rid of this.
+			 * The two arguments are swapped because the fbranch instructions
+			 * depend on this for the non-sse case to work.
+			 */
+			x86_sse_comiss_reg_reg (code, ins->sreg2, ins->sreg1);
+			break;
+		case OP_FCNEQ:
+		case OP_FCEQ:
+		case OP_RCNEQ: {
+			/* zeroing the register at the start results in
+			 * shorter and faster code (we can also remove the widening op)
+			 */
+			guchar *unordered_check;
 
-			x86_push_reg (code, X86_EAX);
-			/* we need to exchange ST(0) with ST(1) */
-			x86_fxch (code, 1);
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			if (ins->opcode == OP_RCNEQ)
+				x86_sse_comiss_reg_reg (code, ins->sreg1, ins->sreg2);
+			else
+				x86_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
 
-			/* this requires a loop, because fprem somtimes
-			 * returns a partial remainder */
-			l1 = code;
-			/* looks like MS is using fprem instead of the IEEE compatible fprem1 */
-			/* x86_fprem1 (code); */
-			x86_fprem (code);
-			x86_fnstsw (code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_C2);
-			l2 = code;
-			x86_branch8 (code, X86_CC_NE, 0, FALSE);
-			x86_patch (l2, l1);
-
-			/* pop result */
-			x86_fstp (code, 1);
-
-			x86_pop_reg (code, X86_EAX);
+			if (ins->opcode == OP_FCEQ) {
+				x86_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
+				x86_patch (unordered_check, code);
+			} else {
+				guchar *jump_to_end;
+				x86_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
+				jump_to_end = code;
+				x86_jump8 (code, 0);
+				x86_patch (unordered_check, code);
+				x86_inc_reg (code, ins->dreg);
+				x86_patch (jump_to_end, code);
+			}
 			break;
 		}
-		case OP_FCOMPARE:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
-				break;
-			}
-			/* this overwrites EAX */
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
-			break;
-		case OP_FCEQ:
-		case OP_FCNEQ:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* zeroing the register at the start results in
-				 * shorter and faster code (we can also remove the widening op)
-				 */
-				guchar *unordered_check;
-				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
-				unordered_check = code;
-				x86_branch8 (code, X86_CC_P, 0, FALSE);
-				if (ins->opcode == OP_FCEQ) {
-					x86_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
-					x86_patch (unordered_check, code);
-				} else {
-					guchar *jump_to_end;
-					x86_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
-					jump_to_end = code;
-					x86_jump8 (code, 0);
-					x86_patch (unordered_check, code);
-					x86_inc_reg (code, ins->dreg);
-					x86_patch (jump_to_end, code);
-				}
-
-				break;
-			}
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
-			x86_set_reg (code, ins->opcode == OP_FCEQ ? X86_CC_EQ : X86_CC_NE, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX)
-				x86_pop_reg (code, X86_EAX);
-			break;
 		case OP_FCLT:
-		case OP_FCLT_UN:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* zeroing the register at the start results in
-				 * shorter and faster code (we can also remove the widening op)
-				 */
-				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
-				if (ins->opcode == OP_FCLT_UN) {
-					guchar *unordered_check = code;
-					guchar *jump_to_end;
-					x86_branch8 (code, X86_CC_P, 0, FALSE);
-					x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
-					jump_to_end = code;
-					x86_jump8 (code, 0);
-					x86_patch (unordered_check, code);
-					x86_inc_reg (code, ins->dreg);
-					x86_patch (jump_to_end, code);
-				} else {
-					x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
-				}
-				break;
-			}
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
+		case OP_FCLT_UN: {
+			/* zeroing the register at the start results in
+			 * shorter and faster code (we can also remove the widening op)
+			 */
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
 			if (ins->opcode == OP_FCLT_UN) {
-				guchar *is_not_zero_check, *end_jump;
-				is_not_zero_check = code;
-				x86_branch8 (code, X86_CC_NZ, 0, TRUE);
-				end_jump = code;
+				guchar *unordered_check = code;
+				guchar *jump_to_end;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
+				jump_to_end = code;
 				x86_jump8 (code, 0);
-				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
-
-				x86_patch (end_jump, code);
+				x86_patch (unordered_check, code);
+				x86_inc_reg (code, ins->dreg);
+				x86_patch (jump_to_end, code);
+			} else {
+				x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
 			}
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX)
-				x86_pop_reg (code, X86_EAX);
 			break;
+		}
 		case OP_FCLE: {
 			guchar *unordered_check;
-			guchar *jump_to_end;
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* zeroing the register at the start results in
-				 * shorter and faster code (we can also remove the widening op)
-				 */
-				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
-				unordered_check = code;
-				x86_branch8 (code, X86_CC_P, 0, FALSE);
-				x86_set_reg (code, X86_CC_NB, ins->dreg, FALSE);
-				x86_patch (unordered_check, code);
-				break;
-			}
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
-			unordered_check = code;
-			x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			x86_set_reg (code, X86_CC_NE, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			jump_to_end = code;
-			x86_jump8 (code, 0);
-			x86_patch (unordered_check, code);
 			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-			x86_patch (jump_to_end, code);
-
-			if (ins->dreg != X86_EAX)
-				x86_pop_reg (code, X86_EAX);
+			x86_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			x86_set_reg (code, X86_CC_NB, ins->dreg, FALSE);
+			x86_patch (unordered_check, code);
 			break;
 		}
 		case OP_FCGT:
-		case OP_FCGT_UN:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* zeroing the register at the start results in
-				 * shorter and faster code (we can also remove the widening op)
-				 */
-				guchar *unordered_check;
-				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
-				if (ins->opcode == OP_FCGT) {
-					unordered_check = code;
-					x86_branch8 (code, X86_CC_P, 0, FALSE);
-					x86_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
-					x86_patch (unordered_check, code);
-				} else {
-					x86_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
-				}
-				break;
-			}
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			if (ins->opcode == OP_FCGT_UN) {
-				guchar *is_not_zero_check, *end_jump;
-				is_not_zero_check = code;
-				x86_branch8 (code, X86_CC_NZ, 0, TRUE);
-				end_jump = code;
-				x86_jump8 (code, 0);
-				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
-
-				x86_patch (end_jump, code);
-			}
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-
-			if (ins->dreg != X86_EAX)
-				x86_pop_reg (code, X86_EAX);
-			break;
-		case OP_FCGE: {
+		case OP_FCGT_UN: {
+			/* zeroing the register at the start results in
+			 * shorter and faster code (we can also remove the widening op)
+			 */
 			guchar *unordered_check;
-			guchar *jump_to_end;
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* zeroing the register at the start results in
-				 * shorter and faster code (we can also remove the widening op)
-				 */
-				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-				x86_fcomip (code, 1);
-				x86_fstp (code, 0);
+
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			if (ins->opcode == OP_FCGT) {
 				unordered_check = code;
 				x86_branch8 (code, X86_CC_P, 0, FALSE);
-				x86_set_reg (code, X86_CC_NA, ins->dreg, FALSE);
+				x86_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
 				x86_patch (unordered_check, code);
-				break;
+			} else {
+				x86_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
 			}
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
-
-			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
-			unordered_check = code;
-			x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			x86_set_reg (code, X86_CC_GE, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			jump_to_end = code;
-			x86_jump8 (code, 0);
-			x86_patch (unordered_check, code);
-			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
-			x86_patch (jump_to_end, code);
-
-			if (ins->dreg != X86_EAX)
-				x86_pop_reg (code, X86_EAX);
 			break;
 		}
-		case OP_FBEQ:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				guchar *jump = code;
-				x86_branch8 (code, X86_CC_P, 0, TRUE);
-				EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
-				x86_patch (jump, code);
-				break;
-			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, TRUE);
+		case OP_FCGE: {
+			guchar *unordered_check;
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			x86_set_reg (code, X86_CC_NA, ins->dreg, FALSE);
+			x86_patch (unordered_check, code);
 			break;
+		}
+		case OP_FBEQ: {
+			guchar *jump = code;
+			x86_branch8 (code, X86_CC_P, 0, TRUE);
+			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			x86_patch (jump, code);
+			break;
+		}
 		case OP_FBNE_UN:
 			/* Branch if C013 != 100 */
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				/* branch if !ZF or (PF|CF) */
-				EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
-				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
-				EMIT_COND_BRANCH (ins, X86_CC_B, FALSE);
-				break;
-			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C3);
+			/* branch if !ZF or (PF|CF) */
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_B, FALSE);
 			break;
 		case OP_FBLT:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_GT, FALSE);
-				break;
-			}
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_GT, FALSE);
 			break;
 		case OP_FBLT_UN:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
-				EMIT_COND_BRANCH (ins, X86_CC_GT, FALSE);
-				break;
-			}
-			if (ins->opcode == OP_FBLT_UN) {
-				guchar *is_not_zero_check, *end_jump;
-				is_not_zero_check = code;
-				x86_branch8 (code, X86_CC_NZ, 0, TRUE);
-				end_jump = code;
-				x86_jump8 (code, 0);
-				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
-
-				x86_patch (end_jump, code);
-			}
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_GT, FALSE);
 			break;
 		case OP_FBGT:
 		case OP_FBGT_UN:
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				if (ins->opcode == OP_FBGT) {
-					guchar *br1;
-
-					/* skip branch if C1=1 */
-					br1 = code;
-					x86_branch8 (code, X86_CC_P, 0, FALSE);
-					/* branch if (C0 | C3) = 1 */
-					EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
-					x86_patch (br1, code);
-				} else {
-					EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
-				}
-				break;
-			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			if (ins->opcode == OP_FBGT_UN) {
-				guchar *is_not_zero_check, *end_jump;
-				is_not_zero_check = code;
-				x86_branch8 (code, X86_CC_NZ, 0, TRUE);
-				end_jump = code;
-				x86_jump8 (code, 0);
-				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
-
-				x86_patch (end_jump, code);
-			}
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
-			break;
-		case OP_FBGE:
-			/* Branch if C013 == 100 or 001 */
-			if (cfg->opt & MONO_OPT_FCMOV) {
+			if (ins->opcode == OP_FBGT) {
 				guchar *br1;
 
 				/* skip branch if C1=1 */
 				br1 = code;
 				x86_branch8 (code, X86_CC_P, 0, FALSE);
 				/* branch if (C0 | C3) = 1 */
-				EMIT_COND_BRANCH (ins, X86_CC_BE, FALSE);
+				EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
 				x86_patch (br1, code);
 				break;
+			} else {
+				EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
 			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C3);
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
 			break;
+		case OP_FBGE: {
+			/* Branch if C013 == 100 or 001 */
+			guchar *br1;
+
+			/* skip branch if C1=1 */
+			br1 = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			/* branch if (C0 | C3) = 1 */
+			EMIT_COND_BRANCH (ins, X86_CC_BE, FALSE);
+			x86_patch (br1, code);
+			break;
+		}
 		case OP_FBGE_UN:
 			/* Branch if C013 == 000 */
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_LE, FALSE);
-				break;
-			}
-			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_LE, FALSE);
 			break;
-		case OP_FBLE:
+		case OP_FBLE: {
 			/* Branch if C013=000 or 100 */
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				guchar *br1;
+			guchar *br1;
 
-				/* skip branch if C1=1 */
-				br1 = code;
-				x86_branch8 (code, X86_CC_P, 0, FALSE);
-				/* branch if C0=0 */
-				EMIT_COND_BRANCH (ins, X86_CC_NB, FALSE);
-				x86_patch (br1, code);
-				break;
-			}
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, (X86_FP_C0|X86_FP_C1));
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0);
-			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			/* skip branch if C1=1 */
+			br1 = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			/* branch if C0=0 */
+			EMIT_COND_BRANCH (ins, X86_CC_NB, FALSE);
+			x86_patch (br1, code);
 			break;
+		}
 		case OP_FBLE_UN:
 			/* Branch if C013 != 001 */
-			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
-				EMIT_COND_BRANCH (ins, X86_CC_GE, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
+			EMIT_COND_BRANCH (ins, X86_CC_GE, FALSE);
+			break;
+
+		case OP_RCEQ:
+		case OP_RCGT:
+		case OP_RCLT:
+		case OP_RCLT_UN:
+		case OP_RCGT_UN: {
+			int x86_cond;
+
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_sse_comiss_reg_reg (code, ins->sreg2, ins->sreg1);
+
+			switch (ins->opcode) {
+			case OP_RCEQ:
+				x86_cond = X86_CC_EQ;
+				break;
+			case OP_RCGT:
+				x86_cond = X86_CC_LT;
+				break;
+			case OP_RCLT:
+				x86_cond = X86_CC_GT;
+				break;
+			case OP_RCLT_UN:
+				x86_cond = X86_CC_GT;
+				break;
+			case OP_RCGT_UN:
+				x86_cond = X86_CC_LT;
+				break;
+			default:
+				g_assert_not_reached ();
 				break;
 			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
-			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
+
+			guchar *unordered_check;
+
+			switch (ins->opcode) {
+			case OP_RCEQ:
+			case OP_RCGT:
+				unordered_check = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				x86_set_reg (code, x86_cond, ins->dreg, FALSE);
+				x86_patch (unordered_check, code);
+				break;
+			case OP_RCLT_UN:
+			case OP_RCGT_UN: {
+				guchar *jump_to_end;
+
+				unordered_check = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				x86_set_reg (code, x86_cond, ins->dreg, FALSE);
+				jump_to_end = code;
+				x86_jump8 (code, 0);
+				x86_patch (unordered_check, code);
+				x86_inc_reg (code, ins->dreg);
+				x86_patch (jump_to_end, code);
+				break;
+			}
+			case OP_RCLT:
+				x86_set_reg (code, x86_cond, ins->dreg, FALSE);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 			break;
+		}
+
 		case OP_CKFINITE: {
+			MonoInst *var = get_double_spill_var (cfg);
+			/* Transfer value to the fp stack */
+			x86_sse_movsd_membase_reg (code, var->inst_basereg, var->inst_offset, ins->sreg1);
+			x86_fld_membase (code, var->inst_basereg, var->inst_offset, TRUE);
+
 			guchar *br1;
 			x86_push_reg (code, X86_EAX);
 			x86_fxam (code);
@@ -4102,6 +4034,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_patch (br1, code);
 			break;
 		}
+
 		case OP_TLS_GET: {
 			code = mono_x86_emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
@@ -4327,6 +4260,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_patch (br, code);
 			break;
 		}
+
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		case OP_ADDPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_ADD, ins->sreg1, ins->sreg2);
@@ -4389,23 +4323,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_PSHUFLEW_HIGH:
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			x86_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 1);
+			x86_sse_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 1);
 			break;
 		case OP_PSHUFLEW_LOW:
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			x86_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 0);
+			x86_sse_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 0);
 			break;
 		case OP_PSHUFLED:
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->sreg1, ins->inst_c0);
+			x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		case OP_SHUFPS:
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			x86_sse_alu_reg_reg_imm8 (code, X86_SSE_SHUFP, ins->sreg1, ins->sreg2, ins->inst_c0);
+			x86_sse_shufps_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 		case OP_SHUFPD:
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0x3);
-			x86_sse_alu_pd_reg_reg_imm8 (code, X86_SSE_SHUFP, ins->sreg1, ins->sreg2, ins->inst_c0);
+			x86_sse_shufpd_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 
 		case OP_ADDPD:
@@ -4727,6 +4661,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ICONV_TO_X:
 			x86_movd_xreg_reg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_ICONV_TO_R4_RAW:
+			x86_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			break;
 		case OP_EXTRACT_I4:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			break;
@@ -4744,17 +4681,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
-				x86_sse_alu_pd_membase_reg (code, X86_SSE_MOVHPD_MEMBASE_REG, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1);
+				x86_movhlps_reg_reg (code, ins->dreg, ins->sreg1);
 			else
-				x86_sse_alu_sd_membase_reg (code, X86_SSE_MOVSD_MEMBASE_REG, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1);
-			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE);
+				x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
-
 		case OP_INSERT_I2:
-			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->sreg1, ins->sreg2, ins->inst_c0);
+			x86_sse_pinsrw_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 		case OP_EXTRACTX_U2:
-			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PEXTRW, ins->dreg, ins->sreg1, ins->inst_c0);
+			x86_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		case OP_INSERTX_U1_SLOW:
 			/*sreg1 is the extracted ireg (scratch)
@@ -4768,30 +4703,42 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_shift_reg_imm (code, X86_SHL, ins->sreg2, 8);
 			/*join them together*/
 			x86_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
-			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, ins->inst_c0 / 2);
+			x86_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0 / 2);
 			break;
 		case OP_INSERTX_I4_SLOW:
-			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg2, ins->inst_c0 * 2);
+			x86_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2);
 			x86_shift_reg_imm (code, X86_SHR, ins->sreg2, 16);
-			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
+			x86_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
 			break;
 
 		case OP_INSERTX_R4_SLOW:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
-			/*TODO if inst_c0 == 0 use movss*/
-			x86_sse_alu_pd_reg_membase_imm (code, X86_SSE_PINSRW, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset + 0, ins->inst_c0 * 2);
-			x86_sse_alu_pd_reg_membase_imm (code, X86_SSE_PINSRW, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset + 2, ins->inst_c0 * 2 + 1);
+			switch (ins->inst_c0) {
+			case 0:
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case 1:
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
+				break;
+			case 2:
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
+				break;
+			case 3:
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
+				break;
+			}
 			break;
 		case OP_INSERTX_R8_SLOW:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);
-			if (cfg->verbose_level)
-				printf ("CONVERTING a OP_INSERTX_R8_SLOW %d offset %x\n", ins->inst_c0, offset);
 			if (ins->inst_c0)
-				x86_sse_alu_pd_reg_membase (code, X86_SSE_MOVHPD_REG_MEMBASE, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+				x86_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
 			else
-				x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+				x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
-
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			x86_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
@@ -4823,30 +4770,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XONES:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQB, ins->dreg, ins->dreg);
 			break;
-
 		case OP_FCONV_TO_R8_X:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);
-			x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+			x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
-
-		case OP_XCONV_R8_TO_I4:
-			x86_cvttsd2si (code, ins->dreg, ins->sreg1);
-			switch (ins->backend.source_opcode) {
-			case OP_FCONV_TO_I1:
-				x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, FALSE);
-				break;
-			case OP_FCONV_TO_U1:
-				x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-				break;
-			case OP_FCONV_TO_I2:
-				x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, TRUE);
-				break;
-			case OP_FCONV_TO_U2:
-				x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
-				break;
-			}
-			break;
-
 		case OP_EXPAND_I2:
 			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 0);
 			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 1);
@@ -4857,14 +4783,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R4:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
-			x86_movd_xreg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
-			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
+			x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);
-			x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
-			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0x44);
+			x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 
 		case OP_CVTDQ2PD:
@@ -4988,8 +4912,8 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 		break;
 	case MONO_PATCH_INFO_R4:
 	case MONO_PATCH_INFO_R8: {
-		guint32 offset = mono_arch_get_patch_offset (ip);
-		*((gconstpointer *)(ip + offset)) = target;
+		/* ip points at the memory address inside the instruction */
+		*(gconstpointer *)ip = target;
 		break;
 	}
 	default: {
@@ -5653,26 +5577,6 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 	int opcode = 0;
 
 	if (cmethod->klass == mono_class_try_get_math_class ()) {
-		if (strcmp (cmethod->name, "Tan") == 0) {
-			opcode = OP_TAN;
-		} else if (strcmp (cmethod->name, "Atan") == 0) {
-			opcode = OP_ATAN;
-		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
-			opcode = OP_SQRT;
-		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
-			opcode = OP_ABS;
-		} else if (strcmp (cmethod->name, "Round") == 0 && fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R8) {
-			opcode = OP_ROUND;
-		}
-
-		if (opcode && fsig->param_count == 1) {
-			MONO_INST_NEW (cfg, ins, opcode);
-			ins->type = STACK_R8;
-			ins->dreg = mono_alloc_freg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			MONO_ADD_INS (cfg->cbb, ins);
-		}
-
 		if (cfg->opt & MONO_OPT_CMOV) {
 			opcode = 0;
 
@@ -5784,9 +5688,6 @@ mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	host_mgreg_t esp = regs [X86_ESP];
 	gpointer res;
-	int offset;
-
-	offset = 0;
 
 	/*
 	 * The stack looks like:
@@ -6101,61 +6002,19 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 
-static MonoInst*
-get_float_to_x_spill_area (MonoCompile *cfg)
-{
-	if (!cfg->fconv_to_r8_x_var) {
-		cfg->fconv_to_r8_x_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.double_class), OP_LOCAL);
-		cfg->fconv_to_r8_x_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
-	}
-	return cfg->fconv_to_r8_x_var;
-}
-
-/*
- * Convert all fconv opts that MONO_OPT_SSE2 would get wrong.
- */
 void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
-	MonoInst *fconv;
-	int dreg, src_opcode;
-
-	if (!(cfg->opt & MONO_OPT_SSE2) || !(cfg->opt & MONO_OPT_SIMD) || COMPILE_LLVM (cfg))
-		return;
-
-	switch (src_opcode = ins->opcode) {
-	case OP_FCONV_TO_I1:
-	case OP_FCONV_TO_U1:
-	case OP_FCONV_TO_I2:
-	case OP_FCONV_TO_U2:
-	case OP_FCONV_TO_I4:
+	switch (ins->opcode) {
+	case OP_CKFINITE:
+		alloc_double_spill_var (cfg);
 		break;
 	default:
-		return;
+		break;
 	}
-
-	/* dreg is the IREG and sreg1 is the FREG */
-	MONO_INST_NEW (cfg, fconv, OP_FCONV_TO_R8_X);
-	fconv->klass = NULL; /*FIXME, what can I use here as the Mono.Simd lib might not be loaded yet*/
-	fconv->sreg1 = ins->sreg1;
-	fconv->dreg = mono_alloc_ireg (cfg);
-	fconv->type = STACK_VTYPE;
-	fconv->backend.spill_var = get_float_to_x_spill_area (cfg);
-
-	mono_bblock_insert_before_ins (cfg->cbb, ins, fconv);
-
-	dreg = ins->dreg;
-	NULLIFY_INS (ins);
-	ins->opcode = OP_XCONV_R8_TO_I4;
-
-	ins->klass = mono_defaults.int32_class;
-	ins->sreg1 = fconv->dreg;
-	ins->dreg = dreg;
-	ins->type = STACK_I4;
-	ins->backend.source_opcode = src_opcode;
 }
 
-#endif /* #ifdef MONO_ARCH_SIMD_INTRINSICS */
+#endif
 
 void
 mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)

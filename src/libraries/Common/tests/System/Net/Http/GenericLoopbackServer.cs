@@ -152,6 +152,9 @@ namespace System.Net.Test.Common
         /// <summary>Waits for the client to signal cancellation.</summary>
         public abstract Task WaitForCloseAsync(CancellationToken cancellationToken);
 
+        /// <summary>Reset the connection's internal state so it can process further requests.</summary>
+        public virtual void CompleteRequestProcessing() { }
+
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
         public async Task SendResponseBodyAsync(string content, bool isFinal = true)
         {

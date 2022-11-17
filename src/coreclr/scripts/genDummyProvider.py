@@ -2,7 +2,7 @@
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
 ##
-##  This script exists to create a dummy implementaion of the eventprovider
+##  This script exists to create a dummy implementation of the eventprovider
 ##  interface from a manifest file
 ##
 ##  The intended use if for platforms which support event pipe

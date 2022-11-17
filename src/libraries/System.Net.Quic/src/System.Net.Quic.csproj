@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -10,6 +11,7 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
+    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
@@ -102,6 +104,11 @@
                       PrivateAssets="all"
                       GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
+                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true"
+                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -131,14 +138,20 @@
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
-  <!-- Support for deploying msquic -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
-                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
+  <!-- Support for deploying msquic on Windows -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(UseQuicTransportPackage)' == 'true' and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(UseQuicTransportPackage)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*" />
   </ItemGroup>
 
   <ItemGroup>

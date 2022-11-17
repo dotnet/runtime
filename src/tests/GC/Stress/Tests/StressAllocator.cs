@@ -65,7 +65,7 @@ namespace StressAllocator
         //remaining will be allocated on Large Object Heap
         public const int DEFAULT_THREADS = 4;  //number of allocating threads
         public const int THREAD_IDLE_TIME = 0; //milliseconds
-        public const int MAX_REFS = 4; //max number of refernces to another object
+        public const int MAX_REFS = 4; //max number of references to another object
         ///////////// end default parameters
 
 

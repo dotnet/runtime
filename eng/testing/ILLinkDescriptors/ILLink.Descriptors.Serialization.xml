@@ -2,4 +2,11 @@
   <assembly fullname="System.Private.Xml.Linq">
     <type fullname="System.Xml.Linq.XElement" />
   </assembly>
+  <assembly fullname="System.Private.DataContractSerialization">
+    <type fullname="System.Runtime.Serialization.DateTimeOffsetAdapter" />
+    <type fullname="System.Runtime.Serialization.MemoryStreamAdapter" />
+  </assembly>
+  <assembly fullname="System.Collections.Immutable">
+    <type fullname="System.Collections.Immutable.ImmutableArray`1" />
+  </assembly>
 </linker>

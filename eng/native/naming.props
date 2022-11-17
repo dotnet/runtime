@@ -36,10 +36,4 @@
     <AdditionalSymbolPackageExcludes Condition="'$(LibSuffix)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibSuffix)" />
   </ItemGroup>
 
-  <!-- arcade is using long name for this property; 'SymbolFileExtension'.
-       remove this property group when arcade is updated with short name (SymbolsSuffix). -->
-  <PropertyGroup>
-    <SymbolFileExtension>$(SymbolsSuffix)</SymbolFileExtension>
-  </PropertyGroup>
-
 </Project>

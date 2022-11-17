@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.CompilerServices;
 
 #if !DISABLE_UNMANAGED_PDB_SYMBOLS
@@ -48,7 +47,7 @@ namespace Internal.TypeSystem.Ecma
             static extern int CLRCreateInstance(ref Guid clsid, ref Guid riid, out IntPtr ptr);
         }
 
-        interface ICLRMetaHost
+        private interface ICLRMetaHost
         {
             public static readonly Guid IID = new Guid("d332db9e-b9b3-4125-8207-a14884f53216");
 
@@ -78,7 +77,7 @@ namespace Internal.TypeSystem.Ecma
 
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe class ClrMetaHostRcw : ICLRMetaHost, IDisposable
+            public sealed unsafe class ClrMetaHostRcw : ICLRMetaHost, IDisposable
             {
                 private bool _disposed;
                 private readonly IntPtr _inst;
@@ -125,7 +124,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        interface ICLRRuntimeInfo
+        private interface ICLRRuntimeInfo
         {
             int GetInterface(ref Guid rclsid, ref Guid riid, out MetaDataDispenserWrapperCache.MetaDataDispenserRcw? ppUnk);
 
@@ -134,7 +133,7 @@ namespace Internal.TypeSystem.Ecma
             // Don't need any other methods.
         }
 
-        private class CLRRuntimeInfoWrapperCache : ComWrappers
+        private sealed class CLRRuntimeInfoWrapperCache : ComWrappers
         {
             public static readonly CLRRuntimeInfoWrapperCache Instance = new CLRRuntimeInfoWrapperCache();
             private CLRRuntimeInfoWrapperCache() { }
@@ -159,7 +158,7 @@ namespace Internal.TypeSystem.Ecma
                     BindAsLegacyV2Runtime = 13
                 }
 
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetInterface(ref Guid rclsid, ref Guid riid, out MetaDataDispenserWrapperCache.MetaDataDispenserRcw? ppUnk)
                 {
@@ -230,7 +229,7 @@ namespace Internal.TypeSystem.Ecma
 
             public sealed unsafe record MetaDataDispenserRcw(IntPtr Inst) : IMetaDataDispenser, IDisposable
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 /// <remarks>
                 /// <paramref="punk" /> is simply a boxed IntPtr, because we don't need an RCW.
@@ -293,9 +292,9 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe record SymUnmanagedBinderRcw(IntPtr Inst) : ISymUnmanagedBinder
+            public sealed unsafe record SymUnmanagedBinderRcw(IntPtr Inst) : ISymUnmanagedBinder
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetReaderForFile(MetadataImportRcw metadataImporter, string fileName, string searchPath, out SymUnmanagedReaderWrapperCache.SymUnmanagedReaderRcw? reader)
                 {
@@ -343,7 +342,7 @@ namespace Internal.TypeSystem.Ecma
         /// </summary>
         private sealed record MetadataImportRcw(IntPtr Ptr) : IDisposable
         {
-            private bool _disposed = false;
+            private bool _disposed;
 
             public void Dispose()
             {
@@ -363,7 +362,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        interface ISymUnmanagedReader
+        private interface ISymUnmanagedReader
         {
             int GetMethod(int methodToken, out ISymUnmanagedMethod? method);
             // No more members are used
@@ -383,7 +382,7 @@ namespace Internal.TypeSystem.Ecma
 
             public sealed unsafe record SymUnmanagedNamespaceRcw(IntPtr Inst) : ISymUnmanagedNamespace
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetName(int bufferLength, out int count, char[] name)
                 {
@@ -418,7 +417,7 @@ namespace Internal.TypeSystem.Ecma
                             {
                                 for (int i = 0; i < count; i++)
                                 {
-                                    namespaces[i] = (SymUnmanagedNamespaceWrapperCache.SymUnmanagedNamespaceRcw)SymUnmanagedNamespaceWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                    namespaces[i] = (SymUnmanagedNamespaceWrapperCache.SymUnmanagedNamespaceRcw)Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
                                 }
                             }
                         }
@@ -496,7 +495,7 @@ namespace Internal.TypeSystem.Ecma
 
             public sealed unsafe record SymUnmanagedVariableRcw(IntPtr Inst) : ISymUnmanagedVariable
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetName(int bufferLength, out int count, char[] name)
                 {
@@ -580,7 +579,7 @@ namespace Internal.TypeSystem.Ecma
 
             public sealed unsafe record SymUnmanagedScopeRcw(IntPtr Inst) : ISymUnmanagedScope
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetMethod(out ISymUnmanagedMethod? method)
                 {
@@ -599,7 +598,7 @@ namespace Internal.TypeSystem.Ecma
                     IntPtr scopePtr;
                     int hr = func(Inst, &scopePtr);
                     scope = hr == 0
-                        ? (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(scopePtr, CreateObjectFlags.UniqueInstance)
+                        ? (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)Instance.GetOrCreateObjectForComInstance(scopePtr, CreateObjectFlags.UniqueInstance)
                         : null;
                     return hr;
                 }
@@ -627,7 +626,7 @@ namespace Internal.TypeSystem.Ecma
                             {
                                 for (int i = 0; i < count; i++)
                                 {
-                                    children[i] = (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)SymUnmanagedScopeWrapperCache.Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
+                                    children[i] = (SymUnmanagedScopeWrapperCache.SymUnmanagedScopeRcw)Instance.GetOrCreateObjectForComInstance(intermediate[i], CreateObjectFlags.UniqueInstance);
                                 }
                             }
                         }
@@ -751,9 +750,9 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe record SymUnmanagedDocumentRcw(IntPtr Inst) : ISymUnmanagedDocument
+            public sealed unsafe record SymUnmanagedDocumentRcw(IntPtr Inst) : ISymUnmanagedDocument
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetUrl(int bufferLength, out int count, char[] url)
                 {
@@ -864,7 +863,7 @@ namespace Internal.TypeSystem.Ecma
 
             public sealed unsafe record SymUnmanagedMethodRcw(IntPtr Inst) : ISymUnmanagedMethod
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public int GetToken(out int methodToken)
                 {
@@ -1080,7 +1079,7 @@ namespace Internal.TypeSystem.Ecma
             /// </summary>
             public sealed record SymUnmanagedReaderRcw(IntPtr Inst) : ISymUnmanagedReader
             {
-                private bool _disposed = false;
+                private bool _disposed;
 
                 public unsafe int GetMethod(int methodToken, out ISymUnmanagedMethod? method)
                 {
@@ -1127,7 +1126,7 @@ namespace Internal.TypeSystem.Ecma
         }
 
         private static int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter,
-                                           Int32 dwClsContext,
+                                           int dwClsContext,
                                            ref Guid riid,
                                            out CoCreateWrapperCache.SymUnmanagedBinderRcw? ppv)
         {
@@ -1140,19 +1139,21 @@ namespace Internal.TypeSystem.Ecma
 
             [DllImport("ole32.dll")]
             static extern int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter,
-                                            Int32 dwClsContext,
+                                            int dwClsContext,
                                             ref Guid riid,
                                             out IntPtr ppv);
         }
 
-        private void ThrowExceptionForHR(int hr)
+        private static void ThrowExceptionForHR(int hr)
         {
             Marshal.ThrowExceptionForHR(hr, new IntPtr(-1));
         }
 
         private static readonly Guid SymBinderIID = new Guid(0x0a29ff9e, 0x7f9c, 0x4437, 0x8b, 0x11, 0xf4, 0x24, 0x49, 0x1e, 0x39, 0x31);
 
+#pragma warning disable CA1810 // Initialize reference type static fields inline
         static UnmanagedPdbSymbolReader()
+#pragma warning restore CA1810 // Initialize reference type static fields inline
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -1202,8 +1203,8 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private readonly static MetaDataDispenserWrapperCache.MetaDataDispenserRcw? s_metadataDispenser;
-        private readonly static CoCreateWrapperCache.SymUnmanagedBinderRcw? s_symBinder;
+        private static readonly MetaDataDispenserWrapperCache.MetaDataDispenserRcw? s_metadataDispenser;
+        private static readonly CoCreateWrapperCache.SymUnmanagedBinderRcw? s_symBinder;
 
         public static PdbSymbolReader? TryOpenSymbolReaderForMetadataFile(string metadataFileName, string searchPath)
         {
@@ -1252,8 +1253,7 @@ namespace Internal.TypeSystem.Ecma
         {
             lock (this)
             {
-                if (_urlCache == null)
-                    _urlCache = new Dictionary<ISymUnmanagedDocument, string>();
+                _urlCache ??= new Dictionary<ISymUnmanagedDocument, string>();
 
                 if (_urlCache.TryGetValue(doc, out var url))
                     return url;
@@ -1323,7 +1323,7 @@ namespace Internal.TypeSystem.Ecma
                 int attributes;
                 ThrowExceptionForHR(local.GetAttributes(out attributes));
 
-                variables.Add(new ILLocalVariable(slot, new String(nameBuffer, 0, nameLength - 1), (attributes & 0x1) != 0));
+                variables.Add(new ILLocalVariable(slot, new string(nameBuffer, 0, nameLength - 1), (attributes & 0x1) != 0));
             }
 
             int childrenCount;

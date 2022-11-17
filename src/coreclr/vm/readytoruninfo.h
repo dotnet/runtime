@@ -52,6 +52,9 @@ class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
 
+    // HotColdMappingLookupTable::LookupMappingForMethod searches m_pHotColdMap, and thus needs access.
+    friend class HotColdMappingLookupTable;
+
     PTR_Module                      m_pModule;
     PTR_ModuleBase                  m_pNativeManifestModule;
     PTR_READYTORUN_HEADER           m_pHeader;
@@ -64,6 +67,9 @@ class ReadyToRunInfo
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
+
+    PTR_ULONG                       m_pHotColdMap;
+    DWORD                           m_nHotColdMap;
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
 
@@ -92,11 +98,9 @@ class ReadyToRunInfo
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
 
-    static BOOL IsReadyToRunEnabled();
-
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
-    PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return m_pNextR2RForUnrelatedCode; }
+    PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(m_pNextR2RForUnrelatedCode) & ~0x1); }
     void RegisterUnrelatedR2RModule();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);

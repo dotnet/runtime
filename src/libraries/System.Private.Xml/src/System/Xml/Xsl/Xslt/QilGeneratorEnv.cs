@@ -252,7 +252,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            return _f.XsltInvokeEarlyBound(name, scrFunc.Method, scrFunc.XmlReturnType, args);
+            return _f.XsltInvokeEarlyBound(name, scrFunc.Method!, scrFunc.XmlReturnType!, args);
         }
 
         private string ResolvePrefixThrow(bool ignoreDefaultNs, string prefix)

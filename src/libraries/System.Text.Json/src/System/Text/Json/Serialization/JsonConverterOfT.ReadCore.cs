@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json.Serialization.Metadata;
-
 namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
@@ -10,7 +8,7 @@ namespace System.Text.Json.Serialization
         internal sealed override object? ReadCoreAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             return ReadCore(ref reader, options, ref state);
         }
@@ -18,7 +16,7 @@ namespace System.Text.Json.Serialization
         internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             try
             {
@@ -28,7 +26,7 @@ namespace System.Text.Json.Serialization
                     {
                         if (state.SupportContinuation)
                         {
-                            // If a Stream-based scenaio, return the actual value previously found;
+                            // If a Stream-based scenario, return the actual value previously found;
                             // this may or may not be the final pass through here.
                             state.BytesConsumed += reader.BytesConsumed;
                             if (state.Current.ReturnValue == null)
@@ -58,8 +56,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo;
-                bool success = TryRead(ref reader, jsonPropertyInfo.PropertyType, options, ref state, out T? value);
+                bool success = TryRead(ref reader, state.Current.JsonTypeInfo.Type, options, ref state, out T? value);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.

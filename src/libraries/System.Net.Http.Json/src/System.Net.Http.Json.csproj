@@ -8,6 +8,7 @@ Commonly Used Types:
 System.Net.Http.Json.HttpClientJsonExtensions
 System.Net.Http.Json.HttpContentJsonExtensions
 System.Net.Http.Json.JsonContent</PackageDescription>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +21,10 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes the state for polymorphic cases and returns the appropriate derived converter.
         /// </summary>
-        internal JsonConverter? ResolvePolymorphicConverter(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref ReadStack state)
+        internal JsonConverter? ResolvePolymorphicConverter(JsonTypeInfo jsonTypeInfo, ref ReadStack state)
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(CanHaveMetadata);
@@ -79,6 +79,16 @@ namespace System.Text.Json.Serialization
             {
                 case PolymorphicSerializationState.None:
                     Debug.Assert(!state.IsContinuation);
+
+                    if (state.IsPolymorphicRootValue && state.CurrentDepth == 0)
+                    {
+                        Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver != null);
+
+                        // We're serializing a root-level object value whose runtime type uses type hierarchies.
+                        // For consistency with nested value handling, we want to serialize as-is without emitting metadata.
+                        state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
+                        break;
+                    }
 
                     Type runtimeType = value.GetType();
 

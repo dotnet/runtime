@@ -136,13 +136,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     if (dumpChanges> 0) {
         SString fn;
         int ec;
-        fn.Printf(W("ApplyChanges.%d.dmeta"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dmeta", m_applyChangesCount);
         FILE *fp;
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaMD, 1, cbDeltaMD, fp);
         fclose(fp);
-        fn.Printf(W("ApplyChanges.%d.dil"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dil", m_applyChangesCount);
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaIL, 1, cbDeltaIL, fp);
@@ -751,9 +751,6 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     STATIC_CONTRACT_GC_TRIGGERS; // Sends IPC event
     STATIC_CONTRACT_THROWS;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    DWORD64 ssp = GetSSP(pContext);
-#endif
     // Create local copies of all structs passed as arguments to prevent them from being overwritten
     CONTEXT context;
     memcpy(&context, pContext, sizeof(CONTEXT));
@@ -832,13 +829,22 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // and return because we are potentially writing new vars onto the stack.
     pCurThread->SetFilterContext( NULL );
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (g_pDebugInterface->IsOutOfProcessSetContextEnabled())
+    {
+        g_pDebugInterface->SendSetThreadContextNeeded(pContext);
+    }
+    else
+    {
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    ClrRestoreNonvolatileContextWorker(pContext, ssp);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));

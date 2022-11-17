@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using Internal.IL.Stubs;
 using Internal.IL;
 
@@ -14,7 +13,7 @@ using System.Reflection.Metadata;
 
 namespace Internal.TypeSystem.Interop
 {
-    partial class Marshaller
+    internal partial class Marshaller
     {
         protected static Marshaller CreateMarshaller(MarshallerKind kind)
         {
@@ -104,7 +103,7 @@ namespace Internal.TypeSystem.Interop
         }
      }
 
-    class AnsiCharArrayMarshaller : ArrayMarshaller
+    internal sealed class AnsiCharArrayMarshaller : ArrayMarshaller
     {
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
@@ -141,7 +140,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class AnsiCharMarshaller : Marshaller
+    internal sealed class AnsiCharMarshaller : Marshaller
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
@@ -166,7 +165,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class StringBuilderMarshaller : Marshaller
+    internal sealed class StringBuilderMarshaller : Marshaller
     {
         private bool _isAnsi;
         public StringBuilderMarshaller(bool isAnsi)
@@ -250,7 +249,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class HandleRefMarshaller : Marshaller
+    internal sealed class HandleRefMarshaller : Marshaller
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
@@ -277,7 +276,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class StructMarshaller : Marshaller
+    internal sealed class StructMarshaller : Marshaller
     {
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
@@ -315,7 +314,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class ByValArrayMarshaller : ArrayMarshaller
+    internal class ByValArrayMarshaller : ArrayMarshaller
     {
         protected FieldDesc _managedField;
         protected FieldDesc _nativeField;
@@ -542,11 +541,10 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    abstract class ByValStringMarshaller : ByValArrayMarshaller
+    internal abstract class ByValStringMarshaller : ByValArrayMarshaller
     {
         protected override void EmitElementCount(ILCodeStream codeStream, MarshalDirection direction)
         {
-            ILEmitter emitter = _ilCodeStreams.Emitter;
             if (MarshalAsDescriptor == null || !MarshalAsDescriptor.SizeConst.HasValue)
             {
                 throw new InvalidProgramException("SizeConst is required for ByValString.");
@@ -608,7 +606,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class ByValAnsiStringMarshaller : ByValStringMarshaller
+    internal sealed class ByValAnsiStringMarshaller : ByValStringMarshaller
     {
         protected override bool IsAnsi
         {
@@ -629,7 +627,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class ByValUnicodeStringMarshaller : ByValStringMarshaller
+    internal sealed class ByValUnicodeStringMarshaller : ByValStringMarshaller
     {
         protected override bool IsAnsi
         {
@@ -650,7 +648,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class LayoutClassMarshaler : Marshaller
+    internal sealed class LayoutClassMarshaler : Marshaller
     {
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
@@ -710,7 +708,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class LayoutClassPtrMarshaller : Marshaller
+    internal sealed class LayoutClassPtrMarshaller : Marshaller
     {
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
@@ -801,7 +799,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class AsAnyMarshaller : Marshaller
+    internal sealed class AsAnyMarshaller : Marshaller
     {
         // This flag affects encoding of string, StringBuilder and Char array marshalling.
         // It does not affect LayoutClass marshalling.
@@ -893,7 +891,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class ComInterfaceMarshaller : Marshaller
+    internal sealed class ComInterfaceMarshaller : Marshaller
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
@@ -965,7 +963,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class AnsiBSTRStringMarshaller : Marshaller
+    internal sealed class AnsiBSTRStringMarshaller : Marshaller
     {
 
         internal override bool CleanupRequired => true;
@@ -998,7 +996,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class BSTRStringMarshaller : Marshaller
+    internal sealed class BSTRStringMarshaller : Marshaller
     {
 
         internal override bool CleanupRequired => true;
@@ -1031,7 +1029,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class OleDateTimeMarshaller : Marshaller
+    internal sealed class OleDateTimeMarshaller : Marshaller
     {
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
@@ -1056,7 +1054,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class OleCurrencyMarshaller : Marshaller
+    internal sealed class OleCurrencyMarshaller : Marshaller
     {
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
@@ -1081,7 +1079,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class FailedTypeLoadMarshaller : Marshaller
+    internal sealed class FailedTypeLoadMarshaller : Marshaller
     {
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
@@ -1094,7 +1092,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class VariantMarshaller : Marshaller
+    internal sealed class VariantMarshaller : Marshaller
     {
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
@@ -1150,8 +1148,9 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
     }
-
-    class CustomTypeMarshaller : Marshaller
+#pragma warning disable CA1852
+    internal class CustomTypeMarshaller : Marshaller
+#pragma warning restore CA1852
     {
         private ILLocalVariable MarshallerLocalVariable = (ILLocalVariable)(-1);
 
@@ -1183,7 +1182,7 @@ namespace Internal.TypeSystem.Interop
             MarshallerLocalVariable = emitter.NewLocal(customMarshallerType);
             var cookie = MarshalAsDescriptor.Cookie;
 
-            // Custom marshaller initialization should not be catched, so initialize early
+            // Custom marshaller initialization should not be caught, so initialize early
             ILCodeStream fnptrLoadStream = _ilCodeStreams.FunctionPointerLoadStream;
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(marshallerType));
@@ -1283,7 +1282,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class BlittableValueClassByRefReturn : Marshaller
+    internal sealed class BlittableValueClassByRefReturn : Marshaller
     {
         protected override void SetupArgumentsForReturnValueMarshalling()
         {

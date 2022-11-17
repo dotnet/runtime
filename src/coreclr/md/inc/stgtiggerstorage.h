@@ -169,7 +169,7 @@ public:
 
 
 //*****************************************************************************
-// Returns the size of the signature plus the verion information
+// Returns the size of the signature plus the version information
 //*****************************************************************************
     static HRESULT SizeOfStorageSignature(
         LPCSTR      pRuntimeVersion,        // The version string as it's length is part of the total size.

@@ -677,7 +677,7 @@ namespace System.Management
         /// <summary>
         /// This function will solve the naming collisions that might occur
         /// due to the collision between the local objects of the generated
-        /// class and the properties/methos of the original WMI Class.
+        /// class and the properties/methods of the original WMI Class.
         /// </summary>
         private void ProcessNamingCollisions()
         {
@@ -4531,7 +4531,7 @@ namespace System.Management
 
         /// <summary>
         /// This function will convert the given CIMTYPE to an acceptable .NET type.
-        /// Since CLS doen't support lotz of the basic types, we are using .NET helper
+        /// Since CLS doesn't support lotz of the basic types, we are using .NET helper
         /// classes here. We safely assume that there won't be any problem using them
         /// since .NET has to be there for the System.Management.Dll to work.
         /// </summary>
@@ -5175,7 +5175,7 @@ namespace System.Management
 
 
         /// <summary>
-        /// Converts a numberic value to appropriate type and adds it to array
+        /// Converts a numeric value to appropriate type and adds it to array
         /// </summary>
         private static string ConvertToNumericValueAndAddToArray(CimType cimType, string numericValue, ArrayList arrayToAdd, out string enumType)
         {
@@ -5269,7 +5269,7 @@ namespace System.Management
 
             CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
 
-            CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
+            CommentsString.Add("Property pointing to a embedded object to get System properties of the WMI object"); // IDS_CommentSystemObject
 
             CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
 
@@ -6665,7 +6665,7 @@ namespace System.Management
 
                     OffsetToBeAdjusted = UTCOffset-OffsetMins;
 
-                    // We have to substract the minutes from the time
+                    // We have to subtract the minutes from the time
                     datetime = datetime.AddMinutes((System.Double)(OffsetToBeAdjusted));
 
                 }

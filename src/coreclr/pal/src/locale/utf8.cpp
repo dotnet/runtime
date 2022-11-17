@@ -245,7 +245,7 @@ public:
 class DecoderFallbackBuffer
 {
     friend class UTF8Encoding;
-    // Most implimentations will probably need an implimenation-specific constructor
+    // Most implementations will probably need an implementation-specific constructor
 
     // internal methods that cannot be overridden that let us do our fallback thing
     // These wrap the internal methods so that we can check for people doing stuff that's incorrect
@@ -284,7 +284,7 @@ protected:
     }
 
     // Set the above values
-    // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
+    // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
     void InternalInitialize(BYTE* byteStart, WCHAR* charEnd)
     {
         this->byteStart = byteStart;
@@ -772,7 +772,7 @@ protected:
     }
 
     // Set the above values
-    // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
+    // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
     void InternalInitialize(WCHAR* charStart, WCHAR* charEnd, bool setEncoder)
     {
         this->charStart = charStart;
@@ -1093,14 +1093,14 @@ class UTF8Encoding
     void ThrowBytesOverflow()
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an encoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
         throw InsufficientBufferException("The output byte buffer is too small to contain the encoded data", "bytes");
     }
 
     void ThrowBytesOverflow(bool nothingEncoded)
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an encoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
         if (nothingEncoded){
             ThrowBytesOverflow();
         }
@@ -1109,14 +1109,14 @@ class UTF8Encoding
     void ThrowCharsOverflow()
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented a decoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented a decoder fallback with a broken GetMaxCharCount
         throw InsufficientBufferException("The output char buffer is too small to contain the encoded data", "chars");
     }
 
     void ThrowCharsOverflow(bool nothingEncoded)
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an decoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an decoder fallback with a broken GetMaxCharCount
         if (nothingEncoded){
             ThrowCharsOverflow();
         }
@@ -1164,7 +1164,7 @@ class UTF8Encoding
         int size;
 
         // See if it was a plain char
-        // (have to check >= 0 because we have all sorts of wierd bit flags)
+        // (have to check >= 0 because we have all sorts of weird bit flags)
         if (ch < 0x100 && ch >= 0)
         {
             pSrc--;

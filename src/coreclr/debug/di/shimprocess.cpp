@@ -1563,7 +1563,7 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
         // Remember that we're processing the first managed event so that we only call HandleFirstRCEvent() once
         m_fFirstManagedEvent = true;
 
-        // This can fail with the incompatable version HR. The process has already been terminated if this
+        // This can fail with the incompatible version HR. The process has already been terminated if this
         // is the case. This will dispatch an Error callback
         // If this fails, the process is in an undefined state.
         // @dbgtodo ipc-block: this will go away once we get rid

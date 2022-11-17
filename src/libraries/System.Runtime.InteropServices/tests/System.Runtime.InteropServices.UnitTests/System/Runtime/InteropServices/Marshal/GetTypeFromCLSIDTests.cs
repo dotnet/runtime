@@ -8,13 +8,17 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetTypeFromCLSIDTests
     {
-        private static readonly Guid TestCLSID = new Guid("927971f5-0939-11d1-8be1-00c04fd8d503");
+        // Represents a COM server that exists on all Windows skus that support IDispatch.
+        // See System.DirectoryServices.AccountManagement.ADsLargeInteger.
+        private const string IDispatchSupportedComServer = "927971f5-0939-11d1-8be1-00c04fd8d503";
+        private const string IDispatchSupportedComServerProgId = "LargeInteger";
 
-        private const string TestProgID = "LargeInteger";
+        private static readonly Guid TestCLSID = new Guid(IDispatchSupportedComServer);
+
+        private const string TestProgID = IDispatchSupportedComServerProgId;
         private const string TestServerName = "____NonExistingServer____";
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_NoSuchCLSIDExists_ReturnsExpected()
         {
             Type type = Marshal.GetTypeFromCLSID(Guid.Empty);
@@ -27,8 +31,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<COMException>(() => Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
         public void GetTypeFromCLSID_CLSIDExists_ReturnsExpected()
         {
             Type type = Marshal.GetTypeFromCLSID(TestCLSID);
@@ -46,8 +49,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.NotNull(Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
         public void GetTypeFromCLSID_CLSIDExists_Server_ReturnsExpected()
         {
             Type type = Type.GetTypeFromCLSID(TestCLSID, server: TestServerName, throwOnError: true);
@@ -74,7 +76,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Type.GetTypeFromProgID(TestProgID, throwOnError: true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromProgID_ReturnsExpected()
         {
             AssertExtensions.Throws<ArgumentNullException>("progID", () => Type.GetTypeFromProgID(null));

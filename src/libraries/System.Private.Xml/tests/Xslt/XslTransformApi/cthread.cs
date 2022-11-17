@@ -107,7 +107,7 @@ namespace System.Xml.Tests
                 catch (Exception e)
                 {
                     //Note: If we don't handle this exception it doesn't get handled by the
-                    //main thread try-catch since its on a sperate thread.  Instead of crashing the
+                    //main thread try-catch since its on a separate thread.  Instead of crashing the
                     //URT - or requiring every thread function to catch any exception (there not expecting)
                     //we will catch it and store the exception for later throw from the calling function
                     _iReturn = HandleException(e);

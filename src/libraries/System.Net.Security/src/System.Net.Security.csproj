@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -19,7 +20,6 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UseManagedNtlm)' == 'true'" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\CertificateValidationPal.cs" />
-    <Compile Include="System\Net\Logging\NetEventSource.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
     <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
@@ -61,6 +61,8 @@
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.DumpBuffer.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.DumpBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <!-- Debug only -->
@@ -146,11 +148,12 @@
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Windows.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Windows.cs" />
-    <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Windows.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Windows.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Windows.cs"
              Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
@@ -253,6 +256,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
@@ -361,10 +366,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCertContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeCertContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeSslCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
@@ -379,7 +380,6 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
-    <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Android.cs" />
@@ -413,7 +413,6 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="System\Net\CertificateValidationPal.OSX.cs" />
-    <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />

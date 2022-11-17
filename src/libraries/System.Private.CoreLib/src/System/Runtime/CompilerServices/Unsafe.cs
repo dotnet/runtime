@@ -67,7 +67,7 @@ namespace System.Runtime.CompilerServices
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(o))]
         public static T As<T>(object? o) where T : class?
         {
             throw new PlatformNotSupportedException();

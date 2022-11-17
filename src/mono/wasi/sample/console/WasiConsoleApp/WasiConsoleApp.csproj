@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
 </Project>

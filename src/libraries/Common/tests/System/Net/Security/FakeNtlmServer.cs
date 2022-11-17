@@ -19,7 +19,7 @@ namespace System.Net.Security
     // basic verification of the messages passed by the client against a
     // specified set of authentication credentials.
     //
-    // This is not indended as a production-quality code for implementing the
+    // This is not intended as a production-quality code for implementing the
     // NTLM authentication. It's merely to serve as a validation of challenges
     // and responses for unit test purposes. The validation checks the
     // structure of the messages, their integrity and use of specified

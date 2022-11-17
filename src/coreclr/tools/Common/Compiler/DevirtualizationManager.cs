@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.TypeSystem;
 using CORINFO_DEVIRTUALIZATION_DETAIL = Internal.JitInterface.CORINFO_DEVIRTUALIZATION_DETAIL;
 using Debug = System.Diagnostics.Debug;
@@ -107,7 +106,6 @@ namespace ILCompiler
                 }
                 else
                 {
-                    MethodDesc dimMethod = null;
                     // This isn't the correct lookup algorithm for variant default interface methods
                     // but as we will drop any results we find in any case, it doesn't matter much.
                     // Non-variant dispatch can simply use ResolveInterfaceMethodToDefaultImplementationOnType
@@ -130,6 +128,7 @@ namespace ILCompiler
 
                     if (defaultInterfaceDispatchDeclMethod != null)
                     {
+                        MethodDesc dimMethod;
                         switch (implType.ResolveInterfaceMethodToDefaultImplementationOnType(defaultInterfaceDispatchDeclMethod, out dimMethod))
                         {
                             case DefaultInterfaceMethodResolution.Diamond:
@@ -160,7 +159,7 @@ namespace ILCompiler
             else
             {
                 // The derived class should be a subclass of the base class.
-                // this check is perfomed via typedef checking instead of casting, as we accept canon methods calling exact types
+                // this check is performed via typedef checking instead of casting, as we accept canon methods calling exact types
                 TypeDesc checkType;
                 for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
                 { }
@@ -211,6 +210,8 @@ namespace ILCompiler
         /// so it can answer this question.
         /// </remarks>
         public virtual bool CanConstructType(TypeDesc type) => true;
+
+        public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif
     }
 }

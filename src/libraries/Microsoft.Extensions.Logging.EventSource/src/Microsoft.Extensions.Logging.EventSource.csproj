@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 

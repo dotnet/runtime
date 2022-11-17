@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -58,10 +59,10 @@ internal sealed class JObjectValueCreator
         return ret;
     }
 
-    public static JObject CreateFromPrimitiveType(object v)
+    public static JObject CreateFromPrimitiveType(object v, int? stringId = null)
         => v switch
         {
-            string s => Create(s, type: "string", description: s),
+            string s => Create(s, type: "string", description: s, objectId: $"dotnet:object:{stringId}"),
             char c => CreateJObjectForChar(Convert.ToInt32(c)),
             bool b => Create(b, type: "boolean", description: b ? "true" : "false", className: "System.Boolean"),
 
@@ -91,7 +92,8 @@ internal sealed class JObjectValueCreator
         CancellationToken token,
         bool isOwn = false,
         int typeIdForObject = -1,
-        bool forDebuggerDisplayAttribute = false)
+        bool forDebuggerDisplayAttribute = false,
+        bool includeStatic = false)
     {
         long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
         ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
@@ -182,7 +184,7 @@ internal sealed class JObjectValueCreator
                 {
                     var stringId = retDebuggerCmdReader.ReadInt32();
                     string value = await _sdbAgent.GetStringValue(stringId, token);
-                    ret = CreateFromPrimitiveType(value);
+                    ret = CreateFromPrimitiveType(value, stringId);
                     break;
                 }
             case ElementType.SzArray:
@@ -199,7 +201,7 @@ internal sealed class JObjectValueCreator
                 }
             case ElementType.ValueType:
                 {
-                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, token);
+                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, includeStatic, token);
                     break;
                 }
             case (ElementType)ValueTypeId.Null:
@@ -268,18 +270,19 @@ internal sealed class JObjectValueCreator
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
-        var type_id = await _sdbAgent.GetTypeIdsForObject(objectId, false, token);
-        string className = await _sdbAgent.GetTypeName(type_id[0], token);
+        var typeIds = await _sdbAgent.GetTypeIdsForObject(objectId, withParents: true, token);
+        string className = await _sdbAgent.GetTypeName(typeIds[0], token);
         string debuggerDisplayAttribute = null;
         if (!forDebuggerDisplayAttribute)
             debuggerDisplayAttribute = await _sdbAgent.GetValueFromDebuggerDisplayAttribute(
-                new DotnetObjectId("object", objectId), type_id[0], token);
+                new DotnetObjectId("object", objectId), typeIds[0], token);
         var description = className.ToString();
 
         if (debuggerDisplayAttribute != null)
+        {
             description = debuggerDisplayAttribute;
-
-        if (await _sdbAgent.IsDelegate(objectId, token))
+        }
+        else if (await _sdbAgent.IsDelegate(objectId, token))
         {
             if (typeIdFromAttribute != -1)
             {
@@ -292,6 +295,12 @@ internal sealed class JObjectValueCreator
                 return Create(value: className, type: "symbol", description: className);
             }
         }
+        else
+        {
+            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, token);
+            if (toString != null)
+                description = toString;
+        }
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
     }
 
@@ -300,6 +309,7 @@ internal sealed class JObjectValueCreator
         string name,
         long initialPos,
         bool forDebuggerDisplayAttribute,
+        bool includeStatic,
         CancellationToken token)
     {
         // FIXME: debugger proxy
@@ -335,8 +345,8 @@ internal sealed class JObjectValueCreator
                                                     initialPos,
                                                     className,
                                                     typeId,
-                                                    numValues,
                                                     isEnum,
+                                                    includeStatic,
                                                     token);
         _valueTypes[valueType.Id.Value] = valueType;
         return await valueType.ToJObject(_sdbAgent, forDebuggerDisplayAttribute, token);

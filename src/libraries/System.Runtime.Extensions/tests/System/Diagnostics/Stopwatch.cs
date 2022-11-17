@@ -96,7 +96,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void DebuggerAttributesValid()
         {
             Stopwatch watch = new Stopwatch();

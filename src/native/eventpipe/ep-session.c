@@ -180,6 +180,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_FILESTREAM :
 		if (output_path) {
 			file_stream_writer = ep_file_stream_writer_alloc (output_path);
+			ep_raise_error_if_nok (file_stream_writer != NULL);
 			instance->file = ep_file_alloc (ep_file_stream_writer_get_stream_writer_ref (file_stream_writer), format);
 			ep_raise_error_if_nok (instance->file != NULL);
 			file_stream_writer = NULL;

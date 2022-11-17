@@ -64,7 +64,7 @@ namespace System.IO.Pipelines
         private int ReadInternal(Span<byte> buffer)
         {
             ValueTask<ReadResult> vt = _pipeReader.ReadAsync();
-            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().Result;
+            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().GetAwaiter().GetResult();
             return HandleReadResult(result, buffer);
         }
 

@@ -173,7 +173,14 @@ int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize) override;
+          int bufferSize,
+          int startIndex) override;
+
+size_t printObjectDescription(
+          CORINFO_OBJECT_HANDLE handle,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
@@ -280,6 +287,15 @@ CorInfoHelpFunc getBoxHelper(
 CorInfoHelpFunc getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
+CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isObjectImmutable(
+          CORINFO_OBJECT_HANDLE objPtr) override;
+
+CORINFO_CLASS_HANDLE getObjectType(
+          CORINFO_OBJECT_HANDLE objPtr) override;
+
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -336,6 +352,10 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
+TypeCompareState isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType) override;
+
 CORINFO_CLASS_HANDLE getParentType(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -388,6 +408,9 @@ void getFieldInfo(
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
+int getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd) override;
+
 void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
@@ -429,6 +452,11 @@ CorInfoTypeWithMod getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet) override;
+
+int getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet) override;
 
 CORINFO_CLASS_HANDLE getArgClass(
           CORINFO_SIG_INFO* sig,
@@ -591,6 +619,12 @@ unsigned getClassDomainID(
 void* getFieldAddress(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
+
+bool getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint8_t* buffer,
+          int bufferSize,
+          bool ignoreMovableObjects) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

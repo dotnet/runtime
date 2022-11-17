@@ -48,7 +48,7 @@ token validation.
 -------------------------------------------------------------------------------
 #ClassConstruction
 
-First of all class contruction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
+First of all class construction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
 if you declare an explicit class constructor method and the later if you declaratively initialize static
 fields. Precise class construction guarantees that the .cctor is run precisely before the first access to any
 method or field of the class. 'beforeFieldInit' semantics guarantees only that the .cctor will be run some
@@ -85,7 +85,7 @@ Thus there four cases
         don't have hooks because a .ctor would have to be called first.
 
 Technically speaking, however the optimization of avoiding checks on instance methods is flawed. It requires
-that a .ctor always preceed a call to an instance methods. This break down when
+that a .ctor always precede a call to an instance methods. This break down when
 
     * A NULL is passed to an instance method.
     * A .ctor does not call its superclasses .ctor. This allows an instance to be created without necessarily
@@ -437,6 +437,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTANY,
     CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
+
+    CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
 
     CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
@@ -1054,6 +1056,7 @@ typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
 typedef struct CORINFO_METHOD_STRUCT_*      CORINFO_METHOD_HANDLE;
 typedef struct CORINFO_FIELD_STRUCT_*       CORINFO_FIELD_HANDLE;
+typedef struct CORINFO_OBJECT_STRUCT_*      CORINFO_OBJECT_HANDLE;
 typedef struct CORINFO_ARG_LIST_STRUCT_*    CORINFO_ARG_LIST_HANDLE;    // represents a list of argument types
 typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
@@ -1929,6 +1932,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
+#define CORINFO_String_MaxLength                          0x3FFFFFDF
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
 #ifdef TARGET_64BIT
@@ -2253,13 +2257,38 @@ public:
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
-    // Returns string length and content (can be null for dynamic context)
+    // Returns (sub)string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
             char16_t*                   buffer,     /* OUT */
-            int                         bufferSize  /* IN  */
+            int                         bufferSize, /* IN  */
+            int                         startIndex = 0 /* IN  */
+            ) = 0;
+
+
+    //------------------------------------------------------------------------------
+    // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
+    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic
+    //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
+    //
+    // Arguments:
+    //    handle     -          Direct object handle
+    //    buffer     -          Pointer to buffer
+    //    bufferSize -          Buffer size
+    //    pRequiredBufferSize - Full length of the textual UTF8 representation, can be used to call this
+    //                          API again with a bigger buffer to get the full string if the first buffer
+    //                          from that first attempt was not big enough.
+    //
+    // Return Value:
+    //    Bytes written to the given buffer, the range is [0..bufferSize)
+    //
+    virtual size_t printObjectDescription (
+            CORINFO_OBJECT_HANDLE       handle,                       /* IN  */
+            char*                       buffer,                       /* OUT */
+            size_t                      bufferSize,                   /* IN  */
+            size_t*                     pRequiredBufferSize = nullptr /* OUT */
             ) = 0;
 
     /**********************************************************************************/
@@ -2472,6 +2501,36 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    virtual CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    //------------------------------------------------------------------------------
+    // isObjectImmutable: checks whether given object is known to be immutable or not
+    //
+    // Arguments:
+    //    objPtr - Direct object handle
+    //
+    // Return Value:
+    //    Returns true if object is known to be immutable
+    //
+    virtual bool isObjectImmutable(
+            CORINFO_OBJECT_HANDLE       objPtr
+            ) = 0;
+
+    //------------------------------------------------------------------------------
+    // getObjectType: obtains type handle for given object
+    //
+    // Arguments:
+    //    objPtr - Direct object handle
+    //
+    // Return Value:
+    //    Returns CORINFO_CLASS_HANDLE handle that represents given object's type
+    //
+    virtual CORINFO_CLASS_HANDLE getObjectType(
+            CORINFO_OBJECT_HANDLE       objPtr
+            ) = 0;
+
     virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             CORINFO_LOOKUP_KIND *           pGenericLookupKind,
@@ -2576,6 +2635,16 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
+    // Returns TypeCompareState::Must if cls is known to be an enum.
+    // For enums with known exact type returns the underlying
+    // type in underlyingType when the provided pointer is
+    // non-NULL.
+    // Returns TypeCompareState::May when a runtime check is required.
+    virtual TypeCompareState isEnum(
+            CORINFO_CLASS_HANDLE        cls,
+            CORINFO_CLASS_HANDLE*       underlyingType
+            ) = 0;
+
     // Given a class handle, returns the Parent type.
     // For COMObjectType, it returns Class Handle of System.Object.
     // Returns 0 if System.Object is passed in.
@@ -2671,6 +2740,8 @@ public:
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
+    virtual int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) = 0;
+
     /*********************************************************************************/
     //
     // ICorDebugInfo
@@ -2706,7 +2777,7 @@ public:
                                                         //      jit allocated with allocateArray, EE frees
                 ) = 0;
 
-    // Query the EE to find out the scope of local varables.
+    // Query the EE to find out the scope of local variables.
     // normally the JIT would trash variables after last use, but
     // under debugging, the JIT needs to keep them live over their
     // entire scope so that they can be inspected.
@@ -2787,6 +2858,15 @@ public:
             CORINFO_ARG_LIST_HANDLE     args,           /* IN */
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
+
+    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
+    // the exact classes is greater than maxExactClasses or if more types might be loaded
+    // in future.
+    virtual int getExactClasses(
+                CORINFO_CLASS_HANDLE  baseType,            /* IN */
+                int                   maxExactClasses,     /* IN */
+                CORINFO_CLASS_HANDLE* exactClsRet          /* OUT */
+                ) = 0;
 
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
     virtual CORINFO_CLASS_HANDLE getArgClass (
@@ -2882,9 +2962,15 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
-    // this function is for debugging only.  It returns the method name
-    // and if 'moduleName' is non-null, it sets it to something that will
-    // says which method (a class name, or a module name)
+    // This function returns the method name and if 'moduleName' is non-null,
+    // it sets it to something that contains the method (a class
+    // name, or a module name). Note that the moduleName parameter is for
+    // diagnostics only.
+    //
+    // The method name returned is the same as getMethodNameFromMetadata except
+    // in the case of functions without metadata (e.g. IL stubs), where this
+    // function still returns a reasonable name while getMethodNameFromMetadata
+    // returns null.
     virtual const char* getMethodName (
             CORINFO_METHOD_HANDLE       ftn,        /* IN */
             const char                **moduleName  /* OUT */
@@ -3121,6 +3207,26 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
+    //------------------------------------------------------------------------------
+    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    //    field represents a statically initialized readonly field of any type.
+    //
+    // Arguments:
+    //    field                - field handle
+    //    buffer               - buffer field's value will be stored to
+    //    bufferSize           - size of buffer
+    //    ignoreMovableObjects - ignore movable reference types or not
+    //
+    // Return Value:
+    //    Returns true if field's constant value was available and successfully copied to buffer
+    //
+    virtual bool getReadonlyStaticFieldValue(
+                    CORINFO_FIELD_HANDLE    field,
+                    uint8_t                *buffer,
+                    int                     bufferSize,
+                    bool                    ignoreMovableObjects = true
+                    ) = 0;
+
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.
@@ -3241,5 +3347,10 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
+/**********************************************************************************/
+#ifdef TARGET_64BIT
+#define USE_PER_FRAME_PINVOKE_INIT
+#endif
 
 #endif // _COR_INFO_H_

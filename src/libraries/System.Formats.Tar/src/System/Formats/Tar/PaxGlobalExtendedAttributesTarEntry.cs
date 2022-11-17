@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace System.Formats.Tar
 {
@@ -26,23 +25,16 @@ namespace System.Formats.Tar
         /// <param name="globalExtendedAttributes">An enumeration of string key-value pairs that represents the metadata to include as Global Extended Attributes.</param>
         /// <exception cref="ArgumentNullException"><paramref name="globalExtendedAttributes"/> is <see langword="null"/>.</exception>
         public PaxGlobalExtendedAttributesTarEntry(IEnumerable<KeyValuePair<string, string>> globalExtendedAttributes)
-            : base(TarEntryType.GlobalExtendedAttributes, TarHeader.GlobalHeadFormatPrefix, TarEntryFormat.Pax, isGea: true)
+            : base(TarEntryType.GlobalExtendedAttributes, nameof(PaxGlobalExtendedAttributesTarEntry), TarEntryFormat.Pax, isGea: true) // Name == name of type for lack of a better temporary name until the entry is written
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
-            _header._extendedAttributes = new Dictionary<string, string>(globalExtendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes);
         }
 
         /// <summary>
         /// Returns the global extended attributes stored in this entry.
         /// </summary>
-        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes
-        {
-            get
-            {
-                _header._extendedAttributes ??= new Dictionary<string, string>();
-                return _readOnlyGlobalExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
-            }
-        }
+        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes => _readOnlyGlobalExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => false;

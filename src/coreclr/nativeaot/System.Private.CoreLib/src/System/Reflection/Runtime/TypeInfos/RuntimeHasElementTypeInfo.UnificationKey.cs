@@ -46,7 +46,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!ElementType.Equals(other.ElementType))
                     return false;
 
-                // The TypeHandle is not actually part of the key but riding along for convenience (see commment at head of class.)
+                // The TypeHandle is not actually part of the key but riding along for convenience (see comment at head of class.)
                 // If the other parts of the key matched, this must too.
                 Debug.Assert(TypeHandle.Equals(other.TypeHandle));
                 return true;

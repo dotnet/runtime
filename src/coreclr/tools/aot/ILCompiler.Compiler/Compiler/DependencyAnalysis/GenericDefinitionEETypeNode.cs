@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Runtime;
-using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -43,9 +42,9 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
             EETypeRareFlags rareFlags = 0;
 
-            ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
+            uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
             if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-                rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
+                rareFlags |= EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
@@ -53,10 +52,12 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
             if (HasOptionalFields)
-                flags |= (ushort)EETypeFlags.OptionalFieldsFlag;
+                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
 
-            dataBuilder.EmitShort((short)_type.Instantiation.Length);
-            dataBuilder.EmitUShort(flags);
+            flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            flags |= (ushort)_type.Instantiation.Length;
+
+            dataBuilder.EmitUInt(flags);
             dataBuilder.EmitInt(0);         // Base size is always 0
             dataBuilder.EmitZeroPointer();  // No related type
             dataBuilder.EmitShort(0);       // No VTable

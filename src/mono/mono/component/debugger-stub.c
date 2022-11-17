@@ -10,7 +10,7 @@
 #include <mono/component/debugger.h>
 
 static bool
-debugger_avaliable (void);
+debugger_available (void);
 
 static void
 stub_debugger_parse_options (char *options);
@@ -66,8 +66,14 @@ stub_mono_wasm_single_step_hit (void);
 static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
+static void 
+stub_receive_and_process_command_from_debugger_agent (void);
+
+static gboolean
+stub_debugger_enabled (void);
+
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_available },
 	&stub_debugger_init,
 	&stub_debugger_user_break,
 	&stub_debugger_parse_options,
@@ -90,10 +96,14 @@ static MonoComponentDebugger fn_table = {
 
 	//HotReload
 	&stub_send_enc_delta,
+
+	//wasi
+	&stub_receive_and_process_command_from_debugger_agent,
+	&stub_debugger_enabled,
 };
 
 static bool
-debugger_avaliable (void)
+debugger_available (void)
 {
 	return false;
 }
@@ -202,6 +212,17 @@ stub_mono_wasm_single_step_hit (void)
 static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len)
 {
+}
+
+static void 
+stub_receive_and_process_command_from_debugger_agent (void)
+{
+}
+
+static gboolean
+stub_debugger_enabled (void)
+{
+	return FALSE;
 }
 
 #ifdef HOST_BROWSER

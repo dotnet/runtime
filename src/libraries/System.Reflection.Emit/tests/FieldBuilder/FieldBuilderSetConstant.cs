@@ -179,7 +179,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("Field_NegTest1", typeof(int), FieldAttributes.Public);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => field.SetConstant(0));
         }

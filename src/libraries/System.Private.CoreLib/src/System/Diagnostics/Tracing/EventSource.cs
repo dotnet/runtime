@@ -13,14 +13,14 @@
 //
 // PRINCIPLE: EventSource - ETW decoupling
 //
-// Conceptually an EventSouce is something that takes event logging data from the source methods
+// Conceptually an EventSource is something that takes event logging data from the source methods
 // to the EventListener that can subscribe to them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
 // KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener which
 // we will call the EtwEventListener, that forwards commands from ETW to EventSources and
 // listens to EventSources and forwards on those events to ETW.   Thus the model should
 // be that you DON'T NEED ETW.
 //
-// Now in actual practice, EventSouce have rather intimate knowledge of ETW and send events
+// Now in actual practice, EventSource have rather intimate knowledge of ETW and send events
 // to it directly, but this can be VIEWED AS AN OPTIMIZATION.
 //
 // Basic Event Data Flow:
@@ -1191,7 +1191,7 @@ namespace System.Diagnostics.Tracing
             }
 
             // Important, we pass this structure directly to the Win32 EventWrite API, so this structure must
-            // be layed out exactly the way EventWrite wants it.
+            // be laid out exactly the way EventWrite wants it.
             internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
@@ -2807,8 +2807,13 @@ namespace System.Diagnostics.Tracing
         // Today, we only send the manifest to ETW, custom listeners don't get it.
         private unsafe void SendManifest(byte[]? rawManifest)
         {
-            if (rawManifest == null)
+            if (rawManifest == null
+                // Don't send the manifest for NativeRuntimeEventSource, it is conceptually
+                // an extension of the native coreclr provider
+                || m_name.Equals("Microsoft-Windows-DotNETRuntime"))
+            {
                 return;
+            }
 
             Debug.Assert(!SelfDescribingEvents);
 
@@ -3606,11 +3611,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                   Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
-                                   "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
-                                   "In the worst case it will not be able to determine the value it's looking for and will not perform" +
-                                   "any validation.")]
+                    Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
+                                    "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
+                                    "In the worst case it will not be able to determine the value it's looking for and will not perform" +
+                                    "any validation.")]
+#endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
 #if !NATIVEAOT
@@ -3662,11 +3669,11 @@ namespace System.Diagnostics.Tracing
                     case 28: // LDC_I4_6
                     case 29: // LDC_I4_7
                     case 30: // LDC_I4_8
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx] - 22;
                         break;
                     case 31: // LDC_I4_S
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx + 1];
                         idx++;
                         break;
@@ -3921,7 +3928,7 @@ namespace System.Diagnostics.Tracing
     /// created.
     /// </para>
     /// </summary>
-    public class EventListener : IDisposable
+    public abstract class EventListener : IDisposable
     {
         private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
 
@@ -3961,7 +3968,7 @@ namespace System.Diagnostics.Tracing
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
         /// </summary>
-        public EventListener()
+        protected EventListener()
         {
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
@@ -4098,7 +4105,7 @@ namespace System.Diagnostics.Tracing
         /// and EventSourceIndex allows this extra information to be efficiently stored in a
         /// (growable) array (eg List(T)).
         /// </summary>
-        public static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
+        protected internal static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
 
         /// <summary>
         /// This method is called whenever a new eventSource is 'attached' to the dispatcher.
@@ -4201,7 +4208,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // Whenver we have async callbacks from native code, there is an ugly issue where
+        // Whenever we have async callbacks from native code, there is an ugly issue where
         // during .NET shutdown native code could be calling the callback, but the CLR
         // has already prohibited callbacks to managed code in the appdomain, causing the CLR
         // to throw a COMPLUS_BOOT_EXCEPTION.   The guideline we give is that you must unregister
@@ -5212,20 +5219,20 @@ namespace System.Diagnostics.Tracing
 
         public void AddKeyword(string name, ulong value)
         {
-            if ((value & (value - 1)) != 0)   // Is it a power of 2?
+            if ((value & (value - 1)) != 0) // Must be zero or a power of 2
             {
-                ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, "0x" + value.ToString("x", CultureInfo.CurrentCulture), name), true);
+                ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, $"0x{value:x}", name), true);
             }
             if ((flags & EventManifestOptions.Strict) != 0)
             {
                 if (value >= 0x0000100000000000UL && !name.StartsWith("Session", StringComparison.Ordinal))
                 {
-                    ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
+                    ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, $"0x{value:x}"));
                 }
 
                 if (keywordTab != null && keywordTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
                 {
-                    ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
+                    ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, $"0x{value:x}"));
                 }
             }
 
@@ -5588,7 +5595,7 @@ namespace System.Diagnostics.Tracing
 
                             // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not.
                             // TODO: Warn people about the dropping of values.
-                            if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
+                            if (isbitmap && !BitOperations.IsPow2(hexValue))
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");

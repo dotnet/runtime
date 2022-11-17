@@ -330,6 +330,9 @@ mono_debugger_get_thread_states (void);
 gboolean
 mono_debugger_is_disconnected (void);
 
+void
+mono_debugger_agent_init (void);
+
 gsize
 mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData);
 
@@ -378,6 +381,9 @@ MonoMethod* get_object_id_for_debugger_method (MonoClass* async_builder_class);
 void mono_debugger_free_objref(gpointer value);
 
 #ifdef HOST_ANDROID
+#define PRINT_DEBUG_MSG(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
+#define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; } } while (0)
+#elif HOST_WASI
 #define PRINT_DEBUG_MSG(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; } } while (0)
 #elif HOST_WASM

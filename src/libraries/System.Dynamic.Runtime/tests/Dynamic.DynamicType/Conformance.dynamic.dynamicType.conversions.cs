@@ -213,7 +213,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
     public class TargetIsPredefinedValueType
     {
         #region non-nullable
-        private static bool ShortTypeWithNumbericConversionFromSbyteInAssignment()
+        private static bool ShortTypeWithNumericConversionFromSbyteInAssignment()
         {
             int failcount = 0;
             sbyte origin = sbyte.MinValue;
@@ -228,7 +228,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool UshortTypeWithNumbericConversionFromCharInAssignment()
+        private static bool UshortTypeWithNumericConversionFromCharInAssignment()
         {
             int failcount = 0;
             char origin = char.MinValue;
@@ -243,7 +243,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool IntTypeWithNumbericConversionFromSbyteInAssignment()
+        private static bool IntTypeWithNumericConversionFromSbyteInAssignment()
         {
             int failcount = 0;
             sbyte origin = sbyte.MinValue;
@@ -258,7 +258,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool UintTypeWithNumbericConversionFromByteInAssignment()
+        private static bool UintTypeWithNumericConversionFromByteInAssignment()
         {
             int failcount = 0;
             byte origin = byte.MaxValue;
@@ -273,7 +273,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool LongTypeWithNumbericConversionFromShortInAssignment()
+        private static bool LongTypeWithNumericConversionFromShortInAssignment()
         {
             int failcount = 0;
             short origin = short.MaxValue;
@@ -288,7 +288,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool UlongTypeWithNumbericConversionFromUshortInAssignment()
+        private static bool UlongTypeWithNumericConversionFromUshortInAssignment()
         {
             int failcount = 0;
             ushort origin = ushort.MaxValue;
@@ -305,7 +305,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
         #endregion
         #region nullable
-        private static bool NullableShortTypeWithNumbericConversionFromByteInAssignment()
+        private static bool NullableShortTypeWithNumericConversionFromByteInAssignment()
         {
             int failcount = 0;
             byte? origin = byte.MaxValue;
@@ -320,7 +320,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableUshortTypeWithNumbericConversionFromByteInAssignment()
+        private static bool NullableUshortTypeWithNumericConversionFromByteInAssignment()
         {
             int failcount = 0;
             byte? origin = byte.MinValue;
@@ -335,7 +335,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableIntTypeWithNumbericConversionFromShortInAssignment()
+        private static bool NullableIntTypeWithNumericConversionFromShortInAssignment()
         {
             int failcount = 0;
             short? origin = short.MaxValue;
@@ -350,7 +350,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableUintTypeWithNumbericConversionFromUshortInAssignment()
+        private static bool NullableUintTypeWithNumericConversionFromUshortInAssignment()
         {
             int failcount = 0;
             ushort? origin = ushort.MaxValue;
@@ -365,7 +365,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableLongTypeWithNumbericConversionFromIntInAssignment()
+        private static bool NullableLongTypeWithNumericConversionFromIntInAssignment()
         {
             int failcount = 0;
             int? origin = int.MinValue;
@@ -380,7 +380,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableUlongTypeWithNullableNumbericConversionFromUintInAssignment()
+        private static bool NullableUlongTypeWithNullableNumericConversionFromUintInAssignment()
         {
             int failcount = 0;
             uint origin = uint.MaxValue;
@@ -405,18 +405,18 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         public static int MainMethod()
         {
             int result = 0;
-            result += Verify.Eval(ShortTypeWithNumbericConversionFromSbyteInAssignment);
-            result += Verify.Eval(UshortTypeWithNumbericConversionFromCharInAssignment);
-            result += Verify.Eval(IntTypeWithNumbericConversionFromSbyteInAssignment);
-            result += Verify.Eval(UintTypeWithNumbericConversionFromByteInAssignment);
-            result += Verify.Eval(LongTypeWithNumbericConversionFromShortInAssignment);
-            result += Verify.Eval(UlongTypeWithNumbericConversionFromUshortInAssignment);
-            result += Verify.Eval(NullableShortTypeWithNumbericConversionFromByteInAssignment);
-            result += Verify.Eval(NullableUshortTypeWithNumbericConversionFromByteInAssignment);
-            result += Verify.Eval(NullableIntTypeWithNumbericConversionFromShortInAssignment);
-            result += Verify.Eval(NullableUintTypeWithNumbericConversionFromUshortInAssignment);
-            result += Verify.Eval(NullableLongTypeWithNumbericConversionFromIntInAssignment);
-            result += Verify.Eval(NullableUlongTypeWithNullableNumbericConversionFromUintInAssignment);
+            result += Verify.Eval(ShortTypeWithNumericConversionFromSbyteInAssignment);
+            result += Verify.Eval(UshortTypeWithNumericConversionFromCharInAssignment);
+            result += Verify.Eval(IntTypeWithNumericConversionFromSbyteInAssignment);
+            result += Verify.Eval(UintTypeWithNumericConversionFromByteInAssignment);
+            result += Verify.Eval(LongTypeWithNumericConversionFromShortInAssignment);
+            result += Verify.Eval(UlongTypeWithNumericConversionFromUshortInAssignment);
+            result += Verify.Eval(NullableShortTypeWithNumericConversionFromByteInAssignment);
+            result += Verify.Eval(NullableUshortTypeWithNumericConversionFromByteInAssignment);
+            result += Verify.Eval(NullableIntTypeWithNumericConversionFromShortInAssignment);
+            result += Verify.Eval(NullableUintTypeWithNumericConversionFromUshortInAssignment);
+            result += Verify.Eval(NullableLongTypeWithNumericConversionFromIntInAssignment);
+            result += Verify.Eval(NullableUlongTypeWithNullableNumericConversionFromUintInAssignment);
             return result;
         }
     }
@@ -440,7 +440,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
     public class TargetIsPredefinedValueType
     {
         #region non-nullable
-        private static bool FloatTypeWithNumbericConversionFromIntInAssignment()
+        private static bool FloatTypeWithNumericConversionFromIntInAssignment()
         {
             int failcount = 0;
             int origin = int.MaxValue;
@@ -455,7 +455,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool DoubleTypeWithNumbericConversionFromUlongInAssignment()
+        private static bool DoubleTypeWithNumericConversionFromUlongInAssignment()
         {
             int failcount = 0;
             ulong origin = ulong.MinValue;
@@ -470,7 +470,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool DecimalTypeWithNumbericConversionFromUintInAssignment()
+        private static bool DecimalTypeWithNumericConversionFromUintInAssignment()
         {
             int failcount = 0;
             uint origin = uint.MaxValue;
@@ -517,7 +517,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
         #endregion
         #region nullable
-        private static bool NullableFloatTypeWithNumbericConversionFromLongInAssignment()
+        private static bool NullableFloatTypeWithNumericConversionFromLongInAssignment()
         {
             int failcount = 0;
             long? origin = long.MaxValue;
@@ -532,7 +532,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableDoubleTypeWithNumbericConversionFromFloatInAssignment()
+        private static bool NullableDoubleTypeWithNumericConversionFromFloatInAssignment()
         {
             int failcount = 0;
             float? origin = +0.0f;
@@ -547,7 +547,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NullableDecimalTypeWithNumbericConversionFromUlongInAssignment()
+        private static bool NullableDecimalTypeWithNumericConversionFromUlongInAssignment()
         {
             int failcount = 0;
             ulong? origin = ulong.MaxValue;
@@ -602,14 +602,14 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         public static int MainMethod()
         {
             int result = 0;
-            result += Verify.Eval(FloatTypeWithNumbericConversionFromIntInAssignment);
-            result += Verify.Eval(DoubleTypeWithNumbericConversionFromUlongInAssignment);
-            result += Verify.Eval(DecimalTypeWithNumbericConversionFromUintInAssignment);
+            result += Verify.Eval(FloatTypeWithNumericConversionFromIntInAssignment);
+            result += Verify.Eval(DoubleTypeWithNumericConversionFromUlongInAssignment);
+            result += Verify.Eval(DecimalTypeWithNumericConversionFromUintInAssignment);
             result += Verify.Eval(GuidTypeWithIdentityConversionInAssignment);
             result += Verify.Eval(DatetimeTypeWithIdentityConversionInAssignment);
-            result += Verify.Eval(NullableFloatTypeWithNumbericConversionFromLongInAssignment);
-            result += Verify.Eval(NullableDoubleTypeWithNumbericConversionFromFloatInAssignment);
-            result += Verify.Eval(NullableDecimalTypeWithNumbericConversionFromUlongInAssignment);
+            result += Verify.Eval(NullableFloatTypeWithNumericConversionFromLongInAssignment);
+            result += Verify.Eval(NullableDoubleTypeWithNumericConversionFromFloatInAssignment);
+            result += Verify.Eval(NullableDecimalTypeWithNumericConversionFromUlongInAssignment);
             result += Verify.Eval(NullableGuidTypeWithIdentityConversionInAssignment);
             result += Verify.Eval(NullableDatetimeTypeWithNullableIdentityConversionInAssignment);
             return result;

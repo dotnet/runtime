@@ -709,7 +709,8 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     // Currently AVX doesn't support integer.
     // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
     if (op1Reg != targetReg && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported &&
-        !(ins == INS_cvtsi2ss || ins == INS_cvtsi2sd) && GetEmitter()->IsThreeOperandAVXInstruction(ins))
+        !(ins == INS_cvtsi2ss32 || ins == INS_cvtsi2sd32 || ins == INS_cvtsi2ss64 || ins == INS_cvtsi2sd64) &&
+        GetEmitter()->IsThreeOperandAVXInstruction(ins))
     {
         inst_RV_RV_RV(ins, targetReg, op1Reg, op2Reg, emitActualTypeSize(targetType));
     }
@@ -731,7 +732,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 }
 
 //--------------------------------------------------------------------------------
-// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operater
+// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operator
 // <, <=, >, >= and ==
 //
 // Arguments:
@@ -870,7 +871,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
     assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
 #endif
 
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
+    // Need an additional Xmm register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genConsumeOperands(treeNode->AsOp());
@@ -906,7 +907,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional Xmm register to read upper 4 bytes, which is different from targetReg
+    // Need an additional Xmm register to read upper 4 bytes, which is different from targetReg
     regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != targetReg);
 
@@ -1052,7 +1053,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
+    // Need an additional Xmm register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genStoreSIMD12ToStack(operandReg, tmpReg);

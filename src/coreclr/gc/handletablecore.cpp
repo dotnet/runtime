@@ -829,7 +829,7 @@ void SegmentRemoveFreeBlocks(TableSegment *pSegment, uint32_t uType, BOOL *pfSca
  *
  * Inserts a block into a block list within a segment.  Blocks are obtained from the
  * segment's free list.  Returns the index of the block inserted, or BLOCK_INVALID
- * if no blocks were avaliable.
+ * if no blocks were available.
  *
  * This routine is the core implementation for SegmentInsertBlockFromFreeList.
  *
@@ -928,7 +928,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
  *
  * Inserts a block into a block list within a segment.  Blocks are obtained from the
  * segment's free list.  Returns the index of the block inserted, or BLOCK_INVALID
- * if no blocks were avaliable.
+ * if no blocks were available.
  *
  * This routine does the work of securing a parallel user data block if required.
  *

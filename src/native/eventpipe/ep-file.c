@@ -57,7 +57,7 @@ file_write_event_to_block (
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
 	uint32_t stack_id,
-	bool is_sotred_event);
+	bool is_sorted_event);
 
 static
 bool
@@ -218,7 +218,7 @@ file_write_event_to_block (
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
 	uint32_t stack_id,
-	bool is_sotred_event)
+	bool is_sorted_event)
 {
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (event_instance != NULL);
@@ -237,14 +237,14 @@ file_write_event_to_block (
 		block = (EventPipeEventBlockBase *)file->metadata_block;
 	}
 
-	if (ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sotred_event))
+	if (ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sorted_event))
 		return; // the block is not full, we added the event and continue
 
 	// we can't write this event to the current block (it's full)
 	// so we write what we have in the block to the serializer
 	ep_file_flush (file, flags);
 
-	bool result = ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sotred_event);
+	bool result = ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sorted_event);
 	if (!result)
 		EP_UNREACHABLE ("Should never fail to add event to a clear block. If we do the max size is too small.");
 }
@@ -340,7 +340,7 @@ ep_file_alloc (
 	ep_rt_metadata_labels_hash_alloc (&instance->metadata_ids, NULL, NULL, NULL, NULL);
 	ep_raise_error_if_nok (ep_rt_metadata_labels_hash_is_valid (&instance->metadata_ids));
 
-	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_stack_hash_key_hash, ep_stack_hash_key_equal, NULL, stack_hash_value_free_func);
+	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_rt_stack_hash_key_hash, ep_rt_stack_hash_key_equal, NULL, stack_hash_value_free_func);
 	ep_raise_error_if_nok (ep_rt_stack_hash_is_valid (&instance->stack_hash));
 
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.

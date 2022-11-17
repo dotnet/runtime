@@ -213,10 +213,15 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> OffsetOf_NotMarshallable_TestData()
         {
+            // Ensure AOT compilers generate the marshalling data
+            if (string.Empty.Length > 0)
+                Marshal.SizeOf<StructWithFxdLPSTRSAFld>();
+
             yield return new object[] { typeof(StructWithFxdLPSTRSAFld), nameof(StructWithFxdLPSTRSAFld.Arr) };
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(OffsetOf_NotMarshallable_TestData))]
         public void OffsetOf_NotMarshallable_ThrowsArgumentException(Type t, string fieldName)
@@ -225,6 +230,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void OffsetOf_NoLayoutPoint_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.OffsetOf(typeof(NoLayoutPoint), nameof(NoLayoutPoint.x)));

@@ -56,7 +56,7 @@ namespace MonoTests.Helpers {
 					asm.EntryPoint.Invoke (null, null);
 			} catch (TargetInvocationException e) {
 				if (e.InnerException is OutOfMemoryException)
-					Console.WriteLine ("Catched oom");
+					Console.WriteLine ("Caught oom");
 				else
 					throw;
 			}

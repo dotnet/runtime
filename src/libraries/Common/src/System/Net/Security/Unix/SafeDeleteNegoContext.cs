@@ -15,6 +15,7 @@ namespace System.Net.Security
         private SafeGssNameHandle? _targetName;
         private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
+        private SafeFreeNegoCredentials? _credential;
 
         public SafeGssCredHandle AcceptorCredential
         {
@@ -42,14 +43,17 @@ namespace System.Net.Security
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential)
-            : base(credential)
+            : base(IntPtr.Zero)
         {
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
+            bool added = false;
+            credential.DangerousAddRef(ref added);
+            _credential = credential;
             _context = new SafeGssContextHandle();
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential, string targetName)
-            : this(credential)
+            : base(IntPtr.Zero)
         {
             try
             {
@@ -61,6 +65,9 @@ namespace System.Net.Security
                 Dispose();
                 throw;
             }
+            _credential = credential;
+            bool ignore = false;
+            _credential.DangerousAddRef(ref ignore);
         }
 
         public void SetGssContext(SafeGssContextHandle context)
@@ -71,6 +78,11 @@ namespace System.Net.Security
         public void SetAuthenticationPackage(bool isNtlmUsed)
         {
             _isNtlmUsed = isNtlmUsed;
+        }
+
+        public override bool IsInvalid
+        {
+            get { return (null == _credential); }
         }
 
         protected override void Dispose(bool disposing)
@@ -92,6 +104,12 @@ namespace System.Net.Security
                 }
             }
             base.Dispose(disposing);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _credential?.DangerousRelease();
+            return true;
         }
     }
 }

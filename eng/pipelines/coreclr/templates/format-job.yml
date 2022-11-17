@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   timeoutInMinutes: ''
   stagedBuild: false
@@ -23,7 +22,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
@@ -39,7 +37,7 @@ jobs:
           value: ${{ variable.value }}
       - ${{ if ne(variable.group, '') }}:
         - group: ${{ variable.group }}
-        
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
@@ -55,11 +53,11 @@ jobs:
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
-        version: '3.x'
+        version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
-      displayName: Run format.py
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+      displayName: Run jitformat.py
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:

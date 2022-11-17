@@ -222,7 +222,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -283,7 +283,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -333,6 +333,14 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return TrailingEpilogueInstructionsCount(pvAddress) == 0;
 }
 
+// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
+// otherwise returns
+//  0 - not in epilogue,
+// -1 - unknown.
+int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
+{
+#ifdef TARGET_AMD64
+
 #define SIZE64_PREFIX 0x48
 #define ADD_IMM8_OP 0x83
 #define ADD_IMM32_OP 0x81
@@ -348,14 +356,6 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 #define INT3_OP 0xcc
 
 #define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
-
-// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
-// otherwise returns
-//  0 - not in epilogue,
-// -1 - unknown.
-int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
-{
-#ifdef TARGET_AMD64
 
     //
     // Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
@@ -523,6 +523,90 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         // A breakpoint, possibly placed by the debugger - we do not know what was here.
         //
         return -1;
+    }
+
+#elif defined(TARGET_ARM64)
+
+// ldr with unsigned immediate
+// 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
+#define LDR_BITS1 0xB9400000
+#define LDR_MASK1 0xBF400000
+
+// ldr with pre/post/no offset
+// 1x11 1000 010x xxxx xxxx xxxx xxxx xxxx
+#define LDR_BITS2 0xB8400000
+#define LDR_MASK2 0xBFE00000
+
+// ldr with register offset
+// 1x11 1000 011x xxxx xxxx 10xx xxxx xxxx
+#define LDR_BITS3 0xB8600800
+#define LDR_MASK3 0xBFE00C00
+
+// ldp with signed offset
+// x010 1001 01xx xxxx xxxx xxxx xxxx xxxx
+#define LDP_BITS1 0x29400000
+#define LDP_MASK1 0x7FC00000
+
+// ldp with pre/post/no offset
+// x010 100x x1xx xxxx xxxx xxxx xxxx xxxx
+#define LDP_BITS2 0x28400000
+#define LDP_MASK2 0x7E400000
+
+// Branches, Exception Generating and System instruction group
+// xxx1 01xx xxxx xxxx xxxx xxxx xxxx xxxx
+#define BEGS_BITS 0x14000000
+#define BEGS_MASK 0x1C000000
+
+    MethodInfo pMethodInfo;
+    FindMethodInfo(pvAddress, &pMethodInfo);
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)&pMethodInfo;
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+
+    // Since we stop on branches, the search is roughly limited by the containing basic block.
+    // We typically examine just 1-5 instructions and in rare cases up to 30.
+    // 
+    // TODO: we can also limit the search by the longest possible epilogue length, but
+    // we must be sure the longest length considers all possibilities,
+    // which is somewhat nontrivial to derive/prove.
+    // It does not seem urgent, but it could be nice to have a constant upper bound.
+    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
+    {
+        uint32_t instr = *pInstr;
+    
+        // check for Branches, Exception Generating and System instruction group.
+        // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
+        // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
+        if ((instr & BEGS_MASK) == BEGS_BITS)
+        {
+            // not in an epilogue
+            break;
+        }
+
+        // check for restoring FP or LR with ldr or ldp
+        int operand = instr & 0x1f;
+        if (operand == 30 || operand == 29)
+        {
+            if ((instr & LDP_MASK1) == LDP_BITS1 ||
+                (instr & LDP_MASK2) == LDP_BITS2 ||
+                (instr & LDR_MASK1) == LDR_BITS1 ||
+                (instr & LDR_MASK2) == LDR_BITS2 ||
+                (instr & LDR_MASK3) == LDR_BITS3)
+            {
+                return -1;
+            }
+        }
+
+        // check for restoring FP or LR with ldp (as Rt2)
+        operand = (instr >> 10) & 0x1f;
+        if (operand == 30 || operand == 29)
+        {
+            if ((instr & LDP_MASK1) == LDP_BITS1 ||
+                (instr & LDP_MASK2) == LDP_BITS2)
+            {
+                return -1;
+            }
+        }
     }
 
 #endif
@@ -784,7 +868,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
         return NULL;
 
-    PTR_UInt8 p = methodInfo.pMainLSDA;
+    PTR_UInt8 p = methodInfo.pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)

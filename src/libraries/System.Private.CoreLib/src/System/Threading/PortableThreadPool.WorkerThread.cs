@@ -119,7 +119,7 @@ namespace System.Threading
                     try
                     {
                         // At this point, the thread's wait timed out. We are shutting down this thread.
-                        // We are going to decrement the number of exisiting threads to no longer include this one
+                        // We are going to decrement the number of existing threads to no longer include this one
                         // and then change the max number of threads in the thread pool to reflect that we don't need as many
                         // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
                         ThreadCounts counts = threadPoolInstance._separated.counts;
@@ -239,27 +239,8 @@ namespace System.Threading
 
                 while (toCreate > 0)
                 {
-                    if (TryCreateWorkerThread())
-                    {
-                        toCreate--;
-                        continue;
-                    }
-
-                    counts = threadPoolInstance._separated.counts;
-                    while (true)
-                    {
-                        ThreadCounts newCounts = counts;
-                        newCounts.NumProcessingWork -= (short)toCreate;
-                        newCounts.NumExistingThreads -= (short)toCreate;
-
-                        ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-                        if (oldCounts == counts)
-                        {
-                            break;
-                        }
-                        counts = oldCounts;
-                    }
-                    break;
+                    CreateWorkerThread();
+                    toCreate--;
                 }
             }
 
@@ -314,28 +295,15 @@ namespace System.Threading
                 return false;
             }
 
-            private static bool TryCreateWorkerThread()
+            private static void CreateWorkerThread()
             {
-                try
-                {
-                    // Thread pool threads must start in the default execution context without transferring the context, so
-                    // using UnsafeStart() instead of Start()
-                    Thread workerThread = new Thread(s_workerThreadStart);
-                    workerThread.IsThreadPoolThread = true;
-                    workerThread.IsBackground = true;
-                    // thread name will be set in thread proc
-                    workerThread.UnsafeStart();
-                }
-                catch (ThreadStartException)
-                {
-                    return false;
-                }
-                catch (OutOfMemoryException)
-                {
-                    return false;
-                }
-
-                return true;
+                // Thread pool threads must start in the default execution context without transferring the context, so
+                // using UnsafeStart() instead of Start()
+                Thread workerThread = new Thread(s_workerThreadStart);
+                workerThread.IsThreadPoolThread = true;
+                workerThread.IsBackground = true;
+                // thread name will be set in thread proc
+                workerThread.UnsafeStart();
             }
         }
     }

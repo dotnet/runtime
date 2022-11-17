@@ -68,24 +68,6 @@
 .endm
 
 //
-// Macro to clear the hijack state. This is safe to do because the suspension code will not Unhijack this
-// thread if it finds it at an IP that isn`t managed code.
-//
-// Register state on entry:
-//  R11: thread pointer
-//
-// Register state on exit:
-//  R9: trashed
-//
-.macro ClearHijackState
-        xor         r9, r9
-        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
-        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
-        mov         [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
-.endm
-
-
-//
 // The prolog for all GC suspension hijacks (normal and stress). Fixes up the hijacked return address, and
 // clears the hijack state.
 //
@@ -98,7 +80,7 @@
 //  RAX, RDX preserved, other volatile regs trashed
 //
 .macro FixupHijackedCallstack
-        // preserve RAX, RDX as they may contain retuvalues
+        // preserve RAX, RDX as they may contain return values
         push rax
         push rdx
 
@@ -109,88 +91,43 @@
         pop rdx
         pop rax
 
-        //
         // Fix the stack by pushing the original return address
-        //
         mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
+        // Fetch the return address flags
         mov         rcx, [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
-        ClearHijackState
+        // Clear hijack state
+        xor         r9, r9
+        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
+        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
+        mov         [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
 .endm
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// RhpWaitForGCNoAbort -- rare path for WaitForGCCompletion
-//
-//
-// INPUT: RDI: transition frame
-//
-// TRASHES: RCX, RDI, R8, R9, R10, R11
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpWaitForGCNoAbort, _TEXT, NoHandler
-        END_PROLOGUE
-
-        mov         rdx, [rdi + OFFSETOF__PInvokeTransitionFrame__m_pThread]
-
-        test        dword ptr [rdx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-        jnz         Done
-
-        // passing transition frame pointer in rdi
-        call        C_FUNC(RhpWaitForGC2)
-
-Done:
-        ret
-
-NESTED_END RhpWaitForGCNoAbort, _TEXT
-
-//
-// Set the Thread state and wait for a GC to complete.
-//
-// Register state on entry:
-//  RBX: thread pointer
-//
-// Register state on exit:
-//  RBX: thread pointer
-//  All other registers trashed
-//
-
-.macro WaitForGCCompletion
-        test        dword ptr [rbx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
-        jnz         LOCAL_LABEL(NoWait)
-
-        mov         rdi, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        call        C_FUNC(RhpWaitForGCNoAbort)
-LOCAL_LABEL(NoWait):
-
-.endm
-
-//
-//
 //
 // GC Probe Hijack target
 //
-//
-
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         END_PROLOGUE
         FixupHijackedCallstack
+
+        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
+        jnz         LOCAL_LABEL(WaitForGC)
+        ret
+
+LOCAL_LABEL(WaitForGC):
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
-        jmp         C_FUNC(RhpGcProbe)
+        jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 
-NESTED_ENTRY RhpGcProbe, _TEXT, NoHandler
-        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
-        jnz         LOCAL_LABEL(RhpGcProbe_Trap)
-        ret
-LOCAL_LABEL(RhpGcProbe_Trap):
+NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
         PUSH_PROBE_FRAME r11, rax, rcx
         END_PROLOGUE
 
         mov         rbx, r11
-        WaitForGCCompletion
+        mov         rdi, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        call        C_FUNC(RhpWaitForGC2)
 
         mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
@@ -203,7 +140,7 @@ LOCAL_LABEL(Abort):
         pop         rdx         // return address as exception RIP
         jmp         C_FUNC(RhpThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
 
-NESTED_END RhpGcProbe, _TEXT
+NESTED_END RhpWaitForGC, _TEXT
 
 
 LEAF_ENTRY RhpGcPoll, _TEXT
@@ -212,7 +149,6 @@ LEAF_ENTRY RhpGcPoll, _TEXT
         ret
 LOCAL_LABEL(RhpGcPoll_RarePath):
         jmp C_FUNC(RhpGcPollRare)
-
 LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
@@ -222,3 +158,16 @@ NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
         POP_COOP_PINVOKE_FRAME
         ret
 NESTED_END RhpGcPollRare, _TEXT
+
+
+#ifdef FEATURE_GC_STRESS
+
+//
+// GC Stress Hijack targets
+//
+LEAF_ENTRY RhpGcStressHijack, _TEXT
+    // NYI
+    int 3
+LEAF_END RhpGcStressHijack, _TEXT
+
+#endif  // FEATURE_GC_STRESS

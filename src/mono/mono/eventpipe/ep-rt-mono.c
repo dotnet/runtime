@@ -2120,13 +2120,13 @@ ep_rt_mono_rand_try_get_bytes (
 }
 
 char *
-ep_rt_mono_get_managed_cmd_line ()
+ep_rt_mono_get_managed_cmd_line (void)
 {
 	return mono_runtime_get_managed_cmd_line ();
 }
 
 char *
-ep_rt_mono_get_os_cmd_line ()
+ep_rt_mono_get_os_cmd_line (void)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -3084,7 +3084,7 @@ struct _BulkTypeEventLogger {
 
 static
 BulkTypeEventLogger*
-ep_rt_bulk_type_event_logger_alloc ()
+ep_rt_bulk_type_event_logger_alloc (void)
 {
 	BulkTypeEventLogger *type_logger = g_malloc0 (sizeof (BulkTypeEventLogger));
 	type_logger->bulk_type_event_buffer = g_malloc0 (sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
@@ -3437,7 +3437,7 @@ static const uint32_t MAX_METHOD_TYPE_ARGUMENT_COUNT = 1024;
 // eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
 // unique types from the method type and available method instantiation parameter types
 // that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
-// After appropraitely logging type information, it sends method details outlined by
+// After appropriately logging type information, it sends method details outlined by
 // the generated dotnetruntime.c and ClrEtwAll manifest.
 //
 // Arguments:
@@ -3784,7 +3784,17 @@ get_module_event_data (
 		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image && image->filename ? image->filename : "";
+		module_data->module_il_path = NULL;
+		if (image && image->filename) {
+			/* if there's a filename, use it */
+			module_data->module_il_path = image->filename;
+		} else if (image && image->module_name) {
+			/* otherwise, use the module name */
+			module_data->module_il_path = image->module_name;
+		}
+		if (!module_data->module_il_path)
+			module_data->module_il_path = "";
+
 		module_data->module_il_pdb_path = "";
 		module_data->module_il_pdb_age = 0;
 

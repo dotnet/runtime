@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
     <Nullable>annotations</Nullable>
   </PropertyGroup>

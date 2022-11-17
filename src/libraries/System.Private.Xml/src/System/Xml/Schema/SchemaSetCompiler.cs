@@ -949,7 +949,7 @@ namespace System.Xml.Schema
                     else
                     {
                         CompileSimpleType(simpleRestriction.BaseType);
-                        if (!XmlSchemaType.IsDerivedFromDatatype(simpleRestriction.BaseType.Datatype!, baseType.Datatype!, XmlSchemaDerivationMethod.None))
+                        if (!XmlSchemaType.IsDerivedFromDatatype(simpleRestriction.BaseType.Datatype!, baseType.Datatype!))
                         {
                             SendValidationEvent(SR.Sch_DerivedNotFromBase, simpleRestriction);
                         }
@@ -1454,7 +1454,7 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("particle")]
+        [return: NotNullIfNotNull(nameof(particle))]
         private static XmlSchemaParticle? CanonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)

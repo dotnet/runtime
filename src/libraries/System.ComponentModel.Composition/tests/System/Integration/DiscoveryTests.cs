@@ -508,7 +508,7 @@ namespace Tests.Integration
             container.SatisfyImportsOnce(import);
 
             // Import will get set twice because there are 2 imports on the same property.
-            // We would really like to either elminate it getting set twice or error in this case
+            // We would really like to either eliminate it getting set twice or error in this case
             // but we figure it is a rare enough corner case that it doesn't warrented the run time cost
             // and can be covered by an FxCop rule.
 
@@ -540,7 +540,7 @@ namespace Tests.Integration
             container.SatisfyImportsOnce(import);
 
             // Import will get set twice because there are 2 imports on the same property.
-            // We would really like to either elminate it getting set twice or error in this case
+            // We would really like to either eliminate it getting set twice or error in this case
             // but we figure it is a rare enough corner case that it doesn't warrented the run time cost
             // and can be covered by an FxCop rule.
 
@@ -821,7 +821,7 @@ namespace Tests.Integration
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
-        public void InheritedExport_InterfaceHiearchy()
+        public void InheritedExport_InterfaceHierarchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));
 

@@ -22,18 +22,45 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
+    public class CertificateSetup : IDisposable
+    {
+        public readonly X509Certificate2 serverCert;
+        public readonly X509Certificate2Collection serverChain;
+
+        public CertificateSetup()
+        {
+            Configuration.Certificates.CleanupCertificates(nameof(MsQuicTests));
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true);
+        }
+
+        public void Dispose()
+        {
+            serverCert.Dispose();
+            foreach (var c in serverChain)
+            {
+                c.Dispose();
+            }
+        }
+    }
+
     [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
-    public class MsQuicTests : QuicTestBase
+    public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
+        readonly CertificateSetup _certificates;
 
-        public MsQuicTests(ITestOutputHelper output) : base(output) { }
+        public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
+        {
+            _certificates = setup;
+        }
 
         [Fact]
         public async Task ConnectWithCertificateChain()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost", longChain: true);
             try
             {
                 X509Certificate2 rootCA = chain[chain.Count - 1];
@@ -103,6 +130,66 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectWithUntrustedCaWithCustomTrust_OK(bool usePartialChain)
+        {
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
+
+            X509Certificate2Collection serverChain;
+            if (usePartialChain)
+            {
+                // give first few certificates without root CA
+                serverChain = new X509Certificate2Collection();
+                for (int i = 0; i < split; i++)
+                {
+                    serverChain.Add(_certificates.serverChain[i]);
+                }
+            }
+            else
+            {
+                serverChain = _certificates.serverChain;
+            }
+
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                var serverOptions = CreateQuicServerOptions();
+                serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
+                serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = null;
+                return ValueTask.FromResult(serverOptions);
+            };
+
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            var clientSslOptions = clientOptions.ClientAuthenticationOptions;
+            clientSslOptions.TargetHost = "localhost";
+            clientSslOptions.RemoteCertificateValidationCallback = null;
+            clientSslOptions.CertificateChainPolicy = new X509ChainPolicy()
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+                TrustMode = X509ChainTrustMode.CustomRootTrust
+            };
+            clientSslOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
+            // Add only one CA to verify that peer did send intermediate CA cert.
+            // In case of partial chain, we need to make missing certs available.
+            if (usePartialChain)
+            {
+                for (int i = split; i < _certificates.serverChain.Count - 1; i++)
+                {
+                    clientSslOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.serverChain[i]);
+                }
+            }
+
+            // should connect successfully
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
+        }
+
+
         [ConditionalFact]
         public async Task UntrustedClientCertificateFails()
         {
@@ -157,7 +244,7 @@ namespace System.Net.Quic.Tests
 
             var listenerOptions = new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
@@ -202,7 +289,7 @@ namespace System.Net.Quic.Tests
 
             var listenerOptions = new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
@@ -241,11 +328,14 @@ namespace System.Net.Quic.Tests
             await clientConnection.DisposeAsync();
             await serverConnection.DisposeAsync();
 
-            // This should fail when callback return null.
+            // This should fail because server connection options callback returns null.
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar3";
             Task clientTask = CreateQuicConnection(clientOptions).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            // TODO: the exception may change if we implement https://github.com/dotnet/runtime/issues/73152 to make server close
+            // connections with CONNECTION_REFUSED in such cases
+            var authEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
+            Assert.Contains("UserCanceled", authEx.Message);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
 
@@ -301,7 +391,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithCertificateForDifferentName_Throws()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost");
             try
             {
                 var quicOptions = new QuicListenerOptions()
@@ -348,8 +438,12 @@ namespace System.Net.Quic.Tests
         public async Task ConnectWithCertificateForLoopbackIP_IndicatesExpectedError(string ipString, bool expectsError)
         {
             var ipAddress = IPAddress.Parse(ipString);
+            if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6 && !IsIPv6Available)
+            {
+                throw new SkipTestException("IPv6 is not available on this platform");
+            }
 
-            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost");
             try
             {
                 var listenerOptions = new QuicListenerOptions()
@@ -393,7 +487,6 @@ namespace System.Net.Quic.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task ConnectWithClientCertificate(bool sendCertificate, bool useClientSelectionCallback)
         {
             if (PlatformDetection.IsWindows10Version20348OrLower)
@@ -570,6 +663,8 @@ namespace System.Net.Quic.Tests
         [InlineData(true, true)] // the code path for uni/bidirectional streams differs only in a flag passed to MsQuic, so there is no need to test all possible combinations.
         public async Task OpenStreamAsync_ConnectionAbort_Throws(bool unidirectional, bool localAbort)
         {
+            const int expectedErrorCode = 789654;
+
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
                 ? connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional, token)
                 : connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, token);
@@ -595,39 +690,18 @@ namespace System.Net.Quic.Tests
 
             if (localAbort)
             {
-                await clientConnection.CloseAsync(0);
-                // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                // To be revisited once we standartize on exceptions.
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                await Assert.ThrowsAsync<QuicException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                await clientConnection.CloseAsync(expectedErrorCode);
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             }
             else
             {
-                await serverConnection.CloseAsync(0);
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                await serverConnection.CloseAsync(expectedErrorCode);
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
             }
 
             await clientConnection.DisposeAsync();
             await serverConnection.DisposeAsync();
-        }
-
-
-        [Fact]
-        [OuterLoop("May take several seconds")]
-        public async Task SetListenerTimeoutWorksWithSmallTimeout()
-        {
-            var listenerOptions = new QuicListenerOptions()
-            {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
-            };
-
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
-            await serverConnection.DisposeAsync();
-            await clientConnection.DisposeAsync();
         }
 
         [Theory]
@@ -1081,6 +1155,54 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(0, received);
                     Assert.True(serverStream.ReadsClosed.IsCompletedSuccessfully);
                 });
+        }
+
+        [Fact]
+        public async Task IncompatibleAlpn_ThrowsAuthenticationException()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [OuterLoop("May take several seconds")]
+        public async Task IdleTimeout_ThrowsQuicException()
+        {
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
+                    serverOptions.IdleTimeout = TimeSpan.FromSeconds(1);
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            await using (clientConnection)
+            await using (serverConnection)
+            {
+                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await clientStream.WriteAsync(new byte[1]);
+                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                await serverStream.ReadAsync(new byte[1]);
+
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
+
+                // read attempts should block until idle timeout
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+
+                // write and accept should throw as well
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+            }
         }
     }
 }

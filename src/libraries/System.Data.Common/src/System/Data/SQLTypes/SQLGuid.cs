@@ -28,7 +28,6 @@ namespace System.Data.SqlTypes
         private Guid? _value; // the SqlGuid is null if _value is null
 
         // constructor
-
         public SqlGuid(byte[] value)
         {
             if (value == null || value.Length != SizeOfGuid)

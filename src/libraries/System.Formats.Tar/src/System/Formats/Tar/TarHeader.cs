@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Formats.Tar
@@ -38,11 +39,6 @@ namespace System.Formats.Tar
         private const string PaxEaDevMajor = "devmajor";
         private const string PaxEaDevMinor = "devminor";
 
-        // Global Extended Attribute entries have a special format in the Name field:
-        // "{tmpFolder}/GlobalHead.{processId}.{GEAEntryNumber}"
-        // Excludes ".{GEAEntryNumber}" because the number gets added on write.
-        internal const string GlobalHeadFormatPrefix = "{0}/GlobalHead.{1}";
-
         internal Stream? _dataStream;
 
         // Position in the stream where the data ends in this header.
@@ -77,7 +73,8 @@ namespace System.Formats.Tar
 
         // PAX attributes
 
-        internal Dictionary<string, string>? _extendedAttributes;
+        private Dictionary<string, string>? _ea;
+        internal Dictionary<string, string> ExtendedAttributes => _ea ??= new Dictionary<string, string>();
 
         // GNU attributes
 
@@ -111,6 +108,12 @@ namespace System.Formats.Tar
             _checksum = other._checksum;
             _linkName = other._linkName;
             _dataStream = other._dataStream;
+        }
+
+        internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
+        {
+            Debug.Assert(_ea == null);
+            _ea = new Dictionary<string, string>(existing);
         }
 
         private static string GetMagicForFormat(TarEntryFormat format) => format switch

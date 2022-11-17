@@ -72,11 +72,15 @@ namespace System
             return underlyingType;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
-            EnumInfo? entry = enumType.GenericCache as EnumInfo;
+            return enumType.GenericCache is EnumInfo info && (!getNames || info.Names is not null) ?
+                info :
+                InitializeEnumInfo(enumType, getNames);
 
-            if (entry == null || (getNames && entry.Names == null))
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static EnumInfo InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
                 ulong[]? values = null;
                 string[]? names = null;
@@ -88,11 +92,10 @@ namespace System
                     getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                entry = new EnumInfo(hasFlagsAttribute, values!, names!);
+                var entry = new EnumInfo(hasFlagsAttribute, values!, names!);
                 enumType.GenericCache = entry;
+                return entry;
             }
-
-            return entry;
         }
     }
 }

@@ -35,7 +35,7 @@ SigFormat::SigFormat(MethodDesc* pMeth, TypeHandle owner, BOOL fIgnoreMethodName
     }
     CONTRACTL_END
 
-    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can succesfully format
+    // Explicitly use MethodDesc::LoadMethodInstantiation so that we can successfully format
     // non-typical generic method definitions.
     MetaSig sig(pMeth, pMeth->GetExactClassInstantiation(owner), pMeth->LoadMethodInstantiation());
 

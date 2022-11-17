@@ -70,11 +70,7 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standartize on exceptions.
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                    await Assert.ThrowsAsync<QuicException>(() => connectTask);
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Which exception is correct?
@@ -107,12 +103,7 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-
-                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standardize on exceptions.
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                    await Assert.ThrowsAsync<QuicException>(() => connectTask);
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
@@ -344,6 +335,34 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(IntPtr.Zero, peerCertificate.Handle);
             }
             peerCertificate.Dispose();
+        }
+
+        [Fact]
+        public async Task Connection_AwaitsStream_ConnectionSurvivesGC()
+        {
+            const byte data = 0xDC;
+
+            TaskCompletionSource<IPEndPoint> listenerEndpointTcs = new TaskCompletionSource<IPEndPoint>();
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    await using var listener = await CreateQuicListener();
+                    listenerEndpointTcs.SetResult(listener.LocalEndPoint);
+                    await using var connection = await listener.AcceptConnectionAsync();
+                    await using var stream = await connection.AcceptInboundStreamAsync();
+                    var buffer = new byte[1];
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+                    Assert.Equal(data, buffer[0]);
+                }).WaitAsync(TimeSpan.FromSeconds(5)),
+                Task.Run(async () =>
+                {
+                    var endpoint = await listenerEndpointTcs.Task;
+                    await using var connection = await CreateQuicConnection(endpoint);
+                    await Task.Delay(TimeSpan.FromSeconds(0.5));
+                    GC.Collect();
+                    await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+                    await stream.WriteAsync(new byte[1] { data }, completeWrites: true);
+                }).WaitAsync(TimeSpan.FromSeconds(5)));
         }
     }
 }

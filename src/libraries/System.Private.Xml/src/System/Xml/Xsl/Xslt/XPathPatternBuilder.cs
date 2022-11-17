@@ -61,7 +61,7 @@ namespace System.Xml.Xsl.Xslt
             filter.Variable.Binding = newBinding;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");

@@ -586,7 +586,7 @@ namespace Internal.Runtime.TypeLoader
 
         private class IntPtrCell : GenericDictionaryCell
         {
-            internal IntPtr Value;
+            internal nint Value;
             internal override unsafe void Prepare(TypeBuilder builder)
             {
             }
@@ -719,7 +719,7 @@ namespace Internal.Runtime.TypeLoader
                         case TypeLoaderEnvironment.MethodAddressType.Canonical:
                             {
                                 bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
-                                bool requestedMethodNeedsDictionaryWhenCalledAsCanonical = NeedsDictionaryParameterToCallCanonicalVersion(Method);
+                                bool requestedMethodNeedsDictionaryWhenCalledAsCanonical = NeedsDictionaryParameterToCallCanonicalVersion();
 
                                 if (!requestedMethodNeedsDictionaryWhenCalledAsCanonical || methodRequestedIsCanonical)
                                 {
@@ -731,7 +731,7 @@ namespace Internal.Runtime.TypeLoader
                         case TypeLoaderEnvironment.MethodAddressType.UniversalCanonical:
                             {
                                 if (Method.IsCanonicalMethod(CanonicalFormKind.Universal) &&
-                                    !NeedsDictionaryParameterToCallCanonicalVersion(Method) &&
+                                    !NeedsDictionaryParameterToCallCanonicalVersion() &&
                                     !UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(
                                         Method.GetTypicalMethodDefinition().Signature))
                                 {
@@ -750,7 +750,7 @@ namespace Internal.Runtime.TypeLoader
                         // We have exhausted exact resolution options so we must resort to calling
                         // convention conversion. Prepare the type parameters of the method so that
                         // the calling convention converter can have RuntimeTypeHandle's to work with.
-                        // For canonical methods, convert paramters to their CanonAlike form
+                        // For canonical methods, convert parameters to their CanonAlike form
                         // as the Canonical RuntimeTypeHandle's are not permitted to exist.
                         Debug.Assert(!Method.IsCanonicalMethod(CanonicalFormKind.Universal));
 
@@ -792,7 +792,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert((_exactFunctionPointer != IntPtr.Zero) || (Method.FunctionPointer != IntPtr.Zero) || (Method.UsgFunctionPointer != IntPtr.Zero));
             }
 
-            private bool NeedsDictionaryParameterToCallCanonicalVersion(MethodDesc method)
+            private bool NeedsDictionaryParameterToCallCanonicalVersion()
             {
                 if (Method.HasInstantiation)
                     return true;

@@ -27,7 +27,7 @@ namespace DefaultNamespace
         }
 
 
-        public static int Main(String[] argv)
+        public static int Main()
         {
             int i = 0;
             X x = new X();

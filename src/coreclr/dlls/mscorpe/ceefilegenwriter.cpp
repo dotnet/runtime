@@ -13,7 +13,6 @@
 
 #include "corerror.h"
 #include <posterror.h>
-#include <shlwapi.h>
 
 // The following block contains a template for the default entry point stubs of a COM+
 // IL only program.  One can emit these stubs (with some fix-ups) and make
@@ -591,7 +590,7 @@ HRESULT CeeFileGenWriter::addAddrReloc(CeeSection &thisSection, UCHAR *instrAddr
 //      // import lookup table: a set of entries for the methods of each DLL,
 //      // terminating each set with NULL
 //      IMAGE_THUNK_DATA32/64 ilt[];
-//      // hint/name table: an set of entries for each method of each DLL wiht
+//      // hint/name table: an set of entries for each method of each DLL with
 //      // no terminating entry
 //      struct {
 //          WORD Hint;

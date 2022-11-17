@@ -1433,16 +1433,18 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (label.SequenceEqual(eligibleLabel))
                     {
-                        TAlg key = factory();
-                        key.ImportFromPem(contents[fields.Location]);
+                        using (TAlg key = factory())
+                        {
+                            key.ImportFromPem(contents[fields.Location]);
 
-                        try
-                        {
-                            return import(key);
-                        }
-                        catch (ArgumentException ae)
-                        {
-                            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                            try
+                            {
+                                return import(key);
+                            }
+                            catch (ArgumentException ae)
+                            {
+                                throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                            }
                         }
                     }
                 }
@@ -1482,13 +1484,17 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>
-            oid.Value switch
+            CreateCustomExtensionIfAny(oid.Value);
+
+        internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
+            oidValue switch
             {
                 Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),
                 Oids.KeyUsage => new X509KeyUsageExtension(),
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
+                Oids.AuthorityKeyIdentifier => new X509AuthorityKeyIdentifierExtension(),
                 Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
                 Oids.SubjectAltName => new X509SubjectAlternativeNameExtension(),
                 _ => null,

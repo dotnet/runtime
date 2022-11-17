@@ -428,7 +428,7 @@ namespace System.Xml.Schema
         }
 
         // recursive here
-        [return: NotNullIfNotNull("axis")]
+        [return: NotNullIfNotNull(nameof(axis))]
         internal static DoubleLinkAxis? ConvertTree(Axis? axis)
         {
             if (axis == null)

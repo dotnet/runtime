@@ -74,6 +74,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                 .Substring("ID=".Length)
                 .Trim('\"', '\'');
 
+            // This gets burned in at publish time on NativeAOT
+            if (PlatformDetection.IsNativeAot)
+                expectedOSName = "linux";
+
             Assert.StartsWith(expectedOSName, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 

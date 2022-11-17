@@ -1,8 +1,72 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/// pthread_t in C
-export type pthread_ptr = number;
+import { Module } from "../../imports";
+import { MonoConfig } from "../../types";
+import { pthread_ptr } from "./types";
+
+export interface PThreadInfo {
+    readonly pthread_id: pthread_ptr;
+    readonly isBrowserThread: boolean;
+}
+
+export const MainThread: PThreadInfo = {
+    get pthread_id(): pthread_ptr {
+        return getBrowserThreadID();
+    },
+    isBrowserThread: true
+};
+
+let browser_thread_id_lazy: pthread_ptr | undefined;
+export function getBrowserThreadID(): pthread_ptr {
+    if (browser_thread_id_lazy === undefined) {
+        browser_thread_id_lazy = (<any>Module)["_emscripten_main_browser_thread_id"]() as pthread_ptr;
+    }
+    return browser_thread_id_lazy;
+}
+
+/// Messages sent on the dedicated mono channel between a pthread and the browser thread
+
+// We use a namespacing scheme to avoid collisions: type/command should be unique.
+export interface MonoThreadMessage {
+    // Type of message.  Generally a subsystem like "diagnostic_server", or "event_pipe", "debugger", etc.
+    type: string;
+    // A particular kind of message. For example, "started", "stopped", "stopped_with_error", etc.
+    cmd: string;
+}
+
+export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
+    if (typeof (x) !== "object" || x === null) {
+        return false;
+    }
+    const xmsg = x as MonoThreadMessage;
+    return typeof (xmsg.type) === "string" && typeof (xmsg.cmd) === "string";
+}
+
+// message from the main thread to the pthread worker that passes the MonoConfig to the worker
+export interface MonoThreadMessageApplyMonoConfig extends MonoThreadMessage {
+    type: "pthread";
+    cmd: "apply_mono_config";
+    config: string;
+}
+
+export function isMonoThreadMessageApplyMonoConfig(x: unknown): x is MonoThreadMessageApplyMonoConfig {
+    if (!isMonoThreadMessage(x)) {
+        return false;
+    }
+    const xmsg = x as MonoThreadMessageApplyMonoConfig;
+    return xmsg.type === "pthread" && xmsg.cmd === "apply_mono_config" && typeof (xmsg.config) === "string";
+}
+
+export function makeMonoThreadMessageApplyMonoConfig(config: MonoConfig): MonoThreadMessageApplyMonoConfig {
+    return {
+        type: "pthread",
+        cmd: "apply_mono_config",
+        config: JSON.stringify(config)
+    };
+}
+
+/// Messages sent using the worker object's postMessage() method ///
 
 /// a symbol that we use as a key on messages on the global worker-to-main channel to identify our own messages
 /// we can't use an actual JS Symbol because those don't transfer between workers.

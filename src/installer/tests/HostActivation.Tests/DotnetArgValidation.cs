@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.FindAnySdk(false);
         }
 
-        // Return a non-exisitent path that contains a mix of / and \
+        // Return a non-existent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {
             return Path.Combine(sharedTestState.RepoDirectories.DotnetSDK, @"x\y/");
