@@ -62,6 +62,10 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 
+#if HOST_BROWSER
+#include "interp/jiterpreter.h"
+#endif
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
@@ -1843,6 +1847,9 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
 			mini_add_profiler_argument (argv [i] + 10);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
+#if HOST_BROWSER
+		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mono_jiterp_parse_option (argv [i] + 2)) {
+#endif
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);

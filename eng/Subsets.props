@@ -61,6 +61,7 @@
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(TargetOS)' == 'wasi'">$(DefaultMonoSubsets)mono.wasiruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'Mono'">$(DefaultMonoSubsets)mono.tools+</DefaultMonoSubsets>
@@ -126,6 +127,8 @@
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
+    <SubsetName Include="Tools.ILLink" Description="The projects that produce illink and analyzer tools for trimming." />
+    <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
@@ -139,7 +142,8 @@
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.Tools" Description="Tooling that helps support Mono development and testing." />
-    <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
+    <SubsetName Include="Mono.WasmRuntime" Description="The Emscripten runtime." />
+    <SubsetName Include="Mono.WasiRuntime" Description="The WASI runtime." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
     <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
@@ -326,6 +330,31 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\Mono.Linker.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\analyzer\analyzer.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\ref\Mono.Linker.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\tlens\tlens.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" Category="tools" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.illinktests+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
+      Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"
+      Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj"
+      Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.Tasks.Tests\ILLink.Tasks.Tests.csproj"
+      Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.RoslynAnalyzer.Tests\ILLink.RoslynAnalyzer.Tests.csproj"
+      Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj"
+      Test="true" Category="tools"/>
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
     <!-- Build crossgen2 that will be used to compile System.Private.CoreLib library for CoreCLR -->
     <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
@@ -343,7 +372,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetsLinuxBionic)' == 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi' or '$(TargetsLinuxBionic)' == 'true'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
@@ -410,6 +439,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasiruntime+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)wasi\wasi.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">

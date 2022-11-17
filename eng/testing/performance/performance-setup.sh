@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Also reset/set below
 set -x
 
 source_directory=$BUILD_SOURCESDIRECTORY
@@ -434,6 +435,9 @@ ci=true
 _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
 
+# Prevent vso[task.setvariable to be erroneously processed
+set +x
+
 # Make sure all of our variables are available for future steps
 Write-PipelineSetVariable -name "UseCoreRun" -value "$use_core_run" -is_multi_job_variable false
 Write-PipelineSetVariable -name "UseBaselineCoreRun" -value "$use_baseline_core_run" -is_multi_job_variable false
@@ -458,3 +462,6 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
+
+# Put it back to what was set on top of this script
+set -x
