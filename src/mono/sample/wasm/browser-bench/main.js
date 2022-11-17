@@ -172,7 +172,7 @@ try {
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
     const runtime = await dotnet
-        .withRuntimeOptions(["--jiterpreter-enable-stats"])
+        .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()
         .create();
