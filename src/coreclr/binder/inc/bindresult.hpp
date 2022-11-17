@@ -22,7 +22,6 @@ namespace BINDER_SPACE
     {
     public:
         inline BindResult();
-        inline ~BindResult();
 
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
         inline Assembly *GetAssembly(BOOL fAddRef = FALSE);
@@ -63,7 +62,6 @@ namespace BINDER_SPACE
 
     protected:
         bool m_isContextBound;
-        AssemblyName *m_pAssemblyName;
         ReleaseHolder<Assembly> m_pAssembly;
 
         AttemptResult m_inContextAttempt;

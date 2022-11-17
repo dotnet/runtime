@@ -23,13 +23,11 @@ namespace BINDER_SPACE
     public:
         ContextEntry()
             : m_pAssembly { NULL }
-            , m_pAssemblyName { NULL }
         { }
 
         ~ContextEntry()
         {
             SAFE_RELEASE(m_pAssembly);
-            SAFE_RELEASE(m_pAssemblyName);
         }
 
         Assembly *GetAssembly(BOOL fAddRef = FALSE)
@@ -58,29 +56,15 @@ namespace BINDER_SPACE
 
         AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE)
         {
-            AssemblyName *pAssemblyName = m_pAssemblyName;
+            Assembly *pAssembly = m_pAssembly;
+            if (pAssembly == NULL)
+                return NULL;
 
-            if (fAddRef && (pAssemblyName != NULL))
-            {
-                pAssemblyName->AddRef();
-            }
-            return pAssemblyName;
+            return pAssembly->GetAssemblyName(fAddRef);
         }
 
-        void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE)
-        {
-            SAFE_RELEASE(m_pAssemblyName);
-
-            if (fAddRef && (pAssemblyName != NULL))
-            {
-                pAssemblyName->AddRef();
-            }
-
-            m_pAssemblyName = pAssemblyName;
-        }
     private:
         Assembly *m_pAssembly;
-        AssemblyName *m_pAssemblyName;
     };
 };
 

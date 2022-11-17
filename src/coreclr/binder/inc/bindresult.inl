@@ -22,25 +22,16 @@ namespace BINDER_SPACE
 BindResult::BindResult()
 {
     m_isContextBound = false;
-    m_pAssemblyName = NULL;
     m_pAssembly = NULL;
-}
-
-BindResult::~BindResult()
-{
-    SAFE_RELEASE(m_pAssemblyName);
 }
 
 AssemblyName *BindResult::GetAssemblyName(BOOL fAddRef /* = FALSE */)
 {
-    AssemblyName *pAssemblyName = m_pAssemblyName;
+    Assembly *pAssembly = m_pAssembly;
+    if (pAssembly == NULL)
+        return NULL;
 
-    if (fAddRef && (pAssemblyName != NULL))
-    {
-        pAssemblyName->AddRef();
-    }
-
-    return pAssemblyName;
+    return pAssembly->GetAssemblyName(fAddRef);
 }
 
 Assembly *BindResult::GetAssembly(BOOL fAddRef /* = FALSE */)
@@ -65,8 +56,6 @@ void BindResult::SetResult(ContextEntry *pContextEntry)
     _ASSERTE(pContextEntry != NULL);
 
     m_isContextBound = true;
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pContextEntry->GetAssemblyName(TRUE /* fAddRef */);
     m_pAssembly = pContextEntry->GetAssembly(TRUE /* fAddRef */);
 }
 
@@ -74,8 +63,6 @@ void BindResult::SetResult(Assembly *pAssembly)
 {
     _ASSERTE(pAssembly != NULL);
 
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pAssembly->GetAssemblyName(TRUE /* fAddRef */);
     pAssembly->AddRef();
     m_pAssembly = pAssembly;
 }
@@ -85,8 +72,6 @@ void BindResult::SetResult(BindResult *pBindResult)
     _ASSERTE(pBindResult != NULL);
 
     m_isContextBound = pBindResult->m_isContextBound;
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pBindResult->GetAssemblyName(TRUE /* fAddRef */);
     m_pAssembly = pBindResult->GetAssembly(TRUE /* fAddRef */);
 
     const AttemptResult *attempt = pBindResult->GetAttempt(true /*foundInContext*/);
@@ -100,17 +85,16 @@ void BindResult::SetResult(BindResult *pBindResult)
 
 void BindResult::SetNoResult()
 {
-    m_pAssemblyName = NULL;
+    m_pAssembly = NULL;
 }
 
 BOOL BindResult::HaveResult()
 {
-    return (GetAssemblyName() != NULL);
+    return m_pAssembly != NULL;
 }
 
 void BindResult::Reset()
 {
-    SAFE_RELEASE(m_pAssemblyName);
     m_pAssembly = NULL;
     m_isContextBound = false;
     m_inContextAttempt.Reset();

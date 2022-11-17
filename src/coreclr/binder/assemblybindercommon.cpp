@@ -1057,7 +1057,6 @@ namespace BINDER_SPACE
                 hr = S_OK; // FindInExecutionContext returns S_FALSE when not found - reset to S_OK
                 SAFE_NEW(pContextEntry, ContextEntry);
 
-                pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
                 pContextEntry->SetAssembly(pBindResult->GetAssembly());
 
                 ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
