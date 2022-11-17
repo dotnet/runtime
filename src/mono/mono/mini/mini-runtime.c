@@ -41,7 +41,6 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
-#include <mono/metadata/marshal-ilgen.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
@@ -52,6 +51,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -4468,22 +4468,6 @@ mini_init (const char *filename)
 
 	mono_component_event_pipe_100ns_ticks_start ();
 
-
-#ifdef ENABLE_ILGEN
-	mono_marshal_lightweight_init ();
-  	mono_marshal_ilgen_init_internal ();
-#else
-	if (mono_marshal_is_ilgen_requested ())
-  	{
-		mono_marshal_lightweight_init ();
-  		mono_marshal_ilgen_init_internal ();
- 	}
-	else{
-		mono_marshal_noilgen_init_lightweight();
-		mono_marshal_noilgen_init_heavyweight ();
-	}
-#endif
-
 	MONO_VES_INIT_BEGIN ();
 
 	CHECKED_MONO_INIT ();
@@ -4505,6 +4489,10 @@ mini_init (const char *filename)
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
+
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 

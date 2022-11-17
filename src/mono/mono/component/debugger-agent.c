@@ -7306,7 +7306,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (req);
 				return err;
 			}
-#if defined(TARGET_WASM) && !defined(HOST_WASI)
+#if defined(HOST_BROWSER)
 			int isBPOnManagedCode = 0;
 			SingleStepReq *ss_req = req->info;
 			if (ss_req && ss_req->bps) {
