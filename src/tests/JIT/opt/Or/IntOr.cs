@@ -30,7 +30,7 @@ namespace CodeGenTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static unsafe bool Test_UInt32_ByRef_CastByte_CastByte_Or(uint x, ref uint y)
+        public static bool Test_UInt32_ByRef_CastByte_CastByte_Or(uint x, ref uint y)
         {
             // X64-NOT: movzx
 
