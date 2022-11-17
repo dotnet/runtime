@@ -8354,7 +8354,30 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         {
             // This means that there is an implicit cast on the rhs value
             // We will add a cast function to reflect the possible narrowing of the rhs value
-            rhsVNPair = vnStore->VNPairForCast(rhsVNPair, lhs->TypeGet(), rhs->TypeGet());
+            GenTree* effectiveLhs = lhs->gtEffectiveVal();
+            if (effectiveLhs->OperIs(GT_LCL_VAR) && lvaGetDesc(effectiveLhs->AsLclVarCommon())->lvNormalizeOnLoad())
+            {
+                rhsVNPair = vnStore->VNPairForImplicitCastForNormalizeOnLoad(rhsVNPair, effectiveLhs->TypeGet(),
+                                                                             rhs->TypeGet());
+            }
+            else
+            {
+                rhsVNPair = vnStore->VNPairForCast(rhsVNPair, effectiveLhs->TypeGet(), rhs->TypeGet());
+            }
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("N%03u ", rhs->gtSeqNum);
+                printTreeID(rhs);
+                printf(" ");
+                gtDispNodeName(rhs);
+                printf(" (implicit cast) => ");
+                vnpPrint(rhsVNPair, 1);
+                printf("\n");
+            }
+#endif // DEBUG
+
         }
     }
 
@@ -9662,6 +9685,25 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     }
 
     return {castLibVN, castConVN};
+}
+
+// Compute the ValueNumberPair for an implicit cast on a normalize-on-load assignment
+ValueNumPair ValueNumStore::VNPairForImplicitCastNormalizeOnLoad(ValueNumPair srcVNPair,
+                                                                 var_types    castToType,
+                                                                 var_types    castFromType,
+                                                                 bool         srcIsUnsigned,    /* = false */
+                                                                 bool         hasOverflowCheck) /* = false */
+{
+    ValueNumPair vnPair = VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+
+    // srcLibVN cannot be the same as castLibVN for normalize-on-load assignments.
+    // So set the castLibVN to be the same as castConVN.
+    if (srcVNPair.GetLiberal() == vnPair.GetLiberal())
+    {
+        vnPair.SetLiberal(vnPair.GetConservative());
+    }
+
+    return vnPair;
 }
 
 //------------------------------------------------------------------------

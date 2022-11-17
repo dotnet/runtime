@@ -800,6 +800,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
+    // Compute the ValueNumberPair for an implicit cast on a normalize-on-load assignment
+    ValueNumPair VNPairForImplicitCastNormalizeOnLoad(ValueNumPair srcVNPair,
+                                                      var_types    castToType,
+                                                      var_types    castFromType,
+                                                      bool         srcIsUnsigned    = false,
+                                                      bool         hasOverflowCheck = false);
+
     ValueNum EncodeBitCastType(var_types castToType, unsigned size);
 
     var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
