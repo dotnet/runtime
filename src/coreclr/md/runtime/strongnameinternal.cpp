@@ -290,7 +290,7 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     // Check that the blob type is PUBLICKEYBLOB.
     pPublicKey = (PublicKeyBlob*) pbPublicKeyBlob;
 
-    if (pPublicKey->cbPublicKey > cbPublicKeyBlob) {
+    if (GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) > cbPublicKeyBlob) {
         hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }
