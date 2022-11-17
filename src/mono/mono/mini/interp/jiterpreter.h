@@ -3,9 +3,15 @@
 
 #ifdef HOST_BROWSER
 
+#if FEATURE_WASM_THREADS
+#define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
+#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
+#else
+#define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
 // enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
 // works even if the jiterpreter is otherwise disabled.
 #define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
+#endif // FEATURE_WASM_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
 //  have a function pointer for a specific entry point.
@@ -13,13 +19,6 @@
 #define JITERPRETER_TRAINING 0
 // NOT_JITTED indicates that the trace was not jitted and it should be turned into a NOP
 #define JITERPRETER_NOT_JITTED 1
-
-#define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
-// After a do_jit_call call site is hit this many times, we will queue it to be jitted
-#define JITERPRETER_JIT_CALL_TRAMPOLINE_HIT_COUNT 2999
-// If a do_jit_call site is hit this many times without being jitted (due to waiting in
-//  the queue), we will flush the queue immediately
-#define JITERPRETER_JIT_CALL_QUEUE_FLUSH_THRESHOLD 10000
 
 typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
 typedef void (*WasmJitCallThunk) (void *extra_arg, void *ret_sp, void *sp, gboolean *thrown);

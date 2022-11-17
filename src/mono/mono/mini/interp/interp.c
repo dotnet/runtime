@@ -2672,16 +2672,17 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			goto epilogue;
 		} else {
 			int count = cinfo->hit_count;
-			if (count == JITERPRETER_JIT_CALL_TRAMPOLINE_HIT_COUNT) {
+			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
 				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
 					rmethod, cinfo, fn, rmethod->hasthis, rmethod->param_count,
 					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {
-				if (count <= JITERPRETER_JIT_CALL_QUEUE_FLUSH_THRESHOLD)
+				int excess = count - mono_opt_jiterpreter_jit_call_queue_flush_threshold;
+				if (excess <= 0)
 					cinfo->hit_count++;
-				if (count == JITERPRETER_JIT_CALL_QUEUE_FLUSH_THRESHOLD)
+				if (excess == 0)
 					mono_interp_flush_jitcall_queue ();
 			}
 		}

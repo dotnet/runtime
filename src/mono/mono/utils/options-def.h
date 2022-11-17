@@ -95,7 +95,7 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
@@ -105,6 +105,10 @@ DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Ma
 DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 8, "Reject traces shorter than this number of meaningful opcodes")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
 DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-count", 10000, "JIT trace entry points once they are hit this many times")
+// After a do_jit_call call site is hit this many times, we will queue it to be jitted
+DEFINE_INT(jiterpreter_jit_call_trampoline_hit_count, "jiterpreter-jit-call-hit-count", 3000, "Queue specialized do_jit_call trampoline for JIT after this many hits")
+// After a do_jit_call call site is hit this many times without being jitted, we will flush the JIT queue
+DEFINE_INT(jiterpreter_jit_call_queue_flush_threshold, "jiterpreter-jit-call-queue-flush-threshold", 10000, "Flush the do_jit_call JIT queue after an unJITted call site has this many hits")
 #endif // HOST_BROWSER
 
 /* Cleanup */
