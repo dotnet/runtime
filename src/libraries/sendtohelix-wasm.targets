@@ -211,7 +211,7 @@
     </FilterTestArchivesList>
 
     <ItemGroup>
-      <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+      <HelixWorkItem Include="@(_DefaultWasmWorkItems -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
