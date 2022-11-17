@@ -177,6 +177,9 @@ namespace System.Resources
 
         private void SkipString()
         {
+            // Note: this method assumes that it is called either during object
+            // construction or within another method that locks on this.
+
             int stringLength = _store.Read7BitEncodedInt();
             if (stringLength < 0)
             {
