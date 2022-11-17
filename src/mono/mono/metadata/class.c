@@ -2637,6 +2637,8 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 		}
 		return NULL;
 	}
+	/* TODO: metadata-update: if property is from update, get the token directly. */
+	g_assert (!m_property_is_from_update (property));
 	cindex = mono_metadata_get_constant_index (klass_image, mono_class_get_property_token (property), 0);
 	if (!cindex)
 		return NULL;
