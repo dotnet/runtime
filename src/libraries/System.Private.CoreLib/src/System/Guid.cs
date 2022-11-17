@@ -60,7 +60,7 @@ namespace System
             }
 
             // slower path for BigEndian:
-            _k = b[15]; // hoist bounds checks
+            _k = b[15];  // hoist bounds checks
             _a = BinaryPrimitives.ReadInt32LittleEndian(b);
             _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
             _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6));
