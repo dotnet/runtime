@@ -11133,8 +11133,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp1 = op1->CastOp();
 
                 DEBUG_DESTROY_NODE(op1);
-
-                cast->SetDoNotCSE();
             }
         }
 
@@ -11148,8 +11146,6 @@ void Compiler::fgOptimizeCastOfSmpOp(GenTreeCast* cast)
                 castOp->AsOp()->gtOp2 = op2->CastOp();
                 
                 DEBUG_DESTROY_NODE(op2);
-
-                cast->SetDoNotCSE();
             }
         }
     }
@@ -11212,11 +11208,6 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
 
     if (genActualType(castFromType) == genActualType(castToType))
     {
-        // If the cast is marked as do-not-cse, then
-        // we should not remove it to imply an implicit cast.
-        if (cast->gtFlags & GTF_DONT_CSE)
-            return asg;
-
         // Removes the cast.
         asg->gtOp2 = cast->CastOp();
     }
