@@ -11,16 +11,14 @@ using Xunit;
 
 public static class MainProgramHandleTests
 {
-    private static IntPtr s_handle;
-
     static MainProgramHandleTests() => NativeLibrary.SetDllImportResolver(typeof(MainProgramHandleTests).Assembly,
         (string libraryName, Assembly asm, DllImportSearchPath? dllImportSearchPath) =>
         {
             if (libraryName == "Self")
             {
-                s_handle = NativeLibrary.GetMainProgramHandle();
-                Assert.NotEqual(IntPtr.Zero, s_handle);
-                return s_handle;
+                IntPtr handle = NativeLibrary.GetMainProgramHandle();
+                Assert.NotEqual(IntPtr.Zero, handle);
+                return handle;
             }
 
             return IntPtr.Zero;
@@ -30,7 +28,8 @@ public static class MainProgramHandleTests
     {
         try
         {
-            free(s_handle);
+            int parentPid = getppid();
+            Console.WriteLine("Parent PID is: {0}", parentPid);
         }
         catch (Exception e)
         {
@@ -42,5 +41,5 @@ public static class MainProgramHandleTests
     }
 
     [DllImport("Self")]
-    private static extern int free(IntPtr arg);
+    private static extern int getppid();
 }
