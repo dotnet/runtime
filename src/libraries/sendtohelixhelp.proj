@@ -294,5 +294,5 @@
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 
-  <Target Name="_PrepareForHelix" BeforeTargets="BeforeTest" DependsOnTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" />
+  <Target Name="_PrepareForHelix" BeforeTargets="CreateTestsWorkItems" DependsOnTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" />
 </Project>
