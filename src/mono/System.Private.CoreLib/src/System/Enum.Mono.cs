@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -9,7 +10,7 @@ namespace System
     public partial class Enum
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool GetEnumValuesAndNames(QCallTypeHandle enumType, out ulong[] values, out string[] names);
+        private static extern void GetEnumValuesAndNames(QCallTypeHandle enumType, out ulong[] values, out string[] names);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void InternalBoxEnum(QCallTypeHandle enumType, ObjectHandleOnStack res, long value);
@@ -40,17 +41,19 @@ namespace System
             return res!;
         }
 
-        private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        private static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
         {
-            EnumInfo? entry = enumType.Cache.EnumInfo;
+            EnumInfo<TUnderlyingValue>? entry = enumType.Cache.EnumInfo as EnumInfo<TUnderlyingValue>;
 
             if (entry == null || (getNames && entry.Names == null))
             {
-                if (!GetEnumValuesAndNames(new QCallTypeHandle(ref enumType), out ulong[]? values, out string[]? names))
-                    Array.Sort(values, names, Collections.Generic.Comparer<ulong>.Default);
+                GetEnumValuesAndNames(new QCallTypeHandle(ref enumType), out ulong[]? uint64Values, out string[]? names);
+
+                TUnderlyingValue[] values = ToUnderlyingValues<TUnderlyingValue>(uint64Values!);
 
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
-                entry = new EnumInfo(hasFlagsAttribute, values, names);
+                entry = new EnumInfo<TUnderlyingValue>(hasFlagsAttribute, values, names);
                 enumType.Cache.EnumInfo = entry;
             }
 

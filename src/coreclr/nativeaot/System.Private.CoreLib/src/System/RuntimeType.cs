@@ -22,9 +22,9 @@ namespace System
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
 
             if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return Enum.GetEnumName(this, rawValue);
+            return Enum.GetName(this, rawValue);
         }
 
         public sealed override string[] GetEnumNames()
@@ -32,7 +32,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] ret = Enum.InternalGetNames(this);
+            string[] ret = Enum.GetNamesNoCopy(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
             return new ReadOnlySpan<string>(ret).ToArray();
@@ -87,7 +87,7 @@ namespace System
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 
-                return Enum.GetEnumName(this, rawValue) != null;
+                return Enum.GetName(this, rawValue) != null;
             }
         }
 
@@ -97,7 +97,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
+            Array values = Enum.GetEnumInfo(this).ValuesNonGeneric;
             int count = values.Length;
             // Without universal shared generics, chances are slim that we'll have the appropriate
             // array type available. Offer an escape hatch that avoids a missing metadata exception
@@ -116,7 +116,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
+            return (Array)Enum.GetEnumInfo(this).ValuesNonGeneric.Clone();
         }
 
         internal bool IsActualEnum

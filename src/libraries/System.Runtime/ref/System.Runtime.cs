@@ -2374,7 +2374,7 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryFormat<TEnum>(TEnum value, System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] System.ReadOnlySpan<char> format) where TEnum : struct { throw null; }
+        public static bool TryFormat<TEnum>(TEnum value, System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>)) where TEnum : struct { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
@@ -4320,7 +4320,6 @@ namespace System
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsBrowser() { throw null; }
-        // TODO public static bool IsWasi() { throw null; } see https://github.com/dotnet/runtime/issues/78389
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]

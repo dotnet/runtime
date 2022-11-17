@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,6 +11,7 @@ namespace System
 {
     public abstract partial class Enum
     {
+        // This returns 0 for all values for float/double/nint/nuint.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
@@ -73,26 +74,29 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        private static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
         {
-            return enumType.GenericCache is EnumInfo info && (!getNames || info.Names is not null) ?
+            return enumType.GenericCache is EnumInfo<TUnderlyingValue> info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static EnumInfo InitializeEnumInfo(RuntimeType enumType, bool getNames)
+            static EnumInfo<TUnderlyingValue> InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
-                ulong[]? values = null;
+                ulong[]? uint64Values = null;
                 string[]? names = null;
                 RuntimeTypeHandle enumTypeHandle = enumType.TypeHandle;
                 GetEnumValuesAndNames(
                     new QCallTypeHandle(ref enumTypeHandle),
-                    ObjectHandleOnStack.Create(ref values),
+                    ObjectHandleOnStack.Create(ref uint64Values),
                     ObjectHandleOnStack.Create(ref names),
                     getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                var entry = new EnumInfo(hasFlagsAttribute, values!, names!);
+                TUnderlyingValue[] values = ToUnderlyingValues<TUnderlyingValue>(uint64Values!);
+
+                var entry = new EnumInfo<TUnderlyingValue>(hasFlagsAttribute, values, names!);
                 enumType.GenericCache = entry;
                 return entry;
             }

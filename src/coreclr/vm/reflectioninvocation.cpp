@@ -1955,7 +1955,6 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
     IMDInternalImport *pImport = pMT->GetMDImport();
 
     StackSArray<TempEnumValue> temps;
-    UINT64 previousValue = 0;
 
     HENUMInternalHolder fieldEnum(pImport);
     fieldEnum.EnumInit(mdtFieldDef, pMT->GetCl());
@@ -2033,27 +2032,12 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
 
             temp.value = value;
 
-            //
-            // Check to see if we are already sorted.  This may seem extraneous, but is
-            // actually probably the normal case.
-            //
-
-            if (previousValue > value)
-                sorted = FALSE;
-            previousValue = value;
-
             temps.Append(temp);
         }
     }
 
     TempEnumValue * pTemps = &(temps[0]);
     DWORD cFields = temps.GetCount();
-
-    if (!sorted)
-    {
-        TempEnumValueSorter sorter(pTemps, cFields);
-        sorter.Sort();
-    }
 
     {
         GCX_COOP();
