@@ -7,10 +7,10 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmXHarnessArgs>--background-throttling</WasmXHarnessArgs>
+    <!-- default scenario for local runs -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <HelixWasmScenariosToRunOnly>WasmTestOnBrowser</HelixWasmScenariosToRunOnly>
   </PropertyGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
