@@ -395,6 +395,21 @@ static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int wo
     // Write the merged MCL array back to disk
     if (!WriteArrayToMCL(mclFilename, mergedMCL, totalCount))
         LogError("Unable to write to MCL file %s.", mclFilename);
+
+    if (MCL != nullptr)
+    {
+        delete[] MCL;
+    }
+
+    if (MCLCount != nullptr)
+    {
+        delete[] MCLCount;
+    }
+
+    if (mergedMCL != nullptr)
+    {
+        delete[] mergedMCL;
+    }
 }
 
 static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::* csvPath)

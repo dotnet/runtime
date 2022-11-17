@@ -3657,6 +3657,7 @@ buildArgv(
         (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
     {
         ERROR("strcpy_s/strcat_s failed!\n");
+        free(lpAsciiCmdLine);
         return NULL;
     }
 
