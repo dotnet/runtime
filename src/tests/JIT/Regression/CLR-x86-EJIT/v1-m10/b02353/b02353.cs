@@ -135,7 +135,7 @@ namespace DefaultNamespace
         internal static readonly String[,] strArr = {{"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."},
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             new Bug();
             return 100;
