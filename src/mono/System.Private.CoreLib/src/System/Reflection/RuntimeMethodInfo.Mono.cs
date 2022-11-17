@@ -802,10 +802,13 @@ namespace System.Reflection
             }
         }
 
-        private static void InvokeClassConstructor()
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void InvokeClassConstructor(QCallTypeHandle type);
+
+        private void InvokeClassConstructor()
         {
-            // [TODO] Mechanism for invoking class constructor
-            // See https://github.com/dotnet/runtime/issues/40351
+            RuntimeType type = (RuntimeType)DeclaringType;
+            InvokeClassConstructor(new QCallTypeHandle(ref type));
         }
 
         /*

@@ -63,13 +63,13 @@
 //                                              (Note that the Null- and Deleted-related functions below
 //                                              are not affected by this and must always be NOTHROW.)
 //
-// static element_t Null()                      Return the Null sentinal value.  May be inherited from
+// static element_t Null()                      Return the Null sentinel value.  May be inherited from
 //                                              default traits if it can be assigned from 0.
-// static element_t Deleted()                   Return the Deleted sentinal value.  May be inherited from the
+// static element_t Deleted()                   Return the Deleted sentinel value.  May be inherited from the
 //                                              default traits if it can be assigned from -1.
-// static const bool IsNull(const ELEMENT &e)   Compare element with Null sentinal value. May be inherited from
+// static const bool IsNull(const ELEMENT &e)   Compare element with Null sentinel value. May be inherited from
 //                                              default traits if it can be assigned from 0.
-// static const bool IsDeleted(const ELEMENT &e) Compare element with Deleted sentinal value. May be inherited from the
+// static const bool IsDeleted(const ELEMENT &e) Compare element with Deleted sentinel value. May be inherited from the
 //                                              default traits if it can be assigned from -1.
 // static bool ShouldDelete(const ELEMENT &e)   Called in addition to IsDeleted() when s_supports_autoremove is true, see more
 //                                              information there.
@@ -85,7 +85,7 @@
 //                                              Typically inherited from default traits (3/2)
 //
 // s_density_factor_numerator
-// s_density_factor_denominator                 Maxium occupied density of table before growth
+// s_density_factor_denominator                 Maximum occupied density of table before growth
 //                                              occurs (num/denom).  Typically inherited (3/4).
 //
 // s_minimum_allocation                         Minimum table allocation count (size on first growth.)  It is

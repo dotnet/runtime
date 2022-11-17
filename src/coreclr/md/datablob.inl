@@ -6,7 +6,7 @@
 
 //
 // Class code:MetaData::DataBlob provides secure access to a block of memory from MetaData (i.e. with fixed
-// endianess).
+// endianness).
 //
 // ======================================================================================
 
@@ -63,7 +63,7 @@ DataBlob::DataBlob(
 
 // --------------------------------------------------------------------------------------
 //
-// Initializes memory block to empty data. The object could be already initialzied.
+// Initializes memory block to empty data. The object could be already initialized.
 //
 inline
 void

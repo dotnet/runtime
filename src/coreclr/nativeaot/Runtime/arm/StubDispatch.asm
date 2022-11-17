@@ -17,7 +17,7 @@
         ;; Check a single entry in the cache.
         ;;  R1 : Instance MethodTable*
         ;;  R2: Cache data structure
-        ;;  R12 : Trashed. On succesful check, set to the target address to jump to.
+        ;;  R12 : Trashed. On successful check, set to the target address to jump to.
 
         ldr     r12, [r2, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8))]
         cmp     r1, r12

@@ -35,8 +35,6 @@ set(BINDER_COMMON_HEADERS
     inc/defaultassemblybinder.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
-    inc/loadcontext.hpp
-    inc/loadcontext.inl
     inc/textualidentityparser.hpp
     inc/utils.hpp
 )

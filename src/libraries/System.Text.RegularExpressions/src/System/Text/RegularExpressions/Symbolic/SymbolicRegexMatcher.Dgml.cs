@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
 
                     writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
-                    if (GetStateInfo(state.Id).IsInitial)
+                    if (_stateFlagsArray[state.Id].IsInitial())
                     {
                         writer.WriteLine("            <Category Ref=\"InitialState\" />");
                     }

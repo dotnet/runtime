@@ -1,16 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
 using System.Collections.Generic;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: used when implementing a custom TraceLoggingTypeInfo.
@@ -152,9 +145,7 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic] // per-thread cache to avoid synchronization
         private static Dictionary<Type, TraceLoggingTypeInfo>? threadCache;
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         public static TraceLoggingTypeInfo GetInstance(Type type, List<Type>? recursionCheck)
         {
             Dictionary<Type, TraceLoggingTypeInfo> cache = threadCache ??= new Dictionary<Type, TraceLoggingTypeInfo>();

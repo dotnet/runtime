@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using SysTx = System.Transactions;
 
 namespace System.Data.ProviderBase
@@ -37,16 +38,13 @@ namespace System.Data.ProviderBase
 
             internal void Dispose()
             {
-                if (null != _transaction)
-                {
-                    _transaction.Dispose();
-                }
+                _transaction?.Dispose();
             }
         }
 
         private sealed class PendingGetConnection
         {
-            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion, DbConnectionOptions? userOptions)
+            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion)
             {
                 DueTime = dueTime;
                 Owner = owner;
@@ -226,9 +224,9 @@ namespace System.Data.ProviderBase
             // Using an AutoResetEvent does not have that complication.
             private readonly Semaphore _creationSemaphore;
 
-            private readonly SafeHandle _poolHandle;
-            private readonly SafeHandle _errorHandle;
-            private readonly SafeHandle _creationHandle;
+            private readonly SafeWaitHandle _poolHandle;
+            private readonly SafeWaitHandle _errorHandle;
+            private readonly SafeWaitHandle _creationHandle;
 
             private readonly int _releaseFlags;
 
@@ -277,7 +275,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            internal SafeHandle CreationHandle
+            internal SafeWaitHandle CreationHandle
             {
                 get { return _creationHandle; }
             }
@@ -354,7 +352,7 @@ namespace System.Data.ProviderBase
         private readonly WaitCallback _poolCreateRequest;
 
         private int _waitCount;
-        private readonly PoolWaitHandles _waitHandles;
+        private PoolWaitHandles _waitHandles;
 
         private Exception? _resError;
         private volatile bool _errorOccurred;
@@ -624,12 +622,7 @@ namespace System.Data.ProviderBase
 
                 for (int i = 0; i < count; ++i)
                 {
-                    obj = _objectList[i];
-
-                    if (null != obj)
-                    {
-                        obj.DoNotPoolThisConnection();
-                    }
+                    _objectList[i]?.DoNotPoolThisConnection();
                 }
             }
 
@@ -921,10 +914,7 @@ namespace System.Data.ProviderBase
             // the error state is cleaned, destroy the timer to avoid periodic invocation
             Timer? t = _errorTimer;
             _errorTimer = null;
-            if (t != null)
-            {
-                t.Dispose(); // Cancel timer request.
-            }
+            t?.Dispose(); // Cancel timer request.
         }
 
         // TODO: move this to src/Common and integrate with SqlClient
@@ -991,20 +981,17 @@ namespace System.Data.ProviderBase
                         }
                         catch (System.OutOfMemoryException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (System.StackOverflowException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (System.Threading.ThreadAbortException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (Exception e)
@@ -1079,8 +1066,7 @@ namespace System.Data.ProviderBase
                 new PendingGetConnection(
                     CreationTimeout == 0 ? Timeout.Infinite : ADP.TimerCurrent() + ADP.TimerFromSeconds(CreationTimeout / 1000),
                     owningObject,
-                    retry,
-                    userOptions);
+                    retry);
             _pendingOpens.Enqueue(pendingGetConnection);
 
             // it is better to StartNew too many times than not enough
@@ -1135,7 +1121,11 @@ namespace System.Data.ProviderBase
                         }
                         finally
                         {
-                            waitResult = SafeNativeMethods.WaitForMultipleObjectsEx(waitHandleCount, _waitHandles.DangerousGetHandle(), false, waitForMultipleObjectsTimeout, false);
+                            unsafe
+                            {
+                                nint* handle = (nint*)_waitHandles.DangerousGetHandle();
+                                waitResult = Interop.Kernel32.WaitForMultipleObjects(waitHandleCount, handle, false, waitForMultipleObjectsTimeout);
+                            }
 
                             // call GetHRForLastWin32Error immediately after after the native call
                             if (waitResult == WAIT_FAILED)
@@ -1266,8 +1256,8 @@ namespace System.Data.ProviderBase
                     {
                         if (CREATION_HANDLE == waitResult)
                         {
-                            int result = SafeNativeMethods.ReleaseSemaphore(_waitHandles.CreationHandle.DangerousGetHandle(), 1, IntPtr.Zero);
-                            if (0 == result)
+                            bool result = Interop.Kernel32.ReleaseSemaphore(_waitHandles.CreationHandle, 1, out _);
+                            if (!result)
                             { // failure case
                                 releaseSemaphoreResult = Marshal.GetHRForLastWin32Error();
                             }
@@ -1454,7 +1444,7 @@ namespace System.Data.ProviderBase
                             { }
                             finally
                             {
-                                waitResult = SafeNativeMethods.WaitForSingleObjectEx(_waitHandles.CreationHandle.DangerousGetHandle(), timeout, false);
+                                waitResult = Interop.Kernel32.WaitForSingleObject(_waitHandles.CreationHandle, (int)timeout);
                             }
                             if (WAIT_OBJECT_0 == waitResult)
                             {
@@ -1509,7 +1499,7 @@ namespace System.Data.ProviderBase
                             if (WAIT_OBJECT_0 == waitResult)
                             {
                                 // reuse waitResult and ignore its value
-                                waitResult = SafeNativeMethods.ReleaseSemaphore(_waitHandles.CreationHandle.DangerousGetHandle(), 1, IntPtr.Zero);
+                                waitResult = Interop.Kernel32.ReleaseSemaphore(_waitHandles.CreationHandle, 1, out _) ? 1 : 0;
                             }
                             if (mustRelease)
                             {
@@ -1680,10 +1670,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
-            {
-                t.Dispose();
-            }
+            t?.Dispose();
         }
 
         private DbConnectionInternal? UserCreateRequest(DbConnection owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection = null)

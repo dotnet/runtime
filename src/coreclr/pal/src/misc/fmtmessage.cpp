@@ -73,7 +73,14 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         }
         else
         {
-            swprintf_s(lpRetVal, MAX_ERROR_STRING_LENGTH, W("Error %u"), dwErrCode);
+            char errorString[sizeof("Error 4294967295")];
+            int cnt = sprintf_s(errorString, sizeof(errorString), "Error %u", dwErrCode);
+            cnt++; // +1 for null terminator
+
+            // Widening characters is okay here because they are the
+            // same in both char and WCHAR.
+            for (int i = 0; i < cnt; ++i)
+                lpRetVal[i] = (WCHAR)errorString[i];
         }
     }
     else
@@ -91,7 +98,7 @@ Function :
     FMTMSG__watoi
 
     Converts a wide string repersentation of an integer number
-    into a interger number.
+    into a integer number.
 
     Returns a integer number, or 0 on failure. 0 is not a valid number
     for FormatMessage inserts.
@@ -173,102 +180,6 @@ of _ADD_TO_STRING, as we will resize the buffer if necessary. */
     _ADD_TO_STRING( c );\
 }
 
-
-/*++
-Function :
-
-    FMTMSG_ProcessPrintf
-
-    Processes the printf formatters based on the format.
-
-    Returns the LPWSTR string, or NULL on failure.
-*/
-
-static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
-                                 LPWSTR lpPrintfString,
-                                 LPWSTR lpInsertString)
-{
-    LPWSTR lpBuffer = NULL;
-    LPWSTR lpBuffer2 = NULL;
-    LPWSTR lpFormat = NULL;
-#if _DEBUG
-    // small size for _DEBUG to exercise buffer reallocation logic
-    int tmpSize = 4;
-#else
-    int tmpSize = 64;
-#endif
-    UINT nFormatLength = 0;
-    int nBufferLength = 0;
-
-    TRACE( "FMTMSG_ProcessPrintf( %C, %S, %p )\n", c,
-           lpPrintfString, lpInsertString );
-
-    switch ( c )
-    {
-    case 'e' :
-        /* Fall through */
-    case 'E' :
-        /* Fall through */
-    case 'f' :
-        /* Fall through */
-    case 'g' :
-        /* Fall through */
-    case 'G' :
-        ERROR( "%%%c is not supported by FormatMessage.\n", c );
-        SetLastError( ERROR_INVALID_PARAMETER );
-        return NULL;
-    }
-
-    nFormatLength = PAL_wcslen( lpPrintfString ) + 2; /* Need to count % AND NULL */
-    lpFormat = (LPWSTR)PAL_malloc( nFormatLength * sizeof( WCHAR ) );
-    if ( !lpFormat )
-    {
-        ERROR( "Unable to allocate memory.\n" );
-        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-        return NULL;
-    }
-    /* Create the format string. */
-    memset( lpFormat, 0, nFormatLength * sizeof(WCHAR) );
-    *lpFormat = '%';
-
-    PAL_wcscat( lpFormat, lpPrintfString );
-
-    lpBuffer = (LPWSTR) PAL_malloc(tmpSize*sizeof(WCHAR));
-
-    /* try until the buffer is big enough */
-    while (TRUE)
-    {
-        if (!lpBuffer)
-        {
-            ERROR("Unable to allocate memory\n");
-            SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-            PAL_free(lpFormat);
-            return NULL;
-        }
-        nBufferLength = _snwprintf_s( lpBuffer, tmpSize,  tmpSize,
-                                    lpFormat, lpInsertString);
-
-        if ((nBufferLength >= 0) && (nBufferLength != tmpSize))
-        {
-            break; /* succeeded */
-        }
-        else
-        {
-            tmpSize *= 2;
-            lpBuffer2 = static_cast<WCHAR *>(
-                PAL_realloc(lpBuffer, tmpSize*sizeof(WCHAR)));
-            if (lpBuffer2 == NULL)
-                PAL_free(lpBuffer);
-            lpBuffer = lpBuffer2;
-        }
-    }
-
-    PAL_free( lpFormat );
-    lpFormat = NULL;
-
-    return lpBuffer;
-}
-
 /*++
 Function:
   FormatMessageW
@@ -333,7 +244,7 @@ FormatMessageW(
     if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) &&
          ( dwLanguageId != 0) )
     {
-        ERROR( "Invalid language indentifier.\n" );
+        ERROR( "Invalid language identifier.\n" );
         SetLastError( ERROR_RESOURCE_LANG_NOT_FOUND );
         goto exit;
     }
@@ -400,7 +311,7 @@ FormatMessageW(
         }
         if ( !lpWorkingString )
         {
-            ERROR( "Invalid error indentifier.\n" );
+            ERROR( "Invalid error identifier.\n" );
             SetLastError( ERROR_INVALID_ADDRESS );
         }
         goto exit;
@@ -456,7 +367,7 @@ FormatMessageW(
                     lpSourceString++;
                     if ( iswdigit( *lpSourceString ) )
                     {
-                        ERROR( "Invalid insert indentifier.\n" );
+                        ERROR( "Invalid insert identifier.\n" );
                         SetLastError( ERROR_INVALID_PARAMETER );
                         lpWorkingString = NULL;
                         nCount = 0;
@@ -466,7 +377,7 @@ FormatMessageW(
                 Index = FMTMSG__watoi( Number );
                 if ( Index == 0 )
                 {
-                    ERROR( "Invalid insert indentifier.\n" );
+                    ERROR( "Invalid insert identifier.\n" );
                     SetLastError( ERROR_INVALID_PARAMETER );
                     lpWorkingString = NULL;
                     nCount = 0;
@@ -474,113 +385,33 @@ FormatMessageW(
                 }
                 if ( *lpSourceString == '!' )
                 {
-                    LPWSTR lpInsertString = NULL;
-                    LPWSTR lpPrintfString = NULL;
-                    LPWSTR lpStartOfFormattedString = NULL;
-                    UINT nPrintfLength = 0;
-                    LPWSTR lpFormattedString = NULL;
-                    UINT nFormattedLength = 0;
+                    ERROR( "Embedded printf formatting ('!<printf format>!') is unsupported\n" );
+                    SetLastError( ERROR_INVALID_PARAMETER );
+                    lpWorkingString = NULL;
+                    nCount = 0;
+                    goto exit;
+                }
 
-                    if ( !bIsVaList )
-                    {
-                        lpInsertString = ((LPWSTR*)Arguments)[ Index - 1 ];
-                    }
-                    else
-                    {
-                        va_list TheArgs;
-
-                        va_copy(TheArgs, *Arguments);
-                        UINT i = 0;
-                        for ( ; i < Index; i++ )
-                        {
-                            lpInsertString = va_arg( TheArgs, LPWSTR );
-                        }
-                    }
-
-                    /* Calculate the length, and extract the printf string.*/
-                    lpSourceString++;
-                    {
-                        LPWSTR p = PAL_wcschr( lpSourceString, '!' );
-
-                        if ( NULL == p )
-                        {
-                            nPrintfLength = 0;
-                        }
-                        else
-                        {
-                            nPrintfLength = p - lpSourceString;
-                        }
-                    }
-
-                    lpPrintfString =
-                        (LPWSTR)PAL_malloc( ( nPrintfLength + 1 ) * sizeof( WCHAR ) );
-
-                    if ( !lpPrintfString )
-                    {
-                        ERROR( "Unable to allocate memory.\n" );
-                        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-                        lpWorkingString = NULL;
-                        nCount = 0;
-                        goto exit;
-                    }
-
-                    PAL_wcsncpy( lpPrintfString, lpSourceString, nPrintfLength );
-                    *( lpPrintfString + nPrintfLength ) = '\0';
-
-                    lpStartOfFormattedString = lpFormattedString =
-                           FMTMSG_ProcessPrintf( *lpPrintfString,
-                                                 lpPrintfString,
-                                                 lpInsertString);
-
-                    if ( !lpFormattedString )
-                    {
-                        ERROR( "Unable to process the format string.\n" );
-                        /* Function will set the error code. */
-                        PAL_free( lpPrintfString );
-                        lpWorkingString = NULL;
-                        goto exit;
-                    }
-
-
-                    nFormattedLength = PAL_wcslen( lpFormattedString );
-
-                    /* Append the processed printf string into the working string */
-                    while ( *lpFormattedString )
-                    {
-                        _CHECKED_ADD_TO_STRING( *lpFormattedString );
-                        lpFormattedString++;
-                    }
-
-                    lpSourceString += nPrintfLength + 1;
-                    PAL_free( lpPrintfString );
-                    PAL_free( lpStartOfFormattedString );
-                    lpPrintfString = lpFormattedString = NULL;
+                LPWSTR lpInsert = NULL;
+                if ( !bIsVaList )
+                {
+                    lpInsert = ((LPWSTR*)Arguments)[Index - 1];
                 }
                 else
                 {
-                    /* The printf format string defaults to 's'.*/
-                    LPWSTR lpInsert = NULL;
+                    va_list TheArgs;
+                    va_copy(TheArgs, *Arguments);
+                    UINT i = 0;
+                    for ( ; i < Index; i++ )
+                    {
+                        lpInsert = va_arg( TheArgs, LPWSTR );
+                    }
+                }
 
-                    if ( !bIsVaList )
-                    {
-                        lpInsert = ((LPWSTR*)Arguments)[Index - 1];
-                    }
-                    else
-                    {
-                        va_list TheArgs;
-                        va_copy(TheArgs, *Arguments);
-                        UINT i = 0;
-                        for ( ; i < Index; i++ )
-                        {
-                            lpInsert = va_arg( TheArgs, LPWSTR );
-                        }
-                    }
-
-                    while ( *lpInsert )
-                    {
-                        _CHECKED_ADD_TO_STRING( *lpInsert );
-                        lpInsert++;
-                    }
+                while ( *lpInsert )
+                {
+                    _CHECKED_ADD_TO_STRING( *lpInsert );
+                    lpInsert++;
                 }
             }
             /* Format specifiers. */

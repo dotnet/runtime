@@ -15,10 +15,12 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void RecursiveDelete_NoListDirectoryPermission() // https://github.com/dotnet/runtime/issues/56922
         {
+            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+
             string parentPath = GetTestFilePath();
             var parent = Directory.CreateDirectory(parentPath);
             var ac = parent.GetAccessControl();
-            var rule = new FileSystemAccessRule(WindowsIdentity.GetCurrent().User, FileSystemRights.ListDirectory, AccessControlType.Deny);
+            var rule = new FileSystemAccessRule(currentIdentity.User, FileSystemRights.ListDirectory, AccessControlType.Deny);
             ac.SetAccessRule(rule);
             parent.SetAccessControl(ac);
 

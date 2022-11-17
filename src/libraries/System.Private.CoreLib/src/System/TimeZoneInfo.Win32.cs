@@ -713,7 +713,7 @@ namespace System
 
                 result = dstDisabled || CheckDaylightSavingTimeNotSupported(timeZone) ||
                     //
-                    // since Daylight Saving Time is not "disabled", do a straight comparision between
+                    // since Daylight Saving Time is not "disabled", do a straight comparison between
                     // the Win32 API data and the registry data ...
                     //
                     (timeZone.DaylightBias == registryTimeZoneInfo.DaylightBias &&
@@ -1006,7 +1006,7 @@ namespace System
         }
 
         // Helper function to get the full display name for the UTC static time zone instance
-        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        private static string GetUtcFullDisplayName(string _ /*timeZoneId*/, string standardDisplayName)
         {
             return $"(UTC) {standardDisplayName}";
         }

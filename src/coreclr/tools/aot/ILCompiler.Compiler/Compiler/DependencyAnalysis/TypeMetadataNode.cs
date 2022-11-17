@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -19,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class TypeMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class TypeMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MetadataType _type;
 
@@ -44,17 +43,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
-            if (_type.IsDelegate)
-            {
-                // We've decided as a policy that delegate Invoke methods will be generated in full.
-                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
-                // in places where they assume IL-level trimming (where the method cannot be removed).
-                // We ask for a full reflectable method with its method body instead of just the
-                // metadata.
-                var invokeMethod = _type.GetMethod("Invoke", null);
-                if (!mdManager.IsReflectionBlocked(invokeMethod))
-                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method");
-            }
 
             if (_type.IsEnum)
             {
@@ -140,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
                         }
 
@@ -153,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)type))
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
                         }
                     }

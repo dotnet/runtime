@@ -443,8 +443,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (copyOfDe != null)
-                    copyOfDe.Dispose();
+                copyOfDe?.Dispose();
             }
         }
 

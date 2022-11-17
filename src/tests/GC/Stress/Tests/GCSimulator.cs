@@ -45,7 +45,7 @@ namespace GCSimulator
     /// implementation.
     /// The only restriction on the ObjectContainer is that the objects contained in it must implement
     /// LifeTime interface.
-    /// Right now we have a simple array container as a stock implementation for that. for more information 
+    /// Right now we have a simple array container as a stock implementation for that. for more information
     /// see code:#ArrayContainer
     /// </summary>
     /// <param name="o"></param>
@@ -95,7 +95,7 @@ namespace GCSimulator
             _root = new Node();
             _root.id = 0;
             // the total number of objects in a binary search tree = (2^n+1) - 1
-            // where n is the depth of the tree 
+            // where n is the depth of the tree
             int depth = (int)Math.Log(numberOfObjects, 2);
 
             _count = numberOfObjects;
@@ -173,7 +173,7 @@ namespace GCSimulator
             // we want to implement find and try to avoid creating temp objects..
             // Our Tree is fixed size,  we don;t allow modifying the actual
             // tree by adding or deleting nodes ( that would be more
-            // interesting, but would give us inconsistent perf numbers.           
+            // interesting, but would give us inconsistent perf numbers.
 
             // Traverse the tree ( slow, but avoids allocation ), we can write
             // another tree that is a BST, or use SortedList<T,T> which uses
@@ -198,7 +198,7 @@ namespace GCSimulator
 
 
 
-    //#ArrayContainer Simple Array Stock Implemntation for ObjectContainer
+    //#ArrayContainer Simple Array Stock Implementation for ObjectContainer
     public sealed class ArrayObjectContainer<T> : ObjectContainer<T> where T : LifeTime
     {
         private T[] _objContainer = null;
@@ -242,7 +242,7 @@ namespace GCSimulator
         private LifeTimeStrategy _strategy;
 
         private ObjectContainer<LifeTime> _objectContainer = null;
-        // 
+        //
 
         public void SetObjectContainer(ObjectContainer<LifeTime> objectContainer)
         {
@@ -286,7 +286,7 @@ namespace GCSimulator
                     int index = _strategy.NextObject(objLifeTime.LifeTime);
                     LifeTime oldObject = _objectContainer.SetObjectAt(null, index);
                     //objContainer[index] = null;
-                    // fire the event 
+                    // fire the event
                     objectDied(oldObject, index);
                 }
             }
@@ -363,9 +363,9 @@ namespace GCSimulator
     }
 
     /// <summary>
-    /// we might want to implement a different strategy that decide the life time of the object based on the time 
+    /// we might want to implement a different strategy that decide the life time of the object based on the time
     /// elapsed since the last object access.
-    /// 
+    ///
     /// </summary>
     internal class TimeBasedLifeTimeStrategy : LifeTimeStrategy
     {
@@ -397,7 +397,7 @@ namespace GCSimulator
                 case LifeTimeENUM.Short:
                     if (Environment.TickCount - _lastShortTickCount > 1) // this is in accureat enumber, since
                     // we will be finsh iterating throuh the short life time object in less than 1 ms , so we need
-                    // to switch either to QueryPeroformanceCounter, or to block the loop for some time through 
+                    // to switch either to QueryPeroformanceCounter, or to block the loop for some time through
                     // Thread.Sleep, the other solution is to increase the number of objects a lot.
                     {
                         _lastShortTickCount = Environment.TickCount;
@@ -536,7 +536,7 @@ namespace GCSimulator
 
         //keep track of the collection count for generations 0, 1, 2
         private static int[] s_currentCollections = new int[3];
-        private static int s_outputFrequency = 0; //after how many iterations the data is printed 
+        private static int s_outputFrequency = 0; //after how many iterations the data is printed
         private static System.TimeSpan s_totalTime;
 
         public static int Main(string[] args)

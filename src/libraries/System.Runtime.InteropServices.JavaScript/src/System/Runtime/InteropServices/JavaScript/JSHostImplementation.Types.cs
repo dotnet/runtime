@@ -5,6 +5,13 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
+        internal unsafe delegate void ToManagedCallback(JSMarshalerArgument* arguments_buffer);
+
+        public sealed class TaskCallback
+        {
+            public ToManagedCallback? Callback;
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         public struct IntPtrAndHandle
         {

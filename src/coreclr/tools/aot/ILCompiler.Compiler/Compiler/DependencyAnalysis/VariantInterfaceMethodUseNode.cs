@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -13,14 +12,14 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     // This node represents the concept of a variant interface method being used.
-    // It has no direct depedencies, but may be referred to by conditional static 
+    // It has no direct dependencies, but may be referred to by conditional static
     // dependencies, or static dependencies from elsewhere.
     //
     // We only track the generic definition of the interface method being used.
     // There's a potential optimization opportunity because e.g. the fact that
     // IEnumerable<string>.GetEnumerator() is used doesn't mean that
     // IEnumerable<char>.GetEnumerator() is used, but this complicates the tracking.
-    internal class VariantInterfaceMethodUseNode : DependencyNodeCore<NodeFactory>
+    internal sealed class VariantInterfaceMethodUseNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _decl;
 
@@ -141,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        protected override string GetName(NodeFactory factory) => $"VariantInterfaceMethodUse {_decl.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"VariantInterfaceMethodUse {_decl}";
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;

@@ -253,6 +253,7 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -444,12 +445,25 @@ bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
 int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                                        unsigned              metaTOK,   /* IN  */
                                        char16_t*             buffer,    /* OUT */
-                                       int                   bufferSize /* IN  */
+                                       int                   bufferSize,/* IN  */
+                                       int                   startIndex /* IN  */
                                        )
 {
     mc->cr->AddCall("getStringLiteral");
-    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
-    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, temp);
+    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex, temp);
+    return temp;
+}
+
+size_t interceptor_ICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                                char*                 buffer,             /* OUT */
+                                                size_t                bufferSize,         /* IN  */
+                                                size_t*               pRequiredBufferSize /* OUT */
+                                                )
+{
+    mc->cr->AddCall("printObjectDescription");
+    size_t temp = original_ICorJitInfo->printObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
+    mc->recPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize, temp);
     return temp;
 }
 
@@ -489,9 +503,9 @@ const char* interceptor_ICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     mc->cr->AddCall("getTypeInstantiationArgument");
-    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
-    mc->recGetTypeInstantiationArgument(cls, temp, index);
-    return temp;
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+    mc->recGetTypeInstantiationArgument(cls, index, result);
+    return result;
 }
 
 // Append a (possibly truncated) textual representation of the type `cls` to a preallocated buffer.
@@ -779,6 +793,30 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getRuntimeTypePointer");
+    CORINFO_OBJECT_HANDLE temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
+    mc->recGetRuntimeTypePointer(cls, temp);
+    return temp;
+}
+
+bool interceptor_ICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE typeObj)
+{
+    mc->cr->AddCall("isObjectImmutable");
+    bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
+    mc->recIsObjectImmutable(typeObj, temp);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeObj)
+{
+    mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getObjectType(typeObj);
+    mc->recGetObjectType(typeObj, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
@@ -927,6 +965,24 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     mc->cr->AddCall("isMoreSpecificType");
     bool temp = original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
     mc->recIsMoreSpecificType(cls1, cls2, temp);
+    return temp;
+}
+
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState interceptor_ICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    mc->cr->AddCall("isEnum");
+    CORINFO_CLASS_HANDLE tempUnderlyingType = nullptr;
+    TypeCompareState temp = original_ICorJitInfo->isEnum(cls, &tempUnderlyingType);
+    mc->recIsEnum(cls, &tempUnderlyingType, temp);
+    if (underlyingType != nullptr)
+    {
+        *underlyingType = tempUnderlyingType;
+    }
     return temp;
 }
 
@@ -1085,6 +1141,14 @@ bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return result;
 }
 
+int interceptor_ICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    mc->cr->AddCall("getArrayOrStringLength");
+    int result = original_ICorJitInfo->getArrayOrStringLength(objHnd);
+    mc->recGetArrayOrStringLength(objHnd, result);
+    return result;
+}
+
 /*********************************************************************************/
 //
 // ICorDebugInfo
@@ -1117,7 +1181,7 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
 // Note that debugger (and profiler) is assuming that all of the
 // offsets form a contiguous block of memory, and that the
 // OffsetMapping is sorted in order of increasing native offset.
-// Note - Ownership of pMap is transfered with this call.  We need to record it before its passed on to the EE.
+// Note - Ownership of pMap is transferred with this call.  We need to record it before its passed on to the EE.
 void interceptor_ICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of interest
                                      ULONG32                       cMap, // [IN] size of pMap
                                      ICorDebugInfo::OffsetMapping* pMap  // [IN] map including all points of interest.
@@ -1130,7 +1194,7 @@ void interceptor_ICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN]
     original_ICorJitInfo->setBoundaries(ftn, cMap, pMap);
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.
@@ -1154,7 +1218,7 @@ void interceptor_ICJI::getVars(CORINFO_METHOD_HANDLE      ftn,   // [IN]  method
 // Report back to the EE the location of every variable.
 // note that the JIT might split lifetimes into different
 // locations etc.
-// Note - Ownership of vars is transfered with this call.  We need to record it before its passed on to the EE.
+// Note - Ownership of vars is transferred with this call.  We need to record it before its passed on to the EE.
 void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
                                ULONG32                       cVars, // [IN] size of 'vars'
                                ICorDebugInfo::NativeVarInfo* vars   // [IN] map telling where local vars are stored at
@@ -1246,6 +1310,16 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     });
 
     return temp;
+}
+
+int interceptor_ICJI::getExactClasses(CORINFO_CLASS_HANDLE  baseType,        /* IN */
+                                      int                   maxExactClasses, /* IN */
+                                      CORINFO_CLASS_HANDLE* exactClsRet)     /* OUT */
+{
+    mc->cr->AddCall("getExactClasses");
+    int result = original_ICorJitInfo->getExactClasses(baseType, maxExactClasses, exactClsRet);
+    this->mc->recGetExactClasses(baseType, maxExactClasses, exactClsRet, result);
+    return result;
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
@@ -1694,17 +1768,20 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+{
+    mc->cr->AddCall("getReadonlyStaticFieldValue");
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects, result);
+    return result;
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
     mc->cr->AddCall("getStaticFieldCurrentClass");
-    bool                 localIsSpeculative = false;
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, &localIsSpeculative);
-    mc->recGetStaticFieldCurrentClass(field, localIsSpeculative, result);
-    if (pIsSpeculative != nullptr)
-    {
-        *pIsSpeculative = localIsSpeculative;
-    }
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, pIsSpeculative);
+    mc->recGetStaticFieldCurrentClass(field, (pIsSpeculative == nullptr) ? false : *pIsSpeculative, result);
     return result;
 }
 

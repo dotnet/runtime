@@ -6,6 +6,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
@@ -83,6 +86,7 @@
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfAnyExcept.T.cs" />
+    <Compile Include="Span\IndexOfAnyInRange.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
@@ -96,6 +100,7 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Overlaps.cs" />
+    <Compile Include="Span\Replace.T.cs" />
     <Compile Include="Span\Reverse.cs" />
     <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />

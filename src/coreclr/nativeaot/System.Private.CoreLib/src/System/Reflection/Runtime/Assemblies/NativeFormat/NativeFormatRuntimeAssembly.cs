@@ -123,10 +123,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                         string? namespaceName = null;
                         foreach (TypeForwarderHandle typeForwarderHandle in namespaceHandle.GetNamespaceDefinition(reader).TypeForwarders)
                         {
-                            if (namespaceName == null)
-                            {
-                                namespaceName = namespaceHandle.ToNamespaceName(reader);
-                            }
+                            namespaceName ??= namespaceHandle.ToNamespaceName(reader);
 
                             TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                             string typeName = typeForwarder.Name.GetString(reader);
@@ -222,7 +219,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         internal sealed override void RunModuleConstructor()
         {
             // Nothing to do for the native format. ILC groups all module cctors into StartupCodeTrigger, and this executes at
-            // the begining of the process. All module cctors execute eagerly.
+            // the beginning of the process. All module cctors execute eagerly.
             return;
         }
     }

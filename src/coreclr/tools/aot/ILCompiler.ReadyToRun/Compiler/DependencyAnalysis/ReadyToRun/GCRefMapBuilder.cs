@@ -199,7 +199,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 ArgLocDesc? argLocDescForStructInRegs = argit.GetArgLoc(argOffset);
                 ArgDestination argDest = new ArgDestination(_transitionBlock, argOffset, argLocDescForStructInRegs);
-                GcScanRoots(method.Signature[argIndex], in argDest, delta: 0, frame);
+                GcScanRoots(method.Signature[argIndex], in argDest, delta: 0, frame, topLevel: true);
                 argIndex++;
             }
         }
@@ -211,7 +211,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <param name="type">Parameter type</param>
         /// <param name="argDest">Location of the parameter</param>
         /// <param name="frame">Frame map to update by marking GC locations</param>
-        private void GcScanRoots(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        /// <param name="topLevel">Indicates if the call is for a type or inner member</param>
+        private void GcScanRoots(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool topLevel)
         {
             switch (type.Category)
             {
@@ -252,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // TYPE_GC_OTHER
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    GcScanValueType(type, argDest, delta, frame);
+                    GcScanValueType(type, in argDest, delta, frame, topLevel);
                     break;
 
                 default:
@@ -260,52 +261,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void GcScanValueType(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        private void GcScanValueType(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool topLevel)
         {
-            if (_transitionBlock.IsArgPassedByRef(new TypeHandle(type)))
+            if (topLevel)
             {
-                argDest.GcMark(frame, delta, interior: true);
-                return;
-            }
+                if (_transitionBlock.IsArgPassedByRef(new TypeHandle(type)))
+                {
+                    argDest.GcMark(frame, delta, interior: true);
+                    return;
+                }
 
-            // ReportPointersFromValueTypeArg
-            if (argDest.IsStructPassedInRegs())
-            {
-                argDest.ReportPointersFromStructInRegisters(type, delta, frame);
-                return;
-            }
-            // ReportPointersFromValueType
-            if (type.IsByRefLike)
-            {
-                FindByRefPointerOffsetsInByRefLikeObject(type, argDest, delta, frame);
+                if (argDest.IsStructPassedInRegs())
+                {
+                    argDest.ReportPointersFromStructInRegisters(type, delta, frame);
+                    return;
+                }
             }
 
             Debug.Assert(type is DefType);
             DefType defType = (DefType)type;
             foreach (FieldDesc field in defType.GetFields())
             {
-                if (!field.IsStatic)
-                {
-                    GcScanRoots(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
-                }
-            }
-        }
+                if (field.IsStatic)
+                    continue;
 
-        private void FindByRefPointerOffsetsInByRefLikeObject(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
-        {
-            if (type.IsByRef)
-            {
-                argDest.GcMark(frame, delta, interior: true);
-                return;
-            }
-
-            foreach (FieldDesc field in type.GetFields())
-            {
-                if (!field.IsStatic && field.FieldType.IsByRefLike)
-                {
-                    Debug.Assert(field.FieldType.IsValueType);
-                    FindByRefPointerOffsetsInByRefLikeObject(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
-                }
+                GcScanRoots(field.FieldType, in argDest, delta + field.Offset.AsInt, frame, topLevel: false);
             }
         }
 

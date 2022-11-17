@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Extension to TargetDetails related to code generation
-    partial class TargetDetails
+    public partial class TargetDetails
     {
         public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength)
             : this(architecture, targetOS, abi)

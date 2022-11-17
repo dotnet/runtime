@@ -377,7 +377,7 @@ namespace System.Configuration
                         // - If the whitespace doesn't contain /r/n, then it's okay to skip them
                         //   as part of the element.
                         // - If the whitespace contains /r/n, not skipping them will result
-                        //   in a redundant emtpy line being copied.
+                        //   in a redundant empty line being copied.
                         if (Reader.NodeType == XmlNodeType.Whitespace) Reader.Skip();
                     }
                     else

@@ -107,7 +107,7 @@ namespace System
         //  copy the stack trace to _remoteStackTraceString.
         internal void InternalPreserveStackTrace()
         {
-            // Make sure that the _source field is initialized if Source is not overriden.
+            // Make sure that the _source field is initialized if Source is not overridden.
             // We want it to contain the original faulting point.
             _ = Source;
 

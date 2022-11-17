@@ -15,6 +15,7 @@ namespace System.IO.Tests
         protected override DirectoryInfo CreateInfo(string path) => new DirectoryInfo(path);
         protected override void DeleteItem(string path) => Directory.Delete(path);
         protected override bool IsDirectory => true;
+        protected override bool CanBeReadOnly => true;
 
         [Theory]
         [InlineData(FileAttributes.ReadOnly)]

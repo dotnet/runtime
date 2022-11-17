@@ -79,6 +79,55 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void PriorityQueue_EmptyCollection_DequeueEnqueue_ShouldThrowInvalidOperationException()
+        {
+            var queue = new PriorityQueue<int, int>();
+
+            Assert.Equal(0, queue.Count);
+            Assert.Throws<InvalidOperationException>(() => queue.DequeueEnqueue(1, 1));
+            Assert.Equal(0, queue.Count);
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_DequeueEnqueue_SmallerThanMin()
+        {
+            PriorityQueue<string, int> queue = CreateSmallPriorityQueue(out HashSet<(string, int)> enqueuedItems);
+
+            string actualElement = queue.DequeueEnqueue("zero", 0);
+
+            Assert.Equal("one", actualElement);
+            Assert.Equal("zero", queue.Dequeue());
+            Assert.Equal("two", queue.Dequeue());
+            Assert.Equal("three", queue.Dequeue());
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_DequeueEnqueue_LargerThanMin()
+        {
+            PriorityQueue<string, int> queue = CreateSmallPriorityQueue(out HashSet<(string, int)> enqueuedItems);
+
+            string actualElement = queue.DequeueEnqueue("four", 4);
+
+            Assert.Equal("one", actualElement);
+            Assert.Equal("two", queue.Dequeue());
+            Assert.Equal("three", queue.Dequeue());
+            Assert.Equal("four", queue.Dequeue());
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_DequeueEnqueue_EqualToMin()
+        {
+            PriorityQueue<string, int> queue = CreateSmallPriorityQueue(out HashSet<(string, int)> enqueuedItems);
+
+            string actualElement = queue.DequeueEnqueue("one-to-replace", 1);
+
+            Assert.Equal("one", actualElement);
+            Assert.Equal("one-to-replace", queue.Dequeue());
+            Assert.Equal("two", queue.Dequeue());
+            Assert.Equal("three", queue.Dequeue());
+        }
+
+        [Fact]
         public void PriorityQueue_Generic_Constructor_IEnumerable_Null()
         {
             (string, int)[] itemsToEnqueue = new(string, int)[] { (null, 0), ("one", 1) } ;

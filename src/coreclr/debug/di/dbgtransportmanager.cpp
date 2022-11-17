@@ -13,8 +13,9 @@
 DbgTransportTarget *g_pDbgTransportTarget = NULL;
 
 DbgTransportTarget::DbgTransportTarget()
+    : m_pProcessList{}
+    , m_sLock{}
 {
-    memset(this, 0, sizeof(*this));
 }
 
 // Initialization routine called only by the DbgTransportManager.

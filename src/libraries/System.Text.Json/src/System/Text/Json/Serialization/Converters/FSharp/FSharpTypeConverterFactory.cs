@@ -24,6 +24,8 @@ namespace System.Text.Json.Serialization.Converters
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
@@ -37,12 +39,12 @@ namespace System.Text.Json.Serialization.Converters
                 case FSharpKind.Option:
                     elementType = typeToConvert.GetGenericArguments()[0];
                     converterFactoryType = typeof(FSharpOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
-                    constructorArguments = new object[] { options.GetConverterFromTypeInfo(elementType) };
+                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
                     break;
                 case FSharpKind.ValueOption:
                     elementType = typeToConvert.GetGenericArguments()[0];
                     converterFactoryType = typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
-                    constructorArguments = new object[] { options.GetConverterFromTypeInfo(elementType) };
+                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
                     break;
                 case FSharpKind.List:
                     elementType = typeToConvert.GetGenericArguments()[0];

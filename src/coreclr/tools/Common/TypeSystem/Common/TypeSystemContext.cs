@@ -117,7 +117,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class ArrayTypeKeyHashtable : LockFreeReaderHashtable<ArrayTypeKey, ArrayType>
+            public sealed class ArrayTypeKeyHashtable : LockFreeReaderHashtable<ArrayTypeKey, ArrayType>
             {
                 protected override int GetKeyHashCode(ArrayTypeKey key)
                 {
@@ -304,7 +304,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class InstantiatedTypeKeyHashtable : LockFreeReaderHashtable<InstantiatedTypeKey, InstantiatedType>
+            public sealed class InstantiatedTypeKeyHashtable : LockFreeReaderHashtable<InstantiatedTypeKey, InstantiatedType>
             {
                 protected override int GetKeyHashCode(InstantiatedTypeKey key)
                 {
@@ -403,7 +403,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class InstantiatedMethodKeyHashtable : LockFreeReaderHashtable<InstantiatedMethodKey, InstantiatedMethod>
+            public sealed class InstantiatedMethodKeyHashtable : LockFreeReaderHashtable<InstantiatedMethodKey, InstantiatedMethod>
             {
                 protected override int GetKeyHashCode(InstantiatedMethodKey key)
                 {
@@ -502,7 +502,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class MethodForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<MethodForInstantiatedTypeKey, MethodForInstantiatedType>
+            public sealed class MethodForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<MethodForInstantiatedTypeKey, MethodForInstantiatedType>
             {
                 protected override int GetKeyHashCode(MethodForInstantiatedTypeKey key)
                 {
@@ -575,7 +575,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class FieldForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<FieldForInstantiatedTypeKey, FieldForInstantiatedType>
+            public sealed class FieldForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<FieldForInstantiatedTypeKey, FieldForInstantiatedType>
             {
                 protected override int GetKeyHashCode(FieldForInstantiatedTypeKey key)
                 {
@@ -617,7 +617,7 @@ namespace Internal.TypeSystem
         //
         // Signature variables
         //
-        private class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
+        private sealed class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
         {
             private TypeSystemContext _context;
             public SignatureVariableHashtable(TypeSystemContext context)

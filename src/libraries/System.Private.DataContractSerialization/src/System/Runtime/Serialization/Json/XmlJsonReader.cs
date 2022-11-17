@@ -1598,7 +1598,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("val")]
+        [return: NotNullIfNotNull(nameof(val))]
         private string? UnescapeJsonString(string? val)
         {
             if (val == null)

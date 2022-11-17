@@ -93,7 +93,7 @@ private:
 private:
     //Parses one line of config and populates values in the passed in configPair
     //returns: true if the parsing was successful, false if the parsing failed.
-    //NOTE: if the method fails configPair is left in an unitialized state
+    //NOTE: if the method fails configPair is left in an uninitialized state
     bool ParseConfigLine(_Out_ ConfigPair* configPair, _In_z_ const char * line);
 
 #ifdef FEATURE_EMBEDDED_CONFIG

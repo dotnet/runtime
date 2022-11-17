@@ -1,5 +1,18 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import MonoWasmThreads from "consts:monoWasmThreads";
-import type { pthread_ptr } from "../shared";
+import type { pthread_ptr } from "../shared/types";
+import type { PThreadInfo, MonoThreadMessage } from "../shared";
+
+/// Identification of the current thread executing on a worker
+export interface PThreadSelf extends PThreadInfo {
+    readonly pthread_id: pthread_ptr;
+    readonly portToBrowser: MessagePort;
+    readonly isBrowserThread: boolean;
+    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
+    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
+}
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;
@@ -15,20 +28,8 @@ export interface WorkerThreadEventMap {
 }
 
 export interface WorkerThreadEvent extends Event {
-    readonly pthread_ptr: pthread_ptr;
-    readonly portToMain: MessagePort;
+    readonly pthread_self: PThreadSelf;
 }
-
-class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-    readonly pthread_ptr: pthread_ptr;
-    readonly portToMain: MessagePort;
-    constructor(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, portToMain: MessagePort) {
-        super(type);
-        this.pthread_ptr = pthread_ptr;
-        this.portToMain = portToMain;
-    }
-}
-
 
 export interface WorkerThreadEventTarget extends EventTarget {
     dispatchEvent(event: WorkerThreadEvent): boolean;
@@ -37,11 +38,15 @@ export interface WorkerThreadEventTarget extends EventTarget {
     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
 }
 
-export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort): WorkerThreadEvent {
-    // this 'if' helps to tree-shake the WorkerThreadEventImpl class if threads are disabled.
-    if (MonoWasmThreads) {
-        return new WorkerThreadEventImpl(type, pthread_ptr, port);
-    } else {
-        throw new Error("threads support disabled");
-    }
-}
+let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent;
+export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !MonoWasmThreads
+    ? (() => { throw new Error("threads support disabled"); })
+    : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
+        if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
+            constructor(type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
+                super(type);
+            }
+        };
+        return new WorkerThreadEventClassConstructor(type, pthread_self);
+    });
+

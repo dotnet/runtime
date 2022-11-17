@@ -115,8 +115,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
 #ifdef TARGET_X86
     // On x86, StubLinkerCPU::EmitMethodStubProlog calls Frame::LogTransition
     // but the caller of EmitMethodStubProlog sets the GSCookie later on.
@@ -127,8 +125,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
 
     if (Frame::ShouldLogTransitions())
         frame->Log();
-
-    END_ENTRYPOINT_VOIDRET;
 } // void Frame::Log()
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1061,7 +1057,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
-// Methods of IntepreterFrame.
+// Methods of InterpreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp)
   : Frame(), m_interp(interp)
 {
@@ -1840,7 +1836,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     else if (!initialInit &&
              (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
-        // explictly told depth
+        // explicitly told depth
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
     }
     else

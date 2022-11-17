@@ -32,12 +32,12 @@ namespace NetClient
             Tuple.Create("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901")
         };
 
-        private readonly IEnumerable<string> reversableStrings = new string[]
+        private readonly IEnumerable<string> reversibleStrings = new string[]
         {
             "",
             "a",
             "abc",
-            "reversable string",
+            "reversible string",
             "Unicode 相反 Unicode",
 
             // Long string optimization validation
@@ -86,7 +86,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 if (!AllAscii(s))
                 {
@@ -117,7 +117,7 @@ namespace NetClient
                 Assert.Equal(local, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 if (!AllAscii(s))
                 {
@@ -171,7 +171,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);
@@ -195,7 +195,7 @@ namespace NetClient
                 Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 var local = new StringBuilder(s);
                 string expected = Reverse(local.ToString());
@@ -243,7 +243,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);
@@ -272,7 +272,7 @@ namespace NetClient
         private void Marshal_LCID()
         {
             Console.WriteLine("Marshal LCID");
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);

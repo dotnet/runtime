@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
@@ -19,6 +20,9 @@ namespace System
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [NonVersionable]
+#pragma warning disable SYSLIB1056 // Specified native type is invalid
+    [NativeMarshalling(typeof(SpanMarshaller<,>))]
+#pragma warning restore SYSLIB1056 // Specified native type is invalid
     public readonly ref struct Span<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -120,6 +124,7 @@ namespace System
             _length = 1;
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T reference, int length)
@@ -129,6 +134,7 @@ namespace System
             _reference = ref reference;
             _length = length;
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Returns a reference to specified element of the Span.
@@ -178,10 +184,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
+        /// </summary>
         /// <exception cref="System.NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
@@ -189,10 +195,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed.
+        /// </summary>
         /// <exception cref="System.NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("GetHashCode() on Span will always throw an exception.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() =>

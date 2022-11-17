@@ -240,7 +240,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetCount(ULONG32* pnCount);
     HRESULT STDMETHODCALLTYPE GetDimensions(ULONG32 cdim, ULONG32 dims[]);
     HRESULT STDMETHODCALLTYPE HasBaseIndicies(BOOL* pbHasBaseIndicies);
-    HRESULT STDMETHODCALLTYPE GetBaseIndicies(ULONG32 cdim, ULONG32 indicies[]);
+    HRESULT STDMETHODCALLTYPE GetBaseIndicies(ULONG32 cdim, ULONG32 indices[]);
     HRESULT STDMETHODCALLTYPE GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue** ppValue);
     HRESULT STDMETHODCALLTYPE GetElementAtPosition(ULONG32 nPosition, ICorDebugValue** ppValue);
 };

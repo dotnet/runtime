@@ -672,7 +672,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	}
 
 	if (pass_on_stack) {
-		/* Allways pass in memory */
+		/* Always pass in memory */
 		ainfo->offset = GINT32_TO_INT16 (*stack_size);
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
@@ -983,7 +983,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 #endif
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* We allways pass the sig cookie on the stack for simplicity */
+			/* We always pass the sig cookie on the stack for simplicity */
 			/*
 			 * Prevent implicit arguments + the sig cookie from being passed
 			 * in registers.
@@ -1622,7 +1622,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
-		/* substract 1 for the invisible store in the prolog */
+		/* subtract 1 for the invisible store in the prolog */
 		return (ins->opcode == OP_ARG) ? 0 : 1;
 	else
 		/* push+pop */
@@ -2165,13 +2165,20 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				return linfo;
 			}
 
+#if 0
+			/* FIXME: the non-LLVM codegen should also pass arguments in registers or
+			 * else there could a mismatch when LLVM code calls non-LLVM code
+			 *
+			 * See https://github.com/dotnet/runtime/issues/73454
+			 */
 			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (m_class_is_simd_type (klass)) {
+				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
 					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
 					break;
 				}
 			}
+#endif
 
 			linfo->args [i].storage = LLVMArgVtypeInReg;
 			for (j = 0; j < 2; ++j)
@@ -3875,8 +3882,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XEQUAL: {
 			int temp_reg1 = mono_alloc_ireg (cfg);
 			int temp_reg2 = mono_alloc_ireg (cfg);
+			int opcode= -1;
+			switch (ins->inst_c1)
+			{
+			case MONO_TYPE_R4: opcode = OP_COMPPS; break;
+			case MONO_TYPE_R8: opcode = OP_COMPPD; break;
+			default: opcode = OP_PCMPEQD;
+			}
 
-			NEW_SIMD_INS (cfg, ins, temp, OP_PCMPEQD, temp_reg1, ins->sreg1, ins->sreg2);
+			NEW_SIMD_INS (cfg, ins, temp, opcode, temp_reg1, ins->sreg1, ins->sreg2);
+			temp->inst_c0 = 0;
 			NEW_SIMD_INS (cfg, ins, temp, OP_EXTRACT_MASK, temp_reg2, temp_reg1, -1);
 			temp->type = STACK_I4;
 			NEW_INS (cfg, ins, temp, OP_COMPARE_IMM);
@@ -4140,7 +4155,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		 * Under Windows, it is necessary to allocate one page at a time,
 		 * "touching" stack after each successful sub-allocation. This is
 		 * because of the way stack growth is implemented - there is a
-		 * guard page before the lowest stack page that is currently commited.
+		 * guard page before the lowest stack page that is currently committed.
 		 * Stack normally grows sequentially so OS traps access to the
 		 * guard page and commits more pages when needed.
 		 */
@@ -5482,7 +5497,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #ifdef TARGET_WIN32
 			// Redundant REX byte indicates a tailcall to the native unwinder. It means nothing to the processor.
-			// https://github.com/dotnet/coreclr/blob/966dabb5bb3c4bf1ea885e1e8dc6528e8c64dc4f/src/unwinder/amd64/unwinder_amd64.cpp#L1394
+			// https://github.com/dotnet/runtime/blob/384dceb4547d3aa240107dc3fbd4abc4387ced70/src/coreclr/unwinder/amd64/unwinder_amd64.cpp#L1390
 			// FIXME This should be jmp rip+32 for AOT direct to same assembly.
 			// FIXME This should be jmp [rip+32] for AOT direct to not-same assembly (through data).
 			// FIXME This should be jmp [rip+32] for JIT direct -- patch data instead of code.
@@ -5504,7 +5519,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			amd64_alu_membase_imm_size (code, X86_CMP, ins->sreg1, 0, 0, 4);
+			amd64_alu_membase8_reg_size (code, X86_CMP, ins->sreg1, 0, ins->sreg1, 1);
 			break;
 		case OP_ARGLIST: {
 			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, cfg->sig_cookie);
@@ -6703,7 +6718,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint64 shifted_nursery_start = nursery_start >> nursery_shift;
 
 			/*If either point to the stack we can simply avoid the WB. This happens due to
-			 * optimizations revealing a stack store that was not visible when op_cardtable was emited.
+			 * optimizations revealing a stack store that was not visible when op_cardtable was emitted.
 			 */
 			if (ins->sreg1 == AMD64_RSP || ins->sreg2 == AMD64_RSP)
 				continue;

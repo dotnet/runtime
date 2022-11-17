@@ -11,80 +11,126 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTimeOffset value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue);
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTimeOffset value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.DateTimeOffset;
+            slot.DoubleValue = (double)value.ToUnixTimeMilliseconds();
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTimeOffset? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue);
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTimeOffset? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.DateTimeOffset;
+                slot.DoubleValue = value.Value.ToUnixTimeMilliseconds(); ;
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTime value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = default;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue).UtcDateTime;
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTime value)
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.DateTime;
+            slot.DoubleValue = new DateTimeOffset(value).ToUnixTimeMilliseconds();
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out DateTime? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = DateTimeOffset.FromUnixTimeMilliseconds((long)slot.DoubleValue).UtcDateTime;
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(DateTime? value)
         {
-            throw new NotImplementedException();
+            if (value.HasValue)
+            {
+                slot.Type = MarshalerType.DateTime;
+                slot.DoubleValue = new DateTimeOffset(value.Value).ToUnixTimeMilliseconds();
+            }
+            else
+            {
+                slot.Type = MarshalerType.None;
+            }
         }
     }
 }

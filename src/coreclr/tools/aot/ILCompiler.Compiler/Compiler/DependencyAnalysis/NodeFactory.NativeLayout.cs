@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -12,14 +11,14 @@ using ILCompiler.DependencyAnalysisFramework;
 namespace ILCompiler.DependencyAnalysis
 {
     /// Part of Node factory that deals with nodes describing native layout information
-    partial class NodeFactory
+    public partial class NodeFactory
     {
         /// <summary>
         /// Helper class that provides a level of grouping for all the native layout lookups
         /// </summary>
         public class NativeLayoutHelper
         {
-            NodeFactory _factory;
+            private NodeFactory _factory;
 
             public NativeLayoutHelper(NodeFactory factory)
             {
@@ -372,7 +371,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _placedVertexSequence.GetOrAdd(new VertexSequenceKey(vertices));
             }
 
-            class UIntSequenceComparer : IEqualityComparer<List<uint>>
+            private sealed class UIntSequenceComparer : IEqualityComparer<List<uint>>
             {
                 bool IEqualityComparer<List<uint>>.Equals(List<uint> x, List<uint> y)
                 {

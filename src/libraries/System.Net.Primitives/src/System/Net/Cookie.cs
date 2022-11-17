@@ -41,8 +41,7 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal static readonly char[] ReservedToName = new char[] { '\t', '\r', '\n', '=', ';', ',' };
-        internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
+        internal const string ReservedToName = "\t\r\n=;,";
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -239,7 +238,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.IndexOfAny(ReservedToName) >= 0)
+                || value.AsSpan().IndexOfAny(ReservedToName) >= 0)
             {
                 m_name = string.Empty;
                 return false;
@@ -347,7 +346,7 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.IndexOfAny(ReservedToName) >= 0)
+                m_name.AsSpan().IndexOfAny(ReservedToName) >= 0)
             {
                 if (shouldThrow)
                 {
@@ -358,7 +357,7 @@ namespace System.Net
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.IndexOfAny(ReservedToValue) >= 0))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -369,7 +368,7 @@ namespace System.Net
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
-                && (Comment.IndexOfAny(ReservedToValue) >= 0))
+                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -380,7 +379,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
-                && (Path.IndexOfAny(ReservedToValue) >= 0))
+                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
             {
                 if (shouldThrow)
                 {
@@ -586,14 +585,17 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    // Therefore; the effective port value is implicit.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
                 {
+                    // "Port" value is present, so we use the provided value rather than an implicit one.
+                    m_port_implicit = false;
                     // Parse port list
                     if (!value.StartsWith('\"') || !value.EndsWith('\"'))
                     {

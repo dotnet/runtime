@@ -97,25 +97,20 @@
         <target state="translated">Nerozpoznaný seskupovací konstrukt.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">Je požadována verze jazyku C# LangVersion 11 nebo vyšší.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">Zadaný regulární výraz je neplatný. {0}</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">Atribut RegexGeneratorAttribute je nesprávný.</target>
-        <note>{Locked="RegexGeneratorAttribute"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">Atribut GeneratedRegexAttribute je poškozený.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
-        <source>Invalid RegexGenerator usage</source>
-        <target state="translated">Neplatné použití RegexGenerator</target>
-        <note>{Locked="RegexGenerator"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">Neplatné použití GeneratedRegexAttribute</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -128,13 +123,13 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu interního omezení.</target>
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">Generátor regulárních výrazů nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu vnitřního omezení. Další podrobnosti najdete v vysvětlení vygenerovaného zdroje.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
-        <source>RegexGenerator limitation reached.</source>
-        <target state="translated">Dosáhlo se omezení nástroje RegexGenerator.</target>
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">Bylo dosaženo omezení generátoru regulárních výrazů.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -157,9 +152,9 @@
         <target state="translated">Řídicí znak chybí.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Na stejnou metodu se uplatnilo několik RegexGeneratorAttributes, ale je povolena jenom jedna.</target>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">Na stejnou metodu bylo použito několik atributů GeneratedRegexAttributes, ale je povolen pouze jeden.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -203,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">Metoda RegexGenerator musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">Metoda GeneratedRegexAttribute musí být částečná, bez parametrů, neobecná, neabstraktní a návratová metoda Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -263,13 +258,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Pomocí regexGeneratorAttribute vygenerujte implementaci regulárního výrazu za kompilace.</target>
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">K vygenerování implementace regulárního výrazu při kompilaci použijte GeneratedRegexAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">Převod na RegexGenerator</target>
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">Převést na GeneratedRegexAttribute.</target>
         <note />
       </trans-unit>
     </body>

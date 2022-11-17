@@ -1414,8 +1414,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 		if (info->def && (!info->uses || ((info->uses->next == NULL) && (((MonoVarUsageInfo*)info->uses->data)->inst == info->def)))) {
 			MonoInst *def = info->def;
 
-			/* Eliminating FMOVE could screw up the fp stack */
-			if (MONO_IS_MOVE (def) && (!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE))) {
+			if (MONO_IS_MOVE (def)) {
 				MonoInst *src_var = get_vreg_to_inst (cfg, def->sreg1);
 				if (src_var && !(src_var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 					add_to_dce_worklist (cfg, info, MONO_VARINFO (cfg, src_var->inst_c0), &work_list);
@@ -1499,7 +1498,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 			continue;
 		MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
 			/*
-			 * Try to move instructions out of loop headers into the preceeding bblock.
+			 * Try to move instructions out of loop headers into the preceding bblock.
 			 */
 			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || ins->opcode == OP_GENERIC_CLASS_INIT) {
 				MonoInst *tins;

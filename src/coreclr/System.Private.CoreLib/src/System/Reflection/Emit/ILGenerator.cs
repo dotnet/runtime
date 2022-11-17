@@ -806,7 +806,7 @@ namespace System.Reflection.Emit
             // Emitting a switch table
 
             int i;
-            int remaining;                  // number of bytes remaining for this switch instruction to be substracted
+            int remaining;                  // number of bytes remaining for this switch instruction to be subtracted
             // for computing the offset
 
             int count = labels.Length;
@@ -1092,7 +1092,7 @@ namespace System.Reflection.Emit
             int catchEndAddr = 0;
             if (state != __ExceptionInfo.State_Try)
             {
-                // generate leave for any preceeding catch clause
+                // generate leave for any preceding catch clause
                 Emit(OpCodes.Leave, endLabel);
                 catchEndAddr = m_length;
             }

@@ -236,6 +236,7 @@ namespace System.Security.Cryptography
 
             if (!Interop.AndroidCrypto.RsaUpRef(handle))
             {
+                safeHandle.Dispose();
                 throw new CryptographicException();
             }
 

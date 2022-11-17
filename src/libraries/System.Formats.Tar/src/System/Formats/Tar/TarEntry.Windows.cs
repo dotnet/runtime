@@ -9,6 +9,7 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
+#pragma warning disable IDE0060
         // Throws on Windows. Block devices are not supported on this platform.
         private void ExtractAsBlockDevice(string destinationFileName)
         {
@@ -38,13 +39,6 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
             Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
-
-        // Mode is not used on Windows.
-#pragma warning disable CA1822 //  Member 'SetModeOnFile' does not access instance data and can be marked as static
-        private void SetModeOnFile(SafeFileHandle handle)
-#pragma warning restore CA1822
-        {
-            // TODO: Verify that executables get their 'executable' permission applied on Windows when extracted, if applicable. https://github.com/dotnet/runtime/issues/68230
-        }
+#pragma warning restore IDE0060
     }
 }

@@ -7,7 +7,7 @@
 **
 ** Purpose: Test for ExitThread.  Create a thread and then call
 ** exit thread within the threading function.  Ensure that it exits
-** immediatly.
+** immediately.
 **
 **
 **=========================================================*/

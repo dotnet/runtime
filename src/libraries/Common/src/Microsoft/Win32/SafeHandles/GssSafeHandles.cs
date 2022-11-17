@@ -91,9 +91,9 @@ namespace Microsoft.Win32.SafeHandles
         ///  returns the handle for the given credentials.
         ///  The method returns an invalid handle if the username is null or empty.
         /// </summary>
-        public static SafeGssCredHandle Create(string username, string password, bool isNtlmOnly)
+        public static SafeGssCredHandle Create(string username, string password, Interop.NetSecurityNative.PackageType packageType)
         {
-            if (isNtlmOnly && !s_IsNtlmInstalled.Value)
+            if (packageType == Interop.NetSecurityNative.PackageType.NTLM && !s_IsNtlmInstalled.Value)
             {
                 throw new Interop.NetSecurityNative.GssApiException(
                     Interop.NetSecurityNative.Status.GSS_S_BAD_MECH,
@@ -117,7 +117,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else
                 {
-                    status = Interop.NetSecurityNative.InitiateCredWithPassword(out minorStatus, isNtlmOnly, userHandle, password, Encoding.UTF8.GetByteCount(password), out retHandle);
+                    status = Interop.NetSecurityNative.InitiateCredWithPassword(out minorStatus, packageType, userHandle, password, Encoding.UTF8.GetByteCount(password), out retHandle);
                 }
 
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)

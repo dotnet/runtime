@@ -117,6 +117,690 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryReadBigEndianByteTest()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_007F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_00FF, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt16Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0100, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_7FFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt32Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0100_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_7FFF_FFFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt64Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0100_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt96Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianInt128Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianSByteTest()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_007F, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt16Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0100, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_7FFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_8000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt32Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0100_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_7FFF_FFFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_8000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_FFFF_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_FFFF_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt64Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0100_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x8000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt96Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadBigEndianUInt128Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadBigEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianByteTest()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_007F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_00FF, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt16Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0100, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_7FFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt32Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0100_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_7FFF_FFFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt64Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0100_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt96Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianInt128Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianSByteTest()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_007F, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80 }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF }, isUnsigned: false, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt16Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0100, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_8000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_7FFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt32Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0100_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_8000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_FFFF_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_7FFF_FFFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_FFFF_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt64Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0100_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x8000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FF7F, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt96Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
+        public static void TryReadLittleEndianUInt128Test()
+        {
+            ulong result;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0080, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryReadLittleEndian(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, isUnsigned: true, out result));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, result);
+        }
+
+        [Fact]
         public static void GetByteCountTest()
         {
             Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0x0000000000000000));
@@ -273,41 +957,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x0000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x0000000000000001, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x8000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x0000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x0000000000000001, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x8000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x0000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x0000000000000001, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x8000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x0000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x0000000000000001, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x8000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x0000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x0000000000000001, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x8000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x0000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x0000000000000001, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x8000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x0000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x0000000000000001, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x8000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x0000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x0000000000000001, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x8000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //
@@ -370,21 +1054,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x0000000000000000, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x0000000000000001, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x8000000000000000, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x0000000000000000, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x0000000000000001, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x8000000000000000, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x0000000000000000, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x0000000000000001, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x8000000000000000, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x0000000000000000, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x0000000000000001, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x8000000000000000, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //
@@ -1600,31 +2284,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000002, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000002, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //

@@ -28,8 +28,8 @@ namespace System.Diagnostics.Metrics
     //   lookup, and then return a new _cachedLookupFunc. Invoking _cachedLookupFunc confirms the keys match what was previously
     //   observed, re-orders the values with the cached permutation and performs the 2nd level lookup against the cached 2nd level
     //   Dictionary. If we wanted to get really fancy we could have that compiler generate IL that would be JIT compiled, but right now
-    //   LabelInstructionCompiler simply creates a managed data structure (LabelInstructionInterpretter) that encodes the permutation
-    //   in an array of LabelInstructions and the 2nd level dictionary in another field. LabelInstructionInterpretter.GetAggregator
+    //   LabelInstructionCompiler simply creates a managed data structure (LabelInstructionInterpreter) that encodes the permutation
+    //   in an array of LabelInstructions and the 2nd level dictionary in another field. LabelInstructionInterpreter.GetAggregator
     //   re-orders the values with a for loop and then does the lookup. Depending on ratio between fast-path and slow-path invocations
     //   it may also not be a win to further pessimize the slow-path (JIT compilation is expensive) to squeeze yet more cycles out of
     //   the fast path.
@@ -353,29 +353,29 @@ namespace System.Diagnostics.Metrics
                     StringSequence1 names1 = new StringSequence1(instructions[0].LabelName);
                     ConcurrentDictionary<ObjectSequence1, TAggregator> valuesDict1 =
                         aggregatorStore.GetLabelValuesDictionary<StringSequence1, ObjectSequence1>(names1);
-                    LabelInstructionInterpretter<ObjectSequence1, TAggregator> interpretter1 =
-                        new LabelInstructionInterpretter<ObjectSequence1, TAggregator>(
+                    LabelInstructionInterpreter<ObjectSequence1, TAggregator> interpreter1 =
+                        new LabelInstructionInterpreter<ObjectSequence1, TAggregator>(
                         expectedLabels, instructions, valuesDict1, createAggregatorFunc);
-                    return interpretter1.GetAggregator;
+                    return interpreter1.GetAggregator;
 
                 case 2:
                     StringSequence2 names2 = new StringSequence2(instructions[0].LabelName, instructions[1].LabelName);
                     ConcurrentDictionary<ObjectSequence2, TAggregator> valuesDict2 =
                         aggregatorStore.GetLabelValuesDictionary<StringSequence2, ObjectSequence2>(names2);
-                    LabelInstructionInterpretter<ObjectSequence2, TAggregator> interpretter2 =
-                        new LabelInstructionInterpretter<ObjectSequence2, TAggregator>(
+                    LabelInstructionInterpreter<ObjectSequence2, TAggregator> interpreter2 =
+                        new LabelInstructionInterpreter<ObjectSequence2, TAggregator>(
                         expectedLabels, instructions, valuesDict2, createAggregatorFunc);
-                    return interpretter2.GetAggregator;
+                    return interpreter2.GetAggregator;
 
                 case 3:
                     StringSequence3 names3 = new StringSequence3(instructions[0].LabelName, instructions[1].LabelName,
                         instructions[2].LabelName);
                     ConcurrentDictionary<ObjectSequence3, TAggregator> valuesDict3 =
                         aggregatorStore.GetLabelValuesDictionary<StringSequence3, ObjectSequence3>(names3);
-                    LabelInstructionInterpretter<ObjectSequence3, TAggregator> interpretter3 =
-                        new LabelInstructionInterpretter<ObjectSequence3, TAggregator>(
+                    LabelInstructionInterpreter<ObjectSequence3, TAggregator> interpreter3 =
+                        new LabelInstructionInterpreter<ObjectSequence3, TAggregator>(
                         expectedLabels, instructions, valuesDict3, createAggregatorFunc);
-                    return interpretter3.GetAggregator;
+                    return interpreter3.GetAggregator;
 
                 default:
                     string[] labelNames = new string[instructions.Length];
@@ -386,10 +386,10 @@ namespace System.Diagnostics.Metrics
                     StringSequenceMany namesMany = new StringSequenceMany(labelNames);
                     ConcurrentDictionary<ObjectSequenceMany, TAggregator> valuesDictMany =
                         aggregatorStore.GetLabelValuesDictionary<StringSequenceMany, ObjectSequenceMany>(namesMany);
-                    LabelInstructionInterpretter<ObjectSequenceMany, TAggregator> interpretter4 =
-                        new LabelInstructionInterpretter<ObjectSequenceMany, TAggregator>(
+                    LabelInstructionInterpreter<ObjectSequenceMany, TAggregator> interpreter4 =
+                        new LabelInstructionInterpreter<ObjectSequenceMany, TAggregator>(
                         expectedLabels, instructions, valuesDictMany, createAggregatorFunc);
-                    return interpretter4.GetAggregator;
+                    return interpreter4.GetAggregator;
             }
         }
 
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Metrics
     }
 
     [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
-    internal sealed class LabelInstructionInterpretter<TObjectSequence, TAggregator>
+    internal sealed class LabelInstructionInterpreter<TObjectSequence, TAggregator>
         where TObjectSequence : struct, IObjectSequence, IEquatable<TObjectSequence>
         where TAggregator : Aggregator
     {
@@ -415,7 +415,7 @@ namespace System.Diagnostics.Metrics
         private ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
         private Func<TObjectSequence, TAggregator?> _createAggregator;
 
-        public LabelInstructionInterpretter(
+        public LabelInstructionInterpreter(
             int expectedLabelCount,
             LabelInstruction[] instructions,
             ConcurrentDictionary<TObjectSequence, TAggregator> valuesDict,

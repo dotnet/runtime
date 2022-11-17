@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Xml;
+using System.Runtime.Serialization.DataContracts;
 using System.Globalization;
 
 
@@ -281,7 +282,7 @@ namespace System.Runtime.Serialization
         internal void WriteAnyType(object value, Type valueType)
         {
             bool handled = true;
-            switch (valueType.GetTypeCode())
+            switch (Type.GetTypeCode(valueType))
             {
                 case TypeCode.Boolean:
                     WriteBoolean((bool)value);
@@ -329,6 +330,7 @@ namespace System.Runtime.Serialization
                     WriteUnsignedLong((ulong)value);
                     break;
                 case TypeCode.Empty:
+                case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
                     if (valueType == Globals.TypeOfByteArray)
@@ -453,7 +455,7 @@ namespace System.Runtime.Serialization
 
         internal virtual void WriteDateTime(DateTime value)
         {
-            WriteString(XmlConvert.ToString(value, XmlDateTimeSerializationMode.RoundtripKind));
+            writer.WriteValue(value);
         }
 
         internal void WriteDateTime(DateTime value, XmlDictionaryString name, XmlDictionaryString? ns)
@@ -616,13 +618,6 @@ namespace System.Runtime.Serialization
         internal void WriteTimeSpan(TimeSpan value)
         {
             writer.WriteRaw(XmlConvert.ToString(value));
-        }
-
-        internal void WriteTimeSpan(char value, XmlDictionaryString name, XmlDictionaryString? ns)
-        {
-            WriteStartElementPrimitive(name, ns);
-            writer.WriteRaw(XmlConvert.ToString(value));
-            WriteEndElementPrimitive();
         }
 
         internal void WriteTimeSpan(TimeSpan value, XmlDictionaryString name, XmlDictionaryString? ns)

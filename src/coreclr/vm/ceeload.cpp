@@ -1718,7 +1718,7 @@ BOOL Module::IsStaticStoragePrepared(mdTypeDef tkType)
 
     // Right now the design is that we do one static allocation pass during NGEN,
     // and a 2nd pass for it at module init time for modules that weren't NGENed or the NGEN
-    // pass was unsucessful. If we are loading types after that then we must use dynamic
+    // pass was unsuccessful. If we are loading types after that then we must use dynamic
     // static storage. These dynamic statics require an additional indirection so they
     // don't perform quite as well.
     //
@@ -2130,7 +2130,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
     if (pMdImport == NULL)
         return FALSE;
-    
+
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
     HENUMInternal assemblyEnum;
@@ -2491,17 +2491,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     // the assembly was loaded in.</REVISIT_TODO>
     if (CORDebuggerAttached())
     {
-        AppDomainIterator i(FALSE);
-
-        while (i.Next())
+        AppDomain *pDomain = AppDomain::GetCurrentDomain();
+        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
+                                                pDomain->ContainsAssembly(m_pAssembly)))
         {
-            AppDomain *pDomain = i.GetDomain();
-
-            if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                  pDomain->ContainsAssembly(m_pAssembly)))
-            {
-                g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
-            }
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }
     }
 }
@@ -2835,7 +2829,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
 }
 
 
-OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token)
+OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -2864,7 +2858,7 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token)
 
     pLoaderAllocator = this->GetLoaderAllocator();
 
-    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData);
+    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 
     return string;
 }
@@ -3679,7 +3673,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
         return;
     }
 
-    // Since serializing metadata to an auxillary buffer is only needed by the debugger,
+    // Since serializing metadata to an auxiliary buffer is only needed by the debugger,
     // we should only be doing this for modules that the debugger can see.
     if (!IsVisibleToDebugger())
     {
@@ -4767,15 +4761,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     }
     CONTRACTL_END;
 
-    // If a debugger is attached, then the CLR will still send ClassLoad notifications for dynamic modules,
-    // which mean we still need to keep the metadata available. This is the same as Whidbey.
-    // An alternative (and better) design would be to suppress ClassLoad notifications too, but then we'd
-    // need some way of sending a "catchup" notification to the debugger after we re-enable notifications.
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
-
     // Do not release the emitter. This is a weak reference.
     IMetaDataEmit *pEmitter = this->GetEmitter();
     _ASSERTE(pEmitter != NULL);
@@ -5132,7 +5117,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         m_ModuleID->EnumMemoryRegions(flags);
     }
-
     if (m_pPEAssembly.IsValid())
     {
         m_pPEAssembly->EnumMemoryRegions(flags);
@@ -5145,7 +5129,11 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     m_TypeRefToMethodTableMap.ListEnumMemoryRegions(flags);
     m_TypeDefToMethodTableMap.ListEnumMemoryRegions(flags);
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pAvailableClasses.IsValid())
         {
@@ -5233,7 +5221,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             }
         }
 
-    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE
+    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
 
     LookupMap<PTR_Module>::Iterator fileRefIter(&m_FileReferencesMap);

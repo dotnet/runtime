@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = await utf8Json.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     bufferState._buffer.AsMemory(bufferState._count),
 #else
                     bufferState._buffer, bufferState._count, bufferState._buffer.Length - bufferState._count,
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = utf8Json.Read(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     _buffer.AsSpan(_count));
 #else
                     _buffer, _count, _buffer.Length - _count);
@@ -122,7 +122,6 @@ namespace System.Text.Json.Serialization
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
                     Buffer.BlockCopy(oldBuffer, _offset + bytesConsumed, newBuffer, 0, _count);
                     _buffer = newBuffer;
-                    _offset = 0;
                     _maxCount = _count;
 
                     // Clear and return the old buffer
@@ -133,9 +132,10 @@ namespace System.Text.Json.Serialization
                 {
                     // Shift the processed bytes to the beginning of buffer to make more room.
                     Buffer.BlockCopy(_buffer, _offset + bytesConsumed, _buffer, 0, _count);
-                    _offset = 0;
                 }
             }
+
+            _offset = 0;
         }
 
         private void ProcessReadBytes()

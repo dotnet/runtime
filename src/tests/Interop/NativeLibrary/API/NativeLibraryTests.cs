@@ -107,7 +107,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Success()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Windows only needs a suffix, so adding only the suffix is successful
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null));
@@ -118,7 +118,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(~TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Failure()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Linux and Mac need both prefix and suffix
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);

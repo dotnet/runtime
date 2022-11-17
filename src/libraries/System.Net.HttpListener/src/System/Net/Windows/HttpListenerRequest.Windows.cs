@@ -273,10 +273,7 @@ namespace System.Net
         {
             get
             {
-                if (_remoteEndPoint == null)
-                {
-                    _remoteEndPoint = Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
-                }
+                _remoteEndPoint ??= Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_remoteEndPoint" + _remoteEndPoint);
                 return _remoteEndPoint!;
             }

@@ -15,9 +15,9 @@ namespace System.Data
             {
                 throw ExceptionBuilder.InternalRBTreeError(RBTreeError.CompareNodeInDataRowTree);
             }
-            protected override int CompareSateliteTreeNode(DataRow? record1, DataRow? record2)
+            protected override int CompareSatelliteTreeNode(DataRow? record1, DataRow? record2)
             {
-                throw ExceptionBuilder.InternalRBTreeError(RBTreeError.CompareSateliteTreeNodeInDataRowTree);
+                throw ExceptionBuilder.InternalRBTreeError(RBTreeError.CompareSatelliteTreeNodeInDataRowTree);
             }
         }
 

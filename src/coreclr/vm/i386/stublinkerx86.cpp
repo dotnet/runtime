@@ -3184,8 +3184,6 @@ GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
 
 extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
 {
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
 
     //
@@ -3300,8 +3298,6 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
         }
     }
 ErrExit:
-
-    END_ENTRYPOINT_VOIDRET;
     return;
 }
 
@@ -4253,7 +4249,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             X86EmitEspOffset(0x8b, kRDX,   ofsadjust
                                          + TransitionBlock::GetOffsetOfArgumentRegisters()
-                                         + FIELD_OFFSET(ArgumentRegisters, THIS_REG));
+                                         + offsetof(ArgumentRegisters, THIS_REG));
 
             // mov RDX, [kArrayMTReg+offsetof(MethodTable, m_ElementType)]
             X86EmitIndexRegLoad(kRDX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle());
@@ -4291,7 +4287,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // lea rdx, [rsp+offs]
             X86EmitEspOffset(0x8d, kRDX,   ofsadjust
                                          + TransitionBlock::GetOffsetOfArgumentRegisters()
-                                         + FIELD_OFFSET(ArgumentRegisters, THIS_REG));
+                                         + offsetof(ArgumentRegisters, THIS_REG));
 
 #else
             // The stack is already setup correctly for the slow helper.
@@ -4909,14 +4905,10 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 
     WRAPPER_NO_CONTRACT;
 
-    Thread *pThread = NULL;
-
     HRESULT hr = S_OK;
 
     // This means that a thread is FIRST coming in from outside the EE.
-    BEGIN_ENTRYPOINT_THROWS;
-    pThread = SetupThreadNoThrow(&hr);
-    END_ENTRYPOINT_THROWS;
+    Thread* pThread = SetupThreadNoThrow(&hr);
 
     if (pThread == NULL) {
         // Unwind stack, and return hr

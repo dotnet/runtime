@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [UnsupportedOSPlatform("browser")]
     public sealed class AesManaged : Aes
     {
         private readonly Aes _impl;

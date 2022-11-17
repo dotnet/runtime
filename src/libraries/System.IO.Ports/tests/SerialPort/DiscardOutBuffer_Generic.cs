@@ -43,7 +43,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying Discard method throws exception after a call to Cloes()");
+                Debug.WriteLine("Verifying Discard method throws exception after a call to Close()");
                 com.Open();
                 com.Close();
 

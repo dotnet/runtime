@@ -26,7 +26,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)
             ///   BZHI r64a, reg/m32, r64b
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ZeroHighBits(ulong value, ulong index) { throw new PlatformNotSupportedException(); }
 
@@ -34,7 +34,7 @@ namespace System.Runtime.Intrinsics.X86
             /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
             ///   MULX r64a, r64b, reg/m64
             /// The above native signature does not directly correspond to the managed signature.
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong MultiplyNoFlags(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
@@ -42,21 +42,21 @@ namespace System.Runtime.Intrinsics.X86
             /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
             ///   MULX r64a, r64b, reg/m64
             /// The above native signature does not directly correspond to the managed signature.
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
             ///   PDEP r64a, r64b, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
             ///   PEXT r64a, r64b, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ParallelBitExtract(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
         }

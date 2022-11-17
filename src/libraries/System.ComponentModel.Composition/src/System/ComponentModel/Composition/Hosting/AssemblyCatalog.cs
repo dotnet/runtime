@@ -514,10 +514,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (disposing)
                     {
-                        if (_innerCatalog != null)
-                        {
-                            _innerCatalog.Dispose();
-                        }
+                        _innerCatalog?.Dispose();
                     }
                 }
             }

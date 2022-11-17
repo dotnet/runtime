@@ -314,7 +314,7 @@ namespace System.Diagnostics
                         idle = false;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                        throw new InvalidOperationException(SR.InputIdleUnknownError);
                 }
             }
             return idle;
@@ -430,17 +430,14 @@ namespace System.Diagnostics
             foreach (Process p in GetProcesses())
             {
                 SafeProcessHandle h = SafeGetHandle(p);
-                if (!h.IsInvalid)
+                if (!h.IsInvalid && predicate(this, p))
                 {
-                    if (predicate(this, p))
-                    {
-                        results.Add((p, h));
-                    }
-                    else
-                    {
-                        p.Dispose();
-                        h.Dispose();
-                    }
+                    results.Add((p, h));
+                }
+                else
+                {
+                    p.Dispose();
+                    h.Dispose();
                 }
             }
 

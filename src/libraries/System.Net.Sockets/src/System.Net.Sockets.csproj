@@ -51,6 +51,8 @@
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.DumpBuffer.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.DumpBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <!-- Debug only -->
@@ -78,8 +80,8 @@
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
              Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
-             Link="Common\System\Net\Internals\SocketExceptionFactory.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.cs"
+             Link="Common\System\Net\Sockets\SocketExceptionFactory.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
              Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
@@ -100,6 +102,8 @@
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Windows" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.Windows.cs"
+             Link="Common\System\Net\Sockets\SocketExceptionFactory.Windows.cs" />
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -278,6 +282,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.Unix.cs"
+             Link="Common\System\Net\Sockets\SocketExceptionFactory.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

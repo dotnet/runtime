@@ -60,7 +60,7 @@ enum NotificationStatus
 
 // --------------------------------------------------------------------------------
 // DomainAssembly represents an assembly loaded (or being loaded) into an app domain.  It
-// is guranteed to be unique per file per app domain.
+// is guaranteed to be unique per file per app domain.
 // --------------------------------------------------------------------------------
 
 class DomainAssembly final
@@ -334,7 +334,7 @@ public:
     void AddDependencies();
     void PreLoadLibrary();
     void LoadLibrary();
-    void PostLoadLibrary(); 
+    void PostLoadLibrary();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();

@@ -594,7 +594,7 @@ static gboolean
 hasenv_obsolete (const char *name, const char* newval)
 {
 	// If they already set MONO_THREADS_SUSPEND to something, maybe they're keeping
-	// the old var set for compatability with old Mono - in that case don't nag.
+	// the old var set for compatibility with old Mono - in that case don't nag.
 	// FIXME: but maybe nag if MONO_THREADS_SUSPEND isn't set to "newval"?
 	static int quiet = -1;
 	if (g_hasenv (name)) {

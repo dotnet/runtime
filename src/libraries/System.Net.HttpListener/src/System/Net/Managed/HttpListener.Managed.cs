@@ -207,10 +207,7 @@ namespace System.Net
                 }
             }
 
-            if (ares != null)
-            {
-                ares.Complete(context);
-            }
+            ares?.Complete(context);
         }
 
         private void Cleanup(bool close_existing)

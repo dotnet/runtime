@@ -493,7 +493,7 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 			symmetric_relation = MONO_SYMMETRIC_RELATION (branch_relation);
 
 			/* FIXME: Other compare opcodes */
-			if (compare->opcode == OP_ICOMPARE) {
+			if (compare->opcode == OP_ICOMPARE && compare->sreg1 != compare->sreg2) {
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
@@ -957,7 +957,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			}
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Recursivity rejected (some relation in the cycle is not a defintion)\n");
+				printf ("Recursivity rejected (some relation in the cycle is not a definition)\n");
 			}
 		}
 		break;

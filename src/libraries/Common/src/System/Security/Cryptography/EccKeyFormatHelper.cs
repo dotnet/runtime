@@ -507,7 +507,7 @@ namespace System.Security.Cryptography
             return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey, attributeWriter);
         }
 
-        [return: NotNullIfNotNull("attributes")]
+        [return: NotNullIfNotNull(nameof(attributes))]
         private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
         {
             if (attributes == null)

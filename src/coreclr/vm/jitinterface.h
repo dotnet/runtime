@@ -262,12 +262,16 @@ public:
 #ifdef FEATURE_SVR_GC
         WRITE_BARRIER_SVR64,
 #endif // FEATURE_SVR_GC
+        WRITE_BARRIER_BYTE_REGIONS64,
+        WRITE_BARRIER_BIT_REGIONS64,
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         WRITE_BARRIER_WRITE_WATCH_PREGROW64,
         WRITE_BARRIER_WRITE_WATCH_POSTGROW64,
 #ifdef FEATURE_SVR_GC
         WRITE_BARRIER_WRITE_WATCH_SVR64,
 #endif // FEATURE_SVR_GC
+        WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64,
+        WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64,
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         WRITE_BARRIER_BUFFER
     };
@@ -289,18 +293,21 @@ protected:
     PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
     PCODE  GetCurrentWriteBarrierCode();
     int ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
-    bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, WriteBarrierType* pNewWriteBarrierType);
+    bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, bool bUseBitwiseWriteBarrier, WriteBarrierType* pNewWriteBarrierType);
 
 private:
     void Validate();
 
     WriteBarrierType    m_currentWriteBarrier;
 
-    PBYTE   m_pWriteWatchTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH |
-    PBYTE   m_pLowerBoundImmediate;         // PREGROW | POSTGROW |     | WRITE_WATCH |
-    PBYTE   m_pCardTableImmediate;          // PREGROW | POSTGROW | SVR | WRITE_WATCH |
-    PBYTE   m_pCardBundleTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH |
-    PBYTE   m_pUpperBoundImmediate;         //         | POSTGROW |     | WRITE_WATCH |
+    PBYTE   m_pWriteWatchTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
+    PBYTE   m_pLowerBoundImmediate;         // PREGROW | POSTGROW |     | WRITE_WATCH | REGION
+    PBYTE   m_pCardTableImmediate;          // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
+    PBYTE   m_pCardBundleTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
+    PBYTE   m_pUpperBoundImmediate;         //         | POSTGROW |     | WRITE_WATCH | REGION
+    PBYTE   m_pRegionToGenTableImmediate;   //         |          |     | WRITE_WATCH | REGION
+    PBYTE   m_pRegionShrDest;               //         |          |     | WRITE_WATCH | REGION
+    PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
 };
 
 #endif // TARGET_AMD64
@@ -487,6 +494,7 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
+        m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
@@ -502,6 +510,21 @@ public:
     virtual ~CEEInfo()
     {
         LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE)
+        // Free all handles used by JIT
+        if (m_pJitHandles != nullptr)
+        {
+            OBJECTHANDLE* elements = m_pJitHandles->GetElements();
+            unsigned count = m_pJitHandles->GetCount();
+            for (unsigned i = 0; i < count; i++)
+            {
+                DestroyHandle(elements[i]);
+            }
+            delete m_pJitHandles;
+            m_pJitHandles = nullptr;
+        }
+#endif
     }
 
     // Performs any work JIT-related work that should be performed at process shutdown.
@@ -562,6 +585,7 @@ public:
 #endif
 
 protected:
+    SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
@@ -571,6 +595,9 @@ protected:
         LIMITED_METHOD_CONTRACT;
         return (CORINFO_METHOD_HANDLE)m_pMethodBeingCompiled;
     }
+
+    CORINFO_OBJECT_HANDLE getJitHandleForObject(OBJECTREF objref, bool knownFrozen = false);
+    OBJECTREF getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle);
 
     // Cache of last GetMethodForSecurity() lookup
     CORINFO_METHOD_HANDLE   m_hMethodForSecurity_Key;
@@ -1088,7 +1115,10 @@ void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 
 EXTERN_C FCDECL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray);
 
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok);
+// ppPinnedString: If the string is pinned (e.g. allocated in frozen heap),
+// the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
+// means that the caller does not care whether the string is pinned or not.
+OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
 
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);

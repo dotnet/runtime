@@ -553,10 +553,7 @@ namespace System.Speech.Recognition
         /// </summary>
         internal void AddRuleRef(Grammar ruleRef, uint grammarId)
         {
-            if (_ruleRefs == null)
-            {
-                _ruleRefs = new Collection<Grammar>();
-            }
+            _ruleRefs ??= new Collection<Grammar>();
             _ruleRefs.Add(ruleRef);
             _sapiGrammarId = grammarId;
         }

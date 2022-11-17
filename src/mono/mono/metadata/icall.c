@@ -233,7 +233,32 @@ ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandl
 	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
 }
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/d3e39bc2f81e3dbf9e4b96347f62b49d8700336c/src/vm/invokeutil.cpp#L33
+void
+ves_icall_System_Array_InitializeInternal (MonoObjectHandleOnStack arr_handle, MonoError *error)
+{
+	MonoArray *arr = *(MonoArray**)arr_handle;
+	MonoClass * const array_class = mono_object_class (arr);
+	MonoClass * const element_class = m_class_get_element_class (array_class);
+	if (!m_class_is_valuetype (element_class)) {
+		return;
+	}
+
+
+	MonoMethod * const method = mono_class_get_method_from_name_checked (element_class, ".ctor", 0, 0, error);
+	if (!method) {
+		return;
+	}
+
+	gsize element_size = mono_array_element_size (array_class);
+
+	for (guint32 i = 0; i < arr->max_length; i++) {
+		gpointer element_address = mono_array_addr_with_size_fast (arr, element_size, (gsize)i);
+		mono_runtime_invoke_checked (method, element_address, NULL, error);
+		return_if_nok (error);
+	}
+}
+
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.cpp#L31
 #define PT_Primitive          0x01000000
 
 static const guint32 primitive_conversions [] = {
@@ -253,7 +278,7 @@ static const guint32 primitive_conversions [] = {
 	PT_Primitive | 0x2000,	// MONO_TYPE_R8   (W = R8)
 };
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/030a3ea9b8dbeae89c90d34441d4d9a1cf4a7de6/src/vm/invokeutil.h#L176
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.h#L119
 static
 gboolean can_primitive_widen (MonoTypeEnum src_type, MonoTypeEnum dest_type)
 {
@@ -263,12 +288,12 @@ gboolean can_primitive_widen (MonoTypeEnum src_type, MonoTypeEnum dest_type)
 	return ((1 << dest_type) & primitive_conversions [src_type]) != 0;
 }
 
-// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/eafa8648ebee92de1380278b15cd5c2b6ef11218/src/vm/array.cpp#L1406
+// Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/array.cpp#L1312
 static MonoTypeEnum
 get_normalized_integral_array_element_type (MonoTypeEnum elementType)
 {
 	// Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-	// Enums with interchangeable underlying types are interchangable
+	// Enums with interchangeable underlying types are interchangeable
 	// BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
 	switch (elementType) {
@@ -2765,6 +2790,10 @@ ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
 
+	// Enums in generic classes should still return VALUETYPE
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
+		return MONO_TYPE_VALUETYPE;
+
 	if (m_type_is_byref (type))
 		return MONO_TYPE_BYREF;
 	else
@@ -2803,6 +2832,18 @@ ves_icall_RuntimeTypeHandle_IsComObject (MonoQCallTypeHandle type_handle, MonoEr
 	return_val_if_nok (error, FALSE);
 
 	return mono_class_is_com_object (klass);
+}
+
+void
+ves_icall_InvokeClassConstructor (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+	return_if_nok (error);
+
+	mono_runtime_class_init_full (vtable, error);
 }
 
 guint32
@@ -3246,7 +3287,7 @@ init_io_stream_slots (void)
 
 
 static MonoBoolean
-stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
+stream_has_overridden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
@@ -3261,10 +3302,10 @@ stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slo
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
-	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+	gboolean begin_is_overridden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overridden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
 
-	return begin_is_overriden || end_is_overriden;
+	return begin_is_overridden || end_is_overridden;
 }
 
 MonoBoolean
@@ -3273,8 +3314,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginRead or EndRead were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
+	// return true if BeginRead or EndRead were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
@@ -3283,8 +3324,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginWrite or EndWrite were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
+	// return true if BeginWrite or EndWrite were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -4016,8 +4057,6 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 GPtrArray*
 ves_icall_RuntimeType_GetPropertiesByName_native (MonoQCallTypeHandle type_handle, gchar *propname, guint32 bflags, guint32 mlisttype, MonoError *error)
 {
-	// Fetch non-public properties as well because they can hide public properties with the same name in base classes
-	bflags |= BFLAGS_NonPublic;
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type))
@@ -4056,11 +4095,9 @@ handle_parent:
 			(prop->set && ((prop->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if (bflags & BFLAGS_NonPublic) {
-			if (property_accessor_nonpublic(prop->get, startklass == klass) ||
+		} else if (property_accessor_nonpublic(prop->get, startklass == klass) ||
 				property_accessor_nonpublic(prop->set, startklass == klass)) {
 				match++;
-			}
 		}
 		if (!match)
 			continue;
@@ -4090,8 +4127,6 @@ handle_parent:
 		g_hash_table_insert (properties, prop, prop);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = m_class_get_parent (klass))) {
-		// BFLAGS_NonPublic should be excluded for base classes
-		bflags &= ~BFLAGS_NonPublic;
 		goto handle_parent;
 	}
 
@@ -6221,7 +6256,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 			continue;
 		res->type = iter->sig->params [i];
 		res->klass = mono_class_from_mono_type_internal (res->type);
-		/* FIXME: endianess issue... */
+		/* FIXME: endianness issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
@@ -6374,12 +6409,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);
-	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
-		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
-		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
-		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
-		type = mono_reflection_type_handle_mono_type (t, error);
-		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -6657,7 +6686,7 @@ mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
 * Additionally, the method must switch to GC Safe mode to perform all blocking
 * operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
 * exceptions or call other methods that will throw or raise exceptions since the runtime won't
-* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* be able to detect exceptions and unwinder won't be able to correctly find last managed frame in callstack.
 * This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
 *
 */
@@ -6891,11 +6920,11 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 		res = (gconstpointer)no_icall_table;
 		goto exit;
 	} else {
-		gboolean uses_handles = FALSE;
+		MonoInternalCallFlags icall_flags;
 		g_assert (icall_table->lookup);
-		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
-		if (res && flags && uses_handles)
-			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
+		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &icall_flags);
+		if (res && flags)
+			*flags = *flags | icall_flags;
 		mono_icall_unlock ();
 		locked = FALSE;
 
@@ -7173,7 +7202,7 @@ ves_icall_System_Threading_Thread_YieldInternal (void)
 gint32
 ves_icall_System_Environment_get_ProcessorCount (void)
 {
-	return mono_cpu_count ();
+	return mono_cpu_limit ();
 }
 
 // Generate wrappers.
@@ -7181,6 +7210,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #define ICALL_TYPE(id,name,first) /* nothing */
 #define ICALL(id,name,func) /* nothing */
 #define NOHANDLES(inner)  /* nothing */
+#define NOHANDLES_FLAGS(inner,flags)  /* nothing */
 
 #define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) MONO_HANDLE_REGISTER_ICALL_IMPLEMENT (func, ret, nargs, argtypes)
 
@@ -7202,4 +7232,5 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #undef ICALL_TYPE
 #undef ICALL
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL

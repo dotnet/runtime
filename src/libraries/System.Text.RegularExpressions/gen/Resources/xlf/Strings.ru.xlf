@@ -97,25 +97,20 @@
         <target state="translated">Нераспознанная конструкция группирования.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">Требуется C# LangVersion 11 или выше</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">Указанное регулярное выражение недопустимо. "{0}"</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">Ошибка в регулярном выражении RegexGeneratorAttribute</target>
-        <note>{Locked="RegexGeneratorAttribute"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="translated">Неправильный GeneratedRegexAttribute</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
-        <source>Invalid RegexGenerator usage</source>
-        <target state="translated">Недопустимое использование RegexGenerator</target>
-        <note>{Locked="RegexGenerator"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="translated">Недопустимое использование GeneratedRegexAttribute</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -128,13 +123,13 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator не удалось создать реализации источника для указанного регулярного выражения из-за внутреннего ограничения.</target>
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="translated">Генератору регулярных выражений не удалось создать полную реализацию исходного кода для указанного регулярного выражения из-за внутреннего ограничения. Дополнительные сведения см. в созданном источнике.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
-        <source>RegexGenerator limitation reached.</source>
-        <target state="translated">Достигнуто ограничение RegexGenerator.</target>
+        <source>Regex generator limitation reached.</source>
+        <target state="translated">Достигнуто ограничение генератора регулярных выражений.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -157,9 +152,9 @@
         <target state="translated">Отсутствует управляющий символ.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Несколько RegexGeneratorAttributes были применены к одному методу, но разрешен только один</target>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="translated">Несколько GeneratedRegexAttributes были применены к одному методу, но разрешен только один.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -203,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">Метод RegexGenerator должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">Метод GeneratedRegexAttribute должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -263,13 +258,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Используйте "RegexGeneratorAttribute", чтобы создавать реализацию регулярного выражения во время компиляции.</target>
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Используйте "GeneratedRegexAttribute", чтобы создавать реализацию регулярного выражения во время компиляции.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">Преобразовать в "RegexGenerator".</target>
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="translated">Преобразовать в "GeneratedRegexAttribute".</target>
         <note />
       </trans-unit>
     </body>

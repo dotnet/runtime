@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="locals">The actual hoisted local values.</param>
         /// <returns>The quoted expression.</returns>
         [Obsolete("RuntimeOps has been deprecated and is not supported.", true), EditorBrowsable(EditorBrowsableState.Never)]
-        [return: NotNullIfNotNull("expression")]
+        [return: NotNullIfNotNull(nameof(expression))]
         public static Expression? Quote(Expression? expression, object hoistedLocals, object[] locals)
         {
             Debug.Assert(hoistedLocals != null && locals != null);

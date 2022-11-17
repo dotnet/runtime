@@ -49,9 +49,9 @@ namespace System.IO.Tests
 
             FileMode[] validValues = Enum.GetValues<FileMode>();
 
-            foreach (var vaidValue in validValues)
+            foreach (var validValue in validValues)
             {
-                Assert.Equal(vaidValue, (new FileStreamOptions { Mode = vaidValue }).Mode);
+                Assert.Equal(validValue, (new FileStreamOptions { Mode = validValue }).Mode);
             }
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Mode = validValues.Min() - 1 });
@@ -65,9 +65,9 @@ namespace System.IO.Tests
 
             FileAccess[] validValues = Enum.GetValues<FileAccess>();
 
-            foreach (var vaidValue in validValues)
+            foreach (var validValue in validValues)
             {
-                Assert.Equal(vaidValue, (new FileStreamOptions { Access = vaidValue }).Access);
+                Assert.Equal(validValue, (new FileStreamOptions { Access = validValue }).Access);
             }
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { Access = validValues.Min() - 1 });
@@ -81,9 +81,9 @@ namespace System.IO.Tests
 
             FileShare[] validValues = Enum.GetValues<FileShare>();
 
-            foreach (var vaidValue in validValues)
+            foreach (var validValue in validValues)
             {
-                Assert.Equal(vaidValue, (new FileStreamOptions { Share = vaidValue }).Share);
+                Assert.Equal(validValue, (new FileStreamOptions { Share = validValue }).Share);
             }
 
             FileShare all = validValues.Aggregate((x, y) => x | y);

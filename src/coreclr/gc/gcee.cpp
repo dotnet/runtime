@@ -105,12 +105,10 @@ void GCHeap::UpdatePostGCCounters()
     size_t promoted_finalization_mem = 0;
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
-#ifndef FEATURE_NATIVEAOT
     // if a max gen garbage collection was performed, resync the GC Handle counter;
     // if threads are currently suspended, we do not need to obtain a lock on each handle table
     if (condemned_gen == max_generation)
         total_num_gc_handles = HndCountAllHandles(!IsGCInProgress());
-#endif //FEATURE_NATIVEAOT
 
     // per generation calculation.
     for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
@@ -159,7 +157,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)",
+    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
@@ -503,6 +501,15 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 #else // FEATURE_BASICFREEZE
     return false;
 #endif
+}
+
+void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
+{
+#ifdef FEATURE_BASICFREEZE
+    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
+    heap_segment_committed(heap_seg) = committed;
+    heap_segment_allocated(heap_seg) = allocated;
+#endif // FEATURE_BASICFREEZE
 }
 
 bool GCHeap::RuntimeStructuresValid()

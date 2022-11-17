@@ -626,7 +626,7 @@ namespace System.DirectoryServices
         internal void CommitIfNotCaching()
         {
             if (JustCreated)
-                return;   // Do not write changes, beacuse the entry is just under construction until CommitChanges() is called.
+                return;   // Do not write changes, because the entry is just under construction until CommitChanges() is called.
 
             if (_useCache)
                 return;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class DocumentOrderComparer : IComparer<XPathNavigator>
     {
-        private List<XPathNavigator> _roots;
+        private List<XPathNavigator>? _roots;
 
         /// <summary>
         /// Return:
@@ -26,9 +25,9 @@ namespace System.Xml.Xsl.Runtime
         ///      0 if navThis has the same position as navThat
         ///      1 if navThis is positioned after navThat
         /// </summary>
-        public int Compare(XPathNavigator navThis, XPathNavigator navThat)
+        public int Compare(XPathNavigator? navThis, XPathNavigator? navThat)
         {
-            switch (navThis.ComparePosition(navThat))
+            switch (navThis!.ComparePosition(navThat))
             {
                 case XmlNodeOrder.Before: return -1;
                 case XmlNodeOrder.Same: return 0;
@@ -38,8 +37,8 @@ namespace System.Xml.Xsl.Runtime
             // Use this.roots to impose stable ordering
             _roots ??= new List<XPathNavigator>();
 
-            Debug.Assert(GetDocumentIndex(navThis) != GetDocumentIndex(navThat));
-            return GetDocumentIndex(navThis) < GetDocumentIndex(navThat) ? -1 : 1;
+            Debug.Assert(GetDocumentIndex(navThis) != GetDocumentIndex(navThat!));
+            return GetDocumentIndex(navThis) < GetDocumentIndex(navThat!) ? -1 : 1;
         }
 
         /// <summary>

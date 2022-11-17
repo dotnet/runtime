@@ -203,6 +203,7 @@ namespace
         _X("armv6"),
         _X("loongarch64"),
         _X("ppc64le"),
+        _X("riscv64"),
         _X("s390x"),
         _X("x64"),
         _X("x86")
@@ -224,6 +225,8 @@ pal::architecture get_current_arch()
     return pal::architecture::arm64;
 #elif defined(TARGET_LOONGARCH64)
     return pal::architecture::loongarch64;
+#elif defined(TARGET_RISCV64)
+    return pal::architecture::riscv64;
 #elif defined(TARGET_S390X)
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
@@ -526,7 +529,7 @@ pal::string_t to_upper(const pal::char_t* in) {
 // with test-only marker.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    // This is a static variable which is embeded in the product binary (somewhere).
+    // This is a static variable which is embedded in the product binary (somewhere).
     // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
     // The first character is used as the decider:
     //  - Default value is 'd' (stands for disabled) - test only behavior is disabled

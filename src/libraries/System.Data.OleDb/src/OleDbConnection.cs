@@ -283,7 +283,7 @@ namespace System.Data.OleDb
         internal bool SupportIRow(OleDbCommand cmd)
         {
             Debug.Assert(null != this.OleDbConnectionStringValue, "no OleDbConnectionString SupportIRow");
-            return this.OleDbConnectionStringValue.GetSupportIRow(this, cmd);
+            return this.OleDbConnectionStringValue.GetSupportIRow(cmd);
         }
 
         internal int QuotedIdentifierCase()
@@ -531,7 +531,7 @@ namespace System.Data.OleDb
 
                     if (hr < 0)
                     {
-                        Exception? e = OleDbConnection.ProcessResults(hr, null, this);
+                        Exception? e = OleDbConnection.ProcessResults(hr, null);
                         if (OleDbHResult.DB_E_ERRORSOCCURRED == hr)
                         {
                             StringBuilder builder = new StringBuilder();
@@ -567,7 +567,7 @@ namespace System.Data.OleDb
             return GetOpenConnection().ValidateTransaction(transaction, method);
         }
 
-        internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
+        internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
             {
@@ -600,9 +600,9 @@ namespace System.Data.OleDb
 
                         ResetState(connection);
                     }
-                    else if (null != connection)
+                    else
                     {
-                        connection.OnInfoMessage(errorInfo, hresult);
+                        connection?.OnInfoMessage(errorInfo, hresult);
                     }
                 }
                 finally
@@ -637,10 +637,7 @@ namespace System.Data.OleDb
 
         private static void ResetState(OleDbConnection? connection)
         {
-            if (null != connection)
-            {
-                connection.ResetState();
-            }
+            connection?.ResetState();
         }
     }
 }

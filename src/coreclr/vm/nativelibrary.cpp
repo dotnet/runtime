@@ -515,15 +515,24 @@ namespace
         return hmod;
     }
 
+    // Enumerations for constructing lib name variations for probing
+    enum NameVariations
+    {
+        NameVariations_None = 0,
+        NameVariations_Prefix = 1,
+        NameVariations_Name = 2,
+        NameVariations_Suffix = 4,
+    };
+
 #ifdef TARGET_UNIX
     const int MaxVariationCount = 4;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(NameVariations* libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto PrefixNameFmt = W("%s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
-        static auto PrefixNameSuffixFmt = W("%s%s%s");
+        static auto NameFmt = (NameVariations)NameVariations_Name;
+        static auto PrefixNameFmt = (NameVariations)(NameVariations_Prefix | NameVariations_Name);
+        static auto NameSuffixFmt = (NameVariations)(NameVariations_Name | NameVariations_Suffix);
+        static auto PrefixNameSuffixFmt = (NameVariations)(NameVariations_Prefix | NameVariations_Name | NameVariations_Suffix);
 
         _ASSERTE(*numberOfVariations >= MaxVariationCount);
 
@@ -578,11 +587,11 @@ namespace
     }
 #else // TARGET_UNIX
     const int MaxVariationCount = 2;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(NameVariations* libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
+        static auto NameFmt = (NameVariations)NameVariations_Name;
+        static auto NameSuffixFmt = (NameVariations)(NameVariations_Name | NameVariations_Suffix);
 
         _ASSERTE(*numberOfVariations >= MaxVariationCount);
 
@@ -654,13 +663,22 @@ namespace
         // even if it has one, or to leave off a prefix like "lib" even if it has one
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
-        const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
+        NameVariations prefixSuffixCombinations[MaxVariationCount] = {};
         int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
             SString currLibNameVariation;
-            currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
+
+            NameVariations const variations = prefixSuffixCombinations[i];
+            if ((variations & NameVariations_Prefix) != 0)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_PREFIX_W);
+
+            _ASSERTE((variations & NameVariations_Name) != 0);
+            currLibNameVariation.Append(wszLibName);
+
+            if ((variations & NameVariations_Suffix) != 0)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_SUFFIX_W);
 
             // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
             hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);

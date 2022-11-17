@@ -228,7 +228,7 @@ namespace System.Globalization
             return monthNames;
         }
 
-        // Invariant DateTimeFormatInfo doesn't have user-overriden values
+        // Invariant DateTimeFormatInfo doesn't have user-overridden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
             : this(CultureInfo.InvariantCulture._cultureData, GregorianCalendar.GetDefaultInstance())
@@ -1266,14 +1266,14 @@ namespace System.Globalization
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < DateTimeFormat.allStandardFormats.Length; i++)
+            foreach (char standardFormat in DateTimeFormat.AllStandardFormats)
             {
-                string[] strings = GetAllDateTimePatterns(DateTimeFormat.allStandardFormats[i]);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string pattern in GetAllDateTimePatterns(standardFormat))
                 {
-                    results.Add(strings[j]);
+                    results.Add(pattern);
                 }
             }
+
             return results.ToArray();
         }
 

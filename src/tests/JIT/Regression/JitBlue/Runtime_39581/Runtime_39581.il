@@ -28,7 +28,7 @@
 // but the pointers passed to DispatchTailCalls will not be updated that leads to Callee using the non-updated location when writing its return value.
 //
 // Note: you will find below that Caller uses localloc - this is done in order to prevent a call to Caller to be transformed into fast tail call.
-// Note: COMPlus_GCStress=3 or COMPlus_GCStress=C are required in order to reliably expose this issue.
+// Note: DOTNET_GCStress=3 or DOTNET_GCStress=C are required in order to reliably expose this issue.
 
 .assembly extern System.Runtime
 {

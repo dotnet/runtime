@@ -14,7 +14,7 @@ namespace ComWrappersTests
         static ComWrappers GlobalComWrappers;
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(IComInterface))]
-        public static int Main(string[] args)
+        public static int Main()
         {
             TestComInteropNullPointers();
             TestComInteropRegistrationRequired();
@@ -83,7 +83,7 @@ namespace ComWrappersTests
                 CaptureComPointer(target);
                 throw new Exception("Cannot work without ComWrappers.RegisterForMarshalling called");
             }
-            catch (InvalidOperationException)
+            catch (NotSupportedException)
             {
             }
         }

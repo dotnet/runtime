@@ -78,6 +78,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(TextReader textReader)
         {
+            ArgumentNullException.ThrowIfNull(textReader);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, textReader));
 
             try
@@ -95,6 +97,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, stream));
 
             try

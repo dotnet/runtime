@@ -157,6 +157,7 @@ protected:
 
 private:
     static HRESULT ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData);
+    static HRESULT getPgoInstrumentationResultsFromText(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource *pPgoSource);
 
     static void ReadPgoData();
     static void WritePgoData();

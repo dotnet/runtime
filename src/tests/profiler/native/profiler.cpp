@@ -785,7 +785,7 @@ void Profiler::SetCallback(ProfilerCallback cb)
     s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo)
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo)
 {
     s_callbackSet.Wait();
 

@@ -1,3 +1,4 @@
+#ifndef HOST_WASI
 #include <glib.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -375,6 +376,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 	gboolean result = FALSE;
 	MONO_ENTER_GC_UNSAFE;
 	if (!debugger_enabled) {
+		PRINT_ERROR_MSG ("DEBUGGING IS NOT ENABLED\n");
 		mono_wasm_add_dbg_command_received (0, id, 0, 0);
 		result = TRUE;
 		goto done;
@@ -401,6 +403,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	gboolean result = FALSE;
 	MONO_ENTER_GC_UNSAFE;
 	if (!debugger_enabled) {
+		PRINT_ERROR_MSG ("DEBUGGING IS NOT ENABLED\n");
 		mono_wasm_add_dbg_command_received(0, id, 0, 0);
 		result = TRUE;
 		goto done;
@@ -484,3 +487,5 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 }
+
+#endif

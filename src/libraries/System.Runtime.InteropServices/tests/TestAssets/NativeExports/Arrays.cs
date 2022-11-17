@@ -5,6 +5,7 @@ using SharedTypes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using static SharedTypes.BoolStructMarshaller;
 
 namespace NativeExports
 {
@@ -232,19 +233,6 @@ namespace NativeExports
             new Span<int>(*values, numOriginalValues).CopyTo(new Span<int>(newArray, numOriginalValues));
             newArray[numOriginalValues] = newValue;
             *values = newArray;
-        }
-
-        [UnmanagedCallersOnly(EntryPoint = "and_all_members")]
-        [DNNE.C99DeclCode("struct bool_struct;")]
-        public static byte AndAllMembers([DNNE.C99Type("struct bool_struct*")] BoolStructNative_V1* pArray, int length)
-        {
-            bool result = true;
-            for (int i = 0; i < length; i++)
-            {
-                BoolStruct_V1 managed = pArray[i].ToManaged();
-                result &= managed.b1 && managed.b2 && managed.b3;
-            }
-            return (byte)(result ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "and_bool_struct_array")]

@@ -36,6 +36,7 @@ namespace System.IO
             if (handle.IsInvalid)
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                handle.Dispose();
                 switch (error.Error)
                 {
                     case Interop.Error.EMFILE:
@@ -786,8 +787,7 @@ namespace System.IO
                         {
                             fixed (byte* buf = &_buffer[0])
                             {
-                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length),
-                                    isDirectory: true);
+                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length));
                                 Debug.Assert(_bufferAvailable <= this._buffer.Length);
                             }
                         }

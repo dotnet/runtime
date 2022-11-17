@@ -479,10 +479,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         finally
                         {
-                            if (catalogs != null)
-                            {
-                                catalogs.Dispose();
-                            }
+                            catalogs?.Dispose();
 
                             if (disposeLock)
                             {
@@ -635,7 +632,7 @@ namespace System.ComponentModel.Composition.Hosting
                             _catalogCollection.Remove(catalogToRemove.Item2);
                         }
 
-                        _loadedFiles = afterFiles.ToReadOnlyCollection();
+                        _loadedFiles = Array.AsReadOnly(afterFiles);
 
                         // Lastly complete any changes added to the atomicComposition during the change event
                         atomicComposition.Complete();
@@ -759,7 +756,7 @@ namespace System.ComponentModel.Composition.Hosting
             _assemblyCatalogs = new Dictionary<string, AssemblyCatalog>();
             _catalogCollection = new ComposablePartCatalogCollection(null, null, null);
 
-            _loadedFiles = GetFiles().ToReadOnlyCollection();
+            _loadedFiles = Array.AsReadOnly(GetFiles());
 
             foreach (string file in _loadedFiles)
             {

@@ -140,13 +140,12 @@ ep_stack_contents_get_size (const EventPipeStackContents *stack_contents)
 static
 inline
 uint32_t
-ep_stack_contents_get_instance_size (const EventPipeStackContents *stack_contents)
+ep_stack_contents_get_full_size (const EventPipeStackContents *stack_contents)
 {
-	// The total size including the size
 #ifdef EP_CHECKED_BUILD
-	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t) * 2) + sizeof (uint32_t) : sizeof (uint32_t);
+	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t) * 2) : 0;
 #else /* EP_CHECKED_BUILD */
-	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t)) + sizeof (uint32_t) : sizeof (uint32_t);
+	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t)): 0;
 #endif
 }
 
@@ -215,58 +214,57 @@ EventPipeStackContentsInstance *
 ep_stack_contents_instance_alloc (void);
 
 EventPipeStackContentsInstance *
-ep_stack_contents_instance_init (EventPipeStackContentsInstance *stack_contents);
+ep_stack_contents_instance_init (EventPipeStackContentsInstance *stack_contents_instance);
 
 void
-ep_stack_contents_instance_fini (EventPipeStackContentsInstance *stack_contents);
+ep_stack_contents_instance_fini (EventPipeStackContentsInstance *stack_contents_instance);
 
 void
-ep_stack_contents_instance_free (EventPipeStackContentsInstance *stack_contents);
+ep_stack_contents_instance_free (EventPipeStackContentsInstance *stack_contents_instance);
 
 static
 inline
 void
-ep_stack_contents_instance_reset (EventPipeStackContentsInstance *stack_contents)
+ep_stack_contents_instance_reset (EventPipeStackContentsInstance *stack_contents_instance)
 {
-	ep_stack_contents_instance_set_next_available_frame (stack_contents, 0);
+	ep_stack_contents_instance_set_next_available_frame (stack_contents_instance, 0);
 }
 
 static
 inline
 uint32_t
-ep_stack_contents_instance_get_size (const EventPipeStackContentsInstance *stack_contents)
+ep_stack_contents_instance_get_size (const EventPipeStackContentsInstance *stack_contents_instance)
 {
-	EP_ASSERT (stack_contents != NULL);
-	return (ep_stack_contents_instance_get_next_available_frame (stack_contents) * sizeof (uintptr_t));
+	EP_ASSERT (stack_contents_instance != NULL);
+	return (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) * sizeof (uintptr_t));
 }
 
 static
 inline
 uint32_t
-ep_stack_contents_instance_get_length (EventPipeStackContentsInstance *stack_contents)
+ep_stack_contents_instance_get_length (EventPipeStackContentsInstance *stack_contents_instance)
 {
-	return ep_stack_contents_instance_get_next_available_frame (stack_contents);
+	return ep_stack_contents_instance_get_next_available_frame (stack_contents_instance);
 }
 
 static
 inline
 uint32_t
-ep_stack_contents_instance_get_total_size (const EventPipeStackContentsInstance *stack_contents_instance)
+ep_stack_contents_instance_get_full_size (const EventPipeStackContentsInstance *stack_contents_instance)
 {
-	// The total size including the size
 #ifdef EP_CHECKED_BUILD
-	return stack_contents_instance ? (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) * sizeof (uintptr_t) * 2) + sizeof (uint32_t) : sizeof (uint32_t);
+	return stack_contents_instance ? (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) * sizeof (uintptr_t) * 2) : 0;
 #else /* EP_CHECKED_BUILD */
-	return stack_contents_instance ? (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) * sizeof (uintptr_t)) + sizeof (uint32_t) : sizeof (uint32_t);
+	return stack_contents_instance ? (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) * sizeof (uintptr_t)) : 0;
 #endif
 }
 
 static
 inline
 bool
-ep_stack_contents_instance_is_empty (EventPipeStackContentsInstance *stack_contents)
+ep_stack_contents_instance_is_empty (EventPipeStackContentsInstance *stack_contents_instance)
 {
-	return (ep_stack_contents_instance_get_next_available_frame (stack_contents) == 0);
+	return (ep_stack_contents_instance_get_next_available_frame (stack_contents_instance) == 0);
 }
 
 static

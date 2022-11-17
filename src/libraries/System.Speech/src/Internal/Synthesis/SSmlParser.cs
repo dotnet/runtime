@@ -1156,10 +1156,7 @@ namespace System.Speech.Internal.Synthesis
                         {
                             if (reader.Value != xmlNamespaceSsml)
                             {
-                                if (localUnknownNamespaces == null)
-                                {
-                                    localUnknownNamespaces = new List<SsmlXmlAttribute>();
-                                }
+                                localUnknownNamespaces ??= new List<SsmlXmlAttribute>();
 
                                 SsmlXmlAttribute ns = new(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI);
                                 localUnknownNamespaces.Add(ns);
@@ -1168,10 +1165,7 @@ namespace System.Speech.Internal.Synthesis
                         }
                         else
                         {
-                            if (extraAttributesVoice == null)
-                            {
-                                extraAttributesVoice = new List<SsmlXmlAttribute>();
-                            }
+                            extraAttributesVoice ??= new List<SsmlXmlAttribute>();
                             extraAttributesVoice.Add(new SsmlXmlAttribute(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI));
                         }
                     }
@@ -1840,10 +1834,7 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (ns._name == attribute._prefix)
                     {
-                        if (extraAttributes == null)
-                        {
-                            extraAttributes = new List<SsmlXmlAttribute>();
-                        }
+                        extraAttributes ??= new List<SsmlXmlAttribute>();
                         extraAttributes.Add(attribute);
                         return true;
                     }
@@ -1857,10 +1848,7 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (ns._name == reader.Prefix)
                     {
-                        if (extraAttributes == null)
-                        {
-                            extraAttributes = new List<SsmlXmlAttribute>();
-                        }
+                        extraAttributes ??= new List<SsmlXmlAttribute>();
                         extraAttributes.Add(new SsmlXmlAttribute(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI));
                         return true;
                     }

@@ -426,30 +426,18 @@ namespace System.Globalization
                 return string.Empty;
             }
 
+            int i = s.AsSpan().IndexOfAnyInRange('A', 'Z');
+            if (i < 0)
+            {
+                return s;
+            }
+
             fixed (char* pSource = s)
             {
-                int i = 0;
-                while (i < s.Length)
-                {
-                    if (char.IsAsciiLetterUpper(pSource[i]))
-                    {
-                        break;
-                    }
-                    i++;
-                }
-
-                if (i >= s.Length)
-                {
-                    return s;
-                }
-
                 string result = string.FastAllocateString(s.Length);
                 fixed (char* pResult = result)
                 {
-                    for (int j = 0; j < i; j++)
-                    {
-                        pResult[j] = pSource[j];
-                    }
+                    s.AsSpan(0, i).CopyTo(new Span<char>(pResult, result.Length));
 
                     pResult[i] = (char)(pSource[i] | 0x20);
                     i++;
@@ -462,72 +450,6 @@ namespace System.Globalization
                 }
 
                 return result;
-            }
-        }
-
-        internal static void ToLowerAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
-        {
-            Debug.Assert(destination.Length >= source.Length);
-
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToLowerAsciiInvariant(source[i]);
-            }
-        }
-
-        private static unsafe string ToUpperAsciiInvariant(string s)
-        {
-            if (s.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            fixed (char* pSource = s)
-            {
-                int i = 0;
-                while (i < s.Length)
-                {
-                    if (char.IsAsciiLetterLower(pSource[i]))
-                    {
-                        break;
-                    }
-                    i++;
-                }
-
-                if (i >= s.Length)
-                {
-                    return s;
-                }
-
-                string result = string.FastAllocateString(s.Length);
-                fixed (char* pResult = result)
-                {
-                    for (int j = 0; j < i; j++)
-                    {
-                        pResult[j] = pSource[j];
-                    }
-
-                    pResult[i] = (char)(pSource[i] & ~0x20);
-                    i++;
-
-                    while (i < s.Length)
-                    {
-                        pResult[i] = ToUpperAsciiInvariant(pSource[i]);
-                        i++;
-                    }
-                }
-
-                return result;
-            }
-        }
-
-        internal static void ToUpperAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
-        {
-            Debug.Assert(destination.Length >= source.Length);
-
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToUpperAsciiInvariant(source[i]);
             }
         }
 

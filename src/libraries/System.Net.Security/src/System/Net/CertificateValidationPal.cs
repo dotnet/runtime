@@ -19,10 +19,10 @@ namespace System.Net
         private static X509Chain? s_chain;
 
         internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>
-            GetRemoteCertificate(securityContext, retrieveChainCertificates: false, ref s_chain);
+            GetRemoteCertificate(securityContext, retrieveChainCertificates: false, ref s_chain, null);
 
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, ref X509Chain? chain) =>
-            GetRemoteCertificate(securityContext, retrieveChainCertificates: true, ref chain);
+        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, ref X509Chain? chain, X509ChainPolicy? chainPolicy) =>
+            GetRemoteCertificate(securityContext, retrieveChainCertificates: true, ref chain, chainPolicy);
 
         static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport);
 

@@ -146,6 +146,12 @@ namespace System.Security.Cryptography.Tests
 
             public OverrideAbstractECDsa(ECDsa ecdsa) => _ecdsa = ecdsa;
 
+            protected override void Dispose(bool disposing)
+            {
+                _ecdsa.Dispose();
+                base.Dispose(disposing);
+            }
+
             public override int KeySize
             {
                 get => _ecdsa.KeySize;

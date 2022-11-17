@@ -58,7 +58,7 @@ namespace Microsoft.Interop
             Unmarshal,
 
             /// <summary>
-            /// Notify a marshaller object that the Invoke stage and all stages preceeding the Invoke stage
+            /// Notify a marshaller object that the Invoke stage and all stages preceding the Invoke stage
             /// successfully completed without any exceptions.
             /// </summary>
             NotifyForSuccessfulInvoke,
@@ -79,6 +79,8 @@ namespace Microsoft.Interop
         /// The current stage being generated.
         /// </summary>
         public Stage CurrentStage { get; init; } = Stage.Invalid;
+
+        public MarshalDirection Direction { get; init; } = MarshalDirection.ManagedToUnmanaged;
 
         /// <summary>
         /// Gets the currently targeted framework and version for stub code generation.

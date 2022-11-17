@@ -3,15 +3,15 @@
 
 /********
  * This class handles smoothing over a circulation graph to be consistent and cost-minimal.
- * 
+ *
  * A circulation graph consists of nodes v, directed edges e, and two functions on the edges:
- * 
+ *
  * cost(e) = the cost of each positive unit of flow on the edge
  * capacity(e) = the range of possible values of flow on the edge
- * 
+ *
  * where flow is a function on the edges such that, for every node, the flow on in-edges adds up
  * to the flow on out-edges.
- * 
+ *
  * The objective of this class's main function (SmoothFlowGraph) is to take an inconsistent count of
  * each node's net flow and map it onto a consistent circulation. This circulation is constructed to map
  * back onto a consistent flow, and when a minimum cost circulation is found (by using a call to
@@ -20,7 +20,7 @@
  * node T a cost to increasing its net flow (when the bool is true) and a cost to decreasing its
  * net flow (when the bool is false.) SmoothFlowGraph then constructs a consistent circulation whose
  * cost will be minimized exactly when the cost of changing the net flows of the blocks is minimized.
- * 
+ *
  * The translation is outlined in detail in Section 4 of "Complementing Incomplete Edge Profile by applying
  * Minimum Cost Circulation Algorithms" (Levin 2007)
  ********/
@@ -148,7 +148,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             CheckGraphConsistency();
         }
 
-        // Helper function to perform parametric mapping on the NodeResults dictionary.
+        // Helper function to perform parameteric mapping on the NodeResults dictionary.
         public Dictionary<T, S> MapNodes<S>(Func<T, long, S> transformation)
         {
             Dictionary<T, S> results = new Dictionary<T, S>();
@@ -161,7 +161,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return results;
         }
 
-        // Helper function to perform parametric mapping on the EdgeResults dictionary.
+        // Helper function to perform parameteric mapping on the EdgeResults dictionary.
         public Dictionary<(T, T), S> MapEdges<S>(Func<(T, T), long, S> transformation)
         {
             Dictionary<(T, T), S> results = new Dictionary<(T, T), S>();

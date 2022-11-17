@@ -200,12 +200,18 @@ namespace System.Net
                     if (asyncResult._dataChunks == null)
                     {
                         result = (uint)0;
-                        if (NetEventSource.Log.IsEnabled()) { NetEventSource.DumpBuffer(null, IntPtr.Zero, 0); }
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(null, Array.Empty<byte>());
                     }
                     else
                     {
                         result = asyncResult._dataChunks.Length == 1 ? asyncResult._dataChunks[0].BufferLength : 0;
-                        if (NetEventSource.Log.IsEnabled()) { for (int i = 0; i < asyncResult._dataChunks.Length; i++) { NetEventSource.DumpBuffer(null, (IntPtr)asyncResult._dataChunks[0].pBuffer, (int)asyncResult._dataChunks[0].BufferLength); } }
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            foreach (Interop.HttpApi.HTTP_DATA_CHUNK chunk in asyncResult._dataChunks)
+                            {
+                                NetEventSource.DumpBuffer(null, new ReadOnlySpan<byte>(chunk.pBuffer, (int)chunk.BufferLength));
+                            }
+                        }
                     }
                 }
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Calling Complete()");

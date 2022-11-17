@@ -16,7 +16,7 @@ namespace System.Net.Sockets.Tests
 
         private const int DiscardPort = 9;
 
-        private ManualResetEvent _waitHandle = new ManualResetEvent(false);
+        private ManualResetEventSlim _waitHandle = new ManualResetEventSlim(false);
 
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
@@ -279,10 +279,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public void MulticastLoopback_Roundtrips()
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void MulticastLoopback_Roundtrips(AddressFamily addressFamily)
         {
-            using (var udpClient = new UdpClient())
+            using (var udpClient = new UdpClient(addressFamily))
             {
                 Assert.True(udpClient.MulticastLoopback);
                 udpClient.MulticastLoopback = false;
@@ -370,7 +372,7 @@ namespace System.Net.Sockets.Tests
                 _waitHandle.Reset();
                 udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-                Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                Assert.True(_waitHandle.Wait(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
             }
         }
 
@@ -628,10 +630,10 @@ namespace System.Net.Sockets.Tests
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
                 await sender.SendAsync(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-				await AssertReceiveAsync(receiver);
-				
-				await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-				await AssertReceiveAsync(receiver);
+                await AssertReceiveAsync(receiver);
+
+                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                await AssertReceiveAsync(receiver);
             }
         }
 

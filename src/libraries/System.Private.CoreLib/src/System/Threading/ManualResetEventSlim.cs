@@ -312,11 +312,8 @@ namespace System.Threading
 
                 lock (eventObj)
                 {
-                    if (m_eventObj != null)
-                    {
-                        // If somebody is waiting, we must set the event.
-                        m_eventObj.Set();
-                    }
+                    // If somebody is waiting, we must set the event.
+                    m_eventObj?.Set();
                 }
             }
         }
@@ -331,11 +328,9 @@ namespace System.Threading
         public void Reset()
         {
             ThrowIfDisposed();
+
             // If there's an event, reset it.
-            if (m_eventObj != null)
-            {
-                m_eventObj.Reset();
-            }
+            m_eventObj?.Reset();
 
             // There is a race condition here. If another thread Sets the event, we will get into a state
             // where m_state will be unsignaled, yet the Win32 event object will have been signaled.

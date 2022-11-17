@@ -31,8 +31,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DllImport("oleaut32", PreserveSig:=False, CharSet:=CharSet.Unicode, EntryPoint:="VarNumFromParseNum")>
         <RequiresUnreferencedCode("Marshalling COM Objects is not trim safe.")>
-        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:COMMarshalling",
-            Justification:="RequiresUnreferencedCode attribute currently doesn't suppress IL2050. This should be removed once it does. https://github.com/mono/linker/issues/1989")>
         Friend Shared Function VarNumFromParseNum(
                 <MarshalAs(UnmanagedType.LPArray)> ByVal numprsPtr As Byte(),
                 <MarshalAs(UnmanagedType.LPArray)> ByVal DigitArray As Byte(),
@@ -41,8 +39,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DllImport("oleaut32", PreserveSig:=False, CharSet:=CharSet.Unicode, EntryPoint:="VariantChangeType")>
         <RequiresUnreferencedCode("Marshalling COM Objects is not trim safe.")>
-        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:COMMarshalling",
-            Justification:="RequiresUnreferencedCode attribute currently doesn't suppress IL2050. This should be removed once it does. https://github.com/mono/linker/issues/1989")>
         Friend Shared Sub VariantChangeType(
             <Out()> ByRef dest As Object,
             <[In]()> ByRef Src As Object,

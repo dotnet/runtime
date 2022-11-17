@@ -366,7 +366,7 @@ namespace System.Xml
                 return new XmlBoundElement(prefix, localName, namespaceURI, this);
             }
 
-            // This is the 1st time an element is beeing created on an empty XmlDataDocument - unbind special listeners, bind permanent ones and then go on w/
+            // This is the 1st time an element is being created on an empty XmlDataDocument - unbind special listeners, bind permanent ones and then go on w/
             // creation of this element
             EnsurePopulatedMode();
             Debug.Assert(_fDataRowCreatedSpecial == false);
@@ -637,7 +637,7 @@ namespace System.Xml
 
         // Foliate rowElement region if there are DataPointers that points into it
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void FoliateIfDataPointers(DataRow row, XmlElement rowElement)
+        private void FoliateIfDataPointers(XmlElement rowElement)
         {
             if (!IsFoliated(rowElement) && HasPointers(rowElement))
             {
@@ -657,7 +657,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void EnsureFoliation(XmlBoundElement rowElem, ElementState foliation)
         {
-            if (rowElem.IsFoliated) //perf reason, avoid unecessary lock.
+            if (rowElem.IsFoliated) //perf reason, avoid unnecessary lock.
                 return;
             ForceFoliation(rowElem, foliation);
         }
@@ -763,7 +763,7 @@ namespace System.Xml
         }
 
         //Determine best radical insert position for inserting column elements
-        private XmlNode? GetColumnInsertAfterLocation(DataRow row, DataColumn col, XmlBoundElement rowElement)
+        private XmlNode? GetColumnInsertAfterLocation(DataColumn col, XmlBoundElement rowElement)
         {
             XmlNode? prev = null;
             XmlNode? node;
@@ -864,7 +864,7 @@ namespace System.Xml
             return DataSetMapper.GetRowFromElement(e);
         }
 
-        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlElement rowElement, XmlNode parentElement)
+        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
         {
             DataRow refRow = row;
             int i;
@@ -1293,7 +1293,7 @@ namespace System.Xml
             }
         }
 
-        // load all data from tree structre into datarows
+        // load all data from tree structure into datarows
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(XmlBoundElement? rowElem, XmlNode node)
         {
@@ -1572,7 +1572,7 @@ namespace System.Xml
                     XmlElement newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
                     newElem.AppendChild(CreateTextNode(col.ConvertObjectToXml(value)));
 
-                    XmlNode? elemBefore = GetColumnInsertAfterLocation(row, col, rowElement);
+                    XmlNode? elemBefore = GetColumnInsertAfterLocation(col, rowElement);
                     if (elemBefore != null)
                     {
                         rowElement.InsertAfter(newElem, elemBefore);
@@ -1641,7 +1641,7 @@ namespace System.Xml
             Debug.Assert(row != null);
             Debug.Assert(rowElement != null);
 
-            // If user has cascading relationships, then columnChangeList will contains the changed columns only for the last row beeing cascaded
+            // If user has cascading relationships, then columnChangeList will contains the changed columns only for the last row being cascaded
             // but there will be multiple ROM events
             if (_columnChangeList.Count > 0)
             {
@@ -1665,7 +1665,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnDeleteRow(DataRow row, XmlBoundElement rowElement)
+        private void OnDeleteRow(XmlBoundElement rowElement)
         {
             // IgnoreXmlEvents s/b on since we are manipulating the XML tree and we not want this to reflect in ROM view.
             Debug.Assert(_ignoreXmlEvents);
@@ -1679,9 +1679,9 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnDeletingRow(DataRow row, XmlBoundElement rowElement)
+        private void OnDeletingRow(XmlBoundElement rowElement)
         {
-            // Note that this function is beeing called even if ignoreDataSetEvents == true.
+            // Note that this function is being called even if ignoreDataSetEvents == true.
 
             // Foliate, so we can be able to preserve the nodes even if the DataRow has no longer values for the crtRecord.
             if (IsFoliated(rowElement))
@@ -2032,7 +2032,7 @@ namespace System.Xml
                         break;
 
                     case DataRowAction.Delete:
-                        OnDeleteRow(row, rowElement);
+                        OnDeleteRow(rowElement);
                         break;
 
                     case DataRowAction.Rollback:
@@ -2078,11 +2078,11 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnRowChanging(object sender, DataRowChangeEventArgs args)
         {
-            // We foliate the region each time the assocaited row gets deleted
+            // We foliate the region each time the associated row gets deleted
             DataRow row = args.Row;
             if (args.Action == DataRowAction.Delete && row.Element != null)
             {
-                OnDeletingRow(row, row.Element);
+                OnDeletingRow(row.Element);
                 return;
             }
 
@@ -2106,7 +2106,7 @@ namespace System.Xml
                     switch (args.Action)
                     {
                         case DataRowAction.Add:
-                            // DataRow is beeing added to the table (Table.Rows.Add is beeing called)
+                            // DataRow is being added to the table (Table.Rows.Add is being called)
                             break;
 
                         case DataRowAction.Delete:
@@ -2149,7 +2149,7 @@ namespace System.Xml
                             break;
 
                         case DataRowAction.Change:
-                            // A DataRow field is beeing changed
+                            // A DataRow field is being changed
                             //    - state transition from New (AKA PendingInsert) to New (AKA PendingInsert)
                             //    - state transition from Unchanged to Modified (AKA PendingChange)
                             //    - state transition from Modified (AKA PendingChange) to Modified (AKA PendingChange)
@@ -2161,12 +2161,12 @@ namespace System.Xml
                                 object proposedValue = row[c, DataRowVersion.Proposed];
                                 object currentValue = row[c, DataRowVersion.Current];
                                 // Foliate if proposedValue is DBNull; this way the DataPointer objects will point to a disconnected fragment after
-                                // the DBNull value is beeing set
+                                // the DBNull value is being set
                                 if (Convert.IsDBNull(proposedValue) && !Convert.IsDBNull(currentValue))
                                 {
                                     // Foliate only for non-hidden columns (since hidden cols are not represented in XML)
                                     if (c.ColumnMapping != MappingType.Hidden)
-                                        FoliateIfDataPointers(row, rowElement);
+                                        FoliateIfDataPointers(rowElement);
                                 }
                                 if (!IsSame(c, nRec1, nRec2))
                                     _columnChangeList.Add(c);
@@ -2261,8 +2261,7 @@ namespace System.Xml
             XmlElement parent;
 
             // make certain we weren't place somewhere else.
-            if (rowElement.ParentNode != null)
-                rowElement.ParentNode.RemoveChild(rowElement);
+            rowElement.ParentNode?.RemoveChild(rowElement);
 
             // Find the parent of RowNode to be inserted
             DataRow? parentRowInRelation = GetNestedParent(row);
@@ -2273,7 +2272,7 @@ namespace System.Xml
             else
                 parent = GetElementFromRow(parentRowInRelation);
 
-            if ((refRow = GetRowInsertBeforeLocation(row, rowElement, parent)) != null)
+            if ((refRow = GetRowInsertBeforeLocation(row, parent)) != null)
                 parent.InsertBefore(rowElement, refRow);
             else
                 parent.AppendChild(rowElement);
@@ -2293,8 +2292,7 @@ namespace System.Xml
             // Should not insert after docElem node
             Debug.Assert(prevSibling != DocumentElement);
 
-            if (child.ParentNode != null)
-                child.ParentNode.RemoveChild(child);
+            child.ParentNode?.RemoveChild(child);
 
             Debug.Assert(child.ParentNode == null);
             prevSibling.ParentNode.InsertAfter(child, prevSibling);
@@ -2531,8 +2529,7 @@ namespace System.Xml
                 XmlBoundElement? be = e as XmlBoundElement;
                 if (be != null && be.Row != null)
                 {
-                    if (rowElemList != null)
-                        rowElemList.Add(e);
+                    rowElemList?.Add(e);
                     // Skip over sub-regions
                     fMore = iter.NextRight();
                     continue;
@@ -2763,7 +2760,7 @@ namespace System.Xml
                 else
                 {
                     ArrayList rowElemList = new ArrayList();
-                    OnNonRowElementInsertedInFragment(node, be, rowElemList);
+                    OnNonRowElementInsertedInFragment(be, rowElemList);
                     // Set nested parent for the 1st level subregions (they should already be associated w/ Deleted or Detached rows)
                     while (rowElemList.Count > 0)
                     {
@@ -2906,7 +2903,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnNonRowElementInsertedInTree(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
         {
-            // non-row-elem is beeing inserted
+            // non-row-elem is being inserted
             DataRow? row = rowElement.Row;
             // Region should already have an associated data row (otherwise how was the original row-elem inserted ?)
             Debug.Assert(row != null);
@@ -2921,9 +2918,9 @@ namespace System.Xml
 
         // A non-row-elem was inserted into disconnected tree (fragment) from oldParent==null state (i.e. was disconnected)
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnNonRowElementInsertedInFragment(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
+        private void OnNonRowElementInsertedInFragment(XmlBoundElement rowElement, ArrayList rowElemList)
         {
-            // non-row-elem is beeing inserted
+            // non-row-elem is being inserted
             DataRow? row = rowElement.Row;
             // Region should already have an associated data row (otherwise how was the original row-elem inserted ?)
             Debug.Assert(row != null);
@@ -2959,7 +2956,7 @@ namespace System.Xml
             DataRow parentRow = parentRowElem.Row;
             // We should set it only if there is a nested relationship between this child and parent regions
             DataRelation[] relations = childRow.Table.NestedParentRelations;
-            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatable
+            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatible
             {
                 SetNestedParentRow(childRow, parentRow);
             }
@@ -3101,7 +3098,7 @@ namespace System.Xml
 
         //  after adding Namespace support foir datatable, DataSet does not guarantee that infered tabels would be in the same sequence as they rae in XML, because
         //  of Namespace. if a table is in different namespace than its children and DataSet, that table would efinetely be added to DataSet after its children. Its By Design
-        // so in order to maintain backward compatability, we reorder the copy of the datatable collection and use it
+        // so in order to maintain backward compatibility, we reorder the copy of the datatable collection and use it
         private DataTable[] OrderTables(DataSet? ds)
         {
             DataTable[]? retValue = null;

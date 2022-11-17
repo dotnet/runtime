@@ -730,7 +730,7 @@ extern ETW::CEtwTracer *  g_pEtwTracer;
 #define ETWLoaderDynamicLoad 1 // Dynamic assembly load
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL) && !defined(WINXP_AND_WIN2K3_BUILD_SUPPORT)
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 FORCEINLINE
@@ -977,7 +977,7 @@ namespace ETW
 //
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL) && !defined(WINXP_AND_WIN2K3_BUILD_SUPPORT)
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 ETW_INLINE

@@ -318,9 +318,9 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        TypeConverter ICustomTypeDescriptor.GetConverter()
+        TypeConverter? ICustomTypeDescriptor.GetConverter()
         {
-            return null!;
+            return null;
         }
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]

@@ -67,7 +67,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Convert an IntPtr into a value for comparisions, or for returning.
+        /// Convert an IntPtr into a value for comparisons, or for returning.
         /// </summary>
         protected override GCHandle ConvertIntPtrToValue(IntPtr pointer)
         {

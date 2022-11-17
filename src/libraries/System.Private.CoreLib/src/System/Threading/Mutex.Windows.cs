@@ -53,6 +53,9 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
+
 #if TARGET_UNIX || TARGET_BROWSER
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {

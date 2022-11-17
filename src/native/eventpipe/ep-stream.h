@@ -131,21 +131,21 @@ ep_fast_serializable_object_fini (FastSerializableObject *fast_serializable_obje
 
 void
 ep_fast_serializable_object_fast_serialize (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer);
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_object);
 
 void
-ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_object);
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_object);
 
 void
 ep_fast_serializable_object_fast_serialize_vcall (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer);
 
 /*
@@ -225,7 +225,7 @@ ep_fast_serializer_write_system_time (
 void
 ep_fast_serializer_write_object (
 	FastSerializer *fast_serializer,
-	FastSerializableObject *fast_serializable_ojbect);
+	FastSerializableObject *fast_serializable_object);
 
 void
 ep_fast_serializer_write_string (

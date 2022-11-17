@@ -10,10 +10,9 @@ using Xunit;
 
 namespace System.Xml.Linq.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39709", TestPlatforms.Browser)]
     public class XTypeDescriptionProviderTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XAttributeValuePropertyDescriptor()
         {
             var xatt = new XAttribute("someAttribute", "someValue");
@@ -42,7 +41,7 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(newValue, xatt.Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementAttributePropertyDescriptor()
         {
             var xel = new XElement("someElement");
@@ -118,7 +117,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(valueChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementDescendantsPropertyDescriptor()
         {
             var xel = new XElement("someElement");
@@ -151,7 +150,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(valueChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementElementPropertyDescriptor()
         {
             var xel = new XElement("someElement");
@@ -226,7 +225,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(valueChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementElementsPropertyDescriptor()
         {
             var xel = new XElement("someElement");
@@ -259,7 +258,7 @@ namespace System.Xml.Linq.Tests
             Assert.True(valueChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementValuePropertyDescriptor()
         {
             var xel = new XElement("someElement", "someValue");
@@ -293,7 +292,7 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(xel.Value, xelValPD.GetValue(xel));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void XElementXmlPropertyDescriptor()
         {
             var xel = new XElement("someElement");

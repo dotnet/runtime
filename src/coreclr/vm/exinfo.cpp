@@ -230,7 +230,7 @@ void ExInfo::UnwindExInfo(VOID* limit)
 
     if (pPrevNestedInfo)
     {
-        // found nested handler info that is above the esp restore point so succesfully caught nested
+        // found nested handler info that is above the esp restore point so successfully caught nested
         STRESS_LOG2(LF_EH, LL_INFO100, "UnwindExInfo: resetting nested ExInfo to 0x%p stackaddress:0x%p\n", pPrevNestedInfo, pPrevNestedInfo->m_StackAddress);
 
         // Remember if this ExInfo is heap allocated or not.

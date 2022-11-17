@@ -46,6 +46,7 @@ namespace System.Reflection
 
         public override Module Module => GetRuntimeModule();
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
         #endregion
 
         #region Object Overrides

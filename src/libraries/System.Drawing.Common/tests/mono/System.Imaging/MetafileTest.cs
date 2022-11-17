@@ -152,7 +152,7 @@ namespace MonoTests.System.Drawing.Imaging
         {
             Assert.Equal(MetafileType.Emf, header.Type);
             Assert.Equal(65536, header.Version);
-            // extactly the filesize
+            // exactly the filesize
             Assert.Equal(20456, header.MetafileSize);
 
             Assert.Equal(0, header.Bounds.X);

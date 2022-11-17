@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
+#pragma warning disable IDE0060
+
 namespace System.Net.Security
 {
     internal static class SslStreamPal
@@ -55,13 +57,9 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
-            SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols,
-            EncryptionPolicy policy,
-            bool isServer)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
+            return null;
         }
 
         public static SecurityStatusPal EncryptMessage(
@@ -178,15 +176,13 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            Debug.Assert(!credential.IsInvalid);
-
             try
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
                 if ((context == null) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
                 }
 
@@ -216,7 +212,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyAlertToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
@@ -227,7 +222,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteSslContext securityContext)
         {
             SafeSslHandle sslHandle = securityContext.SslContext;

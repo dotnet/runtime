@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public AndConstraint<DirectoryInfoAssertions> Exist()
         {
             Execute.Assertion.ForCondition(_dirInfo.Exists)
-                .FailWithPreformatted($"Expected directory '{_dirInfo.FullName}' does not exist.");
+                .FailWith($"Expected directory '{_dirInfo.FullName}' does not exist.");
             return new AndConstraint<DirectoryInfoAssertions>(this);
         }
 
@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var file = _dirInfo.EnumerateFiles(expectedFile, SearchOption.TopDirectoryOnly).SingleOrDefault();
             Execute.Assertion.ForCondition(file != null)
-                .FailWithPreformatted($"Expected File '{expectedFile}' cannot be found in directory '{_dirInfo.FullName}.");
+                .FailWith($"Expected File '{expectedFile}' cannot be found in directory '{_dirInfo.FullName}.");
             return new AndConstraint<DirectoryInfoAssertions>(this);
         }
 
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var file = _dirInfo.EnumerateFiles(expectedFile, SearchOption.TopDirectoryOnly).SingleOrDefault();
             Execute.Assertion.ForCondition(file == null)
-                .FailWithPreformatted($"File '{expectedFile}' should not be found in directory '{_dirInfo.FullName}'.");
+                .FailWith($"File '{expectedFile}' should not be found in directory '{_dirInfo.FullName}'.");
             return new AndConstraint<DirectoryInfoAssertions>(this);
         }
 
@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var dir = _dirInfo.EnumerateDirectories(expectedDir, SearchOption.TopDirectoryOnly).SingleOrDefault();
             Execute.Assertion.ForCondition(dir != null)
-                .FailWithPreformatted($"Expected directory '{expectedDir}' cannot be found inside directory '{_dirInfo.FullName}'.");
+                .FailWith($"Expected directory '{expectedDir}' cannot be found inside directory '{_dirInfo.FullName}'.");
 
             return new AndConstraint<DirectoryInfoAssertions>(new DirectoryInfoAssertions(dir));
         }
@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var dir = _dirInfo.EnumerateDirectories(expectedDir, SearchOption.TopDirectoryOnly).SingleOrDefault();
             Execute.Assertion.ForCondition(dir == null)
-                .FailWithPreformatted($"Directory '{expectedDir}' should not be found in found inside directory '{_dirInfo.FullName}'.");
+                .FailWith($"Directory '{expectedDir}' should not be found in found inside directory '{_dirInfo.FullName}'.");
 
             return new AndConstraint<DirectoryInfoAssertions>(new DirectoryInfoAssertions(dir));
         }
@@ -90,10 +90,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
             var nl = Environment.NewLine;
 
             Execute.Assertion.ForCondition(!missingFiles.Any())
-                .FailWithPreformatted($"Following files cannot be found inside directory {_dirInfo.FullName} {nl} {string.Join(nl, missingFiles)}");
+                .FailWith($"Following files cannot be found inside directory {_dirInfo.FullName} {nl} {string.Join(nl, missingFiles)}");
 
             Execute.Assertion.ForCondition(!extraFiles.Any())
-                .FailWithPreformatted($"Following extra files are found inside directory {_dirInfo.FullName} {nl} {string.Join(nl, extraFiles)}");
+                .FailWith($"Following extra files are found inside directory {_dirInfo.FullName} {nl} {string.Join(nl, extraFiles)}");
 
             return new AndConstraint<DirectoryInfoAssertions>(this);
         }
@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DateTime writeTime = _dirInfo.LastWriteTimeUtc;
 
             Execute.Assertion.ForCondition(writeTime <= timeUtc)
-                .FailWithPreformatted($"Directory '{_dirInfo.FullName}' should not be modified after {timeUtc}, but is modified at {writeTime}.");
+                .FailWith($"Directory '{_dirInfo.FullName}' should not be modified after {timeUtc}, but is modified at {writeTime}.");
 
             return new AndConstraint<DirectoryInfoAssertions>(this);
         }

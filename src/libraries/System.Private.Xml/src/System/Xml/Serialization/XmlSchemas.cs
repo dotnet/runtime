@@ -264,7 +264,7 @@ namespace System.Xml.Serialization
 #endif
 
                 if (ret != null && _shareTypes && checkCache && !IsReference(ret))
-                    ret = Cache.AddItem(ret, name, this);
+                    ret = Cache.AddItem(ret, name);
                 if (ret != null)
                 {
                     return ret;
@@ -478,7 +478,7 @@ namespace System.Xml.Serialization
             return XmlQualifiedName.Empty;
         }
 
-        [return: NotNullIfNotNull("o")]
+        [return: NotNullIfNotNull(nameof(o))]
         private static string? GetSchemaItem(XmlSchemaObject? o, string? ns, string? details)
         {
             if (o == null)

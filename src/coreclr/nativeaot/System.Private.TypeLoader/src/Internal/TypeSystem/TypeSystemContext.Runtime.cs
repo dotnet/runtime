@@ -220,11 +220,9 @@ namespace Internal.TypeSystem
             }
             else
             {
-                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
-                if (returnedType == null)
-                {
-                    returnedType = new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
-                }
+                returnedType =
+                    TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth) ??
+                    new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
             }
 
             // We either retrieved an existing DefType that is already registered with the runtime
@@ -414,8 +412,7 @@ namespace Internal.TypeSystem
 
         internal MethodDesc ResolveRuntimeMethod(bool unboxingStub, DefType owningType, MethodNameAndSignature nameAndSignature, IntPtr functionPointer, bool usgFunctionPointer)
         {
-            if (_runtimeMethods == null)
-                _runtimeMethods = new RuntimeMethodKey.RuntimeMethodKeyHashtable();
+            _runtimeMethods ??= new RuntimeMethodKey.RuntimeMethodKeyHashtable();
 
             MethodDesc retVal = _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, owningType, nameAndSignature));
 
@@ -443,8 +440,7 @@ namespace Internal.TypeSystem
             if (typeAsMetadataType != null)
                 return GetInstantiatedType(typeAsMetadataType, arguments);
 
-            if (_genericTypeInstances == null)
-                _genericTypeInstances = new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
+            _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
 
             GenericTypeInstanceKey key = new GenericTypeInstanceKey(typeDef, arguments);
 
@@ -569,8 +565,7 @@ namespace Internal.TypeSystem
         /// </summary>
         internal void RegisterTypeForTypeSystemStateFlushing(TypeDesc type)
         {
-            if (_typesToFlushTypeSystemStateFrom == null)
-                _typesToFlushTypeSystemStateFrom = new LowLevelList<TypeDesc>();
+            _typesToFlushTypeSystemStateFrom ??= new LowLevelList<TypeDesc>();
             _typesToFlushTypeSystemStateFrom.Add(type);
         }
 
@@ -646,7 +641,7 @@ namespace Internal.TypeSystem
         public static T WithDebugName<T>(this T type) where T : TypeDesc
         {
 #if DEBUG
-            if (type.DebugName == null) type.DebugName = type.ToString();
+            type.DebugName ??= type.ToString();
 #endif
             return type;
         }

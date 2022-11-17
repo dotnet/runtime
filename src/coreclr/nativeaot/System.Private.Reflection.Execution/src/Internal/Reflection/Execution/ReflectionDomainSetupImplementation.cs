@@ -21,19 +21,9 @@ namespace Internal.Reflection.Execution
         // Obtain it lazily to avoid using RuntimeAugments.Callbacks before it is initialized
         public sealed override AssemblyBinder AssemblyBinder => AssemblyBinderImplementation.Instance;
 
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant);
-        }
-
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {
             return MissingMetadataExceptionCreator.Create(pertainant);
-        }
-
-        public sealed override Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName)
-        {
-            return MissingMetadataExceptionCreator.Create(pertainant, nestedTypeName);
         }
 
         public sealed override Exception CreateNonInvokabilityException(MemberInfo pertainant)
@@ -52,7 +42,7 @@ namespace Internal.Reflection.Execution
             }
 
             string pertainantString = MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainant);
-            return new MissingRuntimeArtifactException(SR.Format(resourceName, pertainantString ?? "?"));
+            return new NotSupportedException(SR.Format(resourceName, pertainantString ?? "?"));
         }
 
         public sealed override Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)

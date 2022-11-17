@@ -444,7 +444,7 @@ namespace System.Xml {
         }
 
 
-        private const int threshhold = 20;
+        private const int threshold = 20;
 
         // Promote the node into the parent's position (1 ply closer to the rootNode)
         private void Promote( MTNameTableNode node ) {
@@ -452,14 +452,14 @@ namespace System.Xml {
             node.counter++;
 
             if (node != rootNode &&
-                node.counter > threshhold &&
+                node.counter > threshold &&
                 node.counter > node.parentNode.counter * 2) {
                 if (rwLock != null) {
                     LockCookie lc = rwLock.UpgradeToWriterLock(timeout);
 
                     // recheck for failsafe against race-condition
                     if (node != rootNode &&
-                        node.counter > threshhold &&
+                        node.counter > threshold &&
                         node.counter > node.parentNode.counter * 2) {
                         InternalPromote( node );
                     }

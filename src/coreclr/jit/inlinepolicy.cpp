@@ -454,6 +454,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // bail out, if necessary, during importation
                 break;
 
+            case InlineObservation::CALLSITE_INSIDE_THROW_BLOCK:
+                m_InsideThrowBlock = value;
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -573,6 +577,15 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             assert(value != 0);
             m_CodeSize = static_cast<unsigned>(value);
 
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            unsigned maxCodeSize      = m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize();
+            if (m_InsideThrowBlock)
+            {
+                // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                alwaysInlineSize /= 2;
+                maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
+            }
+
             // Now that we know size and forceinline state,
             // update candidacy.
             if (m_IsForceInline)
@@ -580,12 +593,12 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            else if (m_CodeSize <= alwaysInlineSize)
             {
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_CodeSize <= m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize())
+            else if (m_CodeSize <= maxCodeSize)
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -977,7 +990,7 @@ int DefaultPolicy::CodeSizeEstimate()
     {
         // This is not something the DefaultPolicy explicitly computed,
         // since it uses a blended evaluation model (mixing size and time
-        // together for overall profitability). But it's effecitvely an
+        // together for overall profitability). But it's effectively an
         // estimate of the size impact.
         return (m_CalleeNativeSizeEstimate - m_CallsiteNativeSizeEstimate);
     }
@@ -997,29 +1010,30 @@ int DefaultPolicy::CodeSizeEstimate()
 
 void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 {
-    XATTR_R8(m_Multiplier);
-    XATTR_I4(m_CodeSize);
-    XATTR_I4(m_CallsiteFrequency);
-    XATTR_I4(m_CallsiteDepth);
-    XATTR_I4(m_InstructionCount);
-    XATTR_I4(m_LoadStoreCount);
-    XATTR_I4(m_ArgFeedsTest);
-    XATTR_I4(m_ArgFeedsConstantTest);
-    XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
-    XATTR_I4(m_CalleeNativeSizeEstimate);
-    XATTR_I4(m_CallsiteNativeSizeEstimate);
-    XATTR_B(m_IsForceInline);
-    XATTR_B(m_IsForceInlineKnown);
-    XATTR_B(m_IsInstanceCtor);
-    XATTR_B(m_IsFromPromotableValueClass);
-    XATTR_B(m_HasSimd);
-    XATTR_B(m_LooksLikeWrapperMethod);
-    XATTR_B(m_MethodIsMostlyLoadStore);
-    XATTR_B(m_CallsiteIsInTryRegion);
-    XATTR_B(m_CallsiteIsInLoop);
-    XATTR_B(m_IsNoReturn);
-    XATTR_B(m_IsNoReturnKnown);
+    XATTR_R8(m_Multiplier)
+    XATTR_I4(m_CodeSize)
+    XATTR_I4(m_CallsiteFrequency)
+    XATTR_I4(m_CallsiteDepth)
+    XATTR_I4(m_InstructionCount)
+    XATTR_I4(m_LoadStoreCount)
+    XATTR_I4(m_ArgFeedsTest)
+    XATTR_I4(m_ArgFeedsConstantTest)
+    XATTR_I4(m_ArgFeedsRangeCheck)
+    XATTR_I4(m_ConstantArgFeedsConstantTest)
+    XATTR_I4(m_CalleeNativeSizeEstimate)
+    XATTR_I4(m_CallsiteNativeSizeEstimate)
+    XATTR_B(m_IsForceInline)
+    XATTR_B(m_IsForceInlineKnown)
+    XATTR_B(m_IsInstanceCtor)
+    XATTR_B(m_IsFromPromotableValueClass)
+    XATTR_B(m_HasSimd)
+    XATTR_B(m_LooksLikeWrapperMethod)
+    XATTR_B(m_MethodIsMostlyLoadStore)
+    XATTR_B(m_CallsiteIsInTryRegion)
+    XATTR_B(m_CallsiteIsInLoop)
+    XATTR_B(m_IsNoReturn)
+    XATTR_B(m_IsNoReturnKnown)
+    XATTR_B(m_InsideThrowBlock)
 }
 #endif
 
@@ -1313,8 +1327,8 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_DivByCns++;
             break;
 
-        case InlineObservation::CALLSITE_HAS_PROFILE:
-            m_HasProfile = value;
+        case InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS:
+            m_HasProfileWeights = value;
             break;
 
         case InlineObservation::CALLSITE_IN_NORETURN_REGION:
@@ -1346,9 +1360,17 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
 
             // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
-            if (m_HasProfile && (m_RootCompiler->fgHaveTrustedProfileData()))
+            if (m_HasProfileWeights && (m_RootCompiler->fgHaveTrustedProfileWeights()))
             {
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
+            }
+
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                alwaysInlineSize /= 2;
+                maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
             }
 
             if (m_IsForceInline)
@@ -1356,7 +1378,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            else if (m_CodeSize <= alwaysInlineSize)
             {
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
@@ -1379,7 +1401,8 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_IsForceInline && !m_HasProfile && !m_ConstArgFeedsIsKnownConst && !m_ArgFeedsIsKnownConst)
+            else if (!m_IsForceInline && !m_HasProfileWeights && !m_ConstArgFeedsIsKnownConst &&
+                     !m_ArgFeedsIsKnownConst)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
@@ -1681,7 +1704,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         }
     }
 
-    if (m_HasProfile)
+    if (m_HasProfileWeights)
     {
         // There are cases when Profile Data can be misleading or polluted:
         //  1) We don't support context-sensitive instrumentation
@@ -1693,7 +1716,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        if (m_RootCompiler->fgHaveTrustedProfileData())
+        if (m_RootCompiler->fgHaveTrustedProfileWeights())
         {
             multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         }
@@ -1791,7 +1814,8 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsFromValueClass)
     XATTR_B(m_NonGenericCallsGeneric)
     XATTR_B(m_IsCallsiteInNoReturnRegion)
-    XATTR_B(m_HasProfile)
+    XATTR_B(m_HasProfileWeights)
+    XATTR_B(m_InsideThrowBlock)
 }
 #endif
 
@@ -1846,7 +1870,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_CallSiteWeight(0)
     , m_ModelCodeSizeEstimate(0)
     , m_PerCallInstructionEstimate(0)
-    , m_HasProfile(false)
+    , m_HasProfileWeights(false)
     , m_IsClassCtor(false)
     , m_IsSameThis(false)
     , m_CallerHasNewArray(false)
@@ -1893,8 +1917,8 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
             // hotness for all candidates. So ignore.
             break;
 
-        case InlineObservation::CALLSITE_HAS_PROFILE:
-            m_HasProfile = value;
+        case InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS:
+            m_HasProfileWeights = value;
             break;
 
         default:
@@ -2292,7 +2316,7 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     // model for actual inlining.
     EstimateCodeSize();
 
-    // Estimate peformance impact. This is just for model
+    // Estimate performance impact. This is just for model
     // evaluation purposes -- we'll still use the legacy policy's
     // model for actual inlining.
     EstimatePerformanceImpact();
@@ -2409,7 +2433,7 @@ void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo
 // On the inlines in CoreCLR's CoreLib, release windows x64, this
 // yields scores of R=0.42, MSE=228, and MAE=7.25.
 //
-// This estimate can be improved slighly by refitting, resulting in
+// This estimate can be improved slightly by refitting, resulting in
 //
 //  -1.451 +
 //   0.095 * m_CalleeNativeSizeEstimate +
@@ -2456,7 +2480,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
 }
 
 //------------------------------------------------------------------------
-// EstimatePeformanceImpact: produce performance estimates based on
+// EstimatePerformanceImpact: produce performance estimates based on
 // observations.
 //
 // Notes:
@@ -2928,10 +2952,10 @@ void ProfilePolicy::NoteInt(InlineObservation obs, int value)
             return;
         }
 
-        // If we're mimicing the default policy because there's no PGO
+        // If we're mimicking the default policy because there's no PGO
         // data for this call, also fail if thereare too many basic blocks.
         //
-        if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
+        if (!m_HasProfileWeights && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
         {
             SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
             return;
@@ -2956,7 +2980,7 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     // We expect to have profile data, otherwise we should not
     // have used this policy.
     //
-    if (!m_HasProfile)
+    if (!m_HasProfileWeights)
     {
         // Todo: investigate these cases more carefully.
         //
@@ -3644,7 +3668,7 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         m_IsForceInline = m_WasForceInline;
     }
 
-    // Try and find this candiate in the Xml.
+    // Try and find this candidate in the Xml.
     // If we fail to find it, then don't inline.
     bool accept = false;
 

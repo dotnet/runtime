@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Mail
 {
     internal sealed class SmtpNtlmAuthenticationModule : ISmtpAuthenticationModule
     {
-        private readonly Dictionary<object, NTAuthentication> _sessions = new Dictionary<object, NTAuthentication>();
+        private readonly Dictionary<object, NegotiateAuthentication> _sessions = new Dictionary<object, NegotiateAuthentication>();
 
         internal SmtpNtlmAuthenticationModule()
         {
@@ -16,41 +17,45 @@ namespace System.Net.Mail
 
         public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
-            try
+            lock (_sessions)
             {
-                lock (_sessions)
+                NegotiateAuthentication? clientContext;
+                if (!_sessions.TryGetValue(sessionCookie, out clientContext))
                 {
-                    NTAuthentication? clientContext;
-                    if (!_sessions.TryGetValue(sessionCookie, out clientContext))
+                    if (credential == null)
                     {
-                        if (credential == null)
-                        {
-                            return null;
-                        }
-
-                        _sessions[sessionCookie] =
-                            clientContext =
-                            new NTAuthentication(false, "Ntlm", credential, spn, ContextFlagsPal.Connection, channelBindingToken);
-
+                        return null;
                     }
 
-                    string? resp = clientContext.GetOutgoingBlob(challenge);
-
-                    if (!clientContext.IsCompleted)
-                    {
-                        return new Authorization(resp, false);
-                    }
-                    else
-                    {
-                        _sessions.Remove(sessionCookie);
-                        return new Authorization(resp, true);
-                    }
+                    _sessions[sessionCookie] = clientContext =
+                        new NegotiateAuthentication(
+                            new NegotiateAuthenticationClientOptions
+                            {
+                                Credential = credential,
+                                TargetName = spn,
+                                Binding = channelBindingToken
+                            });
                 }
-            }
-            // From reflected type NTAuthentication in System.Net.Security.
-            catch (NullReferenceException)
-            {
-                return null;
+
+                NegotiateAuthenticationStatusCode statusCode;
+                string? resp = clientContext.GetOutgoingBlob(challenge, out statusCode);
+
+                if (statusCode != NegotiateAuthenticationStatusCode.Completed &&
+                    statusCode != NegotiateAuthenticationStatusCode.ContinueNeeded)
+                {
+                    return null;
+                }
+
+                if (!clientContext.IsAuthenticated)
+                {
+                    return new Authorization(resp, false);
+                }
+                else
+                {
+                    _sessions.Remove(sessionCookie);
+                    clientContext.Dispose();
+                    return new Authorization(resp, true);
+                }
             }
         }
 

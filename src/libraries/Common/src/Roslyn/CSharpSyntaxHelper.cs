@@ -104,5 +104,22 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             // C# doesn't have global aliases at the compilation level.
             return;
         }
+
+        public override bool ContainsGlobalAliases(SyntaxNode root)
+        {
+            // Global usings can only exist at the compilation-unit level, so no need to dive any deeper than that.
+            var compilationUnit = (CompilationUnitSyntax)root;
+
+            foreach (var directive in compilationUnit.Usings)
+            {
+                if (directive.GlobalKeyword.IsKind(SyntaxKind.GlobalKeyword) &&
+                    directive.Alias != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

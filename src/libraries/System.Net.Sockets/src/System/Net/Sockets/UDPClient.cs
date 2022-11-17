@@ -746,19 +746,13 @@ namespace System.Net.Sockets
                             {
                                 ipv4Socket.Connect(address, port);
                                 _clientSocket = ipv4Socket;
-                                if (ipv6Socket != null)
-                                {
-                                    ipv6Socket.Close();
-                                }
+                                ipv6Socket?.Close();
                             }
                             else if (ipv6Socket != null)
                             {
                                 ipv6Socket.Connect(address, port);
                                 _clientSocket = ipv6Socket;
-                                if (ipv4Socket != null)
-                                {
-                                    ipv4Socket.Close();
-                                }
+                                ipv4Socket?.Close();
                             }
 
 
@@ -801,15 +795,8 @@ namespace System.Net.Sockets
                 //did we connect?
                 if (!_active)
                 {
-                    if (ipv6Socket != null)
-                    {
-                        ipv6Socket.Close();
-                    }
-
-                    if (ipv4Socket != null)
-                    {
-                        ipv4Socket.Close();
-                    }
+                    ipv6Socket?.Close();
+                    ipv4Socket?.Close();
 
                     // The connect failed - rethrow the last error we had
                     if (lastex != null)

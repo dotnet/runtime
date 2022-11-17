@@ -14,6 +14,7 @@ using System.IO.Tests;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Text.Json.Tests
 {
@@ -553,7 +554,7 @@ namespace System.Text.Json.Tests
 
                     using (var stream = new MemoryStream(dataUtf8))
                     using (var streamReader = new StreamReader(stream, Encoding.UTF8, false, 1024, true))
-                    using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
+                    using (var jsonReader = new JsonTextReader(streamReader) { MaxDepth = null })
                     {
                         JToken jToken = JToken.ReadFrom(jsonReader);
 
@@ -2744,11 +2745,9 @@ namespace System.Text.Json.Tests
                     Assert.Equal(test, property.Value.GetInt32());
                     test++;
 
-                    // Subsequent read of the same JsonProperty doesn't allocate a new string
-                    // (if another property is inspected from the same document that guarantee
-                    // doesn't hold).
+                    // Subsequent read of the same JsonProperty should return an equal string
                     string propertyName2 = property.Name;
-                    Assert.Same(propertyName, propertyName2);
+                    Assert.Equal(propertyName, propertyName2);
                 }
 
                 test = 0;
@@ -3607,11 +3606,46 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop] // thread-safety / stress test
+        public static async Task GetString_ConcurrentUse_ThreadSafe()
+        {
+            using (JsonDocument doc = JsonDocument.Parse(SR.SimpleObjectJson))
+            {
+                JsonElement first = doc.RootElement.GetProperty("first");
+                JsonElement last = doc.RootElement.GetProperty("last");
+
+                const int Iters = 10_000;
+                using (var gate = new Barrier(2))
+                {
+                    await Task.WhenAll(
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("John", first.GetString());
+                                Assert.True(first.ValueEquals("John"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("Smith", last.GetString());
+                                Assert.True(last.ValueEquals("Smith"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
+                }
+            }
+        }
+
         private static void BuildSegmentedReader(
             out Utf8JsonReader reader,
             ReadOnlyMemory<byte> data,
             int segmentCount,
-            in JsonReaderState state,
+            scoped in JsonReaderState state,
             bool isFinalBlock = false)
         {
             if (segmentCount == 0)
@@ -3656,7 +3690,7 @@ namespace System.Text.Json.Tests
                 return existing;
             }
 
-            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            using (var jsonReader = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null })
             {
                 jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
                 JToken jtoken = JToken.ReadFrom(jsonReader);

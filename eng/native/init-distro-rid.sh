@@ -138,7 +138,7 @@ initDistroRidGlobal()
     fi
 
     if [ -n "${rootfsDir}" ]; then
-        # We may have a cross build. Check for the existance of the rootfsDir
+        # We may have a cross build. Check for the existence of the rootfsDir
         if [ ! -e "${rootfsDir}" ]; then
             echo "Error rootfsDir has been passed, but the location is not valid."
             exit 1
@@ -148,8 +148,13 @@ initDistroRidGlobal()
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
-        __DistroRid=browser-wasm
-        export __DistroRid
+        if [ "$targetOs" = "Browser" ]; then
+            __DistroRid=browser-wasm
+            export __DistroRid
+        elif [ "$targetOs" = "wasi" ]; then
+            __DistroRid=wasi-wasm
+            export __DistroRid
+        fi
     fi
 
     if [ -z "${__DistroRid}" ]; then
@@ -186,6 +191,8 @@ initDistroRidGlobal()
                 distroRid="android-$buildArch"
             elif [ "$targetOs" = "Browser" ]; then
                 distroRid="browser-$buildArch"
+            elif [ "$targetOs" = "wasi" ]; then
+                distroRid="wasi-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
             elif [ "$targetOs" = "illumos" ]; then

@@ -67,7 +67,7 @@ are also some restrictions on the types of nodes that may appear in an HIR or LI
 
 Both HIR and LIR blocks are composed of `GenTree` nodes that define the operations performed by the block. A
 `GenTree` node may consume some number of operands and may produce a singly-defined, at-most-singly-used value as a
-result. These values are referred to interchangably as *SDSU* (single def, single use) temps or *tree* temps.
+result. These values are referred to interchangeably as *SDSU* (single def, single use) temps or *tree* temps.
 Definitions (aka, defs) of SDSU temps are represented by `GenTree` nodes themselves, and uses are represented by
 edges from the using node to the defining node. Furthermore, SDSU temps defined in one block may not be used in a
 different block. In cases where a value must be multiply-defined, multiply-used, or defined in one block and used in

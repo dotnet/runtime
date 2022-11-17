@@ -215,7 +215,7 @@ PALEXPORT ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t
 /*
 Shims the X509_STORE_free method.
 */
-PALEXPORT void CryptoNative_X509StoreDestory(X509_STORE* v);
+PALEXPORT void CryptoNative_X509StoreDestroy(X509_STORE* v);
 
 /*
 Shims the X509_STORE_add_crl method.
@@ -291,9 +291,14 @@ Shims the X509_STORE_CTX_get_error_depth method.
 PALEXPORT int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx);
 
 /*
-Shims the X509_STORE_CTX_set_verify_cb function.
+Shims the X509_STORE_CTX_set_verify_cb and X509_STORE_CTX_set_app_data functions.
 */
-PALEXPORT void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback);
+PALEXPORT int32_t CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback, void* appData);
+
+/*
+Shims the X509_STORE_CTX_get_app_data function.
+*/
+PALEXPORT void* CryptoNative_X509StoreCtxGetAppData(X509_STORE_CTX* ctx);
 
 /*
 Shims the X509_verify_cert_error_string method.

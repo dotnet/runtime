@@ -501,7 +501,7 @@ void EEDbgInterfaceImpl::DetermineIfOffsetsInFilterOrHandler(const BYTE *functio
 
         // Check each EH clause against each offset of interest.
         // Note that this could be time consuming for very long methods ( O(n^2) ).
-        // We could make this linear if we could guarentee that the two lists are sorted.
+        // We could make this linear if we could guarantee that the two lists are sorted.
         for (ULONG j=0; j < offsetToHandlerInfoLength; j++)
         {
             SIZE_T offs = pOffsetToHandlerInfo[j].offset;
@@ -1224,13 +1224,13 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     bool fResult = frame->TraceFrame(thread, fromPatch, trace, regs) != FALSE;
 
 #ifdef _DEBUG
-    StubManager::DbgWriteLog("Doing TraceFrame on frame=0x%p (fromPatch=%d), yeilds:\n", frame, fromPatch);
+    StubManager::DbgWriteLog("Doing TraceFrame on frame=0x%p (fromPatch=%d), yields:\n", frame, fromPatch);
     if (fResult)
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
         FAULT_NOT_FATAL();
         SString buffer;
-        StubManager::DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+        StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else
     {
@@ -1276,7 +1276,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         // Should never be on helper thread
         FAULT_NOT_FATAL();
         SString buffer;
-        StubManager::DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+        StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else
     {

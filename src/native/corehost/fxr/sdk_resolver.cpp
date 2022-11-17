@@ -34,7 +34,7 @@ sdk_resolver::sdk_resolver(bool allow_prerelease) :
 }
 
 sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease) :
-    requested_version(move(version)),
+    requested_version(std::move(version)),
     roll_forward(roll_forward),
     allow_prerelease(allow_prerelease)
 {
@@ -353,7 +353,7 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         }
     }
 
-    global_file = move(global_file_path);
+    global_file = std::move(global_file_path);
     return true;
 }
 
@@ -467,7 +467,7 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
         if (pal::directory_exists(probe_path))
         {
             trace::verbose(_X("Found requested SDK directory [%s]"), probe_path.c_str());
-            sdk_path = move(probe_path);
+            sdk_path = std::move(probe_path);
             resolved_version = requested_version;
 
             // The SDK path has been resolved
@@ -519,7 +519,7 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
 
         changed = true;
         resolved_version = ver;
-        resolved_version_str = move(version);
+        resolved_version_str = std::move(version);
     }
 
     if (changed)

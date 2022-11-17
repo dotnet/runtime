@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not a valid bitwise combination of RegexOptions values.</exception>
         /// <exception cref="RegexParseException">A regular expression parsing error occurred.</exception>
-        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
+        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).EnumerateMatches(input);
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not a valid bitwise combination of RegexOptions values, or <paramref name="matchTimeout"/> is negative, zero, or greater than approximately 24 days.</exception>
         /// <exception cref="RegexParseException">A regular expression parsing error occurred.</exception>
-        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).EnumerateMatches(input);
 
         /// <summary>

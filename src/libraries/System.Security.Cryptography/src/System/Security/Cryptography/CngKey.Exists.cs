@@ -51,8 +51,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    if (keyHandle != null)
-                        keyHandle.Dispose();
+                    keyHandle?.Dispose();
                 }
             }
         }

@@ -113,49 +113,39 @@ internal static partial class SyntaxValueProviderExtensions
 
 #endif
 
-        var collectedNodes = nodesWithAttributesMatchingSimpleName
-            .Collect()
-            .WithComparer(ImmutableArrayValueComparer<SyntaxNode>.Instance)
-            /*.WithTrackingName("collectedNodes_ForAttributeWithMetadataName")*/;
-
-        // Group all the nodes by syntax tree, so we can process a whole syntax tree at a time.  This will let us make
-        // the required semantic model for it once, instead of potentially many times (in the rare, but possible case of
-        // a single file with a ton of matching nodes in it).
-        var groupedNodes = collectedNodes.SelectMany(
-            static (array, cancellationToken) =>
-                array.GroupBy(static n => n.SyntaxTree)
-                     .Select(static g => new SyntaxNodeGrouping<SyntaxNode>(g)))/*.WithTrackingName("groupedNodes_ForAttributeWithMetadataName")*/;
-
-        var compilationAndGroupedNodesProvider = groupedNodes
+        var compilationAndGroupedNodesProvider = nodesWithAttributesMatchingSimpleName
             .Combine(context.CompilationProvider)
             /*.WithTrackingName("compilationAndGroupedNodes_ForAttributeWithMetadataName")*/;
 
         var syntaxHelper = CSharpSyntaxHelper.Instance;
         var finalProvider = compilationAndGroupedNodesProvider.SelectMany((tuple, cancellationToken) =>
         {
-            var (grouping, compilation) = tuple;
+            var ((syntaxTree, syntaxNodes), compilation) = tuple;
+            Debug.Assert(syntaxNodes.All(n => n.SyntaxTree == syntaxTree));
 
             using var result = new ValueListBuilder<T>(Span<T>.Empty);
-            var syntaxTree = grouping.SyntaxTree;
-            var semanticModel = compilation.GetSemanticModel(syntaxTree);
-
-            foreach (var targetNode in grouping.SyntaxNodes)
+            if (!syntaxNodes.IsEmpty)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                var semanticModel = compilation.GetSemanticModel(syntaxTree);
 
-                var targetSymbol =
-                    targetNode is ICompilationUnitSyntax compilationUnit ? semanticModel.Compilation.Assembly :
-                    syntaxHelper.IsLambdaExpression(targetNode) ? semanticModel.GetSymbolInfo(targetNode, cancellationToken).Symbol :
-                    semanticModel.GetDeclaredSymbol(targetNode, cancellationToken);
-                if (targetSymbol is null)
-                    continue;
-
-                var attributes = getMatchingAttributes(targetNode, targetSymbol, fullyQualifiedMetadataName);
-                if (attributes.Length > 0)
+                foreach (var targetNode in syntaxNodes)
                 {
-                    result.Append(transform(
-                        new GeneratorAttributeSyntaxContext(targetNode, targetSymbol, semanticModel, attributes),
-                        cancellationToken));
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var targetSymbol =
+                        targetNode is ICompilationUnitSyntax compilationUnit ? semanticModel.Compilation.Assembly :
+                        syntaxHelper.IsLambdaExpression(targetNode) ? semanticModel.GetSymbolInfo(targetNode, cancellationToken).Symbol :
+                        semanticModel.GetDeclaredSymbol(targetNode, cancellationToken);
+                    if (targetSymbol is null)
+                        continue;
+
+                    var attributes = getMatchingAttributes(targetNode, targetSymbol, fullyQualifiedMetadataName);
+                    if (attributes.Length > 0)
+                    {
+                        result.Append(transform(
+                            new GeneratorAttributeSyntaxContext(targetNode, targetSymbol, semanticModel, attributes),
+                            cancellationToken));
+                    }
                 }
             }
 

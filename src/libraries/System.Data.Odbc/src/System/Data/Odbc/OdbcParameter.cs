@@ -1081,7 +1081,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                // always set ouput only and return value parameter values to null when executing
+                // always set output only and return value parameter values to null when executing
                 _internalValue = null;
 
                 //Always initialize the intbuffer (for output params).  Since we need to know

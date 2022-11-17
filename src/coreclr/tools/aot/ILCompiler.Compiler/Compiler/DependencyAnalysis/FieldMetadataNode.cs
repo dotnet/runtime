@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class FieldMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class FieldMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly FieldDesc _field;
 

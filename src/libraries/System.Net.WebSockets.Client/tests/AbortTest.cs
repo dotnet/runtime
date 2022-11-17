@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,9 +12,24 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    public sealed class InvokerAbortTest : AbortTest
+    {
+        public InvokerAbortTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class HttpClientAbortTest : AbortTest
+    {
+        public HttpClientAbortTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseHttpClient => true;
+    }
+
     public class AbortTest : ClientWebSocketTestBase
     {
         public AbortTest(ITestOutputHelper output) : base(output) { }
+
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
@@ -26,7 +42,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ub = new UriBuilder(server);
                 ub.Query = "delay10sec";
 
-                Task t = cws.ConnectAsync(ub.Uri, cts.Token);
+                Task t = ConnectAsync(cws, ub.Uri, cts.Token);
                 cws.Abort();
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() => t);
 

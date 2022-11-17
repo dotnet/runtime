@@ -164,7 +164,7 @@ class FirefoxInspectorClient : InspectorClient
                     {
                         method = "Runtime.consoleAPICalled";
                         var args = new JArray();
-                        // FIXME: unncessary alloc
+                        // FIXME: unnecessary alloc
                         foreach (JToken? argument in res["resources"]?[0]?["message"]?["arguments"]?.Value<JArray>() ?? new JArray())
                         {
                             args.Add(JObject.FromObject(new { value = argument.Value<string>()}));

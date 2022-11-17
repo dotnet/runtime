@@ -324,7 +324,7 @@ void ProfilingAPIUtility::LogProfEventVA(
         FireEtwProfilerMessage(GetClrInstanceId(), messageToLogUtf16.GetUnicode());
     }
 
-    // Ouput debug strings for diagnostic messages.
+    // Output debug strings for diagnostic messages.
     OutputDebugStringUtf8(messageToLog.GetUTF8());
 }
 
@@ -472,7 +472,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 
 #ifdef _DEBUG
-    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,
+    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo interface,
     // which would otherwise be disallowed for attaching profilers
     DWORD dwTestOnlyEnableICorProfilerInfo = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableICorProfilerInfo);
     if (dwTestOnlyEnableICorProfilerInfo != 0)
@@ -533,7 +533,7 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     // Translate the string into a CLSID
     if (*wszClsid == W('{'))
     {
-        hr = IIDFromString(wszClsid, pClsid);
+        hr = LPCWSTRToGuid(wszClsid, pClsid) ? S_OK : E_FAIL;
     }
     else
     {
@@ -702,8 +702,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    GuidString clsidUtf8;
-    GuidString::Create(clsid, clsidUtf8);
+    char clsidUtf8[GUID_STR_BUFFER_LEN];
+    GuidToLPSTR(clsid, clsidUtf8);
     hr = LoadProfiler(
         kStartupLoad,
         &clsid,
@@ -736,8 +736,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        GuidString clsidUtf8;
-        GuidString::Create(*pClsid, clsidUtf8);
+        char clsidUtf8[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(*pClsid, clsidUtf8);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
@@ -816,8 +816,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
 
-        GuidString clsidUtf8;
-        GuidString::Create(clsid, clsidUtf8);
+        char clsidUtf8[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(clsid, clsidUtf8);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,

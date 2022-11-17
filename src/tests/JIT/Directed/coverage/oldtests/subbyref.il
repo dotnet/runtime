@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Arithemetic operations are generally only allowed with
+// Arithmetic operations are generally only allowed with
 // primitive types, but certain operations are allowed
 // with byrefs
 
@@ -64,7 +64,7 @@ ldc.i4 100
     IL_0004:  ret
   } // end of method ctest::f
 
-  .method public specialname rtspecialname 
+  .method public specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

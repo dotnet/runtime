@@ -1,26 +1,27 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Contains utilities for IJsonTypeInfoResolver
+    /// Contains utilities and combinators acting on <see cref="IJsonTypeInfoResolver"/>.
     /// </summary>
     public static class JsonTypeInfoResolver
     {
         /// <summary>
-        /// Combines multiple IJsonTypeInfoResolvers
+        /// Combines multiple <see cref="IJsonTypeInfoResolver"/> sources into one.
         /// </summary>
-        /// <param name="resolvers"></param>
-        /// <returns></returns>
+        /// <param name="resolvers">Sequence of contract resolvers to be queried for metadata.</param>
+        /// <returns>A <see cref="IJsonTypeInfoResolver"/> combining results from <paramref name="resolvers"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="resolvers"/> or any of its elements is null.</exception>
         /// <remarks>
-        /// All resolvers except last one should return null when they do not know how to create JsonTypeInfo for a given type.
-        /// Last resolver on the list should return non-null for most of the types unless explicit type blocking is desired.
+        /// The combined resolver will query each of <paramref name="resolvers"/> in the specified order,
+        /// returning the first result that is non-null. If all <paramref name="resolvers"/> return null,
+        /// then the combined resolver will also return <see langword="null"/>.
+        ///
+        /// Can be used to combine multiple <see cref="JsonSerializerContext"/> sources,
+        /// which typically define contract metadata for small subsets of types.
+        /// It can also be used to fall back to <see cref="DefaultJsonTypeInfoResolver"/> wherever necessary.
         /// </remarks>
         public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver[] resolvers)
         {
@@ -29,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new ArgumentNullException(nameof(resolvers));
             }
 
-            foreach (var resolver in resolvers)
+            foreach (IJsonTypeInfoResolver? resolver in resolvers)
             {
                 if (resolver == null)
                 {

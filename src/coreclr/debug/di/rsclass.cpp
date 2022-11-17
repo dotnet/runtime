@@ -328,7 +328,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 
     // Static value classes are stored as handles so that GC can deal with them properly.  Thus, we need to follow the
     // handle like an objectref.  Do this by forcing CreateValueByType to think this is an objectref. Note: we don't do
-    // this for value classes that have an RVA, since they're layed out at the RVA with no handle.
+    // this for value classes that have an RVA, since they're laid out at the RVA with no handle.
     bool fIsBoxed = (fIsValueClass &&
                      !pFieldData->m_fFldIsRVA &&
                      !pFieldData->m_fFldIsPrimitive &&
@@ -621,7 +621,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
 // We have to go the EE to find out if a class is a value
 // class or not.  This is because there is no flag for this, but rather
 // it depends on whether the class subclasses System.ValueType (apart
-// from System.Enum...).  Replicating all that resoultion logic
+// from System.Enum...).  Replicating all that resolution logic
 // does not seem like a good plan.
 //
 // We also accept other "evidence" that the class is or isn't a VC, in

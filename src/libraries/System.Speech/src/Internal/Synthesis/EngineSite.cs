@@ -204,10 +204,7 @@ namespace System.Speech.Internal.Synthesis
         internal void SetEventsInterest(int eventInterest)
         {
             _eventInterest = eventInterest;
-            if (_eventMapper != null)
-            {
-                _eventMapper.FlushEvent();
-            }
+            _eventMapper?.FlushEvent();
         }
 
         #endregion
@@ -347,10 +344,7 @@ namespace System.Speech.Internal.Synthesis
 
         protected virtual void SendToOutput(TTSEvent evt)
         {
-            if (_sink != null)
-            {
-                _sink.AddEvent(evt);
-            }
+            _sink?.AddEvent(evt);
         }
 
         public virtual void AddEvent(TTSEvent evt)
@@ -360,10 +354,7 @@ namespace System.Speech.Internal.Synthesis
 
         public virtual void FlushEvent()
         {
-            if (_sink != null)
-            {
-                _sink.FlushEvent();
-            }
+            _sink?.FlushEvent();
         }
 
         private ITtsEventSink _sink;

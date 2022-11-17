@@ -7,7 +7,7 @@
 **
 ** Purpose: Call llabs on a series of values -- negative, positive,
 ** zero, and the largest negative value of an __int64.  Ensure that
-** they are all changed properly to their absoulte value. 
+** they are all changed properly to their absolute value.
 **
 **
 **===================================================================*/
@@ -46,15 +46,15 @@ PALTEST(c_runtime_llabs_test1_paltest_llabs_test1, "c_runtime/llabs/test1/paltes
 
     for(i = 0; i < sizeof(testCases) / sizeof(struct testCase); i++)
     {
-        /* Absolute value on an __int64 */ 
+        /* Absolute value on an __int64 */
         result = llabs(testCases[i].LongLongValue);
 
         if (testCases[i].AbsoluteLongLongValue != result)
         {
-            Fail("ERROR: llabs took the absoulte value of '%d' to be '%d' "
-                 "instead of %d.\n", 
-                 testCases[i].LongLongValue, 
-                 result, 
+            Fail("ERROR: llabs took the absolute value of '%d' to be '%d' "
+                 "instead of %d.\n",
+                 testCases[i].LongLongValue,
+                 result,
                  testCases[i].AbsoluteLongLongValue);
         }
     }

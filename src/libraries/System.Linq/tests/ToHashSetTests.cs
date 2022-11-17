@@ -8,13 +8,6 @@ namespace System.Linq.Tests
 {
     public class ToHashSetTests
     {
-        private class CustomComparer<T> : IEqualityComparer<T>
-        {
-            public bool Equals(T x, T y) => EqualityComparer<T>.Default.Equals(x, y);
-
-            public int GetHashCode(T obj) => EqualityComparer<T>.Default.GetHashCode(obj);
-        }
-
         [Fact]
         public void NoExplicitComparer()
         {
@@ -27,7 +20,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ExplicitComparer()
         {
-            var cmp = new CustomComparer<int>();
+            var cmp = EqualityComparer<int>.Create((x, y) => x == y, x => x);
             var hs = Enumerable.Range(0, 50).ToHashSet(cmp);
             Assert.IsType<HashSet<int>>(hs);
             Assert.Equal(50, hs.Count);
@@ -37,7 +30,7 @@ namespace System.Linq.Tests
         [Fact]
         public void RunOnce()
         {
-            Enumerable.Range(0, 50).RunOnce().ToHashSet(new CustomComparer<int>());
+            Enumerable.Range(0, 50).RunOnce().ToHashSet();
         }
 
         [Fact]

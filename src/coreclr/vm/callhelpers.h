@@ -346,7 +346,7 @@ public:
             }                                                                       \
             ARG_SLOT retval;                                                        \
             CallTargetWorker(pArguments, &retval, sizeof(retval));                  \
-            return *(rettype *)ArgSlotEndianessFixup(&retval, sizeof(rettype));     \
+            return *(rettype *)ArgSlotEndiannessFixup(&retval, sizeof(rettype));     \
         }
 
 #define MDCALLDEF_ARGSLOT(wrappedmethod, ext)                                       \
@@ -362,7 +362,7 @@ public:
             ARG_SLOT retval;                                                                    \
             CallTargetWorker(pArguments, &retval, sizeof(retval));                              \
             return ObjectTo##reftype(*(ptrtype *)                                               \
-                        ArgSlotEndianessFixup(&retval, sizeof(ptrtype)));                       \
+                        ArgSlotEndiannessFixup(&retval, sizeof(ptrtype)));                       \
         }
 
 

@@ -1663,6 +1663,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MetadataStringDecoder UTF8Decoder { get { throw null; } }
         public System.Reflection.Metadata.AssemblyDefinition GetAssemblyDefinition() { throw null; }
         public System.Reflection.Metadata.AssemblyFile GetAssemblyFile(System.Reflection.Metadata.AssemblyFileHandle handle) { throw null; }
+        public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
         public System.Reflection.Metadata.AssemblyReference GetAssemblyReference(System.Reflection.Metadata.AssemblyReferenceHandle handle) { throw null; }
         public byte[] GetBlobBytes(System.Reflection.Metadata.BlobHandle handle) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> GetBlobContent(System.Reflection.Metadata.BlobHandle handle) { throw null; }

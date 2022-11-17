@@ -13,85 +13,85 @@
 
 .class public auto ansi beforefieldinit A
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit B extends A 
+.class public auto ansi beforefieldinit B extends A
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit C extends B 
+.class public auto ansi beforefieldinit C extends B
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-
-.class public auto ansi beforefieldinit GenRetType<X,Y> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit Dictionary<KEY,VAL> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> 
+.class public auto ansi beforefieldinit GenRetType<X,Y>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit Dictionary<KEY,VAL>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> 
+.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> 
+.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> 
+.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
-}
-.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
-.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C 
+.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> 
+.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 
-.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C 
+.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> 
+.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> 
+.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 
+.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class private auto ansi sealed En extends [System.Runtime]System.Enum
@@ -101,14 +101,14 @@
 
 
 // ========================================================================================
-// Main base type with various virtual methods that will be overriden later
+// Main base type with various virtual methods that will be overridden later
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed  { ret }
 
-  .method public hidebysig newslot virtual instance object MyFunc(string& res) 
+  .method public hidebysig newslot virtual instance object MyFunc(string& res)
   {
     ldarg.1
     ldstr "object GenBaseType.MyFunc()"
@@ -116,7 +116,7 @@
     newobj instance void A::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B MyFunc(string& res) 
+  .method public hidebysig newslot virtual instance class B MyFunc(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.MyFunc()"
@@ -124,7 +124,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B GenToNonGen(string& res) 
+  .method public hidebysig newslot virtual instance class B GenToNonGen(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.GenToNonGen()"
@@ -132,7 +132,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class B NonGenThroughGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class B NonGenThroughGenFunc(string& res)
   {
     ldarg.1
     ldstr "B GenBaseType.NonGenThroughGenFunc()"
@@ -140,7 +140,7 @@
     newobj instance void B::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<int32,object> MyGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class GenRetType<int32,object> MyGenFunc(string& res)
   {
     ldarg.1
     ldstr "GenRetType<int32,object> GenBaseType.MyGenFunc()"
@@ -148,7 +148,7 @@
     newobj instance void class GenRetType<int32,object>::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<!A, class Dictionary<string,!B>> MyGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class GenRetType<!A, class Dictionary<string,!B>> MyGenFunc(string& res)
   {
     ldarg.1
     ldstr "GenRetType<!A, class Dictionary<string,!B>> GenBaseType.MyGenFunc()"
@@ -157,17 +157,17 @@
     ret
   }
 
-  .method public hidebysig newslot virtual instance int32[] RetIntArr() 
+  .method public hidebysig newslot virtual instance int32[] RetIntArr()
   {
     ldstr "base.retintarr"
     call void [System.Console]System.Console::WriteLine(string)
-    ldnull   
+    ldnull
     ret
   }
 }
 
 // ========================================================================================
-// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with 
+// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with
 // covariant return types (more derived return types)
 // ========================================================================================
 
@@ -222,7 +222,7 @@
 
 
 // ========================================================================================
-// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with 
+// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with
 // covariant return types (more derived return types than the ones used in GenMiddleType)
 // ========================================================================================
 
@@ -269,7 +269,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class GenRetType<!U,!V> MyFunc(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -280,7 +280,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class C MyFunc(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -291,7 +291,7 @@
     ldnull
     ret
   }
-  
+
   // ========================================================================================
   // Set of implicit overrides that should be ignored given there are explicit overrides from the MethodImpls
   // ========================================================================================
@@ -322,14 +322,14 @@
     newobj instance void [System.Runtime]System.Exception::.ctor(string)
     throw
   }
-  
+
   .method public hidebysig virtual instance object MyFunc(string& res)
   {
     ldstr "Should never execute this method"
     newobj instance void [System.Runtime]System.Exception::.ctor(string)
     throw
   }
-  
+
   .method public hidebysig virtual instance class B MyFunc(string& res)
   {
     ldstr "Should never execute this method"
@@ -345,26 +345,26 @@
 
 .class private auto ansi sealed Del_Obj extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_Obj::.ctor
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance object  Invoke(string& res) runtime managed
   {
   } // end of method Del_Obj::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_Obj::BeginInvoke
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance object  EndInvoke(string& res,
                                      class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -374,26 +374,26 @@
 
 .class private auto ansi sealed Del_B extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_B::.ctor
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance class B  Invoke(string& res) runtime managed
   {
   } // end of method Del_B::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_B::BeginInvoke
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance class B  EndInvoke(string& res,
                                       class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -403,28 +403,28 @@
 
 .class private auto ansi sealed Del_GenRetType_int_object extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenRetType_int_object::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<int32,object> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<int32,object>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenRetType_int_object::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenRetType_int_object::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<int32,object> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<int32,object>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -434,28 +434,28 @@
 
 .class private auto ansi sealed Del_GenRetType<ARG1,ARG2> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenRetType::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<!ARG1,class Dictionary<string,!ARG2>> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<!ARG1,class Dictionary<string,!ARG2>>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenRetType::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenRetType::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<!ARG1,class Dictionary<string,!ARG2>> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<!ARG1,class Dictionary<string,!ARG2>>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -465,28 +465,28 @@
 
 .class private auto ansi sealed Del_NonGenThroughGen2 extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_NonGenThroughGen2::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenThroughGen2<object,int32,string> 
+  .method public hidebysig newslot virtual
+          instance class NonGenThroughGen2<object,int32,string>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_NonGenThroughGen2::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_NonGenThroughGen2::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenThroughGen2<object,int32,string> 
+  .method public hidebysig newslot virtual
+          instance class NonGenThroughGen2<object,int32,string>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -496,28 +496,28 @@
 
 .class private auto ansi sealed Del_GenToNonGen1<V> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenToNonGen1::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenToNonGen1<!V,class Dictionary<string,object>> 
+  .method public hidebysig newslot virtual
+          instance class GenToNonGen1<!V,class Dictionary<string,object>>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenToNonGen1::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenToNonGen1::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenToNonGen1<!V,class Dictionary<string,object>> 
+  .method public hidebysig newslot virtual
+          instance class GenToNonGen1<!V,class Dictionary<string,object>>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -527,28 +527,28 @@
 
 .class private auto ansi sealed Del_NonGenericDerived1 extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_NonGenericDerived1::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenericDerived1<int32,object> 
+  .method public hidebysig newslot virtual
+          instance class NonGenericDerived1<int32,object>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_NonGenericDerived1::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_NonGenericDerived1::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenericDerived1<int32,object> 
+  .method public hidebysig newslot virtual
+          instance class NonGenericDerived1<int32,object>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -558,28 +558,28 @@
 
 .class private auto ansi sealed Del_GenDerive1<U,V> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenDerive1::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenDerive1<!V,class Dictionary<string,!U>> 
+  .method public hidebysig newslot virtual
+          instance class GenDerive1<!V,class Dictionary<string,!U>>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenDerive1::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenDerive1::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenDerive1<!V,class Dictionary<string,!U>> 
+  .method public hidebysig newslot virtual
+          instance class GenDerive1<!V,class Dictionary<string,!U>>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -589,28 +589,28 @@
 
 .class private auto ansi sealed Del_NonGenThroughGen4 extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_NonGenThroughGen4::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenThroughGen4 
+  .method public hidebysig newslot virtual
+          instance class NonGenThroughGen4
           Invoke(string& res) runtime managed
   {
   } // end of method Del_NonGenThroughGen4::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_NonGenThroughGen4::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenThroughGen4 
+  .method public hidebysig newslot virtual
+          instance class NonGenThroughGen4
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -620,28 +620,28 @@
 
 .class private auto ansi sealed Del_GenToNonGen3<U> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenToNonGen3::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenToNonGen3<!U,object> 
+  .method public hidebysig newslot virtual
+          instance class GenToNonGen3<!U,object>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenToNonGen3::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenToNonGen3::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenToNonGen3<!U,object> 
+  .method public hidebysig newslot virtual
+          instance class GenToNonGen3<!U,object>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -651,28 +651,28 @@
 
 .class private auto ansi sealed Del_NonGenericDerived4 extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_NonGenericDerived4::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenericDerived4 
+  .method public hidebysig newslot virtual
+          instance class NonGenericDerived4
           Invoke(string& res) runtime managed
   {
   } // end of method Del_NonGenericDerived4::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_NonGenericDerived4::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class NonGenericDerived4 
+  .method public hidebysig newslot virtual
+          instance class NonGenericDerived4
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -682,28 +682,28 @@
 
 .class private auto ansi sealed Del_GenDerive3<U,V> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenDerive3::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenDerive3<!U,!V> 
+  .method public hidebysig newslot virtual
+          instance class GenDerive3<!U,!V>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenDerive3::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenDerive3::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenDerive3<!U,!V> 
+  .method public hidebysig newslot virtual
+          instance class GenDerive3<!U,!V>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -713,28 +713,28 @@
 
 .class private auto ansi sealed Del_GenRetType_U_V<U,V> extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_GenRetType_U_V::.ctor
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<!U,!V> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<!U,!V>
           Invoke(string& res) runtime managed
   {
   } // end of method Del_GenRetType_U_V::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_GenRetType_U_V::BeginInvoke
 
-  .method public hidebysig newslot virtual 
-          instance class GenRetType<!U,!V> 
+  .method public hidebysig newslot virtual
+          instance class GenRetType<!U,!V>
           EndInvoke(string& res,
                     class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -744,26 +744,26 @@
 
 .class private auto ansi sealed Del_C extends [System.Runtime]System.MulticastDelegate
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
   } // end of method Del_C::.ctor
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance class C  Invoke(string& res) runtime managed
   {
   } // end of method Del_C::Invoke
 
-  .method public hidebysig newslot virtual 
-          instance class [System.Runtime]System.IAsyncResult 
+  .method public hidebysig newslot virtual
+          instance class [System.Runtime]System.IAsyncResult
           BeginInvoke(string& res,
                       class [System.Runtime]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
   } // end of method Del_C::BeginInvoke
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance class C  EndInvoke(string& res,
                                       class [System.Runtime]System.IAsyncResult result) runtime managed
   {
@@ -869,21 +869,21 @@
     IL_00a3:  ret
   } // end of method Program::CheckResults
 
-  
+
   // ============== Test using GenTestType ============== //
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
-  //    2) The signature from GenMiddleType with covariant returns (when applicable)    
+  //    2) The signature from GenMiddleType with covariant returns (when applicable)
   //    3) The signature from GenTestType with covariant returns
   // And verify that the override on GetTestType is the one that executes
 
   .method public hidebysig static bool  RunTest1() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance object class GenBaseType<int32,object>::MyFunc(string&)
@@ -912,10 +912,10 @@
   .method public hidebysig static bool  RunTest2() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance class B class GenBaseType<int32,object>::MyFunc(string&)
@@ -944,10 +944,10 @@
   .method public hidebysig static bool  RunTest3() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -984,10 +984,10 @@
   .method public hidebysig static bool  RunTest4() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance class GenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -1018,16 +1018,16 @@
     ldloc.2
     ldnull
     call bool CMain::CheckResults(string,string,string,string,string)
-    ret    
+    ret
   }
 
   .method public hidebysig static bool  RunTest5() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance class B class GenBaseType<int32,object>::GenToNonGen(string&)
@@ -1064,10 +1064,10 @@
   .method public hidebysig static bool  RunTest6() cil managed noinlining
   {
     .locals init (string res1, string res2, string res3, class GenTestType<int32,object,int32,object> thisPtr)
-    
+
     newobj      instance void class GenTestType<int32,object,int32,object>::.ctor()
     stloc.s     thisPtr
-    
+
     ldloc.s     thisPtr
     ldloc.s     thisPtr
     ldvirtftn   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc(string&)
@@ -1109,40 +1109,40 @@
     .entrypoint
     .maxstack  2
     .locals init ( bool result )
-    
+
     ldc.i4.1
     stloc.0
-    
+
     T1:
     call bool CMain::RunTest1()
     brtrue.s T2
     ldc.i4.0
     stloc.0
-    
+
     T2:
     call bool CMain::RunTest2()
     brtrue.s T3
     ldc.i4.0
     stloc.0
-    
+
     T3:
     call bool CMain::RunTest3()
     brtrue.s T4
     ldc.i4.0
     stloc.0
-    
+
     T4:
     call bool CMain::RunTest4()
     brtrue.s T5
     ldc.i4.0
     stloc.0
-    
+
     T5:
     call bool CMain::RunTest5()
     brtrue.s T6
     ldc.i4.0
     stloc.0
-    
+
     T6:
     call bool CMain::RunTest6()
     brtrue.s DONE
@@ -1159,7 +1159,7 @@
     call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.s   101
     ret
-    
+
     PASS:
     ldstr      "Test PASSED"
     call       void [System.Console]System.Console::WriteLine(string)

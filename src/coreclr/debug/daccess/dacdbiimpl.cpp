@@ -185,7 +185,7 @@ void DeleteDbiMemory(void* p)
     }
     else
     {
-        ::delete (BYTE*)p;
+        ::delete [] (BYTE*)p;
     }
 }
 
@@ -512,7 +512,7 @@ BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
         // 4) assign the object to g_pDebugger.
         // 5) later, LS initialization code will assign g_pDebugger->m_fLeftSideInitialized = TRUE.
         //
-        // The memory write in #5 is atomic.  There is no window where we're reading unitialized data.
+        // The memory write in #5 is atomic.  There is no window where we're reading uninitialized data.
 
         return (g_pDebugger->m_fLeftSideInitialized != 0);
     }
@@ -681,7 +681,6 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     }
 
     // Very important that this either sets pStrName or Throws.
-    // Don't set it and then then throw.
     IfFailThrow(hrStatus);
 }
 
@@ -1208,12 +1207,12 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 
     TADDR pTargetIL; // target address of start of IL blob
 
-    // This works for methods in dynamic modules, and methods overriden by a profiler.
+    // This works for methods in dynamic modules, and methods overridden by a profiler.
     pTargetIL = pModule->GetDynamicIL(mdMethodToken, TRUE);
 
-    // Method not overriden - get the original copy of the IL by going to the PE file/RVA
+    // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemend for DAC.
+    // implemented for DAC.
     if (pTargetIL == 0 && !pModule->IsReflection())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
@@ -2876,7 +2875,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
             thCurrent = methodInst[i - cGenericClassTypeParams];
         }
 
-        // There is the possiblity that we'll get this far with a dump and not fail, but still
+        // There is the possibility that we'll get this far with a dump and not fail, but still
         // not be able to get full info for a particular param.
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
         {
@@ -3619,7 +3618,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
 
     // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
     // pLoaderAllocator is DACized. Cast it so we don't try to to a Host to Target translation.
-    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager(TO_TADDR(pLoaderAllocator->GetVirtualCallStubManager()));
+    VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
     LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
     if (pVcsMgr)
     {
@@ -4256,7 +4255,7 @@ bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
 #endif
 }
 
-// Helper to intialize a TargetBuffer from a MemoryRange
+// Helper to initialize a TargetBuffer from a MemoryRange
 //
 // Arguments:
 //    memoryRange - memory range.
@@ -4278,7 +4277,7 @@ void InitTargetBufferFromMemoryRange(const MemoryRange memoryRange, TargetBuffer
     pTargetBuffer->Init(addr, (ULONG)memoryRange.Size());
 }
 
-// Helper to intialize a TargetBuffer (host representation of target) from an SBuffer  (target)
+// Helper to initialize a TargetBuffer (host representation of target) from an SBuffer  (target)
 //
 // Arguments:
 //   pBuffer - target pointer to a SBuffer structure. If pBuffer is NULL, then target buffer will be empty.
@@ -4458,23 +4457,13 @@ void DacDbiInterfaceImpl::EnumerateAppDomains(
 
     _ASSERTE(fpCallback != NULL);
 
-    // Only include active appdomains in the enumeration.
-    // This includes appdomains sent before the AD load event,
-    // and does not include appdomains that are in shutdown after the AD exit event.
-    const BOOL bOnlyActive = TRUE;
-    AppDomainIterator iterator(bOnlyActive);
+    // It's critical that we don't yield appdomains after the unload event has been sent.
+    // See code:IDacDbiInterface#Enumeration for details.
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-    while(iterator.Next())
-    {
-        // It's critical that we don't yield appdomains after the unload event has been sent.
-        // See code:IDacDbiInterface#Enumeration for details.
-        AppDomain * pAppDomain = iterator.GetDomain();
-
-        VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-        vmAppDomain.SetHostPtr(pAppDomain);
-
-        fpCallback(vmAppDomain, pUserData);
-    }
+    VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
+    vmAppDomain.SetHostPtr(pAppDomain);
+    fpCallback(vmAppDomain, pUserData);
 }
 
 // Enumerate all Assemblies in an appdomain.
@@ -5872,7 +5861,7 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
     return hr;
 }
 
-// Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+// Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
 ULONG DacDbiInterfaceImpl::GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle)
 {
     DD_ENTER_MAY_THROW;
@@ -6204,7 +6193,7 @@ void EnumerateBlockingObjectsCallback(PTR_DebugBlockingItem obj, VOID* pUserData
     BlockingObjectUserDataWrapper* wrapper = (BlockingObjectUserDataWrapper*)pUserData;
     DacBlockingObject dacObj;
 
-    // init to an arbitrary value to avoid mac compiler error about unintialized use
+    // init to an arbitrary value to avoid mac compiler error about uninitialized use
     // it will be correctly set in the switch and is never used with only this init here
     dacObj.blockingReason = DacBlockReason_MonitorCriticalSection;
 
@@ -7602,10 +7591,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-    if (mHandleMask & CorHandleWeakNativeCom)
-        result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
@@ -7779,11 +7764,6 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.i64ExtraData = refCnt;
             break;
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-        case HNDTYPE_WEAK_NATIVE_COM:
-            data.dwType = (DWORD)CorHandleWeakNativeCom;
-            break;
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
         case HNDTYPE_DEPENDENT:
             data.dwType = (DWORD)CorHandleStrongDependent;

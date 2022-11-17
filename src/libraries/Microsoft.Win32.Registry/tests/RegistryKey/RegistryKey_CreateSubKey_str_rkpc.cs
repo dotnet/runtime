@@ -145,10 +145,11 @@ namespace Microsoft.Win32.RegistryTests
 
             if (alreadyExists)
             {
-                TestRegistryKey.CreateSubKey(subkey, true, options);
+                TestRegistryKey.CreateSubKey(subkey, true, options).Dispose();
             }
 
-            Assert.NotNull(TestRegistryKey.CreateSubKey(subkey, true, options));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(subkey, true, options);
+            Assert.NotNull(created);
         }
 
         [Theory]
@@ -162,10 +163,11 @@ namespace Microsoft.Win32.RegistryTests
 
             if (alreadyExists)
             {
-                TestRegistryKey.CreateSubKey(subkey, RegistryKeyPermissionCheck.ReadWriteSubTree, options);
+                TestRegistryKey.CreateSubKey(subkey, RegistryKeyPermissionCheck.ReadWriteSubTree, options).Dispose();
             }
 
-            Assert.NotNull(TestRegistryKey.CreateSubKey(subkey, RegistryKeyPermissionCheck.ReadWriteSubTree, options));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(subkey, RegistryKeyPermissionCheck.ReadWriteSubTree, options);
+            Assert.NotNull(created);
         }
 
         [Theory]

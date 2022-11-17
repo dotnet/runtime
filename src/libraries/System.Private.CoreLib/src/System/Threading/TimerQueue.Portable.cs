@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Threading
 {
     //
-    // Unix-specific implementation of Timer
+    // Portable implementation of Timer
     //
     internal sealed partial class TimerQueue : IThreadPoolWorkItem
     {
@@ -40,7 +40,7 @@ namespace System.Threading
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread)
             {
-                Name = ".NET Timers",
+                Name = ".NET Timer",
                 IsBackground = true
             };
             timerThread.UnsafeStart();
@@ -73,7 +73,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// This method is executed on a dedicated a timer thread. Its purpose is
+        /// This method is executed on a dedicated timer thread. Its purpose is
         /// to handle timer requests and notify the TimerQueue when a timer expires.
         /// </summary>
         private static void TimerThread()

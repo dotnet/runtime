@@ -41,7 +41,7 @@ namespace System.Text
             }
         }
 
-        /// <summary>Grows the builder to accomodate another segment.</summary>
+        /// <summary>Grows the builder to accommodate another segment.</summary>
         /// <param name="segment"></param>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void GrowAndAdd(ReadOnlyMemory<char> segment)

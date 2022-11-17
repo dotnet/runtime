@@ -54,11 +54,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString() => $"msg-{sessionId}:::{id}";
 
-        public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ id.GetHashCode();
+        public override int GetHashCode() => id;
 
         public override bool Equals(object obj) => obj is MessageId other && Equals(other);
 
-        public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
+        public bool Equals(MessageId other) => other.id == id;
     }
 
     internal sealed class DotnetObjectId

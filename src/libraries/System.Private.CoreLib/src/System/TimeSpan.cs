@@ -12,11 +12,11 @@ namespace System
     // TimeSpan represents a duration of time.  A TimeSpan can be negative
     // or positive.
     //
-    // TimeSpan is internally represented as a number of milliseconds.  While
-    // this maps well into units of time such as hours and days, any
-    // periods longer than that aren't representable in a nice fashion.
+    // TimeSpan is internally represented as a number of ticks. A tick is equal
+    // to 100 nanoseconds. While this maps well into units of time such as hours
+    // and days, any periods longer than that aren't representable in a nice fashion.
     // For instance, a month can be between 28 and 31 days, while a year
-    // can contain 365 or 364 days.  A decade can have between 1 and 3 leapyears,
+    // can contain 365 or 366 days.  A decade can have between 1 and 3 leapyears,
     // depending on when you map the TimeSpan into the calendar.  This is why
     // we do not provide Years() or Months().
     //
@@ -616,22 +616,22 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(TimeSpan t1, TimeSpan t2) => t1._ticks == t2._ticks;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(TimeSpan t1, TimeSpan t2) => t1._ticks != t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(TimeSpan t1, TimeSpan t2) => t1._ticks < t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(TimeSpan t1, TimeSpan t2) => t1._ticks <= t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(TimeSpan t1, TimeSpan t2) => t1._ticks > t2._ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
     }
 }

@@ -182,9 +182,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
-                    else if (segmentsPatternEndsWith != null)
+                    else
                     {
-                        segmentsPatternEndsWith.Add(segment);
+                        segmentsPatternEndsWith?.Add(segment);
                     }
 
                     allSegments.Add(segment);

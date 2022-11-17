@@ -10,7 +10,7 @@ For more information, see the documentation:
 
 ## Example
 
-The following example shows how print the list of types defined in an assembly.
+The following example shows how to print the list of types defined in an assembly.
 
 ```cs
 using System;

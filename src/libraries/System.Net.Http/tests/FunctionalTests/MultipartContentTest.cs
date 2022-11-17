@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Dispose_Empty_Sucess()
+        public void Dispose_Empty_Success()
         {
             var content = new MultipartContent();
             content.Dispose();

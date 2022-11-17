@@ -25,7 +25,10 @@ namespace System.Security.Cryptography.X509Certificates
 
             SafeX509ChainHandle certChainHandle = Interop.Crypt32.CertDuplicateCertificateChain(chainContext);
             if (certChainHandle == null || certChainHandle.IsInvalid)
+            {
+                certChainHandle?.Dispose();
                 throw new CryptographicException(SR.Cryptography_InvalidContextHandle, nameof(chainContext));
+            }
 
             var pal = new ChainPal(certChainHandle);
             return pal;
@@ -49,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
                     exception = errorCode.ToCryptographicException();
                     return default(bool?);
                 }
@@ -116,9 +119,11 @@ namespace System.Security.Cryptography.X509Certificates
         public void Dispose()
         {
             SafeX509ChainHandle? chain = _chain;
-            _chain = null!;
             if (chain != null)
+            {
+                _chain = null!;
                 chain.Dispose();
+            }
         }
     }
 }

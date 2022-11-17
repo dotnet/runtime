@@ -16,8 +16,8 @@
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
-#include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
 #include "utils.hpp"
@@ -1055,8 +1055,19 @@ namespace BINDER_SPACE
         {
             if (pContextEntry == NULL)
             {
+                hr = S_OK; // FindInExecutionContext returns S_FALSE when not found - reset to S_OK
+                SAFE_NEW(pContextEntry, ContextEntry);
+
+                pContextEntry->SetIsInTPA(pBindResult->GetIsInTPA());
+                pContextEntry->SetAssemblyName(pBindResult->GetAssemblyName(), TRUE /* fAddRef */);
+                pContextEntry->SetAssembly(pBindResult->GetAssembly());
+                if (pBindResult->GetIsFirstRequest())
+                {
+                    pContextEntry->SetIsFirstRequest(TRUE);
+                }
+
                 ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
-                IF_FAIL_GO(pExecutionContext->Register(pBindResult));
+                pExecutionContext->Add(pContextEntry);
             }
             else
             {
@@ -1089,7 +1100,7 @@ namespace BINDER_SPACE
                 // Lock the application context
                 CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-                // Only perform costly validation if other binds succeded before us
+                // Only perform costly validation if other binds succeeded before us
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
                     IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,

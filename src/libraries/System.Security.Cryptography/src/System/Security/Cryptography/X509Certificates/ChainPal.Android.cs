@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class ChainPal
     {
+#pragma warning disable IDE0060
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return chainPal;
+#pragma warning restore IDE0060
         }
 
         private sealed class AndroidCertPath : IChainPal
@@ -64,10 +66,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             public void Dispose()
             {
-                if (_chainContext != null)
-                {
-                    _chainContext.Dispose();
-                }
+                _chainContext?.Dispose();
             }
 
             public bool? Verify(X509VerificationFlags flags, out Exception? exception)

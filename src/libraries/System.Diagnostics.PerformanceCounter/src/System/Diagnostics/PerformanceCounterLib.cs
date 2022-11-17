@@ -271,8 +271,6 @@ namespace System.Diagnostics
                     {
                         if (s_symbolFilePath == null)
                         {
-                            Path.GetTempPath();
-
                             try
                             {
                                 s_symbolFilePath = Path.GetTempFileName();
@@ -627,8 +625,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (serviceKey != null)
-                    serviceKey.Close();
+                serviceKey?.Close();
             }
         }
 
@@ -738,10 +735,8 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (key != null)
-                        key.Close();
-                    if (baseKey != null)
-                        baseKey.Close();
+                    key?.Close();
+                    baseKey?.Close();
                 }
             }
 
@@ -974,22 +969,10 @@ namespace System.Diagnostics
 
         private static string[] GetLanguageIds()
         {
-            RegistryKey libraryParentKey = null;
-            string[] ids = Array.Empty<string>();
-            try
-            {
-                libraryParentKey = Registry.LocalMachine.OpenSubKey(PerflibPath);
-
-                if (libraryParentKey != null)
-                    ids = libraryParentKey.GetSubKeyNames();
-            }
-            finally
-            {
-                if (libraryParentKey != null)
-                    libraryParentKey.Close();
-            }
-
-            return ids;
+            using RegistryKey libraryParentKey = Registry.LocalMachine.OpenSubKey(PerflibPath);
+            return libraryParentKey != null ?
+                libraryParentKey.GetSubKeyNames() :
+                Array.Empty<string>();
         }
 
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
@@ -1296,8 +1279,7 @@ namespace System.Diagnostics
 
         internal void Close()
         {
-            if (perfDataKey != null)
-                perfDataKey.Close();
+            perfDataKey?.Close();
 
             perfDataKey = null;
         }

@@ -4,24 +4,24 @@
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Determines the kind of contract metadata a given JsonTypeInfo instance is customizing
+    /// Determines the kind of contract metadata a given <see cref="JsonTypeInfo"/> is specifying.
     /// </summary>
     public enum JsonTypeInfoKind
     {
         /// <summary>
-        /// Type is either a primitive value or uses a custom converter. JsonTypeInfo metadata does not apply here.
+        /// Type is either a simple value or uses a custom converter.
         /// </summary>
         None = 0,
         /// <summary>
-        /// Type is serialized as object with properties
+        /// Type is serialized as an object with properties.
         /// </summary>
         Object = 1,
         /// <summary>
-        /// Type is serialized as a collection with elements
+        /// Type is serialized as a collection with elements.
         /// </summary>
         Enumerable = 2,
         /// <summary>
-        /// Type is serialized as a dictionary with key/value pair entries
+        /// Type is serialized as a dictionary with key/value pair entries.
         /// </summary>
         Dictionary = 3
     }

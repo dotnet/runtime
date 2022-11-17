@@ -23,8 +23,8 @@ namespace DebuggerTests
 
         //FIXME: function name
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("ContinueWithStaticAsync", "<ContinueWithStaticAsync>b__3_0")]
-        [InlineData("ContinueWithInstanceAsync", "<ContinueWithInstanceAsync>b__5_0")]
+        [InlineData("ContinueWithStaticAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithStaticAsync.AnonymousMethod__3_0")]
+        [InlineData("ContinueWithInstanceAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceAsync.AnonymousMethod__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", method_name, 5, expected_method_name,
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -45,7 +45,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
-             "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "<ContinueWithInstanceUsingThisAsync>b__6_0",
+             "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
@@ -67,7 +67,7 @@ namespace DebuggerTests
 
          [Fact] // NestedContinueWith
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
-              "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "MoveNext",
+              "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
               wait_for_event_fn: async (pause_location) =>
               {

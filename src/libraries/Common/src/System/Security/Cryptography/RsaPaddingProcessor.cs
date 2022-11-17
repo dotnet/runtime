@@ -52,10 +52,8 @@ namespace System.Security.Cryptography
         {
             if (hashAlgorithmName == HashAlgorithmName.MD5)
             {
-#pragma warning disable CA1416 // Unsupported on Browser. We just want the const here.
                 digestLengthInBytes = MD5.HashSizeInBytes;
                 return DigestInfoMD5;
-#pragma warning restore CA1416
             }
             else if (hashAlgorithmName == HashAlgorithmName.SHA1)
             {

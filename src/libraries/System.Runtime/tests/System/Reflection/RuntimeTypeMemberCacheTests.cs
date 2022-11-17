@@ -95,10 +95,10 @@ namespace System.Reflection.Tests
             Type t = typeof(Test);
             ConstructorInfo constructor3 = t.GetConstructor(new Type[] { typeof(string) });
             Assert.NotNull(constructor3);
-            ConstructorInfo[] constuctors = t.GetConstructors();
-            Assert.Equal(typeof(int), constuctors[0].GetParameters()[0].ParameterType);
-            Assert.Equal(0, constuctors[1].GetParameters().Length);
-            Assert.Equal(constructor3, constuctors[2]);
+            ConstructorInfo[] constructors = t.GetConstructors();
+            Assert.Equal(typeof(int), constructors[0].GetParameters()[0].ParameterType);
+            Assert.Equal(0, constructors[1].GetParameters().Length);
+            Assert.Equal(constructor3, constructors[2]);
         }
 
         [Fact]

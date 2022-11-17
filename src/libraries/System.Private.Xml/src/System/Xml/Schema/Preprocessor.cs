@@ -488,10 +488,7 @@ namespace System.Xml.Schema
                 {
                     import = (include as XmlSchemaImport)!;
                     ns = import.Namespace;
-                    if (ns == null)
-                    {
-                        ns = string.Empty;
-                    }
+                    ns ??= string.Empty;
                     if (_referenceNamespaces[ns] == null)
                         _referenceNamespaces.Add(ns, ns);
                 }

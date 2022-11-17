@@ -313,6 +313,10 @@ namespace ILCompiler.PEWriter
                     _codePadding = 0xD43E0000u;
                     break;
 
+                case TargetArchitecture.LoongArch64:
+                    _codePadding = 0x002A0005u;
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

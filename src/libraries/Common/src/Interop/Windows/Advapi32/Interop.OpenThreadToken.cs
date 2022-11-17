@@ -30,6 +30,7 @@ internal static partial class Interop
             if (openAs == WinSecurityContext.Both)
             {
                 openAsSelf = false;
+                tokenHandle.Dispose();
                 if (OpenThreadToken(Kernel32.GetCurrentThread(), desiredAccess, openAsSelf, out tokenHandle))
                     return true;
             }

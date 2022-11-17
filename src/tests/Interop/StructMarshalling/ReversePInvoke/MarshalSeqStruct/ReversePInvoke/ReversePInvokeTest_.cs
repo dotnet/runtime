@@ -28,7 +28,7 @@ public class MarshalStructTest
         StringStructSequentialUnicodeId,
         S8Id,
         S9Id,
-        IncludeOuterIntergerStructSequentialId,
+        IncludeOuterIntegerStructSequentialId,
         S11Id,
         ComplexStructId,
         ByteStruct3Byte
@@ -1092,20 +1092,20 @@ public class MarshalStructTest
 
     #endregion
 
-    #region Methods for the struct IncludeOuterIntergerStructSequential declaration
+    #region Methods for the struct IncludeOuterIntegerStructSequential declaration
 
     #region PassByRef
 
     //For Reverse Pinvoke ByRef
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate bool IncludeOuterIntergerStructSequentialByRefCdeclcaller([In, Out]ref IncludeOuterIntergerStructSequential argStr);
-    private static bool TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_Cdecl(ref IncludeOuterIntergerStructSequential argstr)
+    public delegate bool IncludeOuterIntegerStructSequentialByRefCdeclcaller([In, Out]ref IncludeOuterIntegerStructSequential argStr);
+    private static bool TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_Cdecl(ref IncludeOuterIntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Ref,Cdecl");
-        IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
+        IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
         //Check the input
-        Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(argstr,
-            changeIncludeOuterIntergerStructSequential, "TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_Cdecl"));
+        Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(argstr,
+            changeIncludeOuterIntegerStructSequential, "TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_Cdecl"));
         //Chanage the value
         argstr.s.s_int.i = 32;
         argstr.s.i = 32;
@@ -1113,14 +1113,14 @@ public class MarshalStructTest
     }
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate bool IncludeOuterIntergerStructSequentialByRefStdCallcaller([In, Out]ref IncludeOuterIntergerStructSequential argStr);
-    private static bool TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_StdCall(ref IncludeOuterIntergerStructSequential argstr)
+    public delegate bool IncludeOuterIntegerStructSequentialByRefStdCallcaller([In, Out]ref IncludeOuterIntegerStructSequential argStr);
+    private static bool TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_StdCall(ref IncludeOuterIntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Ref,StdCall");
-        IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
+        IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
         //Check the input
-        Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(argstr,
-            changeIncludeOuterIntergerStructSequential, "TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_Cdecl"));
+        Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(argstr,
+            changeIncludeOuterIntegerStructSequential, "TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_Cdecl"));
         //Chanage the value
         argstr.s.s_int.i = 32;
         argstr.s.i = 32;
@@ -1129,10 +1129,10 @@ public class MarshalStructTest
 
     //Reverse Pinvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl(IncludeOuterIntergerStructSequentialByRefCdeclcaller caller);
+    public static extern bool DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl(IncludeOuterIntegerStructSequentialByRefCdeclcaller caller);
     //Reverse Pinvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
-    public static extern bool DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall(IncludeOuterIntergerStructSequentialByRefStdCallcaller caller);
+    public static extern bool DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall(IncludeOuterIntegerStructSequentialByRefStdCallcaller caller);
 
     #endregion
 
@@ -1140,14 +1140,14 @@ public class MarshalStructTest
 
     //For Reverse Pinvoke ByVal
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IncludeOuterIntergerStructSequential IncludeOuterIntergerStructSequentialByValCdeclcaller([In, Out] IncludeOuterIntergerStructSequential argStr);
-    private static IncludeOuterIntergerStructSequential TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_Cdecl(IncludeOuterIntergerStructSequential argstr)
+    public delegate IncludeOuterIntegerStructSequential IncludeOuterIntegerStructSequentialByValCdeclcaller([In, Out] IncludeOuterIntegerStructSequential argStr);
+    private static IncludeOuterIntegerStructSequential TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_Cdecl(IncludeOuterIntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Value,Cdecl");
-        IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
+        IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
         //Check the input
-        Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(argstr,
-            changeIncludeOuterIntergerStructSequential, "TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_Cdecl"));
+        Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(argstr,
+            changeIncludeOuterIntegerStructSequential, "TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_Cdecl"));
         //Chanage the value
         argstr.s.s_int.i = 32;
         argstr.s.i = 32;
@@ -1155,14 +1155,14 @@ public class MarshalStructTest
     }
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate IncludeOuterIntergerStructSequential IncludeOuterIntergerStructSequentialByValStdCallcaller([In, Out] IncludeOuterIntergerStructSequential argStr);
-    private static IncludeOuterIntergerStructSequential TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_StdCall(IncludeOuterIntergerStructSequential argstr)
+    public delegate IncludeOuterIntegerStructSequential IncludeOuterIntegerStructSequentialByValStdCallcaller([In, Out] IncludeOuterIntegerStructSequential argStr);
+    private static IncludeOuterIntegerStructSequential TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_StdCall(IncludeOuterIntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Value,StdCall");
-        IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
+        IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
         //Check the input
-        Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(argstr,
-            changeIncludeOuterIntergerStructSequential, "TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_StdCall"));
+        Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(argstr,
+            changeIncludeOuterIntegerStructSequential, "TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_StdCall"));
         //Chanage the value
         argstr.s.s_int.i = 32;
         argstr.s.i = 32;
@@ -1171,10 +1171,10 @@ public class MarshalStructTest
 
     //Reverse Pinvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl(IncludeOuterIntergerStructSequentialByValCdeclcaller caller);
+    public static extern bool DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl(IncludeOuterIntegerStructSequentialByValCdeclcaller caller);
     //Reverse Pinvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
-    public static extern bool DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall(IncludeOuterIntergerStructSequentialByValStdCallcaller caller);
+    public static extern bool DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall(IncludeOuterIntegerStructSequentialByValStdCallcaller caller);
 
     #endregion
 
@@ -1412,28 +1412,28 @@ public class MarshalStructTest
 
     //For Reverse Pinvoke ByVal
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IntergerStructSequential IntergerStructSequentialByValCdeclcaller([In, Out] IntergerStructSequential argStr);
-    private static IntergerStructSequential TestMethodForStructIntergerStructSequential_ReversePInvokeByVal_Cdecl(IntergerStructSequential argstr)
+    public delegate IntegerStructSequential IntegerStructSequentialByValCdeclcaller([In, Out] IntegerStructSequential argStr);
+    private static IntegerStructSequential TestMethodForStructIntegerStructSequential_ReversePInvokeByVal_Cdecl(IntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Value,Cdecl");
-        IntergerStructSequential changeIntergerStructSequential = Helper.NewIntergerStructSequential(64);
+        IntegerStructSequential changeIntegerStructSequential = Helper.NewIntegerStructSequential(64);
         //Check the input
-        Assert.True(Helper.ValidateIntergerStructSequential(argstr,
-            changeIntergerStructSequential, "TestMethodForStructIntergerStructSequential_ReversePInvokeByVal_Cdecl"));
+        Assert.True(Helper.ValidateIntegerStructSequential(argstr,
+            changeIntegerStructSequential, "TestMethodForStructIntegerStructSequential_ReversePInvokeByVal_Cdecl"));
         //Chanage the value
         argstr.i = 32;
         return argstr;
     }
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate IntergerStructSequential IntergerStructSequentialByValStdCallcaller([In, Out] IntergerStructSequential argStr);
-    private static IntergerStructSequential TestMethodForStructIntergerStructSequential_ReversePInvokeByVal_StdCall(IntergerStructSequential argstr)
+    public delegate IntegerStructSequential IntegerStructSequentialByValStdCallcaller([In, Out] IntegerStructSequential argStr);
+    private static IntegerStructSequential TestMethodForStructIntegerStructSequential_ReversePInvokeByVal_StdCall(IntegerStructSequential argstr)
     {
         Console.WriteLine("ReversePinvoke,By Value,StdCall");
-        IntergerStructSequential changeIntergerStructSequential = Helper.NewIntergerStructSequential(64);
+        IntegerStructSequential changeIntegerStructSequential = Helper.NewIntegerStructSequential(64);
         //Check the input
-        Assert.True(Helper.ValidateIntergerStructSequential(argstr,
-            changeIntergerStructSequential, "TestMethodForStructIntergerStructSequential_ReversePInvokeByVal_StdCall"));
+        Assert.True(Helper.ValidateIntegerStructSequential(argstr,
+            changeIntegerStructSequential, "TestMethodForStructIntegerStructSequential_ReversePInvokeByVal_StdCall"));
         //Chanage the value
         argstr.i = 32;
         return argstr;
@@ -1441,10 +1441,10 @@ public class MarshalStructTest
 
     //Reverse Pinvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool DoCallBack_MarshalStructIntergerStructSequentialByVal_Cdecl(IntergerStructSequentialByValCdeclcaller caller);
+    public static extern bool DoCallBack_MarshalStructIntegerStructSequentialByVal_Cdecl(IntegerStructSequentialByValCdeclcaller caller);
     //Reverse Pinvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
-    public static extern bool DoCallBack_MarshalStructIntergerStructSequentialByVal_StdCall(IntergerStructSequentialByValStdCallcaller caller);
+    public static extern bool DoCallBack_MarshalStructIntegerStructSequentialByVal_StdCall(IntegerStructSequentialByValStdCallcaller caller);
 
     #region Methods implementation
 
@@ -1506,10 +1506,10 @@ public class MarshalStructTest
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS9ByRef_Cdecl...");
                 Assert.True(DoCallBack_MarshalStructS9ByRef_Cdecl(new S9ByRefCdeclcaller(TestMethodForStructS9_ReversePInvokeByRef_Cdecl)));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl...");
-                Assert.True(DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl(
-                    new IncludeOuterIntergerStructSequentialByRefCdeclcaller(TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_Cdecl)));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl...");
+                Assert.True(DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl(
+                    new IncludeOuterIntegerStructSequentialByRefCdeclcaller(TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_Cdecl)));
                 break;
             case StructID.S11Id:
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS11ByRef_Cdecl...");
@@ -1578,10 +1578,10 @@ public class MarshalStructTest
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS9ByRef_StdCall...");
                 Assert.True(DoCallBack_MarshalStructS9ByRef_StdCall(new S9ByRefStdCallcaller(TestMethodForStructS9_ReversePInvokeByRef_StdCall)));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall...");
-                Assert.True(DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall(
-                    new IncludeOuterIntergerStructSequentialByRefStdCallcaller(TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByRef_StdCall)));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall...");
+                Assert.True(DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall(
+                    new IncludeOuterIntegerStructSequentialByRefStdCallcaller(TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByRef_StdCall)));
                 break;
             case StructID.S11Id:
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS11ByRef_StdCall...");
@@ -1607,7 +1607,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.StringStructSequentialUnicodeId);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S8Id);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S9Id);
-        TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S11Id);
     }
 
@@ -1625,7 +1625,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.StringStructSequentialUnicodeId);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S8Id);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S9Id);
-        TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S11Id);
     }
 
@@ -1687,10 +1687,10 @@ public class MarshalStructTest
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS9ByVal_Cdecl...");
                 Assert.True(DoCallBack_MarshalStructS9ByVal_Cdecl(new S9ByValCdeclcaller(TestMethodForStructS9_ReversePInvokeByVal_Cdecl)));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl...");
-                Assert.True(DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl(
-                    new IncludeOuterIntergerStructSequentialByValCdeclcaller(TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_Cdecl)));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl...");
+                Assert.True(DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl(
+                    new IncludeOuterIntegerStructSequentialByValCdeclcaller(TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_Cdecl)));
                 break;
             case StructID.S11Id:
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS11ByVal_Cdecl...");
@@ -1764,10 +1764,10 @@ public class MarshalStructTest
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS9ByVal_StdCall...");
                 Assert.True(DoCallBack_MarshalStructS9ByVal_StdCall(new S9ByValStdCallcaller(TestMethodForStructS9_ReversePInvokeByVal_StdCall)));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall...");
-                Assert.True(DoCallBack_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall(
-                    new IncludeOuterIntergerStructSequentialByValStdCallcaller(TestMethodForStructIncludeOuterIntergerStructSequential_ReversePInvokeByVal_StdCall)));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                Console.WriteLine("Calling ReversePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall...");
+                Assert.True(DoCallBack_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall(
+                    new IncludeOuterIntegerStructSequentialByValStdCallcaller(TestMethodForStructIncludeOuterIntegerStructSequential_ReversePInvokeByVal_StdCall)));
                 break;
             case StructID.S11Id:
                 Console.WriteLine("Calling ReversePInvoke_MarshalStructS11ByVal_StdCall...");
@@ -1798,7 +1798,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.StringStructSequentialUnicodeId);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S8Id);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S9Id);
-        TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
         if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !OperatingSystem.IsWindows())
@@ -1821,7 +1821,7 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.StringStructSequentialUnicodeId);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S8Id);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S9Id);
-        TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
         if ((RuntimeInformation.ProcessArchitecture != Architecture.X86) || !OperatingSystem.IsWindows())

@@ -1262,7 +1262,22 @@ namespace System
             return GetBaseType() == typeof(System.MulticastDelegate);
         }
 
+        protected override bool IsValueTypeImpl()
+        {
+            // We need to return true for generic parameters with the ValueType constraint.
+            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
+            // false for all generic parameters.
+            if (this == typeof(ValueType) || this == typeof(Enum))
+                return false;
+
+            return IsSubclassOf(typeof(ValueType));
+        }
+
+        // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
+
+        // Returns true for actual enum types only.
+        internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -1752,9 +1767,9 @@ namespace System
         }
 
         // Stub method to allow for shared code with CoreClr.
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
 
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other

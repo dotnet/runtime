@@ -86,7 +86,7 @@ namespace System.Threading.RateLimiting
 
         private void Tick()
         {
-            var continuation = Interlocked.Exchange(ref _callback, _callbackCompleted);
+            Action? continuation = Interlocked.Exchange(ref _callback, _callbackCompleted);
             continuation?.Invoke();
         }
 

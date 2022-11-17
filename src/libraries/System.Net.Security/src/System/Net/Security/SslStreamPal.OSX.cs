@@ -31,6 +31,7 @@ namespace System.Net.Security
         {
         }
 
+#pragma warning disable IDE0060
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
@@ -38,19 +39,19 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
+            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
-            string? targetName,
+            string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
+            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
         public static SecurityStatusPal Renegotiate(
@@ -62,20 +63,18 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
-            SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols,
-            EncryptionPolicy policy,
-            bool isServer)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
+            return null;
         }
+
+#pragma warning restore IDE0060
 
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
-            int headerSize,
-            int trailerSize,
+            int _ /*headerSize*/,
+            int _1 /*trailerSize*/,
             ref byte[] output,
             out int resultSize)
         {
@@ -207,7 +206,7 @@ namespace System.Net.Security
         }
 
         public static void QueryContextStreamSizes(
-            SafeDeleteContext? securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
@@ -221,22 +220,19 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            Debug.Assert(!credential.IsInvalid);
-
             try
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
                 if ((null == context) || context.IsInvalid)
                 {
-                    sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
+                    sslContext = new SafeDeleteSslContext(sslAuthenticationOptions);
                     context = sslContext;
                 }
 
@@ -300,8 +296,8 @@ namespace System.Net.Security
             }
         }
 
+#pragma warning disable IDE0060
         public static SecurityStatusPal ApplyAlertToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
@@ -311,9 +307,9 @@ namespace System.Net.Security
             // SSLHandshake.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteSslContext securityContext)
         {
             SafeSslHandle sslHandle = securityContext.SslContext;

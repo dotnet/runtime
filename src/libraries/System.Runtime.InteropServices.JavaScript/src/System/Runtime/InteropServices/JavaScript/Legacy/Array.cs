@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
@@ -29,20 +31,20 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Push the specified elements.
         /// </summary>
-        /// <returns>The new length of the Array push was called on</returns>
+        /// <returns>The new length of the Array push was called on.</returns>
         /// <param name="elements">Elements.</param>
         public int Push(params object[] elements) => (int)this.Invoke("push", elements);
 
         /// <summary>
         /// Pop this instance.
         /// </summary>
-        /// <returns>The element removed from the array or null if the array was empty</returns>
+        /// <returns>The element removed from the array or null if the array was empty.</returns>
         public object Pop() => (object)this.Invoke("pop");
 
         /// <summary>
         /// Remove the first element of the Array and return that element
         /// </summary>
-        /// <returns>The removed element</returns>
+        /// <returns>The removed element.</returns>
         public object Shift() => this.Invoke("shift");
 
         /// <summary>
@@ -55,15 +57,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Index of the search element.
         /// </summary>
-        /// <returns>The index of first occurrence of searchElement in the Array or -1 if not Found</returns>
+        /// <returns>The index of first occurrence of searchElement in the Array or -1 if not Found.</returns>
         /// <param name="searchElement">Search element.</param>
-        /// <param name="fromIndex">The index to start the search from</param>
+        /// <param name="fromIndex">The index to start the search from.</param>
         public int IndexOf(object searchElement, int fromIndex = 0) => (int)this.Invoke("indexOf", searchElement, fromIndex);
 
         /// <summary>
         /// Finds the index of the last occurrence of<paramref name="searchElement" />
         /// </summary>
-        /// <returns>The index of the last occurrence</returns>
+        /// <returns>The index of the last occurrence.</returns>
         /// <param name="searchElement">Search element.</param>
         public int LastIndexOf(object searchElement) => (int)this.Invoke("lastIndexOf", searchElement);
 
@@ -81,6 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="i">The index.</param>
         public object this[int i]
         {
+            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             get
             {
                 this.AssertNotDisposed();
@@ -92,6 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSHostImplementation.ReleaseInFlight(indexValue);
                 return indexValue;
             }
+            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             set
             {
                 this.AssertNotDisposed();

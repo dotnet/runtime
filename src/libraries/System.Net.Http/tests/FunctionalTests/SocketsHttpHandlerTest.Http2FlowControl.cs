@@ -30,7 +30,6 @@ namespace System.Net.Http.Functional.Tests
         private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task InitialHttp2StreamWindowSize_SentInSettingsFrame()
         {
             const int WindowSize = 123456;
@@ -50,7 +49,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(0)] // Invalid PING payload
         [InlineData(1)] // Unexpected PING response
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public Task BadRttPingResponse_RequestShouldFail(int mode)
         {
             return Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -86,7 +84,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
         {
             int maxCredit = await TestClientWindowScalingAsync(
@@ -100,8 +97,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
@@ -121,8 +117,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
         {
             const int MaxWindow = 654321;
@@ -145,8 +140,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()
@@ -167,8 +161,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
         {
             static async Task RunTest()

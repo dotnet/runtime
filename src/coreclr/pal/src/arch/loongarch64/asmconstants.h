@@ -4,7 +4,7 @@
 #ifndef __PAL_LOONGARCH64_ASMCONSTANTS_H__
 #define __PAL_LOONGARCH64_ASMCONSTANTS_H__
 
-//Please refence "src/pal/inc/pal.h"
+// Please refer to src/coreclr/pal/inc/pal.h
 #define CONTEXT_LOONGARCH64   0x00800000
 
 #define CONTEXT_CONTROL_BIT (0)
@@ -23,7 +23,7 @@
 #define SIZEOF_LOONGARCH_FPR 8
 
 #define CONTEXT_ContextFlags 0
-//Note: Here CONTEXT_ContextFlags+8 for memory algin.
+// Note: Here CONTEXT_ContextFlags+8 for memory algin.
 #define CONTEXT_R0          CONTEXT_ContextFlags+SIZEOF_LOONGARCH_GPR
 #define CONTEXT_Ra          CONTEXT_R0+SIZEOF_LOONGARCH_GPR
 #define CONTEXT_Tp          CONTEXT_Ra+SIZEOF_LOONGARCH_GPR

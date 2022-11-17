@@ -307,7 +307,7 @@ namespace System.ComponentModel
                 }
             }
 
-            // When looking only at a type, we need to recurse up the inheritence
+            // When looking only at a type, we need to recurse up the inheritance
             // chain, however, we can't give out the license, since this may be
             // from more than one provider.
             if (isValid && instance == null)

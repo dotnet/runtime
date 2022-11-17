@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop.UnitTests;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -27,16 +28,21 @@ partial class C
     public static partial S Method();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -80,16 +86,21 @@ partial class C
     public static partial S Method();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -123,7 +134,6 @@ partial class C
         {
             yield return new object[] { TestTargetFramework.Net, true };
             yield return new object[] { TestTargetFramework.Net6, true };
-            yield return new object[] { TestTargetFramework.Net5, true };
             yield return new object[] { TestTargetFramework.Core, false };
             yield return new object[] { TestTargetFramework.Standard, false };
             yield return new object[] { TestTargetFramework.Framework, false };
@@ -173,16 +183,21 @@ partial class C
     public static partial S Method();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -207,16 +222,21 @@ partial class C
     public static partial S Method();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -241,16 +261,21 @@ partial class C
     public static partial S Method();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 

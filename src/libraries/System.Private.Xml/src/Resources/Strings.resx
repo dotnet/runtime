@@ -514,7 +514,7 @@
     <value>Object type is not supported.</value>
   </data>
   <data name="Xml_NullResolver" xml:space="preserve">
-    <value>Resolving of external URIs was prohibited.</value>
+    <value>Resolving of external URIs was prohibited. Attempted access to: {0}</value>
   </data>
   <data name="Xml_RelativeUriNotSupported" xml:space="preserve">
     <value>Relative URIs are not supported.</value>
@@ -2565,13 +2565,13 @@
   <data name="XmlChoiceIdentifierTypeEnum" xml:space="preserve">
     <value>Choice identifier '{0}' must be an enum.</value>
   </data>
-  <data name="XmlChoiceIdentiferMemberMissing" xml:space="preserve">
+  <data name="XmlChoiceIdentifierMemberMissing" xml:space="preserve">
     <value>Missing '{0}' member needed for serialization of choice '{1}'.</value>
   </data>
-  <data name="XmlChoiceIdentiferAmbiguous" xml:space="preserve">
+  <data name="XmlChoiceIdentifierAmbiguous" xml:space="preserve">
     <value>Ambiguous choice identifier. There are several members named '{0}'.</value>
   </data>
-  <data name="XmlChoiceIdentiferMissing" xml:space="preserve">
+  <data name="XmlChoiceIdentifierMissing" xml:space="preserve">
     <value>You need to add {0} to the '{1}' member.</value>
   </data>
   <data name="XmlChoiceMissingValue" xml:space="preserve">

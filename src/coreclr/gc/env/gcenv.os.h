@@ -355,7 +355,7 @@ public:
     static bool GetCurrentThreadIdealProc(uint16_t* procNo);
 
     // Get numeric id of the current thread if possible on the
-    // current platform. It is indended for logging purposes only.
+    // current platform. It is intended for logging purposes only.
     // Return:
     //  Numeric id of the current thread or 0 if the
     static uint64_t GetCurrentThreadIdForLogging();
@@ -461,7 +461,7 @@ public:
     // Get a time stamp with a low precision
     // Return:
     //  Time stamp in milliseconds
-    static uint32_t GetLowPrecisionTimeStamp();
+    static uint64_t GetLowPrecisionTimeStamp();
 
     // Gets the total number of processors on the machine, not taking
     // into account current process affinity.

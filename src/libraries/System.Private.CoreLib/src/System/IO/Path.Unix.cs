@@ -28,7 +28,7 @@ namespace System.IO
             ArgumentException.ThrowIfNullOrEmpty(path);
 
             if (path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                throw new ArgumentException(SR.Argument_NullCharInPath, nameof(path));
 
             return GetFullPathInternal(path);
         }
@@ -42,7 +42,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 
             if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_NullCharInPath);
 
             if (IsPathFullyQualified(path))
                 return GetFullPathInternal(path);
@@ -62,8 +62,7 @@ namespace System.IO
                 path = Combine(Interop.Sys.GetCwd(), path);
             }
 
-            // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
-            // and turns it into a full path, which we only want if fullCheck is true.
+            // We would ideally use realpath to do this, but it resolves symlinks and requires that the file actually exist.
             string collapsedString = PathInternal.RemoveRelativeSegments(path, PathInternal.GetRootLength(path));
 
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
@@ -93,23 +92,33 @@ namespace System.IO
                 path + PathInternal.DirectorySeparatorChar;
         }
 
-        public static string GetTempFileName()
+        public static unsafe string GetTempFileName()
         {
-            const string Suffix = ".tmp";
-            const int SuffixByteLength = 4;
+            const int SuffixByteLength = 4; // ".tmp"
+            ReadOnlySpan<byte> fileTemplate = "tmpXXXXXX.tmp"u8;
 
             // mkstemps takes a char* and overwrites the XXXXXX with six characters
             // that'll result in a unique file name.
-            string template = GetTempPath() + "tmpXXXXXX" + Suffix + "\0";
-            byte[] name = Encoding.UTF8.GetBytes(template);
+            string tempPath = Path.GetTempPath();
+            int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
+            int totalByteCount = tempPathByteCount + fileTemplate.Length + 1;
+
+            Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
+            int pos = Encoding.UTF8.GetBytes(tempPath, path);
+            fileTemplate.CopyTo(path.Slice(pos));
+            path[^1] = 0;
 
             // Create, open, and close the temp file.
-            IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(name, SuffixByteLength));
-            Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
+            fixed (byte* pPath = path)
+            {
+                // if this returns ENOENT it's because TMPDIR doesn't exist, so isDirError:true
+                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength), tempPath, isDirError:true);
+                Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
+            }
 
-            // 'name' is now the name of the file
-            Debug.Assert(name[name.Length - 1] == '\0');
-            return Encoding.UTF8.GetString(name, 0, name.Length - 1); // trim off the trailing '\0'
+            // 'path' is now the name of the file
+            Debug.Assert(path[^1] == 0);
+            return Encoding.UTF8.GetString(path.Slice(0, path.Length - 1)); // trim off the trailing '\0'
         }
 
         public static bool IsPathRooted([NotNullWhen(true)] string? path)

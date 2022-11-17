@@ -460,6 +460,21 @@ namespace System.Security.Cryptography.X509Certificates
             return serialNumber;
         }
 
+        /// <summary>
+        ///   Gets a value whose contents represent the big-endian representation of the
+        ///   certificate's serial number.
+        /// </summary>
+        /// <value>The big-endian representation of the certificate's serial number.</value>
+        public ReadOnlyMemory<byte> SerialNumberBytes
+        {
+            get
+            {
+                ThrowIfInvalid();
+
+                return GetRawSerialNumber();
+            }
+        }
+
         public virtual string GetSerialNumberString()
         {
             ThrowIfInvalid();

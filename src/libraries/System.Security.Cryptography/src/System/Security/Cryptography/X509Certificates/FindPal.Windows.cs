@@ -395,7 +395,9 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (findResults.IsInvalid)
             {
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                findResults.Dispose();
+                throw e;
             }
 
             SafeCertContextHandle? pCertContext = null;
@@ -417,7 +419,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (!Interop.Crypt32.CertAddCertificateLinkToStore(findResults, pCertContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                 {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
             }
 

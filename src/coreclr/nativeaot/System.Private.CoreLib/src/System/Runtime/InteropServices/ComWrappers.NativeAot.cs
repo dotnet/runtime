@@ -465,6 +465,7 @@ namespace System.Runtime.InteropServices
             return (ComInterfaceDispatch*)comObject;
         }
 
+#pragma warning disable IDE0060
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
@@ -541,6 +542,7 @@ namespace System.Runtime.InteropServices
 
             return true;
         }
+#pragma warning restore IDE0060
 
         private void RemoveRCWFromCache(IntPtr comPointer)
         {
@@ -614,7 +616,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForMarshalling == null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
             return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.None);
@@ -640,7 +642,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForMarshalling == null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
             return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.Unwrap);

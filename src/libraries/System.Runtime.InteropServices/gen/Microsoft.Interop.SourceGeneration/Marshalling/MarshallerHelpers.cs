@@ -147,6 +147,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+        }
+
         /// <summary>
         /// Generate a topologically sorted collection of elements.
         /// </summary>
@@ -272,16 +277,59 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo_V1 nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {
-                    yield return nestedCountElement;
+                    // Do not include dependent elements with no managed or native index.
+                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
+                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                    {
+                        yield return nestedCountElement;
+                    }
                 }
-                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
                 {
-                    yield return nestedElements;
+                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
+                    {
+                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                        {
+                            yield return nestedElement;
+                        }
+                    }
                 }
+            }
+        }
+
+        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
+        {
+            (TargetFramework fmk, _) = context.GetTargetFramework();
+            if (info.ManagedType is not PointerTypeInfo
+                && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
+                && fmk is TargetFramework.Net)
+            {
+                // Use the Unsafe.SkipInit<T> API when available and
+                // managed type is usable as a generic parameter.
+                return ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                            IdentifierName("SkipInit")))
+                    .WithArgumentList(
+                        ArgumentList(SingletonSeparatedList(
+                            Argument(IdentifierName(info.InstanceIdentifier))
+                            .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
+            }
+            else
+            {
+                // Assign out params to default
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(info.InstanceIdentifier),
+                        LiteralExpression(
+                            SyntaxKind.DefaultLiteralExpression,
+                            Token(SyntaxKind.DefaultKeyword))));
             }
         }
     }

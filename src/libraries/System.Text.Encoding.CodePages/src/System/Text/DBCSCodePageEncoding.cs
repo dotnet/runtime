@@ -1171,8 +1171,7 @@ namespace System.Text
             public override void Reset()
             {
                 bLeftOver = 0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

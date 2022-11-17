@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    partial class ReadyToRunGenericHelperNode
+    public partial class ReadyToRunGenericHelperNode
     {
         protected Register GetContextRegister(ref /* readonly */ ARM64Emitter encoder)
         {
@@ -35,6 +35,17 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLDR(result, context, dictionarySlot * factory.Target.PointerSize);
+
+            // If there's any invalid entries, we need to test for them
+            //
+            // Only do this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // flag can change over the course of compilation and the bad slot helper dependency
+            // should be reported by someone else - the system should not rely on it coming from here.
+            if (!relocsOnly && _hasInvalidEntries)
+            {
+                encoder.EmitCMP(result, 0);
+                encoder.EmitJE(GetBadSlotHelper(factory));
+            }
 
             switch (lookup.LookupResultReferenceType(factory))
             {
@@ -216,7 +227,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    partial class ReadyToRunGenericLookupFromTypeNode
+    public partial class ReadyToRunGenericLookupFromTypeNode
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref ARM64Emitter encoder, bool relocsOnly)
         {

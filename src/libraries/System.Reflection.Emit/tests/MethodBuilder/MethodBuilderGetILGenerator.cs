@@ -20,7 +20,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("TestMethod");
             Assert.Equal(expectedReturn, createdMethod.Invoke(null, null));
 

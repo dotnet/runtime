@@ -1,17 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-using System.Diagnostics;
-#endif
 using System.Threading;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Contains the metadata needed to emit an event, optimized
@@ -27,15 +19,11 @@ namespace System.Diagnostics.Tracing
 
         public static TraceLoggingEventTypes Instance
         {
-#if !ES_BUILD_STANDALONE
             [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
             get { return instance ??= InitInstance(); }
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         private static TraceLoggingEventTypes InitInstance()
         {
             var info = TraceLoggingTypeInfo.GetInstance(typeof(T), null);

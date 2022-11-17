@@ -124,8 +124,8 @@ namespace System.Diagnostics.Tests
 
         public static InstanceDataCollectionCollection GetInstanceDataCollectionCollection()
         {
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
-            return Helpers.RetryOnAllPlatforms(() =>
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory("Processor");
+            return Helpers.RetryOnAllPlatformsWithClosingResources(() =>
             {
                 var idcc = pcc.ReadCategory();
                 Assert.InRange(idcc.Values.Count, 1, int.MaxValue);

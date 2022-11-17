@@ -15649,7 +15649,7 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
 
         virtual HRESULT STDMETHODCALLTYPE GetBaseIndicies(
             /* [in] */ ULONG32 cdim,
-            /* [length_is][size_is][out] */ ULONG32 indicies[  ]) = 0;
+            /* [length_is][size_is][out] */ ULONG32 indices[  ]) = 0;
 
         virtual HRESULT STDMETHODCALLTYPE GetElement(
             /* [in] */ ULONG32 cdim,
@@ -15729,7 +15729,7 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
         HRESULT ( STDMETHODCALLTYPE *GetBaseIndicies )(
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 cdim,
-            /* [length_is][size_is][out] */ ULONG32 indicies[  ]);
+            /* [length_is][size_is][out] */ ULONG32 indices[  ]);
 
         HRESULT ( STDMETHODCALLTYPE *GetElement )(
             ICorDebugArrayValue * This,
@@ -15800,8 +15800,8 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
 #define ICorDebugArrayValue_HasBaseIndicies(This,pbHasBaseIndicies)	\
     ( (This)->lpVtbl -> HasBaseIndicies(This,pbHasBaseIndicies) )
 
-#define ICorDebugArrayValue_GetBaseIndicies(This,cdim,indicies)	\
-    ( (This)->lpVtbl -> GetBaseIndicies(This,cdim,indicies) )
+#define ICorDebugArrayValue_GetBaseIndicies(This,cdim,indices)	\
+    ( (This)->lpVtbl -> GetBaseIndicies(This,cdim,indices) )
 
 #define ICorDebugArrayValue_GetElement(This,cdim,indices,ppValue)	\
     ( (This)->lpVtbl -> GetElement(This,cdim,indices,ppValue) )

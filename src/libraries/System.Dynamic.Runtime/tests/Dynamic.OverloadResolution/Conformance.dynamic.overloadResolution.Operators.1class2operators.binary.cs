@@ -69,7 +69,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
         AmbigMember, // Ambiguity between '{0}' and '{1}'
         SizeofUnsafe, // '{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)
         FieldInitRefNonstatic, // A field initializer cannot reference the non-static field, method, or property '{0}'
-        CallingFinalizeDepracated, // Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.
+        CallingFinalizeDeprecated, // Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.
         CallingBaseFinalizeDeprecated, // Do not directly call your base class Finalize method. It is called automatically from your destructor.
         BadCastInFixed, // The right hand side of a fixed statement assignment may not be a cast expression
         NoImplicitConvCast, // Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)

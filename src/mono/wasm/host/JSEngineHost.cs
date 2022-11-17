@@ -26,9 +26,9 @@ internal sealed class JSEngineHost
     }
 
     public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
-                                              ILoggerFactory loggerFactory,
+                                              ILoggerFactory _,
                                               ILogger logger,
-                                              CancellationToken token)
+                                              CancellationToken _1)
     {
         var args = new JSEngineArguments(commonArgs);
         args.Validate();
@@ -48,13 +48,21 @@ internal sealed class JSEngineHost
             _ => throw new CommandLineException($"Unsupported engine {_args.Host}")
         };
 
+        string? engineBinaryPath;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             if (engineBinary.Equals("node"))
-                engineBinary = FindEngineInPath(engineBinary + ".exe"); // NodeJS ships as .exe rather than .cmd
+                engineBinaryPath = FindEngineInPath(engineBinary + ".exe"); // NodeJS ships as .exe rather than .cmd
             else
-                engineBinary = FindEngineInPath(engineBinary + ".cmd");
+                engineBinaryPath = FindEngineInPath(engineBinary + ".cmd");
         }
+        else
+        {
+            engineBinaryPath = FindEngineInPath(engineBinary);
+        }
+
+        if (engineBinaryPath is null)
+            throw new CommandLineException($"Cannot find host {engineBinary} in PATH");
 
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
@@ -99,7 +107,7 @@ internal sealed class JSEngineHost
         return exitCode;
     }
 
-    private static string FindEngineInPath(string engineBinary)
+    private static string? FindEngineInPath(string engineBinary)
     {
         if (File.Exists(engineBinary) || Path.IsPathRooted(engineBinary))
             return engineBinary;
@@ -116,6 +124,6 @@ internal sealed class JSEngineHost
                 return fullPath;
         }
 
-        return engineBinary;
+        return null;
     }
 }

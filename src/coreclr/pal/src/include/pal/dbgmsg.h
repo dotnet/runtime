@@ -27,7 +27,7 @@ Available macros :
     This defines the channel to use with the macros TRACE, ERROR, etc
     Use this macro once at the beginning of your source file.
     (impl. details : this declares a constant static variable defdbgchan and
-    sets it to the apropriate channel)
+    sets it to the appropriate channel)
 
     usage : SET_DEFAULT_DEBUG_CHANNEL(somechannel);
 

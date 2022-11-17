@@ -5,7 +5,6 @@
 // Generic functions to compute the hashcode value of types
 // ---------------------------------------------------------------------------
 
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;

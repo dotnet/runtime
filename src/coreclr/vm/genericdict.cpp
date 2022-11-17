@@ -12,7 +12,7 @@
 // entries in the dictionary are prepopulated).  However at
 // earlier stages in the NGEN, code may have been compiled
 // under the assumption that ComputeNeedsRestore was
-// FALSE for the assocaited method table, and indeed this result
+// FALSE for the associated method table, and indeed this result
 // may have been cached in the ComputeNeedsRestore
 // for the MethodTable.  Thus the combination of populating
 // the dictionary and saving further dictionary slots could lead

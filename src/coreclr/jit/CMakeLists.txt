@@ -125,8 +125,9 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   indirectcalltransformer.cpp
+  importercalls.cpp
   importer.cpp
-  importer_vectorization.cpp
+  importervectorization.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
@@ -154,7 +155,7 @@ set( JIT_SOURCES
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
-  register_arg_convention.cpp
+  registerargconvention.cpp
   regset.cpp
   scopeinfo.cpp
   sideeffects.cpp
@@ -165,7 +166,6 @@ set( JIT_SOURCES
   ssarenamestate.cpp
   stacklevelsetter.cpp
   treelifeupdater.cpp
-  typeinfo.cpp
   unwind.cpp
   utils.cpp
   valuenum.cpp
@@ -301,8 +301,8 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
-  ICorJitInfo_API_names.h
-  ICorJitInfo_API_wrapper.hpp
+  ICorJitInfo_names_generated.h
+  ICorJitInfo_wrapper_generated.hpp
   inline.h
   inlinepolicy.h
   instr.h
@@ -333,7 +333,7 @@ set( JIT_HEADERS
   rangecheck.h
   rationalize.h
   regalloc.h
-  register_arg_convention.h
+  registerargconvention.h
   register.h
   regset.h
   sideeffects.h
@@ -459,6 +459,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
 elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   set(JIT_ARCH_SOURCES ${JIT_LOONGARCH64_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_LOONGARCH64_HEADERS})
+elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
 else()
   clr_unknown_arch()
 endif()
@@ -501,7 +502,6 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
-       palrt
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES
@@ -589,8 +589,10 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
-install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+if (NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
+  create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
+  install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+endif()
 
 # Enable profile guided optimization
 add_pgo(clrjit)
@@ -613,7 +615,7 @@ if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
   create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
-if (CLR_CMAKE_TARGET_UNIX)
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
     if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le)
       if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
@@ -626,7 +628,13 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
-  find_path(PGORT_DIR ${PGORT_DLL} REQUIRED)
+  if(CLR_CMAKE_TARGET_ARCH_ARM64)
+    cmake_path(SET PGORT_DIR "$ENV{VCToolsInstallDir}bin/arm64")
+  elseif(CLR_CMAKE_TARGET_ARCH_I386)
+    cmake_path(SET PGORT_DIR "$ENV{VCToolsInstallDir}bin/Hostx86/x86")
+  else()
+    cmake_path(SET PGORT_DIR "$ENV{VCToolsInstallDir}bin/Hostx64/x64")
+  endif()
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
   install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
 endif ()

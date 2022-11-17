@@ -53,7 +53,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
-#include <tchar.h>
 #include <specstrings.h>
 #include <math.h>
 #include <limits.h>
@@ -62,6 +61,7 @@
 
 // Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
 #ifdef TARGET_UNIX
+#include "clr_std/utility"
 #include "clr_std/string"
 #include "clr_std/algorithm"
 #include "clr_std/vector"
@@ -69,6 +69,7 @@
 #ifndef USE_STL
 #define USE_STL
 #endif // USE_STL
+#include <utility>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -115,5 +116,7 @@ static inline void __debugbreak()
   DebugBreak();
 }
 #endif
+
+#include <minipal/utils.h>
 
 #endif // STANDARDPCH_H

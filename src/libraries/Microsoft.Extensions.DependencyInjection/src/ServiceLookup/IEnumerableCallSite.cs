@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class IEnumerableCallSite : ServiceCallSite
     {
         internal Type ItemType { get; }

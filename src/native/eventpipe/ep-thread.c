@@ -116,7 +116,7 @@ ep_thread_register (EventPipeThread *thread)
 
 	ep_thread_addref (thread);
 
-	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+	ep_rt_spin_lock_acquire (&_ep_threads_lock);
 		result = ep_rt_thread_list_append (&_ep_threads, thread);
 	ep_rt_spin_lock_release (&_ep_threads_lock);
 

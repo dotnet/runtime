@@ -201,7 +201,7 @@ namespace System.Configuration
         {
             // Return an enumerator over the collection's config elements.
             // This is different then the std GetEnumerator because the second one
-            // can return different set of items if overriden in a derived class
+            // can return different set of items if overridden in a derived class
 
             return new Enumerator(Items, this);
         }

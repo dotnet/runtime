@@ -289,7 +289,7 @@
     <value>Expected signature header for '{0}' or '{1}', but found '{2}' (0x{3:x2}).</value>
   </data>
   <data name="NotTypeDefOrRefHandle" xml:space="preserve">
-    <value>Specified handle is not a TypeDefinitionHandle or TypeRefererenceHandle.</value>
+    <value>Specified handle is not a TypeDefinitionHandle or TypeReferenceHandle.</value>
   </data>
   <data name="UnexpectedSignatureTypeCode" xml:space="preserve">
     <value>Unexpected SignatureTypeCode: (0x{0:x}).</value>
@@ -298,7 +298,7 @@
     <value>Signature type sequence must have at least one element.</value>
   </data>
   <data name="NotTypeDefOrRefOrSpecHandle" xml:space="preserve">
-    <value>Specified handle is not a TypeDefinitionHandle, TypeRefererenceHandle, or TypeSpecificationHandle.</value>
+    <value>Specified handle is not a TypeDefinitionHandle, TypeReferenceHandle, or TypeSpecificationHandle.</value>
   </data>
   <data name="UnexpectedDebugDirectoryType" xml:space="preserve">
     <value>The Debug directory was not of type {0}.</value>

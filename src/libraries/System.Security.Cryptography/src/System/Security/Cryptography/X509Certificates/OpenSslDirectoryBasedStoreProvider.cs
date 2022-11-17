@@ -316,15 +316,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             string directoryName = GetDirectoryName(storeName);
 
-            if (s_userStoreRoot == null)
-            {
-                // Do this here instead of a static field initializer so that
-                // the static initializer isn't capable of throwing the "home directory not found"
-                // exception.
-                s_userStoreRoot = PersistedFiles.GetUserFeatureDirectory(
-                    X509Persistence.CryptographyFeatureName,
-                    X509Persistence.X509StoresSubFeatureName);
-            }
+            // Do this here instead of a static field initializer so that
+            // the static initializer isn't capable of throwing the "home directory not found"
+            // exception.
+            s_userStoreRoot ??= PersistedFiles.GetUserFeatureDirectory(
+                X509Persistence.CryptographyFeatureName,
+                X509Persistence.X509StoresSubFeatureName);
 
             return Path.Combine(s_userStoreRoot, directoryName);
         }

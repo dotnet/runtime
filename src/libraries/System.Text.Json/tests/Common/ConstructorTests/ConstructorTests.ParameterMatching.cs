@@ -500,11 +500,10 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<>))]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
-            var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
-            dont_trim_ctor = typeof(Tuple<,,,,,,,>).GetConstructors();
-
             // Seven is okay
             string json = await Serializer.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7));
             var obj = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);
@@ -727,7 +726,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Cannot_Deserialize_ObjectWith_Ctor_With_65_Params()
+        public async Task Can_Deserialize_ObjectWith_Ctor_With_65_Params()
         {
             async Task RunTestAsync<T>()
             {
@@ -753,11 +752,8 @@ namespace System.Text.Json.Serialization.Tests
                 sb.Append("Int32");
                 sb.Append(")");
 
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>(input));
-                Assert.Contains(type.ToString(), ex.ToString());
-
-                ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>("{}"));
-                Assert.Contains(type.ToString(), ex.ToString());
+                T value = await Serializer.DeserializeWrapper<T>(input);
+                value = await Serializer.DeserializeWrapper<T>("{}");
             }
 
             await RunTestAsync<Class_With_Ctor_With_65_Params>();
@@ -1425,6 +1421,17 @@ namespace System.Text.Json.Serialization.Tests
             string json = await Serializer.SerializeWrapper(obj);
             obj = await Serializer.DeserializeWrapper<ClassWithDefaultCtorParams>(json);
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
+        }
+
+        [Fact]
+        public async Task TestClassWithManyConstructorParameters()
+        {
+            ClassWithManyConstructorParameters value = ClassWithManyConstructorParameters.Create();
+            string json = JsonSerializer.Serialize(value);
+
+            ClassWithManyConstructorParameters result = await Serializer.DeserializeWrapper<ClassWithManyConstructorParameters>(json);
+
+            Assert.Equal(value, result); // Type is C# record that implements structural equality.
         }
 
         public class ClassWithDefaultCtorParams

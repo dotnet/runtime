@@ -6,6 +6,9 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="MemoryMappedFile.CreateFromFile.Tests.cs" />
     <Compile Include="MemoryMappedFile.CreateOrOpen.Tests.cs" />
     <Compile Include="MemoryMappedFile.OpenExisting.Tests.cs" />

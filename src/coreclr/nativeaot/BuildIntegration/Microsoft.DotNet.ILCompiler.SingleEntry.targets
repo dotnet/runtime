@@ -1,0 +1,73 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <!-- Define the name of the runtime specific compiler package to import -->
+    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</OSIdentifier>
+    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</OSIdentifier>
+    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</OSIdentifier>
+    <OSIdentifier Condition="'$(OSIdentifier)' == ''">linux</OSIdentifier>
+
+    <!-- Determine TargetArchitecture from RuntimeIdentifier -->
+    <RidWithHyphen>$(RuntimeIdentifier)-</RidWithHyphen>
+    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x86-'))">x86</TargetArchitecture>
+    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x64-'))">x64</TargetArchitecture>
+    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm-'))">arm</TargetArchitecture>
+    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm64-'))">arm64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">unknown</TargetArchitecture>
+
+    <RuntimeIlcPackageName>runtime.$(OSIdentifier)-$(TargetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+
+    <OSHostArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</OSHostArch>
+    <!-- OSArchitecture does not report the true OS architecture for x86 and x64 processes running on Windows ARM64. -->
+    <!-- The following condition checks those cases. -->
+    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('Windows')) and
+        $([System.Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE', EnvironmentVariableTarget.Machine)) == 'ARM64'">arm64</OSHostArch>
+
+    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('osx')) and '$(CrossBuild)' == 'true'">x64</OSHostArch>
+
+    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
+    <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    
+    <IlcCalledViaPackage>true</IlcCalledViaPackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- If the NativeAOT toolchain is being consumed via package, runtime-specific properties must be set before compilation can proceed -->
+    <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
+    <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
+    <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
+  </PropertyGroup>
+
+  <!-- If called via package instead of the SDK, update the runtime package version to match the build package -->
+  <ItemGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(NeedNativePublishSupportForSDK6)' != 'true'">
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
+      <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
+    </KnownILCompilerPack>
+  </ItemGroup>
+
+  <!-- Generate a warning if the non-SDK path is used  -->
+  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''  and '$(NeedNativePublishSupportForSDK6)' != 'true'" 
+      BeforeTargets="ImportRuntimeIlcPackageTarget">
+    <Warning Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
+  </Target>
+
+  <!-- Locate the runtime package according to the current target runtime -->
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and ('$(PublishAot)' == 'true' or '$(NeedNativePublishSupportForSDK6)' == 'true') and $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+    <Error Condition="'@(ResolvedILCompilerPack)' == '' and '$(NeedNativePublishSupportForSDK6)' != 'true'" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
+
+    <PropertyGroup Condition="'$(NeedNativePublishSupportForSDK6)' != 'true'">
+      <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(IlcHostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(RuntimeIlcPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(NeedNativePublishSupportForSDK6)' == 'true'">
+      <RuntimePackagePath Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'">%(PackageDefinitions.ResolvedPath)</RuntimePackagePath>
+      <IlcHostPackagePath Condition="'%(PackageDefinitions.Name)' == '$(IlcHostPackageName)'">%(PackageDefinitions.ResolvedPath)</IlcHostPackagePath>
+    </PropertyGroup>
+
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets" />
+
+</Project>

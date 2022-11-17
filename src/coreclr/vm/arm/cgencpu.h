@@ -998,7 +998,7 @@ struct HijackArgs
 // Currently ClrFlushInstructionCache has no effect on X86
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
+inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
 }

@@ -1097,12 +1097,12 @@ mono_gc_set_stack_end (void *stack_end)
 {
 }
 
-void GC_start_blocking ()
+void GC_start_blocking (void)
 {
 
 }
 
-void GC_end_blocking ()
+void GC_end_blocking (void)
 {
 
 }
@@ -1230,9 +1230,9 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 }
 
 void
-mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
+mono_gc_toggleref_register_callback (MonoToggleRefStatus (*process_toggleref) (MonoObject *obj))
 {
-	GC_set_toggleref_func ((GC_ToggleRefStatus (*) (GC_PTR obj)) proccess_toggleref);
+	GC_set_toggleref_func ((GC_ToggleRefStatus (*) (GC_PTR obj)) process_toggleref);
 }
 
 /* Test support code */

@@ -75,6 +75,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.None, 0 };
                 yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.Singleline, 3 };
 
+                yield return new object[] { engine, @"[а-я-[аeиоуыэюя]]", "спокойной ночи", 0, RegexOptions.None, 8 };
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Lookbehinds
