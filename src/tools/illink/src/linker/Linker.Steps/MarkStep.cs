@@ -3009,6 +3009,13 @@ namespace Mono.Linker.Steps
 			// since in those cases the warnings are desirable (potential access through reflection).
 			case DependencyKind.MemberOfType:
 
+			// Used when marking a cctor because a type or field is kept. This should not warn because we already warn
+			// on access to members of the type which could trigger the cctor.
+			case DependencyKind.CctorForType:
+			case DependencyKind.CctorForField:
+			case DependencyKind.TriggersCctorThroughFieldAccess:
+			case DependencyKind.TriggersCctorForCalledMethod:
+
 			// We should not be generating code which would produce warnings
 			case DependencyKind.UnreachableBodyRequirement:
 

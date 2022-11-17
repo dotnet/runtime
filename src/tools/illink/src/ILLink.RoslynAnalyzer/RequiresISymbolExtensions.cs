@@ -15,10 +15,7 @@ namespace ILLink.RoslynAnalyzer
 		public static bool DoesMemberRequire (this ISymbol member, string requiresAttribute, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData)
 		{
 			requiresAttributeData = null;
-			if (member.IsStaticConstructor ())
-				return false;
-
-			if (member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
+			if (!member.IsStaticConstructor () && member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
 				return true;
 
 			// Also check the containing type

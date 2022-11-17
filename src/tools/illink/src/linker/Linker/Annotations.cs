@@ -658,11 +658,7 @@ namespace Mono.Linker
 		{
 			MethodDefinition? method = originalMethod;
 			do {
-				if (method.IsStaticConstructor ()) {
-					attribute = null;
-					return false;
-				}
-				if (TryGetLinkerAttribute (method, out attribute))
+				if (!method.IsStaticConstructor () && TryGetLinkerAttribute (method, out attribute))
 					return true;
 
 				if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
@@ -670,6 +666,7 @@ namespace Mono.Linker
 					return true;
 			} while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (method, out method));
 
+			attribute = null;
 			return false;
 		}
 
