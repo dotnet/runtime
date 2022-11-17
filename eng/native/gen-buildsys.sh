@@ -59,8 +59,6 @@ for i in "${@:6}"; do
     esac
 done
 
-echo "!!!naricc_debug!!! host_arch: $host_arch CROSSCOMPILE: $CROSSCOMPILE"
-
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
     platform="$(uname)"
@@ -73,7 +71,6 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     TARGET_BUILD_ARCH="$host_arch"
     export TARGET_BUILD_ARCH
 
- 
     cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
 
     if [[ "$platform" == "Darwin" ]]; then
@@ -82,10 +79,6 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
     fi
 fi
-
-
-echo "!!!naricc_debug!!! host_arch: $host_arch TARGET_BUILD_ARCH: $TARGET_BUILD_ARCH"
-
 
 if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"

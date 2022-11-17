@@ -3042,6 +3042,48 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+            <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/SetLastError/SetLastErrorTest/*">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/InstallEHCallback/*">
+          <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/PInvokeDetach/*">
+          <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/PInvokeDetach/*">
+          <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+
+        
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
@@ -3110,6 +3152,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>Fails after removing patching step: https://github.com/dotnet/runtime/pull/62863</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
+            <Issue>Needs coreclr build</Issue>
         </ExcludeList>
     </ItemGroup>
 
