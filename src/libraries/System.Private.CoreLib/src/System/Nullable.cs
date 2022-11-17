@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Runtime.Versioning;
-using System.Runtime.CompilerServices;
 
 #pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
@@ -98,9 +97,7 @@ namespace System
 
         // If the type provided is not a Nullable Type, return null.
         // Otherwise, returns the underlying type of the Nullable type
-        public static Type? GetUnderlyingType(Type nullableType) => GetUnderlyingType(nullableType, false);
-
-        internal static Type? GetUnderlyingType(Type nullableType, bool skipGenericDefinitionCache)
+        public static Type? GetUnderlyingType(Type nullableType)
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
@@ -122,18 +119,7 @@ namespace System
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
                 // instantiated generic type only
-                Type genericType;
-                if (skipGenericDefinitionCache)
-                {
-                    RuntimeTypeHandle nativeHandle = nullableType.TypeHandle;
-                    genericType = null!;
-                    RuntimeTypeHandle.GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref genericType));
-                }
-                else
-                {
-                    genericType = nullableType.GetGenericTypeDefinition();
-                }
-
+                Type genericType = nullableType.GetGenericTypeDefinition();
                 if (object.ReferenceEquals(genericType, typeof(Nullable<>)))
                 {
                     return nullableType.GetGenericArguments()[0];

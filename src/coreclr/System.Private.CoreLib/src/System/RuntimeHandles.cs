@@ -685,7 +685,7 @@ namespace System
         internal static extern bool HasInstantiation(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
+        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
         {

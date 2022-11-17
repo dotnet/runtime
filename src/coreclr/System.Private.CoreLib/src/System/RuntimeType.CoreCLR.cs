@@ -1499,7 +1499,7 @@ namespace System
                 m_typeCode = TypeCode.Empty;
                 m_runtimeType = runtimeType;
                 m_isGlobal = RuntimeTypeHandle.GetModule(runtimeType).RuntimeType == runtimeType;
-                m_isNullableOfT = Nullable.GetUnderlyingType(runtimeType, true) != null;
+                m_isNullableOfT = CheckIfIsNullableOfT(runtimeType);
             }
             #endregion
 
@@ -1527,6 +1527,18 @@ namespace System
                 }
 
                 return existingCache;
+            }
+
+            private static unsafe bool CheckIfIsNullableOfT(RuntimeType runtimeType)
+            {
+                TypeHandle typeHandle = runtimeType.GetNativeTypeHandle();
+                if (typeHandle.IsTypeDesc)
+                {
+                    return false;
+                }
+
+                MethodTable* pMt = typeHandle.AsMethodTable();
+                return pMt->IsNullable && !pMt->ContainsGenericVariables;
             }
             #endregion
 
