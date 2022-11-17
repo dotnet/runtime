@@ -1120,8 +1120,6 @@ BOOL COMCustomAttribute::CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE *
         return FALSE;
     if (sizeData > endBlob - *pBlob)     // integer overflow check
         return FALSE;
-    if (*pBlob + sizeData > endBlob)
-        return FALSE;
 #if BIGENDIAN
     T *ptDest = reinterpret_cast<T *>(pArray->GetDataPtr());
     for (int iElement = 0; iElement < nElements; iElement++)
