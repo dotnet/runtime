@@ -178,6 +178,8 @@ namespace ILCompiler
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
         public Option<bool> HotColdSplitting { get; } =
             new(new[] { "--hot-cold-splitting" }, SR.HotColdSplittingOption);
+        public Option<bool> SynthesizeRandomMibc { get; } =
+            new(new[] { "--synthesize-random-mibc" });
 
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
@@ -243,6 +245,7 @@ namespace ILCompiler
             AddOption(CallChainProfileFile);
             AddOption(MakeReproPath);
             AddOption(HotColdSplitting);
+            AddOption(SynthesizeRandomMibc);
 
             this.SetHandler(context =>
             {

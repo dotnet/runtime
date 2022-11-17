@@ -14,8 +14,6 @@ using Internal.ReadyToRunConstants;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
 using RyuJitCompilation = ILCompiler.Compilation;
@@ -39,7 +37,6 @@ namespace Internal.JitInterface
         private DebugVarInfo[] _debugVarInfos;
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private bool _isFallbackBodyCompilation;
-        private DependencyList _additionalDependencies;
 
         public CorInfoImpl(RyuJitCompilation compilation)
             : this()

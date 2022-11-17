@@ -23,7 +23,7 @@ namespace ILCompiler
         public ReadyToRunProfilingRootProvider(EcmaModule module, ProfileDataManager profileDataManager)
         {
             _module = module;
-            _profileData = profileDataManager.GetMethodsForModuleDesc(module);
+            _profileData = profileDataManager.GetInputProfileDataMethodsForModule(module);
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
