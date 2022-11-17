@@ -732,7 +732,7 @@ export type JiterpreterOptions = {
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
-    alwaysGenerate: boolean;
+    disableHeuristic: boolean;
     enableStats: boolean;
     // Continue counting hits for traces that fail to compile and use it to estimate
     //  the relative importance of the opcode that caused them to abort
@@ -740,6 +740,7 @@ export type JiterpreterOptions = {
     // Count the number of times a trace bails out (branch taken, etc) and for what reason
     countBailouts: boolean;
     minimumTraceLength: number;
+    minimumTraceHitCount: number;
 }
 
 const optionNames : { [jsName: string] : string } = {
@@ -750,10 +751,11 @@ const optionNames : { [jsName: string] : string } = {
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableStats": "jiterpreter-stats-enabled",
-    "alwaysGenerate": "jiterpreter-always-generate",
+    "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
     "countBailouts": "jiterpreter-count-bailouts",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
+    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
 };
 
 let optionsVersion = -1;

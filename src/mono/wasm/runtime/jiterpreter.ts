@@ -83,15 +83,6 @@ let nextInstrumentedTraceId = 1;
 const abortCounts : { [key: string] : number } = {};
 const traceInfo : { [key: string] : TraceInfo } = {};
 
-// It is critical to only jit traces that contain a significant
-//  number of opcodes, because the indirect call into a trace
-//  is pretty expensive. We have both MINT opcode and WASM byte
-//  thresholds, and as long as a trace is above one of these two
-//  thresholds, we will keep it.
-const minimumHitCount = 10000,
-    minTraceLengthMintOpcodes = 8,
-    minTraceLengthWasmBytes = 360;
-
 const // offsetOfStack = 12,
     offsetOfImethod = 4,
     offsetOfDataItems = 20,
@@ -558,8 +549,7 @@ function generate_wasm (
             frame, traceName, ip, endOfBody, builder,
             instrumentedTraceId
         );
-        const keep = (opcodes_processed >= minTraceLengthMintOpcodes) ||
-            (builder.current.size >= minTraceLengthWasmBytes);
+        const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
 
         if (!keep) {
             const ti = traceInfo[<any>ip];
@@ -2916,9 +2906,9 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    if (info.hitCount < minimumHitCount)
+    if (info.hitCount < mostRecentOptions.minimumTraceHitCount)
         return JITERPRETER_TRAINING;
-    else if (info.hitCount === minimumHitCount) {
+    else if (info.hitCount === mostRecentOptions.minimumTraceHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
         if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {

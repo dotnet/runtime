@@ -93,9 +93,9 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 // For locations where the jiterpreter heuristic says we will be unable to generate
 //  a trace, insert an entry point opcode anyway. This enables collecting accurate
 //  stats for options like estimateHeat, but raises overhead.
-DEFINE_BOOL(jiterpreter_always_generate, "jiterpreter-always-generate", FALSE, "Always insert trace entry points for more accurate statistics")
+DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
@@ -103,6 +103,8 @@ DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Main
 DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Maintain accurate count of all trace bailouts based on cause")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
 DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 8, "Reject traces shorter than this number of meaningful opcodes")
+// once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
+DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-count", 10000, "JIT trace entry points once they are hit this many times")
 #endif // HOST_BROWSER
 
 /* Cleanup */
