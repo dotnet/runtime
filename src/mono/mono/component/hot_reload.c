@@ -2448,8 +2448,26 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "MethodSemantics [0x%08x] = { method_idx = 0x%08x, semantics = 0x%08x, association = 0x%08x (idx = 0x%08x, is_prop = %s)} ", log_token, method_idx, semantics, sema_cols [MONO_METHOD_SEMA_ASSOCIATION], assoc_idx, is_prop ? "true" : "false");
 			/* class that owns the property or event */
 			uint32_t klass_token = hot_reload_member_parent (image_base, assoc_token);
-			if (klass_token == 0)
-				break; /* FIXME: these all seems to be from existing properties. Is this because we're ignoring the PropertyMap update, and we're actually getting new contiguous rows ? */
+			if (klass_token == 0) {
+				/* This can happen because Roslyn emits new MethodSemantics
+				 * rows when a getter/setter method is updated.  If you have
+				 * something like:
+				 *
+				 *    public string MyProp => string.Empty;
+				 *
+				 * and you change it to
+				 *
+				 *    public string MyProp => "abcd";
+				 *
+				 * Roslyn emits a MethodDef update (with the new method body RVA), a
+				 * Property update (with the same content as the previous
+				 * generation) and a new MethodSemantics row.
+				 *
+				 * In that case the assoc token points to the mutated Property row,
+				 * for which we don't have a member_parent entry. So just ignore it.
+				 */
+				break;
+			}
 			if (pass2_context_is_skeleton (ctx, klass_token)) {
 				/* nothing to do, the semantics rows for the new class are contiguous and will be inited when the class is created */
 			} else {
