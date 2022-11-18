@@ -283,9 +283,14 @@ private:
 
         const unsigned operatorSize = genTypeSize(tree->TypeGet());
 
-        const bool op1Legal =
-            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
+        // The operatorSize can be smaller than the operands as it will use a lower register/mem.
+        
+        const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() &&
+                              ((operatorSize == genTypeSize(op1->TypeGet())) ||
+                               (varTypeIsIntegral(tree) && operatorSize < genTypeSize(op1->TypeGet())));
+        const bool op2Legal =
+            isSafeToMarkOp2 && ((operatorSize == genTypeSize(op2->TypeGet())) ||
+                                (varTypeIsIntegral(tree) && operatorSize < genTypeSize(op2->TypeGet())));
 
         GenTree* regOptionalOperand = nullptr;
 

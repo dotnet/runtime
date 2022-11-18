@@ -5772,7 +5772,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         if (!binOpInRMW)
         {
             const unsigned operatorSize = genTypeSize(node->TypeGet());
-            if ((genTypeSize(op2->TypeGet()) == operatorSize) && IsContainableMemoryOp(op2))
+            if ((genTypeSize(op2->TypeGet()) >= operatorSize) && IsContainableMemoryOp(op2))
             {
                 isSafeToContainOp2 = IsSafeToContainMem(node, op2);
                 if (isSafeToContainOp2)
@@ -5791,7 +5791,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
                     directlyEncodable = true;
                     operand           = op1;
                 }
-                else if ((genTypeSize(op1->TypeGet()) == operatorSize) && IsContainableMemoryOp(op1))
+                else if ((genTypeSize(op1->TypeGet()) >= operatorSize) && IsContainableMemoryOp(op1))
                 {
                     isSafeToContainOp1 = IsSafeToContainMem(node, op1);
                     if (isSafeToContainOp1)
