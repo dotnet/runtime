@@ -1228,7 +1228,6 @@ typedef struct {
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean         have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
-	guint            use_fpstack : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
 	guint            need_div_check : 1;
@@ -1493,6 +1492,7 @@ typedef struct {
 	guint            after_method_to_ir : 1;
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
+	guint            prefer_instances : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2881,7 +2881,8 @@ typedef enum {
 									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM
-	MONO_CPU_WASM_SIMD = 1 << 1,
+	MONO_CPU_WASM_BASE = 1 << 1,
+	MONO_CPU_WASM_SIMD = 1 << 2,
 #endif
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,
@@ -2921,6 +2922,7 @@ MonoCPUFeatures mono_arch_get_cpu_features (void);
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
+MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);

@@ -115,12 +115,17 @@ namespace System.Text.Json
             Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
 
-            WriteCore(writer, value, jsonTypeInfo);
-            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            try
+            {
+                WriteCore(writer, value, jsonTypeInfo);
+                return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         private static JsonElement WriteElementAsObject(object? value, JsonTypeInfo jsonTypeInfo)
@@ -128,12 +133,17 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             Debug.Assert(options != null);
 
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
 
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
-            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            try
+            {
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
     }
 }

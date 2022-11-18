@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Extensions.Logging.Testing;
 using Moq;
 using Xunit;
@@ -9,7 +10,8 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class LoggerFactoryExtensionsTest
     {
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_CallsCreateWithCorrectName()
         {
@@ -28,7 +30,8 @@ namespace Microsoft.Extensions.Logging.Test
             factory.Verify(f => f.CreateLogger(expected));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_SingleGeneric_CallsCreateWithCorrectName()
         {
@@ -44,7 +47,8 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(logger);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreateOfT_TwoGenerics_CallsCreateWithCorrectName()
         {
@@ -115,7 +119,8 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_CallsCreateWithCorrectName()
         {
@@ -134,7 +139,8 @@ namespace Microsoft.Extensions.Logging.Test
             factory.Verify(f => f.CreateLogger(expected));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_SingleGeneric_CallsCreateWithCorrectName()
         {
@@ -150,7 +156,8 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(logger);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LoggerFactoryCreate_TwoGenerics_CallsCreateWithCorrectName()
         {

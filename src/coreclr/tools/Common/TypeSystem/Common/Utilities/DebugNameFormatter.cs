@@ -4,8 +4,6 @@
 using System;
 using System.Text;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     public partial class DebugNameFormatter : TypeNameFormatter<DebugNameFormatter.Void, DebugNameFormatter.FormatOptions>

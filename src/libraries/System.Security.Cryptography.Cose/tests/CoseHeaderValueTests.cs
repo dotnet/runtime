@@ -256,7 +256,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] content = GetDummyContent(@case);
             CoseHeaderValue headerValue = CoseHeaderValue.FromBytes(content.AsSpan());
             Memory<byte> buffer = new byte[content.Length - 1];
-            Assert.Throws<ArgumentException>(() => headerValue.GetValueAsBytes(buffer.Span));
+            Assert.Throws<ArgumentException>("destination", () => headerValue.GetValueAsBytes(buffer.Span));
         }
 
         [Fact]

@@ -24,10 +24,10 @@ namespace ILCompiler.Dataflow
 {
     public readonly struct AttributeDataFlow
     {
-        readonly Logger _logger;
-        readonly NodeFactory _factory;
-        readonly FlowAnnotations _annotations;
-        readonly MessageOrigin _origin;
+        private readonly Logger _logger;
+        private readonly NodeFactory _factory;
+        private readonly FlowAnnotations _annotations;
+        private readonly MessageOrigin _origin;
 
         public AttributeDataFlow(Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin)
         {
@@ -80,14 +80,14 @@ namespace ILCompiler.Dataflow
             return result;
         }
 
-        void ProcessAttributeDataflow(MethodDesc method, ImmutableArray<object?> arguments, ref DependencyList? result)
+        private void ProcessAttributeDataflow(MethodDesc method, ImmutableArray<object?> arguments, ref DependencyList? result)
         {
-            for (int i = 0; i < method.Signature.Length; i++)
+            foreach (var parameter in method.GetMetadataParameters())
             {
-                var parameterValue = _annotations.GetMethodParameterValue(method, i);
+                var parameterValue = _annotations.GetMethodParameterValue(parameter);
                 if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
-                    MultiValue value = GetValueForCustomAttributeArgument(arguments[i]);
+                    MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
                     var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
                     RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin, ref result);
                 }
@@ -106,7 +106,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        MultiValue GetValueForCustomAttributeArgument(object? argument)
+        private static MultiValue GetValueForCustomAttributeArgument(object? argument)
             => argument switch
             {
                 TypeDesc td => new SystemTypeValue(td),
@@ -116,7 +116,7 @@ namespace ILCompiler.Dataflow
                 _ => throw new InvalidOperationException()
             };
 
-        void RequireDynamicallyAccessedMembers(
+        private void RequireDynamicallyAccessedMembers(
             in DiagnosticContext diagnosticContext,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,

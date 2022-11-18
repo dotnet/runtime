@@ -139,14 +139,17 @@ namespace System.Text.Json
             }
         }
 
-        internal void Initialize(JsonTypeInfo jsonTypeInfo)
+        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false, bool supportAsync = false)
         {
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
             Debug.Assert(!IsContinuation);
             Debug.Assert(CurrentDepth == 0);
 
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -427,6 +430,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

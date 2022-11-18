@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
+            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
             return methodInfo;
         }
 

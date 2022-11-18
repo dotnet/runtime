@@ -1,16 +1,23 @@
-import { App } from './app-support.mjs'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-App.main = async function (applicationArguments) {
+import { dotnet } from './dotnet.js'
 
-    App.IMPORTS.node = {
-        process : {
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+    .withDiagnosticTracing(false)
+    .create();
+
+setModuleImports('main.mjs', {
+    node: {
+        process: {
             version: () => globalThis.process.version
         }
-    };
+    }
+});
 
-    const exports = await App.MONO.mono_wasm_get_assembly_exports("console.0.dll");
-    const text = exports.MyClass.Greeting();
-    console.log(text);
+const config = getConfig();
+const exports = await getAssemblyExports(config.mainAssemblyName);
+const text = exports.MyClass.Greeting();
+console.log(text);
 
-    return await App.MONO.mono_run_main("console.0.dll", applicationArguments);
-}
+await dotnet.run();

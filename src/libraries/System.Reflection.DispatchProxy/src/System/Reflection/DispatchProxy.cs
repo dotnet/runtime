@@ -40,7 +40,32 @@ namespace System.Reflection
         public static T Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TProxy>()
             where TProxy : DispatchProxy
         {
-            return (T)DispatchProxyGenerator.CreateProxyInstance(typeof(TProxy), typeof(T));
+            return (T)DispatchProxyGenerator.CreateProxyInstance(typeof(TProxy), typeof(T), "T", "TProxy");
+        }
+
+        /// <summary>
+        /// Creates an object instance that derives from class <paramref name="proxyType"/>
+        /// and implements interface <paramref name="interfaceType"/>.
+        /// </summary>
+        /// <param name="interfaceType">The interface the proxy should implement.</param>
+        /// <param name="proxyType">The base class to use for the proxy class.</param>
+        /// <returns>An object instance that implements <paramref name="interfaceType"/>.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="interfaceType"/> or <paramref name="proxyType"/> is null</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="interfaceType"/> is a class,
+        /// or <paramref name="proxyType"/> is sealed or abstract or does not inherited from the <see cref="System.Reflection.DispatchProxy"/>
+        /// type or have a parameterless constructor</exception>
+        [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
+        public static object Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+            ArgumentNullException.ThrowIfNull(proxyType);
+
+            if (!proxyType.IsAssignableTo(typeof(DispatchProxy)))
+            {
+                throw new ArgumentException(SR.Format(SR.ProxyType_Must_Be_Derived_From_DispatchProxy, proxyType.Name), nameof(proxyType));
+            }
+
+            return DispatchProxyGenerator.CreateProxyInstance(proxyType, interfaceType, "interfaceType", "proxyType");
         }
     }
 }

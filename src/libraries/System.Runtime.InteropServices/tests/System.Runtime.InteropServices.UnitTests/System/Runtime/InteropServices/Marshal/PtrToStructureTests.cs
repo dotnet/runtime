@@ -13,7 +13,6 @@ namespace System.Runtime.InteropServices.Tests
     public class PtrToStructureTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
             var structure = new SequentialClass
@@ -65,7 +64,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -92,7 +90,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_GenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -142,6 +139,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void PtrToStructure_AutoLayoutClass_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, (object)new NonGenericClass()));
@@ -149,7 +147,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public unsafe void PtrToStructure_GenericLayoutClass_Generic()
         {
             int i = 42;
@@ -160,7 +157,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public unsafe void PtrToStructure_GenericLayoutClass()
         {
             int i = 42;
@@ -191,6 +187,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [MemberData(nameof(PtrToStructure_ObjectNotBlittable_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void PtrToStructure_ObjectNoBlittable_ThrowsArgumentException(object structure)
         {
             AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, structure));
@@ -220,7 +217,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.PtrToStructure((IntPtr)1, structureType));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void PtrToStructure_NonRuntimeType_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
@@ -237,6 +234,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(PtrToStructure_NonBlittableType_TestData))]
         public void PtrToStructure_NonBlittablType_ThrowsArgumentException(Type structureType)
         {

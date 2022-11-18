@@ -14,6 +14,13 @@
 
 #include "handletable.h"
 
+
+ // Build support for async pinned handles into standalone GC to make it usable with older runtimes
+#if defined(BUILD_AS_STANDALONE) && !defined(FEATURE_NATIVEAOT)
+#define FEATURE_ASYNC_PINNED_HANDLES
+#endif
+
+
 /*--------------------------------------------------------------------------*/
 
 //<TODO>@TODO: find a home for this in a project-level header file</TODO>

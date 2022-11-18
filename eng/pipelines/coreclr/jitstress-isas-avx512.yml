@@ -1,0 +1,65 @@
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on specific changes to the JIT directory that are likely to affect AVX-512.
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/instrsxarch.h
+    - src/coreclr/jit/emitxarch.cpp
+    - src/coreclr/jit/emitxarch.h
+
+schedules:
+- cron: "30 19 * * 6"
+  displayName: Sat at 11:30 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  parameters:
+    jobs:
+
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+        buildConfig: checked
+        platforms:
+        # Current Linux and OSX x64 pipelines do not have machines which support AVX-512.
+        # - Linux_x64
+        # - OSX_x64
+        - windows_x64
+        - windows_x86
+        - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+        jobParameters:
+          testGroup: jitstress-isas-avx512
+
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+        buildConfig: checked
+        platforms:
+        - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+        jobParameters:
+          testGroup: jitstress-isas-avx512
+
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+        buildConfig: checked
+        platforms:
+        # Current Linux and OSX x64 pipelines do not have machines which support AVX-512.
+        # - Linux_x64
+        # - OSX_x64
+        - windows_x64
+        - windows_x86
+        helixQueueGroup: ci
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+        jobParameters:
+          testGroup: jitstress-isas-avx512
+          liveLibrariesBuildConfig: Release

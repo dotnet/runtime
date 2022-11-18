@@ -3280,6 +3280,10 @@ public:
 #endif
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+#endif
+
     //
     // Shim  callbacks to simulate fake attach events.
     //
@@ -9718,8 +9722,8 @@ public:
     COM_METHOD GetRank(ULONG32 * pnRank);
     COM_METHOD GetCount(ULONG32 * pnCount);
     COM_METHOD GetDimensions(ULONG32 cdim, ULONG32 dims[]);
-    COM_METHOD HasBaseIndices(BOOL * pbHasBaseIndices);
-    COM_METHOD GetBaseIndices(ULONG32 cdim, ULONG32 indices[]);
+    COM_METHOD HasBaseIndicies(BOOL * pbHasBaseIndicies);
+    COM_METHOD GetBaseIndicies(ULONG32 cdim, ULONG32 indices[]);
     COM_METHOD GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue ** ppValue);
     COM_METHOD GetElementAtPosition(ULONG32 nIndex, ICorDebugValue ** ppValue);
 

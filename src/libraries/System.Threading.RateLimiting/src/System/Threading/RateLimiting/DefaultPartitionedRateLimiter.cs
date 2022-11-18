@@ -65,9 +65,9 @@ namespace System.Threading.RateLimiting
             _timer.Dispose();
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
-            return GetRateLimiter(resource).GetAvailablePermits();
+            return GetRateLimiter(resource).GetStatistics();
         }
 
         protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)

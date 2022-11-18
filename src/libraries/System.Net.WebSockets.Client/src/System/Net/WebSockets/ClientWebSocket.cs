@@ -52,9 +52,15 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Gets the upgrade response status code if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set.
+        /// </summary>
         public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
 
-        // setter to clean up when not needed anymore
+        /// <summary>
+        /// Gets the upgrade response headers if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set.
+        /// The setter may be used to reduce the memory usage of an active WebSocket connection once headers are no longer needed.
+        /// </summary>
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
         {
             get => _innerWebSocket?.HttpResponseHeaders;
@@ -67,11 +73,24 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
             return ConnectAsync(uri, null, cancellationToken);
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="invoker">The <see cref="HttpMessageInvoker" /> instance to use for connecting.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);

@@ -28,7 +28,7 @@ namespace System.Net.Quic.Tests
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsIPv6Available))]
         public async Task Listener_Backlog_Success_IPv6()
         {
             await Task.Run(async () =>
@@ -106,7 +106,7 @@ namespace System.Net.Quic.Tests
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             listenerOptions.ListenEndPoint = listener1.LocalEndPoint;
             listenerOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
-            listenerOptions.ConnectionOptionsCallback = (_, _, _) => 
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
             {
                 var options = CreateQuicServerOptions();
                 options.ServerAuthenticationOptions.ApplicationProtocols[0] = listenerOptions.ApplicationProtocols[0];
@@ -133,16 +133,29 @@ namespace System.Net.Quic.Tests
         public async Task TwoListenersOnSamePort_SameAlpn_Throws()
         {
             await using QuicListener listener = await CreateQuicListener();
+            await AssertThrowsQuicExceptionAsync(QuicError.AlpnInUse, async () => await CreateQuicListener(listener.LocalEndPoint));
+        }
 
-            //
-            // TODO: MsQuic returns QUIC_STATUS_INVALID_STATE in this case, returning
-            // ADDRESS_IN_USE could be confusing because you can actually bind two listeners
-            // to the same port (see TwoListenersOnSamePort_DisjointAlpn_Success). It may be better
-            // to add a new error code to identify this case
-            //
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73045")]
-            //
-            await AssertThrowsQuicExceptionAsync(QuicError.InternalError, async () => await CreateQuicListener(listener.LocalEndPoint));
+        [Fact]
+        public async Task Listener_AwaitsConnection_ListenerSurvivesGC()
+        {
+            TaskCompletionSource<IPEndPoint> listenerEndpointTcs = new TaskCompletionSource<IPEndPoint>();
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    await using var listener = await CreateQuicListener();
+                    listenerEndpointTcs.SetResult(listener.LocalEndPoint);
+                    var connection = await listener.AcceptConnectionAsync();
+                    await connection.DisposeAsync();
+                }).WaitAsync(TimeSpan.FromSeconds(5)),
+                Task.Run(async () =>
+                {
+                    var endpoint = await listenerEndpointTcs.Task;
+                    await Task.Delay(TimeSpan.FromSeconds(0.5));
+                    GC.Collect();
+                    var connection = await CreateQuicConnection(endpoint);
+                    await connection.DisposeAsync();
+                }).WaitAsync(TimeSpan.FromSeconds(5)));
         }
     }
 }

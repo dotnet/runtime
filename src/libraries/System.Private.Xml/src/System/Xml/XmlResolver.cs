@@ -28,7 +28,12 @@ namespace System.Xml
                                           string? role,
                                           Type? ofObjectToReturn);
 
-
+        public virtual Task<object> GetEntityAsync(Uri absoluteUri,
+                                                   string? role,
+                                                   Type? ofObjectToReturn)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

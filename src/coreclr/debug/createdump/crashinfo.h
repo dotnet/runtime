@@ -35,7 +35,7 @@ extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
 extern std::string FormatGuid(const GUID* guid);
 
-class CrashInfo : public ICLRDataEnumMemoryRegionsCallback,
+class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggingCallback,
 #ifdef __APPLE__
     public MachOReader
 #else
@@ -134,6 +134,9 @@ public:
 
     // ICLRDataEnumMemoryRegionsCallback
     virtual HRESULT STDMETHODCALLTYPE EnumMemoryRegion(/* [in] */ CLRDATA_ADDRESS address, /* [in] */ ULONG32 size);
+
+    // ICLRDataLoggingCallback
+    virtual HRESULT STDMETHODCALLTYPE LogMessage( /* [in] */ LPCSTR message);
 
 private:
 #ifdef __APPLE__

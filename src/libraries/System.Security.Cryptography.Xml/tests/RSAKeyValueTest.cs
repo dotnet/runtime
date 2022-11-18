@@ -30,17 +30,32 @@ namespace System.Security.Cryptography.Xml.Tests
             using (RSA rsa = RSA.Create())
             {
                 RSAKeyValue rsaKeyValue = new RSAKeyValue(rsa);
-                Assert.Equal(rsa, rsaKeyValue.Key);
+                Assert.Same(rsa, rsaKeyValue.Key);
             }
         }
 
         [Fact]
         public void Ctor_Rsa_Null()
         {
+#if NET
+            Assert.Throws<ArgumentNullException>("key", () => new RSAKeyValue(null));
+#else
             RSAKeyValue rsaKeyValue = new RSAKeyValue(null);
             Assert.Null(rsaKeyValue.Key);
+#endif
         }
 
+        [Fact]
+        public static void KeyProperty_SetNull()
+        {
+            RSAKeyValue rsaKeyValue = new RSAKeyValue();
+#if NET
+            Assert.Throws<ArgumentNullException>("value", () => rsaKeyValue.Key = null);
+#else
+            rsaKeyValue.Key = null;
+            Assert.Null(rsaKeyValue.Key);
+#endif
+        }
 
         [Fact]
         public void GetXml()

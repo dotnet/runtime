@@ -8,6 +8,7 @@ namespace ComWrappersTests
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using TestLibrary;
     using Xunit;
 
     static class WeakReferenceNative
@@ -269,11 +270,11 @@ namespace ComWrappersTests
             }
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {
-                if (OperatingSystem.IsWindows())
+                if (PlatformDetection.IsBuiltInComEnabled)
                 {
                     ValidateNonComWrappers();
 

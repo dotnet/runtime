@@ -545,13 +545,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_CreateScalar:
+        case NI_Vector64_CreateScalarUnsafe:
+        {
+            if (genTypeSize(simdBaseType) == 8)
+            {
+                intrinsic = NI_Vector64_Create;
+            }
+            FALLTHROUGH;
+        }
+
         case NI_Vector64_Create:
         case NI_Vector128_Create:
+        case NI_Vector128_CreateScalar:
+        case NI_Vector128_CreateScalarUnsafe:
         {
             uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
             assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
 
-            bool isConstant = true;
+            bool isConstant     = true;
+            bool isCreateScalar = (intrinsic == NI_Vector64_CreateScalar) || (intrinsic == NI_Vector128_CreateScalar);
 
             if (varTypeIsFloating(simdBaseType))
             {
@@ -595,7 +608,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // We do this as it simplifies the logic and allows certain code paths to
                 // have better codegen, such as for 0, AllBitsSet, or certain small constants
 
-                GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
+                GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
                 switch (simdBaseType)
                 {
@@ -610,7 +623,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u8[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val       = {};
+                            vecCon->gtSimd32Val.u8[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < simdLength - 1; index++)
                             {
@@ -631,7 +649,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u16[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u16[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -652,7 +675,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u32[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u32[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -673,7 +701,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             vecCon->gtSimd16Val.u64[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.u64[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -689,11 +722,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->gtDconVal);
+                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
                             vecCon->gtSimd16Val.f32[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.f32[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -709,11 +747,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->gtDconVal);
+                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
                             vecCon->gtSimd16Val.f64[simdLength - 1 - index] = cnsVal;
                         }
 
-                        if (sig->numArgs == 1)
+                        if (isCreateScalar)
+                        {
+                            vecCon->gtSimd32Val        = {};
+                            vecCon->gtSimd32Val.f64[0] = cnsVal;
+                        }
+                        else if (sig->numArgs == 1)
                         {
                             for (uint32_t index = 0; index < (simdLength - 1); index++)
                             {
@@ -957,7 +1000,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
 
-                op1 = impCloneExpr(op1, &op2, simdClsHnd, (unsigned)CHECK_SPILL_ALL,
+                op1 = impCloneExpr(op1, &op2, simdClsHnd, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
 
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
@@ -968,7 +1011,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
-                GenTree* zero  = gtNewZeroConNode(simdType, simdBaseJitType);
+                GenTree* zero  = gtNewZeroConNode(simdType);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
 
                 op2 = gtNewSimdHWIntrinsicNode(simdType, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -992,7 +1035,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
 
-                        op1 = impCloneExpr(op1, &op2, simdClsHnd, (unsigned)CHECK_SPILL_ALL,
+                        op1 = impCloneExpr(op1, &op2, simdClsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
                         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
                                                        simdSize, /* isSimdAsHWIntrinsic */ false);
@@ -1035,7 +1078,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewAllBitsSetConNode(retType, simdBaseJitType);
+            retNode = gtNewAllBitsSetConNode(retType);
+            break;
+        }
+
+        case NI_Vector64_get_One:
+        case NI_Vector128_get_One:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewOneConNode(retType, simdBaseType);
             break;
         }
 
@@ -1043,7 +1094,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType, simdBaseJitType);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -1067,7 +1118,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
             assert(numArgs == 1);
             op1            = impPopStack().val;
-            GenTree* zero  = gtNewZeroConNode(retType, simdBaseJitType);
+            GenTree* zero  = gtNewZeroConNode(retType);
             ssize_t  index = 8 / genTypeSize(simdBaseType);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -1542,11 +1593,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ShiftRightArithmetic:
         {
             assert(sig->numArgs == 2);
+            genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdBinOpNode(GT_RSH, retType, op1, op2, simdBaseJitType, simdSize,
+            retNode = gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize,
                                          /* isSimdAsHWIntrinsic */ false);
             break;
         }
@@ -1741,9 +1793,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
+
             if (!indexOp->OperIsConst())
             {
-                // TODO-XARCH-CQ: We should always import these like we do with GetElement
+                // TODO-ARM64-CQ: We should always import these like we do with GetElement
                 // If index is not constant use software fallback.
                 return nullptr;
             }
@@ -1751,7 +1804,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             ssize_t imm8  = indexOp->AsIntCon()->IconValue();
             ssize_t count = simdSize / genTypeSize(simdBaseType);
 
-            if (imm8 >= count || imm8 < 0)
+            if ((imm8 >= count) || (imm8 < 0))
             {
                 // Using software fallback if index is out of range (throw exception)
                 return nullptr;
@@ -1800,27 +1853,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            GenTree* loadIntrinsic = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            // This operation contains an implicit indirection
-            //   it could point into the global heap or
-            //   it could throw a null reference exception.
-            //
-            loadIntrinsic->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
 
-            const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
-            impAssignTempGen(lclNum, loadIntrinsic, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);
-
-            LclVarDsc* varDsc = lvaGetDesc(lclNum);
-            // The following is to exclude the fields of the local to have SSA.
-            varDsc->lvIsMultiRegRet = true;
-
-            GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
-            lclVar->SetDoNotCSE();
-            lclVar->SetMultiReg();
-
-            retNode = lclVar;
+            op1     = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = impAssignMultiRegTypeToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
 

@@ -5,15 +5,14 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    internal static partial class Program
+    public partial class Program
     {
-        private const int Pass = 100;
-        private const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void MoveScalar_UInt64()
         {
             int testResult = Pass;
             int testsCount = 21;
@@ -40,7 +39,7 @@ namespace IntelHardwareIntrinsicTest
                     if (!ulongTable.CheckResult(checkUlong))
                     {
                         PrintError(ulongTable, methodUnderTestName, "(Span<ulong> x, Span<ulong> y, Span<ulong> z, Span<ulong> a) => MoveScalar", checkUlong);
-                        testResult = Fail;
+                        Assert.Fail("");
                     }
                 }
             }
@@ -48,8 +47,6 @@ namespace IntelHardwareIntrinsicTest
             {
                 Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
             }
-
-            return testResult;
         }
     }
 }

@@ -156,7 +156,6 @@
 #include "virtualcallstub.h"
 #include "strongnameinternal.h"
 #include "syncclean.hpp"
-#include "typeparse.h"
 #include "debuginfostore.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -174,10 +173,6 @@
 #ifdef FEATURE_STACK_SAMPLING
 #include "stacksampler.h"
 #endif
-
-#include "win32threadpool.h"
-
-#include <shlwapi.h>
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -289,8 +284,6 @@ HRESULT EnsureEEStarted()
     // which we will do further down.
     if (!g_fEEStarted)
     {
-        BEGIN_ENTRYPOINT_NOTHROW;
-
         // Initialize our configuration.
         CLRConfig::Initialize();
 
@@ -322,8 +315,6 @@ HRESULT EnsureEEStarted()
                 }
             }
         }
-
-        END_ENTRYPOINT_NOTHROW;
     }
     else
     {
@@ -627,12 +618,8 @@ void EEStartupHelper()
 
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
-#endif // HOST_WINDOWS
 
-        // Initialize Numa and CPU group information
-        // Need to do this as early as possible. Used by creating object handle
-        // table inside Ref_Initialization() before GC is initialized.
-        NumaNodeInfo::InitNumaNodeInfo();
+#endif // HOST_WINDOWS
 #ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();
 #endif // !TARGET_UNIX
@@ -644,7 +631,6 @@ void EEStartupHelper()
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
-        ThreadpoolMgr::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -673,7 +659,6 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
 #endif // FEATURE_PERFTRACING
-        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -899,6 +884,7 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.

@@ -411,7 +411,7 @@ namespace System.Runtime.CompilerServices
         #region AppendFormatted ReadOnlySpan<char>
         /// <summary>Writes the specified character span to the handler.</summary>
         /// <param name="value">The span to write.</param>
-        public void AppendFormatted(ReadOnlySpan<char> value)
+        public void AppendFormatted(scoped ReadOnlySpan<char> value)
         {
             // Fast path for when the value fits in the current buffer
             if (value.TryCopyTo(_chars.Slice(_pos)))
@@ -428,7 +428,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The span to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
         /// <param name="format">The format string.</param>
-        public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+        public void AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string? format = null)
         {
             bool leftAlign = false;
             if (alignment < 0)
@@ -621,7 +621,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Fallback for <see cref="AppendFormatted(ReadOnlySpan{char})"/> for when not enough space exists in the current buffer.</summary>
         /// <param name="value">The span to write.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void GrowThenCopySpan(ReadOnlySpan<char> value)
+        private void GrowThenCopySpan(scoped ReadOnlySpan<char> value)
         {
             Grow(value.Length);
             value.CopyTo(_chars.Slice(_pos));

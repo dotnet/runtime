@@ -316,7 +316,7 @@ namespace System.IO
                 // NT5 oddity - when trying to open "C:\" as a FileStream,
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
                 // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath)!.Length)
                 {

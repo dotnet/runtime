@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdio.h>
+#include <stdint.h>
 #include <windows.h>
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-typedef size_t uint64_t;
 typedef void* TADDR;
 extern BOOL g_bDacBroken;
 

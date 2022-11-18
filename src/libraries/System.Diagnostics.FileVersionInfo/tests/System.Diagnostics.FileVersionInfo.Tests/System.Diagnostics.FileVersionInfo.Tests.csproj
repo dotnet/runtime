@@ -28,6 +28,8 @@
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" 
+             Link="Common\System\IO\ReparsePointUtilities.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="FileVersionInfoTest.Windows.cs" />

@@ -3,8 +3,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
-using Internal.IL;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -91,9 +89,9 @@ namespace ILCompiler
         public static bool IsArrayMethod(this MethodDesc method)
         {
             var arrayMethod = method as ArrayMethod;
-            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address || 
-                                           arrayMethod.Kind == ArrayMethodKind.Get || 
-                                           arrayMethod.Kind == ArrayMethodKind.Set || 
+            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address ||
+                                           arrayMethod.Kind == ArrayMethodKind.Get ||
+                                           arrayMethod.Kind == ArrayMethodKind.Set ||
                                            arrayMethod.Kind == ArrayMethodKind.Ctor);
         }
 
@@ -279,7 +277,7 @@ namespace ILCompiler
                 if (ta.IsInterface)
                 {
                     //
-                    // Both classes are interfaces.  Check that if one 
+                    // Both classes are interfaces.  Check that if one
                     // interface extends the other.
                     //
                     // Does tb extend ta ?

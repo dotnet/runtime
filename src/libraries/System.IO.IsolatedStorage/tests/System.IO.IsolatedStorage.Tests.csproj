@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
@@ -17,7 +17,7 @@
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs"
              Link="Internals\Helper.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs"
              Link="Internals\Helper.Unix.cs" />
   </ItemGroup>
@@ -52,6 +52,14 @@
     <Compile Include="System\IO\IsolatedStorage\OpenFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
+  </ItemGroup>
+   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'MacCatalyst' or '$(TargetPlatformIdentifier)' == 'tvOS'">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\TestHelper.AnyMobile.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.NonMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\TestHelper.NonMobile.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />

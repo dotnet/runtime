@@ -67,6 +67,7 @@ namespace System.Formats.Tar.Tests
                 entry.DeviceMajor = TestCharacterDeviceMajor;
                 entry.DeviceMinor = TestCharacterDeviceMinor;
             }
+            entry.Mode = TestPermission1;
 
             return (entryName, destination, entry);
         }
@@ -106,6 +107,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal((int)major, entry.DeviceMajor);
                 Assert.Equal((int)minor, entry.DeviceMinor);
             }
+
+            AssertFileModeEquals(destination, TestPermission1);
         }
     }
 }

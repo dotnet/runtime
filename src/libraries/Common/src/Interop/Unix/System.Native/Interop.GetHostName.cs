@@ -33,7 +33,7 @@ internal static partial class Interop
             // If the hostname is truncated, it is unspecified whether the returned buffer includes a terminating null byte.
             name[ArrLength - 1] = 0;
 
-            return Marshal.PtrToStringAnsi((IntPtr)name)!;
+            return Marshal.PtrToStringUTF8((IntPtr)name)!;
         }
     }
 }

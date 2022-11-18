@@ -54,13 +54,6 @@ namespace Internal.Runtime
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
         }
 
-        internal void SetToCloneOf(MethodTable* pOrigType)
-        {
-            Debug.Assert((_usFlags & (ushort)EETypeFlags.EETypeKindMask) == 0, "should be a canonical type");
-            _usFlags |= (ushort)EETypeKind.ClonedEEType;
-            _relatedType._pCanonicalType = pOrigType;
-        }
-
         // Returns an address in the module most closely associated with this MethodTable that can be handed to
         // EH.GetClasslibException and use to locate the compute the correct exception type. In most cases
         // this is just the MethodTable pointer itself, but when this type represents a generic that has been
@@ -103,7 +96,7 @@ namespace Internal.Runtime
         /// </summary>
         internal bool SimpleCasting()
         {
-            return (_usFlags & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
+            return (_uFlags & (uint)EETypeFlags.ComplexCastingMask) == (uint)EETypeKind.CanonicalEEType;
         }
 
         /// <summary>
@@ -111,7 +104,7 @@ namespace Internal.Runtime
         /// </summary>
         internal static bool BothSimpleCasting(MethodTable* pThis, MethodTable* pOther)
         {
-            return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
+            return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
         }
 
         internal bool IsEquivalentTo(MethodTable* pOtherEEType)

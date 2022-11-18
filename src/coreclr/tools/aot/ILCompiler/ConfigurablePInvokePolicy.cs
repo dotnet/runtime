@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    class ConfigurablePInvokePolicy : PInvokeILEmitterConfiguration
+    internal sealed class ConfigurablePInvokePolicy : PInvokeILEmitterConfiguration
     {
         private readonly TargetDetails _target;
         private readonly Dictionary<string, HashSet<string>> _directPInvokes;

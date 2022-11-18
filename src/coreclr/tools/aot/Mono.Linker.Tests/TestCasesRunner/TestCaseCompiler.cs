@@ -39,7 +39,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string>? defines, NPath[] resources, string[] additionalArguments)
 		{
 			var originalCommonReferences = commonReferences.Select (r => r.ToNPath ()).ToArray ();
-			var originalDefines = defines?.ToArray () ?? new string[0];
+			var originalDefines = defines?.ToArray () ?? Array.Empty<string> ();
 
 			Prepare (outputDirectory);
 
@@ -92,8 +92,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual CompilerOptions CreateOptionsForSupportingAssembly (SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
 		{
-			var allDefines = defines.Concat (setupCompileInfo.Defines ?? new string[0]).ToArray ();
-			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? new NPath[0]).ToArray ();
+			var allDefines = defines.Concat (setupCompileInfo.Defines ?? Array.Empty<string> ()).ToArray ();
+			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? Array.Empty<NPath> ()).ToArray ();
 			string[]? additionalArguments = string.IsNullOrEmpty (setupCompileInfo.AdditionalArguments) ? null : new[] { setupCompileInfo.AdditionalArguments };
 			return new CompilerOptions {
 				OutputPath = outputDirectory.Combine (setupCompileInfo.OutputName),
@@ -102,7 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Defines = allDefines,
 				Resources = resources,
 				AdditionalArguments = additionalArguments,
-				CompilerToUse = setupCompileInfo.CompilerToUse?.ToLower ()
+				CompilerToUse = setupCompileInfo.CompilerToUse?.ToLowerInvariant ()
 			};
 		}
 
@@ -251,6 +251,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case "/optimize+":
 						compilationOptions = compilationOptions.WithOptimizationLevel (OptimizationLevel.Release);
 						break;
+					case "/optimize-":
+						compilationOptions = compilationOptions.WithOptimizationLevel (OptimizationLevel.Debug);
+						break;
 					case "/debug:full":
 					case "/debug:pdbonly":
 						// Use platform's default debug info. This behavior is the same as csc.
@@ -267,7 +270,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case "/langversion:7.3":
 						languageVersion = LanguageVersion.CSharp7_3;
 						break;
-
+					default:
+						var splitIndex = option.IndexOf (":");
+						if (splitIndex != -1 && option[..splitIndex] == "/main") {
+							var mainTypeName = option[(splitIndex + 1)..];
+							compilationOptions = compilationOptions.WithMainTypeName (mainTypeName);
+							break;
+						}
+						throw new NotImplementedException (option);
 					}
 				}
 			}
@@ -357,7 +367,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return options.OutputPath;
 		}
 
-		static string LocateMcsExecutable ()
+		private static string LocateMcsExecutable ()
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				throw new IgnoreTestException ("We don't have a universal way of locating mcs on Windows");

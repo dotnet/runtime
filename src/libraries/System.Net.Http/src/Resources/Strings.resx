@@ -211,6 +211,9 @@
     <value>A request message must be provided. It cannot be null.</value>
   </data>
   <data name="net_http_message_not_success_statuscode" xml:space="preserve">
+    <value>Response status code does not indicate success: {0}.</value>
+  </data>
+  <data name="net_http_message_not_success_statuscode_reason" xml:space="preserve">
     <value>Response status code does not indicate success: {0} ({1}).</value>
   </data>
   <data name="net_http_content_field_too_long" xml:space="preserve">

@@ -12,7 +12,7 @@
     <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(RunApiCompat)' != 'false'" />
+                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -44,7 +44,7 @@
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
       <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
-      
+
       <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
       <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
                                      @(SharedFrameworkAssembly)" />
@@ -57,10 +57,12 @@
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRid) out-of-band assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
+      <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
+      <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
       <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
     </PropertyGroup>
 

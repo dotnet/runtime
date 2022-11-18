@@ -8,13 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
 using System.Xml.XPath;
-
-using ILCompiler;
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
-using ILLink.Shared;
 
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
@@ -25,14 +21,12 @@ namespace ILCompiler
 {
     internal sealed class DescriptorMarker : ProcessLinkerXmlBase
     {
-        const string NamespaceElementName = "namespace";
-
-        const string _required = "required";
-        const string _preserve = "preserve";
-        const string _accessors = "accessors";
-
-        static readonly string[] _accessorsAll = new string[] { "all" };
-        static readonly char[] _accessorsSep = new char[] { ';' };
+        private const string NamespaceElementName = "namespace";
+        private const string _required = "required";
+        private const string _preserve = "preserve";
+        private const string _accessors = "accessors";
+        private static readonly string[] _accessorsAll = new string[] { "all" };
+        private static readonly char[] _accessorsSep = new char[] { ';' };
 
         private NodeFactory _factory;
 
@@ -60,7 +54,7 @@ namespace ILCompiler
             {
                 foreach (var type in assembly.GetAllTypes())
                     MarkAndPreserve(type, nav, TypePreserve.All);
-                
+
                 //foreach (var exportedType in assembly.MainModule.ExportedTypes)
                 //    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
             }
@@ -71,7 +65,7 @@ namespace ILCompiler
             }
         }
 
-        void ProcessNamespaces(ModuleDesc assembly, XPathNavigator nav)
+        private void ProcessNamespaces(ModuleDesc assembly, XPathNavigator nav)
         {
             foreach (XPathNavigator namespaceNav in nav.SelectChildren(NamespaceElementName, XmlNamespace))
             {
@@ -96,7 +90,7 @@ namespace ILCompiler
             }
         }
 
-        void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
+        private void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
         {
             var bindingOptions = preserve switch {
                 TypePreserve.Methods => DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods,
@@ -200,7 +194,7 @@ namespace ILCompiler
 #endif
         }
 
-        static TypePreserve GetTypePreserve(XPathNavigator nav)
+        private static TypePreserve GetTypePreserve(XPathNavigator nav)
         {
             string attribute = GetAttribute(nav, _preserve);
             if (string.IsNullOrEmpty(attribute))
@@ -219,7 +213,7 @@ namespace ILCompiler
                 // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
             }*/
 
-            _dependencies.Add(_factory.ReflectableField(field), "field kept due to embedded descriptor");
+            _dependencies.Add(_factory.ReflectableField(field), "field kept due to descriptor");
         }
 
         protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
@@ -234,15 +228,15 @@ namespace ILCompiler
             if (customData is bool required && !required)
             {
                 //TODO: Add a conditional dependency if the type is used also mark the method
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
             }
             else
             {
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
             }
         }
 
-        void ProcessMethodIfNotNull(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
+        private void ProcessMethodIfNotNull(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
         {
             if (method == null)
                 return;
@@ -254,7 +248,7 @@ namespace ILCompiler
         {
             foreach (MethodDesc meth in type.GetAllMethods())
             {
-                if (signature == ProcessLinkerXmlBase.GetMethodSignature(meth, false))
+                if (signature == GetMethodSignature(meth, false))
                     return meth;
             }
             return null;
@@ -303,7 +297,7 @@ namespace ILCompiler
             }
         }
 
-        static bool IsRequired(XPathNavigator nav)
+        private static bool IsRequired(XPathNavigator nav)
         {
             string attribute = GetAttribute(nav, _required);
             if (attribute == null || attribute.Length == 0)
@@ -312,7 +306,7 @@ namespace ILCompiler
             return bool.TryParse(attribute, out bool result) && result;
         }
 
-        static string[] GetAccessors(XPathNavigator nav)
+        private static string[] GetAccessors(XPathNavigator nav)
         {
             string accessorsValue = GetAttribute(nav, _accessors);
 
@@ -324,7 +318,7 @@ namespace ILCompiler
                 if (accessors.Length > 0)
                 {
                     for (int i = 0; i < accessors.Length; ++i)
-                        accessors[i] = accessors[i].ToLower();
+                        accessors[i] = accessors[i].ToLowerInvariant();
 
                     return accessors;
                 }
@@ -332,7 +326,7 @@ namespace ILCompiler
             return _accessorsAll;
         }
 
-        public static DependencyList GetDependencies(NodeFactory factory, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        public static DependencyList GetDependencies(NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             var descriptor = new DescriptorMarker(factory, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
             descriptor.ProcessXml(false);

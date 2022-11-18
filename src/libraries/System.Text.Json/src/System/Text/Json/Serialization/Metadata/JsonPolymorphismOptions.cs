@@ -18,6 +18,13 @@ namespace System.Text.Json.Serialization.Metadata
         private string? _typeDiscriminatorPropertyName;
 
         /// <summary>
+        /// Creates an empty <see cref="JsonPolymorphismOptions"/> instance.
+        /// </summary>
+        public JsonPolymorphismOptions()
+        {
+        }
+
+        /// <summary>
         /// Gets the list of derived types supported in the current polymorphic type configuration.
         /// </summary>
         public IList<JsonDerivedType> DerivedTypes => _derivedTypes ??= new(this);

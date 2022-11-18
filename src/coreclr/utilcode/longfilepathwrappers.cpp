@@ -223,48 +223,6 @@ GetFileAttributesExWrapper(
     return ret;
 }
 
-BOOL
-DeleteFileWrapper(
-        _In_ LPCWSTR lpFileName
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL   ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = DeleteFileW(
-                    path.GetUnicode()
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD
 SearchPathWrapper(
         _In_opt_ LPCWSTR lpPath,
@@ -436,47 +394,6 @@ DWORD WINAPI GetTempPathWrapper(
         COUNT_T size = MAX_LONGPATH;
 
         ret = GetTempPathW(
-            size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
-            );
-
-        lastError = GetLastError();
-        lpBuffer.CloseBuffer(ret);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
-DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString&  lpBuffer
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DWORD ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-
-        ret = GetCurrentDirectoryW(
             size,
             lpBuffer.OpenUnicodeBuffer(size - 1)
             );

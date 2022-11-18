@@ -7,7 +7,6 @@
 // UTF8 string reading methods
 // ---------------------------------------------------------------------------
 
-using System;
 using System.Text;
 
 namespace Internal.NativeFormat

@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -51,8 +51,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
 
-            if (dependencies == null)
-                dependencies = new DependencyList();
+            dependencies ??= new DependencyList();
 
             dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 
@@ -84,7 +83,11 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsFunctionPointer)
                         return;
 
-                    dependencies.Add(factory.MaximallyConstructableType(type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Reflection invoke");
+                    TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    else
+                        dependencies.Add(factory.MaximallyConstructableType(canonType), "Reflection invoke");
                 }
             }
 

@@ -74,11 +74,11 @@ GC_Initialize(
     assert(clrToGC == nullptr);
 #endif
 
+#ifndef FEATURE_NATIVEAOT // GCConfig and GCToOSInterface are initialized in PalInit
     // Initialize GCConfig before anything else - initialization of our
     // various components may want to query the current configuration.
     GCConfig::Initialize();
 
-#ifndef FEATURE_NATIVEAOT // GCToOSInterface is initialized directly
     if (!GCToOSInterface::Initialize())
     {
         return E_FAIL;
@@ -92,7 +92,7 @@ GC_Initialize(
     }
 
 #ifdef FEATURE_SVR_GC
-    if (GCConfig::GetServerGC())
+    if (GCConfig::GetServerGC() && GCToEEInterface::GetCurrentProcessCpuCount() > 1)
     {
 #ifdef WRITE_BARRIER_CHECK
         g_GCShadow = 0;

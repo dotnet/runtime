@@ -4,7 +4,7 @@
 using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     public class TCStandAlone
     {

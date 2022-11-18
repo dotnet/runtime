@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly a { }
-.method public static int32 main(string[] args) il managed
+.method public static int32 main() il managed
 {
 	.entrypoint
 	.maxstack  8

@@ -38,12 +38,10 @@ jobs:
     - name: officialBuildIdArg
       value: ''
     - name: crossDacArgs
-      value: ''
+      value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
-      - name: crossDacArgs
-        value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
     - ${{ parameters.variables }}
@@ -54,19 +52,6 @@ jobs:
         - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.buildConfig }}
 
     steps:
-    # Install MicroBuild for signing the package
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/restore-internal-tools.yml
-
-      - task: MicroBuildSigningPlugin@2
-        displayName: Install MicroBuild plugin for Signing
-        inputs:
-          signType: $(SignType)
-          zipSources: false
-          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-        continueOnError: false
-        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
-
     - task: DownloadBuildArtifacts@0
       displayName: Download CrossDac artifacts
       inputs:
@@ -76,16 +61,6 @@ jobs:
 
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset crossdacpack -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) $(crossDacArgs) -ci
       displayName: Build crossdac packaging
-
-    # Sign diagnostic files
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
-          /p:PackagesFolder="$(Build.SourcesDirectory)/artifacts/packages/$(buildConfig)"
-          /p:SignDiagnosticsPackages=true
-          /p:DotNetSignType=$(SignType)
-          -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign CrossDac package and contents
 
     # Save packages using the prepare-signed-artifacts format.
     - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml

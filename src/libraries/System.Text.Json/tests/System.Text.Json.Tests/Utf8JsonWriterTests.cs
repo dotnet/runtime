@@ -23,8 +23,6 @@ namespace System.Text.Json.Tests
         private const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         private const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
 
-        public static bool IsX64 { get; } = IntPtr.Size >= 8;
-
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -742,7 +740,7 @@ namespace System.Text.Json.Tests
         /// Also see <see cref="WriteRawLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public void WriteLargeJsonToStreamWithoutFlushing()
         {
@@ -2969,7 +2967,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3014,7 +3012,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3054,7 +3052,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3128,7 +3126,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -4136,10 +4134,16 @@ namespace System.Text.Json.Tests
             using var jsonUtf8 = new Utf8JsonWriter(output, options);
 
             string comment = "comment is */ invalid";
-
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment.AsSpan()));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(Encoding.UTF8.GetBytes(comment)));
+
+            comment = "comment with unpaired surrogate \udc00";
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(comment.AsSpan()));
+
+            var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(invalidUtf8));
         }
 
         [Theory]
@@ -4164,16 +4168,11 @@ namespace System.Text.Json.Tests
             jsonUtf8.WriteCommentValue(comment.AsSpan());
             jsonUtf8.WriteCommentValue(Encoding.UTF8.GetBytes(comment));
 
-            comment = "comment is / * valid even with unpaired surrogate \udc00 this part no longer visible";
+            comment = "comment is / * valid";
             jsonUtf8.WriteCommentValue(comment);
             jsonUtf8.WriteCommentValue(comment.AsSpan());
 
             jsonUtf8.Flush();
-
-            // Explicitly skipping flushing here
-            var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
-            jsonUtf8.WriteCommentValue(invalidUtf8);
-
             string expectedStr = GetCommentExpectedString(prettyPrint: formatted);
             JsonTestHelper.AssertContents(expectedStr, output);
         }
@@ -4199,7 +4198,7 @@ namespace System.Text.Json.Tests
             json.WriteComment(comment);
             json.WriteComment(comment);
 
-            comment = "comment is / * valid even with unpaired surrogate ";
+            comment = "comment is / * valid";
             json.WriteComment(comment);
             json.WriteComment(comment);
 
@@ -6165,7 +6164,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6213,7 +6212,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6247,7 +6246,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6641,7 +6640,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(false, true)]

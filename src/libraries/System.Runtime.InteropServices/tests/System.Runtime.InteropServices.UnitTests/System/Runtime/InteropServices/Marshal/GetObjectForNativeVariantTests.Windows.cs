@@ -493,7 +493,7 @@ namespace System.Runtime.InteropServices.Tests
             };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
         [MemberData(nameof(GetObjectForNativeVariant_TestData))]
         public void GetObjectForNativeVariant_Normal_ReturnsExpected(Variant variant, object expected)
@@ -508,7 +508,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_ErrorMissing_ReturnsTypeMissing()
         {
             // This cannot be in the [MemberData] as XUnit uses reflection to invoke the test method
@@ -516,7 +516,7 @@ namespace System.Runtime.InteropServices.Tests
             GetObjectForNativeVariant_Normal_ReturnsExpected(CreateVariant(VT_ERROR, new UnionTypes { _error = unchecked((int)0x80020004) }), Type.Missing);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
         public void GetObjectForNativeVariant_NestedVariant_ReturnsExpected(Variant source, object expected)
         {
@@ -536,7 +536,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_Record_Throws()
         {
             int record = 10;
@@ -566,7 +566,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
         public unsafe void GetObjectForNativeVariant_ByRef_ReturnsExpected(Variant source, object value)
         {

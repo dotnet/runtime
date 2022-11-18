@@ -10,11 +10,11 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         private MethodDesc _objectEqualsMethod;
 
-        private class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
+        private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
         {
             protected override int GetKeyHashCode(DefType key) => key.GetHashCode();
             protected override int GetValueHashCode(MethodDesc value) => value.OwningType.GetHashCode();
@@ -54,8 +54,7 @@ namespace ILCompiler
 
         private bool RequiresGetFieldHelperMethod(MetadataType valueType)
         {
-            if (_objectEqualsMethod == null)
-                _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)
@@ -77,7 +76,7 @@ namespace ILCompiler
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
         }
 
-        private class TypeState
+        private sealed class TypeState
         {
             private enum Flags
             {
@@ -98,7 +97,8 @@ namespace ILCompiler
                     if ((flags & Flags.CanCompareValueTypeBitsComputed) == 0)
                     {
                         Debug.Assert(Type.IsValueType);
-                        if (ComputeCanCompareValueTypeBits((MetadataType)Type))
+                        MetadataType mdType = (MetadataType)Type;
+                        if (ComparerIntrinsics.CanCompareValueTypeBits(mdType, ((CompilerTypeSystemContext)mdType.Context)._objectEqualsMethod))
                             flags |= Flags.CanCompareValueTypeBits;
                         flags |= Flags.CanCompareValueTypeBitsComputed;
 
@@ -113,74 +113,9 @@ namespace ILCompiler
                 Type = type;
                 _hashtable = hashtable;
             }
-
-            private bool ComputeCanCompareValueTypeBits(MetadataType type)
-            {
-                Debug.Assert(type.IsValueType);
-
-                if (type.ContainsGCPointers)
-                    return false;
-
-                if (type.IsGenericDefinition)
-                    return false;
-
-                OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
-
-                bool result = true;
-                foreach (var field in type.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    if (!overlappingFieldTracker.TrackField(field))
-                    {
-                        // This field overlaps with another field - can't compare memory
-                        result = false;
-                        break;
-                    }
-
-                    TypeDesc fieldType = field.FieldType;
-                    if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
-                    {
-                        TypeFlags category = fieldType.UnderlyingType.Category;
-                        if (category == TypeFlags.Single || category == TypeFlags.Double)
-                        {
-                            // Double/Single have weird behaviors around negative/positive zero
-                            result = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
-                        Debug.Assert(fieldType.IsValueType);
-
-                        MethodDesc objectEqualsMethod = ((CompilerTypeSystemContext)fieldType.Context)._objectEqualsMethod;
-
-                        // If the field overrides Equals, we can't use the fast helper because we need to call the method.
-                        if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(objectEqualsMethod).OwningType == fieldType)
-                        {
-                            result = false;
-                            break;
-                        }
-
-                        if (!_hashtable.GetOrCreateValue((MetadataType)fieldType).CanCompareValueTypeBits)
-                        {
-                            result = false;
-                            break;
-                        }
-                    }
-                }
-
-                // If there are gaps, we can't memcompare
-                if (result && overlappingFieldTracker.HasGaps)
-                    result = false;
-
-                return result;
-            }
         }
 
-        private class TypeStateHashtable : LockFreeReaderHashtable<TypeDesc, TypeState>
+        private sealed class TypeStateHashtable : LockFreeReaderHashtable<TypeDesc, TypeState>
         {
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(TypeState value) => value.Type.GetHashCode();
@@ -193,54 +128,5 @@ namespace ILCompiler
             }
         }
         private TypeStateHashtable _typeStateHashtable = new TypeStateHashtable();
-
-        private struct OverlappingFieldTracker
-        {
-            private bool[] _usedBytes;
-
-            public OverlappingFieldTracker(MetadataType type)
-            {
-                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
-            }
-
-            public bool TrackField(FieldDesc field)
-            {
-                int fieldBegin = field.Offset.AsInt;
-
-                TypeDesc fieldType = field.FieldType;
-
-                int fieldEnd;
-                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
-                {
-                    fieldEnd = fieldBegin + field.Context.Target.PointerSize;
-                }
-                else
-                {
-                    Debug.Assert(fieldType.IsValueType);
-                    fieldEnd = fieldBegin + ((DefType)fieldType).InstanceFieldSize.AsInt;
-                }
-
-                for (int i = fieldBegin; i < fieldEnd; i++)
-                {
-                    if (_usedBytes[i])
-                        return false;
-                    _usedBytes[i] = true;
-                }
-
-                return true;
-            }
-
-            public bool HasGaps
-            {
-                get
-                {
-                    for (int i = 0; i < _usedBytes.Length; i++)
-                        if (!_usedBytes[i])
-                            return true;
-
-                    return false;
-                }
-            }
-        }
     }
 }

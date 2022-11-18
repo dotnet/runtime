@@ -43,6 +43,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestParameterOverwrite (typeof (TestType));
 
+#if !NATIVEAOT
+			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
+#endif
+
 			WriteCapturedParameter.Test ();
 		}
 
@@ -167,7 +171,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// Validate error message when untracable value is passed to an annotated parameter.
 		[ExpectedWarning ("IL2062",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)",
-			"'type'", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			"'type'")]
 		private void UnknownValue ()
 		{
 			var array = new object[1];
@@ -235,6 +239,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			type = _fieldWithMethods;
 			type.GetFields ();
+		}
+
+		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
+		{
 		}
 
 		class WriteCapturedParameter

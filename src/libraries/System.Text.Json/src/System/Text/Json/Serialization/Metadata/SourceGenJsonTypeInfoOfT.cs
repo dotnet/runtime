@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                SetCreateObject(objectInfo.ObjectCreator);
+                SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
                 CreateObjectForExtensionDataProperty = ((JsonTypeInfo)this).CreateObject;
             }
 
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Metadata
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
-            CreateObject = collectionInfo.ObjectCreator;
+            SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 

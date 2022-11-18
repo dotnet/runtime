@@ -309,47 +309,8 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmOid));
                 }
 
-                if (pssParams.TrailerField != 1)
-                {
-                    throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
-                }
-
-                if (pssParams.SaltLength != digestValueLength)
-                {
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_Pkcs_PssParametersSaltMismatch,
-                            pssParams.SaltLength,
-                            digestAlgorithmName.Name));
-                }
-
-                if (pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1)
-                {
-                    throw new CryptographicException(
-                        SR.Cryptography_Pkcs_PssParametersMgfNotSupported,
-                        pssParams.MaskGenAlgorithm.Algorithm);
-                }
-
-                if (pssParams.MaskGenAlgorithm.Parameters == null)
-                {
-                    throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
-                }
-
-                AlgorithmIdentifierAsn mgfParams = AlgorithmIdentifierAsn.Decode(
-                    pssParams.MaskGenAlgorithm.Parameters.Value,
-                    AsnEncodingRules.DER);
-
-                if (mgfParams.Algorithm != digestAlgorithmOid)
-                {
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_Pkcs_PssParametersMgfHashMismatch,
-                            mgfParams.Algorithm,
-                            digestAlgorithmOid));
-                }
-
-                // When RSASignaturePadding supports custom salt sizes this return will look different.
-                return RSASignaturePadding.Pss;
+                RSASignaturePadding padding = pssParams.GetSignaturePadding(digestValueLength);
+                return padding;
             }
 
             protected override bool Sign(

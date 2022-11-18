@@ -113,5 +113,18 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
             }
         }
+
+        [Theory]
+        [MemberData(nameof(GetFormatsAndFiles))]
+        public async Task Extract_Async(TarEntryFormat format, TarEntryType entryType)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            (string entryName, string destination, TarEntry entry) = Prepare_Extract(root, format, entryType);
+
+            await entry.ExtractToFileAsync(destination, overwrite: true);
+
+            Verify_Extract(destination, entry, entryType);
+        }
     }
 }

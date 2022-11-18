@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -14,22 +15,35 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
-        private readonly FieldDesc _field;
+        private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
-        
-        public FrozenObjectNode(FieldDesc field, TypePreinit.ISerializableReference data)
+        private readonly int _allocationSiteId;
+
+        public FrozenObjectNode(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
-            _field = field;
+            _owningType = owningType;
+            _allocationSiteId = allocationSiteId;
             _data = data;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenObj_")
-                .Append(nameMangler.GetMangledFieldName(_field));
+                .Append(nameMangler.GetMangledTypeName(_owningType))
+                .Append(_allocationSiteId.ToStringInvariant());
         }
 
         public override bool StaticDependenciesAreComputed => true;
+
+        public TypeDesc ObjectType => _data.Type;
+
+        public bool IsKnownImmutable => _data.IsKnownImmutable;
+
+        public int GetArrayLength()
+        {
+            Debug.Assert(ObjectType.IsArray);
+            return _data.ArrayLength;
+        }
 
         int ISymbolNode.Offset => 0;
 
@@ -38,17 +52,26 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 // The frozen object symbol points at the MethodTable portion of the object, skipping over the sync block
-                return OffsetFromBeginningOfArray + _field.Context.Target.PointerSize;
+                return OffsetFromBeginningOfArray + _owningType.Context.Target.PointerSize;
             }
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
+            int initialOffset = dataBuilder.CountBytes;
+
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
             // byte contents
             _data.WriteContent(ref dataBuilder, this, factory);
+
+            int objectSize = dataBuilder.CountBytes - initialOffset;
+            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
+            if (objectSize < minimumObjectSize)
+            {
+                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -81,7 +104,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(((FrozenObjectNode)other)._field, _field);
+            var otherFrozenObjectNode = (FrozenObjectNode)other;
+            int result = comparer.Compare(otherFrozenObjectNode._owningType, _owningType);
+            if (result != 0)
+                return result;
+
+            return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
+
+        public override string ToString() => $"Frozen {_data.Type.GetDisplayNameWithoutNamespace()} object";
     }
 }

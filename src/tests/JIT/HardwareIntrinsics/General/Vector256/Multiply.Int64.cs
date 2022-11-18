@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256
 {
     public static partial class Program
     {
-        private static void MultiplyInt64()
+        [Fact]
+        public static void MultiplyInt64()
         {
             var test = new VectorBinaryOpTest__MultiplyInt64();
 

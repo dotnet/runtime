@@ -22,6 +22,7 @@
 #include "assemblynative.hpp"
 #include "shimload.h"
 #include "stringliteralmap.h"
+#include "frozenobjectheap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
 #include "eventtrace.h"
@@ -50,10 +51,6 @@
 #include "typeequivalencehash.hpp"
 
 #include "appdomain.inl"
-#include "typeparse.h"
-#include "threadpoolrequest.h"
-
-#include "nativeoverlapped.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -95,12 +92,13 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 #ifndef DACCESS_COMPILE
 
 // Base Domain Statics
-CrstStatic          BaseDomain::m_SpecialStaticsCrst;
+CrstStatic          BaseDomain::m_MethodTableExposedClassObjectCrst;
 
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
-GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
+GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
+FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -558,7 +556,7 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 //*****************************************************************************
 void BaseDomain::Attach()
 {
-    m_SpecialStaticsCrst.Init(CrstSpecialStatics);
+    m_MethodTableExposedClassObjectCrst.Init(CrstMethodTableExposedObject);
 }
 
 BaseDomain::BaseDomain()
@@ -962,8 +960,6 @@ void SystemDomain::Attach()
     CallCountingStubManager::Init();
 #endif
 
-    PerAppDomainTPCountList::InitAppDomainIndexList();
-
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
 
@@ -1036,10 +1032,7 @@ void SystemDomain::DetachEnd()
 void SystemDomain::Stop()
 {
     WRAPPER_NO_CONTRACT;
-    AppDomainIterator i(TRUE);
-
-    while (i.Next())
-        i.GetDomain()->Stop();
+    AppDomain::GetCurrentDomain()->Stop();
 }
 
 void SystemDomain::PreallocateSpecialObjects()
@@ -1196,6 +1189,24 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     }
 }
 
+void SystemDomain::LazyInitFrozenObjectsHeap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
+    {
+        pFoh.SuppressRelease();
+    }
+}
+
 /*static*/ void SystemDomain::EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
     CONTRACT_VOID
@@ -1205,19 +1216,6 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
         MODE_COOPERATIVE;
     }
     CONTRACT_END;
-
-    // We don't do a normal AppDomainIterator because we can't take the SystemDomain lock from
-    // here.
-    // We're only supposed to call this from a Server GC. We're walking here m_appDomainIdList
-    // m_appDomainIdList will have an AppDomain* or will be NULL. So the only danger is if we
-    // Fetch an AppDomain and then in some other thread the AppDomain is deleted.
-    //
-    // If the thread deleting the AppDomain (AppDomain::~AppDomain)was in Preemptive mode
-    // while doing SystemDomain::EnumAllStaticGCRefs we will issue a GCX_COOP(), which will wait
-    // for the GC to finish, so we are safe
-    //
-    // If the thread is in cooperative mode, it must have been suspended for the GC so a delete
-    // can't happen.
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
              GCHeapUtilities::IsServerHeap()   &&
@@ -1369,6 +1367,9 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pThreadAbortExceptionClass = CoreLibBinder::GetException(kThreadAbortException);
 
     g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
+
+    g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
+    g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
 #ifdef FEATURE_COMINTEROP
     if (g_pConfig->IsBuiltInCOMSupported())
@@ -1893,10 +1894,6 @@ AppDomain::AppDomain()
     m_ForceTrivialWaitOperations = false;
     m_Stage=STAGE_CREATING;
 
-#ifdef _DEBUG
-    m_dwIterHolders=0;
-#endif
-
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_pTypeEquivalenceTable = NULL;
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -1913,14 +1910,7 @@ AppDomain::~AppDomain()
     }
     CONTRACTL_END;
 
-
-    // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
-    // can only be released once all threads in the AppDomain have exited.
-    if (GetTPIndex().m_dwIndex != 0)
-        PerAppDomainTPCountList::ResetAppDomainIndex(GetTPIndex());
-
     m_AssemblyCache.Clear();
-
 }
 
 //*****************************************************************************
@@ -1937,11 +1927,6 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
-
-    //Allocate the threadpool entry before the appdomain id list. Otherwise,
-    //the thread pool list will be out of sync if insertion of id in
-    //the appdomain fails.
-    m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();
 
     BaseDomain::Init();
 
@@ -3764,10 +3749,10 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     {
         if (CoreLibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
         {
-            struct _gc {
+            struct {
                 OBJECTREF    orThis;
             } gc;
-            ZeroMemory(&gc, sizeof(gc));
+            gc.orThis = NULL;
 
             ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
@@ -3850,14 +3835,14 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     if (orDelegate == NULL)
         return FALSE;
 
-    struct _gc {
+    struct {
         OBJECTREF Delegate;
         OBJECTREF Sender;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.Delegate = orDelegate;
+    gc.Sender = NULL;
 
     GCPROTECT_BEGIN(gc);
-    gc.Delegate = orDelegate;
     if (orDelegate != NULL)
     {
         DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
@@ -4160,13 +4145,15 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
     }
     CONTRACTL_END;
 
-    if (dwID < m_aDynamicEntries)
+    SIZE_T oldDynamicEntries = m_aDynamicEntries.Load();
+
+    if (dwID < oldDynamicEntries)
     {
         _ASSERTE(m_pDynamicClassTable.Load() != NULL);
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, m_aDynamicEntries.Load());
+    SIZE_T aDynamicEntries = max(16, oldDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;
@@ -4177,7 +4164,10 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
 
-    memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
+    if (oldDynamicEntries != 0)
+    {
+        memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
+    }
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pNewDynamicClassTable + m_aDynamicEntries, 0, (aDynamicEntries - m_aDynamicEntries) * sizeof(DynamicClassInfo));
@@ -4359,11 +4349,12 @@ DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssemb
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4416,11 +4407,12 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4477,11 +4469,12 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     Assembly* pAssembly = NULL;
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
     {
@@ -5086,26 +5079,7 @@ DomainLocalModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 void
-BaseDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                              bool enumThis)
-{
-    SUPPORTS_DAC;
-    if (enumThis)
-    {
-        // This is wrong.  Don't do it.
-        // BaseDomain cannot be instantiated.
-        // The only thing this code can hope to accomplish is to potentially break
-        // memory enumeration walking through the derived class if we
-        // explicitly call the base class enum first.
-//        DAC_ENUM_VTHIS();
-    }
-
-    EMEM_OUT(("MEM: %p BaseDomain\n", dac_cast<TADDR>(this)));
-}
-
-void
-AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                             bool enumThis)
+AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 {
     SUPPORTS_DAC;
 
@@ -5113,13 +5087,18 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         //sizeof(AppDomain) == 0xeb0
         DAC_ENUM_VTHIS();
+        EMEM_OUT(("MEM: %p AppDomain\n", dac_cast<TADDR>(this)));
     }
-    BaseDomain::EnumMemoryRegions(flags, false);
 
     // We don't need AppDomain name in triage dumps.
     if (flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         m_friendlyName.EnumMemoryRegions(flags);
+    }
+
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
     m_Assemblies.EnumMemoryRegions(flags);
@@ -5133,16 +5112,19 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 }
 
 void
-SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                bool enumThis)
+SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 {
     SUPPORTS_DAC;
     if (enumThis)
     {
         DAC_ENUM_VTHIS();
+        EMEM_OUT(("MEM: %p SystemAppomain\n", dac_cast<TADDR>(this)));
     }
-    BaseDomain::EnumMemoryRegions(flags, false);
 
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
     if (m_pSystemPEAssembly.IsValid())
     {
         m_pSystemPEAssembly->EnumMemoryRegions(flags);

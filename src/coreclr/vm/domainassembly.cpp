@@ -13,8 +13,6 @@
 // Headers
 // --------------------------------------------------------------------------------
 
-#include <shlwapi.h>
-
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"
@@ -810,6 +808,14 @@ void DomainAssembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
+#ifdef PROFILING_SUPPORTED
+    if (!IsProfilerNotified())
+    {
+        SetProfilerNotified();
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
+    }
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())
@@ -1067,14 +1073,17 @@ void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pPEAssembly->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE
-    && m_pDomain.IsValid())
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        m_pDomain->EnumMemoryRegions(flags, true);
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
+        if (m_pDomain.IsValid())
+        {
+            m_pDomain->EnumMemoryRegions(flags, true);
+        }
+
         if (m_pAssembly.IsValid())
         {
             m_pAssembly->EnumMemoryRegions(flags);

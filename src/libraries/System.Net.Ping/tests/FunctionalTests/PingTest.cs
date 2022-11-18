@@ -12,6 +12,7 @@ using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading;
 
 namespace System.Net.NetworkInformation.Tests
 {
@@ -661,6 +662,54 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     PingResultValidator(pingReply, localIpAddresses);
                 });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendPingAsyncWithAlreadyCanceledToken(bool useIPAddress)
+        {
+            using CancellationTokenSource source = new();
+            source.Cancel();
+
+            using Ping ping = new();
+            Task pingTask = useIPAddress
+                ? ping.SendPingAsync(await TestSettings.GetLocalIPAddressAsync(), TimeSpan.FromSeconds(5), cancellationToken: source.Token)
+                : ping.SendPingAsync(TestSettings.LocalHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pingTask);
+            Assert.True(pingTask.IsCanceled);
+
+            // ensure that previous cancellation does not prevent future success
+            PingReply reply = useIPAddress
+                ? await ping.SendPingAsync(await TestSettings.GetLocalIPAddressAsync(), TimeSpan.FromSeconds(5))
+                : await ping.SendPingAsync(TestSettings.LocalHost, TimeSpan.FromSeconds(5));
+            Assert.Equal(IPStatus.Success, reply.Status);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
+        public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
+        {
+            using CancellationTokenSource source = new();
+
+            using Ping ping = new();
+            Task pingTask = useIPAddress
+                ? ping.SendPingAsync((await Dns.GetHostAddressesAsync(Test.Common.Configuration.Ping.PingHost))[0], TimeSpan.FromSeconds(5), cancellationToken: source.Token)
+                : ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+            if (useCancellationToken)
+            {
+                source.Cancel();
+            }
+            else
+            {
+                ping.SendAsyncCancel();
+            }
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pingTask);
+            Assert.True(pingTask.IsCanceled);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

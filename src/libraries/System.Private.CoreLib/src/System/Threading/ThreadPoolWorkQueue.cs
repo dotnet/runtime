@@ -1355,7 +1355,7 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const string WorkerThreadName = ".NET ThreadPool Worker";
+        internal const string WorkerThreadName = ".NET TP Worker";
 
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
@@ -1682,7 +1682,7 @@ namespace System.Threading
             get
             {
                 ThreadPoolWorkQueue workQueue = s_workQueue;
-                return ThreadPoolWorkQueue.LocalCount + workQueue.GlobalCount + PendingUnmanagedWorkItemCount;
+                return ThreadPoolWorkQueue.LocalCount + workQueue.GlobalCount;
             }
         }
     }

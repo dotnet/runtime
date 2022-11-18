@@ -12,9 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj">
-      <SkipUseReferenceAssembly Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</SkipUseReferenceAssembly>
-    </ProjectReference>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj"
+                      SkipUseReferenceAssembly="true"
+                      Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.IO.Pipes"
+               Condition="'$(TargetPlatformIdentifier)' != 'windows'" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />

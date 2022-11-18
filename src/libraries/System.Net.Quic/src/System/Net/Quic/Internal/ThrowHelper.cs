@@ -68,10 +68,12 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_ADDRESS_IN_USE) return new QuicException(QuicError.AddressInUse, null, SR.net_quic_address_in_use);
             if (status == QUIC_STATUS_UNREACHABLE) return new QuicException(QuicError.HostUnreachable, null, SR.net_quic_host_unreachable);
             if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused);
+            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, SR.net_quic_timeout);
             if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error);
             if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.InvalidAddress, null, SR.net_quic_invalid_address);
             if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
             if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, null, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, SR.net_quic_protocol_error);
 
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||
@@ -82,12 +84,10 @@ internal static class ThrowHelper
             }
 
             //
-            // Although ALPN negotiation failure is triggered by a TLS Alert, it is mapped differently
+            // Some TLS Alerts are mapped to dedicated QUIC_STATUS codes so we need to handle them individually.
             //
-            if (status == QUIC_STATUS_ALPN_NEG_FAILURE)
-            {
-                return new AuthenticationException(SR.net_quic_alpn_neg_error);
-            }
+            if (status == QUIC_STATUS_ALPN_NEG_FAILURE) return new AuthenticationException(SR.net_quic_alpn_neg_error);
+            if (status == QUIC_STATUS_USER_CANCELED) return new AuthenticationException(SR.Format(SR.net_auth_tls_alert, TlsAlertMessage.UserCanceled));
 
             //
             // other TLS Alerts: MsQuic maps TLS alerts by offsetting them by a
@@ -156,6 +156,7 @@ internal static class ThrowHelper
         else if (status == QUIC_STATUS_USER_CANCELED) return "QUIC_STATUS_USER_CANCELED";
         else if (status == QUIC_STATUS_ALPN_NEG_FAILURE) return "QUIC_STATUS_ALPN_NEG_FAILURE";
         else if (status == QUIC_STATUS_STREAM_LIMIT_REACHED) return "QUIC_STATUS_STREAM_LIMIT_REACHED";
+        else if (status == QUIC_STATUS_ALPN_IN_USE) return "QUIC_STATUS_ALPN_IN_USE";
         else if (status == QUIC_STATUS_CLOSE_NOTIFY) return "QUIC_STATUS_CLOSE_NOTIFY";
         else if (status == QUIC_STATUS_BAD_CERTIFICATE) return "QUIC_STATUS_BAD_CERTIFICATE";
         else if (status == QUIC_STATUS_UNSUPPORTED_CERTIFICATE) return "QUIC_STATUS_UNSUPPORTED_CERTIFICATE";

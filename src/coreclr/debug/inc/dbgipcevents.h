@@ -153,6 +153,7 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     SIZE_T  m_cbOpcode;                                 // Max size of opcode
     SIZE_T  m_offTraceType;                             // Offset of the trace.type within a patch
     DWORD   m_traceTypeUnmanaged;                       // TRACE_UNMANAGED
+    void   *m_setThreadContextNeededAddr;               // Address of SetThreadContextNeededFlare
 
     DebuggerIPCRuntimeOffsets()
     {

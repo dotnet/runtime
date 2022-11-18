@@ -62,6 +62,10 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 
+#if HOST_BROWSER
+#include "interp/jiterpreter.h"
+#endif
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
@@ -1843,6 +1847,9 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
 			mini_add_profiler_argument (argv [i] + 10);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
+#if HOST_BROWSER
+		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mono_jiterp_parse_option (argv [i] + 2)) {
+#endif
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
@@ -2021,11 +2028,12 @@ print_icall_table (void)
 
 	printf ("[\n{ \"klass\": \"\", \"icalls\": [");
 #define NOHANDLES(inner) inner
-#define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true }\n", name, #func);
+#define NOHANDLES_FLAGS(inner,flags) inner
+#define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true, \"flags\": \"%d\" }\n", name, #func, MONO_ICALL_FLAGS_USES_HANDLES);
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
 #define ICALL_TYPE(id,name,first) printf ("]},\n { \"klass\":\"%s\", \"icalls\": [{} ", name);
-#define ICALL(id,name,func) printf ("\t,{ \"name\": \"%s\", \"func\": \"%s\", \"handles\": false }\n", name, #func);
+#define ICALL(id,name,func) printf ("\t,{ \"name\": \"%s\", \"func\": \"%s\", \"handles\": false, \"flags\": \"0\" }\n", name, #func);
 #include <mono/metadata/icall-def.h>
 
 	printf ("]}\n]\n");

@@ -224,6 +224,26 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // GetRef: Get a reference to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A reference to the element at index `idx`.
+    //
+    // Notes:
+    //    Like `Get`, but returns a reference, so suitable for use as
+    //    the LHS of an assignment.
+    //
+    T& GetRef(unsigned idx)
+    {
+        T& itemRef = JitExpandArray<T>::GetRef(idx);
+        m_used     = max((idx + 1), m_used);
+        return itemRef;
+    }
+
+    //------------------------------------------------------------------------
     // Set: Assign value a copy of `val` to the element at index `idx`.
     //
     // Arguments:
@@ -329,6 +349,27 @@ public:
     //    The element index does not exceed the current stack depth.
     //
     T GetNoExpand(unsigned idx) const
+    {
+        assert(idx < m_used);
+        return this->m_members[idx];
+    }
+
+    //------------------------------------------------------------------------
+    // GetRefNoExpand: Get a reference to the element at index `idx`.
+    //
+    // Arguments:
+    //    idx - the element index
+    //
+    // Return Value:
+    //    A reference to the element at index `idx`.
+    //
+    // Notes:
+    //    Unlike `GetRef` this does not expand the array if the index is not valid.
+    //
+    // Assumptions:
+    //    The element index does not exceed the current stack depth.
+    //
+    T& GetRefNoExpand(unsigned idx)
     {
         assert(idx < m_used);
         return this->m_members[idx];

@@ -74,6 +74,26 @@ namespace System.DirectoryServices.Protocols.Tests
             _ = (SearchResponse) connection.SendRequest(searchRequest);
             // Does not throw
         }
+        [InlineData(60)]
+        [InlineData(0)]
+        [InlineData(-60)]
+        [ConditionalTheory(nameof(IsLdapConfigurationExist))]
+        public void TestSearchWithTimeLimit(int timeLimit)
+        {
+            using LdapConnection connection = GetConnection();
+
+            var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.Subtree);
+            if (timeLimit < 0)
+            {
+                Assert.Throws<ArgumentException>(() => searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit));
+            }
+            else
+            {
+                searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit);
+                _ = (SearchResponse)connection.SendRequest(searchRequest);
+                // Shall succeed
+            }
+        }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestAddingOU()

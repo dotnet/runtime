@@ -57,6 +57,7 @@ namespace System.Text.RegularExpressions.Generator
             string? pattern = null;
             int? options = null;
             int? matchTimeout = null;
+            string? cultureName = string.Empty;
             foreach (AttributeData attributeData in boundAttributes)
             {
                 if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, generatedRegexAttributeSymbol))
@@ -75,7 +76,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
-                if (items.Length == 0 || items.Length > 3)
+                if (items.Length == 0 || items.Length > 4)
                 {
                     return Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, methodSyntax.GetLocation());
                 }
@@ -85,9 +86,23 @@ namespace System.Text.RegularExpressions.Generator
                 if (items.Length >= 2)
                 {
                     options = items[1].Value as int?;
-                    if (items.Length == 3)
+                    if (items.Length == 4)
                     {
                         matchTimeout = items[2].Value as int?;
+                        cultureName = items[3].Value as string;
+                    }
+                    // If there are 3 parameters, we need to check if the third argument is
+                    // int matchTimeoutMilliseconds, or string cultureName.
+                    else if (items.Length == 3)
+                    {
+                        if (items[2].Type.SpecialType == SpecialType.System_Int32)
+                        {
+                            matchTimeout = items[2].Value as int?;
+                        }
+                        else
+                        {
+                            cultureName = items[2].Value as string;
+                        }
                     }
                 }
             }
@@ -97,7 +112,7 @@ namespace System.Text.RegularExpressions.Generator
                 return null;
             }
 
-            if (pattern is null)
+            if (pattern is null || cultureName is null)
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "(null)");
             }
@@ -113,14 +128,40 @@ namespace System.Text.RegularExpressions.Generator
 
             RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
-            // TODO: This is going to include the culture that's current at the time of compilation.
-            // What should we do about that?  We could:
-            // - say not specifying CultureInvariant is invalid if anything about options or the expression will look at culture
-            // - fall back to not generating source if it's not specified
-            // - just use whatever culture is present at build time
-            // - devise a new way of not using the culture present at build time
-            // - ...
-            CultureInfo culture = (regexOptions & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            // If  RegexOptions.IgnoreCase was specified or the inline ignore case option `(?i)` is present in the pattern, then we will (in priority order):
+            // - If a culture name was passed in:
+            //   - If RegexOptions.CultureInvariant was also passed in, then we emit a diagnostic due to the explicit conflict.
+            //   - We try to initialize a culture using the passed in culture name to be used for case-sensitive comparisons. If
+            //     the culture name is invalid, we'll emit a diagnostic.
+            // - Default to use Invariant Culture if no culture name was passed in.
+            CultureInfo culture = CultureInfo.InvariantCulture;
+            RegexOptions regexOptionsWithPatternOptions;
+            try
+            {
+                regexOptionsWithPatternOptions = regexOptions | RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+            }
+            catch (Exception e)
+            {
+                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), e.Message);
+            }
+
+            if ((regexOptionsWithPatternOptions & RegexOptions.IgnoreCase) != 0 && !string.IsNullOrEmpty(cultureName))
+            {
+                if ((regexOptions & RegexOptions.CultureInvariant) != 0)
+                {
+                    // User passed in both a culture name and set RegexOptions.CultureInvariant which causes an explicit conflict.
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "cultureName");
+                }
+
+                try
+                {
+                    culture = CultureInfo.GetCultureInfo(cultureName);
+                }
+                catch (CultureNotFoundException)
+                {
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "cultureName");
+                }
+            }
 
             // Validate the options
             const RegexOptions SupportedOptions =

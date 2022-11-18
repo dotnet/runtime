@@ -8,5 +8,27 @@
       <!-- Used by VS4Mac via reflection to symbolize stack traces -->
       <method name="GetMethodFromNativeIP" />
     </type>
+    <type fullname="System.Runtime.Serialization.SerializationInfo">
+      <!-- Used by System.Runtime.Serialization.Formatters via reflection -->
+      <method name="UpdateValue" />
+      <method name="ThrowIfDeserializationInProgress" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.ComActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInternal" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadInMemoryAssembly" />
+      <!-- Used by ijwhost.cpp -->
+      <method name="LoadInMemoryAssemblyInContext" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
   </assembly>
 </linker>

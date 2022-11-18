@@ -1052,10 +1052,10 @@ namespace System.Text
             int nextCharIndex = m_ChunkLength;
             char[] chars = m_ChunkChars;
 
-            if ((uint)nextCharIndex < (uint)chars.Length)
+            if ((uint)chars.Length > (uint)nextCharIndex)
             {
                 chars[nextCharIndex] = value;
-                m_ChunkLength = nextCharIndex + 1;
+                m_ChunkLength++;
             }
             else
             {
@@ -1965,12 +1965,7 @@ namespace System.Text
                     int endInChunk = Math.Min(chunk.m_ChunkLength, endIndexInChunk);
 
                     Span<char> span = chunk.m_ChunkChars.AsSpan(curInChunk, endInChunk - curInChunk);
-                    int i;
-                    while ((i = span.IndexOf(oldChar)) >= 0)
-                    {
-                        span[i] = newChar;
-                        span = span.Slice(i + 1);
-                    }
+                    span.Replace(oldChar, newChar);
                 }
 
                 if (startIndexInChunk >= 0)

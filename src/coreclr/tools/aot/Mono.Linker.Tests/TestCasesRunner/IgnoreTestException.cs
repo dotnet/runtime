@@ -5,7 +5,7 @@ using System;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	internal class IgnoreTestException : Exception
+	internal sealed class IgnoreTestException : Exception
 	{
 		public IgnoreTestException (string message) : base (message) { }
 	}

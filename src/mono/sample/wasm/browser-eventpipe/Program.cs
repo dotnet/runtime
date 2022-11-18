@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
@@ -64,7 +65,7 @@ namespace Sample
         }
     }
 
-    public class Test
+    public partial class Test
     {
         public static void Main(string[] args)
         {
@@ -76,9 +77,7 @@ namespace Sample
 
         public static CancellationToken GetCancellationToken()
         {
-            if (cts == null) {
-                cts = new CancellationTokenSource ();
-            }
+            cts ??= new CancellationTokenSource ();
             return cts.Token;
         }
 
@@ -104,6 +103,7 @@ namespace Sample
             }
 #endif
 
+        [JSExport]
         public static async Task<double> StartAsyncWork(int N)
         {
             CancellationToken ct = GetCancellationToken();
@@ -133,11 +133,13 @@ namespace Sample
             }
         }
 
+        [JSExport]
         public static void StopWork()
         {
             cts.Cancel();
         }
 
+        [JSExport]
         public static string GetIterationsDone()
         {
             return iterations.ToString();

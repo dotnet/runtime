@@ -16,6 +16,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         private Func<T>? _typedCreateObject;
 
+        /// <summary>
+        /// A Converter whose declared type always matches that of the current JsonTypeInfo.
+        /// It might be the same instance as JsonTypeInfo.Converter or it could be wrapped
+        /// in a CastingConverter in cases where a polymorphic converter is being used.
+        /// </summary>
         internal JsonConverter<T> EffectiveConverter { get; }
 
         /// <summary>
@@ -57,6 +62,13 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
             }
 
+            if (!Converter.SupportsCreateObjectDelegate)
+            {
+                Debug.Assert(_createObject is null);
+                Debug.Assert(_typedCreateObject == null);
+                ThrowHelper.ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type);
+            }
+
             Func<object>? untypedCreateObject;
             Func<T>? typedCreateObject;
 
@@ -81,10 +93,22 @@ namespace System.Text.Json.Serialization.Metadata
             _typedCreateObject = typedCreateObject;
         }
 
+        private protected void SetCreateObjectIfCompatible(Delegate? createObject)
+        {
+            Debug.Assert(!IsConfigured);
+
+            // Guard against the reflection resolver/source generator attempting to pass
+            // a CreateObject delegate to converters/metadata that do not support it.
+            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
+            {
+                SetCreateObject(createObject);
+            }
+        }
+
         internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), converter, options)
         {
-            EffectiveConverter = converter is JsonConverter<T> jsonConverter ? jsonConverter : converter.CreateCastingConverter<T>();
+            EffectiveConverter = converter.CreateCastingConverter<T>();
         }
 
         /// <summary>

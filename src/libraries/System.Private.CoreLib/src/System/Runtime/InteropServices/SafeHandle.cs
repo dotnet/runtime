@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
     public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
 #if DEBUG
-        /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled</summary>
+        /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled.</summary>
         private static readonly bool s_logFinalization = Environment.GetEnvironmentVariable("DEBUG_SAFEHANDLE_FINALIZATION") == "1";
         /// <summary>Debug counter for the number of SafeHandles that have been finalized.</summary>
         private static long s_safeHandlesFinalized;
@@ -83,7 +83,6 @@ namespace System.Runtime.InteropServices
             _fullyInitialized = true;
         }
 
-#if !NATIVEAOT // NativeAOT doesn't correctly support CriticalFinalizerObject; separate implementation provided
         ~SafeHandle()
         {
             if (_fullyInitialized)
@@ -91,7 +90,6 @@ namespace System.Runtime.InteropServices
                 Dispose(disposing: false);
             }
         }
-#endif
 
         internal bool OwnsHandle => _ownsHandle;
 

@@ -87,7 +87,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             }
         }
 
-        if (varTypeIsStruct(varDsc))
+        if (varTypeIsPromotable(varDsc))
         {
             lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
 
@@ -1631,7 +1631,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                 return true;
             }
         }
-        else if (varTypeIsStruct(varDsc.lvType))
+        else if (varTypeIsPromotable(varDsc.lvType))
         {
             if (lvaGetPromotionType(&varDsc) != PROMOTION_TYPE_INDEPENDENT)
             {
@@ -1644,7 +1644,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
+    if (!varTypeIsPromotable(varDsc.TypeGet()) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
         return false;
     }

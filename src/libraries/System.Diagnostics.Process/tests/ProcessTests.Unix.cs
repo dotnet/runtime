@@ -162,6 +162,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst, "On OSX, ProcessName returns the script interpreter.")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/13757")]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();

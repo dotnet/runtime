@@ -22,7 +22,8 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
+        // This calls Assembly.Load, but xUnit turn is into a LoadFrom because TinyAssembly is just a Content item in the project.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
         {
             Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
