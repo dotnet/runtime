@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ILCompiler.IBC;
 using Internal.IL;
@@ -199,7 +200,7 @@ namespace ILCompiler
                     if (targetMeth == null)
                         continue;
 
-                    if (targetMeth.Signature.IsStatic || !targetMeth.IsTypicalMethodDefinition)
+                    if (targetMeth.Signature.IsStatic)
                         continue;
 
                     bool isDelegateInvoke = targetMeth.OwningType.IsDelegate && targetMeth.Name == "Invoke";
