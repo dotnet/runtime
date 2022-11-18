@@ -186,7 +186,7 @@
     <value>Invalid 'LibraryImportAttribute' usage</value>
   </data>
   <data name="InterfaceTypeNotSupportedTitle" xml:space="preserve">
-    <value>Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</value>
+    <value>Specified 'InterfaceType' is not supported with 'GeneratedComInterfaceAttribute'</value>
   </data>
   <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
     <value>Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</value>
