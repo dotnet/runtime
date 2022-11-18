@@ -5217,7 +5217,6 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 MonoProperty*
 mono_class_get_properties (MonoClass* klass, gpointer *iter)
 {
-	MonoProperty* property;
 	if (!iter)
 		return NULL;
 	if (!*iter) {
