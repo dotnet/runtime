@@ -400,6 +400,18 @@ namespace System.Reflection.Metadata
 
                 Assert.NotNull (eventInfo);
 
+                var addedEventToken = eventInfo.MetadataToken;
+
+                Assert.True (addedEventToken > 0);
+
+                // we don't know exactly what token Roslyn will assign to the added event, but
+                // since the AddInstanceField.dll assembly is relatively small, assume that the
+                // total number of events in the updated generation is less than 4 and the
+                // token is in that range.  If more code is added, revise this test.
+
+                Assert.True ((addedEventToken & 0x00ffffff) < 4);
+                
+
             });
         }
 

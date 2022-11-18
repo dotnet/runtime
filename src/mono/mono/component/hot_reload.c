@@ -159,6 +159,9 @@ hot_reload_get_property_idx (MonoProperty *prop);
 MonoEvent *
 hot_reload_added_events_iter (MonoClass *klass, gpointer *iter);
 
+static uint32_t
+hot_reload_get_event_idx (MonoEvent *evt);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
@@ -215,6 +218,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_properties_iter,
 	&hot_reload_get_property_idx,
 	&hot_reload_added_events_iter,
+	&hot_reload_get_event_idx,
 };
 
 MonoComponentHotReload *
@@ -3559,6 +3563,14 @@ hot_reload_get_property_idx (MonoProperty *prop)
 	g_assert (m_property_is_from_update (prop));
 	MonoClassMetadataUpdateProperty *prop_info = (MonoClassMetadataUpdateProperty *)prop;
 	return mono_metadata_token_index (prop_info->token);
+}
+
+uint32_t
+hot_reload_get_event_idx (MonoEvent *evt)
+{
+	g_assert (m_event_is_from_update (evt));
+	MonoClassMetadataUpdateEvent *event_info = (MonoClassMetadataUpdateEvent *)evt;
+	return mono_metadata_token_index (event_info->token);
 }
 
 

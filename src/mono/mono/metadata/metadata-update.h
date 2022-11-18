@@ -109,4 +109,8 @@ mono_metadata_update_get_property_idx (MonoProperty *prop);
 MonoEvent *
 mono_metadata_update_added_events_iter (MonoClass *klass, gpointer *iter);
 
+uint32_t
+mono_metadata_update_get_event_idx (MonoEvent *event);
+
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

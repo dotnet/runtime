@@ -186,6 +186,8 @@ find_property_index (MonoClass *klass, MonoProperty *property)
 static guint32
 find_event_index (MonoClass *klass, MonoEvent *event)
 {
+        if (G_UNLIKELY (m_event_is_from_update (event)))
+                return mono_metadata_update_get_event_idx (event);
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {

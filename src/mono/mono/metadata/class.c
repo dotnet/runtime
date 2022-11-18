@@ -2656,11 +2656,17 @@ mono_class_get_event_token (MonoEvent *event)
 {
 	MonoClass *klass = event->parent;
 
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_event_is_from_update (event))) {
+			uint32_t idx = mono_metadata_update_get_event_idx (event);
+			return mono_metadata_make_token (MONO_TABLE_EVENT, idx);
+		}
+	}
+
 	while (klass) {
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		if (info) {
 			for (guint32 i = 0; i < info->count; ++i) {
-				/* TODO: metadata-update: get tokens for added props, too */
 				g_assert (!m_event_is_from_update (&info->events[i]));
 				if (&info->events [i] == event)
 					return mono_metadata_make_token (MONO_TABLE_EVENT, info->first + i + 1);
