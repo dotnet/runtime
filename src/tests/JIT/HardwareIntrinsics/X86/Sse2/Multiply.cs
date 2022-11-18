@@ -5,15 +5,14 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    internal static partial class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        internal static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Multiply()
         {
             int testResult = Pass;
             int testsCount = 21;
@@ -40,7 +39,7 @@ namespace IntelHardwareIntrinsicTest
                     if (!uintTable.CheckMultiplyUInt32ToUInt64(checkUInt32))
                     {
                         PrintError(uintTable, methodUnderTestName, "(uint x1, uint x2, uint y1, uint y2, ulong z1, ulong z2, ref ulong a1, ref ulong a2) => (a1 = (ulong)x1 * y1) == z1 && (a2 = (ulong)x2 * y2) == z2", checkUInt32);
-                        testResult = Fail;
+                        Assert.Fail("");
                     }
                 }
             }
@@ -48,7 +47,6 @@ namespace IntelHardwareIntrinsicTest
             {
                 Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
             }
-            return testResult;
         }
     }
 }

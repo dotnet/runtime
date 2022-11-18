@@ -841,6 +841,9 @@ namespace ILCompiler
 
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
+            baseMethod = baseMethod.GetTypicalMethodDefinition();
+            overridingMethod = overridingMethod.GetTypicalMethodDefinition();
+
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
             {
@@ -856,8 +859,8 @@ namespace ILCompiler
                 }
             }
 
-            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
-            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
+            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(baseMethod);
+            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
                 FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);

@@ -22,7 +22,7 @@ namespace StructInClass
             Struct.fieldinStruct = "xyz";
         }
 
-        private static int Main(string[] args)
+        private static int Main()
         {
             try
             {

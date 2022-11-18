@@ -10,7 +10,7 @@ public class Class1
     [DllImport("fpcw.dll")]
     private static extern int RaiseFPException();
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int retVal = RaiseFPException();
 

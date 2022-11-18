@@ -95,6 +95,7 @@ struct JitInterfaceCallbacks
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     CORINFO_CLASS_HANDLE (* mergeClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     bool (* isMoreSpecificType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    TypeCompareState (* isEnum)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
     CORINFO_CLASS_HANDLE (* getParentType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getChildType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet);
     bool (* satisfiesClassConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -1021,6 +1022,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isMoreSpecificType(_thisHandle, &pException, cls1, cls2);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual TypeCompareState isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    TypeCompareState temp = _callbacks->isEnum(_thisHandle, &pException, cls, underlyingType);
     if (pException != nullptr) throw pException;
     return temp;
 }

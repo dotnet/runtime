@@ -328,6 +328,8 @@ private:
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 
+    void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
+
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
         BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
