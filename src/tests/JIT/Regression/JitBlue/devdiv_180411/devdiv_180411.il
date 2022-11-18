@@ -8,7 +8,7 @@
 }
 .class _simple {
 
-.method static int32 main(class System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack	100
 call       int64 [devdiv_180411]_simple::test()
