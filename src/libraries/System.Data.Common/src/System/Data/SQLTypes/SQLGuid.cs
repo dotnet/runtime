@@ -151,7 +151,8 @@ namespace System.Data.SqlTypes
         // Overloading comparison operators
         public static SqlBoolean operator ==(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null :
+                    new SqlBoolean(x._value.GetValueOrDefault() == y._value.GetValueOrDefault());
         }
 
         public static SqlBoolean operator !=(SqlGuid x, SqlGuid y)
@@ -276,9 +277,7 @@ namespace System.Data.SqlTypes
         /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
         /// <param name="other">An instance to compare with this instance.</param>
         /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
-        public bool Equals(SqlGuid other) =>
-            other.IsNull || IsNull ? other.IsNull && IsNull :
-            (this == other).Value;
+        public bool Equals(SqlGuid other) => _value == other._value;
 
         // For hashing purpose
         public override int GetHashCode() => _value.GetHashCode();
