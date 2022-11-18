@@ -334,6 +334,10 @@ namespace ILCompiler
 
             var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
+            MetadataManagerOptions metadataOptions = default;
+            if (Get(_command.Dehydrate))
+                metadataOptions |= MetadataManagerOptions.DehydrateData;
+
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
                     typeSystemContext,
@@ -344,6 +348,7 @@ namespace ILCompiler
                     invokeThunkGenerationPolicy,
                     flowAnnotations,
                     metadataGenerationOptions,
+                    metadataOptions,
                     logger,
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
