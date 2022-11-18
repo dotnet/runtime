@@ -94,7 +94,7 @@
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
-                                         RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
+                                         RuntimeGraphFiles="$(BundledRuntimeIdentifierGraphFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 
