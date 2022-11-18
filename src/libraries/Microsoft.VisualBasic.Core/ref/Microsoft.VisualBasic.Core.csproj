@@ -4,7 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Obsoletions.cs" Link="Obsoletions.cs" />
     <Compile Include="Microsoft.VisualBasic.Core.cs" />
   </ItemGroup>
 
