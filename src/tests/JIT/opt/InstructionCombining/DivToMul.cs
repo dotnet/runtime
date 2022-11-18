@@ -12,7 +12,7 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Some corner cases
         var testValues = new List<double>(new []

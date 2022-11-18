@@ -31,10 +31,10 @@
       <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier below -->
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
-        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
-        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
+        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'Browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'Browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'Browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'Browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 

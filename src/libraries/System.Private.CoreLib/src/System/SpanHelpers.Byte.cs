@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -1129,21 +1130,23 @@ namespace System
 
         public static void Reverse(ref byte buf, nuint length)
         {
-            if (Avx2.IsSupported && (nuint)Vector256<byte>.Count * 2 <= length)
+            Debug.Assert(length > 1);
+
+            nint remainder = (nint)length;
+            nint offset = 0;
+
+            if (Avx2.IsSupported && remainder >= Vector256<byte>.Count)
             {
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
                     15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
-                nuint numElements = (nuint)Vector256<byte>.Count;
-                nuint numIters = (length / numElements) / 2;
-                for (nuint i = 0; i < numIters; i++)
-                {
-                    nuint firstOffset = i * numElements;
-                    nuint lastOffset = length - ((1 + i) * numElements);
 
-                    // Load in values from beginning and end of the array.
-                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
-                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
+                nint lastOffset = remainder - Vector256<byte>.Count;
+                do
+                {
+                    // Load the values into vectors
+                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref buf, (nuint)offset);
+                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref buf, (nuint)lastOffset);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -1170,24 +1173,23 @@ namespace System
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, firstOffset);
-                    tempFirst.StoreUnsafe(ref buf, lastOffset);
-                }
-                buf = ref Unsafe.Add(ref buf, numIters * numElements);
-                length -= numIters * numElements * 2;
-            }
-            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<byte>.Count * 2 <= length)
-            {
-                nuint numElements = (nuint)Vector128<byte>.Count;
-                nuint numIters = (length / numElements) / 2;
-                for (nuint i = 0; i < numIters; i++)
-                {
-                    nuint firstOffset = i * numElements;
-                    nuint lastOffset = length - ((1 + i) * numElements);
+                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
+                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
 
-                    // Load in values from beginning and end of the array.
-                    Vector128<byte> tempFirst = Vector128.LoadUnsafe(ref buf, firstOffset);
-                    Vector128<byte> tempLast = Vector128.LoadUnsafe(ref buf, lastOffset);
+                    offset += Vector256<byte>.Count;
+                    lastOffset -= Vector256<byte>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + Vector256<byte>.Count - offset;
+            }
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<byte>.Count)
+            {
+                nint lastOffset = remainder - Vector128<byte>.Count;
+                do
+                {
+                    // Load the values into vectors
+                    Vector128<byte> tempFirst = Vector128.LoadUnsafe(ref buf, (nuint)offset);
+                    Vector128<byte> tempLast = Vector128.LoadUnsafe(ref buf, (nuint)lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +---------------------------------------------------------------+
@@ -1203,15 +1205,58 @@ namespace System
                         (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, firstOffset);
-                    tempFirst.StoreUnsafe(ref buf, lastOffset);
-                }
-                buf = ref Unsafe.Add(ref buf, numIters * numElements);
-                length -= numIters * numElements * 2;
+                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
+                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
+
+                    offset += Vector128<byte>.Count;
+                    lastOffset -= Vector128<byte>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + Vector128<byte>.Count - offset;
             }
 
-            // Store any remaining values one-by-one
-            ReverseInner(ref buf, length);
+            if (remainder >= sizeof(long))
+            {
+                nint lastOffset = (nint)length - offset - sizeof(long);
+                do
+                {
+                    long tempFirst = Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref buf, offset));
+                    long tempLast = Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref buf, lastOffset));
+
+                    // swap and store in reversed position
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref buf, offset), BinaryPrimitives.ReverseEndianness(tempLast));
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref buf, lastOffset), BinaryPrimitives.ReverseEndianness(tempFirst));
+
+                    offset += sizeof(long);
+                    lastOffset -= sizeof(long);
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + sizeof(long) - offset;
+            }
+
+            if (remainder >= sizeof(int))
+            {
+                nint lastOffset = (nint)length - offset - sizeof(int);
+                do
+                {
+                    int tempFirst = Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref buf, offset));
+                    int tempLast = Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref buf, lastOffset));
+
+                    // swap and store in reversed position
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref buf, offset), BinaryPrimitives.ReverseEndianness(tempLast));
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref buf, lastOffset), BinaryPrimitives.ReverseEndianness(tempFirst));
+
+                    offset += sizeof(int);
+                    lastOffset -= sizeof(int);
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + sizeof(int) - offset;
+            }
+
+            if (remainder > 1)
+            {
+                ReverseInner(ref Unsafe.Add(ref buf, offset), (nuint)remainder);
+            }
         }
     }
 }

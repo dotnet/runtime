@@ -9,7 +9,7 @@ using System;
 internal class Program
 {
     public static int ii;
-    private static int Main(string[] args)
+    private static int Main()
     {
         int res = 0;
         ii = 99;

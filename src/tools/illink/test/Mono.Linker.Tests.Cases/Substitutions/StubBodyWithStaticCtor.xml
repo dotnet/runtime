@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.StubBodyWithStaticCtorImpl">
+      <method signature="System.Int32 TestMethod()" body="stub" value="2">
+      </method>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.WrappingClass/Settings">
+      <method signature="System.Boolean TestValue()" body="stub" value="false">
+      </method>
+    </type>
+  </assembly>
+</linker>

@@ -93,6 +93,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
+parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
@@ -874,13 +875,17 @@ def run_tests(args,
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "1"
 
+    if args.synthesize_pgo:
+        print("Synthesizing PGO")
+        os.environ["CrossGen2SynthesizePgo"] = "1"
+
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
 
     if args.run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
-        os.environ["RunInUnloadableContext"] = "1";
+        os.environ["RunInUnloadableContext"] = "1"
         per_test_timeout = 40*60*1000
 
     if args.tiering_test:
@@ -995,6 +1000,11 @@ def setup_args(args):
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
+
+    coreclr_setup_args.verify(args,
+                              "synthesize_pgo",
+                              lambda arg: True,
+                              "Error setting synthesize_pgo")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",

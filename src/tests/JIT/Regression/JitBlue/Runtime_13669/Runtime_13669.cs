@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int result = 0;
 

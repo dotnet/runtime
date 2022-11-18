@@ -1812,12 +1812,59 @@ guint32
 ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoQCallTypeHandle type_handle, MonoObjectHandle obj, MonoError *error)
 {
 	MonoType *type = type_handle.type;
+
+	if (m_type_is_byref (type))
+		return FALSE;
+
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, FALSE);
 	MonoObjectHandle inst = mono_object_handle_isinst (obj, klass, error);
 	return_val_if_nok (error, FALSE);
 	return !MONO_HANDLE_IS_NULL (inst);
+}
+
+void
+ves_icall_RuntimeMethodHandle_ReboxToNullable (MonoObjectHandle obj, MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+	gpointer dest = mono_object_unbox_internal (obj_res);
+
+	mono_nullable_init (dest, MONO_HANDLE_RAW (obj), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
+}
+
+void
+ves_icall_RuntimeMethodHandle_ReboxFromNullable (MonoObjectHandle obj, MonoObjectHandleOnStack res, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (obj)) {
+		HANDLE_ON_STACK_SET (res, NULL);
+		return;
+	}
+
+	MonoVTable *vtable = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass *klass = vtable->klass;
+	MonoObject *obj_res;
+
+	if (!mono_class_is_nullable (klass)) {
+		obj_res = MONO_HANDLE_RAW (obj);
+	} else {
+		gpointer vbuf = mono_object_unbox_internal (MONO_HANDLE_RAW (obj));
+		obj_res = mono_nullable_box (vbuf, klass, error);
+	}
+
+	HANDLE_ON_STACK_SET (res, obj_res);
 }
 
 guint32
@@ -2114,31 +2161,9 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			MonoGenericClass *gclass = type->data.generic_class;
 			g_assert (!gclass->context.class_inst->is_open);
 
-			if (mono_class_is_nullable (mono_class_from_mono_type_internal (type))) {
-				MonoClass *nklass = mono_class_from_mono_type_internal (type);
-
-				/*
-				 * Convert the boxed vtype into a Nullable structure.
-				 * This is complicated by the fact that Nullables have
-				 * a variable structure.
-				 */
-				MonoObjectHandle nullable = mono_object_new_handle (nklass, error);
-				return_if_nok (error);
-
-				MonoGCHandle nullable_gchandle = 0;
-				guint8 *nval = (guint8*)mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
-				mono_nullable_init_from_handle (nval, value, nklass);
-
-				isref = FALSE;
-				value_gchandle = nullable_gchandle;
-				v = (gchar*)nval;
-			}
-			else {
-				isref = !m_class_is_valuetype (gclass->container_class);
-				if (!isref && !MONO_HANDLE_IS_NULL (value)) {
-					v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
-				};
-			}
+			isref = !m_class_is_valuetype (gclass->container_class);
+			if (!isref && !MONO_HANDLE_IS_NULL (value))
+				v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
 			break;
 		}
 		default:
@@ -3403,11 +3428,10 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 
 MonoObjectHandle
 ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
-			  MonoSpanOfObjects *params_span, MonoExceptionHandleOut exception_out, MonoError *error)
+			  gpointer *params_byref, MonoExceptionHandleOut exception_out, MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
-	g_assert (params_span != NULL);
 
 	/*
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -3416,7 +3440,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	int pcount = 0;
 	void *obj = this_arg;
 	MonoObject *result = NULL;
 	MonoArray *arr = NULL;
@@ -3447,11 +3470,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 
 	/* Array constructor */
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
-		pcount = mono_span_length (params_span);
-		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
+		int pcount = sig->param_count;
+		uintptr_t *lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (int i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) params_byref [i];
 
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3477,11 +3500,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		} else {
 			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
 			/* The arguments are lower-bound-length pairs */
-			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
+			intptr_t *lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (int i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
+				lower_bounds [i] = *(int32_t*) params_byref [i * 2];
+				lengths [i] = *(int32_t*) params_byref [i * 2 + 1];
 			}
 
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
@@ -3489,7 +3512,9 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			goto exit;
 		}
 	}
-	result = mono_runtime_invoke_span_checked (m, obj, params_span, error);
+
+	result = mono_runtime_try_invoke_byrefs (m, obj, params_byref, NULL, error);
+
 	goto exit;
 return_null:
 	result = NULL;
@@ -6155,6 +6180,29 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 		return NULL_HANDLE;
 
 	return mono_object_new_handle (klass, error);
+}
+
+/* Only used for value types */
+void
+ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *value = MONO_HANDLE_RAW (value_h);
+	if (value)
+		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
 }
 
 MonoReflectionMethodHandle

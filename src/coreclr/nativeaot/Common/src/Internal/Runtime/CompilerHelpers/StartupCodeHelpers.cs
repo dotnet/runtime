@@ -85,16 +85,31 @@ namespace Internal.Runtime.CompilerHelpers
                     moduleCount++;
             }
 
-            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
+            // We cannot use the new keyword just yet, so stackalloc the array first
+            TypeManagerHandle* pHandles = stackalloc TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
                 {
-                    modules[moduleIndex] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
-                    moduleIndex++;
+                    TypeManagerHandle handle = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+
+                    // Rehydrate any dehydrated data structures
+                    IntPtr dehydratedDataSection = RuntimeImports.RhGetModuleSection(
+                        handle, ReadyToRunSectionType.DehydratedData, out int dehydratedDataLength);
+                    if (dehydratedDataSection != IntPtr.Zero)
+                    {
+                        RehydrateData(dehydratedDataSection, dehydratedDataLength);
+                    }
+
+                    pHandles[moduleIndex++] = handle;
                 }
             }
+
+            // Any potentially dehydrated MethodTables got rehydrated, we can safely use `new` now.
+            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
+            for (int i = 0; i < moduleCount; i++)
+                modules[i] = pHandles[i];
 
             return modules;
         }
@@ -216,6 +231,49 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return spine;
+        }
+
+        private static unsafe void RehydrateData(IntPtr dehydratedData, int length)
+        {
+            // Destination for the hydrated data is in the first 32-bit relative pointer
+            byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
+
+            // The dehydrated data follows
+            byte* pCurrent = (byte*)dehydratedData + sizeof(int);
+            byte* pEnd = (byte*)dehydratedData + length;
+
+            // Fixup table immediately follows the command stream
+            int* pFixups = (int*)pEnd;
+
+            while (pCurrent < pEnd)
+            {
+                pCurrent = DehydratedDataCommand.Decode(pCurrent, out int command, out int payload);
+                switch (command)
+                {
+                    case DehydratedDataCommand.Copy:
+                        // TODO: can we do any kind of memcpy here?
+                        for (; payload > 0; payload--)
+                            *pDest++ = *pCurrent++;
+                        break;
+                    case DehydratedDataCommand.ZeroFill:
+                        pDest += payload;
+                        break;
+                    case DehydratedDataCommand.PtrReloc:
+                        *(void**)pDest = ReadRelPtr32(pFixups + payload);
+                        pDest += sizeof(void*);
+                        break;
+                    case DehydratedDataCommand.RelPtr32Reloc:
+                        WriteRelPtr32(pDest, ReadRelPtr32(pFixups + payload));
+                        pDest += sizeof(int);
+                        break;
+                }
+            }
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
+
+            static void WriteRelPtr32(void* dest, void* value)
+                => *(int*)dest = (int)((byte*)value - (byte*)dest);
         }
     }
 

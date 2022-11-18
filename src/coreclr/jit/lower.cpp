@@ -3777,12 +3777,34 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_BLK:
         case GT_OBJ:
-            retVal->ChangeOper(GT_IND);
-            FALLTHROUGH;
         case GT_IND:
+        {
+            // Spill to a local if sizes don't match so we can avoid the "load more than requested"
+            // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
+            unsigned             realSize  = retVal->AsIndir()->Size();
+            CORINFO_CLASS_HANDLE structCls = comp->info.compMethodInfo->args.retTypeClass;
+            if (realSize == 0)
+            {
+                // TODO-ADDR: delete once "IND<struct>" nodes are no more
+                realSize = comp->info.compCompHnd->getClassSize(structCls);
+            }
+
+            if (genTypeSize(nativeReturnType) > realSize)
+            {
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                comp->lvaSetStruct(tmpNum, structCls, false);
+                comp->genReturnLocal = tmpNum;
+                ReplaceWithLclVar(retValUse, tmpNum);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
+
+            retVal->ChangeOper(GT_IND);
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
             break;
+        }
 
         case GT_LCL_VAR:
             LowerRetSingleRegStructLclVar(ret);
