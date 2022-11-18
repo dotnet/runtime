@@ -6,8 +6,18 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
+#include <stdlib.h>
+#include <stdio.h>
 #include <new>
+
+// Implement pure virtual for Unix (for -p:LinkStandardCPlusPlusLibrary=false the default),
+// to avoid linker requiring __cxa_pure_virtual.
+#ifdef TARGET_WINDOWS
+#define PURE_VIRTUAL = 0;
+#else
+// `while(true);` is to satisfy the missing `return` statement. It will be optimized away by the compiler.
+#define PURE_VIRTUAL { assert(!"pure virtual function called"); while(true); }
+#endif
 
 using std::nothrow;
 using std::size_t;

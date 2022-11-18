@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Logging.Configuration
     /// </summary>
     internal sealed class LoggerProviderConfigureOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions, TProvider> : ConfigureFromConfigurationOptions<TOptions> where TOptions : class
     {
+        [RequiresDynamicCode(LoggerProviderOptions.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(LoggerProviderOptions.TrimmingRequiresUnreferencedCodeMessage)]
         public LoggerProviderConfigureOptions(ILoggerProviderConfiguration<TProvider> providerConfiguration)
             : base(providerConfiguration.Configuration)

@@ -4219,26 +4219,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     {
         // Make sure that we have been restored
         CheckRestore();
-
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
-
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(TypeHandle(this));
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_ExposedClassObject from NULL.
-        LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
-
-        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
-        }
-
-        GCPROTECT_END();
+        TypeHandle(this).AllocateManagedClassObject(&GetWriteableDataForWrite()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
@@ -4790,7 +4771,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         SString name;
         TypeString::AppendTypeDebug(name, this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %S\n", name.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %s\n", name.GetUTF8()));
     }
 #endif
 
@@ -7904,7 +7885,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pWriteableData.EnumMem();
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         DispatchMap * pMap = GetDispatchMap();
         if (pMap != NULL)

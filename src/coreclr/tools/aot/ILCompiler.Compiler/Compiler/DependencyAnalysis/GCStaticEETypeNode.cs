@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 
 using Internal.Runtime;
 using Internal.Text;
@@ -30,15 +29,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (_target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -83,13 +79,12 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert(dataBuilder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
-            dataBuilder.EmitShort(0); // ComponentSize is always 0
-
-            short flags = 0;
+            // ComponentSize is always 0
+            uint flags = 0;
             if (containsPointers)
-                flags |= (short)EETypeFlags.HasPointersFlag;
+                flags |= (uint)EETypeFlags.HasPointersFlag;
 
-            dataBuilder.EmitShort(flags);
+            dataBuilder.EmitUInt(flags);
 
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
             dataBuilder.EmitInt(totalSize);

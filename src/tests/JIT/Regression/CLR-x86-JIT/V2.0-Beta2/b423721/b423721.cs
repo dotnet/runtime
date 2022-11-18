@@ -9,7 +9,7 @@ namespace Test
 
     public class C2
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             int ret = 100;
 

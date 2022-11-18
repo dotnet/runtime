@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -74,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -89,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             bool isPreinitialized = _preinitializationInfo != null && _preinitializationInfo.IsPreinitialized;
             if (isPreinitialized)
                 delta |= GCStaticRegionConstants.HasPreInitializedData;
-                
+
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
             if (isPreinitialized)

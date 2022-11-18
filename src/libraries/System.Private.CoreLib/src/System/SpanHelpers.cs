@@ -3,9 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -574,6 +572,7 @@ namespace System
             ReverseInner(ref elements, length);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
@@ -590,5 +589,6 @@ namespace System
                 last = ref Unsafe.Subtract(ref last, 1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
     }
 }

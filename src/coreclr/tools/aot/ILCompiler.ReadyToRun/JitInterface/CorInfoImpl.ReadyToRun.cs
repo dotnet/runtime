@@ -27,6 +27,15 @@ using System.Text;
 
 namespace Internal.JitInterface
 {
+    class InfiniteCompileStress
+    {
+        public static bool Enabled;
+        static InfiniteCompileStress()
+        {
+            Enabled = JitConfigProvider.Instance.GetIntConfigValue("InfiniteCompileStress", 0) != 0;
+        }
+    }
+
     internal class RequiresRuntimeJitIfUsedSymbol
     {
         public RequiresRuntimeJitIfUsedSymbol(string message)
@@ -435,12 +444,17 @@ namespace Internal.JitInterface
 
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
+        private MethodColdCodeNode _methodColdCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
+        private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
+        private HashSet<MethodDesc> _synthesizedPgoDependencies;
+
+        public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -543,7 +557,7 @@ namespace Internal.JitInterface
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
             // If any il bodies need to be recomputed, force recompilation
-            if (_ilBodiesNeeded != null)
+            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled)
             {
                 _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
                 result = CompilationResult.CompilationRetryRequested;
@@ -656,6 +670,8 @@ namespace Internal.JitInterface
                 {
                     PublishEmptyCode();
                 }
+
+                HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
             }
         }
@@ -1327,6 +1343,7 @@ namespace Internal.JitInterface
         {
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
             _methodCodeNode.InitializeFrameInfos(Array.Empty<FrameInfo>());
+            _methodCodeNode.InitializeColdFrameInfos(Array.Empty<FrameInfo>());
         }
 
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
@@ -1357,57 +1374,64 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
-        private static bool IsClassPreInited(TypeDesc type)
+        private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
             {
                 return true;
             }
-            if (type.HasStaticConstructor)
-            {
-                return false;
-            }
-            if (HasBoxedRegularStatics(type))
-            {
-                return false;
-            }
-            if (IsDynamicStatics(type))
-            {
-                return false;
-            }
-            return true;
-        }
 
-        private static bool HasBoxedRegularStatics(TypeDesc type)
-        {
-            foreach (FieldDesc field in type.GetFields())
+            var uninstantiatedType = type.GetTypeDefinition();
+
+            if (_preInitedTypes.TryGetValue(uninstantiatedType, out bool preInited))
             {
-                if (field.IsStatic &&
-                    !field.IsLiteral &&
-                    !field.HasRva &&
-                    !field.IsThreadStatic &&
-                    field.FieldType.IsValueType &&
-                    !field.FieldType.UnderlyingType.IsPrimitive)
+                return preInited;
+            }
+
+            preInited = ComputeIsClassPreInited(type);
+            _preInitedTypes.Add(uninstantiatedType, preInited);
+            return preInited;
+
+            static bool ComputeIsClassPreInited(TypeDesc type)
+            {
+                if (type.IsGenericDefinition)
                 {
                     return true;
                 }
-            }
-            return false;
-        }
 
-        private static bool IsDynamicStatics(TypeDesc type)
-        {
-            if (type.HasInstantiation)
+                if (type.HasStaticConstructor)
+                {
+                    return false;
+                }
+                if (IsDynamicStaticsOrHasBoxedRegularStatics(type))
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            static bool IsDynamicStaticsOrHasBoxedRegularStatics(TypeDesc type)
             {
+                bool typeHasInstantiation = type.HasInstantiation;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.IsStatic && !field.IsLiteral)
+                    if (!field.IsStatic || field.IsLiteral)
+                        continue;
+
+                    if (typeHasInstantiation)
+                        return true; // Dynamic statics
+
+                    if (!field.HasRva &&
+                        !field.IsThreadStatic &&
+                        field.FieldType.IsValueType &&
+                        !field.FieldType.UnderlyingType.IsPrimitive)
                     {
-                        return true;
+                        return true; // HasBoxedRegularStatics
                     }
                 }
+
+                return false;
             }
-            return false;
         }
 
         private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
@@ -1545,8 +1569,6 @@ namespace Internal.JitInterface
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
                         pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
-                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
-
                         fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
                         fieldOffset = 0;
                     }
@@ -1629,7 +1651,7 @@ namespace Internal.JitInterface
 
             // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
             // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at
-            // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/jitinterface.cpp#L1141
+            // https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/jitinterface.cpp#L1054
             // Its basic meaning is that shared generic methods always need instantiating
             // stubs as the shared generic code needs the method dictionary parameter that cannot
             // be provided by other means.
@@ -1710,7 +1732,7 @@ namespace Internal.JitInterface
 
                     // This check for introducing an instantiation stub comes from the logic in
                     // MethodTable::TryResolveConstraintMethodApprox at
-                    // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/methodtable.cpp#L10062
+                    // https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/methodtable.cpp#L8628
                     // Its meaning is that, for direct method calls on value types, instantiating
                     // stubs are always needed in the presence of generic arguments as the generic
                     // dictionary cannot be passed through "this->method table".
@@ -2729,9 +2751,9 @@ namespace Internal.JitInterface
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc methodDesc = HandleToObject(method);
-            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
                 methodDesc = rawPInvoke.Target;
+            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
@@ -2955,7 +2977,7 @@ namespace Internal.JitInterface
             if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64)
                 return;
 
-            object node = HandleToObject((IntPtr)entryPoint.addr);
+            object node = HandleToObject(entryPoint.addr);
             if (node is not DelayLoadMethodImport imp)
                 return;
 
@@ -2968,6 +2990,37 @@ namespace Internal.JitInterface
                     isJumpableImportRequired: true);
 
             entryPoint = CreateConstLookupToSymbol(newEntryPoint);
+        }
+
+        private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
+        {
+            // Not implemented for R2R yet
+            return 0;
+        }
+
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        {
+            return false;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
+        {
+            throw new NotSupportedException();
+        }
+
+        private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
+        {
+            throw new NotSupportedException();
+        }
+        
+        private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return null;
+        }
+
+        private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
+        {
+            return -1;
         }
     }
 }

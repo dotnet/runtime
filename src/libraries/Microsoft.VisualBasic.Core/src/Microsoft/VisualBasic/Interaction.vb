@@ -126,18 +126,16 @@ Namespace Microsoft.VisualBasic
 #End If
         End Sub
 
-        <Obsolete("Microsoft.VisualBasic.Interaction.InputBox is deprecated.", False, DiagnosticId:="SYSLIB0047", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
+        <Obsolete("Microsoft.VisualBasic.Interaction.InputBox is deprecated.", False, DiagnosticId:="SYSLIB0049", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
         Public Function InputBox(ByVal Prompt As String, Optional ByVal Title As String = "", Optional ByVal DefaultResponse As String = "", Optional ByVal XPos As Integer = -1, Optional ByVal YPos As Integer = -1) As String
             Return DirectCast(InvokeMethod("InputBox", Prompt, Title, DefaultResponse, XPos, YPos), String)
         End Function
 
-        <Obsolete("Microsoft.VisualBasic.Interaction.MsgBox is deprecated, use System.Windows.Forms.MessageBox instead.", False, DiagnosticId:="SYSLIB0048", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
+        <Obsolete("Microsoft.VisualBasic.Interaction.MsgBox is deprecated, use System.Windows.Forms.MessageBox instead.", False, DiagnosticId:="SYSLIB0050", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
         Public Function MsgBox(ByVal Prompt As Object, Optional ByVal Buttons As MsgBoxStyle = MsgBoxStyle.OkOnly, Optional ByVal Title As Object = Nothing) As MsgBoxResult
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
-        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="Trimmer warns because it can't see Microsoft.VisualBasic.Forms. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
             Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)

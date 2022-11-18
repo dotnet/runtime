@@ -103,12 +103,12 @@ namespace System.Net.Http
 
                 _windowManager = new Http2StreamWindowManager(connection, this);
 
-                _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
+                _headerBudgetRemaining = connection._pool.Settings.MaxResponseHeadersByteLength;
 
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
-                    if (_request.IsWebSocketH2Request())
+                    if (_request.IsExtendedConnectRequest)
                     {
                         _requestBodyCancellationSource = new CancellationTokenSource();
                     }
@@ -589,7 +589,7 @@ namespace System.Net.Http
                 _headerBudgetRemaining -= amount;
                 if (_headerBudgetRemaining < 0)
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings.MaxResponseHeadersByteLength));
                 }
             }
 
@@ -637,7 +637,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
+                        if (statusCode == 200 && _response.RequestMessage!.IsExtendedConnectRequest)
                         {
                             ConnectProtocolEstablished = true;
                         }

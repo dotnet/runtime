@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
         private List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
-        private IServiceFactoryAdapter _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        private IServiceFactoryAdapter _serviceProviderFactory;
         private bool _hostBuilt;
         private IConfiguration? _hostConfiguration;
         private IConfiguration? _appConfiguration;
@@ -37,6 +37,15 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="HostBuilder"/>.
+        /// </summary>
+        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
+        public HostBuilder()
+        {
+            _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+        }
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
@@ -184,7 +193,7 @@ namespace Microsoft.Extensions.Hosting
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
-        private static void Write<T>(
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
             DiagnosticSource diagnosticSource,
             string name,
             T value)

@@ -525,8 +525,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_3D: // DR_3D   X..........mmmmm cccc..nnnnnmmmmm      Rd Rn Rm cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
-            assert(isGeneralRegister(id->idReg3()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg3()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -3041,7 +3041,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             {
                 canEncode = true;
             }
-            if (allow_MSL)
+
+            // MSL is only supported for 32-bit.
+            if (allow_MSL && (size == EA_4BYTE))
             {
                 if ((bySh == 1) && (immCheck == 0xFF))
                 {
@@ -7343,8 +7345,8 @@ void emitter::emitIns_R_R_R_COND(
         case INS_csinv:
         case INS_csneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
-            assert(isGeneralRegister(reg3));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert(isGeneralRegisterOrZR(reg3));
             cfi.cond = cond;
             fmt      = IF_DR_3D;
             break;
@@ -11765,6 +11767,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 /*****************************************************************************
  *
+ *  Display a comma
+ */
+void emitter::emitDispComma()
+{
+    printf(", ");
+}
+
+/*****************************************************************************
+ *
  *  Display the instruction name
  */
 void emitter::emitDispInst(instruction ins)
@@ -11790,8 +11801,18 @@ void emitter::emitDispInst(instruction ins)
  *
  *  Display an immediate value
  */
-void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */)
+void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /* =false */)
 {
+    if (isAddrOffset)
+    {
+        alwaysHex = true;
+    }
+    else if (imm == 0)
+    {
+        // Non-offset values of zero are never displayed as hex.
+        alwaysHex = false;
+    }
+
     if (strictArmAsm)
     {
         printf("#");
@@ -11821,16 +11842,23 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
         if ((imm & 0xFFFFFFFF00000000LL) != 0)
         {
-            printf("0x%llx", imm);
+            if (isAddrOffset)
+            {
+                printf("0x%llX", imm);
+            }
+            else
+            {
+                printf("0x%llx", imm);
+            }
         }
         else
         {
-            printf("0x%02x", (unsigned)imm);
+            printf("0x%02X", (unsigned)imm);
         }
     }
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 /*****************************************************************************
@@ -11999,7 +12027,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
     printf(emitRegName(reg, size));
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12012,7 +12040,7 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
     emitDispArrangement(opt);
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12026,7 +12054,7 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
     printf("[%d]", (int)index);
 
     if (addComma)
-        printf(", ");
+        emitDispComma();
 }
 
 //------------------------------------------------------------------------
@@ -12049,7 +12077,7 @@ void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOp
 
     if (addComma)
     {
-        printf(", ");
+        emitDispComma();
     }
 }
 
@@ -12071,7 +12099,7 @@ void emitter::emitDispVectorElemList(
         const bool notLastRegister = (i != listSize - 1);
         if (notLastRegister)
         {
-            printf(", ");
+            emitDispComma();
         }
         currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
     }
@@ -12080,7 +12108,7 @@ void emitter::emitDispVectorElemList(
 
     if (addComma)
     {
-        printf(", ");
+        emitDispComma();
     }
 }
 
@@ -12170,7 +12198,7 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
     {
         if (strictArmAsm)
         {
-            printf(",");
+            emitDispComma();
         }
         emitDispShiftOpts(opt);
         emitDispImm(imm, false);
@@ -12252,8 +12280,8 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (!insOptsPostIndex(opt) && (imm != 0))
         {
-            printf(",");
-            emitDispImm(imm, false);
+            emitDispComma();
+            emitDispImm(imm, false, true, true);
         }
         printf("]");
 
@@ -12263,8 +12291,8 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         }
         else if (insOptsPostIndex(opt))
         {
-            printf(",");
-            emitDispImm(imm, false);
+            emitDispComma();
+            emitDispImm(imm, false, true, true);
         }
     }
     else // !strictArmAsm
@@ -12292,13 +12320,13 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (insOptsIndexed(opt))
         {
-            printf(", ");
+            emitDispComma();
         }
         else
         {
             printf("%c", operStr[1]);
         }
-        emitDispImm(imm, false);
+        emitDispImm(imm, false, true, true);
         printf("]");
     }
 }
@@ -12993,7 +13021,7 @@ void emitter::emitDispInsHelp(
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispImm(cfi.imm5, true);
             emitDispFlags(cfi.flags);
-            printf(", ");
+            emitDispComma();
             emitDispCond(cfi.cond);
             break;
 
@@ -13063,7 +13091,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), size, true);
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispFlags(cfi.flags);
-            printf(", ");
+            emitDispComma();
             emitDispCond(cfi.cond);
             break;
 
@@ -13230,8 +13258,8 @@ void emitter::emitDispInsHelp(
             }
             if (ins == INS_fcmeq || ins == INS_fcmge || ins == INS_fcmgt || ins == INS_fcmle || ins == INS_fcmlt)
             {
-                printf(", ");
-                emitDispImm(0, false);
+                emitDispComma();
+                emitDispFloatZero();
             }
             break;
 
@@ -13254,7 +13282,7 @@ void emitter::emitDispInsHelp(
             }
             if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
-                printf(", ");
+                emitDispComma();
                 emitDispImm(0, false);
             }
             break;
@@ -13381,7 +13409,7 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
-                emitDispImm(0, false);
+                emitDispFloatZero();
             }
             else if (emitInsIsVectorNarrow(ins))
             {
@@ -13396,7 +13424,7 @@ void emitter::emitDispInsHelp(
             if (fmt == IF_DV_2L &&
                 (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt))
             {
-                printf(", ");
+                emitDispComma();
                 emitDispImm(0, false);
             }
             break;
@@ -15929,7 +15957,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return false;
     }
 
-    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    const bool canOptimize = emitCanPeepholeLastIns();
 
     if (dst == src)
     {
@@ -15949,8 +15977,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
         {
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if (!isFirstInstrInBlock && (emitLastIns != nullptr) && (emitLastIns->idReg1() == dst) &&
-                (emitLastIns->idOpSize() == size) && emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
+            if (canOptimize && (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == size) &&
+                emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
             {
                 JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
                 return true;
@@ -15958,8 +15986,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
-        (emitLastIns != nullptr) &&
+    if (canOptimize &&                       // Don't optimize if unsafe.
         (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
         (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
@@ -16037,9 +16064,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
+    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
     {
         return false;
     }

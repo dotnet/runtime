@@ -17,16 +17,16 @@ namespace System.Security.Cryptography.Cose
     /// </summary>
     public sealed class CoseMultiSignMessage : CoseMessage
     {
-        private const int MultiSignArrayLength = 4;
+        internal const int MultiSignArrayLength = 4;
         private const int MultiSignSizeOfCborTag = 2;
         internal const int CoseSignatureArrayLength = 3;
 
         private readonly List<CoseSignature> _signatures;
 
         /// <summary>
-        /// Gets a read-only collection of signatures associated to this message.
+        /// Gets a read-only collection of signatures associated with this message.
         /// </summary>
-        /// <value>A read-only collection of signatures associated to this message.</value>
+        /// <value>A read-only collection of signatures associated with this message.</value>
         public ReadOnlyCollection<CoseSignature> Signatures { get; }
 
         internal CoseMultiSignMessage(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, List<CoseSignature> signatures, byte[] encodedProtectedHeader, bool isTagged)
@@ -804,7 +804,7 @@ namespace System.Security.Cryptography.Cose
                     bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
 
                     byte[] signature = bufferSpan.Slice(0, bytesWritten).ToArray();
-                    _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, _protectedHeaderAsBstr, encodedSignProtected, signature));
+                    _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
                 }
             }
             finally
@@ -877,7 +877,7 @@ namespace System.Security.Cryptography.Cose
                 bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
 
                 byte[] signature = buffer.AsSpan(0, bytesWritten).ToArray();
-                _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, _protectedHeaderAsBstr, encodedSignProtected, signature));
+                _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
             }
 
             ArrayPool<byte>.Shared.Return(buffer, clearArray: true);

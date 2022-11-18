@@ -219,6 +219,8 @@
 #error Unsupported or unset target architecture
 #endif
 
+typedef ptrdiff_t ssize_t;
+
 // Include the AMD64 unwind codes when appropriate.
 #if defined(TARGET_AMD64)
 #include "win64unwind.h"
@@ -349,8 +351,6 @@ typedef int NATIVE_OFFSET;
 // this is used for native code sizes.
 typedef unsigned UNATIVE_OFFSET;
 
-typedef ptrdiff_t ssize_t;
-
 // Type used for weights (e.g. block and edge weights)
 typedef double weight_t;
 
@@ -435,8 +435,7 @@ public:
 #define NODEBASH_STATS 0      // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS 0     // Display use counts for GenTree operators.
 
-#define VERBOSE_SIZES 0  // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
-#define VERBOSE_VERIFY 0 // Dump additional information when verifying code. Useful to debug verification bugs.
+#define VERBOSE_SIZES 0 // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
 
 #ifdef DEBUG
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
@@ -632,8 +631,15 @@ inline unsigned int unsigned_abs(int x)
 #ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
+    return ((size_t)abs((__int64)x));
+}
+
+#ifdef __APPLE__
+inline size_t unsigned_abs(__int64 x)
+{
     return ((size_t)abs(x));
 }
+#endif // __APPLE__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/

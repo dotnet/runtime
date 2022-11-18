@@ -31,6 +31,7 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger-state-machine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.c
   ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
+  ${MONO_COMPONENT_PATH}/mini-wasi-debugger.c
   ${MONO_COMPONENT_PATH}/debugger-protocol.h
   ${MONO_COMPONENT_PATH}/debugger-protocol.c
   )
@@ -92,8 +93,6 @@ list(APPEND components_for_aot
 set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/marshal-ilgen.c
   ${MONO_COMPONENT_PATH}/marshal-ilgen.h
-  ${MONO_COMPONENT_PATH}/marshal-ilgen-noilgen.c
-  ${MONO_COMPONENT_PATH}/marshal-ilgen-noilgen.h  
 )
 
 # For every component not build into the AOT compiler, build the stub instead

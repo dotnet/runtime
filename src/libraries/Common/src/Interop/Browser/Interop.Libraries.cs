@@ -7,6 +7,5 @@ internal static partial class Interop
     {
         // Shims
         internal const string SystemNative = "libSystem.Native";
-        internal const string CryptoNative = "libSystem.Security.Cryptography.Native.Browser";
     }
 }

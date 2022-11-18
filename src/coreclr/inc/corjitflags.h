@@ -92,7 +92,7 @@ public:
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
 #if defined(TARGET_ARM)
-        CORJIT_FLAG_SOFTFP_ABI              = 43, // JIT should generate PC-relative address computations instead of EE relocation records
+        CORJIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
 #else // !defined(TARGET_ARM)
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
@@ -202,9 +202,19 @@ public:
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    uint64_t GetInstructionSetFlagsRaw()
+    uint64_t* GetInstructionSetFlagsRaw()
     {
         return instructionSetFlags.GetFlagsRaw();
+    }
+
+    CORINFO_InstructionSetFlags GetInstructionSetFlags()
+    {
+        return instructionSetFlags;
+    }
+
+    const int GetInstructionFlagsFieldCount()
+    {
+        return instructionSetFlags.GetInstructionFlagsFieldCount();
     }
 
 private:

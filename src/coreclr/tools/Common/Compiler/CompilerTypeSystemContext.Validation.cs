@@ -9,7 +9,7 @@ namespace ILCompiler
 {
     // Validates types to the extent that is required to make sure the compilation won't fail
     // in unpredictable spots.
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         /// <summary>
         /// Ensures that the type can be fully loaded. The method will throw one of the type system
@@ -33,7 +33,7 @@ namespace ILCompiler
             }
         }
 
-        class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
+        private sealed class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
             protected override bool CompareValueToValue(TypeDesc value1, TypeDesc value2) => value1 == value2;

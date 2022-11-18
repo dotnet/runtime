@@ -8,7 +8,7 @@ namespace System.Numerics
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
           IShiftOperators<TSelf, int, TSelf>
-        where TSelf : IBinaryInteger<TSelf>
+        where TSelf : IBinaryInteger<TSelf>?
     {
         /// <summary>Computes the quotient and remainder of two values.</summary>
         /// <param name="left">The value which <paramref name="right" /> divides.</param>
@@ -25,7 +25,12 @@ namespace System.Numerics
         /// <returns>The number of leading zeros in <paramref name="value" />.</returns>
         static virtual TSelf LeadingZeroCount(TSelf value)
         {
-            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            TSelf bitCount = TSelf.CreateChecked(value!.GetByteCount() * 8L);
 
             if (value == TSelf.Zero)
             {
@@ -74,7 +79,7 @@ namespace System.Numerics
         /// <param name="isUnsigned"><c>true</c> if <paramref name="source" /> represents an unsigned two's complement number; otherwise, <c>false</c> to indicate it represents a signed two's complement number.</param>
         /// <returns>The value read from <paramref name="source" />.</returns>
         /// <exception cref="OverflowException"><paramref name="source" /> is not representable by <typeparamref name="TSelf" /></exception>
-        static virtual TSelf ReadBigEndian(Span<byte> source, bool isUnsigned)
+        static virtual TSelf ReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned)
         {
             if (!TSelf.TryReadBigEndian(source, isUnsigned, out TSelf value))
             {
@@ -117,7 +122,7 @@ namespace System.Numerics
         /// <param name="isUnsigned"><c>true</c> if <paramref name="source" /> represents an unsigned two's complement number; otherwise, <c>false</c> to indicate it represents a signed two's complement number.</param>
         /// <returns>The value read from <paramref name="source" />.</returns>
         /// <exception cref="OverflowException"><paramref name="source" /> is not representable by <typeparamref name="TSelf" /></exception>
-        static virtual TSelf ReadLittleEndian(Span<byte> source, bool isUnsigned)
+        static virtual TSelf ReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned)
         {
             if (!TSelf.TryReadLittleEndian(source, isUnsigned, out TSelf value))
             {
@@ -132,7 +137,12 @@ namespace System.Numerics
         /// <returns>The result of rotating <paramref name="value" /> left by <paramref name="rotateAmount" />.</returns>
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount)
         {
-            int bitCount = checked(value.GetByteCount() * 8);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            int bitCount = checked(value!.GetByteCount() * 8);
             return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
         }
 
@@ -142,7 +152,12 @@ namespace System.Numerics
         /// <returns>The result of rotating <paramref name="value" /> right by <paramref name="rotateAmount" />.</returns>
         static virtual TSelf RotateRight(TSelf value, int rotateAmount)
         {
-            int bitCount = checked(value.GetByteCount() * 8);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            int bitCount = checked(value!.GetByteCount() * 8);
             return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
         }
 

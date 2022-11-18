@@ -229,6 +229,9 @@
   <data name="Arg_CannotHaveNegativeValue" xml:space="preserve">
     <value>String cannot contain a minus sign if the base is not 10.</value>
   </data>
+  <data name="Arg_CannotMarshal" xml:space="preserve">
+    <value>Type '{0}' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed.</value>
+  </data>
   <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
     <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
   </data>
@@ -1243,8 +1246,8 @@
   <data name="Argument_InvalidParamInfo" xml:space="preserve">
     <value>Invalid type for ParameterInfo member in Attribute class.</value>
   </data>
-  <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path.</value>
+  <data name="Argument_NullCharInPath" xml:space="preserve">
+    <value>Null character in path.</value>
   </data>
   <data name="Argument_InvalidResourceCultureName" xml:space="preserve">
     <value>The given culture name '{0}' cannot be used to locate a resource file. Resource filenames must consist of only letters, numbers, hyphens or underscores.</value>

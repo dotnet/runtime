@@ -7,7 +7,7 @@
 // 2. fgAddRefPred did not find the existing occurrence if the order was not sorted;
 // 3. fgReplacePred had several occurrences of the same block and when it became dead it updated only the first link;
 // 4. The link to the dead block exposed noway_assert in flowgraph.
-// The repro required JitStress=2 or complus_jitstressmodenames=STRESS_BB_PROFILE;
+// The repro required JitStress=2 or DOTNET_jitstressmodenames=STRESS_BB_PROFILE;
 // STRESS_BB_PROFILE uses file name hash to set weights, so this file can't be renamed.
 
 #pragma warning disable

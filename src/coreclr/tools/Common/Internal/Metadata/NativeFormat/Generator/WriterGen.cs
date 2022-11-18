@@ -13,15 +13,10 @@ class WriterGen : CsWriter
         WriteLine("#pragma warning disable 649");
         WriteLine();
 
-        WriteLine("using System;");
-        WriteLine("using System.IO;");
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Threading;");
-        WriteLine("using Internal.LowLevelLinq;");
-        WriteLine("using Internal.Metadata.NativeFormat.Writer;");
         WriteLine("using Internal.NativeFormat;");
-        WriteLine("using HandleType = Internal.Metadata.NativeFormat.HandleType;");
         WriteLine("using Debug = System.Diagnostics.Debug;");
         WriteLine();
 
@@ -64,8 +59,8 @@ class WriterGen : CsWriter
         }
         CloseScope("Visit");
 
-        OpenScope("public override sealed bool Equals(Object obj)");
-        WriteLine("if (Object.ReferenceEquals(this, obj)) return true;");
+        OpenScope("public sealed override bool Equals(object obj)");
+        WriteLine("if (ReferenceEquals(this, obj)) return true;");
         WriteLine($"var other = obj as {record.Name};");
         WriteLine("if (other == null) return false;");
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)
@@ -94,7 +89,7 @@ class WriterGen : CsWriter
             else
             if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.RecordRef)) != 0)
             {
-                WriteLine($"if (!Object.Equals({member.Name}, other.{member.Name})) return false;");
+                WriteLine($"if (!Equals({member.Name}, other.{member.Name})) return false;");
             }
             else
             if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
@@ -113,7 +108,7 @@ class WriterGen : CsWriter
             WriteLine("finally");
             WriteLine("{");
             WriteLine("    var popped = _equalsReentrancyGuard.Value.Pop();");
-            WriteLine("    Debug.Assert(Object.ReferenceEquals(other, popped));");
+            WriteLine("    Debug.Assert(ReferenceEquals(other, popped));");
             WriteLine("}");
         }
         WriteLine("return true;");
@@ -121,7 +116,7 @@ class WriterGen : CsWriter
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)
             WriteLine("private ThreadLocal<ReentrancyGuardStack> _equalsReentrancyGuard;");
 
-        OpenScope("public override sealed int GetHashCode()");
+        OpenScope("public sealed override int GetHashCode()");
         WriteLine("if (_hash != 0)");
         WriteLine("    return _hash;");
         WriteLine("EnterGetHashCode();");

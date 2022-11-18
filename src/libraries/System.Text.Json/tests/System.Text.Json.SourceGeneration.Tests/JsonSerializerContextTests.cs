@@ -22,6 +22,70 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void PropertyMetadataIsImmutable()
+        {
+            JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
+
+            Assert.True(typeInfo.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+        }
+
+        [Fact]
+        public static void JsonSerializerContext_GetTypeInfo_MetadataIsImmutable()
+        {
+            JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)PersonJsonContext.Default.GetTypeInfo(typeof(Person));
+
+            Assert.True(typeInfo.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+        }
+
+        [Fact]
+        public static void IJsonTypeInfoResolver_GetTypeInfo_MetadataIsMutable()
+        {
+            IJsonTypeInfoResolver resolver = PersonJsonContext.Default;
+            JsonTypeInfo<Person> typeInfo = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
+
+            Assert.NotSame(typeInfo, PersonJsonContext.Default.Person);
+            Assert.False(typeInfo.IsReadOnly);
+
+            JsonTypeInfo<Person> typeInfo2 = (JsonTypeInfo<Person>)resolver.GetTypeInfo(typeof(Person), PersonJsonContext.Default.Options);
+            Assert.NotSame(typeInfo, typeInfo2);
+            Assert.False(typeInfo.IsReadOnly);
+
+            typeInfo.CreateObject = null;
+            typeInfo.OnDeserializing = obj => { };
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            propertyInfo.Name = "differentName";
+            propertyInfo.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            propertyInfo.IsRequired = true;
+            propertyInfo.Order = -1;
+
+            typeInfo.Properties.Clear();
+            Assert.Equal(0, typeInfo.Properties.Count);
+
+            // Changes should not impact other metadata instances
+            Assert.Equal(2, typeInfo2.Properties.Count);
+            Assert.Equal(2, PersonJsonContext.Default.Person.Properties.Count);
+        }
+
+        [Fact]
         public static void VariousGenericsAreSupported()
         {
             AssertGenericContext(GenericContext<int>.Default);
@@ -380,6 +444,37 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(@"[""Cee""]", json);
         }
 
+        // Regression test for https://github.com/dotnet/runtime/issues/74652
+        [Fact]
+        public static void ClassWithStringValuesRoundtrips()
+        {
+            JsonSerializerOptions options = ClassWithStringValuesContext.Default.Options;
+
+            ClassWithStringValues obj = new()
+            {
+                StringValuesProperty = new(new[] { "abc", "def" })
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/61734
+        [Fact]
+        public static void ClassWithDictionaryPropertyRoundtrips()
+        {
+            JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
+
+            ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
+            {
+                ["foo"] = "bar",
+                ["test"] = "baz",
+            });
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
+        }
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum TestEnum
         {
@@ -394,7 +489,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithPocoListDictionaryAndNullable))]
         internal partial class ClassWithPocoListDictionaryAndNullablePropertyContext : JsonSerializerContext
         {
+        }
 
+        [JsonSerializable(typeof(ClassWithStringValues))]
+        internal partial class ClassWithStringValuesContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(ClassWithDictionaryProperty))]
+        internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
         }
 
         internal class ClassWithPocoListDictionaryAndNullable

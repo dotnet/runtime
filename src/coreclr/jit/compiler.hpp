@@ -233,6 +233,13 @@ inline unsigned genLog2(unsigned __int64 value)
 #endif
 }
 
+#ifdef __APPLE__
+inline unsigned genLog2(size_t value)
+{
+    return genLog2((unsigned __int64)value);
+}
+#endif // __APPLE__
+
 /*****************************************************************************
  *
  *  Return the lowest bit that is set in the given register mask.
@@ -830,42 +837,23 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-/*****************************************************************************/
-
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications)
+inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
-    if (doSimplifications)
+    if (oper == GT_ADDR)
     {
-        // We do some simplifications here. If this gets to be too many, try a switch...
-        if (oper == GT_IND)
+        if (op1->OperIsIndir())
         {
-            // IND(ADDR(IND(x)) == IND(x)
-            if (op1->OperIs(GT_ADDR))
-            {
-                GenTree* indir = op1->AsUnOp()->gtGetOp1();
-                if (indir->OperIs(GT_IND))
-                {
-                    op1 = indir->AsIndir()->Addr();
-                }
-            }
+            assert(op1->IsValue());
+            return op1->AsIndir()->Addr();
         }
-        else if (oper == GT_ADDR)
-        {
-            if (op1->OperIs(GT_IND))
-            {
-                return op1->AsOp()->gtOp1;
-            }
-            else
-            {
-                // Addr source can't be CSE-ed.
-                op1->SetDoNotCSE();
-            }
-        }
+
+        assert(op1->OperIsLocalRead() || op1->OperIs(GT_FIELD));
+        op1->SetDoNotCSE();
     }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
@@ -1081,61 +1069,6 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-//------------------------------------------------------------------------
-// gtNewFieldRef: a helper for creating GT_FIELD nodes.
-//
-// Normalizes struct types (for SIMD vectors). Sets GTF_GLOB_REF for fields
-// that may be pointing into globally visible memory.
-//
-// Arguments:
-//    type   - type for the field node
-//    fldHnd - the field handle
-//    obj    - the instance, an address
-//    offset - the field offset
-//
-// Return Value:
-//    The created node.
-//
-inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
-{
-    // GT_FIELD nodes are transformed into GT_IND nodes.
-    assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
-
-    if (type == TYP_STRUCT)
-    {
-        CORINFO_CLASS_HANDLE structHnd;
-        eeGetFieldType(fldHnd, &structHnd);
-        type = impNormStructType(structHnd);
-    }
-
-    GenTreeField* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
-
-    // If "obj" is the address of a local, note that a field of that struct local has been accessed.
-    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
-        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
-    {
-        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
-
-        varDsc->lvFieldAccessed = 1;
-
-        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
-        {
-            // These structs are passed by reference and can easily become global references if those
-            // references are exposed. We clear out address-exposure information for these parameters
-            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
-            // the necessary information in morph to know if these indirections are actually global
-            // references, so we have to be conservative here.
-            fieldNode->gtFlags |= GTF_GLOB_REF;
-        }
-    }
-    else
-    {
-        fieldNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    return fieldNode;
-}
-
 inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   GenTree*             indexOp,
                                                   var_types            elemType,
@@ -1279,10 +1212,14 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 // Return Value:
 //    New GT_IND node
 
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
 {
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
     GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->gtFlags |= indirFlags;
     indir->SetIndirExceptionFlags(this);
+
     return indir->AsIndir();
 }
 
@@ -1338,8 +1275,6 @@ inline void GenTree::gtBashToNOP()
 
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
-
-/*****************************************************************************/
 
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
 {
@@ -1557,7 +1492,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
     static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
                           std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, double>::value));
+                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
+
     static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
 
     var_types typeOfValue = TYP_UNDEF;
@@ -1617,7 +1553,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
-            AsDblCon()->gtDconVal = static_cast<double>(value);
+            AsDblCon()->SetDconValue(static_cast<double>(value));
             break;
 
         default:
@@ -3762,7 +3698,7 @@ inline ArenaAllocator* Compiler::compGetArenaAllocator()
     return compArenaAllocator;
 }
 
-inline bool Compiler::compIsProfilerHookNeeded()
+inline bool Compiler::compIsProfilerHookNeeded() const
 {
 #ifdef PROFILING_SUPPORTED
     return compProfilerHookNeeded
@@ -3794,30 +3730,6 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
 }
 
-/*****************************************************************************
- *
- *  Check to see if the delegate is created using "LDFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 6 && // LDFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_PREFIX1 && delegateCreateStart[1] == (CEE_LDFTN & 0xFF));
-}
-
-/*****************************************************************************
- *
- *  Check to see if the delegate is created using "DUP LDVIRTFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 7 && // DUP LDVIRTFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_DUP && delegateCreateStart[1] == CEE_PREFIX1 &&
-            delegateCreateStart[2] == (CEE_LDVIRTFTN & 0xFF));
-}
 /*****************************************************************************
  *
  * Returns true if the compiler instance is created for import only (verification).
@@ -3884,13 +3796,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
     {
         // The struct is a register candidate
         return PROMOTION_TYPE_INDEPENDENT;
-    }
-
-    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2
-    if (fgNoStructParamPromotion)
-    {
-        // The struct parameter is not enregistered
-        return PROMOTION_TYPE_DEPENDENT;
     }
 
 // We have a parameter that could be enregistered
@@ -4126,36 +4031,6 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
 }
 
-/*****************************************************************************/
-unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
-{
-    // Address-taken variables don't have SSA numbers.
-    if (!lvaInSsa(lcl->AsLclVarCommon()->GetLclNum()))
-    {
-        return SsaConfig::RESERVED_SSA_NUM;
-    }
-
-    if (lcl->gtFlags & GTF_VAR_USEASG)
-    {
-        // It's partial definition of a struct. "lcl" is both used and defined here;
-        // we've chosen in this case to annotate "lcl" with the SSA number (and VN) of the use,
-        // and to store the SSA number of the def in a side table.
-        unsigned ssaNum;
-        // In case of a remorph (fgMorph) in CSE/AssertionProp after SSA phase, there
-        // wouldn't be an entry for the USEASG portion of the indir addr, return
-        // reserved.
-        if (!GetOpAsgnVarDefSsaNums()->Lookup(lcl, &ssaNum))
-        {
-            return SsaConfig::RESERVED_SSA_NUM;
-        }
-        return ssaNum;
-    }
-    else
-    {
-        return lcl->AsLclVarCommon()->GetSsaNum();
-    }
-}
-
 inline bool Compiler::PreciseRefCountsRequired()
 {
     return opts.OptimizationEnabled();
@@ -4204,6 +4079,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         // Unary operators with an optional operand
         case GT_NOP:
         case GT_FIELD:
+        case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
             if (this->AsUnOp()->gtOp1 == nullptr)

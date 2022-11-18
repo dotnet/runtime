@@ -939,10 +939,6 @@ namespace System.Resources
         // This allows us to delay-initialize the Type[].  This might be a
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
-            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
-            "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
             if (!AllowCustomResourceTypes)
@@ -955,7 +951,13 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
 
-            return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            Type UseReflectionToGetTypeLocal(int typeIndex) => UseReflectionToGetType(typeIndex);
+
+            return _typeTable[typeIndex] ?? UseReflectionToGetTypeLocal(typeIndex);
         }
 
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +

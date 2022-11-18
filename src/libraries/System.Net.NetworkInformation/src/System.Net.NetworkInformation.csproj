@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -54,8 +54,6 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <!-- Logging -->
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" Link="Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" Link="Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" />
@@ -120,7 +118,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MapTcpState.cs" Link="Common\Interop\Unix\System.Native\Interop.MapTcpState.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs" Link="Common\System\IO\RowConfigReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
   </ItemGroup>
   <!-- Linux (other than Android) -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux'">

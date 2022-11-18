@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types";
 import { VoidPtr } from "../types/emscripten";
 
@@ -134,7 +137,7 @@ export type MONOType = {
     /**
      * @deprecated Please use runMainAndExit instead
      */
-    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<void>;
+    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<number>;
     /**
      * @deprecated Please use config.assets instead
      */

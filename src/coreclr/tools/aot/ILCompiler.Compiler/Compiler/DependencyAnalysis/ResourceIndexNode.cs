@@ -5,14 +5,13 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
     {
         private ResourceDataNode _resourceDataNode;
 
@@ -28,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -71,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
             indexHashtableSection.Place(indexHashtable);
 
             // Build a table with a tuple of Assembly Full Name, Resource Name, Offset within the resource data blob, Length
-            // for each resource. 
+            // for each resource.
             // This generates a hashtable for the convenience of managed code since there's
             // a reader for VertexHashtable, but not for VertexSequence.
 

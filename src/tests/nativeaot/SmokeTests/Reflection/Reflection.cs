@@ -62,6 +62,7 @@ internal static class ReflectionTest
         TestInvokeMethodMetadata.Run();
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
+        TestMethodConsistency.Run();
 
         //
         // Mostly functionality tests
@@ -2018,6 +2019,25 @@ internal static class ReflectionTest
             }
 
             throw new Exception();
+        }
+    }
+
+    class TestMethodConsistency
+    {
+        class MyGenericType<T>
+        {
+            public static string MyMethod() => typeof(T).Name;
+        }
+
+        struct Atom { }
+
+        public static void Run()
+        {
+            object returned = Grab<Atom>().Invoke(null, null);
+            if ((string)returned != nameof(Atom))
+                throw new Exception();
+
+            static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
         }
     }
 

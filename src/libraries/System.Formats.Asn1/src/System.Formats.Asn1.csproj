@@ -53,6 +53,7 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Compile Include="System\Formats\Asn1\SetOfValueComparer.cs" />
     <Compile Include="System\Formats\Asn1\TagClass.cs" />
     <Compile Include="System\Formats\Asn1\UniversalTagNumber.cs" />
+    <Compile Include="System\Formats\Asn1\WellKnownOids.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

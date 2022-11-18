@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -73,7 +74,7 @@ namespace System.Reflection
             return new AssemblyNameParser(name).Parse();
         }
 
-        private void RecordNewSeenOrThrow(ref AttributeKind seenAttributes, AttributeKind newAttribute)
+        private void RecordNewSeenOrThrow(scoped ref AttributeKind seenAttributes, AttributeKind newAttribute)
         {
             if ((seenAttributes & newAttribute) != 0)
             {
@@ -205,7 +206,8 @@ namespace System.Reflection
                         if (!char.IsDigit(parts[i][j]))
                             ThrowInvalidAssemblyName();
                     }
-                    if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
+
+                    if (!ushort.TryParse(parts[i], NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
                     {
                         ThrowInvalidAssemblyName();
                     }

@@ -216,8 +216,8 @@ namespace System.Text.Json
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
-            Current.JsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo.JsonTypeInfo;
-            Current.JsonPropertyInfo = Current.JsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.JsonTypeInfo = derivedJsonTypeInfo;
+            Current.JsonPropertyInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling ??= Current.JsonPropertyInfo.NumberHandling;
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
             SetConstructorArgumentState();
@@ -411,6 +411,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

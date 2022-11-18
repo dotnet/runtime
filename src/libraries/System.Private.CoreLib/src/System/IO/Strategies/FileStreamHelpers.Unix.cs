@@ -23,7 +23,7 @@ namespace System.IO.Strategies
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path);
                 }
             }
 
@@ -51,7 +51,7 @@ namespace System.IO.Strategies
                         // In such cases there's nothing to flush.
                         break;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
                 }
             }
         }

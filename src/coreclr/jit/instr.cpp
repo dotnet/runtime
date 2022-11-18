@@ -36,12 +36,12 @@ const char* CodeGen::genInsName(instruction ins)
     const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
-        #define INST0(id, nm, um, mr,                 flags) nm,
-        #define INST1(id, nm, um, mr,                 flags) nm,
-        #define INST2(id, nm, um, mr, mi,             flags) nm,
-        #define INST3(id, nm, um, mr, mi, rm,         flags) nm,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     flags) nm,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) nm,
+        #define INST0(id, nm, um, mr,                 tt, flags) nm,
+        #define INST1(id, nm, um, mr,                 tt, flags) nm,
+        #define INST2(id, nm, um, mr, mi,             tt, flags) nm,
+        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) nm,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) nm,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -101,7 +101,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsAVXInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
         retbuf = buf[curBuf];
@@ -745,7 +745,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 break;
 
             case GT_CNS_DBL:
-                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());
@@ -765,7 +765,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     case TYP_SIMD12:
                     case TYP_SIMD16:
                     {
-                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        simd16_t constValue = {};
+
+                        if (op->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = op->AsVecCon()->gtSimd16Val;
+
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
@@ -1782,8 +1788,18 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     }
 }
 
-// Conversions to or from floating point values
-instruction CodeGen::ins_FloatConv(var_types to, var_types from)
+//------------------------------------------------------------------------
+// ins_FloatConv: Conversions to or from floating point values.
+//
+// Arguments:
+//    to - Destination type.
+//    from - Source type.
+//    attr - Input size.
+//
+// Returns:
+//    The correct conversion instruction to use based on src and dst types.
+//
+instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
     // AVX: For now we support only conversion from Int/Long -> float
 
@@ -1795,9 +1811,29 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             switch (to)
             {
                 case TYP_FLOAT:
-                    return INS_cvtsi2ss;
+                {
+                    if (EA_SIZE(attr) == EA_4BYTE)
+                    {
+                        return INS_cvtsi2ss32;
+                    }
+                    else if (EA_SIZE(attr) == EA_8BYTE)
+                    {
+                        return INS_cvtsi2ss64;
+                    }
+                    unreached();
+                }
                 case TYP_DOUBLE:
-                    return INS_cvtsi2sd;
+                {
+                    if (EA_SIZE(attr) == EA_4BYTE)
+                    {
+                        return INS_cvtsi2sd32;
+                    }
+                    else if (EA_SIZE(attr) == EA_8BYTE)
+                    {
+                        return INS_cvtsi2sd64;
+                    }
+                    unreached();
+                }
                 default:
                     unreached();
             }

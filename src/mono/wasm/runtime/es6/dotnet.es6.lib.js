@@ -26,6 +26,7 @@ let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
+    __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 }
 let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
@@ -47,6 +48,7 @@ var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
     PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
+    PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
 }
 `,
 };
@@ -67,10 +69,22 @@ const linked_functions = [
     // mono-threads-wasm.c
     "schedule_background_exec",
 
+    // interp.c
+    "mono_wasm_profiler_enter",
+    "mono_wasm_profiler_leave",
+
     // driver.c
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_event_pipe_early_startup_callback",
+
+    // jiterpreter.c / interp.c / transform.c
+    "mono_interp_tier_prepare_jiterpreter",
+    "mono_interp_jit_wasm_entry_trampoline",
+    "mono_interp_jit_wasm_jit_call_trampoline",
+    "mono_interp_invoke_wasm_jit_call_trampoline",
+    "mono_interp_flush_jitcall_queue",
+    "mono_jiterp_do_jit_call_indirect",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",
@@ -86,19 +100,13 @@ const linked_functions = [
     "mono_wasm_compile_function_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
+    "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
-
-    // pal_crypto_webworker.c
-    "dotnet_browser_can_use_subtle_crypto_impl",
-    "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_sign",
-    "dotnet_browser_encrypt_decrypt",
-    "dotnet_browser_derive_bits",
 
     #if USE_PTHREADS
     /// mono-threads-wasm.c

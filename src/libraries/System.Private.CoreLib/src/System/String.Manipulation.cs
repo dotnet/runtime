@@ -994,7 +994,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            int remainingLength = Length - firstIndex;
+            nuint remainingLength = (uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -1006,36 +1006,22 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
 
-            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            // If the string is long enough for vectorization to kick in, we'd like to
+            // process the remaining elements vectorized too.
+            // Thus we adjust the pointers so that at least one full vector from the end can be processed.
+            nuint length = (uint)Length;
+            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<ushort>.Count)
             {
-                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
-                Vector<ushort> newChars = new Vector<ushort>(newChar);
-
-                do
-                {
-                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
-                    Vector<ushort> equals = Vector.Equals(original, oldChars);
-                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
-
-                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
-                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
-                    remainingLength -= Vector<ushort>.Count;
-                }
-                while (remainingLength >= Vector<ushort>.Count);
+                nuint adjust = (length - remainingLength) & ((uint)Vector128<ushort>.Count - 1);
+                pSrc = ref Unsafe.Subtract(ref pSrc, adjust);
+                pDst = ref Unsafe.Subtract(ref pDst, adjust);
+                remainingLength += adjust;
             }
 
-            for (; remainingLength > 0; remainingLength--)
-            {
-                ushort currentChar = pSrc;
-                pDst = currentChar == oldChar ? newChar : currentChar;
-
-                pSrc = ref Unsafe.Add(ref pSrc, 1);
-                pDst = ref Unsafe.Add(ref pDst, 1);
-            }
+            SpanHelpers.ReplaceValueType(ref pSrc, ref pDst, oldChar, newChar, remainingLength);
 
             return result;
         }
@@ -1067,7 +1053,7 @@ namespace System
                 int i = 0;
                 while (true)
                 {
-                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                    int pos = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
                     if (pos < 0)
                     {
                         break;
@@ -1798,41 +1784,63 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
-
-        public string Substring(int startIndex, int length)
+        public string Substring(int startIndex)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
-            if (startIndex > Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
-
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
-
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            if (startIndex == 0 && length == this.Length)
+            if (startIndex == 0)
             {
                 return this;
             }
 
+            int length = Length - startIndex;
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if ((uint)startIndex > (uint)Length)
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
             return InternalSubString(startIndex, length);
+        }
+
+        public string Substring(int startIndex, int length)
+        {
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
+#else
+            if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
+#endif
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if (length == Length)
+            {
+                Debug.Assert(startIndex == 0);
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        {
+            (string paramName, string message) =
+                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
+                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
+                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
+                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+
+            throw new ArgumentOutOfRangeException(paramName, message);
         }
 
         private string InternalSubString(int startIndex, int length)

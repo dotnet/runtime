@@ -155,7 +155,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     {
         CFileStream fileStream;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName)))
+        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
         {
             hr = WriteOutput(& fileStream);
         }
@@ -283,14 +283,14 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 }
 
 ModuleRecord::ModuleRecord(unsigned lenName, unsigned lenAsmName)
+    : version{}
+    , jitMethodCount{}
+    , wLoadLevel{}
 {
     LIMITED_METHOD_CONTRACT;
 
-    memset(this, 0, sizeof(ModuleRecord));
-
     recordID = Pack8_24(MULTICOREJIT_MODULE_RECORD_ID, sizeof(ModuleRecord));
 
-    wLoadLevel = 0;
     // Extra data
     lenModuleName = (unsigned short) lenName;
     lenAssemblyName = (unsigned short) lenAsmName;
@@ -1467,16 +1467,11 @@ void MulticoreJitManager::StopProfileAll()
     }
     CONTRACTL_END;
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().StopProfile(true);
-        }
+        pDomain->GetMulticoreJitManager().StopProfile(true);
     }
 }
 
@@ -1508,16 +1503,11 @@ void MulticoreJitManager::DisableMulticoreJit()
 
 #ifdef PROFILING_SUPPORTED
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().AbortProfile();
-        }
+        pDomain->GetMulticoreJitManager().AbortProfile();
     }
 
 #endif

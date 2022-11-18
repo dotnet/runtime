@@ -1,3 +1,4 @@
+#ifndef HOST_WASI
 #include <glib.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -486,3 +487,5 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 }
+
+#endif

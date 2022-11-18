@@ -160,6 +160,8 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
+        /// <summary>Gets or sets the value of the <see langword=":protocol" /> pseudo-header for an HTTP request.</summary>
+        /// <value>The value of the <see langword=":protocol" /> pseudo-header for an HTTP request.</value>
         public string? Protocol
         {
             get => _protocol;

@@ -8,7 +8,20 @@ using System.Threading;
 namespace System.Text.RegularExpressions;
 
 /// <summary>Instructs the System.Text.RegularExpressions source generator to generate an implementation of the specified regular expression.</summary>
-/// <remarks>The generator associated with this attribute only supports C#.  It only supplies an implementation when applied to static, partial, parameterless, non-generic methods that are typed to return <see cref="Regex"/>.</remarks>
+/// <remarks>
+/// <para>
+/// The generator associated with this attribute only supports C#.  It only supplies an implementation when applied to static, partial, parameterless, non-generic methods that
+/// are typed to return <see cref="Regex"/>.
+/// </para>
+/// <para>
+/// When the <see cref="Regex"/> supports case-insensitive matches (either by passing <see cref="RegexOptions.IgnoreCase"/> or using the inline `(?i)` switch in the pattern) the regex
+/// engines will use an internal casing table to transform the passed in pattern into an equivalent case-sensitive one. For example, given the pattern `abc`, the engines
+/// will transform it to the equivalent pattern `[Aa][Bb][Cc]`. The equivalences found in this internal casing table can change over time, for example in the case new characters are added to
+/// a new version of Unicode. When using the source generator, this transformation happens at compile time, which means the casing table used to find the
+/// equivalences will depend on the target framework at compile time. This differs from the rest of the <see cref="Regex"/> engines, which perform this transformation at run-time, meaning
+/// they will always use casing table for the current runtime.
+/// </para>
+/// </remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class GeneratedRegexAttribute : Attribute
 {

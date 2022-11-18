@@ -73,11 +73,24 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
             return ConnectAsync(uri, null, cancellationToken);
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="invoker">The <see cref="HttpMessageInvoker" /> instance to use for connecting.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);

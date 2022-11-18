@@ -10,7 +10,7 @@
 #include <eventpipe/ep-types-forward.h>
 #include <glib.h>
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 #include <pthread.h>
 #include <emscripten.h>

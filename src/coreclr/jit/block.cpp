@@ -1451,7 +1451,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
     // Note that some fields have to be initialized to 0 (like bbFPStateX87)
-    memset(block, 0, sizeof(*block));
+    memset((void*)block, 0, sizeof(*block));
 
     // scopeInfo needs to be able to differentiate between blocks which
     // correspond to some instrs (and so may have some LocalVarInfo

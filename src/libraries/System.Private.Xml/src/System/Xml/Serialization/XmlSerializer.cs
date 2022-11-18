@@ -140,6 +140,8 @@ namespace System.Xml.Serialization
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces? s_defaultNamespaces;
+        private static readonly XmlWriterSettings s_writerSettings = new XmlWriterSettings() { Encoding = new UTF8Encoding(false), Indent = true };
+
         private static XmlSerializerNamespaces DefaultNamespaces
         {
             get
@@ -323,7 +325,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(textWriter);
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter, s_writerSettings);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -336,7 +338,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(stream);
+            XmlWriter xmlWriter = XmlWriter.Create(stream, s_writerSettings);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -379,7 +381,7 @@ namespace System.Xml.Serialization
                 {
                     // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
-                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, _tempAssembly);
+                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
                     Serialize(o, writer);
                 }
                 else
@@ -471,7 +473,7 @@ namespace System.Xml.Serialization
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationReader reader = CreateReader();
-                    reader.Init(xmlReader, events, encodingStyle, _tempAssembly);
+                    reader.Init(xmlReader, events, encodingStyle);
                     return Deserialize(reader);
                 }
                 else
@@ -535,13 +537,13 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public static XmlSerializer[] FromMappings(XmlMapping[]? mappings)
+        public static XmlSerializer?[] FromMappings(XmlMapping[]? mappings)
         {
             return FromMappings(mappings, (Type?)null);
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public static XmlSerializer[] FromMappings(XmlMapping[]? mappings, Type? type)
+        public static XmlSerializer?[] FromMappings(XmlMapping[]? mappings, Type? type)
         {
             if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
             bool anySoapMapping = false;
@@ -601,11 +603,12 @@ namespace System.Xml.Serialization
             }
             else
             {
-                XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
+                XmlSerializer?[] serializers = new XmlSerializer?[mappings.Length];
                 for (int i = 0; i < serializers.Length; i++)
                 {
-                    serializers[i] = (XmlSerializer)contract!.TypedSerializers[mappings[i].Key!]!;
-                    TempAssembly.VerifyLoadContext(serializers[i]._rootType, type!.Assembly);
+                    serializers[i] = contract!.TypedSerializers[mappings[i].Key!] as XmlSerializer;
+                    if (serializers[i] != null)
+                        TempAssembly.VerifyLoadContext(serializers[i]!._rootType, type!.Assembly);
                 }
                 return serializers;
             }
@@ -714,7 +717,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public static XmlSerializer[] FromTypes(Type[]? types)
+        public static XmlSerializer?[] FromTypes(Type[]? types)
         {
             if (types == null)
                 return Array.Empty<XmlSerializer>();
@@ -820,7 +823,7 @@ namespace System.Xml.Serialization
         private void SerializePrimitive(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlSerializationPrimitiveWriter writer = new XmlSerializationPrimitiveWriter();
-            writer.Init(xmlWriter, namespaces, null, null, null);
+            writer.Init(xmlWriter, namespaces, null, null);
             switch (Type.GetTypeCode(_primitiveType))
             {
                 case TypeCode.String:
@@ -901,7 +904,7 @@ namespace System.Xml.Serialization
         private object? DeserializePrimitive(XmlReader xmlReader, XmlDeserializationEvents events)
         {
             XmlSerializationPrimitiveReader reader = new XmlSerializationPrimitiveReader();
-            reader.Init(xmlReader, events, null, null);
+            reader.Init(xmlReader, events, null);
             object? o;
             switch (Type.GetTypeCode(_primitiveType))
             {

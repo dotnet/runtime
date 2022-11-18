@@ -262,7 +262,7 @@ namespace System.Text.Json
             }
         }
 
-        private static Utf8JsonReader GetReaderScopedToNextValue(ref Utf8JsonReader reader, ref ReadStack state)
+        private static Utf8JsonReader GetReaderScopedToNextValue(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             // Advances the provided reader, validating that it is pointing to a complete JSON value.
             // If successful, returns a new Utf8JsonReader that is scoped to the next value, reusing existing buffers.

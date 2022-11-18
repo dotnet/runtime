@@ -23,12 +23,7 @@ namespace System.Text.Json.Serialization.Metadata
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
-            if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
-            {
-                AddPropertiesAndParametersUsingReflection();
-            }
-
-            Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
+            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
             SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 
@@ -37,11 +32,17 @@ namespace System.Text.Json.Serialization.Metadata
             converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private void AddPropertiesAndParametersUsingReflection()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        internal override void LateAddProperties()
         {
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(PropertyCache is null);
+
+            if (Kind != JsonTypeInfoKind.Object)
+            {
+                return;
+            }
 
             const BindingFlags BindingFlags =
                 BindingFlags.Instance |

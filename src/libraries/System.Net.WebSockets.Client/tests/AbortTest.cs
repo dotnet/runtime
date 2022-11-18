@@ -16,14 +16,14 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public InvokerAbortTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
+        protected override bool UseCustomInvoker => true;
     }
 
     public sealed class HttpClientAbortTest : AbortTest
     {
         public HttpClientAbortTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+        protected override bool UseHttpClient => true;
     }
 
     public class AbortTest : ClientWebSocketTestBase

@@ -28,7 +28,6 @@
 #include "dllimportcallback.h"
 #include "eventtrace.h"
 
-#include "win32threadpool.h"
 #include "eventtrace.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -40,8 +39,6 @@
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
-extern void PrintToStdOutA(const char *pszString);
-extern void PrintToStdOutW(const WCHAR *pwzString);
 
 //***************************************************************************
 
@@ -65,8 +62,6 @@ STDMETHODIMP CorHost2::Start()
     }CONTRACTL_END;
 
     HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // Ensure that only one thread at a time gets in here
     DangerousNonHostedSpinLockHolder lockHolder(&lockOnlyOneToInvokeStart);
@@ -117,7 +112,6 @@ STDMETHODIMP CorHost2::Start()
         }
     }
 
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 }
 
@@ -137,7 +131,6 @@ HRESULT CorHost2::Stop()
         return E_UNEXPECTED;
     }
     HRESULT hr=S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // Is this host eligible to invoke the Stop method?
     if ((!m_fStarted) && (!m_fFirstToLoadCLR))
@@ -177,8 +170,6 @@ HRESULT CorHost2::Stop()
             }
         }
     }
-    END_ENTRYPOINT_NOTHROW;
-
 
     return hr;
 }
@@ -200,30 +191,15 @@ HRESULT CorHost2::GetCurrentAppDomainId(DWORD *pdwAppDomainId)
         return HOST_E_CLRNOTAVAILABLE;
     }
 
-    HRESULT hr = S_OK;
+    if (pdwAppDomainId == NULL)
+        return E_POINTER;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
+    Thread *pThread = GetThreadNULLOk();
+    if (!pThread)
+        return E_UNEXPECTED;
 
-    if(pdwAppDomainId == NULL)
-    {
-        hr = E_POINTER;
-    }
-    else
-    {
-        Thread *pThread = GetThreadNULLOk();
-        if (!pThread)
-        {
-            hr = E_UNEXPECTED;
-        }
-        else
-        {
-            *pdwAppDomainId = DefaultADID;
-        }
-    }
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
+    *pdwAppDomainId = DefaultADID;
+    return S_OK;
 }
 
 HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
@@ -404,8 +380,6 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
 
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
@@ -470,9 +444,6 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 
@@ -514,7 +485,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
 
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
@@ -525,7 +495,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
         hr=ExecuteInAppDomainHelper (pCallback, cookie);
     }
     END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 }
@@ -574,8 +543,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     if ((wszAppDomainManagerAssemblyName != NULL) || (wszAppDomainManagerTypeName != NULL))
         return E_INVALIDARG;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
@@ -665,8 +632,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     END_EXTERNAL_ENTRYPOINT;
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 
@@ -708,8 +673,6 @@ HRESULT CorHost2::CreateDelegate(
     // This is currently supported in default domain only
     if (appDomainID != DefaultADID)
         return HOST_E_INVALIDOPERATION;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
@@ -758,8 +721,6 @@ HRESULT CorHost2::CreateDelegate(
     }
 
     END_EXTERNAL_ENTRYPOINT;
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 }
@@ -860,7 +821,6 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
     }
 
     HRESULT hr=S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (!m_fFirstToLoadCLR)
     {
@@ -886,7 +846,6 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
             hr = S_FALSE;
         }
     }
-    END_ENTRYPOINT_NOTHROW;
 
     if (pLatchedExitCode)
     {
@@ -978,18 +937,11 @@ HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pPara
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // To avoid confusion, clear the buckets.
     memset(pParams, 0, sizeof(BucketParameters));
 
     // Defer to Watson helper.
-    hr = ::GetBucketParametersForCurrentException(pParams);
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
+    return ::GetBucketParametersForCurrentException(pParams);
 }
 #endif // !TARGET_UNIX
 

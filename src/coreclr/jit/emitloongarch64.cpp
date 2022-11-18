@@ -1461,56 +1461,6 @@ void emitter::emitIns_R_R_I(
 }
 
 /*****************************************************************************
-*
-*  Add an instruction referencing two registers and a constant.
-*  Also checks for a large immediate that needs a second instruction
-*  and will load it in reg1
-*
-*/
-void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm)
-{
-    assert(isGeneralRegister(reg1));
-    assert(reg1 != reg2);
-
-    bool immFits = true;
-
-#ifdef DEBUG
-    switch (ins)
-    {
-        case INS_addi_w:
-        case INS_addi_d:
-        case INS_ld_d:
-            immFits = isValidSimm12(imm);
-            break;
-
-        case INS_andi:
-        case INS_ori:
-        case INS_xori:
-            immFits = (0 <= imm) && (imm <= 0xfff);
-            break;
-
-        default:
-            assert(!"Unsupported instruction in emitIns_R_R_Imm");
-    }
-#endif
-
-    if (immFits)
-    {
-        emitIns_R_R_I(ins, attr, reg1, reg2, imm);
-    }
-    else
-    {
-        // Load 'imm' into the reg1 register
-        // then issue:   'ins'  reg1, reg2, reg1
-        //
-        assert(!EA_IS_RELOC(attr));
-        emitIns_I_la(attr, reg1, imm);
-        assert(ins == INS_ld_d);
-        emitIns_R_R_R(INS_ldx_d, attr, reg1, reg2, reg1);
-    }
-}
-
-/*****************************************************************************
  *
  *  Add an instruction referencing three registers.
  */

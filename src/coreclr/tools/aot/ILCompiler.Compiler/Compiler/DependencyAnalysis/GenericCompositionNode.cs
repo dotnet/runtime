@@ -53,15 +53,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_details.Instantiation[0].Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool IsShareable => true;
@@ -77,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.RequireInitialPointerAlignment();
 
-            builder.EmitShort((short)checked((UInt16)_details.Instantiation.Length));
+            builder.EmitShort((short)checked((ushort)_details.Instantiation.Length));
 
             builder.EmitByte((byte)(hasVariance ? 1 : 0));
 
@@ -116,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
         public GenericCompositionDetails(TypeDesc genericTypeInstance, bool forceVarianceInfo = false)
         {
             Debug.Assert(!genericTypeInstance.IsTypeDefinition);
-            
+
             Instantiation = genericTypeInstance.Instantiation;
 
             bool emitVarianceInfo = forceVarianceInfo;

@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
             string propertyName,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out JsonNode? value);
             Debug.Assert(success); // Node converters are not resumable.

@@ -103,7 +103,7 @@ namespace System.IO.Tests
 
                 var memory = buffer.ToArray();
 
-                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
+                AssertExtensions.SequenceEqual(bytes, memory);
 
                 stream.Write(new byte[0], 0, 0);
             }
@@ -132,7 +132,7 @@ namespace System.IO.Tests
                 }
 
                 var memory = buffer.ToArray();
-                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
+                AssertExtensions.SequenceEqual(bytes, memory);
             }
         }
     }

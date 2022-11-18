@@ -42,7 +42,7 @@ public class Bug7907
         return count;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int result0 = new Bug7907().F0(10);
         int result1 = new Bug7907().F1(10);

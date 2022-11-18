@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Formats.Cbor;
 using System.Linq;
 using Xunit;
@@ -631,6 +632,49 @@ namespace System.Security.Cryptography.Cose.Tests
                 protectedHeaders.Add(myCritHeaderLabel, myCritHeaderValue);
                 expectedHeaders?.Add((myCritHeaderLabel, myCritHeaderValue.EncodedValue));
             }
+        }
+
+        [Fact]
+        public void MultiSign_SignWithCounterSignature()
+        {
+            if (MessageKind != CoseMessageKind.MultiSign)
+            {
+                return;
+            }
+
+            CoseMessage msg = Decode(Sign(s_sampleContent, GetCoseSigner(DefaultKey, DefaultHash)));
+            CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+
+            // counter sign
+            CoseHeaderLabel counterSignLabel = new(7);
+            CoseSignature signatureToCounterSign = multiSignMsg.Signatures[0];
+            byte[] encodedCounterSignature = GetCounterSign(multiSignMsg, signatureToCounterSign, DefaultAlgorithm);
+            signatureToCounterSign.UnprotectedHeaders[counterSignLabel] = CoseHeaderValue.FromEncodedValue(encodedCounterSignature);
+
+            // re-encode
+            byte[] encodedMsg = msg.Encode();
+
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtected = GetExpectedProtectedHeaders(DefaultAlgorithm);
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedUnprotected = GetEmptyExpectedHeaders();
+            expectedUnprotected.Add((counterSignLabel, encodedCounterSignature));
+
+            AssertCoseSignMessage(encodedMsg, s_sampleContent, DefaultKey, DefaultAlgorithm, expectedProtected, expectedUnprotected);
+
+            // decode
+            msg = Decode(encodedMsg);
+            multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+
+            ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
+            Assert.Equal(1, signatures.Count);
+
+            CoseSignature counterSignedSignature = signatures[0];
+            Assert.True(counterSignedSignature.UnprotectedHeaders.TryGetValue(counterSignLabel, out CoseHeaderValue value));
+
+            // verify counter signature
+            (byte[] EncodedProtectedHeaders, byte[] Signature) counterSignInfo = ReadCounterSign(value, DefaultKey);
+            byte[] toBeSigned = GetToBeSignedForCounterSign(multiSignMsg, counterSignedSignature, counterSignInfo.EncodedProtectedHeaders);
+
+            Assert.True(VerifyCounterSign(DefaultKey, DefaultHash, toBeSigned, counterSignInfo.Signature));
         }
     }
 }

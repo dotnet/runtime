@@ -14,35 +14,44 @@ namespace System.Security.Cryptography.Cose
     /// </summary>
     public sealed class CoseSignature
     {
-        private readonly byte[] _encodedBodyProtectedHeaders;
         internal readonly byte[] _encodedSignProtectedHeaders;
         internal readonly byte[] _signature;
         private CoseMultiSignMessage? _message;
 
         /// <summary>
-        /// Gets the protected header parameters of this instance.
+        /// Gets the protected header parameters associated with this instance.
         /// </summary>
-        /// <value>A collection of protected header parameters associated to this instance.</value>
+        /// <value>A collection of protected header parameters associated with this instance.</value>
         public CoseHeaderMap ProtectedHeaders { get; }
 
         /// <summary>
-        /// Gets the unprotected header parameters of this instance.
+        /// Gets the unprotected header parameters associated with this instance.
         /// </summary>
-        /// <value>A collection of unprotected header parameters associated to this instance.</value>
+        /// <value>A collection of unprotected header parameters associated with this instance.</value>
         public CoseHeaderMap UnprotectedHeaders { get; }
 
+        /// <summary>
+        /// Gets the raw bytes of the protected header parameters associated with this instance.
+        /// </summary>
+        /// <value>A region of memory that contains the raw bytes of the protected header parameters associated with this instance.</value>
+        public ReadOnlyMemory<byte> RawProtectedHeaders => _encodedSignProtectedHeaders;
 
-        internal CoseSignature(CoseMultiSignMessage message, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedBodyProtectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
-            : this(protectedHeaders, unprotectedHeaders, encodedBodyProtectedHeaders, encodedSignProtectedHeaders, signature)
+        /// <summary>
+        /// Gets the digital signature.
+        /// </summary>
+        /// <value>A region of memory that contains the digital signature.</value>
+        public ReadOnlyMemory<byte> Signature => _signature;
+
+        internal CoseSignature(CoseMultiSignMessage message, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
+            : this(protectedHeaders, unprotectedHeaders, encodedSignProtectedHeaders, signature)
         {
             Message = message;
         }
 
-        internal CoseSignature(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedBodyProtectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
+        internal CoseSignature(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
         {
             ProtectedHeaders = protectedHeaders;
             UnprotectedHeaders = unprotectedHeaders;
-            _encodedBodyProtectedHeaders = encodedBodyProtectedHeaders;
             _encodedSignProtectedHeaders = encodedSignProtectedHeaders;
             _signature = signature;
         }
@@ -389,7 +398,7 @@ namespace System.Security.Cryptography.Cose
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
-                    _encodedBodyProtectedHeaders.Length,
+                    Message.RawProtectedHeaders.Length,
                     _encodedSignProtectedHeaders.Length,
                     associatedData.Length,
                     contentLength: 0);
@@ -397,7 +406,7 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, _encodedBodyProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
+                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
                     return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
                 }
                 finally
@@ -421,7 +430,7 @@ namespace System.Security.Cryptography.Cose
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
-                    _encodedBodyProtectedHeaders.Length,
+                    Message.RawProtectedHeaders.Length,
                     _encodedSignProtectedHeaders.Length,
                     associatedData.Length,
                     contentLength: 0);
@@ -429,7 +438,7 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    CoseMessage.AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, _encodedBodyProtectedHeaders, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
+                    CoseMessage.AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders.Span, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
                     return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
                 }
                 finally

@@ -1030,14 +1030,7 @@ bool CodeGen::genCreateAddrMode(
 
     if (!addr->OperIs(GT_ADD))
     {
-#if TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
     GenTree* rv1 = nullptr;
@@ -1063,23 +1056,6 @@ bool CodeGen::genCreateAddrMode(
         op1 = addr->AsOp()->gtOp1;
         op2 = addr->AsOp()->gtOp2;
     }
-
-#if TARGET_ARM64
-    if (addr->OperIs(GT_ADDEX))
-    {
-        if (op2->isContained() && op2->OperIs(GT_CAST))
-        {
-            *rv1Ptr = op1;
-            *rv2Ptr = op2;
-            *mulPtr = 1;
-            *cnsPtr = 0;
-            *revPtr = false; // op2 is never a gc type
-            assert(!varTypeIsGC(op2));
-            return true;
-        }
-        return false;
-    }
-#endif
 
     // Can't use indirect addressing mode as we need to check for overflow.
     // Also, can't use 'lea' as it doesn't set the flags.
@@ -1370,65 +1346,45 @@ FOUND_AM:
 
     if (rv2)
     {
-        /* Make sure a GC address doesn't end up in 'rv2' */
-
+        // Make sure a GC address doesn't end up in 'rv2'
         if (varTypeIsGC(rv2->TypeGet()))
         {
-            noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
-            tmp = rv1;
-            rv1 = rv2;
-            rv2 = tmp;
-
+            std::swap(rv1, rv2);
             rev = !rev;
         }
 
-        /* Special case: constant array index (that is range-checked) */
-
+        // Special case: constant array index (that is range-checked)
         if (fold)
         {
-            ssize_t  tmpMul;
-            GenTree* index;
+            // By default, assume index is rv2 and indexScale is mul (or 1 if mul is zero)
+            GenTree* index      = rv2;
+            ssize_t  indexScale = mul == 0 ? 1 : mul;
 
-            if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
+            if (rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
             {
-                /* For valuetype arrays where we can't use the scaled address
-                   mode, rv2 will point to the scaled index. So we have to do
-                   more work */
-
-                tmpMul = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
-                if (mul)
-                {
-                    tmpMul *= mul;
-                }
-            }
-            else
-            {
-                /* May be a simple array. rv2 will points to the actual index */
-
-                index  = rv2;
-                tmpMul = mul;
+                indexScale *= compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
             }
 
-            /* Get hold of the array index and see if it's a constant */
-            if (index->IsIntCnsFitsInI32())
+            // "index * 0" means index is zero
+            if (indexScale == 0)
             {
-                /* Get hold of the index value */
-                ssize_t ixv = index->AsIntConCommon()->IconValue();
-
-                /* Scale the index if necessary */
-                if (tmpMul)
+                mul = 0;
+                rv2 = nullptr;
+            }
+            else if (index->IsIntCnsFitsInI32())
+            {
+                ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
+                if (constantIndex == 0)
                 {
-                    ixv *= tmpMul;
+                    // while scale is a non-zero constant, the actual index is zero so drop it
+                    mul = 0;
+                    rv2 = nullptr;
                 }
-
-                if (FitsIn<INT32>(cns + ixv))
+                else if (FitsIn<INT32>(cns + constantIndex))
                 {
-                    /* Add the scaled index to the offset value */
-
-                    cns += ixv;
-
-                    /* There is no scaled operand any more */
+                    // Add the constant index to the accumulated offset value
+                    cns += constantIndex;
+                    // and get rid of index
                     mul = 0;
                     rv2 = nullptr;
                 }
@@ -1887,31 +1843,9 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            const char* pgoKind;
-            switch (compiler->fgPgoSource)
-            {
-                case ICorJitInfo::PgoSource::Static:
-                    pgoKind = "Static";
-                    break;
-                case ICorJitInfo::PgoSource::Dynamic:
-                    pgoKind = "Dynamic";
-                    break;
-                case ICorJitInfo::PgoSource::Blend:
-                    pgoKind = "Blend";
-                    break;
-                case ICorJitInfo::PgoSource::Text:
-                    pgoKind = "Textual";
-                    break;
-                case ICorJitInfo::PgoSource::Sampling:
-                    pgoKind = "Sample-based";
-                    break;
-                default:
-                    pgoKind = "Unknown";
-                    break;
-            }
-
-            printf("; with %s PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n", pgoKind,
-                   compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
+            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
+                   compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)
@@ -1944,16 +1878,13 @@ void CodeGen::genGenerateMachineCode()
 
     genFinalizeFrame();
 
-    unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
-
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                ,
-                            maxTmpSize);
+                                );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -2124,13 +2055,6 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
-
-#if defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
-    if (compiler->verbose)
-    {
-        varLiveKeeper->dumpLvaVariableLiveRanges();
-    }
-#endif // defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
 
 #ifdef LATE_DISASM
     unsigned finalHotCodeSize;
@@ -4333,13 +4257,6 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Initialization of OSR locals must be handled specially
-        if (compiler->lvaIsOSRLocal(varNum))
-        {
-            varDsc->lvMustInit = 0;
-            continue;
-        }
-
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -5473,14 +5390,6 @@ void CodeGen::genFinalizeFrame()
 
     compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
-    /* We want to make sure that the prolog size calculated here is accurate
-       (that is instructions will not shrink because of conservative stack
-       frame approximations).  We do this by filling in the correct size
-       here (where we have committed to the final numbers for the frame offsets)
-       This will ensure that the prolog size is always correct
-    */
-    GetEmitter()->emitMaxTmpSize = regSet.tmpGetTotalSize();
-
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
     {
@@ -6396,17 +6305,15 @@ void CodeGen::genFnProlog()
 #if defined(DEBUG) && defined(TARGET_XARCH)
     if (compiler->opts.compStackCheckOnRet)
     {
-        noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
+        assert(compiler->lvaReturnSpCheck != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
     GetEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
-
-    noway_assert(GetEmitter()->emitMaxTmpSize == regSet.tmpGetTotalSize());
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -7025,8 +6932,11 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 end++;
             }
 
-            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
-            liveRangeIndex++;
+            if (start < end)
+            {
+                genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+                liveRangeIndex++;
+            }
         };
 
         siVarLoc*      curLoc   = nullptr;
@@ -7984,31 +7894,17 @@ void CodeGen::genReturn(GenTree* treeNode)
         // Since we are invalidating the assumption that we would slip into the epilog
         // right after the "return", we need to preserve the return reg's GC state
         // across the call until actual method return.
-        ReturnTypeDesc retTypeDesc;
-        unsigned       regCount = 0;
-        if (compiler->compMethodReturnsMultiRegRetType())
-        {
-            if (varTypeIsLong(compiler->info.compRetNativeType))
-            {
-                retTypeDesc.InitializeLongReturnType();
-            }
-            else // we must have a struct return type
-            {
-                CorInfoCallConvExtension callConv = compiler->info.compCallConv;
 
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       callConv);
-            }
-            regCount = retTypeDesc.GetReturnRegCount();
-        }
+        ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+        unsigned       retRegCount = retTypeDesc.GetReturnRegCount();
 
-        if (varTypeIsGC(compiler->info.compRetNativeType))
+        if (compiler->compMethodReturnsRetBufAddr())
         {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
         }
-        else if (compiler->compMethodReturnsMultiRegRetType())
+        else
         {
-            for (unsigned i = 0; i < regCount; ++i)
+            for (unsigned i = 0; i < retRegCount; ++i)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
@@ -8016,30 +7912,22 @@ void CodeGen::genReturn(GenTree* treeNode)
                 }
             }
         }
-        else if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
 
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
-        if (varTypeIsGC(compiler->info.compRetNativeType))
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
-        else if (compiler->compMethodReturnsMultiRegRetType())
+        else
         {
-            for (unsigned i = 0; i < regCount; ++i)
+            for (unsigned i = 0; i < retRegCount; ++i)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
                     gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
                 }
             }
-        }
-        else if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
     }
 #endif // PROFILING_SUPPORTED
@@ -8109,28 +7997,14 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_RETURN);
-    GenTree* op1 = treeNode->gtGetOp1();
-    genConsumeRegs(op1);
-    GenTree* actualOp1 = op1;
-    if (op1->IsCopyOrReload())
-    {
-        actualOp1 = op1->gtGetOp1();
-    }
 
-    ReturnTypeDesc retTypeDesc;
-    LclVarDsc*     varDsc = nullptr;
-    if (actualOp1->OperIs(GT_LCL_VAR))
-    {
-        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
-        assert(varDsc->lvIsMultiRegRet);
-    }
-    else
-    {
-        assert(actualOp1->OperIs(GT_CALL));
-        retTypeDesc = *(actualOp1->AsCall()->GetReturnTypeDesc());
-    }
-    unsigned regCount = retTypeDesc.GetReturnRegCount();
+    genConsumeRegs(treeNode->gtGetOp1());
+
+    GenTree* op1       = treeNode->gtGetOp1();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+    const unsigned regCount    = retTypeDesc.GetReturnRegCount();
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
@@ -8143,6 +8017,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(varTypeIsSIMD(varDsc->GetRegisterType()));
         assert(!lclVar->IsMultiReg());
 #endif // DEBUG
+
 #ifdef FEATURE_SIMD
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
@@ -8152,6 +8027,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
+
 #ifdef TARGET_LOONGARCH64
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
@@ -8199,10 +8075,11 @@ void CodeGen::genStructReturn(GenTree* treeNode)
                 // This is a spilled field of a multi-reg lclVar.
                 // We currently only mark a lclVar operand as RegOptional, since we don't have a way
                 // to mark a multi-reg tree node as used from spill (GTF_NOREG_AT_USE) on a per-reg basis.
-                assert(varDsc != nullptr);
+                LclVarDsc* varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
                 assert(varDsc->lvPromoted);
                 unsigned fieldVarNum = varDsc->lvFieldLclStart + i;
                 assert(compiler->lvaGetDesc(fieldVarNum)->lvOnFrame);
+
                 GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, fieldVarNum, 0);
             }
             else
@@ -8600,17 +8477,34 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 //    doStackPointerCheck - If true, do the stack pointer check, otherwise do nothing.
 //    lvaStackPointerVar  - The local variable number that holds the value of the stack pointer
 //                          we are comparing against.
+//    offset              - the offset from the stack pointer to expect
+//    regTmp              - register we can use for computation if `offset` != 0
 //
 // Return Value:
 //    None
 //
-void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar)
+void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
+                                   unsigned  lvaStackPointerVar,
+                                   ssize_t   offset,
+                                   regNumber regTmp)
 {
     if (doStackPointerCheck)
     {
-        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
-        GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
+        assert(lvaStackPointerVar != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
+
+        if (offset != 0)
+        {
+            assert(regTmp != REG_NA);
+            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, regTmp, REG_SPBASE, /* canSkip */ false);
+            GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regTmp, offset);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, lvaStackPointerVar, 0);
+        }
+        else
+        {
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
+        }
 
         BasicBlock* sp_check = genCreateTempLabel();
         GetEmitter()->emitIns_J(INS_je, sp_check);

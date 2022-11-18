@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { _are_promises_supported } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
@@ -153,7 +156,7 @@ export function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any
     const elemAddress = elemRoot.address;
 
     try {
-        const len = cwraps.mono_wasm_array_length(arrayRoot.value);
+        const len = cwraps.mono_wasm_array_length_ref(arrayAddress);
         const res = new Array(len);
         for (let i = 0; i < len; ++i) {
             // TODO: pass arrayRoot.address and elemRoot.address into new API that copies

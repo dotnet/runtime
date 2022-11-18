@@ -51,6 +51,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -4489,6 +4490,10 @@ mini_init (const char *filename)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
+
 	mono_os_mutex_init_recursive (&jit_mutex);
 
 	mono_cross_helpers_run ();
@@ -5206,7 +5211,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 }
 
-void mono_precompile_assemblies ()
+void mono_precompile_assemblies (void)
 {
 	GHashTable *assemblies = g_hash_table_new (NULL, NULL);
 

@@ -85,6 +85,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
+                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
+                    ex = refEx.InnerException;
+
                 arg_exc.ToJS(ex);
             }
         }
@@ -121,7 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void CreateTaskCallback(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return vaule
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
@@ -191,6 +194,51 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_exc.ToJS(ex);
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // the marshaled signature is:
+        // string GetManagedStackTrace(GCHandle exception)
+        public static void GetManagedStackTrace(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
+            try
+            {
+                GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
+                if (exception_gc_handle.Target is Exception exception)
+                {
+                    arg_return.ToJS(exception.StackTrace);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Exception is null");
+                }
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+#if FEATURE_WASM_THREADS
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // the marshaled signature is:
+        // void InstallSynchronizationContext()
+        public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            try
+            {
+                JSSynchronizationContext.Install();
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void StopProfile()

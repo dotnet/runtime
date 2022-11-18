@@ -78,6 +78,9 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanCancelAcquireAsyncAfterQueuing();
 
         [Fact]
+        public abstract Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually();
+
+        [Fact]
         public abstract Task CanCancelAcquireAsyncBeforeQueuing();
 
         [Fact]
@@ -115,5 +118,17 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract void IdleDurationUpdatesWhenChangingFromActive();
+
+        [Fact]
+        public abstract void GetStatisticsReturnsNewInstances();
+
+        [Fact]
+        public abstract Task GetStatisticsHasCorrectValues();
+
+        [Fact]
+        public abstract Task GetStatisticsWithZeroPermitCount();
+
+        [Fact]
+        public abstract void GetStatisticsThrowsAfterDispose();
     }
 }

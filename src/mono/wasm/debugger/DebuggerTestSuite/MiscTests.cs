@@ -713,7 +713,7 @@ namespace DebuggerTests
 
                  await CheckProps(frame_locals, new
                  {
-                     mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
+                     mi = TObject("System.Reflection.RuntimeMethodInfo", description: "Void SimpleStaticMethod(System.DateTime, System.String)"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
                      strings = TArray("string[]", "string[1]"),
@@ -735,23 +735,25 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task DebugLazyLoadedAssemblyWithPdb()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("lazy-debugger-test")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
-                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
-                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.pdb"));
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll"),
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.pdb"));
 
-            var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+            var source_location = $"dotnet://{assembly_name}.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
 
             await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
+               "window.setTimeout(function () { invoke_static_method('[" + assembly_name + "] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "LazyMath.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -1036,6 +1038,94 @@ namespace DebuggerTests
                 {
                     await CheckValueType(locals, "myInt", "System.IntPtr");
                     await CheckValueType(locals, "myInt2", "System.IntPtr");
+                }
+            );
+        }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, true)]
+        [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
+        [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
+        {
+            await SetJustMyCode(jmc);
+            var expression = "{{ invoke_static_method('[debugger-test] " + class_name + ":Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", line, 8,
+                $"{class_name}.CallMethod",
+                locals_fn: async (locals) =>
+                {
+                    var this_props = await GetObjectOnLocals(locals, "this");
+                    if (jmc)
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                            propB = TGetter("propB"),
+                            propC = TGetter("propC"),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                        }, "this_props", num_fields: 6);
+                    }
+                    else
+                    {
+                        await CheckProps(this_props, new
+                        {
+                            propA = TNumber(10),
+                            propB = TNumber(20),
+                            propC = TNumber(30),
+                            d = TNumber(40),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                            G = TGetter("G"),
+                            H = TGetter("H"),
+                            myField = TNumber(0),
+                            myField2 = TNumber(0),
+                        }, "this_props", num_fields: 10);
+                    }
+                }
+            );
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task SetBreakpointInProjectWithChineseCharactereInPath()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+        }
+
+        [Fact]
+        public async Task InspectReadOnlySpan()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] ReadOnlySpanTest:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1371, 8,
+                "ReadOnlySpanTest.CheckArguments",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
+                    );
+                }
+            );
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
+                locals_fn: async (locals) =>
+                {
+                    await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
                 }
             );
         }
