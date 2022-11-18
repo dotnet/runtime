@@ -1188,15 +1188,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.BreakableLines = new List<int>();
 
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + DebuggerFileName, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && File.Exists(url))
-            {
-                this.Url = this.SourceUri.ToString();
-            }
+            this.SourceUri = new Uri("file://" + DebuggerFileName, UriKind.RelativeOrAbsolute);
+            if (File.Exists(url))
+                this.Url = "file://" + DebuggerFileName;
             else
-            {
                 this.Url = DotNetUrl;
-            }
         }
 
         private static string EscapeAscii(string path)
