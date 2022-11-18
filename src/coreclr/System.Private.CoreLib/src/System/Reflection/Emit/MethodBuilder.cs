@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
         private Type[][]? m_parameterTypeOptionalCustomModifiers;
 
         // Generics
-        private GenericTypeParameterBuilder[]? m_inst;
+        private RuntimeGenericTypeParameterBuilder[]? m_inst;
         private bool m_bIsGenMethDef;
         #endregion
 
@@ -533,9 +533,9 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
             m_bIsGenMethDef = true;
-            m_inst = new GenericTypeParameterBuilder[names.Length];
+            m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -606,7 +606,7 @@ namespace System.Reflection.Emit
             m_token = token;
 
             if (m_inst != null)
-                foreach (GenericTypeParameterBuilder tb in m_inst)
+                foreach (RuntimeGenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
             RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);

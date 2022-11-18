@@ -422,7 +422,7 @@ namespace System.Reflection.Emit
         private RuntimeType m_bakedRuntimeType = null!;
 
         private readonly int m_genParamPos;
-        private GenericTypeParameterBuilder[]? m_inst;
+        private RuntimeGenericTypeParameterBuilder[]? m_inst;
         private readonly bool m_bIsGenParam;
         private readonly RuntimeMethodBuilder? m_declMeth;
         private readonly RuntimeTypeBuilder? m_genTypeDef;
@@ -1162,9 +1162,9 @@ namespace System.Reflection.Emit
             if (m_inst != null)
                 throw new InvalidOperationException();
 
-            m_inst = new GenericTypeParameterBuilder[names.Length];
+            m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -1755,7 +1755,7 @@ namespace System.Reflection.Emit
 
                 if (m_inst != null)
                 {
-                    foreach (GenericTypeParameterBuilder tb in m_inst)
+                    foreach (RuntimeGenericTypeParameterBuilder tb in m_inst)
                     {
                         tb.m_type.CreateType();
                     }
@@ -1932,7 +1932,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);

@@ -599,6 +599,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
+	<Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />

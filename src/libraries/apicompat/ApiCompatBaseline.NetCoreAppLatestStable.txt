@@ -92,6 +92,12 @@ CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilde
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetParent(System.Type)' is abstract in the implementation but is not abstract in the contract.
 CannotMakeMemberAbstract : Member 'public System.Int32 System.Reflection.Emit.TypeBuilder.Size.get()' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetBaseTypeConstraint(System.Type)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetInterfaceConstraints(System.Type[])' is abstract in the implementation but is not abstract in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -231,6 +237,12 @@ CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.PackingSize Sys
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetParent(System.Type)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetBaseTypeConstraint(System.Type)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetInterfaceConstraints(System.Type[])' is abstract in the implementation but is not abstract in the contract.
 CannotMakeMemberAbstract : Member 'public System.Int32 System.Reflection.Emit.TypeBuilder.Size.get()' is abstract in the implementation but is not abstract in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
@@ -344,4 +356,4 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 332
+Total Issues: 345

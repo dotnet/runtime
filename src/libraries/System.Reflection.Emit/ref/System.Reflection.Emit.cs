@@ -205,9 +205,9 @@ namespace System.Reflection.Emit
         public abstract void SetOffset(int iOffset);
         public override void SetValue(object? obj, object? val, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, System.Globalization.CultureInfo? culture) { }
     }
-    public sealed partial class GenericTypeParameterBuilder : System.Reflection.TypeInfo
+    public abstract partial class GenericTypeParameterBuilder : System.Reflection.TypeInfo
     {
-        internal GenericTypeParameterBuilder() { }
+        protected GenericTypeParameterBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
         public override string? AssemblyQualifiedName { get { throw null; } }
         public override System.Type? BaseType { get { throw null; } }
@@ -298,11 +298,11 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public override System.Type MakePointerType() { throw null; }
-        public void SetBaseTypeConstraint([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? baseTypeConstraint) { }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        public void SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes genericParameterAttributes) { }
-        public void SetInterfaceConstraints(params System.Type[]? interfaceConstraints) { }
+        public abstract void SetBaseTypeConstraint([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? baseTypeConstraint);
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
+        public abstract void SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes genericParameterAttributes);
+        public abstract void SetInterfaceConstraints(params System.Type[]? interfaceConstraints);
         public override string ToString() { throw null; }
     }
     public abstract partial class MethodBuilder : System.Reflection.MethodInfo
@@ -422,14 +422,14 @@ namespace System.Reflection.Emit
         public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
 
-        public abstract int GetTypeToken(Type type, bool getGenericDefinition = true);
+        /*public abstract int GetTypeToken(Type type, bool getGenericDefinition = true);
         public abstract int GetFieldToken(FieldInfo field);
         public abstract int GetConstructorToken(ConstructorInfo con);
         public abstract int GetSignatureToken(SignatureHelper sigHelper);
         public abstract int GetStringConstant(string str);
         public abstract ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor);
         public abstract FieldInfo GetField(Type type, FieldInfo field);
-        public abstract MethodInfo GetMethod(Type type, MethodInfo method);
+        public abstract MethodInfo GetMethod(Type type, MethodInfo method);*/
     }
     public abstract partial class PropertyBuilder : System.Reflection.PropertyInfo
     {

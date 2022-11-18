@@ -83,4 +83,18 @@ CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilde
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.TypeBuilder.SetParent(System.Type)' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMemberAbstract : Member 'public System.Int32 System.Reflection.Emit.TypeBuilder.Size.get()' is abstract in the reference but is not abstract in the implementation.
-Total Issues: 93
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetBaseTypeConstraint(System.Type)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.GenericTypeParameterBuilder.SetInterfaceConstraints(System.Type[])' is abstract in the implementation but is not abstract in the contract.
+CannotAddAbstractMembers : Member 'public System.Reflection.ConstructorInfo System.Reflection.Emit.ModuleBuilder.GetConstructor(System.Type, System.Reflection.ConstructorInfo)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Reflection.FieldInfo System.Reflection.Emit.ModuleBuilder.GetField(System.Type, System.Reflection.FieldInfo)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.Reflection.Emit.ModuleBuilder.GetFieldToken(System.Reflection.FieldInfo)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Reflection.MethodInfo System.Reflection.Emit.ModuleBuilder.GetMethod(System.Type, System.Reflection.MethodInfo)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Reflection.Emit.SignatureHelper)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.Reflection.Emit.ModuleBuilder.GetStringConstant(System.String)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.Type, System.Boolean)' is abstract in the implementation but is missing in the contract.
+Total Issues: 98
