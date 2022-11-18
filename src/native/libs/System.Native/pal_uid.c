@@ -21,7 +21,7 @@
 // Linux c-libraries (glibc, musl) provide a thread-safe getgrouplist.
 // OSX man page mentions explicitly the implementation is not thread safe,
 // due to using getgrent.
-#ifndef __linux__
+#if !defined(__linux__) && !defined(TARGET_WASI)
 #define USE_GROUPLIST_LOCK
 #endif
 
@@ -32,7 +32,6 @@
 #endif
 
 #if !defined(TARGET_WASI)
-
 static int32_t ConvertNativePasswdToPalPasswd(int error, struct passwd* nativePwd, struct passwd* result, Passwd* pwd)
 {
     // positive error number returned -> failure other than entry-not-found
@@ -61,6 +60,7 @@ static int32_t ConvertNativePasswdToPalPasswd(int error, struct passwd* nativePw
     pwd->Shell = nativePwd->pw_shell;
     return 0;
 }
+#endif /* !TARGET_WASI */
 
 int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
 {
@@ -71,12 +71,16 @@ int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buf
     if (buflen < 0)
         return EINVAL;
 
+#if !defined(TARGET_WASI)
     struct passwd nativePwd;
     struct passwd* result;
     int error;
     while ((error = getpwuid_r(uid, &nativePwd, buf, Int32ToSizeT(buflen), &result)) == EINTR);
 
     return ConvertNativePasswdToPalPasswd(error, &nativePwd, result, pwd);
+#else /* !TARGET_WASI */
+    return EINVAL;
+#endif /* !TARGET_WASI */
 }
 
 int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
@@ -88,34 +92,50 @@ int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t
     if (buflen < 0)
         return EINVAL;
 
+#if !defined(TARGET_WASI)
     struct passwd nativePwd;
     struct passwd* result;
     int error;
     while ((error = getpwnam_r(name, &nativePwd, buf, Int32ToSizeT(buflen), &result)) == EINTR);
 
     return ConvertNativePasswdToPalPasswd(error, &nativePwd, result, pwd);
+#else /* !TARGET_WASI */
+    return EINVAL;
+#endif /* !TARGET_WASI */
 }
 
 uint32_t SystemNative_GetEUid(void)
 {
+#if !defined(TARGET_WASI)
     return geteuid();
+#else /* !TARGET_WASI */
+    return EINVAL;
+#endif /* !TARGET_WASI */
 }
 
 uint32_t SystemNative_GetEGid(void)
 {
+#if !defined(TARGET_WASI)
     return getegid();
+#else /* !TARGET_WASI */
+    return EINVAL;
+#endif /* !TARGET_WASI */
 }
 
 int32_t SystemNative_SetEUid(uint32_t euid)
 {
+#if !defined(TARGET_WASI)
     return seteuid(euid);
+#else /* !TARGET_WASI */
+    return EINVAL;
+#endif /* !TARGET_WASI */
 }
 
 #ifdef USE_GROUPLIST_LOCK
 static pthread_mutex_t s_groupLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#if !HAVE_GETGROUPLIST
+#if !HAVE_GETGROUPLIST && !defined(TARGET_WASI)
 int getgrouplist(const char *uname, gid_t agroup, gid_t *groups, int *groupCount)
 {
     int ngroups = 1;
@@ -212,8 +232,10 @@ int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* gr
 #ifdef __APPLE__
         // On OSX groups are passed as a signed int.
         rv = getgrouplist(name, (int)group, (int*)groups, &groupsAvailable);
-#else
+#elif HAVE_GETGROUPLIST
         rv = getgrouplist(name, group, groups, &groupsAvailable);
+#else
+        rv = 0;
 #endif
 
 #ifdef USE_GROUPLIST_LOCK
@@ -244,10 +266,14 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     assert(ngroups >= 0);
     assert(groups != NULL);
 
+#if !defined(TARGET_WASI)
     return getgroups(ngroups, groups);
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
-#if !HAVE_GETGRGID_R
+#if !HAVE_GETGRGID_R && !defined(TARGET_WASI)
 // Need to call getgrgid which is not thread-safe, and protect it with a mutex
 static pthread_mutex_t s_getgrgid_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -290,7 +316,7 @@ char* SystemNative_GetGroupName(uint32_t gid)
         }
         bufferLength = tmpBufferLength;
     }
-#else
+#elif !defined(TARGET_WASI)
     // Platforms like Android API level < 24 do not have getgrgid_r available
     int rv = pthread_mutex_lock(&s_getgrgid_lock);
     if (rv != 0)
@@ -308,55 +334,7 @@ char* SystemNative_GetGroupName(uint32_t gid)
     char* name = strdup(result->gr_name);
     pthread_mutex_unlock(&s_getgrgid_lock);
     return name;
+#else
+    return NULL;
 #endif
 }
-
-#else /* TARGET_WASI */
-int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-uint32_t SystemNative_GetEUid(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0xFFFFFFFF;
-}
-
-uint32_t SystemNative_GetEGid(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0xFFFFFFFF;
-}
-
-int32_t SystemNative_SetEUid(uint32_t euid)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-char* SystemNative_GetGroupName(uint32_t gid)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-#endif /* TARGET_WASI */
