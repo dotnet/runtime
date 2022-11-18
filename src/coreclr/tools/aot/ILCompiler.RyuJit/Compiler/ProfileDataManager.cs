@@ -16,18 +16,18 @@ namespace ILCompiler
         public ProfileDataManager(IEnumerable<string> mibcFiles,
                                   CompilerTypeSystemContext context)
         {
-            List<ProfileData> _inputData = new List<ProfileData>();
+            List<ProfileData> inputData = new List<ProfileData>();
 
             foreach (string file in mibcFiles)
             {
                 using (PEReader peReader = MIbcProfileParser.OpenMibcAsPEReader(file))
                 {
-                    _inputData.Add(MIbcProfileParser.ParseMIbcFile(context, peReader, null, null));
+                    inputData.Add(MIbcProfileParser.ParseMIbcFile(context, peReader, null, null));
                 }
             }
 
             // Merge all data together
-            foreach (ProfileData profileData in _inputData)
+            foreach (ProfileData profileData in inputData)
             {
                 ProfileData.MergeProfileData(_mergedProfileData, profileData);
             }
