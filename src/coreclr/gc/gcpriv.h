@@ -5936,9 +5936,9 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
-    bool allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
+    bool allocate_region (int gen_num, size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
+    bool allocate_basic_region (int gen_num, uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
+    bool allocate_large_region (int gen_num, uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
     void delete_region (uint8_t* start);
     void delete_region_impl (uint8_t* start);
     uint32_t get_va_memory_load()

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
-    <IsWasmProject>true</IsWasmProject>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
     <Configuration>Debug</Configuration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

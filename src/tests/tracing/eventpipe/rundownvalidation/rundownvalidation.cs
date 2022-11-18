@@ -18,7 +18,7 @@ namespace Tracing.Tests.RundownValidation
 
     public class RundownValidation
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // This test validates that the rundown events are present
             // and that the rundown contains the necessary events to get

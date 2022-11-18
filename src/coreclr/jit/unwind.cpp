@@ -400,7 +400,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
             default:
-                printf("    Unrecognized CFI_CODE: 0x%IX\n", *(UINT64*)pCode);
+                printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
                 break;
         }
     }

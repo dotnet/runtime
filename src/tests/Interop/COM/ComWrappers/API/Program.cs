@@ -611,7 +611,7 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

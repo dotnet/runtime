@@ -30,6 +30,8 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 #pragma warning disable IDE0060
 
 namespace Internal.JitInterface
@@ -556,10 +558,15 @@ namespace Internal.JitInterface
                     }
                 }
             }
+
+            if (_synthesizedPgoDependencies != null)
+            {
+                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
+            }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -569,6 +576,8 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
+
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
         }
 
         private void PublishROData()
@@ -659,12 +668,12 @@ namespace Internal.JitInterface
 
             _gcInfo = null;
             _ehClauses = null;
+            _additionalDependencies = null;
 
 #if !READYTORUN
             _debugInfo = null;
-
-            _additionalDependencies = null;
 #endif
+
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
@@ -677,6 +686,7 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _synthesizedPgoDependencies = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -3427,6 +3437,8 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
+        private DependencyList _additionalDependencies;
+
         private void allocMem(ref AllocMemArgs args)
         {
             args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
@@ -3951,11 +3963,6 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
-        private PgoSchemaElem[] getPgoInstrumentationResults(MethodDesc method)
-        {
-            return _compilation.ProfileData[method]?.SchemaData;
-        }
-
         private MemoryStream _cachedMemoryStream = new MemoryStream();
 
         public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
@@ -4033,7 +4040,19 @@ namespace Internal.JitInterface
 
             if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
             {
-                var pgoResultsSchemas = getPgoInstrumentationResults(methodDesc);
+#if READYTORUN
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+
+                if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
+                {
+                    if (_synthesizedPgoDependencies == null)
+                        _synthesizedPgoDependencies = new HashSet<MethodDesc>();
+
+                    _synthesizedPgoDependencies.Add(methodDesc);
+                }
+#else
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;
+#endif
                 if (pgoResultsSchemas == null)
                 {
                     pgoResults.hr = HRESULT.E_NOTIMPL;

@@ -84,10 +84,6 @@ mono_jiterp_do_jit_call_indirect (
 	gpointer cb, gpointer arg, gboolean *out_thrown
 );
 
-extern gboolean jiterpreter_traces_enabled;
-extern gboolean jiterpreter_interp_entry_enabled;
-extern gboolean jiterpreter_jit_call_enabled;
-extern gboolean jiterpreter_wasm_eh_enabled;
 extern WasmDoJitCall jiterpreter_do_jit_call;
 
 #endif // HOST_BROWSER

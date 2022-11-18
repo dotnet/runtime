@@ -2649,7 +2649,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 
 #if JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES
 	// FIXME: thread safety
-	if (jiterpreter_jit_call_enabled) {
+	if (mono_opt_jiterpreter_jit_call_enabled) {
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
 			MonoFtnDesc ftndesc = {0};
@@ -2659,7 +2659,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			extra_arg = cinfo->no_wrapper ? cinfo->extra_arg : &ftndesc;
 			interp_push_lmf (&ext, frame);
 			if (
-				jiterpreter_wasm_eh_enabled ||
+				mono_opt_jiterpreter_wasm_eh_enabled ||
 				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
 			) {
 				thunk (extra_arg, ret_sp, sp, &thrown);
@@ -3223,7 +3223,7 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	// FIXME: We don't support generating wasm trampolines for high arg counts yet
 	if (
 		(sig->param_count <= MAX_INTERP_ENTRY_ARGS) &&
-		jiterpreter_interp_entry_enabled
+		mono_opt_jiterpreter_interp_entry_enabled
 	) {
 		jiterp_preserve_module();
 
@@ -7512,7 +7512,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 
 		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER) {
-			if (jiterpreter_traces_enabled) {
+			if (mono_opt_jiterpreter_traces_enabled) {
 				// We may lose a race with another thread here so we need to use volatile and be careful
 				volatile guint16 *mutable_ip = (volatile guint16*)ip;
 				/*

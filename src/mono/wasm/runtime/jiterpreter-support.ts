@@ -6,6 +6,8 @@ import { Module } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
+export const maxFailures = 4;
+
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
@@ -605,6 +607,7 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
+    failures: 0
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -695,6 +698,18 @@ export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
     }
 }
 
+export function recordFailure () : void {
+    counters.failures++;
+    if (counters.failures >= maxFailures) {
+        console.log(`MONO_WASM: Disabling jiterpreter after ${counters.failures} failures`);
+        applyOptions(<any>{
+            enableTraces: false,
+            enableInterpEntry: false,
+            enableJitCall: false
+        });
+    }
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
@@ -727,18 +742,17 @@ export type JiterpreterOptions = {
     minimumTraceLength: number;
 }
 
-const optionNames : { [jsName: string] : [string, string] | string } = {
-    "enableAll": ["jiterpreter-enable-all", "jiterpreter-disable-all"],
-    "enableTraces": ["jiterpreter-enable-traces", "jiterpreter-disable-traces"],
-    "enableInterpEntry": ["jiterpreter-enable-interp-entry", "jiterpreter-disable-interp-entry"],
-    "enableJitCall": ["jiterpreter-enable-jit-call", "jiterpreter-disable-jit-call"],
-    "enableBackwardBranches": ["jiterpreter-enable-backward-branches", "jiterpreter-disable-backward-branches"],
-    "enableCallResume": ["jiterpreter-enable-call-resume", "jiterpreter-disable-call-resume"],
-    "enableWasmEh": ["jiterpreter-enable-wasm-eh", "jiterpreter-disable-wasm-eh"],
-    "enableStats": ["jiterpreter-enable-stats", "jiterpreter-disable-stats"],
-    "alwaysGenerate": ["jiterpreter-always-generate", ""],
-    "estimateHeat": ["jiterpreter-estimate-heat", ""],
-    "countBailouts": ["jiterpreter-count-bailouts", ""],
+const optionNames : { [jsName: string] : string } = {
+    "enableTraces": "jiterpreter-traces-enabled",
+    "enableInterpEntry": "jiterpreter-interp-entry-enabled",
+    "enableJitCall": "jiterpreter-jit-call-enabled",
+    "enableBackwardBranches": "jiterpreter-backward-branch-entries-enabled",
+    "enableCallResume": "jiterpreter-call-resume-enabled",
+    "enableWasmEh": "jiterpreter-wasm-eh-enabled",
+    "enableStats": "jiterpreter-stats-enabled",
+    "alwaysGenerate": "jiterpreter-always-generate",
+    "estimateHeat": "jiterpreter-estimate-heat",
+    "countBailouts": "jiterpreter-count-bailouts",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
 };
 
@@ -756,9 +770,9 @@ export function applyOptions (options: JiterpreterOptions) {
 
         const v = (<any>options)[k];
         if (typeof (v) === "boolean")
-            cwraps.mono_jiterp_parse_option(v ? info[0] : info[1]);
+            cwraps.mono_jiterp_parse_option((v ? "--" : "--no-") + info);
         else if (typeof (v) === "number")
-            cwraps.mono_jiterp_parse_option(`${info}=${v}`);
+            cwraps.mono_jiterp_parse_option(`--${info}=${v}`);
         else
             console.error(`Jiterpreter option must be a boolean or a number but was ${typeof(v)} '${v}'`);
     }
@@ -775,14 +789,14 @@ export function getOptions () {
 }
 
 function updateOptions () {
-    const table = <any>{};
-    optionTable = table;
+    const pJson = cwraps.mono_jiterp_get_options_as_json();
+    const json = Module.UTF8ToString(<any>pJson);
+    Module._free(<any>pJson);
+    const blob = JSON.parse(json);
+
+    optionTable = <any>{};
     for (const k in optionNames) {
         const info = optionNames[k];
-        if (Array.isArray(info))
-            table[k] = cwraps.mono_jiterp_get_option(info[0]) > 0;
-        else
-            table[k] = cwraps.mono_jiterp_get_option(info);
+        (<any>optionTable)[k] = blob[info];
     }
-    // console.log(`options=${JSON.stringify(table)}`);
 }
