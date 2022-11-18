@@ -18,7 +18,10 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 ## Source
 * `BigInteger` and `Complex`: [./src/System/Numerics](./src/System/Numerics).
 * Everything else: [../../coreclr/System.Private.CoreLib/src/System/Numerics](../../coreclr/System.Private.CoreLib/src/System/Numerics)
-* Tests for this library live in [./tests](./tests) and [../System.Numerics.Vectors/tests](../System.Numerics.Vectors/tests)
+
+## Tests
+* `System.Numerics.Vectors`: [../System.Numerics.Vectors/tests](../System.Numerics.Vectors/tests)
+* Everything else: [./tests](./tests)
 
 ## Deployment
 [System.Runtime.Numerics](https://www.nuget.org/packages/System.Runtime.Numerics) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.

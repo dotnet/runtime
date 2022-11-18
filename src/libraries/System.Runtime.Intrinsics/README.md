@@ -10,12 +10,14 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Source
 * `Vector64/128/256/512`: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics)
-    * Tests live in [./tests/Vectors](./tests/Vectors)
 * `Arm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm)
 * `Wasm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm)
 * `x86` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86)
-* Tests for this library live in [./tests](./tests).
-* JIT tests for this library live in [../../tests/JIT/HardwareIntrinsics](../../tests/JIT/HardwareIntrinsics)
+
+## Tests
+* `Vector64/128/256/512`: [./tests/Vectors](./tests/Vectors)
+* JIT integration: [../../tests/JIT/HardwareIntrinsics](../../tests/JIT/HardwareIntrinsics)
+* Everything else: [./tests](./tests)
 
 ## Deployment
 `System.Runtime.Intrinsics` is included in the shared framework.
