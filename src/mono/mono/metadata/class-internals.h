@@ -1356,7 +1356,7 @@ mono_class_get_property_info (MonoClass *klass);
 void
 mono_class_set_property_info (MonoClass *klass, MonoClassPropertyInfo *info);
 
-MonoClassEventInfo*
+MONO_COMPONENT_API MonoClassEventInfo*
 mono_class_get_event_info (MonoClass *klass);
 
 void
