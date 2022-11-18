@@ -284,7 +284,7 @@ private:
         const unsigned operatorSize = genTypeSize(tree->TypeGet());
 
         // The operatorSize can be smaller than the operands as it will use a lower register/mem.
-        
+
         const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() &&
                               ((operatorSize == genTypeSize(op1->TypeGet())) ||
                                (varTypeIsIntegral(tree) && operatorSize < genTypeSize(op1->TypeGet())));
