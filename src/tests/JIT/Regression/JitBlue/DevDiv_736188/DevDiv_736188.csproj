@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitStressRegs" Value="0x204" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressRegs" Value="0x204" />
   </ItemGroup>
 </Project>

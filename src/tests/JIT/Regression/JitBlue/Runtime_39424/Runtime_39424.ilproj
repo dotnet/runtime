@@ -11,6 +11,6 @@
     <Compile Include="$(MSBuildProjectName).il" />
 
     <!-- Disable CSE to protect fragile `OBJ(ADDR(LCL_FIELD)` constructions. -->
-    <CLRTestEnvironmentVariable Include="COMPlus_JitNoCSE" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoCSE" Value="1" />
   </ItemGroup>
 </Project>

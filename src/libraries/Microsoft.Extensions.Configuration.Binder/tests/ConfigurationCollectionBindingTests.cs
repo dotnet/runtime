@@ -393,6 +393,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[2]);
             Assert.Equal("val2", list[3]);
             Assert.Equal("valx", list[4]);
+
+            // Ensure expandability of the returned list
+            options.AlreadyInitializedListInterface.Add("ExtraItem");
+            Assert.Equal(6, options.AlreadyInitializedListInterface.Count);
+            Assert.Equal("ExtraItem", options.AlreadyInitializedListInterface[5]);
         }
 
         [Fact]
@@ -1067,7 +1072,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 {"AlreadyInitializedIEnumerableInterface:1", "val1"},
                 {"AlreadyInitializedIEnumerableInterface:2", "val2"},
                 {"AlreadyInitializedIEnumerableInterface:x", "valx"},
-                
+
                 {"ICollectionNoSetter:0", "val0"},
                 {"ICollectionNoSetter:1", "val1"},
             };
@@ -1098,6 +1103,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.ICollectionNoSetter.Count);
             Assert.Equal("val0", options.ICollectionNoSetter.ElementAt(0));
             Assert.Equal("val1", options.ICollectionNoSetter.ElementAt(1));
+
+            // Ensure expandability of the returned collection
+            options.ICollectionNoSetter.Add("ExtraItem");
+            Assert.Equal(3, options.ICollectionNoSetter.Count);
+            Assert.Equal("ExtraItem", options.ICollectionNoSetter.ElementAt(2));
         }
 
         [Fact]
@@ -1218,6 +1228,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", array[1]);
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
+
+            // Ensure expandability of the returned collection
+            options.ICollection.Add("ExtraItem");
+            Assert.Equal(5, options.ICollection.Count);
+            Assert.Equal("ExtraItem", options.ICollection.ElementAt(4));
         }
 
         [Fact]
@@ -1246,6 +1261,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
+
+            // Ensure expandability of the returned list
+            options.IList.Add("ExtraItem");
+            Assert.Equal(5, options.IList.Count);
+            Assert.Equal("ExtraItem", options.IList[4]);
         }
 
         [Fact]
@@ -1601,6 +1621,62 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public IEnumerable<int> FilteredConfigValues => ConfigValues.Where(p => p > 10);
             public IEnumerable<int> ConfigValues { get; set; }
+        }
+
+        [Fact]
+        public void DifferentDictionaryBindingCasesTest()
+        {
+            var dic = new Dictionary<string, string>() { { "key", "value" } };
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(dic)
+                .Build();
+
+            Assert.Single(config.Get<Dictionary<string, string>>());
+            Assert.Single(config.Get<IDictionary<string, string>>());
+            Assert.Single(config.Get<ExtendedDictionary<string, string>>());
+            Assert.Single(config.Get<ImplementerOfIDictionaryClass<string, string>>());
+        }
+
+        public class ImplementerOfIDictionaryClass<TKey, TValue> : IDictionary<TKey, TValue>
+        {
+            private Dictionary<TKey, TValue> _dict = new();
+
+            public TValue this[TKey key] { get => _dict[key]; set => _dict[key] = value; }
+
+            public ICollection<TKey> Keys => _dict.Keys;
+
+            public ICollection<TValue> Values => _dict.Values;
+
+            public int Count => _dict.Count;
+
+            public bool IsReadOnly => false;
+
+            public void Add(TKey key, TValue value) => _dict.Add(key, value);
+
+            public void Add(KeyValuePair<TKey, TValue> item) => _dict.Add(item.Key, item.Value);
+
+            public void Clear() => _dict.Clear();
+
+            public bool Contains(KeyValuePair<TKey, TValue> item) => _dict.Contains(item);
+
+            public bool ContainsKey(TKey key) => _dict.ContainsKey(key);
+
+            public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => throw new NotImplementedException();
+
+            public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dict.GetEnumerator();
+
+            public bool Remove(TKey key) => _dict.Remove(key);
+
+            public bool Remove(KeyValuePair<TKey, TValue> item) => _dict.Remove(item.Key);
+
+            public bool TryGetValue(TKey key, out TValue value) => _dict.TryGetValue(key, out value);
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _dict.GetEnumerator();
+        }
+
+        public class ExtendedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+        {
+
         }
     }
 }

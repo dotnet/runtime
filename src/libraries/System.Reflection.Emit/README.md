@@ -5,8 +5,12 @@ Not all platforms and runtimes support IL.Emit.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.emit. The primary class is [`AssemblyBuilder`](https://learn.microsoft.com/dotnet/api/system.reflection.emit.AssemblyBuilder).
 
-## Status: [Inactive](../../libraries/README.md#development-statuses)
-The APIs and functionality are mature, but do get extended occasionally.
+## Contribution Bar
+- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+
+See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Reflection.Emit+label%3A%22help+wanted%22) issues.
+
+The primary new feature under consideration is [AssemblyBuilder.Save()](https://github.com/dotnet/runtime/issues/62956).
 
 ## Deployment
 [System.Reflection.Emit](https://www.nuget.org/packages/System.Reflection.Emit) is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.1; it only needs to be installed when targeting .NET Standard 2.0.

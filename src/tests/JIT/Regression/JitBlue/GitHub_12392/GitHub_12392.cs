@@ -11,7 +11,7 @@ namespace Test
     class Program
     {
 
-        static int Main(string[] args)
+        static int Main()
         {
             Test t = new Test();
             if (!t.TestMethod())

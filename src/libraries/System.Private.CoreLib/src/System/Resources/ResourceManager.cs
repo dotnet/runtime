@@ -103,7 +103,6 @@ namespace System.Resources
 
         private Dictionary<string, ResourceSet>? _resourceSets;
         private readonly string? _moduleDir;          // For assembly-ignorant directory location
-        private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
@@ -227,9 +226,13 @@ namespace System.Resources
             if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            _locationInfo = resourceSource;
-            MainAssembly = _locationInfo.Assembly;
-            BaseNameField = resourceSource.Name;
+            MainAssembly = resourceSource.Assembly;
+
+            string? nameSpace = resourceSource.Namespace;
+            char c = Type.Delimiter;
+            BaseNameField = nameSpace is null
+                ? resourceSource.Name
+                : string.Concat(nameSpace, new ReadOnlySpan<char>(in c), resourceSource.Name);
 
             CommonAssemblyInit();
         }
@@ -407,7 +410,7 @@ namespace System.Resources
             {
                 string fileName = GetResourceFileName(culture);
                 Debug.Assert(MainAssembly != null);
-                Stream? stream = MainAssembly.GetManifestResourceStream(_locationInfo!, fileName);
+                Stream? stream = MainAssembly.GetManifestResourceStream(fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
@@ -746,9 +749,6 @@ namespace System.Resources
 
             // NEEDED ONLY BY FILE-BASED
             internal string? ModuleDir => _rm._moduleDir;
-
-            // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
-            internal Type? LocationInfo => _rm._locationInfo;
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             internal Type? UserResourceSet => _rm._userResourceSet;

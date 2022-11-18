@@ -101,6 +101,11 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os Browser'
+    - ${{ if eq(parameters.osGroup, 'wasi') }}:
+      - name: archType
+        value: wasm
+      - name: osOverride
+        value: '-os wasi'
     - ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'x64'))) }}:
         name: llvmCxxAbi
         value: /p:MonoLLVMUseCxx11Abi=true
@@ -122,7 +127,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:

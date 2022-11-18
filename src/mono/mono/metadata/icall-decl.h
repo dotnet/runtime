@@ -36,6 +36,7 @@ typedef enum {
 #include "icall-table.h"
 
 #define NOHANDLES(inner) inner
+#define NOHANDLES_FLAGS(inner,flags) inner
 #define HANDLES_REUSE_WRAPPER(...) /* nothing */
 
 // Generate prototypes for coop icall wrappers and coop icalls.
@@ -53,6 +54,7 @@ typedef enum {
 #undef HANDLES
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL
 
 // This is sorted.

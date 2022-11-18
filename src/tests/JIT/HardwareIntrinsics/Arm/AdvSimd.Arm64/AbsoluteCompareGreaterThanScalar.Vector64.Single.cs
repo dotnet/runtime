@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd.Arm64
 {
     public static partial class Program
     {
-        private static void AbsoluteCompareGreaterThanScalar_Vector64_Single()
+        [Fact]
+        public static void AbsoluteCompareGreaterThanScalar_Vector64_Single()
         {
             var test = new SimpleBinaryOpTest__AbsoluteCompareGreaterThanScalar_Vector64_Single();
 

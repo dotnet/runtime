@@ -14,7 +14,7 @@ namespace System.Runtime.Serialization
         private readonly CodeGenerator _ilg;
         private readonly LocalBuilder[] _locals;
 
-        public BitFlagsGenerator(int bitCount, CodeGenerator ilg, string localName)
+        public BitFlagsGenerator(int bitCount, CodeGenerator ilg)
         {
             _ilg = ilg;
             _bitCount = bitCount;
@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
             _locals = new LocalBuilder[localCount];
             for (int i = 0; i < _locals.Length; i++)
             {
-                _locals[i] = ilg.DeclareLocal(typeof(byte), localName + i, (byte)0);
+                _locals[i] = ilg.DeclareLocal(typeof(byte), (byte)0);
             }
         }
 
@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
 
         public void LoadArray()
         {
-            LocalBuilder localArray = _ilg.DeclareLocal(Globals.TypeOfByteArray, "localArray");
+            LocalBuilder localArray = _ilg.DeclareLocal(Globals.TypeOfByteArray);
             _ilg.NewArray(typeof(byte), _locals.Length);
             _ilg.Store(localArray);
             for (int i = 0; i < _locals.Length; i++)

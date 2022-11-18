@@ -164,7 +164,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public static SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)
+        public static SocketError Bind(SafeSocketHandle handle, ProtocolType _ /*socketProtocolType*/, byte[] buffer, int nameLen)
         {
             SocketError errorCode = Interop.Winsock.bind(handle, buffer, nameLen);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
@@ -512,7 +512,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred) =>
+        public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags _ /*socketFlags*/, byte[] socketAddress, ref int addressLength, out int bytesTransferred) =>
             ReceiveFrom(handle, buffer.AsSpan(offset, size), SocketFlags.None, socketAddress, ref addressLength, out bytesTransferred);
 
         public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, Span<byte> buffer, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
@@ -1048,6 +1048,7 @@ namespace System.Net.Sockets
             }
         }
 
+        [Conditional("unnecessary")]
         public static void CheckDualModeReceiveSupport(Socket socket)
         {
             // Dual-mode sockets support received packet info on Windows.

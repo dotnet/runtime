@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section => _type.Context.Target.IsWindows ? ObjectNodeSection.FoldableReadOnlyDataSection : ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _type.Context.Target.IsWindows ? ObjectNodeSection.FoldableReadOnlyDataSection : ObjectNodeSection.DataSection;
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

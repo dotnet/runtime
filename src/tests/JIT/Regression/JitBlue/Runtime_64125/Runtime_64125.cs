@@ -6932,7 +6932,7 @@ namespace Runtime_64125
             return true;
         }
 
-        static unsafe int Main(string[] args)
+        static unsafe int Main()
         {
             var anyLocation = new AnyLocation();
 

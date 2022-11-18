@@ -10,7 +10,7 @@
   <ItemGroup>
     <Compile Include="ExplicitTailCallNoSO.il" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJit" Value="1" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJitForLoops" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJit" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
   </ItemGroup>
 </Project>

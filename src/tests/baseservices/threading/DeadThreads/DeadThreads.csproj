@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_Thread_DeadThreadCountThresholdForGCTrigger" Value="8" />
-    <CLRTestEnvironmentVariable Include="COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds" Value="3e8" />
+    <CLRTestEnvironmentVariable Include="DOTNET_Thread_DeadThreadCountThresholdForGCTrigger" Value="8" />
+    <CLRTestEnvironmentVariable Include="DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds" Value="3e8" />
   </ItemGroup>
 </Project>

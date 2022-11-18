@@ -32,7 +32,7 @@ done:
 .try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
 }
 
-.method static int32 main(class [mscorlib]System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack	10
 	ldc.i8		0x8000000000000000

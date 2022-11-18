@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Rdm
 {
     public static partial class Program
     {
-        private static void MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh_Vector64_Int16_Vector128_Int16_7()
+        [Fact]
+        public static void MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh_Vector64_Int16_Vector128_Int16_7()
         {
             var test = new SimpleTernaryOpTest__MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh_Vector64_Int16_Vector128_Int16_7();
 

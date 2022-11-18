@@ -48,26 +48,6 @@
 #include <lwp.h>
 #endif
 
-#if HAVE_SYS_VMPARAM_H
-#include <sys/vmparam.h>
-#endif  // HAVE_SYS_VMPARAM_H
-
-#if HAVE_MACH_VM_TYPES_H
-#include <mach/vm_types.h>
-#endif // HAVE_MACH_VM_TYPES_H
-
-#if HAVE_MACH_VM_PARAM_H
-#include <mach/vm_param.h>
-#endif  // HAVE_MACH_VM_PARAM_H
-
-#ifdef __APPLE__
-#include <mach/vm_statistics.h>
-#include <mach/mach_types.h>
-#include <mach/mach_init.h>
-#include <mach/mach_host.h>
-#include <mach/mach_port.h>
-#endif // __APPLE__
-
 #if HAVE_CLOCK_GETTIME_NSEC_NP
 #include <time.h>
 #endif
@@ -402,7 +382,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
 
@@ -430,7 +410,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     InitializeCurrentProcessCpuCount();
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -440,7 +420,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     return true;
 }
 
-#ifndef TARGET_LINUX
+#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -486,7 +466,7 @@ EXTERN_C intptr_t RhGetCurrentThunkContext()
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
@@ -763,7 +743,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
 
         void * pRetVal = mmap(pAddress, alignedSize, unixProtect, flags, -1, 0);
 
-        if (pRetVal != NULL)
+        if (pRetVal != MAP_FAILED)
         {
             void * pAlignedRetVal = (void *)(((size_t)pRetVal + (Alignment - 1)) & ~(Alignment - 1));
             size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;

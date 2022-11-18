@@ -13,7 +13,7 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .locals	()
 .maxstack	2

@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Relative ptr]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    public partial class EETypeNode : ObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
+    public partial class EETypeNode : DehydratableObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
         protected readonly TypeDesc _type;
         internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
@@ -117,15 +117,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc Type => _type;
 
-        public override ObjectNodeSection Section
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            get
-            {
-                if (_type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
@@ -564,7 +561,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();

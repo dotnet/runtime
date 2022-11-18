@@ -8,8 +8,8 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="1" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TC_QuickJitForLoops" Value="1" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TC_OnStackReplacement" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_OnStackReplacement" Value="1" />
   </ItemGroup>
 </Project>

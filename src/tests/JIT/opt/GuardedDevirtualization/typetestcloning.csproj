@@ -7,7 +7,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="1" />
-    <CLRTestEnvironmentVariable Include="COMPlus_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
   </ItemGroup>
 </Project>

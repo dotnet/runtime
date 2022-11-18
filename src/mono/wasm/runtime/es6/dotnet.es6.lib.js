@@ -69,10 +69,22 @@ const linked_functions = [
     // mono-threads-wasm.c
     "schedule_background_exec",
 
+    // interp.c
+    "mono_wasm_profiler_enter",
+    "mono_wasm_profiler_leave",
+
     // driver.c
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_event_pipe_early_startup_callback",
+
+    // jiterpreter.c / interp.c / transform.c
+    "mono_interp_tier_prepare_jiterpreter",
+    "mono_interp_jit_wasm_entry_trampoline",
+    "mono_interp_jit_wasm_jit_call_trampoline",
+    "mono_interp_invoke_wasm_jit_call_trampoline",
+    "mono_interp_flush_jitcall_queue",
+    "mono_jiterp_do_jit_call_indirect",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",

@@ -10,6 +10,6 @@
   <ItemGroup>
     <Compile Include="GitHub_23199.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_GcStressOnDirectCalls" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GcStressOnDirectCalls" Value="1" />
   </ItemGroup>
 </Project>

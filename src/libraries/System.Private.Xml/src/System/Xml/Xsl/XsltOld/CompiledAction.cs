@@ -90,12 +90,12 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public static void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
+        public static void CheckRequiredAttribute(object? attrValue, string attrName)
         {
-            CheckRequiredAttribute(compiler, attrValue != null, attrName);
+            CheckRequiredAttribute(attrValue != null, attrName);
         }
 
-        public static void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)
+        public static void CheckRequiredAttribute(bool attr, string attrName)
         {
             if (!attr)
             {

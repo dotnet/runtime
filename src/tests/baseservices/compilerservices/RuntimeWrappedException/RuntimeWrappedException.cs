@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 
 class Test 
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int retVal = 0;
         var thrower = new StringThrowerClass();

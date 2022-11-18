@@ -1037,8 +1037,7 @@ void emitter::emitBegFN(bool hasFramePtr
                         ,
                         bool chkAlign
 #endif
-                        ,
-                        unsigned maxTmpSize)
+                        )
 {
     insGroup* ig;
 
@@ -1056,8 +1055,6 @@ void emitter::emitBegFN(bool hasFramePtr
     /* Record stack frame info (the temp size is just an estimate) */
 
     emitHasFramePtr = hasFramePtr;
-
-    emitMaxTmpSize = maxTmpSize;
 
 #ifdef DEBUG
     emitChkAlign = chkAlign;
@@ -4135,7 +4132,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     else if (flag == GTF_ICON_OBJ_HDL)
     {
 #ifdef DEBUG
-        emitComp->eePrintObjectDescriptionDescription(commentPrefix, handle);
+        emitComp->eePrintObjectDescription(commentPrefix, (CORINFO_OBJECT_HANDLE)handle);
 #else
         str                   = "frozen object handle";
 #endif

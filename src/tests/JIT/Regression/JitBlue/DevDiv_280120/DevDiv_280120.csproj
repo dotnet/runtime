@@ -10,6 +10,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitDoSsa" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoSsa" Value="0" />
   </ItemGroup>
 </Project>

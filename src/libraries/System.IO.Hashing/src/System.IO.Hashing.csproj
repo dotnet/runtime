@@ -15,6 +15,7 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\XxHash3.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.cs" />

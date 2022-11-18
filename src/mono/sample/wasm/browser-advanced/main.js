@@ -19,7 +19,8 @@ try {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
+                config.browserProfilerOptions = {};
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -51,6 +52,9 @@ try {
     const meaning = exports.Sample.Test.TestMeaning();
     if (typeof Module.GL !== "object") {
         exit(-10, "Can't find GL");
+    }
+    if (typeof Module.FS.filesystems.IDBFS !== "object") {
+        exit(-10, "Can't find FS.filesystems.IDBFS");
     }
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {

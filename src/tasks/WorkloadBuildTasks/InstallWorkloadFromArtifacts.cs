@@ -158,6 +158,12 @@ namespace Microsoft.Workload.Build.Tasks
                     continue;
                 }
 
+                if (string.IsNullOrEmpty(req.Version))
+                {
+                    Log.LogError($"No Version set for workload manifest {req.ManifestName} in workload install requests.");
+                    return false;
+                }
+
                 Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** {req.WorkloadId}: Installing manifests **");
                 if (!InstallWorkloadManifest(workload,
                                              req.ManifestName,

@@ -30,7 +30,7 @@ class SP1a
         return Foo(i0, s); // r0 <= r0; r1 <= r2; r2 <= r1
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         int res = M(1, 2, 3);
         Console.WriteLine("M(1, 2, 3) is {0}.", res);

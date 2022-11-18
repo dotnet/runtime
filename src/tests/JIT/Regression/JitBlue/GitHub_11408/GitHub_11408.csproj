@@ -10,6 +10,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_TailcallStress" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TailcallStress" Value="1" />
   </ItemGroup>
 </Project>
