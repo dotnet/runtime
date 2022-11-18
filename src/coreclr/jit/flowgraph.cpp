@@ -3203,7 +3203,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
             }
         }
 
-#if DEBUG
+#ifdef DEBUG
         if (madeChanges)
         {
             JITDUMP("Lower - Cast of Simple Op %s:\n", GenTree::OpName(cast->OperGet()));

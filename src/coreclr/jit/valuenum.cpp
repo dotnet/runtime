@@ -8368,7 +8368,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 printf("\n");
             }
 #endif // DEBUG
-
         }
     }
 
