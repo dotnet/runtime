@@ -48,7 +48,7 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
-    testResultsFormat: ${{ parameters.testResultsFormat }}}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
