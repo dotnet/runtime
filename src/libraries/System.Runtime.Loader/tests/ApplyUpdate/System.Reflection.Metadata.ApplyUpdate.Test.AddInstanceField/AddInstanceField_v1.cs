@@ -68,9 +68,21 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public event EventHandler<double> ExistingEvent;
         public event EventHandler<double> AddedEvent;
 
-        public void FireEvents() {
+        public double Accumulator;
+
+        private void AccumHandler (object sender, double value) => Accumulator += value;
+
+        public double FireEvents() {
+            Accumulator = 0.0;
+            ExistingEvent += AccumHandler;
             ExistingEvent(this, 123.0);
+            ExistingEvent -= AccumHandler;
+
+            AddedEvent += AccumHandler;
             AddedEvent(this, 123.0);
+            AddedEvent -= AccumHandler;
+
+            return Accumulator;
         }
 
     }
