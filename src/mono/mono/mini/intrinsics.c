@@ -718,6 +718,11 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			}
 		}
 		return ins;
+	} else if (!strcmp (cmethod->name, "DisableInline")) {
+		cfg->disable_inline = TRUE;
+		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	}
 
 	return NULL;
