@@ -11,7 +11,7 @@ namespace System.IO.Pipes
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
         private SafePipeHandle _clientHandle = null!;
-        private bool _clientHandleExposed;
+        private bool _clientHandleExposed, _clientHandleExposedAsString;
         private readonly HandleInheritability _inheritability;
 
         public AnonymousPipeServerStream()
@@ -85,7 +85,7 @@ namespace System.IO.Pipes
         // processes. For now, people do it via command line arguments.
         public string GetClientHandleAsString()
         {
-            _clientHandleExposed = true;
+            _clientHandleExposedAsString =_clientHandleExposed = true;
             GC.SuppressFinalize(_clientHandle);
             return _clientHandle.DangerousGetHandle().ToString();
         }
@@ -122,8 +122,9 @@ namespace System.IO.Pipes
         {
             try
             {
-                // We should dispose of the client handle if it was created inheritable or it was not exposed at all.
-                if (_inheritability == HandleInheritability.Inheritable || !_clientHandleExposed)
+                // We should dispose of the client handle when it was not exposed at all OR
+                // it was exposed as a string (handle finalization has been suppressed) and created inheritable (out-of-proc communication).
+                if (!_clientHandleExposed || (_clientHandleExposedAsString && _inheritability == HandleInheritability.Inheritable))
                 {
                     DisposeLocalCopyOfClientHandle();
                 }
