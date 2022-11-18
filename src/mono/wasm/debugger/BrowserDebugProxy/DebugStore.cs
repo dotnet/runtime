@@ -1184,13 +1184,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.docHandle = docHandle;
             this.url = url;
 
-            this.DebuggerFileName = EscapeAscii(url);
+            this.DebuggerFileName = EscapeAscii(url.Replace("\\", "/"));
             this.BreakableLines = new List<int>();
 
 
             this.SourceUri = new Uri("file://" + DebuggerFileName, UriKind.RelativeOrAbsolute);
             if (File.Exists(url))
-                this.Url = "file://" + DebuggerFileName;
+                this.Url = "file:///" + DebuggerFileName;
             else
                 this.Url = DotNetUrl;
         }
@@ -1198,12 +1198,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapeAscii(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in Regex.Split(path, @"([:\\/])"))
+            foreach (var part in Regex.Split(path, @"([:/])"))
             {
-                if (part == ":")
+                if (part == ":" || part == "/")
                     builder.Append(part);
-                else if (part == "\\" || part == "/")
-                    builder.Append('/');
                 else
                     builder.Append(Uri.EscapeDataString(part));
             }

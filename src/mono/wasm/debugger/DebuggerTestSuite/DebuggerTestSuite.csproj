@@ -100,7 +100,7 @@
 
 
   <Target Name="CreateProjectWithColonInSourceName"
-    Condition="'$(BrowserHost)' != 'windows'">
+    Condition="!$([MSBuild]::IsOSPlatform('windows'))">
     <PropertyGroup>
         <CsprojContent>
             <Project Sdk="Microsoft.NET.Sdk">
