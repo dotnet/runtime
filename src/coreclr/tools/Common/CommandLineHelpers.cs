@@ -179,7 +179,7 @@ namespace System.CommandLine
                     }
 
                     IValueDescriptor descriptor = option;
-                    object val = res.CommandResult.GetValueForOption(option);
+                    object val = res.CommandResult.GetValue(option);
                     if (val is not null && !(descriptor.HasDefaultValue && descriptor.GetDefaultValue().Equals(val)))
                     {
                         if (val is IEnumerable<string> values)
@@ -213,7 +213,7 @@ namespace System.CommandLine
 
                 foreach (var argument in res.CommandResult.Command.Arguments)
                 {
-                    object val = res.CommandResult.GetValueForArgument(argument);
+                    object val = res.CommandResult.GetValue(argument);
                     if (val is IEnumerable<string> values)
                     {
                         foreach (string optInList in values)

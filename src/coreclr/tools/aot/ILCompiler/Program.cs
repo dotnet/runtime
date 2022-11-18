@@ -104,7 +104,7 @@ namespace ILCompiler
             //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValueForArgument(_command.InputFilePaths))
+            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
             {
                 try
                 {
@@ -652,7 +652,7 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))

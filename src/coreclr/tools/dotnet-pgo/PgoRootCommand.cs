@@ -243,7 +243,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 if (setVerbosity)
                 {
-                    Verbosity verbosity = context.ParseResult.GetValueForOption(_verbosity);
+                    Verbosity verbosity = context.ParseResult.GetValue(_verbosity);
                     BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                     Warnings = (int)verbosity >= (int)Verbosity.normal;
                     VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
@@ -270,9 +270,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<HelpSectionDelegate> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
         {
-            foreach (HelpSectionDelegate sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
