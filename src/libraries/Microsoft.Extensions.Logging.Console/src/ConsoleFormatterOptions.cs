@@ -12,6 +12,9 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public class ConsoleFormatterOptions
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConsoleFormatterOptions"/> class.
+        /// </summary>
         public ConsoleFormatterOptions() { }
 
         /// <summary>

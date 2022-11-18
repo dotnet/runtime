@@ -40,7 +40,7 @@ static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and w
 
 static pid_t g_pid;
 
-static int GetSignalMax() // Returns the highest usable signal number.
+static int GetSignalMax(void) // Returns the highest usable signal number.
 {
 #ifdef SIGRTMAX
     return SIGRTMAX;
@@ -409,7 +409,7 @@ static void* SignalHandlerLoop(void* arg)
     }
 }
 
-static void CloseSignalHandlingPipe()
+static void CloseSignalHandlingPipe(void)
 {
     assert(g_signalPipe[0] >= 0);
     assert(g_signalPipe[1] >= 0);
@@ -548,7 +548,7 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
     return success;
 }
 
-int32_t InitializeSignalHandlingCore()
+int32_t InitializeSignalHandlingCore(void)
 {
     size_t signalMax = (size_t)GetSignalMax();
     g_origSigHandler = (struct sigaction*)calloc(sizeof(struct sigaction), signalMax);
@@ -700,7 +700,7 @@ void UninstallTTOUHandlerForConsole(void)
 
 #ifndef HAS_CONSOLE_SIGNALS
 
-int32_t SystemNative_InitializeTerminalAndSignalHandling()
+int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
     static int32_t initialized = 0;
 

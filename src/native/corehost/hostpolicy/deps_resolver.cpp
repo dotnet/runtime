@@ -6,8 +6,8 @@
 #include <cassert>
 
 #include <trace.h>
-#include <deps_entry.h>
-#include <deps_format.h>
+#include "deps_entry.h"
+#include "deps_format.h"
 #include "deps_resolver.h"
 #include <utils.h>
 #include <fx_ver.h>
@@ -253,7 +253,7 @@ void deps_resolver_t::setup_probe_config(
     {
         if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
-            m_probes.push_back(probe_config_t::fx(m_fx_definitions[i]->get_dir(), &m_fx_definitions[i]->get_deps(), i));
+            m_probes.push_back(probe_config_t::fx(m_fx_definitions[i]->get_dir(), m_fx_deps[i].get(), i));
         }
     }
 
@@ -546,7 +546,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
 
         // Add the app's entries
-        const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
+        const auto& deps_entries = get_app_deps().get_entries(deps_entry_t::asset_types::runtime);
         for (const auto& entry : deps_entries)
         {
             if (!process_entry(m_app_dir, entry, 0))
@@ -558,7 +558,7 @@ bool deps_resolver_t::resolve_tpa_list(
         // If the deps file wasn't present or has missing entries, then
         // add the app local assemblies to the TPA. This is only valid
         // in non-libhost scenarios (e.g. comhost).
-        if (!get_deps().exists())
+        if (!get_app_deps().exists())
         {
             // Obtain the local assemblies in the app dir.
             get_dir_assemblies(m_app_dir, _X("local"), &items);
@@ -588,7 +588,7 @@ bool deps_resolver_t::resolve_tpa_list(
     {
         for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
         {
-            const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
+            const auto& deps_entries = m_fx_deps[i]->get_entries(deps_entry_t::asset_types::runtime);
             for (const auto& entry : deps_entries)
             {
                 if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
@@ -627,7 +627,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -740,12 +740,10 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
     }
 }
 
-void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
+void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback)
 {
-    assert(begin != nullptr && end != nullptr);
-
-    auto begin_iter = m_fx_definitions.begin();
-    auto end_iter = m_fx_definitions.end();
+    auto begin_iter = m_fx_deps.cbegin();
+    auto end_iter = m_fx_deps.cend();
 
     if ((m_host_mode == host_mode_t::libhost
         || (bundle::info_t::is_single_file_bundle() && !bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
@@ -754,12 +752,14 @@ void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::i
         // Neither in a libhost scenario nor in a bundled app
         // the deps files should be exposed in the app context
         // properties.
-        assert(begin_iter->get() == &get_app(m_fx_definitions));
+        assert(begin_iter->get() == &get_app_deps());
         ++begin_iter;
     }
 
-    *begin = begin_iter;
-    *end = end_iter;
+    for (auto it = begin_iter; it != m_fx_deps.cend(); ++it)
+    {
+        callback((*it)->get_deps_file());
+    }
 }
 
 /**
@@ -843,7 +843,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     };
 
     // Add app entries
-    const auto& entries = get_deps().get_entries(asset_type);
+    const auto& entries = get_app_deps().get_entries(asset_type);
     for (const auto& entry : entries)
     {
         if (!add_package_cache_entry(entry, m_app_dir, 0))
@@ -853,7 +853,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // If the deps file is missing add known locations.
-    if (!get_deps().exists())
+    if (!get_app_deps().exists())
     {
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
@@ -877,7 +877,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Add fx package locations to fx_dir
     for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
-        const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
+        const auto& fx_entries = m_fx_deps[i]->get_entries(asset_type);
 
         for (const auto& entry : fx_entries)
         {

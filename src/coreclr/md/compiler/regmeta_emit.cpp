@@ -50,8 +50,6 @@ STDMETHODIMP RegMeta::SetModuleProps(   // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ModuleRec   *pModule;               // The module record to modify.
 
     LOG((LOGMD, "RegMeta::SetModuleProps(%S)\n", MDSTR(szName)));
@@ -74,9 +72,6 @@ STDMETHODIMP RegMeta::SetModuleProps(   // S_OK or error.
     IfFailGo(UpdateENCLog(TokenFromRid(1, mdtModule)));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::SetModuleProps()
 
@@ -88,8 +83,6 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
     DWORD       dwSaveFlags)            // [IN] Flags for the save.
 {
     HRESULT     hr=S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     LOG((LOGMD, "RegMeta::Save(%S, 0x%08x)\n", MDSTR(szFile), dwSaveFlags));
     LOCKWRITE();
@@ -114,9 +107,6 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
 #endif // _DEBUG
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::Save()
 
@@ -128,8 +118,6 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
     DWORD       dwSaveFlags)            // [IN] Flags for the save.
 {
     HRESULT     hr=S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     LOCKWRITE();
 
@@ -149,9 +137,6 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
 #endif // _DEBUG
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::SaveToStream()
 
@@ -187,8 +172,6 @@ STDMETHODIMP RegMeta::SaveToMemory(           // S_OK or error.
 {
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     IStream     *pStream = 0;           // Working pointer for save.
 
     LOG((LOGMD, "MD RegMeta::SaveToMemory(0x%08x, 0x%08x)\n",
@@ -211,7 +194,6 @@ STDMETHODIMP RegMeta::SaveToMemory(           // S_OK or error.
 ErrExit:
     if (pStream)
         pStream->Release();
-    END_ENTRYPOINT_NOTHROW;
 
     return (hr);
 } // STDMETHODIMP RegMeta::SaveToMemory()
@@ -224,8 +206,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
     DWORD      *pdwSaveSize)            // [OUT] Put the size here.
 {
     HRESULT     hr=S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     FilterTable *ft = NULL;
 
@@ -253,7 +233,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
         }
     }
 
-
     if (ft->Count() != 0)
     {
         int iCount;
@@ -274,9 +253,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
     hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::GetSaveSize
 
@@ -291,7 +267,6 @@ HRESULT RegMeta::UnmarkAll()
 {
     HRESULT         hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
     int             i;
     int             iCount;
     TypeDefRec      *pRec;
@@ -416,10 +391,6 @@ HRESULT RegMeta::UnmarkAll()
         }
     }
 ErrExit:
-
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::UnmarkAll
 
@@ -458,8 +429,6 @@ STDMETHODIMP RegMeta::MarkToken(        // Return code.
     mdToken     tk)                     // [IN] token to be Marked
 {
     HRESULT     hr = NOERROR;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // LOG((LOGMD, "RegMeta::MarkToken(0x%08x)\n", tk));
     LOCKWRITE();
@@ -536,9 +505,6 @@ STDMETHODIMP RegMeta::MarkToken(        // Return code.
         break;
     }
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::MarkToken
 
@@ -553,8 +519,6 @@ HRESULT RegMeta::IsTokenMarked(
     BOOL        *pIsMarked)         // [OUT] true if token is marked
 {
     HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     FilterTable *pFilter = NULL;
 
@@ -618,9 +582,6 @@ HRESULT RegMeta::IsTokenMarked(
         break;
     }
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::IsTokenMarked
 
@@ -638,8 +599,6 @@ STDMETHODIMP RegMeta::DefineTypeDef(                // S_OK or error.
 {
     HRESULT     hr = S_OK;              // A result.
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     LOG((LOGMD, "RegMeta::DefineTypeDef(%S, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             MDSTR(szTypeDef), dwTypeDefFlags, tkExtends,
             rtkImplements, ptd));
@@ -652,9 +611,6 @@ STDMETHODIMP RegMeta::DefineTypeDef(                // S_OK or error.
     IfFailGo(_DefineTypeDef(szTypeDef, dwTypeDefFlags,
                 tkExtends, rtkImplements, mdTokenNil, ptd));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::DefineTypeDef()
 
@@ -666,8 +622,6 @@ STDMETHODIMP RegMeta::SetHandler(       // S_OK.
     IUnknown    *pUnk)                  // [IN] The new error handler.
 {
     HRESULT     hr = S_OK;              // A result.
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     IMapToken *pIMap = NULL;
 
@@ -687,9 +641,6 @@ STDMETHODIMP RegMeta::SetHandler(       // S_OK.
         pIMap->Release();
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::SetHandler()
 

@@ -79,11 +79,11 @@ namespace System.Security.Cryptography.Xml
             XmlElement rsaKeyValueElement = xmlDocument.CreateElement(RSAKeyValueElementName, SignedXml.XmlDsigNamespaceUrl);
 
             XmlElement modulusElement = xmlDocument.CreateElement(ModulusElementName, SignedXml.XmlDsigNamespaceUrl);
-            modulusElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(rsaParams.Modulus)));
+            modulusElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(rsaParams.Modulus!)));
             rsaKeyValueElement.AppendChild(modulusElement);
 
             XmlElement exponentElement = xmlDocument.CreateElement(ExponentElementName, SignedXml.XmlDsigNamespaceUrl);
-            exponentElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(rsaParams.Exponent)));
+            exponentElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(rsaParams.Exponent!)));
             rsaKeyValueElement.AppendChild(exponentElement);
 
             keyValueElement.AppendChild(rsaKeyValueElement);
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             xmlNamespaceManager.AddNamespace(xmlDsigNamespacePrefix, SignedXml.XmlDsigNamespaceUrl);
 
-            XmlNode rsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{RSAKeyValueElementName}", xmlNamespaceManager);
+            XmlNode? rsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{RSAKeyValueElementName}", xmlNamespaceManager);
             if (rsaKeyValueElement == null)
             {
                 throw new CryptographicException(SR.Format(SR.MustContainChildElement, KeyValueElementName, RSAKeyValueElementName));
@@ -133,8 +133,8 @@ namespace System.Security.Cryptography.Xml
             {
                 Key.ImportParameters(new RSAParameters
                 {
-                    Modulus = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ModulusElementName}", xmlNamespaceManager).InnerText),
-                    Exponent = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ExponentElementName}", xmlNamespaceManager).InnerText)
+                    Modulus = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ModulusElementName}", xmlNamespaceManager)!.InnerText),
+                    Exponent = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ExponentElementName}", xmlNamespaceManager)!.InnerText)
                 });
             }
             catch (Exception ex)

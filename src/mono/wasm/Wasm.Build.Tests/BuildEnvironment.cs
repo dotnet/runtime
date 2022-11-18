@@ -27,6 +27,7 @@ namespace Wasm.Build.Tests
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
+        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt");
 
         private static readonly Dictionary<string, string> s_runtimePackVersions = new();
 
@@ -106,7 +107,6 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
-            EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
 
@@ -118,12 +118,6 @@ namespace Wasm.Build.Tests
             // in the logs
             EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
             DefaultBuildArgs += " /nr:false";
-
-            if (OperatingSystem.IsWindows())
-            {
-                EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                                        ".emscripten-cache");
-            }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -141,6 +135,10 @@ namespace Wasm.Build.Tests
             {
                 LogRootPath = Environment.CurrentDirectory;
             }
+
+            if (Directory.Exists(TmpPath))
+                Directory.Delete(TmpPath, recursive: true);
+            Directory.CreateDirectory(TmpPath);
         }
 
         // FIXME: error checks
@@ -155,8 +153,5 @@ namespace Wasm.Build.Tests
 
         protected static string s_directoryBuildPropsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.targets"));
-
-        protected static string s_directoryBuildPropsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.props"));
-        protected static string s_directoryBuildTargetsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.targets"));
     }
 }

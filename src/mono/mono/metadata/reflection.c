@@ -29,6 +29,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -1391,7 +1392,6 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	MonoMethodSignature *methodsig = mono_method_signature_internal (method);
 
 	MonoTableInfo *constt;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
 	if (!methodsig->param_count)
@@ -1411,22 +1411,16 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 		return;
 	}
 
-	methodt = &image->tables [MONO_TABLE_METHOD];
 	paramt = &image->tables [MONO_TABLE_PARAM];
 	constt = &image->tables [MONO_TABLE_CONSTANT];
 
 	idx = mono_method_get_index (method);
 	g_assert (idx != 0);
 
-	/* lastp is the starting param index for the next method in the table, or
-	 * one past the last row if this is the last method
-	 */
-	/* FIXME: metadata-update : will this work with added methods ? */
-	param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
-	if (!mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx + 1))
-		lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (paramt) + 1;
+	param_index = mono_metadata_get_method_params (image, idx, &lastp);
+
+	if (!param_index)
+		return;
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 paramseq;

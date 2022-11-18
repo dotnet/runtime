@@ -28,7 +28,7 @@ public class F
         return obj.GetValue(3);
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         Derived d = new Derived();
         int v = TestSealedMethodInlining(d);

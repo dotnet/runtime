@@ -19,6 +19,7 @@
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
 #include "metricssummary.h"
+#include "fileio.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 
@@ -64,56 +65,47 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
     }
 }
 
+enum class NearDifferResult
+{
+    SuccessWithoutDiff,
+    SuccessWithDiff,
+    Failure,
+};
+
 // This function uses PAL_TRY, so it can't be in the a function that requires object unwinding. Extracting it out here
 // avoids compiler error.
 //
-void InvokeNearDiffer(NearDiffer*           nearDiffer,
-                      CommandLine::Options* o,
-                      MethodContext**       mc,
-                      CompileResult**       crl,
-                      int*                  matchCount,
-                      MethodContextReader** reader,
-                      MCList*               failingMCL,
-                      MCList*               diffMCL)
+static NearDifferResult InvokeNearDiffer(NearDiffer*           nearDiffer,
+                                   MethodContext**       mc,
+                                   CompileResult**       crl,
+                                   MethodContextReader** reader)
 {
+
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
         NearDiffer*           nearDiffer;
-        CommandLine::Options* o;
         MethodContext**       mc;
         CompileResult**       crl;
-        int*                  matchCount;
         MethodContextReader** reader;
-        MCList*               failingMCL;
-        MCList*               diffMCL;
+        NearDifferResult      result;
     } param;
     param.nearDiffer = nearDiffer;
-    param.o          = o;
     param.mc         = mc;
     param.crl        = crl;
-    param.matchCount = matchCount;
     param.reader     = reader;
-    param.failingMCL = failingMCL;
-    param.diffMCL    = diffMCL;
+    param.result     = NearDifferResult::Failure;
 
     PAL_TRY(Param*, pParam, &param)
     {
-        if (pParam->nearDiffer->compare(*pParam->mc, *pParam->crl, (*pParam->mc)->cr))
+        if (!pParam->nearDiffer->compare(*pParam->mc, *pParam->crl, (*pParam->mc)->cr))
         {
-            (*pParam->matchCount)++;
+            pParam->result = NearDifferResult::SuccessWithDiff;
+            LogIssue(ISSUE_ASM_DIFF, "main method %d of size %d differs", (*pParam->reader)->GetMethodContextIndex(),
+                     (*pParam->mc)->methodSize);
         }
         else
         {
-            LogIssue(ISSUE_ASM_DIFF, "main method %d of size %d differs", (*pParam->reader)->GetMethodContextIndex(),
-                     (*pParam->mc)->methodSize);
-
-            // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
-            // We will add this MC to the diffMCList if one is requested
-            // Otherwise this will end up in failingMCList
-            if ((*pParam->o).diffMCLFilename != nullptr)
-                (*pParam->diffMCL).AddMethodToMCL((*pParam->reader)->GetMethodContextIndex());
-            else if ((*pParam->o).mclFilename != nullptr)
-                (*pParam->failingMCL).AddMethodToMCL((*pParam->reader)->GetMethodContextIndex());
+            pParam->result = NearDifferResult::SuccessWithoutDiff;
         }
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
@@ -123,10 +115,26 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
         LogError("main method %d of size %d failed to load and compile correctly.", (*reader)->GetMethodContextIndex(),
                  (*mc)->methodSize);
         e.ShowAndDeleteMessage();
-        if ((*o).mclFilename != nullptr)
-            (*failingMCL).AddMethodToMCL((*reader)->GetMethodContextIndex());
+        param.result = NearDifferResult::Failure;
     }
     PAL_ENDTRY
+
+    return param.result;
+}
+
+static bool PrintDiffsCsvHeader(FileWriter& fw)
+{
+    return fw.Printf("Context,Context size,Base size,Diff size,Base instructions,Diff instructions\n");
+}
+
+static bool PrintDiffsCsvRow(
+    FileWriter& fw,
+    int context,
+    uint32_t contextSize,
+    long long baseSize, long long diffSize,
+    long long baseInstructions, long long diffInstructions)
+{
+    return fw.Printf("%d,%u,%lld,%lld,%lld,%lld\n", context, contextSize, baseSize, diffSize, baseInstructions, diffInstructions);
 }
 
 // Run superpmi. The return value is as follows:
@@ -173,7 +181,8 @@ int __cdecl main(int argc, char* argv[])
 #endif
 
     bool   collectThroughput = false;
-    MCList failingToReplayMCL, diffMCL;
+    MCList failingToReplayMCL;
+    FileWriter diffCsv;
 
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
@@ -232,9 +241,13 @@ int __cdecl main(int argc, char* argv[])
     {
         failingToReplayMCL.InitializeMCL(o.mclFilename);
     }
-    if (o.diffMCLFilename != nullptr)
+    if (o.diffsInfo != nullptr)
     {
-        diffMCL.InitializeMCL(o.diffMCLFilename);
+        if (!FileWriter::CreateNew(o.diffsInfo, &diffCsv))
+        {
+            LogError("Could not create file %s", o.diffsInfo);
+            return (int)SpmiResult::GeneralFailure;
+        }
     }
 
     SetDebugDumpVariables();
@@ -250,7 +263,6 @@ int __cdecl main(int argc, char* argv[])
 
     int loadedCount       = 0;
     int jittedCount       = 0;
-    int matchCount        = 0;
     int failToReplayCount = 0;
     int errorCount        = 0;
     int errorCount2       = 0;
@@ -267,6 +279,11 @@ int __cdecl main(int argc, char* argv[])
         {
             return (int)SpmiResult::GeneralFailure;
         }
+    }
+
+    if (o.diffsInfo != nullptr)
+    {
+        PrintDiffsCsvHeader(diffCsv);
     }
 
     MetricsSummaries totalBaseMetrics;
@@ -289,9 +306,9 @@ int __cdecl main(int argc, char* argv[])
             st1.Stop();
             if (o.applyDiff)
             {
-                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Matching %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, matchCount, failToReplayCount,
-                           (int)((double)500 / st1.GetSeconds()));
+                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Diffs %d  FailedCompile %d at %d per second",
+                           reader->PercentComplete(), loadedCount, jittedCount, totalBaseMetrics.Overall.NumContextsWithDiffs,
+                           failToReplayCount, (int)((double)500 / st1.GetSeconds()));
             }
             else
             {
@@ -309,6 +326,11 @@ int __cdecl main(int argc, char* argv[])
         if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
+        }
+
+        if (o.ignoreStoredConfig)
+        {
+            mc->setIgnoreStoredConfig();
         }
 
         if (reader->IsMethodExcluded(mc))
@@ -555,7 +577,43 @@ int __cdecl main(int argc, char* argv[])
                 }
                 else
                 {
-                    InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
+                    NearDifferResult result = InvokeNearDiffer(&nearDiffer, &mc, &crl, &reader);
+
+                    switch (result)
+                    {
+                        case NearDifferResult::SuccessWithDiff:
+                            totalBaseMetrics.Overall.NumContextsWithDiffs++;
+                            totalDiffMetrics.Overall.NumContextsWithDiffs++;
+
+                            totalBaseMetricsOpts.NumContextsWithDiffs++;
+                            totalDiffMetricsOpts.NumContextsWithDiffs++;
+
+                            // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
+                            // We will add this MC to the diffs info if there is one.
+                            // Otherwise this will end up in failingMCList
+                            if (o.diffsInfo != nullptr)
+                            {
+                                PrintDiffsCsvRow(
+                                    diffCsv,
+                                    reader->GetMethodContextIndex(),
+                                    mcb.size,
+                                    baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
+                                    baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions);
+                            }
+                            else if (o.mclFilename != nullptr)
+                            {
+                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                            }
+
+                            break;
+                        case NearDifferResult::SuccessWithoutDiff:
+                            break;
+                        case NearDifferResult::Failure:
+                            if (o.mclFilename != nullptr)
+                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+
+                            break;
+                    }
 
                     totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.Overall.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
@@ -618,7 +676,7 @@ int __cdecl main(int argc, char* argv[])
                 if (o.breakOnError)
                 {
                     if (o.indexCount == -1)
-                        LogInfo("HINT: to repro add '/c %d' to cmdline", reader->GetMethodContextIndex());
+                        LogInfo("HINT: to repro add '-c %d' to cmdline", reader->GetMethodContextIndex());
                     __debugbreak();
                 }
             }
@@ -638,7 +696,7 @@ int __cdecl main(int argc, char* argv[])
     if (o.applyDiff)
     {
         LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount,
-                missingCount, jittedCount - failToReplayCount - matchCount);
+                missingCount, totalDiffMetrics.Overall.NumContextsWithDiffs);
     }
     else
     {
@@ -667,10 +725,6 @@ int __cdecl main(int argc, char* argv[])
     {
         failingToReplayMCL.CloseMCL();
     }
-    if (o.diffMCLFilename != nullptr)
-    {
-        diffMCL.CloseMCL();
-    }
     Logger::Shutdown();
 
     SpmiResult result = SpmiResult::Success;
@@ -679,7 +733,7 @@ int __cdecl main(int argc, char* argv[])
     {
         result = SpmiResult::Error;
     }
-    else if (o.applyDiff && (matchCount != jittedCount - missingCount))
+    else if (o.applyDiff && (totalDiffMetrics.Overall.NumContextsWithDiffs > 0))
     {
         result = SpmiResult::Diffs;
     }

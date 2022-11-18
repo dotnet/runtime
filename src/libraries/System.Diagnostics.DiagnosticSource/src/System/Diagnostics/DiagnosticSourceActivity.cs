@@ -26,13 +26,18 @@ namespace System.Diagnostics
         /// <returns>Started Activity for convenient chaining</returns>
         /// <seealso cref="Activity"/>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public Activity StartActivity(Activity activity, object? args)
         {
             activity.Start();
             Write(activity.OperationName + ".Start", args);
             return activity;
         }
+
+        /// <inheritdoc cref="StartActivity"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
+        public Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
+            => StartActivity(activity, (object?)args);
 
         /// <summary>
         /// Stops given Activity: maintains global Current Activity and notifies consumers
@@ -45,7 +50,6 @@ namespace System.Diagnostics
         /// <param name="args">An object that represent the value being passed as a payload for the event.</param>
         /// <seealso cref="Activity"/>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public void StopActivity(Activity activity, object? args)
         {
             // Stop sets the end time if it was unset, but we want it set before we issue the write
@@ -55,6 +59,12 @@ namespace System.Diagnostics
             Write(activity.OperationName + ".Stop", args);
             activity.Stop();    // Resets Activity.Current (we want this after the Write)
         }
+
+        /// <inheritdoc cref="StartActivity"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
+        public void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
+            => StopActivity(activity, (object?)args);
 
         /// <summary>
         /// Optional: If an instrumentation site creating an new activity that was caused

@@ -4,7 +4,7 @@
 /*
 * Regression test for Dev11 243742 [Triton]
 * precommands:
-* set COMPLUS_ZAPREQUIRE=2
+* set DOTNET_ZAPREQUIRE=2
 * set CORECLR_PREJITType=MDIL
 * del /q nitype.signal
 *

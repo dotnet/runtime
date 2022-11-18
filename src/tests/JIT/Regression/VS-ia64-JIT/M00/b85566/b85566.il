@@ -9,7 +9,7 @@
 }
 .assembly s{}
 .class public s {
-.method static int32 main(class System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack	10
      ldc.r8	5.5

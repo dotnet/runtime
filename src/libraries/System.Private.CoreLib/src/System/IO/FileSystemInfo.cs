@@ -56,30 +56,10 @@ namespace System.IO
             }
         }
 
-        public virtual string Name
-        {
-            get
-            {
-                Debug.Fail("Property is abstract in the ref assembly and both Directory/FileInfo override it.");
-                return _name!;
-            }
-        }
+        public abstract string Name { get; }
 
         // Whether a file/directory exists
-        public virtual bool Exists
-        {
-            get
-            {
-                try
-                {
-                    return ExistsCore;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public abstract bool Exists { get; }
 
         // Delete a file/directory
         public abstract void Delete();

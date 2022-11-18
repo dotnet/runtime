@@ -35,7 +35,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = -1,
@@ -44,7 +44,7 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.FromMinutes(2),
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -53,7 +53,7 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.FromMinutes(2),
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -62,13 +62,22 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.MinValue,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
                     QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                     QueueLimit = 1,
                     Window = TimeSpan.FromMinutes(-2),
+                    AutoReplenishment = false,
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
                     AutoReplenishment = false,
                 }));
         }
@@ -512,6 +521,41 @@ namespace System.Threading.RateLimiting.Test
             Replenish(limiter, 1L);
 
             Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public override async Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually()
+        {
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3,
+                Window = TimeSpan.FromMilliseconds(2),
+                AutoReplenishment = false
+            });
+
+            var lease = limiter.AttemptAcquire(1);
+            Assert.True(lease.IsAcquired);
+
+            lease = limiter.AttemptAcquire(2);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.AcquireAsync(2, cts.Token);
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            var wait2 = limiter.AcquireAsync(1);
+            Replenish(limiter, 2L);
+
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(2, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.Equal(0, limiter.GetStatistics().CurrentQueuedCount);
         }
 
         [Fact]

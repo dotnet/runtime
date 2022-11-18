@@ -5188,45 +5188,27 @@ EnumMethodDefinitions::CdEnd(CLRDATA_ENUM handle)
 
 EnumMethodInstances::EnumMethodInstances(MethodDesc* methodDesc,
                                          IXCLRDataAppDomain* givenAppDomain)
-    : m_domainIter(FALSE)
 {
     m_methodDesc = methodDesc;
     if (givenAppDomain)
     {
-        m_givenAppDomain =
+        m_appDomain =
             ((ClrDataAppDomain*)givenAppDomain)->GetAppDomain();
     }
     else
     {
-        m_givenAppDomain = NULL;
+        m_appDomain = AppDomain::GetCurrentDomain();
     }
-    m_givenAppDomainUsed = false;
-    m_appDomain = NULL;
+    m_appDomainUsed = false;
 }
 
 HRESULT
 EnumMethodInstances::Next(ClrDataAccess* dac,
                           IXCLRDataMethodInstance **instance)
 {
- NextDomain:
-    if (!m_appDomain)
+    if (!m_appDomainUsed)
     {
-        if (m_givenAppDomainUsed ||
-            !m_domainIter.Next())
-        {
-            return S_FALSE;
-        }
-
-        if (m_givenAppDomain)
-        {
-            m_appDomain = m_givenAppDomain;
-            m_givenAppDomainUsed = true;
-        }
-        else
-        {
-            m_appDomain = m_domainIter.GetDomain();
-        }
-
+        m_appDomainUsed = true;
         m_methodIter.Start(m_appDomain,
                            m_methodDesc->GetModule(),       // module
                            m_methodDesc->GetMemberDef(),    // token
@@ -5239,8 +5221,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         if (!m_methodIter.Next(pDomainAssembly.This()))
         {
-            m_appDomain = NULL;
-            goto NextDomain;
+            return S_FALSE;
         }
     }
 

@@ -141,19 +141,6 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
-        internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
-        {
-            CorElementType corElemType = GetCorElementType(type);
-            if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
-            {
-                elementType = GetElementType(type);
-                return true;
-            }
-
-            elementType = null;
-            return false;
-        }
-
         internal static bool IsPointer(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -873,7 +860,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1225,7 +1212,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)

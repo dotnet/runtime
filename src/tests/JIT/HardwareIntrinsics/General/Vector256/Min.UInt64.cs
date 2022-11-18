@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256
 {
     public static partial class Program
     {
-        private static void MinUInt64()
+        [Fact]
+        public static void MinUInt64()
         {
             var test = new VectorBinaryOpTest__MinUInt64();
 

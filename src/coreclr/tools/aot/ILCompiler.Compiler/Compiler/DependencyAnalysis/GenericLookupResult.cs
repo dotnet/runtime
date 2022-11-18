@@ -1475,6 +1475,8 @@ namespace ILCompiler.DependencyAnalysis
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
 
+            factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
+
             if (implMethod.Signature.IsStatic)
             {
                 if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)

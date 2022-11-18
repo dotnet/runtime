@@ -97,19 +97,19 @@ namespace System.Security.Cryptography.Xml
             XmlElement dsaKeyValueElement = xmlDocument.CreateElement(DSAKeyValueElementName, SignedXml.XmlDsigNamespaceUrl);
 
             XmlElement pElement = xmlDocument.CreateElement(PElementName, SignedXml.XmlDsigNamespaceUrl);
-            pElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.P)));
+            pElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.P!)));
             dsaKeyValueElement.AppendChild(pElement);
 
             XmlElement qElement = xmlDocument.CreateElement(QElementName, SignedXml.XmlDsigNamespaceUrl);
-            qElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.Q)));
+            qElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.Q!)));
             dsaKeyValueElement.AppendChild(qElement);
 
             XmlElement gElement = xmlDocument.CreateElement(GElementName, SignedXml.XmlDsigNamespaceUrl);
-            gElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.G)));
+            gElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.G!)));
             dsaKeyValueElement.AppendChild(gElement);
 
             XmlElement yElement = xmlDocument.CreateElement(YElementName, SignedXml.XmlDsigNamespaceUrl);
-            yElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.Y)));
+            yElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.Y!)));
             dsaKeyValueElement.AppendChild(yElement);
 
             // Add optional components if present
@@ -168,28 +168,28 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             xmlNamespaceManager.AddNamespace(xmlDsigNamespacePrefix, SignedXml.XmlDsigNamespaceUrl);
 
-            XmlNode dsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{DSAKeyValueElementName}", xmlNamespaceManager);
+            XmlNode? dsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{DSAKeyValueElementName}", xmlNamespaceManager);
             if (dsaKeyValueElement == null)
             {
                 throw new CryptographicException(SR.Format(SR.MustContainChildElement, KeyValueElementName, DSAKeyValueElementName));
             }
 
-            XmlNode yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}", xmlNamespaceManager);
+            XmlNode? yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}", xmlNamespaceManager);
             if (yNode == null)
                 throw new CryptographicException(SR.Format(SR.ElementMissing, YElementName));
 
-            XmlNode pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}", xmlNamespaceManager);
-            XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
+            XmlNode? pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}", xmlNamespaceManager);
+            XmlNode? qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
 
             if ((pNode == null && qNode != null) || (pNode != null && qNode == null))
                 throw new CryptographicException(SR.Format(SR.ElementCombinationMissing, PElementName, QElementName));
 
 
-            XmlNode gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}", xmlNamespaceManager);
-            XmlNode jNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{JElementName}", xmlNamespaceManager);
+            XmlNode? gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}", xmlNamespaceManager);
+            XmlNode? jNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{JElementName}", xmlNamespaceManager);
 
-            XmlNode seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}", xmlNamespaceManager);
-            XmlNode pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}", xmlNamespaceManager);
+            XmlNode? seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}", xmlNamespaceManager);
+            XmlNode? pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}", xmlNamespaceManager);
             if ((seedNode == null && pgenCounterNode != null) || (seedNode != null && pgenCounterNode == null))
                 throw new CryptographicException(SR.Format(SR.ElementCombinationMissing, SeedElementName, PgenCounterElementName));
 

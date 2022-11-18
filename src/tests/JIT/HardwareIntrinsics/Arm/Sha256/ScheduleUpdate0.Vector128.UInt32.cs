@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Sha256
 {
     public static partial class Program
     {
-        private static void ScheduleUpdate0_Vector128_UInt32()
+        [Fact]
+        public static void ScheduleUpdate0_Vector128_UInt32()
         {
             var test = new SecureHashBinaryOpTest__ScheduleUpdate0_Vector128_UInt32();
 

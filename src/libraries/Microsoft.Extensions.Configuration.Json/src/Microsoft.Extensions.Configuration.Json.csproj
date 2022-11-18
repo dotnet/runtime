@@ -18,7 +18,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

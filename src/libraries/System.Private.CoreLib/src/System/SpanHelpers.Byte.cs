@@ -801,7 +801,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = minLength;
 
-            if (Avx2.IsSupported)
+            if (Vector256.IsHardwareAccelerated)
             {
                 if (lengthToExamine >= (nuint)Vector256<byte>.Count)
                 {
@@ -809,7 +809,7 @@ namespace System
                     uint matches;
                     while (lengthToExamine > offset)
                     {
-                        matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset)));
+                        matches = Vector256.Equals(Vector256.LoadUnsafe(ref first, offset), Vector256.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                         // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
 
@@ -826,7 +826,7 @@ namespace System
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset)));
+                    matches = Vector256.Equals(Vector256.LoadUnsafe(ref first, offset), Vector256.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                     if (matches == uint.MaxValue)
                     {
                         // All matched
@@ -850,7 +850,7 @@ namespace System
                     uint matches;
                     if (lengthToExamine > offset)
                     {
-                        matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                        matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                         // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
 
@@ -863,7 +863,7 @@ namespace System
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                    matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                     if (matches == ushort.MaxValue)
                     {
                         // All matched
@@ -881,58 +881,32 @@ namespace System
                     return result;
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
                 if (lengthToExamine >= (nuint)Vector128<byte>.Count)
                 {
                     lengthToExamine -= (nuint)Vector128<byte>.Count;
-                    uint matches;
                     while (lengthToExamine > offset)
                     {
-                        matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
-                        // Note that MoveMask has converted the equal vector elements into a set of bit flags,
-                        // So the bit position in 'matches' corresponds to the element offset.
-
-                        // 16 elements in Vector128<byte> so we compare to ushort.MaxValue to check if everything matched
-                        if (matches == ushort.MaxValue)
+                        if (Vector128.LoadUnsafe(ref first, offset) == Vector128.LoadUnsafe(ref second, offset))
                         {
                             // All matched
                             offset += (nuint)Vector128<byte>.Count;
                             continue;
                         }
 
-                        goto Difference;
+                        goto BytewiseCheck;
                     }
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
-                    // Same as method as above
-                    matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
-                    if (matches == ushort.MaxValue)
+                    if (Vector128.LoadUnsafe(ref first, offset) == Vector128.LoadUnsafe(ref second, offset))
                     {
                         // All matched
                         goto Equal;
                     }
-                Difference:
-                    // Invert matches to find differences
-                    uint differences = ~matches;
-                    // Find bitflag offset of first difference and add to current offset
-                    offset += (uint)BitOperations.TrailingZeroCount(differences);
-
-                    int result = Unsafe.AddByteOffset(ref first, offset).CompareTo(Unsafe.AddByteOffset(ref second, offset));
-                    Debug.Assert(result != 0);
-
-                    return result;
+                    goto BytewiseCheck;
                 }
             }
-            //else if (AdvSimd.Arm64.IsSupported)
-            //{
-            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
-            //    // when compared to the vectorized implementation below. There were some wins if the mismatch happen
-            //    // after 8th index of the chunk because with ARM64 intrinsic, using fewer instructions the first mismatched
-            //    // index can be retrieved. In case of vectorization, sequential scan has to be done instead. However, at the
-            //    // same time, there are losses if the mismatch index is less than 7~8. So the overall benefit doesn't justify
-            //    // to optimize this method with ARM64 hardware intrinsics.
-            //}
             else if (Vector.IsHardwareAccelerated)
             {
                 if (lengthToExamine > (nuint)Vector<byte>.Count)

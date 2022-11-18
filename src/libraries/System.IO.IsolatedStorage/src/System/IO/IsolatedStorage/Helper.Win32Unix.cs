@@ -12,7 +12,7 @@ namespace System.IO.IsolatedStorage
     {
         internal static string GetDataDirectory(IsolatedStorageScope scope)
         {
-            // This is the relevant special folder for the given scope plus "IsolatedStorage".
+            // This is the relevant special folder for the given scope plus IsolatedStorageDirectoryName.
             // It is meant to replicate the behavior of the VM ComIsolatedStorage::GetRootDir().
 
             // (note that Silverlight used "CoreIsolatedStorage" for a directory name and did not support machine scope)

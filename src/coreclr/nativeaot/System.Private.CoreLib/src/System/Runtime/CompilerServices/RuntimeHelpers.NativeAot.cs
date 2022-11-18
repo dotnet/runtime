@@ -25,6 +25,7 @@ namespace System.Runtime.CompilerServices
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable IDE0060
         private static unsafe void* GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
@@ -36,6 +37,7 @@ namespace System.Runtime.CompilerServices
             // https://github.com/dotnet/corert/issues/364
             throw new PlatformNotSupportedException();
         }
+#pragma warning disable IDE0060
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
@@ -70,7 +72,7 @@ namespace System.Runtime.CompilerServices
             if ((!eeType.IsValueType) || eeType.IsPrimitive)
                 return obj;
 
-            return RuntimeImports.RhMemberwiseClone(obj);
+            return obj.MemberwiseClone();
         }
 
         public static new bool Equals(object? o1, object? o2)
@@ -206,8 +208,16 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe nuint GetRawObjectDataSize(this object obj)
         {
-            Debug.Assert(obj.GetEETypePtr().ComponentSize == 0);
-            return obj.GetEETypePtr().BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
+            MethodTable* pMT = GetMethodTable(obj);
+
+            // See comment on RawArrayData for details
+            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+            if (pMT->HasComponentSize)
+                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
+
+            GC.KeepAlive(obj); // Keep MethodTable alive
+
+            return rawSize;
         }
 
         internal static unsafe ushort GetElementSize(this Array array)

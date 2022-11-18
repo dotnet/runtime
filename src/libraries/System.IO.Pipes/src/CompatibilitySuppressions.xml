@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- Exposed public in System.IO.Pipes.AccessControl but implemented in System.IO.Pipes. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.AnonymousPipeServerStreamAcl</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.NamedPipeServerStreamAcl</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.PipeAccessRights</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.PipeAccessRule</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.PipeAuditRule</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.PipesAclExtensions</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.IO.Pipes.PipeSecurity</Target>
+    <Left>ref/net7.0/System.IO.Pipes.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.IO.Pipes.dll</Right>
+  </Suppression>
+</Suppressions>

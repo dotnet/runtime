@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern ulong GetRuntimeCounterValue(RuntimeCounters counterID);
 #else
-        internal static ulong GetRuntimeCounterValue(RuntimeCounters counterID)
+        internal static ulong GetRuntimeCounterValue(RuntimeCounters _ /*counterID*/)
         {
             return 0;
         }
