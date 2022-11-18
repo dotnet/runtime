@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Set AutoGenerateAssemblyVersion to false until runtime uses illink live bits and removes dependencies https://github.com/dotnet/runtime/issues/78076 -->
+    <AutoGenerateAssemblyVersion>false</AutoGenerateAssemblyVersion>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
+    <EnableXlfLocalization>false</EnableXlfLocalization>
+  </PropertyGroup>
+
+  <!-- Analyzer package properties -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
+    <Authors>Microsoft</Authors>
+    <Description>Analyzer utilities for ILLink attributes and single-file</Description>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
+  </ItemGroup>
+
+  <Target Name="IncludeAnalyzerAssembliesInPkg" DependsOnTargets="InitializeStandardNuspecProperties" AfterTargets="AfterBuild">
+    <ItemGroup>
+      <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(OutputPath)\**\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -11,7 +11,7 @@
 {
 }
 .class ILGEN_939796994 {
-.method static int32 main(class System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack	2
 

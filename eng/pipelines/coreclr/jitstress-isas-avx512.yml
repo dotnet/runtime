@@ -1,5 +1,8 @@
-trigger:
-  batch: false
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on specific changes to the JIT directory that are likely to affect AVX-512.
+pr:
   branches:
     include:
     - main

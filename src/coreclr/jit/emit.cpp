@@ -1037,8 +1037,7 @@ void emitter::emitBegFN(bool hasFramePtr
                         ,
                         bool chkAlign
 #endif
-                        ,
-                        unsigned maxTmpSize)
+                        )
 {
     insGroup* ig;
 
@@ -1056,8 +1055,6 @@ void emitter::emitBegFN(bool hasFramePtr
     /* Record stack frame info (the temp size is just an estimate) */
 
     emitHasFramePtr = hasFramePtr;
-
-    emitMaxTmpSize = maxTmpSize;
 
 #ifdef DEBUG
     emitChkAlign = chkAlign;

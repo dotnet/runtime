@@ -452,6 +452,7 @@ namespace Internal.JitInterface
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
+        private HashSet<MethodDesc> _synthesizedPgoDependencies;
 
         public bool HasColdCode { get; private set; }
 

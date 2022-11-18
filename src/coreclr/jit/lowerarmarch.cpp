@@ -1100,6 +1100,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector64_Create:
         case NI_Vector128_Create:
+        case NI_Vector64_CreateScalar:
+        case NI_Vector128_CreateScalar:
         {
             // We don't directly support the Vector64.Create or Vector128.Create methods in codegen
             // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
@@ -1439,8 +1441,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    bool   isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
-    size_t argCnt     = node->GetOperandCount();
+    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
+    bool   isCreateScalar = (intrinsicId == NI_Vector64_CreateScalar) || (intrinsicId == NI_Vector128_CreateScalar);
+    size_t argCnt         = node->GetOperandCount();
 
     // Check if we have a cast that we can remove. Note that "IsValidConstForMovImm"
     // will reset Op(1) if it finds such a cast, so we do not need to handle it here.
@@ -1482,6 +1485,22 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     }
     else if (argCnt == 1)
     {
+        if (isCreateScalar)
+        {
+            GenTree* op1 = node->Op(1);
+
+            GenTree* tmp = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(op1, tmp);
+            LowerNode(tmp);
+
+            GenTree* idx = comp->gtNewIconNode(0);
+            BlockRange().InsertAfter(tmp, idx);
+            LowerNode(idx);
+
+            node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp, idx, op1);
+            return LowerNode(node);
+        }
+
         // We have the following (where simd is simd8 or simd16):
         //          /--*  op1  T
         //   node = *  HWINTRINSIC   simd   T Create
@@ -2443,6 +2462,15 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
             startOfChain->AsOp()->gtGetOp2()->ClearContained();
             ContainCheckCompare(startOfChain->AsOp());
         }
+    }
+
+    if (node->gtOp1->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp1);
+    }
+    if (node->gtOp2->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp2);
     }
 }
 

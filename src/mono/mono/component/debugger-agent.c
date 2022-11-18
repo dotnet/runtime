@@ -6175,12 +6175,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end, TRUE);
 			if (err != ERR_NONE)
 				break;
-			if (mono_class_is_nullable (arg_class)) {
-				args [i] = mono_nullable_box (arg_buf [i], arg_class, error);
-				mono_error_assert_ok (error);
-			} else {
-				args [i] = arg_buf [i];
-			}
+			args [i] = arg_buf [i];
 		}
 	}
 
@@ -7306,7 +7301,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (req);
 				return err;
 			}
-#if defined(TARGET_WASM) && !defined(HOST_WASI)
+#if defined(HOST_BROWSER)
 			int isBPOnManagedCode = 0;
 			SingleStepReq *ss_req = req->info;
 			if (ss_req && ss_req->bps) {

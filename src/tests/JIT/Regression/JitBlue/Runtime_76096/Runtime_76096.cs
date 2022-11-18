@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 unsafe class Runtime_76096
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int result = 100;
         if (ProblemWithMemoryNumbering())

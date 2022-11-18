@@ -13,7 +13,7 @@
 
 .class public		seh {
 
-.method public static	int32 main(string[]) {
+.method public static	int32 main() {
 .entrypoint
 .locals(int32)
 .maxstack	5

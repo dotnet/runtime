@@ -13,12 +13,14 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256_1
 {
     public static partial class Program
     {
-        private unsafe static void ToStringUInt64()
+        [Fact]
+        public unsafe static void ToStringUInt64()
         {
             int size = Unsafe.SizeOf<Vector256<UInt64>>() / sizeof(UInt64);
             UInt64[] values = new UInt64[size];

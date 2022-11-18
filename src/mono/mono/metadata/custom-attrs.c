@@ -1770,6 +1770,13 @@ exit:
 	HANDLE_FUNCTION_RETURN ();
 }
 
+static gboolean
+cattr_class_match (MonoClass *attr_klass, MonoClass *klass)
+{
+	return mono_class_is_assignable_from_internal (attr_klass, klass) ||
+		(m_class_is_gtd (attr_klass) && m_class_is_ginst (klass) && mono_class_is_assignable_from_internal (attr_klass, mono_class_get_generic_type_definition (klass)));
+}
+
 static MonoArrayHandle
 mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass, MonoError *error)
 {
@@ -1795,7 +1802,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 		for (i = 0; i < cinfo->num_attrs; ++i) {
 			MonoMethod *ctor = cinfo->attrs[i].ctor;
 			g_assert (ctor);
-			if (mono_class_is_assignable_from_internal (attr_klass, ctor->klass))
+			if (cattr_class_match (attr_klass, ctor->klass))
 				n++;
 		}
 	} else {
@@ -1807,7 +1814,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		MonoCustomAttrEntry *centry = &cinfo->attrs [i];
-		if (!attr_klass || mono_class_is_assignable_from_internal (attr_klass, centry->ctor->klass)) {
+		if (!attr_klass || cattr_class_match (attr_klass, centry->ctor->klass)) {
 			create_custom_attr_into_array (cinfo->image, centry->ctor, centry->data,
 				centry->data_size, result, n, error);
 			goto_if_nok (error, exit);
@@ -2689,10 +2696,31 @@ custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token
 			if (assembly_token)
 				*assembly_token = 0;
 			return custom_attr_class_name_from_methoddef (image, methoddef_token, nspace, class_name);
+		} else if (class_index == MONO_MEMBERREF_PARENT_TYPESPEC) {
+			ERROR_DECL (error);
+
+			if (!image->assembly)
+				/* Avoid recursive calls from mono_assembly_has_reference_assembly_attribute () etc. */
+				return FALSE;
+
+			guint32 token = MONO_TOKEN_TYPE_SPEC | nindex;
+			MonoType *type = mono_type_get_checked (image, token, NULL, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			g_assert (klass);
+			if (class_name)
+				*class_name = m_class_get_name (klass);
+			if (nspace)
+				*nspace = m_class_get_name_space (klass);
+			if (assembly_token)
+				*assembly_token = 0;
+			return TRUE;
 		} else {
-			/* Attributes can't be generic, so it won't be
-			 * a typespec, and they're always
-			 * constructors, so it won't be a moduleref */
+			/* Attributes are always constructors, so it won't be a moduleref */
 			g_assert_not_reached ();
 		}
 	} else {

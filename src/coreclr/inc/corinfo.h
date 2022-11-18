@@ -2270,7 +2270,7 @@ public:
 
     //------------------------------------------------------------------------------
     // printObjectDescription: Prints a (possibly truncated) textual UTF8 representation of the given
-    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic 
+    //    object to a preallocated buffer. It's intended to be used only for debug/diagnostic
     //    purposes such as JitDisasm. The buffer is null-terminated (even if truncated).
     //
     // Arguments:
@@ -2635,6 +2635,16 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
+    // Returns TypeCompareState::Must if cls is known to be an enum.
+    // For enums with known exact type returns the underlying
+    // type in underlyingType when the provided pointer is
+    // non-NULL.
+    // Returns TypeCompareState::May when a runtime check is required.
+    virtual TypeCompareState isEnum(
+            CORINFO_CLASS_HANDLE        cls,
+            CORINFO_CLASS_HANDLE*       underlyingType
+            ) = 0;
+
     // Given a class handle, returns the Parent type.
     // For COMObjectType, it returns Class Handle of System.Object.
     // Returns 0 if System.Object is passed in.
@@ -2849,7 +2859,7 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of 
+    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(
