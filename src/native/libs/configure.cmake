@@ -367,6 +367,10 @@ check_symbol_exists(
     ${STATFS_INCLUDES}
     HAVE_STATFS)
 
+check_include_files(
+     "mntent.h"
+     HAVE_MNTENT_H)
+
 check_type_size(
     "struct statfs"
     STATFS_SIZE

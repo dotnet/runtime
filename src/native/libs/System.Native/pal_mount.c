@@ -10,27 +10,29 @@
 #include <limits.h>
 
 // Check if we should use getmntinfo or /proc/mounts
-#if !defined(TARGET_WASI)
 #if HAVE_MNTINFO
 #include <sys/mount.h>
-#else
+#else /* HAVE_MNTINFO */
+#if HAVE_STATFS
 #include <sys/statfs.h>
+#endif /* HAVE_STATFS */
 #if HAVE_SYS_MNTENT_H
 #include <sys/mntent.h>
 #include <sys/mnttab.h>
 #if HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
-#endif
-#else
+#endif /* HAVE_SYS_STATVFS_H */
+#else /* HAVE_SYS_MNTENT_H */
+#if HAVE_MNTENT_H
 #include <mntent.h>
-#endif
 #define STRING_BUFFER_SIZE 8192
-
 // Android does not define MNTOPT_RO
 #ifndef MNTOPT_RO
 #define MNTOPT_RO "r"
-#endif
-#endif
+#endif /* MNTOPT_RO */
+#endif /* HAVE_MNTENT_H */
+#endif /* HAVE_SYS_MNTENT_H */
+#endif /* HAVE_MNTINFO */
 
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
@@ -71,7 +73,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
     return result;
 }
 
-#else
+#elif HAVE_MNTENT_H
     int result = -1;
     FILE* fp = setmntent("/proc/mounts", MNTOPT_RO);
     if (fp != NULL)
@@ -92,6 +94,8 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
     }
 
     return result;
+#else
+    return -1;
 }
 
 #endif
@@ -106,12 +110,15 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
     memset(&stats, 0, sizeof(struct statfs));
 
     int result = statfs(name, &stats);
-#else
+#elif HAVE_MNTENT_H
     struct statvfs stats;
     memset(&stats, 0, sizeof(struct statvfs));
 
     int result = statvfs(name, &stats);
+#else
+    return -1;
 #endif
+#if HAVE_NON_LEGACY_STATFS || HAVE_MNTENT_H
     if (result == 0)
     {
         // Note that these have signed integer types on some platforms but mustn't be negative.
@@ -132,6 +139,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
     }
 
     return result;
+#endif
 }
 
 int32_t
@@ -143,9 +151,11 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 #if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
-#else
+#elif HAVE_MNTENT_H
     struct statvfs stats;
     int result = statvfs(name, &stats);
+#else
+    int result = -1;
 #endif
     if (result == 0)
     {
@@ -180,24 +190,3 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 
     return result;
 }
-#else /* TARGET_WASI */
-int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0;
-}
-
-int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    memset(mpi, 0, sizeof(MountPointInformation));
-    return -1;
-}
-
-int32_t
-SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-#endif /* TARGET_WASI */
