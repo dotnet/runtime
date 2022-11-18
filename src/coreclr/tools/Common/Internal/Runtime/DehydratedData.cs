@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime
@@ -48,7 +49,8 @@ namespace Internal.Runtime
             int numExtraBytes = 0;
             for (; remainingData != 0; remainingData >>= 8)
                 buffer[++numExtraBytes] = (byte)remainingData;
-            Debug.Assert(numExtraBytes <= MaxExtraPayloadBytes, "Decoder assumes this");
+            if (numExtraBytes > MaxExtraPayloadBytes)
+                throw new InvalidOperationException(); // decoder can only decode this many extra bytes
 
             buffer[0] = (byte)(command | ((MaxShortPayload + numExtraBytes) << DehydratedDataCommandPayloadShift));
             return 1 + numExtraBytes;
