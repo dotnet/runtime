@@ -367,9 +367,18 @@ check_symbol_exists(
     ${STATFS_INCLUDES}
     HAVE_STATFS)
 
+check_symbol_exists(
+    "kill"
+    "signal.h"
+    HAVE_SIGNAL_KILL)
+
 check_include_files(
      "mntent.h"
      HAVE_MNTENT_H)
+
+check_include_files(
+     "sys/resource.h"
+     HAVE_SYS_RESOURCE_H)
 
 check_type_size(
     "struct statfs"

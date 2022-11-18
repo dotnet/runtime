@@ -217,6 +217,7 @@ handler_from_sigaction (struct sigaction *sa)
         return sa->sa_handler;
     }
 }
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
@@ -520,6 +521,7 @@ done:;
 #endif
 }
 
+#if !defined(TARGET_WASI)
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -618,11 +620,12 @@ typedef __priority_which_t priorityWhich;
 typedef int rlimitResource;
 typedef int priorityWhich;
 #endif
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
     assert(limits != NULL);
-
+#if HAVE_SYS_RESOURCE_H
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     int result = getrlimit((rlimitResource)platformLimit, &internalLimit);
@@ -634,6 +637,10 @@ int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
     {
         memset(limits, 0, sizeof(RLimit));
     }
+#else /* HAVE_SYS_RESOURCE_H */
+    int result = -1;
+    memset(limits, 0, sizeof(RLimit));
+#endif
 
     return result;
 }
@@ -642,14 +649,19 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 {
     assert(limits != NULL);
 
+#if HAVE_SYS_RESOURCE_H
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     ConvertFromRLimitManagedToPal(limits, &internalLimit);
     return setrlimit((rlimitResource)platformLimit, &internalLimit);
+#else /* HAVE_SYS_RESOURCE_H */
+    return -1;
+#endif
 }
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+#if HAVE_SIGNAL_KILL
     switch (signal)
     {
         case PAL_NONE:
@@ -671,25 +683,39 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     }
 
     return kill(pid, signal);
+#else /* HAVE_SIGNAL_KILL */
+    return -1;
+#endif /* HAVE_SIGNAL_KILL */
 }
 
 int32_t SystemNative_GetPid(void)
 {
+#if !defined(TARGET_WASI)
     return getpid();
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_GetSid(int32_t pid)
 {
+#if !defined(TARGET_WASI)
     return getsid(pid);
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
+#if !defined(TARGET_WASI)
     syslog((int)(LOG_USER | priority), message, arg1);
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
+#if !defined(TARGET_WASI)
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
@@ -709,10 +735,14 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
         result = 0;
     }
     return result;
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
 {
+#if !defined(TARGET_WASI)
     assert(exitCode != NULL);
 
     int32_t result;
@@ -736,6 +766,9 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         }
     }
     return result;
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int64_t SystemNative_PathConf(const char* path, PathConfName name)
@@ -784,6 +817,7 @@ int64_t SystemNative_PathConf(const char* path, PathConfName name)
 
 int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
+#if !defined(TARGET_WASI)
     // GetPriority uses errno 0 to show success to make sure we don't have a stale value
     errno = 0;
 #if PRIORITY_REQUIRES_INT_WHO
@@ -791,15 +825,22 @@ int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 #else
     return getpriority((priorityWhich)which, (id_t)who);
 #endif
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
+#if !defined(TARGET_WASI)
 #if PRIORITY_REQUIRES_INT_WHO
     return setpriority((priorityWhich)which, who, nice);
 #else
     return setpriority((priorityWhich)which, (id_t)who, nice);
 #endif
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
@@ -891,123 +932,3 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
-
-#else /* TARGET_WASI */
-
-
-int32_t SystemNative_ForkAndExecProcess(const char* filename,
-                                      char* const argv[],
-                                      char* const envp[],
-                                      const char* cwd,
-                                      int32_t redirectStdin,
-                                      int32_t redirectStdout,
-                                      int32_t redirectStderr,
-                                      int32_t setCredentials,
-                                      uint32_t userId,
-                                      uint32_t groupId,
-                                      uint32_t* groups,
-                                      int32_t groupsLength,
-                                      int32_t* childPid,
-                                      int32_t* stdinFd,
-                                      int32_t* stdoutFd,
-                                      int32_t* stderrFd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Kill(int32_t pid, int32_t signal)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetPid(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetSid(int32_t pid)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int64_t SystemNative_PathConf(const char* path, PathConfName name)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    (void)pid;
-    (void)mask;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    (void)pid;
-    (void)mask;
-    errno = ENOTSUP;
-    return -1;
-}
-
-char* SystemNative_GetProcessPath(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-#endif /* TARGET_WASI */
