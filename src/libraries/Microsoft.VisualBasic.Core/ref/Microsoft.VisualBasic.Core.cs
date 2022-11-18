@@ -54,7 +54,7 @@ namespace Microsoft.VisualBasic
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
     public sealed partial class ComClassAttribute : System.Attribute
     {
         public ComClassAttribute() { }
