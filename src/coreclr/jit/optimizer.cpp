@@ -9216,6 +9216,8 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     {
         // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
         tree->gtFlags |= GTF_DONT_CSE;
+        // Ensure the other side of the comma can't be moved outside the checked range.
+        tree->gtGetOp2()->gtFlags |= GTF_ORDER_SIDEEFF;
     }
 
     gtUpdateSideEffects(stmt, tree);
