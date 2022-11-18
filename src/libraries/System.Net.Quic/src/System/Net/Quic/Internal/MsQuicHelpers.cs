@@ -35,23 +35,12 @@ internal static class MsQuicHelpers
         return false;
     }
 
-    internal static unsafe IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress, AddressFamily? addressFamilyOverride = null)
-    {
-        // MsQuic always uses storage size as if IPv6 was used
-        Span<byte> addressBytes = new Span<byte>((byte*)Unsafe.AsPointer(ref quicAddress), Internals.SocketAddress.IPv6AddressSize);
-        return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
-    }
-
     internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint iPEndPoint)
     {
         // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
         QuicAddr result = default;
-        Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
+        result.Address = new SockAddr(iPEndPoint);
 
-        Internals.SocketAddress address = IPEndPointExtensions.Serialize(iPEndPoint);
-        Debug.Assert(address.Size <= rawAddress.Length);
-
-        address.Buffer.AsSpan(0, address.Size).CopyTo(rawAddress);
         return result;
     }
 

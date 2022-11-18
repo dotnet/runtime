@@ -237,7 +237,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, ReadOnlySpan<byte> socketAddress, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
 
@@ -256,7 +256,7 @@ namespace System.Net.Sockets
                 var messageHeader = new Interop.Sys.MessageHeader
                 {
                     SocketAddress = sockAddr,
-                    SocketAddressLen = socketAddress != null ? socketAddressLen : 0,
+                    SocketAddressLen = socketAddress.Length,
                     IOVectors = &iov,
                     IOVectorCount = 1
                 };
@@ -281,18 +281,14 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ReadOnlySpan<byte> socketAddress, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
 
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            int sockAddrLen = 0;
-            if (socketAddress != null)
-            {
-                sockAddrLen = socketAddressLen;
-            }
+            int sockAddrLen = socketAddress.Length;
 
             int maxBuffers = buffers.Count - startIndex;
             bool allocOnStack = maxBuffers <= IovStackThreshold;
@@ -908,25 +904,25 @@ namespace System.Net.Sockets
             }
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, Span<byte> buffer, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(SafeSocketHandle socket, Span<byte> buffer, ref int offset, ref int count, SocketFlags flags, ReadOnlySpan<byte> socketAddress, ref int bytesSent, out SocketError errorCode)
         {
             int bufferIndex = 0;
-            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, SocketFlags flags, ReadOnlySpan<byte> socketAddress, ref int bytesSent, out SocketError errorCode)
         {
             int bufferIndex = 0, offset = 0, count = buffer.Length;
-            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, SocketFlags flags, ReadOnlySpan<byte> socketAddress, ref int bytesSent, out SocketError errorCode)
         {
             int count = 0;
-            return TryCompleteSendTo(socket, default(ReadOnlySpan<byte>), buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+            return TryCompleteSendTo(socket, default(ReadOnlySpan<byte>), buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, ReadOnlySpan<byte> socketAddress, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
             long start = socket.IsUnderlyingHandleBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
@@ -946,9 +942,9 @@ namespace System.Net.Sockets
                     else
                     {
                         sent = buffers != null ?
-                            SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
-                            socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
-                                                    SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                            SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, out errno) :
+                            socketAddress.Length == 0 ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
+                                                    SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, out errno);
                     }
                 }
                 catch (ObjectDisposedException)
@@ -1151,7 +1147,7 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int offset = 0;
             SocketError errorCode;
-            TryCompleteSendTo(handle, bufferList, ref bufferIndex, ref offset, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            TryCompleteSendTo(handle, bufferList, ref bufferIndex, ref offset, socketFlags, ReadOnlySpan<byte>.Empty, ref bytesTransferred, out errorCode);
             return errorCode;
         }
 
@@ -1164,7 +1160,7 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, ReadOnlySpan<byte>.Empty, ref bytesTransferred, out errorCode);
             return errorCode;
         }
 
@@ -1177,7 +1173,7 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            TryCompleteSendTo(handle, buffer, socketFlags, ReadOnlySpan<byte>.Empty, ref bytesTransferred, out errorCode);
             return errorCode;
         }
 
@@ -1197,29 +1193,16 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, byte[] socketAddress, int socketAddressLen, out int bytesTransferred)
+        public static SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, ReadOnlySpan<byte>  socketAddress, out int bytesTransferred)
         {
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.SendTo(buffer, offset, count, socketFlags, socketAddress, socketAddressLen, handle.SendTimeout, out bytesTransferred);
+                return handle.AsyncContext.SendTo(buffer, socketFlags, socketAddress, handle.SendTimeout, out bytesTransferred);
             }
 
             bytesTransferred = 0;
             SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
-            return errorCode;
-        }
-
-        public static SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, byte[] socketAddress, int socketAddressLen, out int bytesTransferred)
-        {
-            if (!handle.IsNonBlocking)
-            {
-                return handle.AsyncContext.SendTo(buffer, socketFlags, socketAddress, socketAddressLen, handle.SendTimeout, out bytesTransferred);
-            }
-
-            bytesTransferred = 0;
-            SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
+            TryCompleteSendTo(handle, buffer, socketFlags, socketAddress, ref bytesTransferred, out errorCode);
             return errorCode;
         }
 

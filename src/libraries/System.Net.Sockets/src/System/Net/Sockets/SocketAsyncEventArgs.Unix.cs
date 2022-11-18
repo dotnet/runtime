@@ -98,7 +98,7 @@ namespace System.Net.Sockets
 
         private void CompleteTransferOperation(byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags)
         {
-            Debug.Assert(socketAddress == null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(socketAddress == null || _socketAddress == null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
             _socketAddressSize = socketAddressSize;
             _receivedFlags = receivedFlags;
         }
@@ -223,7 +223,6 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.IOPending)
             {
-                CompleteTransferOperation(null, 0, SocketFlags.None);
                 FinishOperationSync(errorCode, bytesSent, SocketFlags.None);
             }
 
@@ -289,26 +288,25 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        internal SocketError DoOperationSendTo(SafeSocketHandle handle, CancellationToken cancellationToken)
+        internal SocketError DoOperationSendTo(SafeSocketHandle handle, ReadOnlySpan<byte> address, CancellationToken cancellationToken)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
 
             int bytesSent;
-            int socketAddressLen = _socketAddress!.Size;
             SocketError errorCode;
+
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback, cancellationToken);
+                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, address, out bytesSent, TransferCompletionCallback, cancellationToken);
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal!, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal!, _socketFlags, address, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
             {
-                CompleteTransferOperation(_socketAddress.Buffer, socketAddressLen, SocketFlags.None);
                 FinishOperationSync(errorCode, bytesSent, SocketFlags.None);
             }
 

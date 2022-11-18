@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -127,14 +128,15 @@ public sealed partial class QuicListener : IAsyncDisposable
         // Start the listener, from now on MsQuic events will come.
         using MsQuicBuffers alpnBuffers = new MsQuicBuffers();
         alpnBuffers.Initialize(options.ApplicationProtocols, applicationProtocol => applicationProtocol.Protocol);
-        QuicAddr address = options.ListenEndPoint.ToQuicAddr();
+        QuicAddr address = new QuicAddr(options.ListenEndPoint);
         if (options.ListenEndPoint.Address.Equals(IPAddress.IPv6Any))
         {
             // For IPv6Any, MsQuic would listen only for IPv6 connections. This would make it impossible
             // to connect the listener by using the IPv4 address (which could have been e.g. resolved by DNS).
             // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
-            address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
+            address.Address.Ipv6.SetAddressFamily(QUIC_ADDRESS_FAMILY_UNSPEC);
         }
+
         ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ListenerStart(
             _handle,
             alpnBuffers.Buffers,
@@ -144,7 +146,11 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // Get the actual listening endpoint.
         address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
-        LocalEndPoint = address.ToIPEndPoint(options.ListenEndPoint.AddressFamily);
+        if (options.ListenEndPoint.Address.Equals(IPAddress.IPv6Any))
+        {
+            address.Address.Ipv6.SetAddressFamily((int)QUIC_ADDRESS_FAMILY_INET6);
+        }
+        LocalEndPoint = address.ToIPEndPoint();
     }
 
     /// <summary>

@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Internals;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace System.Net.Sockets
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
         private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
-
+        private static readonly byte[] s_zero = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
@@ -1288,37 +1289,8 @@ namespace System.Net.Sockets
         // Sends data to a specific end point, starting at the indicated location in the buffer.
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            ThrowIfDisposed();
-
             ValidateBufferArguments(buffer, offset, size);
-            ArgumentNullException.ThrowIfNull(remoteEP);
-
-            ValidateBlockingMode();
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
-
-            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
-
-            int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
-
-            // Throw an appropriate SocketException if the native call fails.
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesSent(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
-            }
-
-            // Save a copy of the EndPoint so we can use it for Create().
-            _rightEndPoint ??= remoteEP;
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, size);
-            return bytesTransferred;
+            return SendTo(new ReadOnlySpan<byte>(buffer, offset, size), socketFlags, remoteEP);
         }
 
         // Sends data to a specific end point, starting at the indicated location in the data.
@@ -1361,17 +1333,28 @@ namespace System.Net.Sockets
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
-        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        public unsafe int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(remoteEP);
 
             ValidateBlockingMode();
 
-            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+            ReadOnlySpan<byte> socketBuffer;
+
+            if (remoteEP is IPEndPoint)
+            {
+                var address = new SockAddr((IPEndPoint)remoteEP);
+                socketBuffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref address, 1));
+            }
+            else
+            {
+                Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+                socketBuffer = new ReadOnlySpan<byte>(socketAddress.Buffer, 0, socketAddress.Size);
+            }
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketBuffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1386,8 +1369,12 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            // Save a copy of the EndPoint so we can use it for Create().
-            _rightEndPoint ??= remoteEP;
+            if (_localEndPoint == null)
+            {   // We expect that the socket will have LocalEndPoint if not bound already.
+                // Addresses are mutable so we need to create new instance.
+                //_localEndPoint = new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? 4 : 16)), 0);
+                _rightEndPoint ??= new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? 4 : 16)), 0);
+            }
 
             return bytesTransferred;
         }
@@ -3022,25 +3009,32 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
-            // Prepare SocketAddress
-            EndPoint endPointSnapshot = e.RemoteEndPoint;
-            e._socketAddress = Serialize(ref endPointSnapshot);
+            EndPoint remoteEP = e.RemoteEndPoint;
+            ReadOnlySpan<byte> socketBuffer;
+            if (remoteEP is IPEndPoint)
+            {
+                var address = new SockAddr((IPEndPoint)remoteEP);
+                socketBuffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref address, 1));
+            }
+            else
+            {
+                Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+                socketBuffer = new ReadOnlySpan<byte>(socketAddress.Buffer, 0, socketAddress.Size);
+            }
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
-            EndPoint? oldEndPoint = _rightEndPoint;
-            _rightEndPoint ??= endPointSnapshot;
-
+            _rightEndPoint ??=  new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? SockAddr.IPv4AddressSize : SockAddr.IPv6AddressSize)), 0);
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendTo(_handle, cancellationToken);
+                socketError = e.DoOperationSendTo(_handle, socketBuffer, cancellationToken);
             }
             catch
             {
-                _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;
+                _rightEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
@@ -3048,7 +3042,7 @@ namespace System.Net.Sockets
 
             if (!CheckErrorAndUpdateStatus(socketError))
             {
-                _rightEndPoint = oldEndPoint;
+                _rightEndPoint = null;
                 _localEndPoint = null;
             }
 

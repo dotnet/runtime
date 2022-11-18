@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -71,6 +71,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\SockAddr.cs"
+             Link="Common\System\Net\SockAddr.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
@@ -137,6 +139,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.setsockopt.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.shutdown.cs"
              Link="Common\Interop\Windows\WinSock\Interop.shutdown.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketAddress.cs"
+             Link="Common\Interop\Windows\WinSock\Interop.SocketAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.TransmitFile.cs"
              Link="Common\Interop\Windows\WinSock\Interop.TransmitFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WinsockBSD.cs"
@@ -182,7 +186,7 @@
     <Compile Include="$(CommonPath)System\Net\CompletionPortHelper.Windows.cs"
              Link="Common\System\Net\CompletionPortHelper.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Windows' and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
@@ -285,6 +289,22 @@
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketExceptionFactory.Unix.cs"
              Link="Common\System\Net\Sockets\SocketExceptionFactory.Unix.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'Linux'">
+    <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\Linux\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'tvOS'">
+    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\BSD\System.Native\Interop.SocketAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\OSX\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'FreeBSD' ">
+    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\BSD\System.Native\Interop.SocketAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\FreeBSD\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\FreeBSD\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -300,7 +320,7 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Windows'">
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

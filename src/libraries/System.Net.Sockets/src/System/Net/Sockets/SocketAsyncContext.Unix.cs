@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -372,15 +373,19 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 int bufferIndex = 0;
-                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, new ReadOnlySpan<byte>(SocketAddress, 0, SocketAddressLen), ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
             {
+                if (SocketAddress != null)
+                {
+                    ArrayPool<byte>.Shared.Return(SocketAddress);
+                    SocketAddress = null;
+                }
+
                 var cb = Callback!;
                 int bt = BytesTransferred;
-                byte[]? sa = SocketAddress;
-                int sal = SocketAddressLen;
                 SocketError ec = ErrorCode;
 
                 if (allowPooling)
@@ -388,7 +393,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(bt, sa, sal, SocketFlags.None, ec);
+                cb(bt, null, 0, SocketFlags.None, ec);
             }
         }
 
@@ -401,7 +406,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteSendTo(context._socket, default(ReadOnlySpan<byte>), Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, default(ReadOnlySpan<byte>), Buffers, ref BufferIndex, ref Offset, ref Count, Flags, new ReadOnlySpan<byte>(SocketAddress, 0, SocketAddressLen), ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
@@ -431,7 +436,7 @@ namespace System.Net.Sockets
             {
                 int bufferIndex = 0;
                 int bufferLength = Offset + Count; // TryCompleteSendTo expects the entire buffer, which it then indexes into with the ref Offset and ref Count arguments
-                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, bufferLength), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, bufferLength), null, ref bufferIndex, ref Offset, ref Count, Flags, new ReadOnlySpan<byte>(SocketAddress, 0, SocketAddressLen), ref BytesTransferred, out ErrorCode);
             }
         }
 
@@ -1854,20 +1859,19 @@ namespace System.Net.Sockets
         }
 
         public SocketError Send(ReadOnlySpan<byte> buffer, SocketFlags flags, int timeout, out int bytesSent) =>
-            SendTo(buffer, flags, null, 0, timeout, out bytesSent);
+            SendTo(buffer, flags, ReadOnlySpan<byte>.Empty, timeout, out bytesSent);
 
         public SocketError Send(byte[] buffer, int offset, int count, SocketFlags flags, int timeout, out int bytesSent)
         {
-            return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
+            return SendTo(buffer, offset, count, flags, ReadOnlySpan<byte>.Empty, timeout, out bytesSent);
         }
 
         public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
-            int socketAddressLen = 0;
-            return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback, cancellationToken);
+            return SendToAsync(buffer, offset, count, flags, ReadOnlySpan<byte>.Empty, out bytesSent, callback, cancellationToken);
         }
 
-        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, ReadOnlySpan<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1875,7 +1879,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1887,10 +1891,19 @@ namespace System.Net.Sockets
                 Offset = offset,
                 Count = count,
                 Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 BytesTransferred = bytesSent
             };
+
+            if (socketAddress.Length > 0)
+            {
+                operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
+                socketAddress.CopyTo(operation.SocketAddress);
+            }
+            else
+            {
+                operation.SocketAddress = null;
+            }
 
             PerformSyncOperation(ref _sendQueue, operation, timeout, observedSequenceNumber);
 
@@ -1898,7 +1911,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, ReadOnlySpan<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1907,7 +1920,7 @@ namespace System.Net.Sockets
             int bufferIndexIgnored = 0, offset = 0, count = buffer.Length;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1921,10 +1934,19 @@ namespace System.Net.Sockets
                     Offset = offset,
                     Count = count,
                     Flags = flags,
-                    SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
+                    SocketAddressLen = socketAddress.Length,
                     BytesTransferred = bytesSent
                 };
+
+                if (socketAddress.Length > 0 )
+                {
+                    operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
+                    socketAddress.CopyTo(operation.SocketAddress);
+                }
+                else
+                {
+                    operation.SocketAddress = null;
+                }
 
                 PerformSyncOperation(ref _sendQueue, operation, timeout, observedSequenceNumber);
 
@@ -1933,7 +1955,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, ReadOnlySpan<byte> socketAddress, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
@@ -1941,7 +1963,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -1952,9 +1974,18 @@ namespace System.Net.Sockets
             operation.Offset = offset;
             operation.Count = count;
             operation.Flags = flags;
-            operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
             operation.BytesTransferred = bytesSent;
+
+            if (socketAddress.Length > 0 )
+            {
+                operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
+                socketAddress.CopyTo(operation.SocketAddress);
+            }
+            else
+            {
+                operation.SocketAddress = null;
+            }
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
@@ -1970,16 +2001,15 @@ namespace System.Net.Sockets
 
         public SocketError Send(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesSent)
         {
-            return SendTo(buffers, flags, null, 0, timeout, out bytesSent);
+            return SendTo(buffers, flags, ReadOnlySpan<byte>.Empty, timeout, out bytesSent);
         }
 
         public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
-            int socketAddressLen = 0;
-            return SendToAsync(buffers, flags, null, ref socketAddressLen, out bytesSent, callback);
+            return SendToAsync(buffers, flags, ReadOnlySpan<byte>.Empty, out bytesSent, callback);
         }
 
-        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, ReadOnlySpan<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1989,7 +2019,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -2001,10 +2031,19 @@ namespace System.Net.Sockets
                 BufferIndex = bufferIndex,
                 Offset = offset,
                 Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 BytesTransferred = bytesSent
             };
+
+            if (socketAddress.Length > 0 )
+            {
+                operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
+                socketAddress.CopyTo(operation.SocketAddress);
+            }
+            else
+            {
+                operation.SocketAddress = null;
+            }
 
             PerformSyncOperation(ref _sendQueue, operation, timeout, observedSequenceNumber);
 
@@ -2012,7 +2051,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, ReadOnlySpan<byte> socketAddress, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
             SetHandleNonBlocking();
 
@@ -2022,7 +2061,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+                SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -2033,9 +2072,19 @@ namespace System.Net.Sockets
             operation.BufferIndex = bufferIndex;
             operation.Offset = offset;
             operation.Flags = flags;
-            operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
             operation.BytesTransferred = bytesSent;
+            socketAddress.CopyTo(operation.SocketAddress);
+
+            if (socketAddress.Length > 0 )
+            {
+                operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
+                socketAddress.CopyTo(operation.SocketAddress);
+            }
+            else
+            {
+                operation.SocketAddress = null;
+            }
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
             {

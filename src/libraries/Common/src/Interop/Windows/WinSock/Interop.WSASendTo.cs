@@ -18,7 +18,7 @@ internal static partial class Interop
             int bufferCount,
             out int bytesTransferred,
             SocketFlags socketFlags,
-            IntPtr socketAddress,
+            byte* socketAddress,
             int socketAddressSize,
             NativeOverlapped* overlapped,
             IntPtr completionRoutine);
@@ -29,7 +29,7 @@ internal static partial class Interop
             int bufferCount,
             out int bytesTransferred,
             SocketFlags socketFlags,
-            IntPtr socketAddress,
+            byte* socketAddress,
             int socketAddressSize,
             NativeOverlapped* overlapped,
             IntPtr completionRoutine)
@@ -47,7 +47,7 @@ internal static partial class Interop
             int bufferCount,
             [Out] out int bytesTransferred,
             SocketFlags socketFlags,
-            IntPtr socketAddress,
+            byte* socketAddress,
             int socketAddressSize,
             NativeOverlapped* overlapped,
             IntPtr completionRoutine)
