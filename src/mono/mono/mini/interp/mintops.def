@@ -8,6 +8,11 @@
  * optype describes the contents of the instruction, following the dreg/sreg offsets.
  */
 
+/*
+ * This file is parsed by genmintops.py to generate typescript during the wasm build process,
+ *  so if you make any changes to its syntax you will need to update that script.
+ */
+
 OPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
