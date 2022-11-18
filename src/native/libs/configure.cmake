@@ -132,6 +132,11 @@ check_symbol_exists(
     HAVE_F_DUPFD_CLOEXEC)
 
 check_symbol_exists(
+    F_DUPFD
+    fcntl.h
+    HAVE_F_DUPFD)
+
+check_symbol_exists(
     F_FULLFSYNC
     fcntl.h
     HAVE_F_FULLFSYNC)

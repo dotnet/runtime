@@ -97,7 +97,6 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 
 #endif
 
-#if !defined(TARGET_WASI)
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -108,6 +107,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #define lstat_ lstat
 #endif  /* HAVE_STAT64 */
 
+#if !defined(TARGET_WASI)
 // These numeric values are specified by POSIX.
 // Validate that our definitions match.
 c_static_assert(PAL_S_IRWXU == S_IRWXU);
@@ -193,7 +193,6 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
-#if !defined(TARGET_WASI)
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
@@ -348,10 +347,13 @@ intptr_t SystemNative_Dup(intptr_t oldfd)
     int result;
 #if HAVE_F_DUPFD_CLOEXEC
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD_CLOEXEC, 0)) < 0 && errno == EINTR);
-#else
+#elif HAVE_F_DUPFD
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD, 0)) < 0 && errno == EINTR);
     // do CLOEXEC here too
     fcntl(result, F_SETFD, FD_CLOEXEC);
+#else
+    // https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-dup
+    result = oldfd;
 #endif
     return result;
 }
@@ -577,7 +579,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #if HAVE_PIPE2
     // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
     while ((result = pipe2(pipeFds, flags)) < 0 && errno == EINTR);
-#else
+#elif HAVE_PIPE
     // Otherwise, use pipe.
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
@@ -602,7 +604,9 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
             errno = tmpErrno;
         }
     }
-#endif
+#else /* HAVE_PIPE */
+    result = -1;
+#endif /* HAVE_PIPE */
     return result;
 }
 
@@ -702,16 +706,24 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
 
 int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
+#if HAVE_CHMOD
     int32_t result;
     while ((result = chmod(path, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* HAVE_CHMOD */
+    return EINTR;
+#endif /* HAVE_CHMOD */
 }
 
 int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 {
+#if HAVE_FCHMOD
     int32_t result;
     while ((result = fchmod(ToFileDescriptor(fd), (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* HAVE_FCHMOD */
+    return EINTR;
+#endif /* HAVE_FCHMOD */
 }
 
 int32_t SystemNative_FSync(intptr_t fd)
@@ -755,12 +767,15 @@ int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
         result =
 #if HAVE_LSEEK64
             lseek64(
-#else
-            lseek(
-#endif
                  ToFileDescriptor(fd),
                  (off_t)offset,
                  whence)) < 0 && errno == EINTR);
+#else
+            lseek(
+                 ToFileDescriptor(fd),
+                 (off_t)offset,
+                 whence)) < 0 && errno == EINTR);
+#endif
     return result;
 }
 
@@ -780,32 +795,50 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 
 void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
+#if !defined(TARGET_WASI)
     dev_t castedDev = (dev_t)dev;
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
+#else /* TARGET_WASI */
+    dev_t castedDev = (dev_t)dev;
+    *majorNumber = 0;
+    *minorNumber = 0;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
+#if !defined(TARGET_WASI)
     dev_t dev = (dev_t)makedev(major, minor);
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 {
+#if !defined(TARGET_WASI)
     int32_t result;
     while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
+#if !defined(TARGET_WASI)
     char* result = NULL;
     while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return NULL;
+#endif /* TARGET_WASI */
 }
 
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
@@ -848,7 +881,7 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
 #elif TARGET_WASI
-    // TODOWASI
+    result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
 #endif
@@ -1154,7 +1187,9 @@ int32_t SystemNative_RmDir(const char* path)
 
 void SystemNative_Sync(void)
 {
+#if !defined(TARGET_WASI)
     sync();
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
@@ -1378,6 +1413,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         return -1;
     }
 
+#if HAVE_FCHMOD
     // Copy permissions.
     // Even though managed code created the file with permissions matching those of the source file,
     // we need to copy permissions because the open permissions may be filtered by 'umask'.
@@ -1386,6 +1422,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
         return -1;
     }
+#endif /* HAVE_FCHMOD */
 
     return 0;
 #endif // HAVE_FCOPYFILE
@@ -1467,9 +1504,14 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 char* SystemNative_RealPath(const char* path)
 {
     assert(path != NULL);
+#if !defined(TARGET_WASI)
     return realpath(path, NULL);
+#else /* TARGET_WASI */
+    return NULL;
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 static int16_t ConvertLockType(int16_t managedLockType)
 {
     // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
@@ -1623,6 +1665,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     return result;
 }
 #endif
+#endif /* TARGET_WASI */
 
 uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
@@ -1643,6 +1686,8 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     uint32_t result = (uint32_t)statfsArgs.f_type;
     return result;
 #endif
+#elif defined(TARGET_WASI)
+    return EINTR;
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
@@ -1657,6 +1702,7 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+#if !defined(TARGET_WASI)
     int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
@@ -1686,6 +1732,9 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     int32_t ret;
     while ((ret = fcntl (ToFileDescriptor(fd), command, &lockArgs)) < 0 && errno == EINTR);
     return ret;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_LChflags(const char* path, uint32_t flags)
@@ -1866,422 +1915,3 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     return count;
 }
 
-#else /* TARGET_WASI */
-
-int32_t SystemNative_Link(const char* source, const char* linkTarget)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Stat(const char* path, FileStatus* output)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_LStat(const char* path, FileStatus* output)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Close(intptr_t fd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-intptr_t SystemNative_Dup(intptr_t oldfd)
-{
-    // https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-dup
-    return oldfd;
-}
-
-int32_t SystemNative_Unlink(const char* path)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_ShmUnlink(const char* name)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetReadDirRBufferSize(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-DIR* SystemNative_OpenDir(const char* path)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-int32_t SystemNative_CloseDir(DIR* dir)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlGetFD(intptr_t fd)
-{
-    printf("TODOSystemNative_FcntlGetFDWASI\n");
-    return -1;
-}
-
-int32_t SystemNative_FcntlCanGetSetPipeSz(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlGetPipeSz(intptr_t fd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_MkDir(const char* path, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_ChMod(const char* path, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FSync(intptr_t fd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FLock(intptr_t fd, int32_t operation)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_ChDir(const char* path)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Access(const char* path, int32_t mode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_SymLink(const char* target, const char* linkPath)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
-{
-    return -1;
-}
-
-char* SystemNative_MkdTemp(char* pathTemplate)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-void* SystemNative_MMap(void* address,
-                      uint64_t length,
-                      int32_t protection, // bitwise OR of PAL_PROT_*
-                      int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
-                      intptr_t fd,
-                      int64_t offset)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-int32_t SystemNative_MUnmap(void* address, uint64_t length)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int64_t SystemNative_SysConf(int32_t name)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_RmDir(const char* path)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-void SystemNative_Sync(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
-{
-    // the same
-    return Common_Write(fd, buffer, bufferSize);
-}
-
-int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-intptr_t SystemNative_INotifyInit(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-char* SystemNative_RealPath(const char* path)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-uint32_t SystemNative_GetFileSystemType(intptr_t fd)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0xFFFFFFFF;
-}
-
-int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_LChflags(const char* path, uint32_t flags)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
-{
-#if HAVE_LCHFLAGS
-    return SystemNative_CanGetHiddenFlag();
-#else
-    return false;
-#endif
-}
-
-int32_t SystemNative_CanGetHiddenFlag(void)
-{
-#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
-    return true;
-#else
-    return false;
-#endif
-}
-
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-#endif /* TARGET_WASI */
