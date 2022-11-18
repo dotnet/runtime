@@ -2545,7 +2545,13 @@ public:
                                  bool        isSimdAsHWIntrinsic);
 
     GenTree* gtNewSimdCreateBroadcastNode(
-        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarUnsafeNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
 
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,

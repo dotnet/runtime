@@ -12703,8 +12703,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
 
         // Move constant vectors from op1 to op2 for commutative and compare operations
-        // For now we only do it for zero vector
-        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorZero() &&
+        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorConst() &&
             HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
         {
             std::swap(hw->Op(1), hw->Op(2));
