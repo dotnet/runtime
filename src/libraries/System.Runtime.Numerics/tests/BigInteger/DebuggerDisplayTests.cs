@@ -11,9 +11,9 @@ namespace System.Numerics.Tests
     public class DebuggerDisplayTests
     {
         [Theory]
-        [InlineData(new uint[] { 0, 0, 1 }, "1.84467441e+19")]
-        [InlineData(new uint[] { 0, 0, 0, 1 }, "7.92281625e+28")]
-        [InlineData(new uint[] { 0, 0xCC00CC00, 0x80808080 }, "3.97694306e+28")]
+        [InlineData(new uint[] { 0, 0, 1 }, "18446744073709551616")]
+        [InlineData(new uint[] { 0, 0, 0, 0, 1 }, "3.40282367e+38")]
+        [InlineData(new uint[] { 0, 0x12345678, 0, 0xCC00CC00, 0x80808080 }, "3.15085891e+57")]
         [SkipOnPlatform(TestPlatforms.Browser, "DebuggerDisplayAttribute is stripped on wasm")]
         public void TestDebuggerDisplay(uint[] bits, string displayString)
         {
