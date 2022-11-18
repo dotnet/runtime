@@ -30,7 +30,7 @@ namespace Internal.Runtime
 
         private const int MaxRawShortPayload = (1 << (8 - DehydratedDataCommandPayloadShift)) - 1;
         private const int MaxExtraPayloadBytes = 3;
-        private const int MaxShortPayload = MaxRawShortPayload - MaxExtraPayloadBytes;
+        public const int MaxShortPayload = MaxRawShortPayload - MaxExtraPayloadBytes;
 
         public static byte EncodeShort(int command, int commandData)
         {

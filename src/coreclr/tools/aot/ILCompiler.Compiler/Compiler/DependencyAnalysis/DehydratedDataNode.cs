@@ -207,6 +207,8 @@ namespace ILCompiler.DependencyAnalysis
                     // Generate the next relocation if there's any.
                     if (reloc.Target != null)
                     {
+                        Debug.Assert(sourcePosition == reloc.Offset);
+
 #if DEBUG
                         unsafe
                         {
@@ -228,6 +230,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (relocs.TryGetValue(target, out int targetIndex))
                         {
+                            // Reloc goes through the lookup table
                             int relocCommand = reloc.RelocType switch
                             {
                                 RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc,
@@ -240,14 +243,59 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
+                            // Reloc will be generated inline. Check if we can generate a run of inline relocs.
+
+                            // Reserve a byte for the command (the command payload will have to fit in this byte too).
+                            ObjectDataBuilder.Reservation reservation = builder.ReserveByte();
+
+                            int numRelocs = 0;
+                            bool hasNextReloc;
+                            do
+                            {
+                                builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32);
+                                numRelocs++;
+                                hasNextReloc = false;
+
+                                if (currentReloc < o.Relocs.Length)
+                                {
+                                    // If we wouldn't be able to fit this run into the single byte we reserved, stop.
+                                    if (numRelocs == DehydratedDataCommand.MaxShortPayload)
+                                        break;
+
+                                    Relocation nextReloc = o.Relocs[currentReloc];
+
+                                    // Does the next reloc immediately follow this one?
+                                    if (nextReloc.Offset != sourcePosition)
+                                        break;
+
+                                    // Is it of the same type?
+                                    if (nextReloc.RelocType != reloc.RelocType)
+                                        break;
+
+                                    ISymbolNode nextTarget = nextReloc.Target;
+                                    if (nextTarget is ISymbolNodeWithLinkage nextTargetWithLinkage)
+                                        nextTarget = nextTargetWithLinkage.NodeForLinkage(factory);
+
+                                    // We don't have a short code for it?
+                                    if (relocs.ContainsKey(nextTarget))
+                                        break;
+
+                                    // This relocation is good - we'll generate it as part of the run
+                                    sourcePosition += Relocation.GetSize(reloc.RelocType);
+                                    hasNextReloc = true;
+                                    currentReloc++;
+                                    target = nextTarget;
+                                }
+                            } while (hasNextReloc);
+
+                            // Now update the byte we reserved with the command to emit for the run
                             int relocCommand = reloc.RelocType switch
                             {
                                 RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc,
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.InlineRelPtr32Reloc,
                                 _ => throw new NotSupportedException(),
                             };
-                            builder.EmitByte(DehydratedDataCommand.EncodeShort(relocCommand, 0));
-                            builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32);
+                            builder.EmitByte(reservation, DehydratedDataCommand.EncodeShort(relocCommand, numRelocs));
                         }
                     }
                 }
