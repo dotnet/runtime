@@ -5,6 +5,7 @@
 // hash.cpp - Class for hashing a text stream using MurMurHash3 hashing
 //----------------------------------------------------------
 
+#include "standardpch.h"
 #include "runtimedetails.h"
 #include "errorhandling.h"
 #include "hash.h"
