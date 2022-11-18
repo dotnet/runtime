@@ -666,7 +666,6 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
     let offset = destOnStack ? 0 : localOffset;
     // initlocals sizes are always 8 byte aligned, so for large sets we work in 8 bytes at a time
     while (count >= 8) {
-        console.log(`unrolled memset count=${count} offset=${offset} 8b`);
         builder.local(destOnStack ? "math_lhs32" : "pLocals");
         builder.i52_const(0);
         builder.appendU8(WasmOpcode.i64_store);
@@ -693,7 +692,6 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
                 builder.appendU8(WasmOpcode.i32_store16);
                 break;
         }
-        console.log(`unrolled memset count=${count} offset=${offset} ${localCount}b`);
         // since sizes are 8 byte aligned it should be safe to do natural alignment stores too
         builder.appendMemarg(offset, 2);
         offset += localCount;

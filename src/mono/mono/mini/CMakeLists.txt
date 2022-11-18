@@ -467,12 +467,6 @@ if(HOST_BROWSER)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
-
-  add_custom_target(GENERATE_MINTOPS_TYPESCRIPT ALL
-  ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py "${CMAKE_CURRENT_SOURCE_DIR}/interp/mintops.def" "${CMAKE_CURRENT_SOURCE_DIR}/../../wasm/runtime/mintops.ts"
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py interp/mintops.def
-  VERBATIM
-)
 endif()
 
 add_custom_command(
