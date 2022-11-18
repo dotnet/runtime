@@ -21,7 +21,7 @@ namespace System
     /// <summary>Provides the base class for enumerations.</summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
+    public abstract partial class Enum : ValueType, IComparable, ISpanFormattable, IConvertible
     {
         /// <summary>Character used to separate flag enum values when formatted in a list.</summary>
         private const char EnumSeparatorChar = ',';
@@ -1759,6 +1759,62 @@ namespace System
             throw CreateInvalidFormatSpecifierException();
         }
 
+        /// <summary>Tries to format the value of the enum into the provided span of characters.</summary>
+        /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written in destination.</param>
+        /// <param name="format">The format specifier.</param>
+        /// <param name="provider">An optional object that supplies culture-specific formatting information for destination. This is ignored.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            RuntimeType enumType = (RuntimeType)GetType();
+            ref byte rawData = ref this.GetRawData();
+            CorElementType corElementType = InternalGetCorElementType();
+
+            if (format.IsEmpty)
+            {
+                return corElementType switch
+                {
+                    CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveDefault(enumType, (sbyte)rawData, destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveDefault(enumType, rawData, destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, short>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, ushort>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, int>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
+                    _ => throw CreateUnknownEnumTypeException(),
+                };
+            }
+            else
+            {
+                return corElementType switch
+                {
+                    CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveNonDefault(enumType, (sbyte)rawData, destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveNonDefault(enumType, rawData, destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, short>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, ushort>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, int>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
+                    _ => throw CreateUnknownEnumTypeException(),
+                };
+            }
+        }
+
         /// <summary>Tries to format the value of the enumerated type instance into the provided span of characters.</summary>
         /// <typeparam name="TEnum"></typeparam>
         /// <param name="value"></param>
@@ -1913,9 +1969,15 @@ namespace System
             {
                 switch (format[0] | 0x20)
                 {
-                    case 'g': return TryFormatPrimitiveDefault(enumType, value, destination, out charsWritten);
-                    case 'd': return value.TryFormat(destination, out charsWritten, format: default, provider: null);
-                    case 'x': return TryFormatNumberAsHex<TUnderlyingValue>(ref Unsafe.As<TUnderlyingValue, byte>(ref value), destination, out charsWritten);
+                    case 'g':
+                        return TryFormatPrimitiveDefault(enumType, value, destination, out charsWritten);
+
+                    case 'd':
+                        return value.TryFormat(destination, out charsWritten, format: default, provider: null);
+
+                    case 'x':
+                        return TryFormatNumberAsHex<TUnderlyingValue>(ref Unsafe.As<TUnderlyingValue, byte>(ref value), destination, out charsWritten);
+
                     case 'f':
                         bool destinationIsTooSmall = false;
                         if (TryFormatFlagNames(GetEnumInfo<TUnderlyingValue>(enumType), value, destination, out charsWritten, ref destinationIsTooSmall) ||
