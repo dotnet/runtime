@@ -650,8 +650,64 @@ export function addWasmFunctionPointer (f: Function) {
     return index;
 }
 
+export function try_append_memset_fast (builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
+    if (count <= 0) {
+        if (destOnStack)
+            builder.appendU8(WasmOpcode.drop);
+        return true;
+    }
+
+    if (count >= 64)
+        return false;
+
+    if (destOnStack)
+        builder.local("math_lhs32", WasmOpcode.set_local);
+
+    let offset = destOnStack ? 0 : localOffset;
+    // initlocals sizes are always 8 byte aligned, so for large sets we work in 8 bytes at a time
+    while (count >= 8) {
+        console.log(`unrolled memset count=${count} offset=${offset} 8b`);
+        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.i52_const(0);
+        builder.appendU8(WasmOpcode.i64_store);
+        // since sizes are 8 byte aligned it should be safe to do natural alignment stores too
+        builder.appendMemarg(offset, 2);
+        offset += 8;
+        count -= 8;
+    }
+
+    // initlocals sizes are always 8 byte aligned, so for large sets we work in 8 bytes at a time
+    while (count >= 1) {
+        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.i32_const(0);
+        let localCount = count % 4;
+        switch (localCount) {
+            case 0:
+                localCount = 4;
+                builder.appendU8(WasmOpcode.i32_store);
+                break;
+            case 1:
+                builder.appendU8(WasmOpcode.i32_store8);
+                break;
+            case 2:
+                builder.appendU8(WasmOpcode.i32_store16);
+                break;
+        }
+        console.log(`unrolled memset count=${count} offset=${offset} ${localCount}b`);
+        // since sizes are 8 byte aligned it should be safe to do natural alignment stores too
+        builder.appendMemarg(offset, 2);
+        offset += localCount;
+        count -= localCount;
+    }
+
+    return true;
+}
+
 export function append_memset_dest (builder: WasmBuilder, value: number, count: number) {
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
+    if (try_append_memset_fast(builder, 0, value, count, true))
+        return;
+
     builder.i32_const(value);
     builder.i32_const(count);
     builder.appendU8(WasmOpcode.PREFIX_sat);
