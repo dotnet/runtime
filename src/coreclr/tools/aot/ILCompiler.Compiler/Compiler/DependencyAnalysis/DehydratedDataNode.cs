@@ -92,8 +92,24 @@ namespace ILCompiler.DependencyAnalysis
             // Sort the reloc targets and create reloc lookup table.
             KeyValuePair<ISymbolNode, int>[] relocSort = new List<KeyValuePair<ISymbolNode, int>>(relocOccurences).ToArray();
             Array.Sort(relocSort, (x, y) => y.Value.CompareTo(x.Value));
+            int lastProfitableReloc = 0;
             for (int i = 0; i < relocSort.Length; i++)
+            {
+                // Stop when we reach rarely referenced targets. Those will be inlined instead of being indirected
+                // through the table. Lookup table entry costs 4 bytes, a single reference to a rarely used reloc
+                // in the lookup table costs about 3 bytes. Inline reference to a reloc costs 5 bytes.
+                // It might be profitable from cache line utilization perspective at runtime to bump this number
+                // even higher to avoid using the lookup table as much as possible.
+                if (relocSort[i].Value < 3)
+                {
+                    lastProfitableReloc = i - 1;
+                    break;
+                }
+
                 relocSort[i] = new KeyValuePair<ISymbolNode, int>(relocSort[i].Key, i);
+            }
+            if (lastProfitableReloc > 0)
+                Array.Resize(ref relocSort, lastProfitableReloc);
             var relocs = new Dictionary<ISymbolNode, int>(relocSort);
 
             // Walk all the ObjectDatas and generate the dehydrated instruction stream.
@@ -210,17 +226,29 @@ namespace ILCompiler.DependencyAnalysis
                         if (target is ISymbolNodeWithLinkage withLinkage)
                             target = withLinkage.NodeForLinkage(factory);
 
-                        int targetIndex = relocs[target];
-
-                        int relocCommand = reloc.RelocType switch
+                        if (relocs.TryGetValue(target, out int targetIndex))
                         {
-                            RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc,
-                            RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.RelPtr32Reloc,
-                            _ => throw new NotSupportedException(),
-                        };
+                            int relocCommand = reloc.RelocType switch
+                            {
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.RelPtr32Reloc,
+                                _ => throw new NotSupportedException(),
+                            };
 
-                        int written = DehydratedDataCommand.Encode(relocCommand, targetIndex, buff);
-                        builder.EmitBytes(buff, 0, written);
+                            int written = DehydratedDataCommand.Encode(relocCommand, targetIndex, buff);
+                            builder.EmitBytes(buff, 0, written);
+                        }
+                        else
+                        {
+                            int relocCommand = reloc.RelocType switch
+                            {
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc,
+                                RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.InlineRelPtr32Reloc,
+                                _ => throw new NotSupportedException(),
+                            };
+                            builder.EmitByte(DehydratedDataCommand.EncodeShort(relocCommand, 0));
+                            builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        }
                     }
                 }
 
