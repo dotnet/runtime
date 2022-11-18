@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
@@ -13,6 +12,7 @@ namespace System.IO.Pipes
     {
         private SafePipeHandle _clientHandle = null!;
         private bool _clientHandleExposed;
+        private readonly HandleInheritability _inheritability;
 
         public AnonymousPipeServerStream()
             : this(PipeDirection.Out, HandleInheritability.None, 0)
@@ -73,6 +73,7 @@ namespace System.IO.Pipes
             }
 
             Create(direction, inheritability, bufferSize);
+            _inheritability = inheritability;
         }
 
         ~AnonymousPipeServerStream()
@@ -121,10 +122,10 @@ namespace System.IO.Pipes
         {
             try
             {
-                // We should dispose of the client handle if it was not exposed.
-                if (!_clientHandleExposed && _clientHandle != null && !_clientHandle.IsClosed)
+                // We should dispose of the client handle if it was created inheritable or it was not exposed at all.
+                if (_inheritability == HandleInheritability.Inheritable || !_clientHandleExposed)
                 {
-                    _clientHandle.Dispose();
+                    DisposeLocalCopyOfClientHandle();
                 }
             }
             finally
