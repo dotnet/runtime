@@ -83,7 +83,7 @@ private:
     bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
     bool Initialize(int mcIndex, HANDLE hFile);
 
-    int dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
+    int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
     static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
@@ -110,7 +110,7 @@ public:
     int methodSize;
 
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
-    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
+    int dumpMethodHashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
     bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
