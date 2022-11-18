@@ -9938,7 +9938,17 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             CORINFO_METHOD_HANDLE methHnd = (CORINFO_METHOD_HANDLE)jmpNode->AsVal()->gtVal1;
 
             CORINFO_CONST_LOOKUP addrInfo;
-            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+            if (compiler->opts.IsReadyToRun())
+            {
+                // R2R entry points may require additional args that we do not
+                // handle here.
+                compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &addrInfo);
+            }
+            else
+            {
+                compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+            }
+
             if (addrInfo.accessType != IAT_VALUE && addrInfo.accessType != IAT_PVALUE)
             {
                 NO_WAY("Unsupported JMP indirection");

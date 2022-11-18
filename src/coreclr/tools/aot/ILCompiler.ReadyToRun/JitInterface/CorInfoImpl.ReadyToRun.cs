@@ -1126,8 +1126,9 @@ namespace Internal.JitInterface
 
             if (!CanGetEntryPoint(md))
             {
-                // We do not expect JIT to call this except for for delegate
-                // GDV methods, and we prefilter the PGO data we pass to JIT.
+                // We only expect this to be called in rare situations:
+                // 1. For delegate GDV as part of the guard. We prefilter GDV data so that we do not fail it here.
+                // 2. For GT_JMP, which is very rare so we have no problem falling back to runtime JIT.
                 throw new RequiresRuntimeJitException($"Cannot get entry point for {md}");
             }
 

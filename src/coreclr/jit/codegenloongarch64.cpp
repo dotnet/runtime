@@ -1378,7 +1378,16 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     if (jmpEpilog && (lastNode->gtOper == GT_JMP))
     {
         methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
-        compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+        if (compiler->opts.IsReadyToRun())
+        {
+            // R2R entry points may require additional args that we do not
+            // handle here.
+            compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &addrInfo);
+        }
+        else
+        {
+            compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+        }
     }
 
     compiler->unwindBegEpilog();
