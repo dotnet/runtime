@@ -6327,6 +6327,12 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
+        /*
+         * metadata-update: note this next line needs block needs to look at the number of rows in
+         * EventMap and Event of the base image.  Updates will add rows for new properties,
+         * but they won't be contiguous.  if we set end to the number of rows in the updated
+         * Property table, the range will include properties from some other class
+         */
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {

@@ -122,6 +122,9 @@ hot_reload_stub_added_properties_iter (MonoClass *klass, gpointer *iter);
 static uint32_t
 hot_reload_stub_get_property_idx (MonoProperty *prop);
 
+static MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -159,6 +162,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_added_field_ldflda,
 	&hot_reload_stub_added_properties_iter,
 	&hot_reload_stub_get_property_idx,
+	&hot_reload_stub_added_events_iter,
 };
 
 static bool
@@ -383,6 +387,11 @@ hot_reload_stub_get_property_idx (MonoProperty *prop)
 	return 0;
 }
 
+MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *
@@ -390,4 +399,5 @@ mono_component_hot_reload_init (void)
 {
 	return component_hot_reload_stub_init ();
 }
+
 

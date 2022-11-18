@@ -5273,7 +5273,6 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 MonoEvent*
 mono_class_get_events (MonoClass* klass, gpointer *iter)
 {
-	MonoEvent* event;
 	if (!iter)
 		return NULL;
 	if (!*iter) {
@@ -5281,19 +5280,28 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		/* start from the first */
 		if (info->count) {
-			*iter = &info->events [0];
-			return (MonoEvent *)*iter;
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx + 1);
+			return (MonoEvent *)&info->events [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY (!m_class_get_image (klass)->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	event = (MonoEvent *)*iter;
-	event++;
+	// invariant: idx is one past the event we previously returned
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
-	if (event < &info->events [info->count]) {
-		*iter = event;
-		return (MonoEvent *)*iter;
+	if (idx < info->count) {
+		MonoEvent *event = &info->events[idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
+		return event;
+	}
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		return mono_metadata_update_added_events_iter (klass, iter);
 	}
 	return NULL;
 }

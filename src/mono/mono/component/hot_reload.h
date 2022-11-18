@@ -52,6 +52,7 @@ typedef struct _MonoComponentHotReload {
 	gpointer (*added_field_ldflda) (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
 	MonoProperty* (*added_properties_iter) (MonoClass *klass, gpointer *iter);
 	uint32_t (*get_property_idx) (MonoProperty *prop);
+	MonoEvent* (*added_events_iter) (MonoClass *klass, gpointer *iter);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
