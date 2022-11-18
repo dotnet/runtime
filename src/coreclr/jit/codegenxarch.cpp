@@ -6459,7 +6459,8 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        if ((condition.GetCode() == GenCondition::FNEU) && (op1->GetRegNum() == op2->GetRegNum()))
+        if ((condition.GetCode() == GenCondition::FNEU) && (op1->GetRegNum() == op2->GetRegNum()) &&
+            !op1->isUsedFromSpillTemp() && !op2->isUsedFromSpillTemp())
         {
             // For floating point, `x != x` is a common way of
             // checking for NaN. So, in the case where both
