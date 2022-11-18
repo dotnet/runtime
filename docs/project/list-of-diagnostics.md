@@ -13,6 +13,7 @@ The acceptance criteria for adding an obsoletion includes:
 * Add new constants to `src\libraries\Common\src\System\Obsoletions.cs`, following the existing conventions
     * A `...Message` const using the same description added to the table below
     * A `...DiagId` const for the `SYSLIB0###` id
+    * _**Note: For VB-specific API obsoletions where we cannot source link `Obsoletions.cs`, just hard-code the strings into the VB source file**_
 * Annotate `src` files by referring to the constants defined from `Obsoletions.cs`
     * Specify the `UrlFormat = Obsoletions.SharedUrlFormat`
     * Example: `[Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]`

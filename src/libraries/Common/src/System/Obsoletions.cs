@@ -150,11 +150,5 @@ namespace System
 
         internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
         internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
-
-        internal const string VisualBasicInputBoxMessage = "Microsoft.VisualBasic.Interaction.InputBox is deprecated.";
-        internal const string VisualBasicInputBoxDiagId = "SYSLIB0047";
-
-        internal const string VisualBasicMsgBoxMessage = "Microsoft.VisualBasic.Interaction.MsgBox is deprecated, use System.Windows.Forms.MessageBox instead.";
-        internal const string VisualBasicMsgBoxDiagId = "SYSLIB0048";
     }
 }

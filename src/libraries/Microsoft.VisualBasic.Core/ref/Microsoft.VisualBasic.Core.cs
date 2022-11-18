@@ -542,9 +542,9 @@ namespace Microsoft.VisualBasic
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string? GetSetting(string AppName, string Section, string Key, string? Default = "") { throw null; }
         public static object? IIf(bool Expression, object? TruePart, object? FalsePart) { throw null; }
-        [System.Obsolete(System.Obsoletions.VisualBasicInputBoxMessage, error: false, DiagnosticId = System.Obsoletions.VisualBasicInputBoxDiagId, UrlFormat = System.Obsoletions.SharedUrlFormat)]
+        [System.Obsolete("Microsoft.VisualBasic.Interaction.InputBox is deprecated.", error: false, DiagnosticId = "SYSLIB0047", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
-        [System.Obsolete(System.Obsoletions.VisualBasicMsgBoxMessage, error: false, DiagnosticId = System.Obsoletions.VisualBasicMsgBoxDiagId, UrlFormat = System.Obsoletions.SharedUrlFormat)]
+        [System.Obsolete("Microsoft.VisualBasic.Interaction.MsgBox is deprecated, use System.Windows.Forms.MessageBox instead.", error: false, DiagnosticId = "SYSLIB0048", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object? Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
