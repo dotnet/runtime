@@ -24,11 +24,11 @@ namespace System.Reflection.Emit
             => AddInterfaceImplementation(interfaceType);
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
             => CreateTypeInfo();
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public virtual TypeInfo? CreateTypeInfo()
+        public virtual TypeInfo CreateTypeInfo()
             => CreateTypeInfo();
 
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes)

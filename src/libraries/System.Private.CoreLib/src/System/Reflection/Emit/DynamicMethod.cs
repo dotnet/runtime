@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 
 namespace System.Reflection.Emit
@@ -193,12 +194,8 @@ namespace System.Reflection.Emit
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
 
-                AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
-                    assemblyName,
-                    AssemblyBuilderAccess.Run,
-                    typeof(object).Assembly,
-                    null,
-                    null);
+                var assembly = new RuntimeAssemblyBuilder(new AssemblyName("Anonymously Hosted DynamicMethods Assembly"),
+                    AssemblyBuilderAccess.Run, AssemblyLoadContext.Default, null);
 
                 // this always gets the internal module.
                 s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule!;
@@ -262,7 +259,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(m == null || owner == null, "m and owner cannot both be set");
 
                 if (m != null)
-                    _module = ModuleBuilder.GetRuntimeModuleFromModule(m); // this returns the underlying module for all RuntimeModule and ModuleBuilder objects.
+                    _module = RuntimeModuleBuilder.GetRuntimeModuleFromModule(m); // this returns the underlying module for all RuntimeModule and ModuleBuilder objects.
                 else
                 {
                     if (owner?.UnderlyingSystemType is RuntimeType rtOwner)

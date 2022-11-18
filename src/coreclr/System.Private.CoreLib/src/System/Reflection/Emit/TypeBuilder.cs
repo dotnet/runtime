@@ -1683,7 +1683,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeInfo CreateTypeInfoImpl()
+        internal TypeInfo? CreateTypeInfoImpl()
         {
             lock (SyncRoot)
             {
