@@ -1,5 +1,5 @@
 # System.Diagnostics.Process
-Contains the source and tests of assembly System.Diagostincs.Process which includes a subset of members of the System.Diagnostics namespace that allow you to interact with local and remote system processes.
+Contains the source and tests of assembly System.Diagnostics.Process which includes a subset of members of the System.Diagnostics namespace that allow you to interact with local and remote system processes.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.diagnostics. The primary class is [`Process`](https://learn.microsoft.com/dotnet/api/system.diagnostics.process).
 
