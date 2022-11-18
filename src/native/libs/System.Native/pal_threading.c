@@ -28,14 +28,17 @@
 #define _XOPEN_SOURCE
 #endif
 
-#if !defined(TARGET_WASI)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
 struct LowLevelMonitor
 {
+#if !defined(TARGET_WASI)
     pthread_mutex_t Mutex;
     pthread_cond_t Condition;
+#else /* !TARGET_WASI */
+    bool Dummy;
+#endif /* !TARGET_WASI */
 #ifdef DEBUG
     bool IsLocked;
 #endif
@@ -59,6 +62,7 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
     {
         return NULL;
     }
+#if !defined(TARGET_WASI)
 
     int error;
 
@@ -109,12 +113,16 @@ mutex_destroy:
     assert(error == 0);
     free(monitor);
     return NULL;
+#else /* !TARGET_WASI */
+    return monitor;
+#endif /* !TARGET_WASI */
 }
 
 void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
+#if !defined(TARGET_WASI)
     int error;
 
     error = pthread_cond_destroy(&monitor->Condition);
@@ -125,6 +133,7 @@ void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
 
     (void)error; // unused in release build
 
+#endif /* !TARGET_WASI */
     free(monitor);
 }
 
@@ -132,9 +141,11 @@ void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
+#if !defined(TARGET_WASI)
     int error = pthread_mutex_lock(&monitor->Mutex);
     assert(error == 0);
     (void)error; // unused in release build
+#endif /* !TARGET_WASI */
 
     SetIsLocked(monitor, true);
 }
@@ -145,9 +156,11 @@ void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
+#if !defined(TARGET_WASI)
     int error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
     (void)error; // unused in release build
+#endif /* !TARGET_WASI */
 }
 
 void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
@@ -156,9 +169,11 @@ void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
+#if !defined(TARGET_WASI)
     int error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
     assert(error == 0);
     (void)error; // unused in release build
+#endif /* !TARGET_WASI */
 
     SetIsLocked(monitor, true);
 }
@@ -169,6 +184,7 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t
 
     SetIsLocked(monitor, false);
 
+#if !defined(TARGET_WASI)
     int error;
 
     // Calculate the time at which a timeout should occur, and wait. Older versions of OSX don't support clock_gettime with
@@ -203,12 +219,16 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t
     SetIsLocked(monitor, true);
 
     return error == 0;
+#else /* !TARGET_WASI */
+    return true;
+#endif /* !TARGET_WASI */
 }
 
 void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
+#if !defined(TARGET_WASI)
     int error;
 
     error = pthread_cond_signal(&monitor->Condition);
@@ -220,11 +240,13 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
     assert(error == 0);
 
     (void)error; // unused in release build
+#endif /* !TARGET_WASI */
 }
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
     bool result = false;
+#if !defined(TARGET_WASI)
     pthread_attr_t attrs;
 
     int error = pthread_attr_init(&attrs);
@@ -265,6 +287,7 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
 CreateThreadExit:
     error = pthread_attr_destroy(&attrs);
     assert(error == 0);
+#endif /* !TARGET_WASI */
 
     return result;
 }
@@ -289,76 +312,3 @@ void SystemNative_Abort(void)
 {
     abort();
 }
-
-#else /* TARGET_WASI */
-struct LowLevelMonitor
-{
-    // TARGET_WASI
-    bool IsLocked;
-};
-
-LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return NULL;
-}
-
-void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return false;
-}
-
-void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return false;
-}
-
-int32_t SystemNative_SchedGetCpu(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return -1;
-}
-
-__attribute__((noreturn))
-void SystemNative_Exit(int32_t exitCode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    assert(false);
-    abort();
-}
-
-__attribute__((noreturn))
-void SystemNative_Abort(void)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    assert(false);
-    abort();
-}
-#endif /* TARGET_WASI */
