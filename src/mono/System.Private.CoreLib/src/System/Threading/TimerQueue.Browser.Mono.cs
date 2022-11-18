@@ -23,7 +23,7 @@ namespace System.Threading
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
 
-        private TimerQueue(int id)
+        private TimerQueue(int _)
         {
         }
 

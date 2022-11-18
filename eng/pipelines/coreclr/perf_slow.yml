@@ -40,7 +40,6 @@ extends:
           jobTemplate: /eng/pipelines/mono/templates/build-job.yml
           runtimeFlavor: mono
           buildConfig: release
-          container: ubuntu-18.04-cross-arm64
           platforms:
           - Linux_arm64
 
@@ -49,10 +48,6 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: release
-          container: ubuntu-18.04-cross-arm64
-          variables:
-            - name: ROOTFS_DIR
-              value: /crossrootfs/arm64
           platforms:
           - Linux_arm64
           jobParameters:
@@ -64,7 +59,6 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
           buildConfig: release
           runtimeFlavor: mono
-          container: ubuntu-18.04-cross-arm64
           platforms:
           - Linux_arm64
           jobParameters:
@@ -76,7 +70,7 @@ extends:
             runKind: micro_mono
             runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
             logicalmachine: 'perfampere'
-            timeoutInMinutes: 500 
+            timeoutInMinutes: 720 
 
       # build mono on wasm
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -84,7 +78,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           runtimeFlavor: mono
-          container: ubuntu-18.04-cross-arm64
           platforms:
           - Browser_wasm
           jobParameters:
@@ -138,12 +131,8 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          container: ubuntu-18.04-cross-arm64
           runtimeFlavor: mono
           runtimeVariant: 'llvmaot'
-          variables:
-            - name: ROOTFS_DIR
-              value: /crossrootfs/arm64
           platforms:
           - Linux_arm64
           jobParameters:
@@ -168,7 +157,6 @@ extends:
           runtimeFlavor: aot
           platforms:
           - Linux_arm64
-          container: ubuntu-18.04-cross-arm64
           jobParameters:
             testGroup: perf
             liveLibrariesBuildConfig: Release
@@ -188,7 +176,6 @@ extends:
           runtimeFlavor: coreclr
           platforms:
           - Linux_arm64
-          container: ubuntu-18.04-cross-arm64
           jobParameters:
             testGroup: perf
             liveLibrariesBuildConfig: Release

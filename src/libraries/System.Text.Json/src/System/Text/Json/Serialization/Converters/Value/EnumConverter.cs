@@ -10,10 +10,12 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonConverter<T>
+    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
+
+        private static readonly char[] s_specialChars = new[] { ',', ' ' };
 
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
@@ -85,6 +87,12 @@ namespace System.Text.Json.Serialization.Converters
                 string jsonName = FormatJsonName(name, namingPolicy);
                 _nameCacheForWriting.TryAdd(key, JsonEncodedText.Encode(jsonName, encoder));
                 _nameCacheForReading?.TryAdd(jsonName, value);
+
+                // If enum contains special char, make it failed to serialize or deserialize.
+                if (name.IndexOfAny(s_specialChars) != -1)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T), name);
+                }
             }
         }
 
@@ -370,7 +378,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 #else
-        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
             // Try parsing case sensitive first
             bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);

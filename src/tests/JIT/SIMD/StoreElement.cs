@@ -8,7 +8,7 @@ namespace VectorTests
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             Point p = new Point(1);
             Point[] arr = new Point[10];

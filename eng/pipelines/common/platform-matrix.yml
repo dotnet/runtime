@@ -271,7 +271,7 @@ jobs:
       platform: Centos7_Linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: centos-7-source-build-20210714125450-5d87b80
+        image: centos-7-source-build
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -374,7 +374,7 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly
+# Browser WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
   - template: xplat-setup.yml
@@ -395,7 +395,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly Linux Firefox
+# Browser WebAssembly Linux Firefox
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox') }}:
   - template: xplat-setup.yml
@@ -416,7 +416,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly on Windows
+# Browser WebAssembly on Windows
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml

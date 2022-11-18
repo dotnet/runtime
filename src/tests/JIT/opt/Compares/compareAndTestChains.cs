@@ -31,6 +31,12 @@ public class ComparisonTestAndTestChains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Eq_ulong_bool(ulong a1, bool a2) => (a1 == 10) & !a2;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Eq_float_bool(float a1, bool a2) => (a1 == 10.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Eq_double_bool(double a1, bool a2) => (a1 == 10.1) & !a2;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ne_byte_bool(byte a1, bool a2) => (a1 != 5) & !a2;
@@ -52,6 +58,12 @@ public class ComparisonTestAndTestChains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ne_ulong_bool(ulong a1, bool a2) => (a1 != 5) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ne_float_bool(float a1, bool a2) => (a1 != 5.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ne_double_bool(double a1, bool a2) => (a1 != 5.1) & !a2;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -75,6 +87,12 @@ public class ComparisonTestAndTestChains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Lt_ulong_bool(ulong a1, bool a2) => (a1 < 5) & !a2;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Lt_float_bool(float a1, bool a2) => (a1 < 5.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Lt_double_bool(double a1, bool a2) => (a1 < 5.1) & !a2;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Le_byte_bool(byte a1, bool a2) => (a1 <= 5) & !a2;
@@ -96,6 +114,12 @@ public class ComparisonTestAndTestChains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Le_ulong_bool(ulong a1, bool a2) => (a1 <= 5) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Le_float_bool(float a1, bool a2) => (a1 <= 5.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Le_double_bool(double a1, bool a2) => (a1 <= 5.1) & !a2;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -119,6 +143,12 @@ public class ComparisonTestAndTestChains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Gt_ulong_bool(ulong a1, bool a2) => (a1 > 5) & !a2;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Gt_float_bool(float a1, bool a2) => (a1 > 5.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Gt_double_bool(double a1, bool a2) => (a1 > 5.1) & !a2;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ge_byte_bool(byte a1, bool a2) => (a1 >= 5) & !a2;
@@ -140,6 +170,12 @@ public class ComparisonTestAndTestChains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ge_ulong_bool(ulong a1, bool a2) => (a1 >= 5) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ge_float_bool(float a1, bool a2) => (a1 >= 5.1f) & !a2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ge_double_bool(double a1, bool a2) => (a1 >= 5.1) & !a2;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -180,6 +216,16 @@ public class ComparisonTestAndTestChains
             Console.WriteLine("ComparisonTestAndTestChains:Eq_ulong_bool(10, false) failed");
             return 101;
         }
+        if (!Eq_float_bool(10.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Eq_float_bool(10.1, false) failed");
+            return 101;
+        }
+        if (!Eq_double_bool(10.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Eq_double_bool(10.1, false) failed");
+            return 101;
+        }
 
         if (!Ne_byte_bool(10, false))
         {
@@ -214,6 +260,16 @@ public class ComparisonTestAndTestChains
         if (!Ne_ulong_bool(10, false))
         {
             Console.WriteLine("ComparisonTestAndTestChains:Ne_ulong_bool(10, false) failed");
+            return 101;
+        }
+        if (!Ne_float_bool(10.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Ne_float_bool(10.1, false) failed");
+            return 101;
+        }
+        if (!Ne_double_bool(10.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Ne_double_bool(10.1, false) failed");
             return 101;
         }
 
@@ -252,6 +308,16 @@ public class ComparisonTestAndTestChains
             Console.WriteLine("ComparisonTestAndTestChains:Lt_ulong_bool(3, false) failed");
             return 101;
         }
+        if (!Lt_float_bool(3.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Lt_float_bool(3.1, false) failed");
+            return 101;
+        }
+        if (!Lt_double_bool(3.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Lt_double_bool(3.1, false) failed");
+            return 101;
+        }
 
         if (!Le_byte_bool(3, false))
         {
@@ -286,6 +352,16 @@ public class ComparisonTestAndTestChains
         if (!Le_ulong_bool(3, false))
         {
             Console.WriteLine("ComparisonTestAndTestChains:Le_ulong_bool(3, false) failed");
+            return 101;
+        }
+        if (!Le_float_bool(3.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Le_float_bool(3.1, false) failed");
+            return 101;
+        }
+        if (!Le_double_bool(3.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Le_double_bool(3.1, false) failed");
             return 101;
         }
 
@@ -324,6 +400,16 @@ public class ComparisonTestAndTestChains
             Console.WriteLine("ComparisonTestAndTestChains:Gt_ulong_bool(10, false) failed");
             return 101;
         }
+        if (!Gt_float_bool(10.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Gt_float_bool(10.1, false) failed");
+            return 101;
+        }
+        if (!Gt_double_bool(10.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Gt_double_bool(10.1, false) failed");
+            return 101;
+        }
 
         if (!Ge_byte_bool(10, false))
         {
@@ -358,6 +444,16 @@ public class ComparisonTestAndTestChains
         if (!Ge_ulong_bool(10, false))
         {
             Console.WriteLine("ComparisonTestAndTestChains:Le_ulong_bool(10, false) failed");
+            return 101;
+        }
+        if (!Ge_float_bool(10.1f, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Ge_float_bool(10.1, false) failed");
+            return 101;
+        }
+        if (!Ge_double_bool(10.1, false))
+        {
+            Console.WriteLine("ComparisonTestAndTestChains:Ge_double_bool(10.1, false) failed");
             return 101;
         }
 

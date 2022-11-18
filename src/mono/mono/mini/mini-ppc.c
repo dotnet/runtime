@@ -470,10 +470,54 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	return start;
 }
 
+/**
+ *
+ * @brief Architecture-specific delegation virtual trampoline processing
+ *
+ * @param[in] @sig - Method signature
+ * @param[in] @method - Method
+ * @param[in] @offset - Offset into vtable
+ * @param[in] @load_imt_reg - Whether to load the LMT register
+ * @returns Trampoline
+ *
+ * Return a pointer to a delegation virtual trampoline
+ */
+
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
 {
-	return NULL;
+	guint8 *code, *start;
+	int size = 32;
+
+	start = code = (guint8 *) mono_global_codeman_reserve (size);
+
+	/*
+	 * Replace the "this" argument with the target
+	 */
+	ppc_mr  (code, ppc_r12, ppc_r3);
+	ppc_ldptr (code, ppc_r3, MONO_STRUCT_OFFSET(MonoDelegate, target), ppc_r12);
+
+	/*
+	 * Load the IMT register, if needed
+	 */
+	if (load_imt_reg) {
+		ppc_ldptr  (code, MONO_ARCH_IMT_REG, MONO_STRUCT_OFFSET(MonoDelegate, method), ppc_r12);
+	}
+
+	/*
+	 * Load the vTable
+	 */
+	ppc_ldptr  (code, ppc_r12, MONO_STRUCT_OFFSET(MonoObject, vtable), ppc_r3);
+	if (!ppc_is_imm16(offset))
+		ppc_addis (code, ppc_r12, ppc_r12, ppc_ha(offset));
+	ppc_ldptr  (code, ppc_r12, offset, ppc_r12);
+	ppc_mtctr (code, ppc_r12);
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+
+	mono_arch_flush_icache (start, code - start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL));
+
+	return(start);
 }
 
 gpointer
@@ -2733,7 +2777,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 			cfg->arch.thunks = cfg->thunks;
 			cfg->arch.thunks_size = cfg->thunk_area;
 #ifdef THUNK_ADDR_ALIGNMENT
-			cfg->arch.thunks = ALIGN_TO(cfg->arch.thunks, THUNK_ADDR_ALIGNMENT);
+			cfg->arch.thunks = (guint8 *)ALIGN_TO(cfg->arch.thunks, THUNK_ADDR_ALIGNMENT);
 #endif
 		}
 		thunks = cfg->arch.thunks;
@@ -5886,7 +5930,7 @@ host_mgreg_t*
 mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
+		return (host_mgreg_t *)(gsize)&ctx->sc_sp;
 
 	return &ctx->regs [reg];
 }

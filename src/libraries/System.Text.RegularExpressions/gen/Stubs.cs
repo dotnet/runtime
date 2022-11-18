@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#pragma warning disable IDE0060
+
 // This file provides helpers used to help compile some Regex source code (e.g. RegexParser) as part of the netstandard2.0 generator assembly.
 
 namespace System.Text
@@ -57,6 +59,13 @@ namespace System
 
             return length;
         }
+    }
+
+    internal static class CharExtensions
+    {
+        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
+        public static bool IsAsciiLetter(char c) =>
+            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
     }
 }
 

@@ -382,10 +382,6 @@ namespace System.Runtime
         internal static unsafe void RhUnbox(object? obj, ref byte data, EETypePtr pUnboxToEEType)
             => RhUnbox(obj, ref data, pUnboxToEEType.ToPointer());
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhMemberwiseClone")]
-        internal static extern object RhMemberwiseClone(object obj);
-
         // Busy spin for the given number of iterations.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]

@@ -121,7 +121,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | area-System.ServiceModel                       | @HongGit      | @HongGit @mconnew                                   | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul>                                              |
 | area-System.ServiceModel.Syndication           | @HongGit      | @StephenMolloy @HongGit                             |                                                                                                                                                                                                                                                                                           |
 | area-System.ServiceProcess                     | @ericstj      | @dotnet/area-system-serviceprocess                  |                                                                                                                                                                                                                                                                                           |
-| area-System.Speech                             | @jeffhandley  | @jeffhandley                                         |                                                                                                                                                                                                                                                                                           |
+| area-System.Speech                             | @jeffhandley  | @ericstj @jeffhandley                               |                                                                                                                                                                                                                                                                                           |
 | area-System.Text.Encoding                      | @jeffhandley  | @dotnet/area-system-text-encoding                   |                                                                                                                                                                                                                                                                                           |
 | area-System.Text.Encodings.Web                 | @jeffhandley  | @dotnet/area-system-text-encodings-web              |                                                                                                                                                                                                                                                                                           |
 | area-System.Text.Json                          | @jeffhandley  | @dotnet/area-system-text-json                       |                                                                                                                                                                                                                                                                                           |
@@ -134,6 +134,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | area-System.Xml                                | @jeffhandley  | @dotnet/area-system-xml                             |                                                                                                                                                                                                                                                                                           |
 | area-Threading-mono                            | @SamMonoRT    | @lambdageek                                         |                                                                                                                                                                                                                                                                                           |
 | area-TieredCompilation-coreclr                 | @mangod9      | @kouvel                                             |                                                                                                                                                                                                                                                                                           |
+| area-Tools-ILLink                | @agocke      | @sbomer                                             |                                                                                                                                                                                                                                                                                           |
 | area-Tracing-coreclr                           | @tommcdon     | @sywhang @josalem                                   |                                                                                                                                                                                                                                                                                           |
 | area-Tracing-mono                              | @steveisok    | @lateralusX                                         |                                                                                                                                                                                                                                                                                           |
 | area-TypeSystem-coreclr                        | @mangod9      | @davidwrighton @MichalStrehovsky @janvorli @mangod9 |                                                                                                                                                                                                                                                                                           |
@@ -143,16 +144,16 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 ## Operating Systems
 
-| Operating System | Lead          | Owners (area experts to tag in PR's and issues)     | Description  |
-|------------------|---------------|-----------------------------------------------------|--------------|
-| os-alpine        |               |                                                     |              |
-| os-android       | @steveisok    | @akoeplinger                                        |              |
-| os-freebsd       |               |                                                     |              |
-| os-mac-os-x      |               |                                                     |              |
-| os-maccatalyst   | @steveisok    |                                                     |              |
-| os-ios           | @steveisok    | @vargaz                                             |              |
-| os-tizen         | @alpencolt    | @gbalykov, @hjleee, @wscho77, @clamp03              |              |
-| os-tvos          | @steveisok    | @vargaz                                             |              |
+| Operating System | Lead          | Owners (area experts to tag in PR's and issues)       | Description  |
+|------------------|---------------|-------------------------------------------------------|--------------|
+| os-alpine        |               |                                                       |              |
+| os-android       | @steveisok    | @akoeplinger                                          |              |
+| os-freebsd       |               |                                                       |              |
+| os-mac-os-x      |               |                                                       |              |
+| os-maccatalyst   | @steveisok    |                                                       |              |
+| os-ios           | @steveisok    | @vargaz                                               |              |
+| os-tizen         | @alpencolt    | @gbalykov, @hjleee, @wscho77, @clamp03, @JongHeonChoi |              |
+| os-tvos          | @steveisok    | @vargaz                                               |              |
 
 ## Architectures
 

@@ -10,7 +10,7 @@ namespace TernaryOperatorOptimization
     {
         private static bool caughtException = false;
 
-        static int Main(string[] args)
+        static int Main()
         {
             Console.WriteLine("Regression testcase for devdiv 106272 - Invalid JIT optimization");
             Console.WriteLine("with ternary/conditional operator (?:) in release builds");

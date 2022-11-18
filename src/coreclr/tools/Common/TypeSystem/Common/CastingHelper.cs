@@ -363,7 +363,7 @@ namespace Internal.TypeSystem
         {
             if (!otherType.HasVariance)
             {
-                return thisType.CanCastToNonVariantInterface(otherType, protect);
+                return thisType.CanCastToNonVariantInterface(otherType);
             }
             else
             {
@@ -384,7 +384,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static bool CanCastToNonVariantInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        private static bool CanCastToNonVariantInterface(this TypeDesc thisType, TypeDesc otherType)
         {
             if (otherType == thisType)
             {

@@ -634,12 +634,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)abs((__int64)x));
 }
 
-#ifdef HOST_UNIX
+#ifdef __APPLE__
 inline size_t unsigned_abs(__int64 x)
 {
     return ((size_t)abs(x));
 }
-#endif // HOST_UNIX
+#endif // __APPLE__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/

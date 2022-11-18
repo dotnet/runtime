@@ -410,7 +410,7 @@ namespace System.Data.Common
             bool restoreNullConnection = (null == command.Connection);
             try
             {
-                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.FillSchema);
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(command, ADP.FillSchema);
                 ConnectionState originalState = ConnectionState.Open;
 
                 try
@@ -616,7 +616,7 @@ namespace System.Data.Common
             bool restoreNullConnection = (null == command.Connection);
             try
             {
-                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.Fill);
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(command, ADP.Fill);
                 ConnectionState originalState = ConnectionState.Open;
 
                 // the default is MissingSchemaAction.Add, the user must explicitly
@@ -1215,7 +1215,7 @@ namespace System.Data.Common
                                 }
                                 else if (null != dataCommand)
                                 {
-                                    IDbConnection connection = DbDataAdapter.GetConnection4(this, dataCommand, statementType, isCommandFromRowUpdating);
+                                    IDbConnection connection = DbDataAdapter.GetConnection4(dataCommand, statementType, isCommandFromRowUpdating);
                                     ConnectionState state = UpdateConnectionOpen(connection, statementType, connections, connectionStates, useSelectConnectionState);
                                     if (ConnectionState.Open == state)
                                     {
@@ -1599,7 +1599,7 @@ namespace System.Data.Common
             switch (rowUpdatedEvent.Status)
             {
                 case UpdateStatus.Continue:
-                    cumulativeDataRowsAffected = UpdatedRowStatusContinue(rowUpdatedEvent, batchCommands, commandCount);
+                    cumulativeDataRowsAffected = UpdatedRowStatusContinue(batchCommands, commandCount);
                     break; // return to foreach DataRow
                 case UpdateStatus.ErrorsOccurred:
                     cumulativeDataRowsAffected = UpdatedRowStatusErrors(rowUpdatedEvent, batchCommands, commandCount);
@@ -1614,7 +1614,7 @@ namespace System.Data.Common
             return cumulativeDataRowsAffected;
         }
 
-        private int UpdatedRowStatusContinue(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
+        private int UpdatedRowStatusContinue(BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
             int cumulativeDataRowsAffected = 0;
@@ -1692,7 +1692,7 @@ namespace System.Data.Common
             }
             else
             {
-                affected = UpdatedRowStatusContinue(rowUpdatedEvent, batchCommands, commandCount);
+                affected = UpdatedRowStatusContinue(batchCommands, commandCount);
             }
             if (!ContinueUpdateOnError)
             {
@@ -1766,7 +1766,7 @@ namespace System.Data.Common
             return connection;
         }
 
-        private static IDbConnection GetConnection3(DbDataAdapter adapter, IDbCommand command, string method)
+        private static IDbConnection GetConnection3(IDbCommand command, string method)
         {
             Debug.Assert(null != command, "GetConnection3: null command");
             Debug.Assert(!string.IsNullOrEmpty(method), "missing method name");
@@ -1778,7 +1778,7 @@ namespace System.Data.Common
             return connection;
         }
 
-        private static IDbConnection GetConnection4(DbDataAdapter adapter, IDbCommand command, StatementType statementType, bool isCommandFromRowUpdating)
+        private static IDbConnection GetConnection4(IDbCommand command, StatementType statementType, bool isCommandFromRowUpdating)
         {
             Debug.Assert(null != command, "GetConnection4: null command");
             IDbConnection? connection = command.Connection;

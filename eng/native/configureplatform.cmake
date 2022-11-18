@@ -214,6 +214,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+    set(CLR_CMAKE_HOST_WASI 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+
 #--------------------------------------------
 # This repo builds two set of binaries
 # 1. binaries which execute on target arch machine
@@ -261,6 +265,9 @@ elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
     set(CLR_CMAKE_HOST_ARCH_POWERPC64 1)
     set(CLR_CMAKE_HOST_ARCH "ppc64le")
 elseif(CLR_CMAKE_HOST_BROWSER)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    set(CLR_CMAKE_HOST_ARCH "wasm")
+elseif(CLR_CMAKE_HOST_WASI)
     set(CLR_CMAKE_HOST_ARCH_WASM 1)
     set(CLR_CMAKE_HOST_ARCH "wasm")
 elseif(CLR_CMAKE_HOST_UNIX_MIPS64)
@@ -409,6 +416,10 @@ if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+    set(CLR_CMAKE_TARGET_WASI 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
 
 if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)

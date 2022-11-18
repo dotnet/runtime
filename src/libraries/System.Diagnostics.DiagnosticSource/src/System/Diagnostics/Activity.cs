@@ -445,7 +445,7 @@ namespace System.Diagnostics
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
             }
 
-            OperationName = operationName;
+            OperationName = operationName ?? string.Empty;
         }
 
         /// <summary>

@@ -41,7 +41,7 @@ class Runtime_4781_1
 {
     static Bar s_bar = new Bar();
 
-    static int Main(string[] args)
+    static int Main()
     {
         var f = new Foo(s_bar);
         return Observer.failed ? -1 : 100;

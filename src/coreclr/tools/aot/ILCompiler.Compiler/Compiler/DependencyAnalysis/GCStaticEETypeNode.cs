@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// types. It only fills out enough pieces of the MethodTable structure so that the GC can operate on it. Runtime should
     /// never see these.
     /// </summary>
-    public class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
+    public class GCStaticEETypeNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;
@@ -29,15 +29,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (_target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -60,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => true;
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
             dataBuilder.RequireInitialPointerAlignment();

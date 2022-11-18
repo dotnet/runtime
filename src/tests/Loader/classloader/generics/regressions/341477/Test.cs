@@ -9,7 +9,7 @@ using System;
 class Test
 {
 
-	static int Main(string[] args)
+	static int Main()
 	{
 		Hello<string> mystr = new Hello<string>("PASS");
 

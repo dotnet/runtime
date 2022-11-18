@@ -334,6 +334,10 @@ namespace ILCompiler
 
             var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
+            MetadataManagerOptions metadataOptions = default;
+            if (Get(_command.Dehydrate))
+                metadataOptions |= MetadataManagerOptions.DehydrateData;
+
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
                     typeSystemContext,
@@ -344,6 +348,7 @@ namespace ILCompiler
                     invokeThunkGenerationPolicy,
                     flowAnnotations,
                     metadataGenerationOptions,
+                    metadataOptions,
                     logger,
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
@@ -615,8 +620,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException($"Method '{singleMethodName}' not found in '{singleMethodTypeName}'");
 
-            if (method.HasInstantiation != (singleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     $"Expected {method.Instantiation.Length} generic arguments for method '{singleMethodName}' on type '{singleMethodTypeName}'");

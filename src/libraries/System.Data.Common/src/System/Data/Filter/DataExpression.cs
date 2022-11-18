@@ -147,7 +147,7 @@ namespace System.Data
                     catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                     {
                         ExceptionBuilder.TraceExceptionForCapture(e);
-                        throw ExprException.DatavalueConversion(result, _dataType!, e);
+                        throw ExprException.DatavalueConversion(result, _dataType!);
                     }
                 }
             }
@@ -270,11 +270,11 @@ namespace System.Data
                 catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                 {
                     ExceptionBuilder.TraceExceptionForCapture(e);
-                    throw ExprException.DatavalueConversion(value, typeof(bool), e);
+                    throw ExprException.DatavalueConversion(value, typeof(bool));
                 }
             }
 
-            throw ExprException.DatavalueConversion(value, typeof(bool), null);
+            throw ExprException.DatavalueConversion(value, typeof(bool));
         }
     }
 }
