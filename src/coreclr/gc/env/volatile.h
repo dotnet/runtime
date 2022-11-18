@@ -207,7 +207,7 @@ T VolatileLoad(Volatile<T> const * pt)
 }
 
 //
-// VolatileStore stores a T into the target of a pointer to T.  Is is guaranteed that this store will
+// VolatileStore stores a T into the target of a pointer to T.  It is guaranteed that this store will
 // not be optimized away by the compiler, and that any operation that occurs before this store, in program
 // order, will not be moved after this store.  In general, it is not guaranteed that the store will be
 // atomic, though this is the case for most aligned scalar data types.  If you need atomic loads or stores,
@@ -302,11 +302,9 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an unitialized value!
+    // Default constructor.
     //
-    inline Volatile()
-    {
-    }
+    inline Volatile() = default;
 
     //
     // Allow initialization of Volatile<T> from a T

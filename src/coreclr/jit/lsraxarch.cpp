@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -147,6 +147,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
+        case GT_CNS_VEC:
         {
             srcCount = 0;
             assert(dstCount == 1);
@@ -652,7 +653,7 @@ int LinearScan::BuildNode(GenTree* tree)
             //   - if the index is `native int` then we need to load the array
             //     length into a register to widen it to `native int`
             //   - if the index is `int` (or smaller) then we need to widen
-            //     it to `long` to peform the address calculation
+            //     it to `long` to perform the address calculation
             internalDef = buildInternalIntRegisterDefForNode(tree);
 #else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
@@ -925,6 +926,18 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         assert(shiftBy->OperIsConst());
     }
+#if defined(TARGET_64BIT)
+    else if (tree->OperIsShift() && !tree->isContained() &&
+             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        // shlx (as opposed to mov+shl) instructions handles all register forms, but it does not handle contained form
+        // for memory operand. Likewise for sarx and shrx.
+        srcCount += BuildOperandUses(source, srcCandidates);
+        srcCount += BuildOperandUses(shiftBy, srcCandidates);
+        BuildDef(tree, dstCandidates);
+        return srcCount;
+    }
+#endif
     else
     {
         srcCandidates = allRegs(TYP_INT) & ~RBM_RCX;
@@ -1225,6 +1238,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+    // No args are placed in registers anymore.
+    placedArgRegs      = RBM_NONE;
+    numPlacedArgLocals = 0;
     return srcCount;
 }
 
@@ -1499,17 +1516,18 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
                 // We can treat as a slot any field that is stored at a slot boundary, where the previous
                 // field is not in the same slot. (Note that we store the fields in reverse order.)
-                const bool fieldIsSlot      = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
-                const bool canStoreWithPush = fieldIsSlot;
-                const bool canLoadWithPush  = varTypeIsI(fieldNode);
+                const bool canStoreFullSlot = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
+                const bool canLoadFullSlot =
+                    (genTypeSize(fieldNode) == TARGET_POINTER_SIZE) ||
+                    (fieldNode->OperIsLocalRead() && (genTypeSize(fieldNode) >= genTypeSize(fieldType)));
 
-                if ((!canStoreWithPush || !canLoadWithPush) && (intTemp == nullptr))
+                if ((!canStoreFullSlot || !canLoadFullSlot) && (intTemp == nullptr))
                 {
                     intTemp = buildInternalIntRegisterDefForNode(putArgStk);
                 }
 
                 // We can only store bytes using byteable registers.
-                if (!canStoreWithPush && varTypeIsByte(fieldType))
+                if (!canStoreFullSlot && varTypeIsByte(fieldType))
                 {
                     intTemp->registerAssignment &= allByteRegs();
                 }
@@ -1548,21 +1566,31 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildOperandUses(src);
     }
 
-    ssize_t size = putArgStk->GetStackByteSize();
+    unsigned loadSize = putArgStk->GetArgLoadSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            if ((size % XMM_REGSIZE_BYTES) != 0)
+            if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
+#ifdef TARGET_X86
+                // Storing at byte granularity requires a byteable register.
+                if ((loadSize & 1) != 0)
+                {
+                    regMask &= allByteRegs();
+                }
+#endif // TARGET_X86
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-            if (size >= XMM_REGSIZE_BYTES)
+#ifdef TARGET_X86
+            if (loadSize >= 8)
+#else
+            if (loadSize >= XMM_REGSIZE_BYTES)
+#endif
             {
-                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES, reserve
-                // an XMM register to use it for a series of 16-byte loads and stores.
+                // See "genStructPutArgUnroll" -- we will use this XMM register for wide stores.
                 buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
                 SetContainsAVXFlags();
             }
@@ -1622,10 +1650,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     //      const and <=6 reg words      -                  0 (pushes '0')
     //      const and >6 reg words       Yes                0 (pushes '0')
     //      const and <PageSize          No                 0 (amd64) 1 (x86)
-    //                                                        (x86:tmpReg for sutracting from esp)
-    //      const and >=PageSize         No                 2 (regCnt and tmpReg for subtracing from sp)
+    //
+    //      const and >=PageSize         No                 1 (regCnt)
     //      Non-const                    Yes                0 (regCnt=targetReg and pushes '0')
-    //      Non-const                    No                 2 (regCnt and tmpReg for subtracting from sp)
+    //      Non-const                    No                 1 (regCnt)
     //
     // Note: Here we don't need internal register to be different from targetReg.
     // Rather, require it to be different from operand's reg.
@@ -1639,6 +1667,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 
         if (sizeVal == 0)
         {
+            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
         else
@@ -1651,22 +1680,20 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
             // we will generate 'push 0'.
             assert((sizeVal % REGSIZE_BYTES) == 0);
+
             if (!compiler->info.compInitMem)
             {
-                // No need to initialize allocated stack space.
-                if (sizeVal < compiler->eeGetPageSize())
-                {
 #ifdef TARGET_X86
-                    // x86 needs a register here to avoid generating "sub" on ESP.
-                    buildInternalIntRegisterDefForNode(tree);
-#endif
-                }
-                else
+                // x86 always needs regCnt.
+                // For regCnt
+                buildInternalIntRegisterDefForNode(tree);
+#else  // !TARGET_X86
+                if (sizeVal >= compiler->eeGetPageSize())
                 {
-                    // We need two registers: regCnt and RegTmp
-                    buildInternalIntRegisterDefForNode(tree);
+                    // For regCnt
                     buildInternalIntRegisterDefForNode(tree);
                 }
+#endif // !TARGET_X86
             }
         }
     }
@@ -1674,7 +1701,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     {
         if (!compiler->info.compInitMem)
         {
-            buildInternalIntRegisterDefForNode(tree);
+            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
         BuildUse(size);
@@ -2468,9 +2495,9 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     assert(!varTypeIsLong(srcType) || (src->OperIs(GT_LONG) && src->isContained()));
 #else
-    // Overflow checking cast from TYP_(U)LONG to TYP_UINT requires a temporary
+    // Overflow checking cast from TYP_(U)LONG to TYP_(U)INT requires a temporary
     // register to extract the upper 32 bits of the 64 bit source register.
-    if (cast->gtOverflow() && varTypeIsLong(srcType) && (castType == TYP_UINT))
+    if (cast->gtOverflow() && varTypeIsLong(srcType) && varTypeIsInt(castType))
     {
         // Here we don't need internal register to be different from targetReg,
         // rather require it to be different from operand's reg.
@@ -2478,9 +2505,10 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     }
 #endif
 
-    int srcCount = BuildOperandUses(src, candidates);
+    int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();
     BuildDef(cast, candidates);
+
     return srcCount;
 }
 

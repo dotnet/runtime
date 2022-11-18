@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.Reflection
 {
-    internal class MetadataLoadContextInternal
+    internal sealed class MetadataLoadContextInternal
     {
         private readonly Compilation _compilation;
 

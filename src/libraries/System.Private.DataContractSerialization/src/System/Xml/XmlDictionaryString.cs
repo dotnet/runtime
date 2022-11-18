@@ -33,7 +33,7 @@ namespace System.Xml
             _key = key;
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         internal static string? GetString(XmlDictionaryString? s)
         {
             if (s == null)
@@ -75,9 +75,7 @@ namespace System.Xml
 
         internal byte[] ToUTF8()
         {
-            if (_buffer == null)
-                _buffer = System.Text.Encoding.UTF8.GetBytes(_value);
-            return _buffer;
+            return _buffer ??= System.Text.Encoding.UTF8.GetBytes(_value);
         }
 
         public override string ToString()

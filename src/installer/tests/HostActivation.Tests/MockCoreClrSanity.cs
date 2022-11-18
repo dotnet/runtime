@@ -14,23 +14,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     {
         private readonly DotNetCli DotNet;
 
-        private readonly string _dotnetDir;
+        private readonly TestArtifact _dotnetDirArtifact;
 
         public MockCoreClrSanity()
         {
-            _dotnetDir = Path.Combine(TestArtifact.TestArtifactsPath, "mockCoreclrSanity");
+            _dotnetDirArtifact = new TestArtifact(Path.Combine(TestArtifact.TestArtifactsPath, "mockCoreclrSanity"));
 
-            DotNet = new DotNetBuilder(_dotnetDir, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+            DotNet = new DotNetBuilder(_dotnetDirArtifact.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
                 .AddMicrosoftNETCoreAppFrameworkMockCoreClr("9999.0.0")
                 .Build();
         }
 
         public void Dispose()
         {
-            if (!TestArtifact.PreserveTestRuns())
-            {
-                Directory.Delete(_dotnetDir, true);
-            }
+            _dotnetDirArtifact.Dispose();
         }
 
         [Fact]

@@ -562,7 +562,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             CheckRequestMessage(request);
 
             SetOperationStarted();
@@ -604,11 +604,18 @@ namespace System.Net.Http
                         e = toThrow = new TaskCanceledException(oce.Message, oce.InnerException, cancellationToken);
                     }
                 }
-                else if (!pendingRequestsCts.IsCancellationRequested)
+                else if (cts.IsCancellationRequested && !pendingRequestsCts.IsCancellationRequested)
                 {
-                    // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
+                    // If the linked cancellation token source was canceled, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
                     // the only other cause could be a timeout.  Treat it as such.
-                    e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+
+                    // cancellationToken could have been triggered right after we checked it, but before we checked the cts.
+                    // We must check it again to avoid reporting a timeout when one did not occur.
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        Debug.Assert(_timeout.TotalSeconds > 0);
+                        e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                    }
                 }
             }
             else if (e is HttpRequestException && cts.IsCancellationRequested) // if cancellationToken is canceled, cts will also be canceled
@@ -677,7 +684,7 @@ namespace System.Net.Http
 
         public void CancelPendingRequests()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // With every request we link this cancellation token source.
             CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts, new CancellationTokenSource());
@@ -725,18 +732,10 @@ namespace System.Net.Http
 
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
 

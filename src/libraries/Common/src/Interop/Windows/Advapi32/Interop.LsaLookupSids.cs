@@ -41,7 +41,7 @@ internal static partial class SafeLsaMemoryHandleExtensions
             if (domainList.Domains != IntPtr.Zero)
             {
                 Interop.LSA_TRUST_INFORMATION* pTrustInformation = (Interop.LSA_TRUST_INFORMATION*)domainList.Domains;
-                pTrustInformation = pTrustInformation + domainList.Entries;
+                pTrustInformation += domainList.Entries;
 
                 long bufferSize = (byte*)pTrustInformation - pRdl;
                 System.Diagnostics.Debug.Assert(bufferSize > 0, "bufferSize > 0");

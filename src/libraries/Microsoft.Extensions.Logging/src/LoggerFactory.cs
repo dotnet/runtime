@@ -103,6 +103,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="configure">A delegate to configure the <see cref="ILoggingBuilder"/>.</param>
         /// <returns>The <see cref="ILoggerFactory"/> that was created.</returns>
+        [RequiresDynamicCode("LoggerFactory.Create uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static ILoggerFactory Create(Action<ILoggingBuilder> configure)
         {
             var serviceCollection = new ServiceCollection();
@@ -195,10 +196,7 @@ namespace Microsoft.Extensions.Logging
 
             if (provider is ISupportExternalScope supportsExternalScope)
             {
-                if (_scopeProvider == null)
-                {
-                    _scopeProvider = new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
-                }
+                _scopeProvider ??= new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
 
                 supportsExternalScope.SetScopeProvider(_scopeProvider);
             }

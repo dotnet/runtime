@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// <remarks>
         /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
         /// </remarks>
-        public Activity? CreateActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+        public Activity? CreateActivity(string name, ActivityKind kind, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
             => CreateActivity(name, kind, default, parentId, tags, links, default, startIt: false, idFormat);
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace System.Diagnostics
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
+        public Activity? StartActivity(string name, ActivityKind kind, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
             => CreateActivity(name, kind, default, parentId, tags, links, startTime);
 
         /// <summary>

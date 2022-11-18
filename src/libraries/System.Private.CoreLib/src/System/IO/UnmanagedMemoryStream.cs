@@ -589,7 +589,7 @@ namespace System.IO
             {
                 unsafe
                 {
-                    Buffer.ZeroMemory(_mem + len, (nuint)(value - len));
+                    NativeMemory.Clear(_mem + len, (nuint)(value - len));
                 }
             }
             Interlocked.Exchange(ref _length, value);
@@ -652,7 +652,7 @@ namespace System.IO
                 // zero any memory in the middle.
                 if (pos > len)
                 {
-                    Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
+                    NativeMemory.Clear(_mem + len, (nuint)(pos - len));
                 }
 
                 // set length after zeroing memory to avoid race condition of accessing unzeroed memory
@@ -782,7 +782,7 @@ namespace System.IO
                     {
                         unsafe
                         {
-                            Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
+                            NativeMemory.Clear(_mem + len, (nuint)(pos - len));
                         }
                     }
 

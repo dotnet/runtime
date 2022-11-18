@@ -54,9 +54,8 @@ steps:
         includeRootFolder: true
         displayName: iOS Sample App NoLLVM
         artifactName: iOSSampleAppNoLLVM
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
+        archiveExtension: '.zip'
+        archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
@@ -77,7 +76,5 @@ steps:
         includeRootFolder: true
         displayName: iOS Sample App LLVM
         artifactName: iOSSampleAppLLVM
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
-
+        archiveExtension: '.zip'
+        archiveType: zip

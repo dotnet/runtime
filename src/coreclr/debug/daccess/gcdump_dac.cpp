@@ -4,7 +4,7 @@
 #include <stdafx.h>
 
 /* There is no DAC build of gcdump, so instead
- * build it directly into the the dac.  That's what all these ugly defines
+ * build it directly into the dac.  That's what all these ugly defines
  * are all about.
  */
 #ifdef __MSC_VER

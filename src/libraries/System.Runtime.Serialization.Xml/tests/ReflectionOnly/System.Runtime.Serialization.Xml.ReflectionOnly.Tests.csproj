@@ -34,17 +34,18 @@
              Link="SerializationTestTypes\DataContract.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRImplVariations.cs"
              Link="SerializationTestTypes\DCRImplVariations.cs" />
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceCases.cs"
-             Link="SerializationTestTypes\InheritenceCases.cs" />
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceObjectRef.cs"
-             Link="SerializationTestTypes\InheritenceObjectRef.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritanceCases.cs"
+             Link="SerializationTestTypes\InheritanceCases.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritanceObjectRef.cs"
+             Link="SerializationTestTypes\InheritanceObjectRef.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleIObjectRef.cs"
              Link="SerializationTestTypes\SampleIObjectRef.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleTypes.cs"
              Link="SerializationTestTypes\SampleTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SelfRefAndCycles.cs"
              Link="SerializationTestTypes\SelfRefAndCycles.cs" />
-
+    <Compile Include="$(TestSourceFolder)..\System.Xml\XmlBinaryNodeType.cs"
+             Link="System.Xml\XmlBinaryNodeType.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
   <ItemGroup>

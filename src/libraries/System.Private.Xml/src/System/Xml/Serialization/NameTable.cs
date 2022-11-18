@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Xml;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace System.Xml.Serialization
 {
-    using System.Xml;
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-
     internal sealed class NameKey
     {
         private readonly string? _ns;

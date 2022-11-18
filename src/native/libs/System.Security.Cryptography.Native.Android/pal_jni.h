@@ -71,6 +71,9 @@ extern jmethodID g_cipherInitMethod;
 extern jmethodID g_cipherInit2Method;
 extern jmethodID g_getBlockSizeMethod;
 
+// javax/crypto/spec/AEADBadTagException
+extern jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/IvParameterSpec
 extern jclass    g_ivPsClass;
 extern jmethodID g_ivPsCtor;
@@ -100,6 +103,21 @@ extern jmethodID g_sslCtxGetDefaultSslParamsMethod;
 // javax/crypto/spec/GCMParameterSpec
 extern jclass    g_GCMParameterSpecClass;
 extern jmethodID g_GCMParameterSpecCtor;
+
+// java/security/spec/MGF1ParameterSpec
+extern jclass   g_MGF1ParameterSpecClass;
+extern jfieldID g_MGF1ParameterSpec_SHA1Field;
+extern jfieldID g_MGF1ParameterSpec_SHA256Field;
+extern jfieldID g_MGF1ParameterSpec_SHA384Field;
+extern jfieldID g_MGF1ParameterSpec_SHA512Field;
+
+// javax/crypto/spec/OAEPParameterSpec
+extern jclass    g_OAEPParameterSpecClass;
+extern jmethodID g_OAEPParameterSpecCtor;
+
+// javax/crypto/spec/PSource$PSpecified
+extern jclass    g_PSourcePSpecifiedClass;
+extern jfieldID  g_PSourcePSpecified_DefaultField;
 
 // java/security/cert/CertificateFactory
 extern jclass    g_CertFactoryClass;

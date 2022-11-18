@@ -275,7 +275,7 @@ mono_error_set_error (MonoError *oerror, int error_code, const char *msg_format,
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
-	error->error_code = error_code;
+	error->error_code = GINT_TO_UINT16 (error_code);
 	set_error_message ();
 }
 
@@ -370,7 +370,7 @@ mono_error_set_specific (MonoError *oerror, int error_code, const char *message)
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
-	error->error_code = error_code;
+	error->error_code = GINT_TO_UINT16 (error_code);
 	error->full_message = message;
 	error->flags |= MONO_ERROR_FREE_STRINGS;
 }

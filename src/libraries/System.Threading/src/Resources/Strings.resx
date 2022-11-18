@@ -69,9 +69,6 @@
   <data name="Common_OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
   </data>
-  <data name="Barrier_Dispose" xml:space="preserve">
-    <value>The barrier has been disposed.</value>
-  </data>
   <data name="Barrier_SignalAndWait_InvalidOperation_ZeroTotal" xml:space="preserve">
     <value>The barrier has no registered participants.</value>
   </data>

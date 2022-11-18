@@ -152,6 +152,15 @@ namespace System.Numerics
             get => _identity;
         }
 
+        /// <summary>Gets or sets the element at the specified indices.</summary>
+        /// <param name="row">The index of the row containing the element to get or set.</param>
+        /// <param name="column">The index of the column containing the element to get or set.</param>
+        /// <returns>The element at [<paramref name="row" />][<paramref name="column" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="row" /> was less than zero or greater than the number of rows.
+        /// -or-
+        /// <paramref name="column" /> was less than zero or greater than the number of columns.
+        /// </exception>
         public unsafe float this[int row, int column]
         {
             get

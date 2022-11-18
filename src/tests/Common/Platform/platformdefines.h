@@ -18,6 +18,13 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#define TARGET_XARCH
+#endif
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#define TARGET_ARMARCH
+#endif
 
 // Ensure that both UNICODE and _UNICODE are set.
 #ifndef _UNICODE
@@ -40,8 +47,6 @@
 #include <windows.h>
 #include <combaseapi.h>
 
-#define FS_SEPERATOR L"\\"
-#define PATH_DELIMITER L";"
 #define L(t) L##t
 #define W(str)  L##str
 
@@ -134,8 +139,6 @@ typedef unsigned int ULONG, *PULONG;
 
 LPWSTR HackyConvertToWSTR(const char* pszInput);
 
-#define FS_SEPERATOR L("/")
-#define PATH_DELIMITER L(":")
 #define L(t) HackyConvertToWSTR(t)
 #define W(str)  u##str
 #define MAX_PATH 260

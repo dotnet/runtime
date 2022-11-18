@@ -21,6 +21,8 @@ namespace System.Xml.Schema
 
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
+        internal abstract Type ListValueType { get; }
+
         internal XmlSchemaDatatype() { }
 
         public virtual object ChangeType(object value, Type targetType)
@@ -253,7 +255,7 @@ namespace System.Xml.Schema
 
             if (convert)
             {
-                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), uri.Substring(offset, uri.Length - offset).ToUpperInvariant()));
+                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), uri.Substring(offset).ToUpperInvariant()));
             }
             else
             {

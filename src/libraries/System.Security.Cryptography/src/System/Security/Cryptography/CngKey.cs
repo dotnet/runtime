@@ -25,15 +25,8 @@ namespace System.Security.Cryptography
 
         public void Dispose()
         {
-            if (_providerHandle != null)
-            {
-                _providerHandle.Dispose();
-            }
-
-            if (_keyHandle != null)
-            {
-                _keyHandle.Dispose();
-            }
+            _providerHandle?.Dispose();
+            _keyHandle?.Dispose();
         }
 
         //

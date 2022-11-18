@@ -15,19 +15,21 @@ namespace System.Net.Security
     [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
+#pragma warning disable IDE0060
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
-        {
-            throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
 
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
             throw new PlatformNotSupportedException();
         }
+
+        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
+        {
+            throw new PlatformNotSupportedException();
+        }
+#pragma warning restore IDE0060
     }
 }

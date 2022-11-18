@@ -84,11 +84,24 @@ namespace System.Text.RegularExpressions
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
+        public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
+        {
+            using var parser = new RegexParser(pattern, options, CultureInfo.InvariantCulture, // since we won't perform case conversions, culture doesn't matter in this case.
+                new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
+
+            // We don't really need to Count the Captures, but this method will already do a quick
+            // pass through the pattern, and will scan the options found and return them as an out
+            // parameter, so we use that to get out the pattern inline options.
+            parser.CountCaptures(out RegexOptions foundOptionsInPattern);
+            parser.Reset(options);
+            return foundOptionsInPattern;
+        }
+
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
             using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
-            parser.CountCaptures();
+            parser.CountCaptures(out _);
             parser.Reset(options);
             RegexNode root = parser.ScanRegex();
 
@@ -346,20 +359,15 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
+                        PushOptions();
+                        if (ScanGroupOpen() is RegexNode grouper)
                         {
-                            RegexNode? grouper;
-
-                            PushOptions();
-
-                            if (null == (grouper = ScanGroupOpen()))
-                            {
-                                PopKeepOptions();
-                            }
-                            else
-                            {
-                                PushGroup();
-                                StartGroup(grouper);
-                            }
+                            PushGroup();
+                            StartGroup(grouper);
+                        }
+                        else
+                        {
+                            PopKeepOptions();
                         }
                         continue;
 
@@ -420,7 +428,8 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        throw new InvalidOperationException(SR.InternalError_ScanRegex);
+                        Debug.Fail($"Unexpected char {ch}");
+                        break;
                 }
 
                 ScanBlank();
@@ -436,18 +445,15 @@ namespace System.Text.RegularExpressions
                 // Handle quantifiers
                 while (Unit() != null)
                 {
-                    int min;
-                    int max;
+                    int min = 0, max = 0;
 
                     switch (ch)
                     {
                         case '*':
-                            min = 0;
                             max = int.MaxValue;
                             break;
 
                         case '?':
-                            min = 0;
                             max = 1;
                             break;
 
@@ -457,30 +463,29 @@ namespace System.Text.RegularExpressions
                             break;
 
                         case '{':
+                            startpos = Textpos();
+                            max = min = ScanDecimal();
+                            if (startpos < Textpos())
                             {
-                                startpos = Textpos();
-                                max = min = ScanDecimal();
-                                if (startpos < Textpos())
+                                if (CharsRight() > 0 && RightChar() == ',')
                                 {
-                                    if (CharsRight() > 0 && RightChar() == ',')
-                                    {
-                                        MoveRight();
-                                        max = CharsRight() == 0 || RightChar() == '}' ? int.MaxValue : ScanDecimal();
-                                    }
+                                    MoveRight();
+                                    max = CharsRight() == 0 || RightChar() == '}' ? int.MaxValue : ScanDecimal();
                                 }
+                            }
 
-                                if (startpos == Textpos() || CharsRight() == 0 || RightCharMoveRight() != '}')
-                                {
-                                    AddConcatenate();
-                                    Textto(startpos - 1);
-                                    goto ContinueOuterScan;
-                                }
+                            if (startpos == Textpos() || CharsRight() == 0 || RightCharMoveRight() != '}')
+                            {
+                                AddConcatenate();
+                                Textto(startpos - 1);
+                                goto ContinueOuterScan;
                             }
 
                             break;
 
                         default:
-                            throw new InvalidOperationException(SR.InternalError_ScanRegex);
+                            Debug.Fail($"Unexpected char {ch}");
+                            break;
                     }
 
                     ScanBlank();
@@ -1230,10 +1235,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
-            if (CharsRight() == 0)
-            {
-                throw MakeException(RegexParseError.UnescapedEndingBackslash, SR.UnescapedEndingBackslash);
-            }
+            Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
             int backpos = Textpos();
             char close = '\0';
@@ -1783,10 +1785,10 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// A prescanner for deducing the slots used for captures by doing a partial tokenization of the pattern.
         /// </summary>
-        private void CountCaptures()
+        private void CountCaptures(out RegexOptions optionsFoundInPattern)
         {
             NoteCaptureSlot(0, 0);
-
+            optionsFoundInPattern = RegexOptions.None;
             _autocap = 1;
 
             while (CharsRight() > 0)
@@ -1861,6 +1863,7 @@ namespace System.Text.RegularExpressions
 
                                     // get the options if it's an option construct (?cimsx-cimsx...)
                                     ScanOptions();
+                                    optionsFoundInPattern |= _options;
 
                                     if (CharsRight() > 0)
                                     {

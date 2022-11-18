@@ -88,6 +88,14 @@ namespace Internal.Runtime
                     return SR.InvalidProgram_Vararg;
                 case ExceptionStringID.InvalidProgramCallVirtFinalize:
                     return SR.InvalidProgram_CallVirtFinalize;
+                case ExceptionStringID.InvalidProgramNonStaticMethod:
+                    return SR.InvalidProgram_NonStaticMethod;
+                case ExceptionStringID.InvalidProgramGenericMethod:
+                    return SR.InvalidProgram_GenericMethod;
+                case ExceptionStringID.InvalidProgramNonBlittableTypes:
+                    return SR.InvalidProgram_NonBlittableTypes;
+                case ExceptionStringID.InvalidProgramMultipleCallConv:
+                    return SR.InvalidProgram_MultipleCallConv;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:

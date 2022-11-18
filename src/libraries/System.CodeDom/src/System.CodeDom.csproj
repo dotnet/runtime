@@ -31,7 +31,7 @@ Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
     <Compile Include="Microsoft\VisualBasic\VBCodeGenerator.PlatformNotSupported.cs" />
     <Compile Include="Microsoft\VisualBasic\VBCodeProvider.cs" />
     <Compile Include="Microsoft\VisualBasic\VBMemberAttributeConverter.cs" />
-    <Compile Include="Microsoft\VisualBasic\VBModiferAttributeConverter.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBModifierAttributeConverter.cs" />
     <Compile Include="Microsoft\VisualBasic\VBTypeAttributeConverter.cs" />
     <Compile Include="System\CodeDom\CodeArgumentReferenceExpression.cs" />
     <Compile Include="System\CodeDom\CodeArrayCreateExpression.cs" />

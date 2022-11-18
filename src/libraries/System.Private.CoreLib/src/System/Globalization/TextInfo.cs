@@ -426,30 +426,18 @@ namespace System.Globalization
                 return string.Empty;
             }
 
+            int i = s.AsSpan().IndexOfAnyInRange('A', 'Z');
+            if (i < 0)
+            {
+                return s;
+            }
+
             fixed (char* pSource = s)
             {
-                int i = 0;
-                while (i < s.Length)
-                {
-                    if ((uint)(pSource[i] - 'A') <= (uint)('Z' - 'A'))
-                    {
-                        break;
-                    }
-                    i++;
-                }
-
-                if (i >= s.Length)
-                {
-                    return s;
-                }
-
                 string result = string.FastAllocateString(s.Length);
                 fixed (char* pResult = result)
                 {
-                    for (int j = 0; j < i; j++)
-                    {
-                        pResult[j] = pSource[j];
-                    }
+                    s.AsSpan(0, i).CopyTo(new Span<char>(pResult, result.Length));
 
                     pResult[i] = (char)(pSource[i] | 0x20);
                     i++;
@@ -465,76 +453,10 @@ namespace System.Globalization
             }
         }
 
-        internal static void ToLowerAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
-        {
-            Debug.Assert(destination.Length >= source.Length);
-
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToLowerAsciiInvariant(source[i]);
-            }
-        }
-
-        private static unsafe string ToUpperAsciiInvariant(string s)
-        {
-            if (s.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            fixed (char* pSource = s)
-            {
-                int i = 0;
-                while (i < s.Length)
-                {
-                    if ((uint)(pSource[i] - 'a') <= (uint)('z' - 'a'))
-                    {
-                        break;
-                    }
-                    i++;
-                }
-
-                if (i >= s.Length)
-                {
-                    return s;
-                }
-
-                string result = string.FastAllocateString(s.Length);
-                fixed (char* pResult = result)
-                {
-                    for (int j = 0; j < i; j++)
-                    {
-                        pResult[j] = pSource[j];
-                    }
-
-                    pResult[i] = (char)(pSource[i] & ~0x20);
-                    i++;
-
-                    while (i < s.Length)
-                    {
-                        pResult[i] = ToUpperAsciiInvariant(pSource[i]);
-                        i++;
-                    }
-                }
-
-                return result;
-            }
-        }
-
-        internal static void ToUpperAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
-        {
-            Debug.Assert(destination.Length >= source.Length);
-
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToUpperAsciiInvariant(source[i]);
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
+            if (char.IsAsciiLetterUpper(c))
             {
                 // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
                 c = (char)(byte)(c | 0x20);
@@ -591,7 +513,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToUpperAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
+            if (char.IsAsciiLetterLower(c))
             {
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
@@ -708,10 +630,7 @@ namespace System.Globalization
                             i++;
                             if (hasLowerCase)
                             {
-                                if (lowercaseData == null)
-                                {
-                                    lowercaseData = ToLower(str);
-                                }
+                                lowercaseData ??= ToLower(str);
                                 result.Append(lowercaseData, lowercaseStart, i - lowercaseStart);
                             }
                             else
@@ -724,7 +643,7 @@ namespace System.Globalization
                         else if (!IsWordSeparator(charType))
                         {
                             // This category is considered to be part of the word.
-                            // This is any category that is marked as false in wordSeprator array.
+                            // This is any category that is marked as false in wordSeparator array.
                             i += charLen;
                         }
                         else
@@ -740,10 +659,7 @@ namespace System.Globalization
                     {
                         if (hasLowerCase)
                         {
-                            if (lowercaseData == null)
-                            {
-                                lowercaseData = ToLower(str);
-                            }
+                            lowercaseData ??= ToLower(str);
                             result.Append(lowercaseData, lowercaseStart, count);
                         }
                         else
@@ -852,7 +768,7 @@ namespace System.Globalization
 
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
-        // considered as word seprator or not.
+        // considered as word separator or not.
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,

@@ -176,6 +176,7 @@ struct _MonoArray {
 	} name;
 
 MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfVoid, void)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
@@ -220,7 +221,7 @@ mono_array_handle_length (MonoArrayHandle arr)
 #define mono_array_set_fast(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr_fast ((array), type, (index));	\
-		*__p = (value);	\
+		*__p = (type)(value);	\
 	} while (0)
 #define mono_array_setref_fast(array,index,value)	\
 	do {	\
@@ -251,7 +252,7 @@ mono_array_addr_with_size_internal (MonoArray *array, size_t size, uintptr_t idx
 #define mono_array_set_internal(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr_internal ((array), type, (index));	\
-		*__p = (value);	\
+		*__p = (type)(value);	\
 	} while (0)
 #define mono_array_setref_internal(array,index,value)	\
 	do {	\
@@ -330,7 +331,7 @@ struct _MonoStringBuilder {
 	int maxCapacity;
 };
 
-static inline int
+static inline guint
 mono_string_builder_capacity (MonoStringBuilderHandle sbh)
 {
 	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);
@@ -651,6 +652,11 @@ typedef struct {
 	guint32 intType;
 } MonoClassInterfaceAttribute;
 
+typedef struct {
+	MonoObject object;
+	gsize taggedHandle;
+} MonoWeakReference;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
@@ -836,6 +842,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
 	MonoBoolean method_is_virtual;
+	MonoBoolean bound;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
@@ -882,7 +889,7 @@ typedef struct {
 	MonoEvent *event;
 } MonoReflectionMonoEvent;
 
-/* Safely access Systme.Reflection.MonoEvent from native code */
+/* Safely access System.Reflection.MonoEvent from native code */
 TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {
@@ -1183,7 +1190,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
+/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
@@ -1326,13 +1333,11 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoMethod *mhandle;
-	MonoString *name;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
-	guint32 attrs;
-	guint32 call_conv;
 	MonoReflectionModule *module;
 	MonoBoolean skip_visibility;
+	MonoBoolean restricted_skip_visibility;
 	MonoBoolean init_locals;
 	MonoReflectionILGen *ilgen;
 	gint32 nrefs;
@@ -1874,12 +1879,8 @@ void
 mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
-			       MonoObject **exc, MonoError *error);
-
-MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
-				   MonoError *error);
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+				MonoObject **exc, MonoError *error);
 
 void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);

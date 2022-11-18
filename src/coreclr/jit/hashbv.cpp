@@ -383,7 +383,7 @@ hashBv* hashBv::Create(Compiler* compiler)
     else
     {
         result = new (compiler, CMK_hashBv) hashBv(compiler);
-        memset(result, 0, sizeof(hashBv));
+        memset((void*)result, 0, sizeof(hashBv));
         result->nodeArr = result->initialVector;
     }
 
@@ -1684,7 +1684,7 @@ void hashBv::InorderTraverse(nodeAction n)
 
     {
         // keep an array of the current pointers
-        // into each of the the bitvector lists
+        // into each of the bitvector lists
         // in the hashtable
         for (int i = 0; i < hts; i++)
         {

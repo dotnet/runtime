@@ -269,18 +269,18 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
-             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-             {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Null(response.Content.Headers.Expires);
                 }
             },
-            async server =>
-            {
-                await server.HandleRequestAsync(HttpStatusCode.OK);
-            });
+           async server =>
+           {
+               await server.HandleRequestAsync(HttpStatusCode.OK);
+           });
         }
 
         [Theory]
@@ -382,7 +382,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -395,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = "hostheaderthatdoesnotmatch";
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient(CreateHttpClientHandler(allowAllCertificates: false)))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, m));
             }
@@ -423,7 +423,6 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
-                    catch (QuicConnectionAbortedException) { }
                 });
         }
 
@@ -554,6 +553,41 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.HandleRequestAsync(headers: headerData);
                 });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        public async Task SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion
+                };
+                using HttpClient client = new HttpClient();
+                Task<HttpResponseMessage> getResponse = client.SendAsync(requestMessage);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.SendResponseAsync(HttpStatusCode.OK,
+                        new List<HttpHeaderData>
+                        {
+                            new HttpHeaderData("Content-Length", "33"),
+                            new HttpHeaderData("Transfer-Encoding", "chunked")
+                        }, "5\r\nhello\r\n5\r\nworld\r\n3\r\nyay\r\n0\r\n\r\n");
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                        Assert.True(response.Headers.Contains("Transfer-Encoding"));
+                        Assert.Equal("chunked", Assert.Single(response.Headers.GetValues("Transfer-Encoding")));
+                        Assert.Equal(33, response.Content.Headers.ContentLength);
+
+                        string content = await response.Content.ReadAsStringAsync();
+                        Assert.Equal("helloworldyay", content);
+                    }
+                });
+            });
         }
     }
 }

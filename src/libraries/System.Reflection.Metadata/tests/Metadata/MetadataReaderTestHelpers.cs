@@ -8,6 +8,9 @@ namespace System.Reflection.Metadata.Tests
 {
     internal static class MetadataReaderTestHelpers
     {
+        public static readonly string RuntimeAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Runtime";
+        public static readonly string CollectionsAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Collections";
+
         internal static IEnumerable<ConstantHandle> GetConstants(this MetadataReader reader)
         {
             for (int i = 1, n = reader.GetTableRowCount(TableIndex.Constant); i <= n; i++)

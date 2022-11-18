@@ -144,16 +144,8 @@ internal static partial class Interop
 
             static bool HasReadAndExecFlags(string s, ref int start, ref int end)
             {
-                bool sawRead = false, sawExec = false;
-                for (int i = start; i < end; i++)
-                {
-                    if (s[i] == 'r')
-                        sawRead = true;
-                    else if (s[i] == 'x')
-                        sawExec = true;
-                }
-
-                return sawRead & sawExec;
+                ReadOnlySpan<char> span = s.AsSpan(start, end - start);
+                return span.Contains('r') && span.Contains('x');
             }
         }
     }

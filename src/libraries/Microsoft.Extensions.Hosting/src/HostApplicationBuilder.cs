@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,7 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
         ///   </list>
         /// </remarks>
+        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder()
             : this(args: null)
         {
@@ -68,6 +70,7 @@ namespace Microsoft.Extensions.Hosting
         ///   </list>
         /// </remarks>
         /// <param name="args">The command line args.</param>
+        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder(string[]? args)
             : this(new HostApplicationBuilderSettings { Args = args })
         {
@@ -77,6 +80,7 @@ namespace Microsoft.Extensions.Hosting
         /// Initializes a new instance of the <see cref="HostApplicationBuilder"/>.
         /// </summary>
         /// <param name="settings">Settings controlling initial configuration and whether default settings should be used.</param>
+        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder(HostApplicationBuilderSettings? settings)
         {
             settings ??= new HostApplicationBuilderSettings();

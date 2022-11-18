@@ -64,10 +64,7 @@ namespace System.Net
             }
             set
             {
-                if (_credentials == null)
-                {
-                    _credentials = new WeakReference(null);
-                }
+                _credentials ??= new WeakReference(null);
                 _credentials.Target = value;
             }
         }
@@ -320,7 +317,7 @@ namespace System.Net
             if (entry.HasFlag(PipelineEntryFlags.CreateDataConnection) && (response.PositiveCompletion || response.PositiveIntermediate))
             {
                 bool isSocketReady;
-                PipelineInstruction result = QueueOrCreateDataConection(entry, response, timeout, ref stream, out isSocketReady);
+                PipelineInstruction result = QueueOrCreateDataConection(entry, response, out isSocketReady);
                 if (!isSocketReady)
                     return result;
                 // otherwise we have a stream to create
@@ -576,8 +573,8 @@ namespace System.Net
                 else
                 {
                     string portCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6) ? "PORT" : "EPRT";
-                    CreateFtpListenerSocket(request);
-                    commandList.Add(new PipelineEntry(FormatFtpCommand(portCommand, GetPortCommandLine(request))));
+                    CreateFtpListenerSocket();
+                    commandList.Add(new PipelineEntry(FormatFtpCommand(portCommand, GetPortCommandLine())));
                 }
 
                 if (request.ContentOffset > 0)
@@ -602,8 +599,7 @@ namespace System.Net
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 
                 string renameTo;
-                if (!string.IsNullOrEmpty(request.RenameTo)
-                    && request.RenameTo.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                if (request.RenameTo is not null && request.RenameTo.StartsWith('/'))
                 {
                     renameTo = request.RenameTo; // Absolute path
                 }
@@ -631,7 +627,7 @@ namespace System.Net
             return commandList.ToArray();
         }
 
-        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream? stream, out bool isSocketReady)
+        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, out bool isSocketReady)
         {
             isSocketReady = false;
             if (_dataHandshakeStarted)
@@ -671,7 +667,7 @@ namespace System.Net
 
                 try
                 {
-                    _dataSocket = CreateFtpDataSocket((FtpWebRequest)_request!, Socket);
+                    _dataSocket = CreateFtpDataSocket(Socket);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -770,11 +766,11 @@ namespace System.Net
             else
             {
                 directory = path.Substring(0, index + 1);
-                filename = path.Substring(index + 1, path.Length - (index + 1));
+                filename = path.Substring(index + 1);
             }
 
             // strip off trailing '/' on directory if present
-            if (directory.Length > 1 && directory[directory.Length - 1] == '/')
+            if (directory.Length > 1 && directory.EndsWith('/'))
                 directory = directory.Substring(0, directory.Length - 1);
         }
 
@@ -846,7 +842,7 @@ namespace System.Net
         {
             get
             {
-                return (_bannerMessage != null) ? _bannerMessage.ToString() : null;
+                return _bannerMessage?.ToString();
             }
         }
 
@@ -857,7 +853,7 @@ namespace System.Net
         {
             get
             {
-                return (_welcomeMessage != null) ? _welcomeMessage.ToString() : null;
+                return _welcomeMessage?.ToString();
             }
         }
 
@@ -868,7 +864,7 @@ namespace System.Net
         {
             get
             {
-                return (_exitMessage != null) ? _exitMessage.ToString() : null;
+                return _exitMessage?.ToString();
             }
         }
 
@@ -954,11 +950,11 @@ namespace System.Net
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
-            string orginalPath = baseUri.AbsolutePath;
-            if (orginalPath.Length > 0 && orginalPath[orginalPath.Length - 1] != '/')
+            string originalPath = baseUri.AbsolutePath;
+            if (originalPath.Length > 0 && !originalPath.EndsWith('/'))
             {
                 UriBuilder uriBuilder = new UriBuilder(baseUri);
-                uriBuilder.Path = orginalPath + "/";
+                uriBuilder.Path = originalPath + "/";
                 baseUri = uriBuilder.Uri;
             }
 
@@ -1040,8 +1036,7 @@ namespace System.Net
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
-            port = port |
-                   (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
+            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }
@@ -1069,13 +1064,13 @@ namespace System.Net
         /// <summary>
         ///    <para>Creates the Listener socket</para>
         /// </summary>
-        private void CreateFtpListenerSocket(FtpWebRequest request)
+        private void CreateFtpListenerSocket()
         {
             // Gets an IPEndPoint for the local host for the data socket to bind to.
             IPEndPoint epListener = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint!).Address, 0);
             try
             {
-                _dataSocket = CreateFtpDataSocket(request, Socket);
+                _dataSocket = CreateFtpDataSocket(Socket);
             }
             catch (ObjectDisposedException)
             {
@@ -1090,7 +1085,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Builds a command line to send to the server with proper port and IP address of client</para>
         /// </summary>
-        private string GetPortCommandLine(FtpWebRequest request)
+        private string GetPortCommandLine()
         {
             try
             {
@@ -1130,7 +1125,7 @@ namespace System.Net
         ///     This will handle either connecting to a port or listening for one
         ///    </para>
         /// </summary>
-        private static Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
+        private static Socket CreateFtpDataSocket(Socket templateSocket)
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);

@@ -96,7 +96,18 @@ namespace Internal.Runtime
             // Get a pointer to the beginning of the module's Thread Static section. Then get a pointer
             // to the MethodTable that represents a memory map for thread statics storage.
             threadStaticRegion = (IntPtr*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticRegion, out length);
-            return RuntimeImports.RhNewObject(new EETypePtr(threadStaticRegion[typeTlsIndex]));
+
+            IntPtr gcDesc;
+            if (typeTlsIndex < (length / IntPtr.Size))
+            {
+                gcDesc = threadStaticRegion[typeTlsIndex];
+            }
+            else
+            {
+                gcDesc = Internal.Runtime.Augments.RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticGCDescForDynamicType(typeManager, typeTlsIndex);
+            }
+
+            return RuntimeImports.RhNewObject(new EETypePtr(gcDesc));
         }
     }
 }

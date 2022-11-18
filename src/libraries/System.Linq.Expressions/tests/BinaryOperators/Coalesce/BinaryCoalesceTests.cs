@@ -390,7 +390,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void RightLeft_NonEquivilentTypes_ThrowsArgumentException()
+        public static void RightLeft_NonEquivalentTypes_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.Coalesce(Expression.Constant("abc"), Expression.Constant(5)));
         }
@@ -418,19 +418,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Conversion_ReturnTypeNotEquivilientToRightType_ThrowsInvalidOperationException()
         {
-            Expression<Func<int?, int>> nullableNotEquivilent = x => x ?? 5;
-            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5, typeof(int?)), Expression.Constant(5, typeof(int?)), nullableNotEquivilent));
+            Expression<Func<int?, int>> nullableNotEquivalent = x => x ?? 5;
+            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5, typeof(int?)), Expression.Constant(5, typeof(int?)), nullableNotEquivalent));
 
-            Expression<Func<string, bool>> stringNotEquivilent = x => x == "";
-            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), stringNotEquivilent));
+            Expression<Func<string, bool>> stringNotEquivalent = x => x == "";
+            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), stringNotEquivalent));
         }
 
         [Fact]
-        public static void Conversion_ParameterTypeNotEquivilentToLeftType_ThrowsInvalidOperationException()
+        public static void Conversion_ParameterTypeNotEquivalentToLeftType_ThrowsInvalidOperationException()
         {
-            Expression<Func<bool, string>> boolNotEquivilent = x => x.ToString();
-            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), boolNotEquivilent));
-            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(""), boolNotEquivilent));
+            Expression<Func<bool, string>> boolNotEquivalent = x => x.ToString();
+            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(""), Expression.Constant(""), boolNotEquivalent));
+            Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(""), boolNotEquivalent));
         }
 
         [Fact]
@@ -506,7 +506,7 @@ namespace System.Linq.Expressions.Tests
             f.VerifyIL(
                 @".method valuetype [System.Private.CoreLib]System.Nullable`1<int32> ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,valuetype [System.Private.CoreLib]System.Nullable`1<int32>,valuetype [System.Private.CoreLib]System.Nullable`1<int32>)
                 {
-                    .maxstack 2
+                    .maxstack 1
                     .locals init (
                         [0] valuetype [System.Private.CoreLib]System.Nullable`1<int32>
                     )

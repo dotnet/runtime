@@ -47,7 +47,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (!result.IsCompleted && !Log.HasLoggedErrors)
         {
-            Log.LogError("Unknown failure occured while IL stripping assemblies. Check logs to get more details.");
+            Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
         }
 
         return !Log.HasLoggedErrors;

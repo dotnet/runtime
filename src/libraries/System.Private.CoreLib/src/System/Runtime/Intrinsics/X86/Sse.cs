@@ -26,20 +26,20 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// __int64 _mm_cvtss_si64 (__m128 a)
             ///   CVTSS2SI r64, xmm/m32
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64(Vector128<float> value) => ConvertToInt64(value);
             /// <summary>
             /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
             ///   CVTSI2SS xmm, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) => ConvertScalarToVector128Single(upper, value);
 
             /// <summary>
             /// __int64 _mm_cvttss_si64 (__m128 a)
             ///   CVTTSS2SI r64, xmm/m32
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64WithTruncation(Vector128<float> value) => ConvertToInt64WithTruncation(value);
         }

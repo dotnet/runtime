@@ -42,15 +42,21 @@ __VerboseBuild=false
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-
-if [[ "$__TargetArch" == wasm ]]; then
+if [[ "$__TargetOS" == Browser ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
-        echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
-        exit 1
+        if [[ -d "$__RepoRootDir"/src/mono/wasm/emsdk/ ]]; then
+            export EMSDK_PATH="$__RepoRootDir"/src/mono/wasm/emsdk/
+        else
+            echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
+            exit 1
+        fi
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
+elif [[ "$__TargetOS" == wasi ]]; then
+    # nothing to do here
+    true
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
@@ -64,7 +70,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
+    if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__TargetArch build"
     fi
@@ -73,6 +79,9 @@ fi
 if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
+elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
+    # Android SDK defaults to c++_static; we only need C support
+    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with src/mono/Directory.Build.props

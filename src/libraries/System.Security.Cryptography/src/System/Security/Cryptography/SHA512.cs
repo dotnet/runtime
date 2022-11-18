@@ -35,6 +35,7 @@ namespace System.Security.Cryptography
 
         public static new SHA512 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA512? Create(string hashName) => (SHA512?)CryptoConfig.CreateFromName(hashName);
 
@@ -141,7 +142,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeInBytes, source, destination);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, source, destination);
         }
 
         /// <summary>
@@ -187,7 +188,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA512, HashSizeInBytes, source, cancellationToken);
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA512, source, cancellationToken);
         }
 
         /// <summary>
@@ -228,7 +229,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HashStreamAsync(
                 HashAlgorithmNames.SHA512,
-                HashSizeInBytes,
                 source,
                 destination,
                 cancellationToken);

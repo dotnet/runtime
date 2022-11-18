@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-// Two OSR methods from one orignal method
+// Two OSR methods from one original method
 
 class X
 {
@@ -31,11 +31,11 @@ class X
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int final = 1_000_000;
         int result1 = F(0, final, true);
         int result2 = F(0, final, false);
         return (result1 == result2) && (result1 == 1783293664) ? 100 : -1;
-    }  
+    }
 }

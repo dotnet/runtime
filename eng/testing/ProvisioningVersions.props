@@ -1,0 +1,30 @@
+<Project>
+  <!--
+    Set ChromeChannel properties to get the latest versions
+  -->
+  <PropertyGroup>
+    <ChromeChannel>stable</ChromeChannel>
+
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">win</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('mac'))">mac</ChromeOSIdentifier>
+
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallChromeForTests>
+
+    <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
+    <ChromeDriverDir>$(ArtifactsBinDir)chromedriver\</ChromeDriverDir>
+
+    <!-- Download all.json to get latest chrome versions, only if the last all.json
+         is more than 3 days old -->
+    <ChromeVersionCheckThresholdDays>3</ChromeVersionCheckThresholdDays>
+
+    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
+    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(FirefoxRevision).stamp'))</FirefoxStampFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <FirefoxRevision>97.0.1</FirefoxRevision>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxBinaryName>firefox</FirefoxBinaryName>
+  </PropertyGroup>
+</Project>

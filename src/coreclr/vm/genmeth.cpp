@@ -67,7 +67,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                     MethodDesc *pTemplateMD,
                                     DWORD classification,
                                     BOOL fNativeCodeSlot,
-                                    BOOL fComPlusCallInfo,
                                     AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -92,7 +91,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      classification,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
-                                     fComPlusCallInfo,
                                      pMT,
                                      pamTracker);
 
@@ -358,7 +356,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         TypeHandle *pInstOrPerInstInfo = NULL;
         DictionaryLayout *pDL = NULL;
         DWORD infoSize = 0;
-        IBCLoggerAwareAllocMemTracker amt;
+        AllocMemTracker amt;
 
         if (!methodInst.IsEmpty())
         {
@@ -382,8 +380,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
+                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
                 }
 #endif // _DEBUG
             }
@@ -407,8 +405,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             }
         }
 
-        BOOL forComInterop = FALSE;
-
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets
         // used in some of the subsequent setup methods for method descs.
@@ -418,7 +414,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                              pGenericMDescInRepMT,
                                                              mcInstantiated,
                                                              !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
-                                                             forComInterop,
                                                              &amt));
 
         // Initialize the MD the way it needs to be
@@ -473,10 +468,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 amt.SuppressRelease();
 
 #ifdef _DEBUG
-                SString name(SString::Utf8);
+                SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
-                StackScratchBuffer buff;
-                const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                const char* pDebugNameUTF8 = name.GetUTF8();
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
@@ -857,7 +851,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             if (pResultMD != NULL)
             {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
                 RETURN(pResultMD);
             }
 
@@ -894,14 +887,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    FALSE);
                 if (pResultMD == NULL)
                 {
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     pResultMD = CreateMethodDesc(pAllocator,
                                                  pRepMT,
                                                  pMDescInCanonMT,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     // Indicate that this is a stub method which takes a BOXed this pointer.
@@ -947,7 +939,22 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
-                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race)
+                // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
+                // stub with an instantiating stub.
+                MethodDesc* pNonUnboxingStub=
+                    MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
+                                                                 pExactMT,
+                                                                 FALSE /* not Unboxing */,
+                                                                 methodInst,
+                                                                 FALSE);
+
+                _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
+                _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
+                _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
+
+                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race,
+                // and its possible that the non-unboxing instantiating stub may be in a different loader module than pLoaderModule
+                // which would cause a Crst lock level violation
                 CrstHolder ch(&pLoaderModule->m_InstMethodHashTableCrst);
 
                 // Check whether another thread beat us to it!
@@ -959,20 +966,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
                 if (pResultMD == NULL)
                 {
-                    // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
-                    // stub with an instantiating stub.
-                    MethodDesc* pNonUnboxingStub=
-                        MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
-                                                                     pExactMT,
-                                                                     FALSE /* not Unboxing */,
-                                                                     methodInst,
-                                                                     FALSE);
-
-                    _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
-                    _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
-                    _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
-
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);
 
@@ -981,7 +975,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pNonUnboxingStub,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     pResultMD->SetIsUnboxingStub();
@@ -1052,11 +1045,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                      pResultMD == FindTightlyBoundWrappedMethodDesc_DEBUG(pMDescInCanonMT));
 
             if (pResultMD != NULL)
-                            {
+            {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
-
                 if (allowInstParam || !pResultMD->RequiresInstArg())
                 {
                     RETURN(pResultMD);
@@ -1240,12 +1230,11 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         if (methodInst.GetNumArgs() != pMethod->GetNumGenericMethodArgs())
             COMPlusThrow(kArgumentException);
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
+        // we need unboxing stubs for virtual methods on value types
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,
             pMT,
-            pMethod->IsUnboxingStub(),
+            instType.IsValueType() && pMethod->IsVirtual(),
             methodInst,
             FALSE,      /* no allowInstParam */
             TRUE   /* force remotable method (i.e. inst wrappers for non-generic methods on generic interfaces) */);
@@ -1267,12 +1256,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // - non generic method on a generic interface
         //
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
-
         // we need unboxing stubs for virtual methods on value types unless the method is generic
-        BOOL fNeedUnboxingStub = pMethod->IsUnboxingStub() ||
-            ( instType.IsValueType() && pMethod->IsVirtual() );
+        BOOL fNeedUnboxingStub = instType.IsValueType() && pMethod->IsVirtual();
 
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,            /* the original MD          */
@@ -1411,7 +1396,8 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     // the memory allocated for m_pMethInst will be freed if the declaring type fails to load
     m_pPerInstInfo = (Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 
-    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
+    TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionary();
+    _ASSERTE(pInstDest != NULL);
 
     {
         // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
@@ -1644,7 +1630,7 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        // Pass in the InstatiationContext so contraints can be correctly evaluated
+        // Pass in the InstatiationContext so constraints can be correctly evaluated
         // if this is an instantiation where the type variable is in its open position
         if (!tyvar->SatisfiesConstraints(&typeContext,thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
         {

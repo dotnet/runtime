@@ -38,7 +38,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<Workspace> Workspaces
         {
-            get => _workspaces ?? (_workspaces = new NullNotAllowedCollection<Workspace>());
+            get => _workspaces ??= new NullNotAllowedCollection<Workspace>();
         }
 
         public static ServiceDocument Load(XmlReader reader)

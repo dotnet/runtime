@@ -39,7 +39,7 @@ namespace System.Net.Http
         public sealed override int ReadByte()
         {
             byte b = 0;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         public sealed override int Read(byte[] buffer, int offset, int count)
@@ -64,7 +64,7 @@ namespace System.Net.Http
         }
 
         public sealed override void WriteByte(byte value) =>
-            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            Write(new ReadOnlySpan<byte>(in value));
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

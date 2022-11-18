@@ -259,8 +259,8 @@ namespace System.Memory.Tests.SequenceReader
         public void TryReadTo_Span_At_Segments_Boundary()
         {
             Span<byte> delimiter = new byte[] { 13, 10 }; // \r\n
-            BufferSegment<byte> segment = new BufferSegment<byte>(Text.Encoding.ASCII.GetBytes("Hello\r"));
-            segment.Append(Text.Encoding.ASCII.GetBytes("\nWorld")); // add next segment
+            BufferSegment<byte> segment = new BufferSegment<byte>("Hello\r"u8.ToArray());
+            segment.Append("\nWorld"u8.ToArray()); // add next segment
             ReadOnlySequence<byte> inputSeq = new ReadOnlySequence<byte>(segment, 0, segment, 6); // span only the first segment!
             SequenceReader<byte> sr = new SequenceReader<byte>(inputSeq);
             bool r = sr.TryReadTo(out ReadOnlySpan<byte> _, delimiter);

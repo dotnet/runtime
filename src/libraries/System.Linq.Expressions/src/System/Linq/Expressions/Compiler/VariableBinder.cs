@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Compiler
         {
         }
 
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         public override Expression? Visit(Expression? node)
         {
             // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
@@ -178,10 +178,7 @@ namespace System.Linq.Expressions.Compiler
                     }
 
                     // Otherwise, merge it
-                    if (currentScope.MergedScopes == null)
-                    {
-                        currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer.Instance);
-                    }
+                    currentScope.MergedScopes ??= new HashSet<BlockExpression>(ReferenceEqualityComparer.Instance);
                     currentScope.MergedScopes.Add(block);
                     foreach (ParameterExpression v in block.Variables)
                     {
@@ -221,10 +218,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             Debug.Assert(referenceScope != null);
-            if (referenceScope.ReferenceCount == null)
-            {
-                referenceScope.ReferenceCount = new Dictionary<ParameterExpression, int>();
-            }
+            referenceScope.ReferenceCount ??= new Dictionary<ParameterExpression, int>();
 
             Helpers.IncrementCount(node, referenceScope.ReferenceCount);
             return node;

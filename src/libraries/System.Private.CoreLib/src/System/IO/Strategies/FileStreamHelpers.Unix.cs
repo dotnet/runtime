@@ -13,8 +13,8 @@ namespace System.IO.Strategies
             new UnixFileStreamStrategy(handle, access);
 #pragma warning restore IDE0060
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
-            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
+            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode);
 
         internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)
         {
@@ -23,7 +23,7 @@ namespace System.IO.Strategies
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path);
                 }
             }
 
@@ -51,7 +51,7 @@ namespace System.IO.Strategies
                         // In such cases there's nothing to flush.
                         break;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
                 }
             }
         }

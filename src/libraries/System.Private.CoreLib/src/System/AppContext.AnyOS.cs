@@ -18,7 +18,7 @@ namespace System
         private static string GetBaseDirectoryCore()
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
-#if CORERT
+#if NATIVEAOT
             string? path = Environment.ProcessPath;
 #else
             string? path = Assembly.GetEntryAssembly()?.Location;

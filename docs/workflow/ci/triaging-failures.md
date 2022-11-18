@@ -23,14 +23,14 @@ and for libraries runs is defined [here](../../../eng/pipelines/libraries/helix-
 
 Many test runs use a non-default product configuration, to allow re-using existing test assets to stress various aspects of the system.
 Determine the precise test configuration under which the test has failed. This might be evident from the test job name. For example,
-`net7.0-windows-Release-x86-CoreCLR_checked-jitstress1-Windows.10.Amd64.Open` is a libraries test run on Windows with a Release x86 libraries
+`net8.0-windows-Release-x86-CoreCLR_checked-jitstress1-Windows.10.Amd64.Open` is a libraries test run on Windows with a Release x86 libraries
 build, Checked coreclr build, and setting the `COMPlus_JitStress=1` configuration setting, in the `Windows.10.Amd64.Open` Helix queue.
 
 You need to be careful when reproducing failures to set all the correct environment variables. In the above example, if you look at the
 test failure console log, you find:
 
 ```
-C:\h\w\AE88094B\w\B1B409BF\e>set COMPlus 
+C:\h\w\AE88094B\w\B1B409BF\e>set COMPlus
 COMPlus_JitStress=1
 COMPlus_TieredCompilation=0
 ```
@@ -50,7 +50,7 @@ COMPlus_DbgEnableMiniDump=1
 
 You might need to set variables in addition to the `COMPlus_*` (equivalently, `DOTNET_*`) variables. For example, you might see:
 ```
-set RunCrossGen2=1 
+set RunCrossGen2=1
 ```
 which instructs the coreclr test wrapper script to do crossgen2 compilation of the test.
 
@@ -128,7 +128,7 @@ Jobs
 | where Type1 contains test_name
   and Status <> "Pass" and (Method == "cmd" or Method == "sh")
 | project Queued, Pipeline = parse_json(Properties).DefinitionName, Pipeline_Configuration = parse_json(Properties).configuration,
-  OS = QueueName, Arch = parse_json(Properties).architecture, Test = Type1, Result, Duration, Console_log = Message, WorkItemFriendlyName, Method 
+  OS = QueueName, Arch = parse_json(Properties).architecture, Test = Type1, Result, Duration, Console_log = Message, WorkItemFriendlyName, Method
 | order  by Queued desc
 | limit 100
 ```
@@ -194,7 +194,7 @@ of failures:
 - A bug in the GC stress infrastructure.
 - A bug in the GC itself.
 
-Note the the value `COMPlus_GCStress` is set to is a bitmask. Failures with 0x1 or 0x2 (and thus 0x3) are typically VM failures.
+Note the value `COMPlus_GCStress` is set to is a bitmask. Failures with 0x1 or 0x2 (and thus 0x3) are typically VM failures.
 Failures with 0x4 or 0x8 (and thus 0xC) are typically JIT failures. Ideally, a failure can be reduced to fail with only a single
 bit set (that is, either 0x4 or 0x8, which is more specific than just 0xC). That is especially true for 0xF, where we don't know if
 it's likely a VM or a JIT failure without reducing it.

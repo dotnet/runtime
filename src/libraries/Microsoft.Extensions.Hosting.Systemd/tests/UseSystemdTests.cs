@@ -12,16 +12,30 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void DefaultsToOffOutsideOfService()
         {
-            var host = new HostBuilder()
+            using IHost host = new HostBuilder()
                 .UseSystemd()
                 .Build();
 
-            using (host)
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
+            Assert.IsNotType<SystemdLifetime>(lifetime);
+        }
+
+        [Fact]
+        public void ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService()
+        {
+            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
             {
-                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-                Assert.NotNull(lifetime);
-                Assert.IsNotType<SystemdLifetime>(lifetime);
-            }
+                // Disable defaults that may not be supported on the testing platform like EventLogLoggerProvider.
+                DisableDefaults = true,
+            });
+
+            builder.Services.AddSystemd();
+            using IHost host = builder.Build();
+
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
+            Assert.IsNotType<SystemdLifetime>(lifetime);
         }
     }
 }

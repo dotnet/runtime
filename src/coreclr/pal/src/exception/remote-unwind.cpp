@@ -124,7 +124,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -143,7 +143,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #ifndef FEATURE_USE_SYSTEM_LIBUNWIND
 extern "C" int
-_OOP_find_proc_info(
+unw_get_proc_info_in_range(
     unw_word_t start_ip,
     unw_word_t end_ip,
     unw_word_t eh_frame_table,
@@ -169,7 +169,7 @@ typedef struct _libunwindInfo
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
-#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
+#ifdef HOST_UNIX
 
 #define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
 
@@ -526,6 +526,10 @@ ReadEncodedPointer(
     *valp = value;
     return true;
 }
+
+#endif // HOST_UNIX
+
+#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
 template<class T>
 static bool
@@ -1816,12 +1820,12 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
 static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
 #if defined(TARGET_AMD64)
-    GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, &contextPointers->Rbp);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, &contextPointers->Rbx);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R12, &contextPointers->R12);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R13, &contextPointers->R13);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R14, &contextPointers->R14);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R15, &contextPointers->R15);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, (SIZE_T**)&contextPointers->Rbp);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, (SIZE_T**)&contextPointers->Rbx);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R12, (SIZE_T**)&contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R13, (SIZE_T**)&contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R14, (SIZE_T**)&contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R15, (SIZE_T**)&contextPointers->R15);
 #elif defined(TARGET_X86)
     GetContextPointer(cursor, unwContext, UNW_X86_EBX, &contextPointers->Ebx);
     GetContextPointer(cursor, unwContext, UNW_X86_EBP, &contextPointers->Ebp);
@@ -1837,41 +1841,60 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
     GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
 #elif defined(TARGET_ARM64)
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, &contextPointers->X21);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X22, &contextPointers->X22);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X23, &contextPointers->X23);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X24, &contextPointers->X24);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X25, &contextPointers->X25);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X26, &contextPointers->X26);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, (SIZE_T**)&contextPointers->X19);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, (SIZE_T**)&contextPointers->X20);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, (SIZE_T**)&contextPointers->X21);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X22, (SIZE_T**)&contextPointers->X22);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X23, (SIZE_T**)&contextPointers->X23);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X24, (SIZE_T**)&contextPointers->X24);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X25, (SIZE_T**)&contextPointers->X25);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X26, (SIZE_T**)&contextPointers->X26);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, (SIZE_T**)&contextPointers->X27);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, (SIZE_T**)&contextPointers->X28);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, (SIZE_T**)&contextPointers->Fp);
 #elif defined(TARGET_LOONGARCH64)
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, (SIZE_T **)&contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, (SIZE_T **)&contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, (SIZE_T **)&contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, (SIZE_T **)&contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, (SIZE_T **)&contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, (SIZE_T **)&contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, (SIZE_T **)&contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, (SIZE_T **)&contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, (SIZE_T **)&contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, (SIZE_T **)&contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, (SIZE_T **)&contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, (SIZE_T **)&contextPointers->S8);
 #elif defined(TARGET_S390X)
-    GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R8, &contextPointers->R8);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R9, &contextPointers->R9);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R10, &contextPointers->R10);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R11, &contextPointers->R11);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R12, &contextPointers->R12);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R6, (SIZE_T **)&contextPointers->R6);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R7, (SIZE_T **)&contextPointers->R7);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R8, (SIZE_T **)&contextPointers->R8);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R9, (SIZE_T **)&contextPointers->R9);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R10, (SIZE_T **)&contextPointers->R10);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R11, (SIZE_T **)&contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R12, (SIZE_T **)&contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R13, (SIZE_T **)&contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R14, (SIZE_T **)&contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R15, (SIZE_T **)&contextPointers->R15);
+#elif defined(TARGET_POWERPC64)
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R14, (SIZE_T **)&contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R15, (SIZE_T **)&contextPointers->R15);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R16, (SIZE_T **)&contextPointers->R16);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R17, (SIZE_T **)&contextPointers->R17);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R18, (SIZE_T **)&contextPointers->R18);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R19, (SIZE_T **)&contextPointers->R19);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R20, (SIZE_T **)&contextPointers->R20);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R21, (SIZE_T **)&contextPointers->R21);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R22, (SIZE_T **)&contextPointers->R22);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R23, (SIZE_T **)&contextPointers->R23);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R24, (SIZE_T **)&contextPointers->R24);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R25, (SIZE_T **)&contextPointers->R25);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R26, (SIZE_T **)&contextPointers->R26);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R27, (SIZE_T **)&contextPointers->R27);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R28, (SIZE_T **)&contextPointers->R28);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R29, (SIZE_T **)&contextPointers->R29);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
+    GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
 #else
 #error unsupported architecture
 #endif
@@ -1959,6 +1982,27 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
     TRACE("sp %p pc %p lr %p\n", winContext->R15, winContext->PSWAddr, winContext->R14);
+#elif defined(TARGET_POWERPC64)
+    //TODO
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Nip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R31);
+    unw_get_reg(cursor, UNW_PPC64_R14, (unw_word_t *) &winContext->R14);
+    unw_get_reg(cursor, UNW_PPC64_R15, (unw_word_t *) &winContext->R15);
+    unw_get_reg(cursor, UNW_PPC64_R16, (unw_word_t *) &winContext->R16);
+    unw_get_reg(cursor, UNW_PPC64_R17, (unw_word_t *) &winContext->R17);
+    unw_get_reg(cursor, UNW_PPC64_R18, (unw_word_t *) &winContext->R18);
+    unw_get_reg(cursor, UNW_PPC64_R19, (unw_word_t *) &winContext->R19);
+    unw_get_reg(cursor, UNW_PPC64_R20, (unw_word_t *) &winContext->R20);
+    unw_get_reg(cursor, UNW_PPC64_R21, (unw_word_t *) &winContext->R21);
+    unw_get_reg(cursor, UNW_PPC64_R22, (unw_word_t *) &winContext->R22);
+    unw_get_reg(cursor, UNW_PPC64_R23, (unw_word_t *) &winContext->R23);
+    unw_get_reg(cursor, UNW_PPC64_R24, (unw_word_t *) &winContext->R24);
+    unw_get_reg(cursor, UNW_PPC64_R25, (unw_word_t *) &winContext->R25);
+    unw_get_reg(cursor, UNW_PPC64_R26, (unw_word_t *) &winContext->R26);
+    unw_get_reg(cursor, UNW_PPC64_R27, (unw_word_t *) &winContext->R27);
+    unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
+    unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
+    unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
 #else
 #error unsupported architecture
 #endif
@@ -2073,6 +2117,27 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_S390X_R14:    *valp = (unw_word_t)winContext->R14; break;
     case UNW_S390X_R15:    *valp = (unw_word_t)winContext->R15; break;
     case UNW_S390X_IP:     *valp = (unw_word_t)winContext->PSWAddr; break;
+#elif defined(TARGET_POWERPC64)
+    //TODO
+    case UNW_PPC64_R14:    *valp = (unw_word_t)winContext->R14; break;
+    case UNW_PPC64_R15:    *valp = (unw_word_t)winContext->R15; break;
+    case UNW_PPC64_R16:    *valp = (unw_word_t)winContext->R16; break;
+    case UNW_PPC64_R17:    *valp = (unw_word_t)winContext->R17; break;
+    case UNW_PPC64_R18:    *valp = (unw_word_t)winContext->R18; break;
+    case UNW_PPC64_R19:    *valp = (unw_word_t)winContext->R19; break;
+    case UNW_PPC64_R20:    *valp = (unw_word_t)winContext->R20; break;
+    case UNW_PPC64_R21:    *valp = (unw_word_t)winContext->R21; break;
+    case UNW_PPC64_R22:    *valp = (unw_word_t)winContext->R22; break;
+    case UNW_PPC64_R23:    *valp = (unw_word_t)winContext->R23; break;
+    case UNW_PPC64_R24:    *valp = (unw_word_t)winContext->R24; break;
+    case UNW_PPC64_R25:    *valp = (unw_word_t)winContext->R25; break;
+    case UNW_PPC64_R26:    *valp = (unw_word_t)winContext->R26; break;
+    case UNW_PPC64_R27:    *valp = (unw_word_t)winContext->R27; break;
+    case UNW_PPC64_R28:    *valp = (unw_word_t)winContext->R28; break;
+    case UNW_PPC64_R29:    *valp = (unw_word_t)winContext->R29; break;
+    case UNW_PPC64_R30:    *valp = (unw_word_t)winContext->R30; break;
+    case UNW_PPC64_R31:    *valp = (unw_word_t)winContext->R31; break;
+    case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
 #else
 #error unsupported architecture
 #endif
@@ -2221,7 +2286,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
 
 #ifdef FEATURE_USE_SYSTEM_LIBUNWIND
-    if (ehFrameHdrAddr  == 0) {
+    if (ehFrameHdrAddr == 0) {
         ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
         return -UNW_EINVAL;
     }
@@ -2293,7 +2358,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
 #else
-    return _OOP_find_proc_info(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
+    return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
 #endif // FEATURE_USE_SYSTEM_LIBUNWIND
 
 #endif // __APPLE__
@@ -2445,11 +2510,160 @@ exit:
     return result;
 }
 
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
+{
+    _ASSERTE(ehFrameStart != nullptr);
+    _ASSERTE(ehFrameSize != nullptr);
+    _ASSERTE(ehFrameHdrAddr != 0);
+    *ehFrameStart = 0;
+    *ehFrameSize = 0;
+
+#ifdef HOST_UNIX
+    libunwindInfo info;
+    info.BaseAddress = baseAddress;
+    info.Context = nullptr;
+    info.FunctionStart = 0;
+    info.ReadMemory = readMemoryCallback;
+
+    eh_frame_hdr ehFrameHdr;
+    if (!info.ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
+        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
+        return FALSE;
+    }
+    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
+        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
+
+    if (ehFrameHdr.version != DW_EH_VERSION) {
+        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        return FALSE;
+    }
+    unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
+    unw_word_t ehFramePtr;
+    unw_word_t fdeCount;
+
+    // Decode the eh_frame_hdr info
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
+        ERROR("decoding eh_frame_ptr\n");
+        return FALSE;
+    }
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
+        ERROR("decoding fde_count_enc\n");
+        return FALSE;
+    }
+    TRACE("ehFrameStart %p fdeCount %p\n", ehFrameStart, fdeCount);
+
+    // If there are no frame table entries
+    if (fdeCount == 0) {
+        TRACE("No frame table entries\n");
+        return FALSE;
+    }
+
+    uint64_t totalSize = 0;
+    uint64_t encounteredCieCount = 0;
+    uint64_t encounteredFdeCount = 0;
+    addr = ehFramePtr;
+
+    while (true)
+    {
+        bool is64BitEncoding = false;
+        uint64_t initialLength = 0;
+        uint32_t initialLength32;
+
+        if (!ReadValue32(&info, &addr, &initialLength32)) {
+            return FALSE;
+        }
+        totalSize += sizeof(initialLength32);
+
+        if (initialLength32 >= 0xfffffff0)
+        {
+            if (initialLength32 == 0xffffffff)
+            {
+                // 64 bit encoding
+                is64BitEncoding = true;
+                if (!ReadValue64(&info, &addr, &initialLength)) {
+                    return FALSE;
+                }
+                totalSize += sizeof(initialLength);
+            }
+            else
+            {
+                ASSERT("Length encoding not supported: %08x\n", initialLength32);
+                return FALSE;
+            }
+        }
+        else
+        {
+            // 32 bit encoding
+            initialLength = static_cast<uint64_t>(initialLength32);
+        }
+
+        if (initialLength == 0)
+        {
+            break;
+        }
+
+        // "addr" either points to a CIE_id in a CIE or CIE_ptr in a FDE. A value of zero indicates a CIE.
+        uint64_t ciePtr;
+        if (is64BitEncoding)
+        {
+            if (!ReadValue64(&info, &addr, &ciePtr)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr);
+        }
+        else
+        {
+            uint32_t ciePtr32;
+            if (!ReadValue32(&info, &addr, &ciePtr32)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr32);
+            ciePtr = static_cast<uint64_t>(ciePtr32);
+        }
+
+        if (ciePtr == 0)
+        {
+            encounteredCieCount++;
+        }
+        else
+        {
+            encounteredFdeCount++;
+        }
+
+        totalSize += initialLength;
+        addr += initialLength;
+
+        // If we've seen more FDEs than expected, somehow either the header is inconsistent or we overread the end of the table.
+        if (encounteredFdeCount >= fdeCount)
+        {
+            break;
+        }
+    }
+
+    _ASSERTE(encounteredFdeCount == fdeCount);
+
+    *ehFrameStart = ehFramePtr;
+    *ehFrameSize = totalSize;
+    return TRUE;
+#else
+    return FALSE;
+#endif // HOST_UNIX
+}
+
 #else
 
 BOOL
 PALAPI
 PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+{
+    return FALSE;
+}
+
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
 {
     return FALSE;
 }

@@ -12,15 +12,15 @@ namespace System.Text.Json.Serialization
             ref WriteStack state)
         {
             if (
-#if NET5_0_OR_GREATER
-                // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
+#if NETCOREAPP
+                // Treated as a constant by recent versions of the JIT.
                 typeof(T).IsValueType)
 #else
                 IsValueType)
 #endif
             {
                 // Value types can never have a null except for Nullable<T>.
-                if (value == null && Nullable.GetUnderlyingType(TypeToConvert) == null)
+                if (default(T) is not null && value is null)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }

@@ -11,7 +11,7 @@ class Test
     static ManualResetEvent _mre;
     static AutoResetEvent _are = new AutoResetEvent(false);
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         Thread th = new Thread(new ThreadStart(Thread2));
         th.Start();

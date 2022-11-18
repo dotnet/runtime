@@ -60,7 +60,7 @@ namespace Microsoft.Internal.Collections
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return new ReadOnlyCollection<T>(source.AsArray());
+            return Array.AsReadOnly(source.AsArray());
         }
 
         public static IEnumerable<T>? ConcatAllowingNull<T>(this IEnumerable<T>? source, IEnumerable<T>? second)
@@ -131,10 +131,7 @@ namespace Microsoft.Internal.Collections
 
         private static List<T> FastAppendToListAllowNulls<T>(this List<T>? source, T value)
         {
-            if (source == null)
-            {
-                source = new List<T>();
-            }
+            source ??= new List<T>();
             source.Add(value);
 
             return source;

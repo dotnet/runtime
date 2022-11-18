@@ -77,27 +77,29 @@ namespace System.Runtime.InteropServices
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
-        public static ref T GetReference<T>(Span<T> span) => ref span._reference.Value;
+        public static ref T GetReference<T>(Span<T> span) => ref span._reference;
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
-        public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference.Value;
+        public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref span._reference.Value : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to fake non-null pointer. Such a reference
         /// can be used for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref span._reference.Value : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -150,7 +152,7 @@ namespace System.Runtime.InteropServices
             }
 
             return new Span<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref span._reference.Value),
+                ref Unsafe.As<TFrom, TTo>(ref span._reference),
                 toLength);
         }
 
@@ -217,9 +219,14 @@ namespace System.Runtime.InteropServices
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <returns>A span representing the specified reference and length.</returns>
-        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
+        /// <remarks>
+        /// This method should be used with caution. It is dangerous because the length argument is not checked.
+        /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+        /// of the returned span will not be validated for safety, even by span-aware languages.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
+        public static Span<T> CreateSpan<T>(scoped ref T reference, int length) =>
+            new Span<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>
         /// Creates a new read-only span over a portion of a regular managed object. This can be useful
@@ -229,9 +236,14 @@ namespace System.Runtime.InteropServices
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <returns>A read-only span representing the specified reference and length.</returns>
-        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
+        /// <remarks>
+        /// This method should be used with caution. It is dangerous because the length argument is not checked.
+        /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+        /// of the returned span will not be validated for safety, even by span-aware languages.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
+            new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>
         /// <param name="value">The pointer to the null-terminated string of characters.</param>
@@ -315,7 +327,7 @@ namespace System.Runtime.InteropServices
         /// If unable to get the <typeparamref name="TManager"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="memory" />.</typeparam>
-        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrive.</typeparam>
+        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrieve.</typeparam>
         /// <param name="memory">The memory to get the manager for.</param>
         /// <param name="manager">The returned manager of the <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
@@ -334,7 +346,7 @@ namespace System.Runtime.InteropServices
         /// If unable to get the <typeparamref name="TManager"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="memory" />.</typeparam>
-        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrive.</typeparam>
+        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrieve.</typeparam>
         /// <param name="memory">The memory to get the manager for.</param>
         /// <param name="manager">The returned manager of the <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <param name="start">The offset from the start of the <paramref name="manager" /> that the <paramref name="memory" /> represents.</param>
@@ -418,8 +430,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Reads a structure of type T out of a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
@@ -457,8 +469,8 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Writes a structure of type T into a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct

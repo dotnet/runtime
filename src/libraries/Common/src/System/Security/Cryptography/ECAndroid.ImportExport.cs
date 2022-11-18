@@ -34,6 +34,7 @@ namespace System.Security.Cryptography
 
             if (key == null || key.IsInvalid)
             {
+                key?.Dispose();
                 throw new CryptographicException();
             }
 
@@ -175,7 +176,10 @@ namespace System.Security.Cryptography
             SafeEcKeyHandle? key = Interop.AndroidCrypto.EcKeyCreateByOid(oid);
 
             if (key == null || key.IsInvalid)
+            {
+                key?.Dispose();
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
+            }
 
             return key;
         }

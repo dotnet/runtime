@@ -88,12 +88,12 @@ namespace System.Composition.Convention
                 return pi == _propertyInfo;
             }
 
-            public void ConfigureImport(PropertyInfo propertyInfo, ImportConventionBuilder importBuilder)
+            public void ConfigureImport(PropertyInfo _, ImportConventionBuilder importBuilder)
             {
                 _configureImport?.Invoke(importBuilder);
             }
 
-            public void ConfigureExport(PropertyInfo propertyInfo, ExportConventionBuilder exportBuilder)
+            public void ConfigureExport(PropertyInfo _, ExportConventionBuilder exportBuilder)
             {
                 _configureExport?.Invoke(exportBuilder);
             }
@@ -139,7 +139,7 @@ namespace System.Composition.Convention
                 ParseSelectConstructor(selectConstructor);
             }
 
-            public ConstructorInfo SelectConstructor(IEnumerable<ConstructorInfo> constructorInfos)
+            public ConstructorInfo SelectConstructor(IEnumerable<ConstructorInfo> _)
             {
                 return _constructorInfo;
             }
@@ -187,10 +187,7 @@ namespace System.Composition.Convention
                             {
                                 var lambdaExpression = (LambdaExpression)parameter;
                                 Delegate importDelegate = lambdaExpression.Compile();
-                                if (_importBuilders == null)
-                                {
-                                    _importBuilders = new Dictionary<ParameterInfo, Action<ImportConventionBuilder>>();
-                                }
+                                _importBuilders ??= new Dictionary<ParameterInfo, Action<ImportConventionBuilder>>();
                                 _importBuilders.Add(parameterInfos[index], (Action<ImportConventionBuilder>)importDelegate);
                                 ++index;
                             }

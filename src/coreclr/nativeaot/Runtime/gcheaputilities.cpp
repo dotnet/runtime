@@ -36,7 +36,7 @@ IGCHandleManager* g_pGCHandleManager = nullptr;
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
-// GC entrypoints for the the linked-in GC. These symbols are invoked
+// GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
 extern "C" HRESULT GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
@@ -77,7 +77,7 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
 
 void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
 {
-    // CoreRT does not support standalone GC. Call GCEventStatus directly to keep things simple.
+    // NativeAOT does not support standalone GC. Call GCEventStatus directly to keep things simple.
     GCEventStatus::Set(isPublicProvider ? GCEventProvider_Default : GCEventProvider_Private, keywords, level);
 }
 

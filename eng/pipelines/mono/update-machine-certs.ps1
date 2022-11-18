@@ -14,7 +14,7 @@ Try {
 
         $ValidTo = [datetime]::Parse($Cert.GetExpirationDatestring())
 
-        Write-Host "`nConnection Successfull" -ForegroundColor DarkGreen
+        Write-Host "`nConnection Successful" -ForegroundColor DarkGreen
         Write-Host "Website: $WebsiteURL"
     }
     Catch { Throw $_ }

@@ -393,4 +393,7 @@
   <data name="WrongRootElement" xml:space="preserve">
     <value>Root element must be {0} element in namespace {1}</value>
   </data>
+  <data name="Cryptography_Xml_EntityResolutionNotSupported" xml:space="preserve">
+    <value>External entity resolution is not supported.</value>
+  </data>
 </root>

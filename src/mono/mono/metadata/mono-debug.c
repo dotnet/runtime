@@ -491,7 +491,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		}
 	}
 
-	size = ptr - oldptr;
+	size = GPTRDIFF_TO_UINT32 (ptr - oldptr);
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
@@ -840,7 +840,7 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 {
 	MonoImage* img = m_class_get_image (minfo->method->klass);
 	if (img->has_updates) {
-		int idx = mono_metadata_token_index (minfo->method->token);
+		guint32 idx = mono_metadata_token_index (minfo->method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie != NULL) {
 			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, il_offset);
@@ -1112,6 +1112,19 @@ open_symfile_from_bundle (MonoImage *image)
 	return NULL;
 }
 
+const mono_byte *
+mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
+{
+	BundledSymfile *bsymfile;
+	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
+		if (strcmp (bsymfile->aname, assembly_name))
+			continue;
+		*size = bsymfile->size;
+		return bsymfile->raw_contents;
+	}
+	return NULL;
+}
+
 void
 mono_debugger_lock (void)
 {
@@ -1142,7 +1155,7 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 {
 	MonoImage* img = m_class_get_image (minfo->method->klass);
 	if (img->has_updates) {
-		int idx = mono_metadata_token_index (minfo->method->token);
+		guint32 idx = mono_metadata_token_index (minfo->method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie != NULL) {
 			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))

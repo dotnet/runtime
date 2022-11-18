@@ -499,7 +499,9 @@
           <GenericArgument Name="System.Runtime.CompilerServices.Tests.RuntimeHelpersTests+TestStruct, System.Runtime.Tests" />
         </Method>
       </Type>
-
+      <Type Name="System.Int128" Dynamic="Required All" />
+      <Type Name="System.Half" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.NonRandomizedStringEqualityComparer" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>

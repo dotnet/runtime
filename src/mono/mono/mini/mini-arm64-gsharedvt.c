@@ -136,7 +136,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	GSharedVtCallInfo *info;
 	CallInfo *caller_cinfo, *callee_cinfo;
 	MonoMethodSignature *caller_sig, *callee_sig;
-	int aindex, i;
+	int aindex;
 	gboolean var_ret = FALSE;
 	CallInfo *cinfo, *gcinfo;
 	MonoMethodSignature *sig;
@@ -305,7 +305,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		}
 		nslots = MIN (nsrc, ndst);
 
-		for (i = 0; i < nslots; ++i)
+		for (int i = 0; i < nslots; ++i)
 			add_to_map (map, src [i], dst [i]);
 
 		g_free (src);
@@ -335,7 +335,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 
 	info->vcall_offset = vcall_offset;
 	info->map_count = map->len / 2;
-	for (i = 0; i < map->len; ++i)
+	for (guint i = 0; i < map->len; ++i)
 		info->map [i] = GPOINTER_TO_UINT (g_ptr_array_index (map, i));
 	g_ptr_array_free (map, TRUE);
 

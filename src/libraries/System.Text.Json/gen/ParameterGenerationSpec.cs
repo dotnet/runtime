@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
-    internal class ParameterGenerationSpec
+    internal sealed class ParameterGenerationSpec
     {
         public TypeGenerationSpec TypeGenerationSpec { get; init; }
 

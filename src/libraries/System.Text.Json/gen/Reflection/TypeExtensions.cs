@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Text.Json.Reflection
 {
@@ -16,43 +14,61 @@ namespace System.Text.Json.Reflection
                 return GetCompilableName(type.GetElementType()) + "[]";
             }
 
-            string compilableName;
-
-            if (!type.IsGenericType)
+            if (type.IsGenericParameter)
             {
-                compilableName = type.FullName;
+                return type.Name;
             }
-            else
+
+            StringBuilder sb = new();
+
+            sb.Append("global::");
+
+            string @namespace = type.Namespace;
+            if (!string.IsNullOrEmpty(@namespace) && @namespace != JsonConstants.GlobalNamespaceValue)
             {
-                StringBuilder sb = new();
+                sb.Append(@namespace);
+                sb.Append('.');
+            }
 
-                string fullName = type.FullName;
-                int backTickIndex = fullName.IndexOf('`');
+            int argumentIndex = 0;
+            AppendTypeChain(sb, type, type.GetGenericArguments(), ref argumentIndex);
 
-                string baseName = fullName.Substring(0, backTickIndex);
+            return sb.ToString();
 
-                sb.Append(baseName);
-
-                sb.Append("<");
-
-                Type[] genericArgs = type.GetGenericArguments();
-                int genericArgCount = genericArgs.Length;
-                List<string> genericArgNames = new(genericArgCount);
-
-                for (int i = 0; i < genericArgCount; i++)
+            static void AppendTypeChain(StringBuilder sb, Type type, Type[] genericArguments, ref int argumentIndex)
+            {
+                Type declaringType = type.DeclaringType;
+                if (declaringType != null)
                 {
-                    genericArgNames.Add(GetCompilableName(genericArgs[i]));
+                    AppendTypeChain(sb, declaringType, genericArguments, ref argumentIndex);
+                    sb.Append('.');
                 }
+                int backTickIndex = type.Name.IndexOf('`');
+                if (backTickIndex == -1)
+                {
+                    sb.Append(type.Name);
+                }
+                else
+                {
+                    sb.Append(type.Name, 0, backTickIndex);
 
-                sb.Append(string.Join(", ", genericArgNames));
+                    sb.Append('<');
 
-                sb.Append(">");
+                    int startIndex = argumentIndex;
+                    argumentIndex = type.GetGenericArguments().Length;
+                    for (int i = startIndex; i < argumentIndex; i++)
+                    {
+                        if (i != startIndex)
+                        {
+                            sb.Append(", ");
+                        }
 
-                compilableName = sb.ToString();
+                        sb.Append(GetCompilableName(genericArguments[i]));
+                    }
+
+                    sb.Append('>');
+                }
             }
-
-            compilableName = compilableName.Replace("+", ".");
-            return "global::" + compilableName;
         }
 
         public static string GetTypeInfoPropertyName(this Type type)
@@ -132,6 +148,9 @@ namespace System.Text.Json.Reflection
 
             return false;
         }
+
+        public static bool CanUseDefaultConstructorForDeserialization(this Type type)
+            => (type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface;
 
         public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
 

@@ -69,10 +69,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        if (culture == null)
-                        {
-                            culture = CultureInfo.CurrentCulture;
-                        }
+                        culture ??= CultureInfo.CurrentCulture;
 
                         NumberFormatInfo? formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
                         return FromString(text, formatInfo);
@@ -96,10 +93,7 @@ namespace System.ComponentModel
 
             if (destinationType == typeof(string) && value != null && TargetType.IsInstanceOfType(value))
             {
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 NumberFormatInfo? formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
                 return ToString(value, formatInfo);

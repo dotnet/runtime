@@ -9,4 +9,9 @@ extern "C"
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
+
+    void RedirectForThreadAbort()
+    {
+        PORTABILITY_ASSERT("Implement for PAL");
+    }
 };

@@ -31,7 +31,6 @@ endfunction(generate_module_index)
 
 if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
     generate_module_index(coreclr ${CMAKE_CURRENT_BINARY_DIR}/runtimemoduleindex.h)
-    add_dependencies(runtimeinfo inject_debug_resources_coreclr)
     generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
     generate_module_index(mscordbi ${CMAKE_CURRENT_BINARY_DIR}/dbimoduleindex.h)
 endif()

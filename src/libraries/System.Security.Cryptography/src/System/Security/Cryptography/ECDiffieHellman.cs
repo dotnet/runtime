@@ -31,6 +31,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static partial ECDiffieHellman Create(ECParameters parameters);
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDiffieHellman? Create(string algorithm)
         {

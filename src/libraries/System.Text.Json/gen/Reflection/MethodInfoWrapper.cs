@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class MethodInfoWrapper : MethodInfo
+    internal sealed class MethodInfoWrapper : MethodInfo
     {
         private readonly IMethodSymbol _method;
         private readonly MetadataLoadContextInternal _metadataLoadContext;

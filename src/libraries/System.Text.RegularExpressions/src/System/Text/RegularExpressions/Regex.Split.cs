@@ -18,10 +18,10 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Splits the <paramref name="input "/>string at the position defined by <paramref name="pattern"/>.
         /// </summary>
-        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
+        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Split(input);
 
-        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Split(input);
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
                     return new[] { input };
                 }
 
-                state.results.Add(input.Substring(state.prevat, input.Length - state.prevat));
+                state.results.Add(input.Substring(state.prevat));
             }
             else
             {

@@ -94,10 +94,7 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         public CngKey Import()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanCngPublicKey));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
 #pragma warning disable SYSLIB0043 // ToByteArray is obsolete.
             return CngKey.Import(ToByteArray(), _curveName, BlobFormat);

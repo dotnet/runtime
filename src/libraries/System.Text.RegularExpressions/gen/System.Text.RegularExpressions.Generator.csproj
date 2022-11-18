@@ -6,20 +6,15 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <IsPackable>false</IsPackable>
-    <LangVersion>Preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- This generator ships as part of the .NET ref pack. Since VS ingests new Roslyn versions at a different cadence than the .NET SDK, we are pinning this generator to build against Roslyn 4.0 to ensure that we don't break users who are using .NET 7 previews in VS. -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_0)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +26,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" Link="Production\RegexCaseEquivalences.Data.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCaseEquivalences.cs" Link="Production\RegexCaseEquivalences.cs" />

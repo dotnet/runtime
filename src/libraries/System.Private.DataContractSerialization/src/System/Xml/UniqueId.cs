@@ -313,7 +313,6 @@ namespace System.Xml
             if (id1 is null || id2 is null)
                 return false;
 
-#pragma warning suppress 56506 // Microsoft, checks for whether id1 and id2 are null done above.
             if (id1.IsGuid && id2.IsGuid)
             {
                 return id1._idLow == id2._idLow && id1._idHigh == id2._idHigh;

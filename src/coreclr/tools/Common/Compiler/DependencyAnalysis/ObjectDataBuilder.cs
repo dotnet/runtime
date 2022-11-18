@@ -21,10 +21,10 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectDataBuilder(TargetDetails target, bool relocsOnly)
         {
             _target = target;
-            _data = new ArrayBuilder<byte>();
-            _relocs = new ArrayBuilder<Relocation>();
+            _data = default(ArrayBuilder<byte>);
+            _relocs = default(ArrayBuilder<Relocation>);
             Alignment = 1;
-            _definedSymbols = new ArrayBuilder<ISymbolDefinitionNode>();
+            _definedSymbols = default(ArrayBuilder<ISymbolDefinitionNode>);
 #if DEBUG
             _numReservations = 0;
             _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
@@ -213,7 +213,9 @@ namespace ILCompiler.DependencyAnalysis
             return ticket;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private int ReturnReservationTicket(Reservation reservation)
+#pragma warning restore CA1822 // Mark members as static
         {
 #if DEBUG
             Debug.Assert(_numReservations > 0);
@@ -303,10 +305,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.
-                    break;                    
+                    break;
                 default:
                     throw new NotImplementedException();
             }

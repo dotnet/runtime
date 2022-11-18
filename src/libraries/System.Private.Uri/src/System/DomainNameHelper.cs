@@ -23,7 +23,7 @@ namespace System
 
             for (int i = end - 1; i >= start; --i)
             {
-                if (str[i] >= 'A' && str[i] <= 'Z')
+                if (char.IsAsciiLetterUpper(str[i]))
                 {
                     res = str.Substring(start, end - start).ToLowerInvariant();
                     break;
@@ -32,10 +32,7 @@ namespace System
                     end = i;
             }
 
-            if (res == null)
-            {
-                res = str.Substring(start, end - start);
-            }
+            res ??= str.Substring(start, end - start);
 
             if (res == Localhost || res == Loopback)
             {
@@ -349,12 +346,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsASCIILetterOrDigit(char character, ref bool notCanonical)
         {
-            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0')
+            if (char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character))
             {
                 return true;
             }
 
-            if ((uint)(character - 'A') <= 'Z' - 'A')
+            if (char.IsAsciiLetterUpper(character))
             {
                 notCanonical = true;
                 return true;
@@ -370,12 +367,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsValidDomainLabelCharacter(char character, ref bool notCanonical)
         {
-            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0' || character == '-' || character == '_')
+            if (char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-' || character == '_')
             {
                 return true;
             }
 
-            if ((uint)(character - 'A') <= 'Z' - 'A')
+            if (char.IsAsciiLetterUpper(character))
             {
                 notCanonical = true;
                 return true;
@@ -392,11 +389,7 @@ namespace System
         // This means that a host containing Unicode characters can be normalized to contain
         // URI reserved characters, changing the meaning of a URI only when certain properties
         // such as IdnHost are accessed. To be safe, disallow control characters in normalized hosts.
-        private static readonly char[] s_UnsafeForNormalizedHost = { '\\', '/', '?', '@', '#', ':', '[', ']' };
-
-        internal static bool ContainsCharactersUnsafeForNormalizedHost(string host)
-        {
-            return host.IndexOfAny(s_UnsafeForNormalizedHost) != -1;
-        }
+        internal static bool ContainsCharactersUnsafeForNormalizedHost(string host) =>
+            host.AsSpan().IndexOfAny(@"\/?@#:[]") >= 0;
     }
 }

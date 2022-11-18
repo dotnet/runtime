@@ -18,7 +18,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         public GcInfo() { }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
@@ -95,7 +95,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
         private void GetTransitionsFullyInterruptible(byte[] image, ref int offset)
         {
@@ -197,7 +197,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
         private void GetTransitionsEbpFrame(byte[] image, ref int offset)
         {
@@ -340,7 +340,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
         private void SaveCallTransition(byte[] image, ref int offset, uint val, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, uint lastSkip, ref uint imask)
         {

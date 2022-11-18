@@ -801,8 +801,7 @@ namespace System.Text
                 bLeftOver2 = -1;
                 bLeftOver3 = -1;
                 bLeftOver4 = -1;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

@@ -13,11 +13,11 @@ using System.Runtime.InteropServices;
 //Allocation should not be too intense
 //For testing the concurrent phase of partial compaction: update references between objects
 //What the test does:
-// 1.Allocating phase: 
+// 1.Allocating phase:
 //-Allocate n regions
 //-When objects get in Gen2 release the objects used to create spaces
 //-Create refs from objects in these regions to ephemeral objects
-// 2.Steady state 
+// 2.Steady state
 //- randomly change references between objects
 //- release some of the existing objects (to create fragmentation in the existing regions)
 // Repeat from 1.
@@ -187,7 +187,7 @@ namespace PartialCompactionTest
             int randNumber = Rand.Next(0, (int)EstimatedObjectCount); //Console.WriteLine(randNumber);
             int randNumber2 = Rand.Next(0, (int)EstimatedObjectCount); //Console.WriteLine(randNumber2);
             PickObject(Arr, randNumber);
-          
+
             ObjectWrapper Object1 = staticObject;
             for (int i = 0; i < Object1.m_data.Length; i++)
             {
@@ -198,7 +198,7 @@ namespace PartialCompactionTest
             {
                 staticObject.m_data[i] = (byte)(staticObject.m_data[i] + randNumber2);
             }
-          
+
             if (Object1 != null)
             {
                 Object1.ref1 = staticObject;
@@ -206,7 +206,7 @@ namespace PartialCompactionTest
            //     if (staticObject != null)
             //        Console.WriteLine("to " + staticObject.m_dataSize);
             }
- 
+
         }
 
         public static void PickObject(List<ObjectWrapper> Arr, int index)
@@ -241,7 +241,7 @@ namespace PartialCompactionTest
             }
             o.visited = true;
        //    Console.WriteLine("Try Pick object" + staticIndex);
-  
+
             if(staticObject != null)
                 return;
             if (staticIndex == index)
@@ -250,7 +250,7 @@ namespace PartialCompactionTest
                 staticObject = o;
                 return;
             }
-           
+
             staticIndex++;
 
 
@@ -276,7 +276,7 @@ namespace PartialCompactionTest
             Console.WriteLine("pinned objects, before removing= " + CountPinned);
             int Count = CountTotalObjects(Arr);
             Console.WriteLine("total objects, before removing= " + Count);
-            Console.WriteLine("percentage pinned " + (float)CountPinned * 100.0f / (float)Count); 
+            Console.WriteLine("percentage pinned " + (float)CountPinned * 100.0f / (float)Count);
             */
             Console.WriteLine("Removing Objects");
             //Console.WriteLine("before: Arr.Count " + Arr.Count);
@@ -306,12 +306,12 @@ namespace PartialCompactionTest
             //Console.WriteLine("before: gcHandleArr.Count " + gcHandleArr.Count);
             //remove weak handles for dead objects
 
-            EstimatedObjectCount = CountTotalObjects(Arr);      
+            EstimatedObjectCount = CountTotalObjects(Arr);
             EstimatedHeapSize = EstimatedObjectCount * AvgObjectSize;
             //Console.WriteLine("After removing objects: Estimated Heap size= " + EstimatedHeapSize);
         }
 
-      
+
 
         //estimate the total number of objects in the reference graph
         public static int CountTotalObjects(List<ObjectWrapper> Arr)
@@ -320,7 +320,7 @@ namespace PartialCompactionTest
            // Console.WriteLine("Counting Objects..");
             //use the "visited" table
             int runningCount = 0;
-           
+
             for (int i = 0; i < Arr.Count; i++)
             {
                 runningCount += CountReferences(Arr[i]);
@@ -340,7 +340,7 @@ namespace PartialCompactionTest
             Console.WriteLine("Counting Objects..");
             //use the "visited" table
             int runningCount = 0;
-           
+
             for (int i = 0; i < Arr.Count; i++)
             {
                 runningCount += CountPinnedReferences(Arr[i]);
@@ -369,7 +369,7 @@ namespace PartialCompactionTest
             }
         }
 
-        //counts the refernces of this objects
+        //counts the references of this objects
         public static int CountReferences(ObjectWrapper o)
         {
             if (o.visited)
@@ -424,9 +424,9 @@ namespace PartialCompactionTest
                     }
                 }
             }
-           
+
         }
-        //counts the pinned refernces of this objects
+        //counts the pinned references of this objects
         public static int CountPinnedReferences(ObjectWrapper o)
         {
             if (o.visited)
@@ -457,14 +457,14 @@ namespace PartialCompactionTest
             }
             return count;
         }
-   
-      
+
+
 
         public static void UpdateAvg()
         {
             AvgObjectSize = (double)EstimatedHeapSize / (double)EstimatedObjectCount;
             //Console.WriteLine("Avg object size " + AvgObjectSize);
-           
+
         }
 
         public static void AddRef(Object from, Object to)
@@ -481,7 +481,7 @@ namespace PartialCompactionTest
 
         }
 
-    
+
 
         public static void RunTest(List<ObjectWrapper> Arr)
         {
@@ -631,7 +631,7 @@ namespace PartialCompactionTest
             Console.WriteLine("-timeout <seconds> : when to stop the test, default is " + timeout);
             Console.WriteLine("-maxHeapMB <MB> : max heap size in MB to allocate, default is " + maxHeapMB);
             Console.WriteLine("-regionSizeMB <MB> : regionSize, default is " + regionSizeMB);
-            Console.WriteLine("-depth <depth of refernce tree>, default is " + maxDepth);
+            Console.WriteLine("-depth <depth of reference tree>, default is " + maxDepth);
 
             Console.WriteLine("-randomseed <seed> : random seed(for repro)");
         }
@@ -658,7 +658,7 @@ namespace PartialCompactionTest
                 maxSpaceSize = maxSpace;
                 minObjectSize = minObject;
                 maxObjectsize = maxObject;
-         
+
             }
 
             //add objects to region
@@ -693,7 +693,7 @@ namespace PartialCompactionTest
                 }
                 return false;
             }
-         
+
         }
 
         public class ObjectWrapper
@@ -717,7 +717,7 @@ namespace PartialCompactionTest
                     return null;
                 byte[] Temp = new byte[Rand.Next(50, 200)];
                 int size = Rand.Next(r.minObjectSize, r.maxObjectsize);
-               
+
                 bool pinned = false;
                 if ((r.pinnedCount * 100.0 / (double)r.objectCount) < r.pinnedPercentage)
                 {
@@ -779,9 +779,9 @@ namespace PartialCompactionTest
             {
                 this.depth = depth;
                 //we want m_data to have an approximate size of dataSize
-                m_dataSize = datasize;  
+                m_dataSize = datasize;
                 m_pinned = pinned;
-            
+
                 m_data = new byte[datasize];
                 for (int i = 0; i < datasize; i++)
                 {
@@ -795,7 +795,7 @@ namespace PartialCompactionTest
                     arrayRefs = new ObjectWrapper[arrayRefCount];
                 }
 
-               
+
             }
             public void CleanUp()
             {

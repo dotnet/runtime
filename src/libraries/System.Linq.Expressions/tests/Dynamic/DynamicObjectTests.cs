@@ -102,7 +102,7 @@ namespace System.Dynamic.Tests
 
         private class TestDynamicNameReflectiveNotOverride : TestDynamic
         {
-            // Like TestDynamicNameReflective but hides rather than overiding.
+            // Like TestDynamicNameReflective but hides rather than overriding.
             // Because DynamicObject reflects upon itself to see if these methods are
             // overridden, we test this override-detection against finding hiding
             // methods.
@@ -146,13 +146,13 @@ namespace System.Dynamic.Tests
             }
         }
 
-        private class DynamicallyConvertable : DynamicObject
+        private class DynamicallyConvertible : DynamicObject
         {
             public override bool TryConvert(ConvertBinder binder, out object result)
             {
                 if (binder.ReturnType == typeof(string))
                 {
-                    result = nameof(DynamicallyConvertable);
+                    result = nameof(DynamicallyConvertible);
                     return true;
                 }
 
@@ -166,20 +166,20 @@ namespace System.Dynamic.Tests
                 return false;
             }
 
-            public static explicit operator DateTimeOffset(DynamicallyConvertable source) =>
+            public static explicit operator DateTimeOffset(DynamicallyConvertible source) =>
                 new DateTimeOffset(1991, 8, 6, 0, 0, 0, new TimeSpan(2, 0, 0));
 
-            public static implicit operator Uri(DynamicallyConvertable source) =>
+            public static implicit operator Uri(DynamicallyConvertible source) =>
                 new Uri("http://example.net/");
         }
 
-        private class DynamicallyConvertableNotOverride : DynamicObject
+        private class DynamicallyConvertibleNotOverride : DynamicObject
         {
             public new bool TryConvert(ConvertBinder binder, out object result)
             {
                 if (binder.ReturnType == typeof(string))
                 {
-                    result = nameof(DynamicallyConvertable);
+                    result = nameof(DynamicallyConvertible);
                     return true;
                 }
 
@@ -193,10 +193,10 @@ namespace System.Dynamic.Tests
                 return false;
             }
 
-            public static explicit operator DateTimeOffset(DynamicallyConvertableNotOverride source) =>
+            public static explicit operator DateTimeOffset(DynamicallyConvertibleNotOverride source) =>
                 new DateTimeOffset(1991, 8, 6, 0, 0, 0, new TimeSpan(2, 0, 0));
 
-            public static implicit operator Uri(DynamicallyConvertableNotOverride source) =>
+            public static implicit operator Uri(DynamicallyConvertibleNotOverride source) =>
                 new Uri("http://example.net/");
         }
 
@@ -559,7 +559,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertBuiltInImplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             Uri u = d;
             Assert.Equal(new Uri("http://example.net/"), u);
         }
@@ -567,7 +567,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertBuiltInExplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             DateTimeOffset dto = (DateTimeOffset)d;
             Assert.Equal(new DateTimeOffset(1991, 8, 6, 0, 0, 0, new TimeSpan(2, 0, 0)), dto);
         }
@@ -575,7 +575,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertFailImplicitWhenMatchingExplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             DateTimeOffset dto = default(DateTimeOffset);
             Assert.Throws<RuntimeBinderException>(() => dto = d);
         }
@@ -583,15 +583,15 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertDynamicImplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             string name = d;
-            Assert.Equal(nameof(DynamicallyConvertable), name);
+            Assert.Equal(nameof(DynamicallyConvertible), name);
         }
 
         [Fact]
         public void ConvertDynamicExplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             DateTime dt = (DateTime)d;
             Assert.Equal(new DateTime(1991, 8, 6), dt);
         }
@@ -599,7 +599,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertFailImplicitOfferedDynamicallyExplicit()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             DateTime dt = default(DateTime);
             Assert.Throws<RuntimeBinderException>(() => dt = d);
         }
@@ -607,7 +607,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertFailNotOfferedConversion()
         {
-            dynamic d = new DynamicallyConvertable();
+            dynamic d = new DynamicallyConvertible();
             Expression ex = null;
             Assert.Throws<RuntimeBinderException>(() => ex = d);
             Assert.Throws<RuntimeBinderException>(() => ex = (Expression)d);
@@ -616,7 +616,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ConvertHidingTryConvert()
         {
-            dynamic d = new DynamicallyConvertableNotOverride();
+            dynamic d = new DynamicallyConvertibleNotOverride();
             Uri u = d;
             Assert.Equal(new Uri("http://example.net/"), u);
             DateTimeOffset dto = (DateTimeOffset)d;

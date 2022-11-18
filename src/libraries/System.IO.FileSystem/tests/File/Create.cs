@@ -217,7 +217,7 @@ namespace System.IO.Tests
             Assert.False(File.Exists(path));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         public void CaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

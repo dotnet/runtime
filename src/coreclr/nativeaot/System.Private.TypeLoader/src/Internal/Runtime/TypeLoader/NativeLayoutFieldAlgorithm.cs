@@ -19,7 +19,7 @@ namespace Internal.Runtime.TypeLoader
         private NoMetadataFieldLayoutAlgorithm _noMetadataFieldLayoutAlgorithm = new NoMetadataFieldLayoutAlgorithm();
         private const int InstanceAlignmentEntry = 4;
 
-        public unsafe override bool ComputeContainsGCPointers(DefType type)
+        public override unsafe bool ComputeContainsGCPointers(DefType type)
         {
             if (type.IsTemplateCanonical())
             {
@@ -430,7 +430,7 @@ namespace Internal.Runtime.TypeLoader
             alignment = fieldDefType.InstanceFieldAlignment;
         }
 
-        public unsafe override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+        public override unsafe ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             // Use this constant to make the code below more laconic
             const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;

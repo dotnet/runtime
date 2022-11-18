@@ -7,10 +7,11 @@
     <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+    <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>
@@ -267,29 +268,20 @@
       <Link>Internal\TypeSystem\WellKnownType.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionInfo.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionParameters.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\CallingConventions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\DispatchCellInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\Empty.cs" />
-    <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\FixupCellMetadataResolver.cs" />
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.NativeFormatModuleInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionaryCell.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\LazyVtableResolverThunk.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\MetadataFixupKind.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
@@ -336,8 +328,6 @@
     <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
-    <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>

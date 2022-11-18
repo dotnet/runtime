@@ -37,7 +37,7 @@ namespace System.Configuration
             Host = new InternalConfigHost();
         }
 
-        internal ClientConfigPaths ConfigPaths => _configPaths ?? (_configPaths = ClientConfigPaths.GetPaths(_exePath, _initComplete));
+        internal ClientConfigPaths ConfigPaths => _configPaths ??= ClientConfigPaths.GetPaths(_exePath, _initComplete);
 
         internal static string MachineConfigFilePath
         {

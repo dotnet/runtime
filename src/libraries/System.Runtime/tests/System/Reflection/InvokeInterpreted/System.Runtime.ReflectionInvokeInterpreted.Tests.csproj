@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\BindingFlagsDoNotWrap.cs" />
+    <Compile Include="..\InvokeRefReturn.cs" />
+    <Compile Include="..\InvokeWithRefLikeArgs.cs" />
+    <Compile Include="..\PointerTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Reflection\InvokeInterpretedTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
+</Project>

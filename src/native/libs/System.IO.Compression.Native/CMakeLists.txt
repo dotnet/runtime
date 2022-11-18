@@ -35,10 +35,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
     endif()
 
-    # Disable implicit fallthrough warning for Brotli
+    # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
 
-    # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
+    # Disable no strict prototypes warning for Zlib
+    # https://github.com/madler/zlib/issues/633
+    set(FLAGS "${FLAGS} -Wno-strict-prototypes")
+
+    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
     set(FLAGS "${FLAGS} -Wno-vla-parameter")
 
@@ -105,11 +109,11 @@ else ()
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)
+        add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
         add_library(System.IO.Compression.Native
             SHARED
             ${NATIVECOMPRESSION_SOURCES}
             System.IO.Compression.Native.def
-            # This will add versioning to the library
             ${VERSION_FILE_RC_PATH}
         )
     endif ()

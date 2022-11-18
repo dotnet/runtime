@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="CompositionException">
         ///     An error occurred during previewing and <paramref name="atomicComposition"/> is null.
         ///     <see cref="CompositionException.Errors"/> will contain a collection of errors that occurred.
-        ///     The pre-existing composition is in an unknown state, depending on the errors that occured.
+        ///     The pre-existing composition is in an unknown state, depending on the errors that occurred.
         /// </exception>
         /// <exception cref="ChangeRejectedException">
         ///     An error occurred during the previewing and <paramref name="atomicComposition"/> is not null.
@@ -100,7 +100,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Instead, if the transaction is present we will queue up the release of the lock, otherwise we will release it when we exit this method
             // We add the "release" lock to BOTH Commit and Revert queues, because they are mutually exclusive, and we need to release the lock regardless.
 
-            // This will take the lock, if necesary
+            // This will take the lock, if necessary
             IDisposable? compositionLockHolder = _lock.IsThreadSafe ? _lock.LockComposition() : null;
             bool compositionLockTaken = (compositionLockHolder != null);
             try
@@ -396,7 +396,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                 }
 
-                // if an error occured while doing a state transition
+                // if an error occurred while doing a state transition
                 if (!result.Succeeded)
                 {
                     // revert to the previous state and return the error

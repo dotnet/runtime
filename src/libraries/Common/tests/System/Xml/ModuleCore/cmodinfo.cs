@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Collections.Generic;
+using System.Text;
 
 namespace OLEDB.Test.ModuleCore
 {
@@ -75,7 +75,7 @@ namespace OLEDB.Test.ModuleCore
                 {
                     CKeywordParser.Tokens tokens = new CKeywordParser.Tokens();
                     tokens.Equal = " ";
-                    tokens.Seperator = "/";
+                    tokens.Separator = "/";
                     s_hashOptions = CKeywordParser.ParseKeywords(CommandLine, tokens);
                 }
                 return s_hashOptions;

@@ -4,11 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Xsl.Qil;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     /**
     InvokeGenerator is one of the trickiest peaces here.
     ARGS:

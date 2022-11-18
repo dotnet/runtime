@@ -39,10 +39,7 @@ namespace System.Drawing.Printing
             }
             set
             {
-                if (value == null)
-                {
-                    value = new PageSettings();
-                }
+                value ??= new PageSettings();
                 _pageSettings = value;
                 PageSettingsChanged = true;
             }

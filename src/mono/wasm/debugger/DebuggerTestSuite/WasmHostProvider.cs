@@ -80,7 +80,7 @@ internal abstract class WasmHostProvider : IDisposable
         {
             _process.Exited += (_, _) =>
             {
-                Console.WriteLine ($"**Browser died!**");
+                //Console.WriteLine ($"**Browser died!**");
                 Dispose();
             };
 
@@ -88,10 +88,15 @@ internal abstract class WasmHostProvider : IDisposable
         }
 
         // FIXME: use custom exception types
+        // Note: this message string is used in eng/test-configuration.json for triggering
+        //       test retries
         throw new IOException($"{messagePrefix} Timed out after {hostReadyTimeoutMs/1000}s waiting for the browser to be ready: {psi.FileName}");
 
         void ProcessOutput(string prefix, string? msg)
         {
+            if (!ShouldMessageBeLogged(prefix, msg))
+                return;
+
             _logger.LogDebug($"{prefix}{msg}");
 
             if (string.IsNullOrEmpty(msg) || browserReadyTCS.Task.IsCompleted)
@@ -102,6 +107,8 @@ internal abstract class WasmHostProvider : IDisposable
                 browserReadyTCS.TrySetResult(result);
         }
     }
+
+    protected virtual bool ShouldMessageBeLogged(string prefix, string? msg) => true;
 
     public virtual void Dispose()
     {
@@ -117,27 +124,4 @@ internal abstract class WasmHostProvider : IDisposable
         }
     }
 
-    protected static string GetBrowserPath(IEnumerable<string> pathsToProbe)
-    {
-        string? browserPath = FindBrowserPath();
-        if (!string.IsNullOrEmpty(browserPath))
-            return Path.GetFullPath(browserPath);
-
-        throw new Exception("Could not find an installed chrome to use");
-
-        string? FindBrowserPath()
-        {
-            string? _browserPath_env_var = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_DEBUGGER_TESTS");
-            if (!string.IsNullOrEmpty(_browserPath_env_var))
-            {
-                if (File.Exists(_browserPath_env_var))
-                    return _browserPath_env_var;
-
-                Console.WriteLine ($"warning: Could not find BROWSER_PATH_FOR_DEBUGGER_TESTS={_browserPath_env_var}");
-            }
-
-            // Look for a browser installed in artifacts, for local runs
-            return pathsToProbe.FirstOrDefault(p => File.Exists(p));
-        }
-    }
 }

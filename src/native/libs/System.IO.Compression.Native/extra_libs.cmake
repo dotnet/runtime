@@ -10,6 +10,7 @@ macro(append_extra_compression_libs NativeLibsExtra)
       set(ZLIB_LIBRARIES z m)
   else ()
       find_package(ZLIB REQUIRED)
+      set(ZLIB_LIBRARIES ${ZLIB_LIBRARIES} m)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
 

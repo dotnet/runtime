@@ -15,12 +15,7 @@ namespace System.Security.Cryptography
         public Oid(string oid)
         {
             // If we were passed the friendly name, retrieve the value String.
-            string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
-            if (oidValue == null)
-            {
-                oidValue = oid;
-            }
-            this.Value = oidValue;
+            this.Value = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false) ?? oid;
 
             _group = OidGroup.All;
         }

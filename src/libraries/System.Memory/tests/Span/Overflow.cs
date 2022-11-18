@@ -25,11 +25,11 @@ namespace System.SpanTests
             {
                 //
                 // Although Span constrains indexes to 0..2Gb, it does not similarly constrain index * sizeof(T).
-                // Make sure that internal offset calculcations handle the >2Gb case properly.
+                // Make sure that internal offset calculations handle the >2Gb case properly.
                 //
                 unsafe
                 {
-                    if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memBlock))
+                    if (!AllocationHelper.TryAllocNative(unchecked((nint)ThreeGiB), out IntPtr memBlock))
                     {
                         Console.WriteLine($"Span.Overflow test {nameof(IndexOverflow)} skipped (could not alloc memory).");
                         return; // It's not implausible to believe that a 3gb allocation will fail - if so, skip this test to avoid unnecessary test flakiness.
@@ -78,7 +78,7 @@ namespace System.SpanTests
             {
                 unsafe
                 {
-                    if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memory))
+                    if (!AllocationHelper.TryAllocNative(unchecked((nint)ThreeGiB), out IntPtr memory))
                     {
                         Console.WriteLine($"Span.Overflow test {nameof(SliceStartInt32Overflow)} skipped (could not alloc memory).");
                         return;
@@ -122,7 +122,7 @@ namespace System.SpanTests
             {
                 unsafe
                 {
-                    if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memory))
+                    if (!AllocationHelper.TryAllocNative(unchecked((nint)ThreeGiB), out IntPtr memory))
                     {
                         Console.WriteLine($"Span.Overflow test {nameof(ReadOnlySliceStartInt32Overflow)} skipped (could not alloc memory).");
                         return;

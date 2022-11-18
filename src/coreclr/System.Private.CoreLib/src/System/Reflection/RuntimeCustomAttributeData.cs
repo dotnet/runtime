@@ -278,9 +278,16 @@ namespace System.Reflection
             }
 
             ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
-            m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
-            for (int i = 0; i < parameters.Length; i++)
-                m_ctorParams[i] = new CustomAttributeCtorParameter(InitCustomAttributeType((RuntimeType)parameters[i].ParameterType));
+            if (parameters.Length != 0)
+            {
+                m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    m_ctorParams[i] = new CustomAttributeCtorParameter(InitCustomAttributeType((RuntimeType)parameters[i].ParameterType));
+            }
+            else
+            {
+                m_ctorParams = Array.Empty<CustomAttributeCtorParameter>();
+            }
 
             FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             PropertyInfo[] properties = m_ctor.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -341,7 +348,7 @@ namespace System.Reflection
             m_typedCtorArgs = Array.AsReadOnly(new CustomAttributeTypedArgument[] {
                 new CustomAttributeTypedArgument(fieldOffset.Value)
             });
-            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
         private void Init(MarshalAsAttribute marshalAs)
         {
@@ -391,8 +398,7 @@ namespace System.Reflection
             typedArgs[0] = new CustomAttributeTypedArgument(typeof(Type), forwardedTo.Destination);
             m_typedCtorArgs = Array.AsReadOnly(typedArgs);
 
-            CustomAttributeNamedArgument[] namedArgs = Array.Empty<CustomAttributeNamedArgument>();
-            m_namedArgs = Array.AsReadOnly(namedArgs);
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
@@ -409,8 +415,8 @@ namespace System.Reflection
 #endif
 
             m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
-            m_typedCtorArgs = Array.AsReadOnly(Array.Empty<CustomAttributeTypedArgument>());
-            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
+            m_typedCtorArgs = Array.Empty<CustomAttributeTypedArgument>();
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
         #endregion
 
@@ -423,16 +429,23 @@ namespace System.Reflection
             {
                 if (m_typedCtorArgs is null)
                 {
-                    CustomAttributeTypedArgument[] typedCtorArgs = new CustomAttributeTypedArgument[m_ctorParams.Length];
-
-                    for (int i = 0; i < typedCtorArgs.Length; i++)
+                    if (m_ctorParams.Length != 0)
                     {
-                        CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].CustomAttributeEncodedArgument;
+                        CustomAttributeTypedArgument[] typedCtorArgs = new CustomAttributeTypedArgument[m_ctorParams.Length];
 
-                        typedCtorArgs[i] = new CustomAttributeTypedArgument(m_scope, encodedArg);
+                        for (int i = 0; i < typedCtorArgs.Length; i++)
+                        {
+                            CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].CustomAttributeEncodedArgument;
+
+                            typedCtorArgs[i] = new CustomAttributeTypedArgument(m_scope, encodedArg);
+                        }
+
+                        m_typedCtorArgs = Array.AsReadOnly(typedCtorArgs);
                     }
-
-                    m_typedCtorArgs = Array.AsReadOnly(typedCtorArgs);
+                    else
+                    {
+                        m_typedCtorArgs = Array.Empty<CustomAttributeTypedArgument>();
+                    }
                 }
 
                 return m_typedCtorArgs;
@@ -445,26 +458,33 @@ namespace System.Reflection
             {
                 if (m_namedArgs is null)
                 {
-                    if (m_namedParams is null)
-                        return null!;
-
                     int cNamedArgs = 0;
-                    for (int i = 0; i < m_namedParams.Length; i++)
+                    if (m_namedParams is not null)
                     {
-                        if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
-                            cNamedArgs++;
+                        for (int i = 0; i < m_namedParams.Length; i++)
+                        {
+                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                                cNamedArgs++;
+                        }
                     }
 
-                    CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[cNamedArgs];
-
-                    for (int i = 0, j = 0; i < m_namedParams.Length; i++)
+                    if (cNamedArgs != 0)
                     {
-                        if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
-                            namedArgs[j++] = new CustomAttributeNamedArgument(
-                                m_members[i], new CustomAttributeTypedArgument(m_scope, m_namedParams[i].EncodedArgument));
-                    }
+                        CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[cNamedArgs];
 
-                    m_namedArgs = Array.AsReadOnly(namedArgs);
+                        for (int i = 0, j = 0; i < m_namedParams!.Length; i++)
+                        {
+                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                                namedArgs[j++] = new CustomAttributeNamedArgument(
+                                    m_members[i], new CustomAttributeTypedArgument(m_scope, m_namedParams[i].EncodedArgument));
+                        }
+
+                        m_namedArgs = Array.AsReadOnly(namedArgs);
+                    }
+                    else
+                    {
+                        m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
+                    }
                 }
 
                 return m_namedArgs;
@@ -766,9 +786,6 @@ namespace System.Reflection
 
     internal static unsafe class CustomAttribute
     {
-        private static readonly RuntimeType Type_RuntimeType = (RuntimeType)typeof(RuntimeType);
-        private static readonly RuntimeType Type_Type = (RuntimeType)typeof(Type);
-
         #region Internal Static Members
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
         {
@@ -1137,7 +1154,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
@@ -1221,9 +1238,9 @@ namespace System.Reflection
                             if (type is null && value is not null)
                             {
                                 type = (RuntimeType)value.GetType();
-                                if (type == Type_RuntimeType)
+                                if (type == typeof(RuntimeType))
                                 {
-                                    type = Type_Type;
+                                    type = (RuntimeType)typeof(Type);
                                 }
                             }
 
@@ -1273,7 +1290,7 @@ namespace System.Reflection
             Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
             in MetadataImport scope,
@@ -1427,7 +1444,7 @@ namespace System.Reflection
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();
@@ -1544,7 +1561,7 @@ namespace System.Reflection
         {
             Type[] pcas = new Type[]
             {
-                // See https://github.com/dotnet/coreclr/blob/master/src/md/compiler/custattr_emit.cpp
+                // See https://github.com/dotnet/runtime/blob/main/src/coreclr/md/compiler/custattr_emit.cpp
                 typeof(FieldOffsetAttribute), // field
                 typeof(SerializableAttribute), // class, struct, enum, delegate
                 typeof(MarshalAsAttribute), // parameter, field, return-value

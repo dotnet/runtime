@@ -340,10 +340,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> WithComparer(IComparer<T>? comparer)
         {
-            if (comparer == null)
-            {
-                comparer = Comparer<T>.Default;
-            }
+            comparer ??= Comparer<T>.Default;
 
             if (comparer == _comparer)
             {

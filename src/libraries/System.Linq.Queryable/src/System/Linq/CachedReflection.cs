@@ -14,36 +14,42 @@ namespace System.Linq
     {
         private static MethodInfo? s_Aggregate_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Aggregate_TSource_2(Type TSource) =>
              (s_Aggregate_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, object, object>>, object>(Queryable.Aggregate).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Aggregate_TSource_TAccumulate_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Aggregate_TSource_TAccumulate_3(Type TSource, Type TAccumulate) =>
              (s_Aggregate_TSource_TAccumulate_3 ??= new Func<IQueryable<object>, object, Expression<Func<object, object, object>>, object>(Queryable.Aggregate).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TAccumulate);
 
         private static MethodInfo? s_Aggregate_TSource_TAccumulate_TResult_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Aggregate_TSource_TAccumulate_TResult_4(Type TSource, Type TAccumulate, Type TResult) =>
              (s_Aggregate_TSource_TAccumulate_TResult_4 ??= new Func<IQueryable<object>, object, Expression<Func<object, object, object>>, Expression<Func<object, object>>, object>(Queryable.Aggregate).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TAccumulate, TResult);
 
         private static MethodInfo? s_All_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo All_TSource_2(Type TSource) =>
              (s_All_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, bool>(Queryable.All).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Any_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Any_TSource_1(Type TSource) =>
              (s_Any_TSource_1 ??= new Func<IQueryable<object>, bool>(Queryable.Any).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Any_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Any_TSource_2(Type TSource) =>
              (s_Any_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, bool>(Queryable.Any).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
@@ -100,570 +106,686 @@ namespace System.Linq
 
         private static MethodInfo? s_Average_Int32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_Int32_TSource_2(Type TSource) =>
              (s_Average_Int32_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int>>, double>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_NullableInt32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_NullableInt32_TSource_2(Type TSource) =>
              (s_Average_NullableInt32_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int?>>, double?>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_Single_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_Single_TSource_2(Type TSource) =>
              (s_Average_Single_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, float>>, float>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_NullableSingle_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_NullableSingle_TSource_2(Type TSource) =>
              (s_Average_NullableSingle_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, float?>>, float?>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_Int64_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_Int64_TSource_2(Type TSource) =>
              (s_Average_Int64_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, long>>, double>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_NullableInt64_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_NullableInt64_TSource_2(Type TSource) =>
              (s_Average_NullableInt64_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, long?>>, double?>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_Double_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_Double_TSource_2(Type TSource) =>
              (s_Average_Double_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, double>>, double>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_NullableDouble_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_NullableDouble_TSource_2(Type TSource) =>
              (s_Average_NullableDouble_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, double?>>, double?>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_Decimal_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_Decimal_TSource_2(Type TSource) =>
              (s_Average_Decimal_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, decimal>>, decimal>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Average_NullableDecimal_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Average_NullableDecimal_TSource_2(Type TSource) =>
              (s_Average_NullableDecimal_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, decimal?>>, decimal?>(Queryable.Average).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Cast_TResult_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Cast_TResult_1(Type TResult) =>
              (s_Cast_TResult_1 ??= new Func<IQueryable, IQueryable<object>>(Queryable.Cast<object>).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TResult);
 
         private static MethodInfo? s_Chunk_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Chunk_TSource_1(Type TSource) =>
              (s_Chunk_TSource_1 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Chunk).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Concat_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Concat_TSource_2(Type TSource) =>
              (s_Concat_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<object>>(Queryable.Concat).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Contains_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Contains_TSource_2(Type TSource) =>
              (s_Contains_TSource_2 ??= new Func<IQueryable<object>, object, bool>(Queryable.Contains).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Contains_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Contains_TSource_3(Type TSource) =>
              (s_Contains_TSource_3 ??= new Func<IQueryable<object>, object, IEqualityComparer<object>, bool>(Queryable.Contains).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Count_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Count_TSource_1(Type TSource) =>
              (s_Count_TSource_1 ??= new Func<IQueryable<object>, int>(Queryable.Count).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Count_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Count_TSource_2(Type TSource) =>
              (s_Count_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, int>(Queryable.Count).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_DefaultIfEmpty_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo DefaultIfEmpty_TSource_1(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_DefaultIfEmpty_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo DefaultIfEmpty_TSource_2(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Distinct_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Distinct_TSource_1(Type TSource) =>
              (s_Distinct_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object>>(Queryable.Distinct).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Distinct_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Distinct_TSource_2(Type TSource) =>
              (s_Distinct_TSource_2 ??= new Func<IQueryable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Distinct).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_DistinctBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo DistinctBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_DistinctBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.DistinctBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_DistinctBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo DistinctBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_DistinctBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.DistinctBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_ElementAt_Int32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ElementAt_Int32_TSource_2(Type TSource) =>
              (s_ElementAt_Int32_TSource_2 ??= new Func<IQueryable<object>, int, object>(Queryable.ElementAt).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_ElementAt_Index_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ElementAt_Index_TSource_2(Type TSource) =>
              (s_ElementAt_Index_TSource_2 ??= new Func<IQueryable<object>, Index, object>(Queryable.ElementAt).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_ElementAtOrDefault_Int32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ElementAtOrDefault_Int32_TSource_2(Type TSource) =>
              (s_ElementAtOrDefault_Int32_TSource_2 ??= new Func<IQueryable<object>, int, object?>(Queryable.ElementAtOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_ElementAtOrDefault_Index_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ElementAtOrDefault_Index_TSource_2(Type TSource) =>
              (s_ElementAtOrDefault_Index_TSource_2 ??= new Func<IQueryable<object>, Index, object?>(Queryable.ElementAtOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Except_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Except_TSource_2(Type TSource) =>
              (s_Except_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<object>>(Queryable.Except).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Except_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Except_TSource_3(Type TSource) =>
              (s_Except_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Except).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_ExceptBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ExceptBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_ExceptBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.ExceptBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_ExceptBy_TSource_TKey_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ExceptBy_TSource_TKey_4(Type TSource, Type TKey) =>
              (s_ExceptBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.ExceptBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_First_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo First_TSource_1(Type TSource) =>
              (s_First_TSource_1 ??= new Func<IQueryable<object>, object>(Queryable.First).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_First_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo First_TSource_2(Type TSource) =>
              (s_First_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object>(Queryable.First).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo FirstOrDefault_TSource_1(Type TSource) =>
              (s_FirstOrDefault_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo FirstOrDefault_TSource_2(Type TSource) =>
              (s_FirstOrDefault_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object?>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo FirstOrDefault_TSource_3(Type TSource) =>
-            (s_FirstOrDefault_TSource_3 ??
-            (s_FirstOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo FirstOrDefault_TSource_4(Type TSource) =>
-            (s_FirstOrDefault_TSource_4 ??
-            (s_FirstOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_GroupBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IQueryable<IGrouping<object, object>>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_GroupBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<IGrouping<object, object>>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TElement_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TElement_3(Type TSource, Type TKey, Type TElement) =>
              (s_GroupBy_TSource_TKey_TElement_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, IQueryable<IGrouping<object, object>>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TElement);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TElement_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TElement_4(Type TSource, Type TKey, Type TElement) =>
              (s_GroupBy_TSource_TKey_TElement_4 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<IGrouping<object, object>>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TElement);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TResult_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TResult_3(Type TSource, Type TKey, Type TResult) =>
              (s_GroupBy_TSource_TKey_TResult_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IQueryable<object>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TResult);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TResult_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TResult_4(Type TSource, Type TKey, Type TResult) =>
              (s_GroupBy_TSource_TKey_TResult_4 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TResult);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TElement_TResult_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TElement_TResult_4(Type TSource, Type TKey, Type TElement, Type TResult) =>
              (s_GroupBy_TSource_TKey_TElement_TResult_4 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IQueryable<object>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TElement, TResult);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_TElement_TResult_5;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupBy_TSource_TKey_TElement_TResult_5(Type TSource, Type TKey, Type TElement, Type TResult) =>
              (s_GroupBy_TSource_TKey_TElement_TResult_5 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.GroupBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey, TElement, TResult);
 
         private static MethodInfo? s_GroupJoin_TOuter_TInner_TKey_TResult_5;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupJoin_TOuter_TInner_TKey_TResult_5(Type TOuter, Type TInner, Type TKey, Type TResult) =>
              (s_GroupJoin_TOuter_TInner_TKey_TResult_5 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IQueryable<object>>(Queryable.GroupJoin).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TOuter, TInner, TKey, TResult);
 
         private static MethodInfo? s_GroupJoin_TOuter_TInner_TKey_TResult_6;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo GroupJoin_TOuter_TInner_TKey_TResult_6(Type TOuter, Type TInner, Type TKey, Type TResult) =>
              (s_GroupJoin_TOuter_TInner_TKey_TResult_6 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, IEnumerable<object>, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.GroupJoin).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TOuter, TInner, TKey, TResult);
 
         private static MethodInfo? s_Intersect_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Intersect_TSource_2(Type TSource) =>
              (s_Intersect_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<object>>(Queryable.Intersect).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Intersect_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Intersect_TSource_3(Type TSource) =>
              (s_Intersect_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Intersect).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_IntersectBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo IntersectBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_IntersectBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.IntersectBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_IntersectBy_TSource_TKey_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo IntersectBy_TSource_TKey_4(Type TSource, Type TKey) =>
              (s_IntersectBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.IntersectBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Join_TOuter_TInner_TKey_TResult_5;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Join_TOuter_TInner_TKey_TResult_5(Type TOuter, Type TInner, Type TKey, Type TResult) =>
              (s_Join_TOuter_TInner_TKey_TResult_5 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.Join).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TOuter, TInner, TKey, TResult);
 
         private static MethodInfo? s_Join_TOuter_TInner_TKey_TResult_6;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Join_TOuter_TInner_TKey_TResult_6(Type TOuter, Type TInner, Type TKey, Type TResult) =>
              (s_Join_TOuter_TInner_TKey_TResult_6 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, Expression<Func<object, object>>, Expression<Func<object, object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Join).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TOuter, TInner, TKey, TResult);
 
         private static MethodInfo? s_Last_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Last_TSource_1(Type TSource) =>
              (s_Last_TSource_1 ??= new Func<IQueryable<object>, object>(Queryable.Last).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Last_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Last_TSource_2(Type TSource) =>
              (s_Last_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object>(Queryable.Last).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LastOrDefault_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LastOrDefault_TSource_1(Type TSource) =>
              (s_LastOrDefault_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LastOrDefault_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LastOrDefault_TSource_2(Type TSource) =>
              (s_LastOrDefault_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object?>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LastOrDefault_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LastOrDefault_TSource_3(Type TSource) =>
-            (s_LastOrDefault_TSource_3 ??
-             (s_LastOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_LastOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LastOrDefault_TSource_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LastOrDefault_TSource_4(Type TSource) =>
-            (s_LastOrDefault_TSource_4 ??
-             (s_LastOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_LastOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LongCount_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LongCount_TSource_1(Type TSource) =>
              (s_LongCount_TSource_1 ??= new Func<IQueryable<object>, long>(Queryable.LongCount).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LongCount_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo LongCount_TSource_2(Type TSource) =>
              (s_LongCount_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, long>(Queryable.LongCount).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Max_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Max_TSource_1(Type TSource) =>
              (s_Max_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Max_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Max_TSource_2(Type TSource) =>
              (s_Max_TSource_2 ??= new Func<IQueryable<object>, IComparer<object>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Max_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Max_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Max_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_MaxBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo MaxBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_MaxBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.MaxBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_MaxBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo MaxBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_MaxBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, object?>(Queryable.MaxBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Min_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Min_TSource_1(Type TSource) =>
              (s_Min_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Min_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Min_TSource_2(Type TSource) =>
              (s_Min_TSource_2 ??= new Func<IQueryable<object>, IComparer<object>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Min_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Min_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Min_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_MinBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo MinBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_MinBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.MinBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_MinBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo MinBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_MinBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, object?>(Queryable.MinBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_OfType_TResult_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo OfType_TResult_1(Type TResult) =>
              (s_OfType_TResult_1 ??= new Func<IQueryable, IQueryable<object>>(Queryable.OfType<object>).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TResult);
 
+        private static MethodInfo? s_Order_T_1;
+
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
+        public static MethodInfo Order_T_1(Type T) =>
+             (s_Order_T_1 ??= new Func<IQueryable<object>, IOrderedQueryable<object>>(Queryable.Order).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
+        private static MethodInfo? s_Order_T_2;
+
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
+        public static MethodInfo Order_T_2(Type T) =>
+             (s_Order_T_2 ??= new Func<IQueryable<object>, IComparer<object>, IOrderedQueryable<object>>(Queryable.Order).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
         private static MethodInfo? s_OrderBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo OrderBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_OrderBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IOrderedQueryable<object>>(Queryable.OrderBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
+        private static MethodInfo? s_OrderDescending_T_1;
+
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
+        public static MethodInfo OrderDescending_T_1(Type T) =>
+             (s_OrderDescending_T_1 ??= new Func<IQueryable<object>, IOrderedQueryable<object>>(Queryable.OrderDescending).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
+        private static MethodInfo? s_OrderDescending_T_2;
+
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
+        public static MethodInfo OrderDescending_T_2(Type T) =>
+             (s_OrderDescending_T_2 ??= new Func<IQueryable<object>, IComparer<object>, IOrderedQueryable<object>>(Queryable.OrderDescending).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
         private static MethodInfo? s_OrderBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo OrderBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_OrderBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, IOrderedQueryable<object>>(Queryable.OrderBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_OrderByDescending_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo OrderByDescending_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_OrderByDescending_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IOrderedQueryable<object>>(Queryable.OrderByDescending).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_OrderByDescending_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo OrderByDescending_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_OrderByDescending_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, IOrderedQueryable<object>>(Queryable.OrderByDescending).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Reverse_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Reverse_TSource_1(Type TSource) =>
              (s_Reverse_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object>>(Queryable.Reverse).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Select_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Select_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Select_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.Select).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_Select_Index_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Select_Index_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Select_Index_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, int, object>>, IQueryable<object>>(Queryable.Select).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_SelectMany_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SelectMany_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_SelectMany_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, IEnumerable<object>>>, IQueryable<object>>(Queryable.SelectMany).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_SelectMany_Index_TSource_TResult_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SelectMany_Index_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_SelectMany_Index_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, int, IEnumerable<object>>>, IQueryable<object>>(Queryable.SelectMany).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
 
         private static MethodInfo? s_SelectMany_Index_TSource_TCollection_TResult_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SelectMany_Index_TSource_TCollection_TResult_3(Type TSource, Type TCollection, Type TResult) =>
              (s_SelectMany_Index_TSource_TCollection_TResult_3 ??= new Func<IQueryable<object>, Expression<Func<object, int, IEnumerable<object>>>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.SelectMany).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TCollection, TResult);
 
         private static MethodInfo? s_SelectMany_TSource_TCollection_TResult_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SelectMany_TSource_TCollection_TResult_3(Type TSource, Type TCollection, Type TResult) =>
              (s_SelectMany_TSource_TCollection_TResult_3 ??= new Func<IQueryable<object>, Expression<Func<object, IEnumerable<object>>>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.SelectMany).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TCollection, TResult);
 
         private static MethodInfo? s_SequenceEqual_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SequenceEqual_TSource_2(Type TSource) =>
              (s_SequenceEqual_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, bool>(Queryable.SequenceEqual).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SequenceEqual_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SequenceEqual_TSource_3(Type TSource) =>
              (s_SequenceEqual_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, bool>(Queryable.SequenceEqual).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Single_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Single_TSource_1(Type TSource) =>
              (s_Single_TSource_1 ??= new Func<IQueryable<object>, object>(Queryable.Single).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Single_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Single_TSource_2(Type TSource) =>
              (s_Single_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object>(Queryable.Single).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_1;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SingleOrDefault_TSource_1(Type TSource) =>
              (s_SingleOrDefault_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SingleOrDefault_TSource_2(Type TSource) =>
              (s_SingleOrDefault_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object?>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SingleOrDefault_TSource_3(Type TSource) =>
-            (s_SingleOrDefault_TSource_3 ??
-            (s_SingleOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SingleOrDefault_TSource_4(Type TSource) =>
-            (s_SingleOrDefault_TSource_4 ??
-            (s_SingleOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Skip_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Skip_TSource_2(Type TSource) =>
              (s_Skip_TSource_2 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Skip).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SkipWhile_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SkipWhile_TSource_2(Type TSource) =>
              (s_SkipWhile_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(Queryable.SkipWhile).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SkipWhile_Index_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SkipWhile_Index_TSource_2(Type TSource) =>
              (s_SkipWhile_Index_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int, bool>>, IQueryable<object>>(Queryable.SkipWhile).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
@@ -720,162 +842,189 @@ namespace System.Linq
 
         private static MethodInfo? s_Sum_NullableDecimal_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_NullableDecimal_TSource_2(Type TSource) =>
              (s_Sum_NullableDecimal_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, decimal?>>, decimal?>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_Int32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_Int32_TSource_2(Type TSource) =>
              (s_Sum_Int32_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int>>, int>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_NullableInt32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_NullableInt32_TSource_2(Type TSource) =>
              (s_Sum_NullableInt32_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int?>>, int?>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_Int64_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_Int64_TSource_2(Type TSource) =>
              (s_Sum_Int64_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, long>>, long>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_NullableInt64_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_NullableInt64_TSource_2(Type TSource) =>
              (s_Sum_NullableInt64_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, long?>>, long?>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_Single_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_Single_TSource_2(Type TSource) =>
              (s_Sum_Single_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, float>>, float>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_NullableSingle_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_NullableSingle_TSource_2(Type TSource) =>
              (s_Sum_NullableSingle_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, float?>>, float?>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_Double_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_Double_TSource_2(Type TSource) =>
              (s_Sum_Double_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, double>>, double>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_NullableDouble_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_NullableDouble_TSource_2(Type TSource) =>
              (s_Sum_NullableDouble_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, double?>>, double?>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Sum_Decimal_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Sum_Decimal_TSource_2(Type TSource) =>
              (s_Sum_Decimal_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, decimal>>, decimal>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Take_Int32_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Take_Int32_TSource_2(Type TSource) =>
              (s_Take_Int32_TSource_2 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Take).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Take_Range_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Take_Range_TSource_2(Type TSource) =>
              (s_Take_Range_TSource_2 ??= new Func<IQueryable<object>, Range, IQueryable<object>>(Queryable.Take).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_TakeWhile_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo TakeWhile_TSource_2(Type TSource) =>
              (s_TakeWhile_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(Queryable.TakeWhile).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_TakeWhile_Index_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo TakeWhile_Index_TSource_2(Type TSource) =>
              (s_TakeWhile_Index_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int, bool>>, IQueryable<object>>(Queryable.TakeWhile).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_ThenBy_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ThenBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_ThenBy_TSource_TKey_2 ??= new Func<IOrderedQueryable<object>, Expression<Func<object, object>>, IOrderedQueryable<object>>(Queryable.ThenBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_ThenBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ThenBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_ThenBy_TSource_TKey_3 ??= new Func<IOrderedQueryable<object>, Expression<Func<object, object>>, IComparer<object>, IOrderedQueryable<object>>(Queryable.ThenBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_ThenByDescending_TSource_TKey_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ThenByDescending_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_ThenByDescending_TSource_TKey_2 ??= new Func<IOrderedQueryable<object>, Expression<Func<object, object>>, IOrderedQueryable<object>>(Queryable.ThenByDescending).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_ThenByDescending_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo ThenByDescending_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_ThenByDescending_TSource_TKey_3 ??= new Func<IOrderedQueryable<object>, Expression<Func<object, object>>, IComparer<object>, IOrderedQueryable<object>>(Queryable.ThenByDescending).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Union_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Union_TSource_2(Type TSource) =>
              (s_Union_TSource_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<object>>(Queryable.Union).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Union_TSource_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Union_TSource_3(Type TSource) =>
              (s_Union_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Union).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_UnionBy_TSource_TKey_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo UnionBy_TSource_TKey_3(Type TSource, Type TKey) =>
              (s_UnionBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.UnionBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_UnionBy_TSource_TKey_4;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo UnionBy_TSource_TKey_4(Type TSource, Type TKey) =>
              (s_UnionBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.UnionBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Where_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Where_TSource_2(Type TSource) =>
              (s_Where_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, IQueryable<object>>(Queryable.Where).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Where_Index_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Where_Index_TSource_2(Type TSource) =>
              (s_Where_Index_TSource_2 ??= new Func<IQueryable<object>, Expression<Func<object, int, bool>>, IQueryable<object>>(Queryable.Where).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Zip_TFirst_TSecond_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Zip_TFirst_TSecond_2(Type TFirst, Type TSecond) =>
             (s_Zip_TFirst_TSecond_2 ??= new Func<IQueryable<object>, IEnumerable<object>, IQueryable<(object, object)>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TFirst, TSecond);
 
         private static MethodInfo? s_Zip_TFirst_TSecond_TResult_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Zip_TFirst_TSecond_TResult_3(Type TFirst, Type TSecond, Type TResult) =>
              (s_Zip_TFirst_TSecond_TResult_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TFirst, TSecond, TResult);
 
         private static MethodInfo? s_Zip_TFirst_TSecond_TThird_3;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Zip_TFirst_TSecond_TThird_3(Type TFirst, Type TSecond, Type TThird) =>
              (s_Zip_TFirst_TSecond_TThird_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEnumerable<object>, IQueryable<(object, object, object)>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TFirst, TSecond, TThird);
@@ -883,24 +1032,28 @@ namespace System.Linq
 
         private static MethodInfo? s_SkipLast_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo SkipLast_TSource_2(Type TSource) =>
              (s_SkipLast_TSource_2 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.SkipLast).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_TakeLast_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo TakeLast_TSource_2(Type TSource) =>
              (s_TakeLast_TSource_2 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.TakeLast).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Append_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Append_TSource_2(Type TSource) =>
              (s_Append_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object>>(Queryable.Append).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Prepend_TSource_2;
 
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         public static MethodInfo Prepend_TSource_2(Type TSource) =>
              (s_Prepend_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object>>(Queryable.Prepend).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);

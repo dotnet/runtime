@@ -74,7 +74,6 @@ namespace Internal.Runtime.TypeLoader
             fieldAccessMetadata = default(FieldAccessMetadata);
 
             if (TryGetFieldAccessMetadataFromFieldAccessMap(
-                metadataReader,
                 runtimeTypeHandle,
                 fieldHandle,
                 CanonicalFormKind.Specific,
@@ -84,7 +83,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             if (TryGetFieldAccessMetadataFromFieldAccessMap(
-                metadataReader,
                 runtimeTypeHandle,
                 fieldHandle,
                 CanonicalFormKind.Universal,
@@ -110,14 +108,12 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Try to look up field access info for given canon in metadata blobs for all available modules.
         /// </summary>
-        /// <param name="metadataReader">Metadata reader for the declaring type</param>
         /// <param name="declaringTypeHandle">Declaring type for the method</param>
         /// <param name="fieldHandle">Field handle</param>
         /// <param name="canonFormKind">Canonical form to use</param>
         /// <param name="fieldAccessMetadata">Output - metadata information for field accessor construction</param>
         /// <returns>true when found, false otherwise</returns>
         private static unsafe bool TryGetFieldAccessMetadataFromFieldAccessMap(
-            MetadataReader metadataReader,
             RuntimeTypeHandle declaringTypeHandle,
             FieldHandle fieldHandle,
             CanonicalFormKind canonFormKind,
@@ -267,7 +263,7 @@ namespace Internal.Runtime.TypeLoader
         /// </param>
         public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
-            // TODO: implement for CoreRT
+            // TODO: implement
             throw new NotImplementedException();
         }
 
@@ -467,7 +463,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     {
                         Environment.FailFast(
-                            "Failed to locate statics table entry for for field '" +
+                            "Failed to locate statics table entry for field '" +
                             fieldName +
                             "' on type " +
                             type.ToString());

@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal static PublicKey BuildPublicKey(RSA rsa)
         {
             Oid oid = Oids.RsaOid;
+            ReadOnlySpan<byte> asnNull = new byte[] { 0x05, 0x00 };
 
             // The OID is being passed to everything here because that's what
             // X509Certificate2.PublicKey does.
@@ -39,8 +40,8 @@ namespace System.Security.Cryptography.X509Certificates
                 //
                 // This is due to one version of the ASN.1 not including OPTIONAL, and that was
                 // the version that got predominately implemented for RSA. Now it's convention.
-                new AsnEncodedData(oid, stackalloc byte[] { 0x05, 0x00 }),
-                new AsnEncodedData(oid, rsa.ExportRSAPublicKey()));
+                new AsnEncodedData(oid, asnNull),
+                new AsnEncodedData(oid, rsa.ExportRSAPublicKey(), skipCopy: true));
         }
 
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)

@@ -118,7 +118,7 @@ struct ProfilingScanContext;
         ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
 #endif // FEATURE_DTRACE
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 // Headers
 #ifndef FEATURE_PAL
@@ -137,7 +137,7 @@ struct ProfilingScanContext;
 #include "clrdtrace.h"
 #endif
 
-#endif //!FEATURE_REDHAWK
+#endif //!FEATURE_NATIVEAOT
 
 
 #else // FEATURE_EVENT_TRACE
@@ -145,7 +145,7 @@ struct ProfilingScanContext;
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #include "corprof.h"
 
@@ -477,7 +477,7 @@ namespace ETW
         static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
         static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
-        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers);
+        static void StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static void MethodRestored(MethodDesc * pMethodDesc);
         static void MethodTableRestored(MethodTable * pMethodTable);
         static void DynamicMethodDestroyed(MethodDesc *pMethodDesc);
@@ -486,7 +486,7 @@ namespace ETW
         static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL) {};
         static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0) {};
         static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
-        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
+        static void StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
         static void MethodRestored(MethodDesc * pMethodDesc) {};
         static void MethodTableRestored(MethodTable * pMethodTable) {};
         static void DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
@@ -692,7 +692,8 @@ namespace ETW
             typedef enum _Sku
             {
                 DesktopCLR=0x1,
-                CoreCLR=0x2
+                CoreCLR=0x2,
+                Mono=0x4
             }Sku;
 
             typedef enum _EtwMode
@@ -729,7 +730,7 @@ extern ETW::CEtwTracer *  g_pEtwTracer;
 #define ETWLoaderDynamicLoad 1 // Dynamic assembly load
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL) && !defined(WINXP_AND_WIN2K3_BUILD_SUPPORT)
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 FORCEINLINE
@@ -921,9 +922,9 @@ McGenEventProviderEnabled(
 
 #endif // FEATURE_EVENT_TRACE && !FEATURE_PAL
 
-#endif // !FEATURE_REDHAWK
-// These parts of the ETW namespace are common for both FEATURE_REDHAWK and
-// !FEATURE_REDHAWK builds.
+#endif // !FEATURE_NATIVEAOT
+// These parts of the ETW namespace are common for both FEATURE_NATIVEAOT and
+// !FEATURE_NATIVEAOT builds.
 
 
 struct ProfilingScanContext;
@@ -944,7 +945,7 @@ namespace ETW
     };
 };
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #ifdef FEATURE_EVENT_TRACE
 
@@ -976,7 +977,7 @@ namespace ETW
 //
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL) && !defined(WINXP_AND_WIN2K3_BUILD_SUPPORT)
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 ETW_INLINE
@@ -1083,6 +1084,6 @@ public:
 
 #endif // FEATURE_EVENT_TRACE
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 #endif //_ETWTRACER_HXX_

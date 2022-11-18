@@ -27,6 +27,8 @@ class Generics
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
+        TestGvmOnInterface.Run();
+        TestSharedAndUnsharedGvmAnalysisRegression.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
         TestReflectionInvoke.Run();
@@ -43,6 +45,7 @@ class Generics
         TestSimpleGenericRecursion.Run();
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
+        TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -807,7 +810,7 @@ class Generics
                     s_NumErrors++;
             }
 
-            // Uncomment when we have the type loader to buld invoke stub dictionaries.
+            // Uncomment when we have the type loader to build invoke stub dictionaries.
             {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
@@ -1661,6 +1664,86 @@ class Generics
         {
             TestInContext<object>();
             TestInContext<int>();
+        }
+    }
+
+    class TestGvmOnInterface
+    {
+        interface IGvmMethods
+        {
+            static abstract int StaticAbstractGvm<T>();
+            int InstanceGvm<T>();
+            int InstanceDefaultGvm<T>() { return 0; }
+            static void StaticGeneric<T>() { }
+        }
+
+        class BaseWithInterface : IGvmMethods
+        {
+            public static int StaticAbstractGvm<T>() { return 1; }
+            public int InstanceGvm<T>() { return 1; }
+            int IGvmMethods.InstanceDefaultGvm<T>() { return 1; }
+        }
+
+        static void TestInContext<T>()
+        {
+            BaseWithInterface b = new BaseWithInterface();
+            IGvmMethods i = new BaseWithInterface();
+
+            if (BaseWithInterface.StaticAbstractGvm<T>() != 1)
+                throw new Exception();
+
+            if (b.InstanceGvm<T>() != 1)
+                throw new Exception();
+
+            if (i.InstanceGvm<T>() != 1)
+                throw new Exception();
+
+            if (i.InstanceDefaultGvm<T>() != 1)
+                throw new Exception();
+        }
+
+        static void TestStaticAbstractGvm<T, TMethods>() where TMethods : IGvmMethods
+        {
+            if (TMethods.StaticAbstractGvm<T>() != 1)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            TestInContext<object>();
+            TestInContext<int>();
+            TestStaticAbstractGvm<object, BaseWithInterface>();
+            TestStaticAbstractGvm<int, BaseWithInterface>();
+        }
+    }
+
+    class TestSharedAndUnsharedGvmAnalysisRegression
+    {
+        interface IAtom { }
+        interface IPhantom { }
+        class Atom : IAtom, IPhantom { }
+
+        class Lol<TLeft> where TLeft : IAtom, IPhantom
+        {
+            public static void Run() => ((IPartitionedStreamRecipient<int>)new RightChildResultsRecipient<TLeft, int>()).ReceivePackage<int>();
+        }
+
+        interface IPartitionedStreamRecipient<T>
+        {
+            void ReceivePackage<U>();
+        }
+
+        sealed class RightChildResultsRecipient<TLeftInput, TRightInput> : IPartitionedStreamRecipient<TRightInput>
+        {
+            public void ReceivePackage<U>() => Console.WriteLine("Accepted");
+        }
+
+        static Type s_atom = typeof(Atom);
+
+        public static void Run()
+        {
+            // Make sure the compiler never saw anything more concrete than Lol<__Canon>.
+            typeof(Lol<>).MakeGenericType(s_atom).GetMethod("Run").Invoke(null, Array.Empty<object>());
         }
     }
 
@@ -3118,6 +3201,47 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             // Inspired by https://github.com/dotnet/machinelearning/blob/cc5e6395e0d15e4d3db702b9cb1129e12838b840/src/Microsoft.ML.Transforms/UngroupTransform.cs#L610-L629
             s_derived.Get<object>();
+        }
+    }
+
+    class TestRecursionInGenericInterfaceMethods
+    {
+        interface IFoo
+        {
+            void Recurse<T>(int val);
+        }
+
+        class Foo : IFoo
+        {
+            void IFoo.Recurse<T>(int val)
+            {
+                if (val > 0)
+                    ((IFoo)this).Recurse<S<T>>(val - 1);
+            }
+        }
+
+        struct S<T>
+        {
+            public T Field;
+        }
+
+        public static void Run()
+        {
+            IFoo f = new Foo();
+
+            f.Recurse<int>(2);
+
+            bool thrown = false;
+            try
+            {
+                f.Recurse<int>(100);
+            }
+            catch (TypeLoadException)
+            {
+                thrown = true;
+            }
+            if (!thrown)
+                throw new Exception();
         }
     }
 

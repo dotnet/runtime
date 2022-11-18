@@ -10,6 +10,8 @@ using System.Reflection;
 
 namespace System.Drawing
 {
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Heif and Webp are referenced here for " +
+        "design-time support, the user is responsible to ensure that they are used on a supported version of Windows.")]
     public class ImageFormatConverter : TypeConverter
     {
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
@@ -63,6 +65,10 @@ namespace System.Drawing
                 return ImageFormat.Tiff;
             else if (strFormat.Equals("Wmf", StringComparison.OrdinalIgnoreCase))
                 return ImageFormat.Wmf;
+            else if (strFormat.Equals("Heif", StringComparison.OrdinalIgnoreCase))
+                return ImageFormat.Heif;
+            else if (strFormat.Equals("Webp", StringComparison.OrdinalIgnoreCase))
+                return ImageFormat.Webp;
 
             throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, strFormat, nameof(ImageFormat)));
         }
@@ -128,7 +134,9 @@ namespace System.Drawing
                 ImageFormat.Png,
                 ImageFormat.Tiff,
                 ImageFormat.Exif,
-                ImageFormat.Icon
+                ImageFormat.Icon,
+                ImageFormat.Heif,
+                ImageFormat.Webp
             });
         }
 

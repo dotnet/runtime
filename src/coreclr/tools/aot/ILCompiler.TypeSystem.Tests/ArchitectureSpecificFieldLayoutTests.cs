@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -15,12 +10,18 @@ namespace TypeSystemTests
 {
     public class ArchitectureSpecificFieldLayoutTests
     {
-        TestTypeSystemContext _contextX86;
-        ModuleDesc _testModuleX86;
-        TestTypeSystemContext _contextX64;
-        ModuleDesc _testModuleX64;
-        TestTypeSystemContext _contextARM;
-        ModuleDesc _testModuleARM;
+        private TestTypeSystemContext _contextX86;
+        private ModuleDesc _testModuleX86;
+        private TestTypeSystemContext _contextX64;
+        private ModuleDesc _testModuleX64;
+        private TestTypeSystemContext _contextX64Windows;
+        private ModuleDesc _testModuleX64Windows;
+        private TestTypeSystemContext _contextX64Linux;
+        private ModuleDesc _testModuleX64Linux;
+        private TestTypeSystemContext _contextARM;
+        private ModuleDesc _testModuleARM;
+        private TestTypeSystemContext _contextARM64;
+        private ModuleDesc _testModuleARM64;
 
         public ArchitectureSpecificFieldLayoutTests()
         {
@@ -29,6 +30,18 @@ namespace TypeSystemTests
             _contextX64.SetSystemModule(systemModuleX64);
 
             _testModuleX64 = systemModuleX64;
+
+            _contextX64Linux = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Linux);
+            var systemModuleX64Linux = _contextX64Linux.CreateModuleForSimpleName("CoreTestAssembly");
+            _contextX64Linux.SetSystemModule(systemModuleX64Linux);
+
+            _testModuleX64Linux = systemModuleX64Linux;
+
+            _contextX64Windows = new TestTypeSystemContext(TargetArchitecture.X64, TargetOS.Windows);
+            var systemModuleX64Windows = _contextX64Windows.CreateModuleForSimpleName("CoreTestAssembly");
+            _contextX64Windows.SetSystemModule(systemModuleX64Windows);
+
+            _testModuleX64Windows = systemModuleX64Windows;
 
             _contextARM = new TestTypeSystemContext(TargetArchitecture.ARM);
             var systemModuleARM = _contextARM.CreateModuleForSimpleName("CoreTestAssembly");
@@ -41,6 +54,12 @@ namespace TypeSystemTests
             _contextX86.SetSystemModule(systemModuleX86);
 
             _testModuleX86 = systemModuleX86;
+
+            _contextARM64 = new TestTypeSystemContext(TargetArchitecture.ARM64);
+            var systemModuleARM64 = _contextARM64.CreateModuleForSimpleName("CoreTestAssembly");
+            _contextARM64.SetSystemModule(systemModuleARM64);
+
+            _testModuleARM64 = systemModuleARM64;
         }
 
         [Fact]
@@ -319,20 +338,20 @@ namespace TypeSystemTests
             Assert.Equal(0x4, tX86.InstanceByteAlignment.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceByteCountUnaligned.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0xC, tARM.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0xC, tX86.InstanceByteCountUnaligned.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceByteCount.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceByteCount.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceByteCount.AsInt);
+            Assert.Equal(0xC, tARM.InstanceByteCount.AsInt);
+            Assert.Equal(0xC, tX86.InstanceByteCount.AsInt);
 
             Assert.Equal(0x8, tX64.InstanceFieldAlignment.AsInt);
             Assert.Equal(0x4, tARM.InstanceFieldAlignment.AsInt);
             Assert.Equal(0x4, tX86.InstanceFieldAlignment.AsInt);
 
             Assert.Equal(0x10, tX64.InstanceFieldSize.AsInt);
-            Assert.Equal(0xC,  tARM.InstanceFieldSize.AsInt);
-            Assert.Equal(0xC,  tX86.InstanceFieldSize.AsInt);
+            Assert.Equal(0xC, tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(0xC, tX86.InstanceFieldSize.AsInt);
 
             Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
             Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
@@ -413,6 +432,117 @@ namespace TypeSystemTests
             Assert.Equal(0x8, tX64FieldStruct.GetField("_struct").Offset.AsInt);
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
             Assert.Equal(0x4, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+        }
+
+        [Fact]
+        public void TestAlignmentBehavior_StructStructByte_StructByteAuto()
+        {
+            string _namespace = "Sequential";
+            string _type = "StructStructByte_StructByteAuto";
+
+            MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
+            MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
+            MetadataType tARM = _testModuleARM.GetType(_namespace, _type);
+
+            Assert.Equal(0x1, tX64.InstanceFieldAlignment.AsInt);
+            Assert.Equal(0x1, tARM.InstanceFieldAlignment.AsInt);
+            Assert.Equal(0x1, tX86.InstanceFieldAlignment.AsInt);
+
+            Assert.Equal(0x2, tX64.InstanceFieldSize.AsInt);
+            Assert.Equal(0x2, tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(0x2, tX86.InstanceFieldSize.AsInt);
+
+            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+
+            Assert.Equal(0x1, tX64.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x1, tARM.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x1, tX86.GetField("fld2").Offset.AsInt);
+        }
+
+        [Theory]
+        [InlineData("StructStructByte_StructByteAuto", new int[] { 1, 1, 1 }, new int[] { 2, 2, 2 })]
+        [InlineData("StructStructByte_Struct2BytesAuto", new int[] { 2, 2, 2 }, new int[] { 4, 4, 4 })]
+        [InlineData("StructStructByte_Struct3BytesAuto", new int[] { 4, 4, 4 }, new int[] { 8, 8, 8 })]
+        [InlineData("StructStructByte_Struct4BytesAuto", new int[] { 4, 4, 4 }, new int[] { 8, 8, 8 })]
+        [InlineData("StructStructByte_Struct5BytesAuto", new int[] { 8, 4, 4 }, new int[] { 16, 12, 12 })]
+        [InlineData("StructStructByte_Struct8BytesAuto", new int[] { 8, 4, 4 }, new int[] { 16, 12, 12 })]
+        [InlineData("StructStructByte_Struct9BytesAuto", new int[] { 8, 4, 4 }, new int[] { 24, 16, 16 })]
+        public void TestAlignmentBehavior_AutoAlignmentRules(string wrapperType, int[] alignment, int[] size)
+        {
+            string _namespace = "Sequential";
+            string _type = wrapperType;
+
+            MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
+            MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
+            MetadataType tARM = _testModuleARM.GetType(_namespace, _type);
+
+            Assert.Equal(alignment[0], tX64.InstanceFieldAlignment.AsInt);
+            Assert.Equal(alignment[1], tARM.InstanceFieldAlignment.AsInt);
+            Assert.Equal(alignment[2], tX86.InstanceFieldAlignment.AsInt);
+
+            Assert.Equal(size[0], tX64.InstanceFieldSize.AsInt);
+            Assert.Equal(size[1], tARM.InstanceFieldSize.AsInt);
+            Assert.Equal(size[2], tX86.InstanceFieldSize.AsInt);
+
+            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+
+            Assert.Equal(alignment[0], tX64.GetField("fld2").Offset.AsInt);
+            Assert.Equal(alignment[1], tARM.GetField("fld2").Offset.AsInt);
+            Assert.Equal(alignment[2], tX86.GetField("fld2").Offset.AsInt);
+        }
+
+        [Theory]
+        [InlineData("StructStructByte_Int128StructAuto", "ARM64", 16, 32)]
+        [InlineData("StructStructByte_Int128StructAuto", "ARM", 8, 24)]
+        [InlineData("StructStructByte_Int128StructAuto", "X86", 16, 32)]
+        [InlineData("StructStructByte_Int128StructAuto", "X64Linux", 16, 32)]
+        [InlineData("StructStructByte_Int128StructAuto", "X64Windows", 16, 32)]
+        [InlineData("StructStructByte_UInt128StructAuto", "ARM64", 16, 32)]
+        [InlineData("StructStructByte_UInt128StructAuto", "ARM", 8, 24)]
+        [InlineData("StructStructByte_UInt128StructAuto", "X86", 16, 32)]
+        [InlineData("StructStructByte_UInt128StructAuto", "X64Linux", 16, 32)]
+        [InlineData("StructStructByte_UInt128StructAuto", "X64Windows", 16, 32)]
+        // Variation of TestAlignmentBehavior_AutoAlignmentRules above that is able to deal with os specific behavior
+        public void TestAlignmentBehavior_AutoAlignmentRulesWithOSDependence(string wrapperType, string osArch, int alignment, int size)
+        {
+            ModuleDesc testModule;
+            switch (osArch)
+            {
+                case "ARM64":
+                    testModule = _testModuleARM64;
+                    break;
+                case "ARM":
+                    testModule = _testModuleARM;
+                    break;
+                case "X64":
+                    testModule = _testModuleX64;
+                    break;
+                case "X64Linux":
+                    testModule = _testModuleX64Linux;
+                    break;
+                case "X64Windows":
+                    testModule = _testModuleX64Windows;
+                    break;
+                case "X86":
+                    testModule = _testModuleX86;
+                    break;
+                default:
+                    throw new Exception();
+            }
+
+            string _namespace = "Sequential";
+            string _type = wrapperType;
+
+            MetadataType type = testModule.GetType(_namespace, _type);
+
+            Assert.Equal(alignment, type.InstanceFieldAlignment.AsInt);
+            Assert.Equal(size, type.InstanceFieldSize.AsInt);
+            Assert.Equal(0x0, type.GetField("fld1").Offset.AsInt);
+            Assert.Equal(alignment, type.GetField("fld2").Offset.AsInt);
         }
     }
 }

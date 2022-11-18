@@ -3,6 +3,7 @@
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsPackable>true</IsPackable>
     <PackageDescription>Contains runtime components of the Managed Extensibility Framework.

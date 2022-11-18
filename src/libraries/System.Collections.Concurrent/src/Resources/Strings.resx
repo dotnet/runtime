@@ -93,9 +93,6 @@
   <data name="BlockingCollection_ctor_CountMoreThanCapacity" xml:space="preserve">
     <value>The collection argument contains more items than are allowed by the boundedCapacity.</value>
   </data>
-  <data name="BlockingCollection_Disposed" xml:space="preserve">
-    <value>The collection has been disposed.</value>
-  </data>
   <data name="BlockingCollection_Take_CollectionModified" xml:space="preserve">
     <value>The underlying collection was modified from outside of the BlockingCollection&lt;T&gt;.</value>
   </data>

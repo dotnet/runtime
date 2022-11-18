@@ -147,7 +147,7 @@ namespace System.Runtime.CompilerServices
 
             private static Action OutputCorrelationEtwEvent(Action continuation)
             {
-#if CORERT
+#if NATIVEAOT
                 // TODO
                 return continuation;
 #else

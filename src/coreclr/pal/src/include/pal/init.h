@@ -86,14 +86,14 @@ PALSetShutdownIntent();
 Function:
   PALInitLock
 
-Take the initializaiton critical section (init_critsec). necessary to serialize
+Take the initialization critical section (init_critsec). necessary to serialize
 TerminateProcess along with PAL_Terminate and PAL_Initialize
 
 (no parameters)
 
 Return value :
     TRUE if critical section existed (and was acquired)
-    FALSE if critical section doens't exist yet
+    FALSE if critical section doesn't exist yet
 --*/
 BOOL PALInitLock(void);
 

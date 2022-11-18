@@ -228,7 +228,7 @@ namespace System.Globalization
                     m_dateWords.Add(str);
                 }
 
-                if (str[^1] == '.')
+                if (str.EndsWith('.'))
                 {
                     // Old version ignore the trailing dot in the date words. Support this as well.
                     string strWithoutDot = str[0..^1];
@@ -327,7 +327,7 @@ namespace System.Globalization
         internal static int ScanRepeatChar(string pattern, char ch, int index, out int count)
         {
             count = 1;
-            while (++index < pattern.Length && pattern[index] == ch)
+            while ((uint)++index < (uint)pattern.Length && pattern[index] == ch)
             {
                 count++;
             }
@@ -352,11 +352,9 @@ namespace System.Globalization
 
         internal void AddIgnorableSymbols(string? text)
         {
-            if (m_dateWords == null)
-            {
-                // Create the date word array.
-                m_dateWords = new List<string>();
-            }
+            // Create the date word array.
+            m_dateWords ??= new List<string>();
+
             // Add the ignorable symbol into the ArrayList.
             string temp = IgnorableSymbolChar + text;
             if (!m_dateWords.Contains(temp))
@@ -423,7 +421,7 @@ namespace System.Globalization
                         i = ScanRepeatChar(pattern, 'M', i, out chCount);
                         if (chCount >= 4)
                         {
-                            if (i < pattern.Length && pattern[i] == '\'')
+                            if ((uint)i < (uint)pattern.Length && pattern[i] == '\'')
                             {
                                 i = AddDateWords(pattern, i + 1, "MMMM");
                             }
@@ -538,10 +536,10 @@ namespace System.Globalization
         // the format flag.
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitveMonthNames, string[] abbrevMonthNames, string[] genetiveAbbrevMonthNames)
+        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitiveMonthNames, string[] abbrevMonthNames, string[] genitiveAbbrevMonthNames)
         {
             // If we have different names in regular and genitive month names, use genitive month flag.
-            return (!EqualStringArrays(monthNames, genitveMonthNames) || !EqualStringArrays(abbrevMonthNames, genetiveAbbrevMonthNames))
+            return (!monthNames.AsSpan().SequenceEqual(genitiveMonthNames) || !abbrevMonthNames.AsSpan().SequenceEqual(genitiveAbbrevMonthNames))
                 ? FORMATFLAGS.UseGenitiveMonth : 0;
         }
 
@@ -591,39 +589,6 @@ namespace System.Globalization
         }
 
         //-----------------------------------------------------------------------------
-        // EqualStringArrays
-        //      compares two string arrays and return true if all elements of the first
-        //      array equals to all elements of the second array.
-        //      otherwise it returns false.
-        //-----------------------------------------------------------------------------
-
-        private static bool EqualStringArrays(string[] array1, string[] array2)
-        {
-            // Shortcut if they're the same array
-            if (array1 == array2)
-            {
-                return true;
-            }
-
-            // This is effectively impossible
-            if (array1.Length != array2.Length)
-            {
-                return false;
-            }
-
-            // Check each string
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        //-----------------------------------------------------------------------------
         // ArrayElementsHaveSpace
         //      It checks all input array elements if any of them has space character
         //      returns true if found space character in one of the array elements.
@@ -655,30 +620,29 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
         private static bool ArrayElementsBeginWithDigit(string[] array)
         {
-            for (int i = 0; i < array.Length; i++)
+            foreach (string s in array)
             {
                 // it is faster to check for space character manually instead of calling IndexOf
                 // so we don't have to go to native code side.
-                if (array[i].Length > 0 &&
-                   array[i][0] >= '0' && array[i][0] <= '9')
+                if (s.Length != 0 && char.IsAsciiDigit(s[0]))
                 {
                     int index = 1;
-                    while (index < array[i].Length && array[i][index] >= '0' && array[i][index] <= '9')
+                    while ((uint)index < (uint)s.Length && char.IsAsciiDigit(s[index]))
                     {
                         // Skip other digits.
                         index++;
                     }
-                    if (index == array[i].Length)
+                    if (index == s.Length)
                     {
                         return false;
                     }
 
-                    if (index == array[i].Length - 1)
+                    if (index == s.Length - 1)
                     {
                         // Skip known CJK month suffix.
                         // CJK uses month name like "1\x6708", since \x6708 is a known month suffix,
                         // we don't need the UseDigitPrefixInTokens since it is slower.
-                        switch (array[i][index])
+                        switch (s[index])
                         {
                             case CJKMonthSuff:
                             case KoreanMonthSuff:
@@ -686,13 +650,13 @@ namespace System.Globalization
                         }
                     }
 
-                    if (index == array[i].Length - 4)
+                    if (index == s.Length - 4)
                     {
                         // Skip known CJK month suffix.
                         // Starting with Windows 8, the CJK months for some cultures looks like: "1' \x6708'"
                         // instead of just "1\x6708"
-                        if (array[i][index] == '\'' && array[i][index + 1] == ' ' &&
-                           array[i][index + 2] == CJKMonthSuff && array[i][index + 3] == '\'')
+                        if (s[index] == '\'' && s[index + 1] == ' ' &&
+                            s[index + 2] == CJKMonthSuff && s[index + 3] == '\'')
                         {
                             return false;
                         }

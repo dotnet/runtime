@@ -109,9 +109,9 @@ namespace System.Reflection.Emit
         public abstract System.Reflection.Emit.FieldBuilder UnderlyingField { get; }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public System.Type? CreateType() { throw null; }
+        public System.Type CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public abstract System.Reflection.TypeInfo? CreateTypeInfo();
+        public abstract System.Reflection.TypeInfo CreateTypeInfo();
         public abstract System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue);
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -494,9 +494,9 @@ namespace System.Reflection.Emit
         public override System.Type UnderlyingSystemType { get { throw null; } }
         public abstract void AddInterfaceImplementation([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type interfaceType);
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public System.Type? CreateType() { throw null; }
+        public System.Type CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public abstract System.Reflection.TypeInfo? CreateTypeInfo();
+        public abstract System.Reflection.TypeInfo CreateTypeInfo();
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes) { throw null; }
         public abstract System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers);
         public abstract System.Reflection.Emit.ConstructorBuilder DefineDefaultConstructor(System.Reflection.MethodAttributes attributes);

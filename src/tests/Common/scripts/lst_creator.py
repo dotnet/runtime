@@ -70,7 +70,7 @@ def create_list_file(file_name, metadata):
         file_handle.write("## Commit: %s\n" % ARGS.commit_hash)
         file_handle.write("## \n")
 
-        order = ["RelativePath", "WorkingDir", "Expected", 
+        order = ["RelativePath", "WorkingDir", "Expected",
                 "MaxAllowedDurationSeconds", "Categories", "HostStyle"]
 
         def write_metadata(data, count=None):
@@ -130,7 +130,7 @@ def create_metadata(tests):
 
         with open(failures_csv, "r") as file_handle:
             lines = file_handle.readlines()
-        
+
         try:
             for line in lines:
                 split = line.split(",")
@@ -147,15 +147,15 @@ def create_metadata(tests):
 
         working_directory = os.path.dirname(test_name).replace("/", "\\")
 
-        # Make sure the tests use the windows \ seperator.
+        # Make sure the tests use the windows \ separator.
         relative_path = test_name.replace("/", "\\")
         max_duration = "600"
-        
+
         if priority == 0:
             categories = "EXPECTED_PASS"
         else:
             categories = "EXPECTED_PASS;Pri%d" % priority
-        
+
         expected = "0"
         host_style = "0"
 
@@ -185,8 +185,8 @@ def get_all_tests(base_dir):
                          : cmd file under the base_dir.
 
     Note:
-        To find the tests correctly you must build the tests correctly and 
-        pass that directory. This method will NOT check to make sure that 
+        To find the tests correctly you must build the tests correctly and
+        pass that directory. This method will NOT check to make sure that
         this has been done correctly.
 
         This is a recursive method.
@@ -284,7 +284,7 @@ def parse_lst_file(lst_file):
 def main(args):
     """ Main method
     Args:
-        args ([str]): the arugments passed to the program.
+        args ([str]): the arguments passed to the program.
 
     """
 
@@ -315,7 +315,7 @@ def main(args):
     print
 
     priority_marked_tests = defaultdict(lambda: None)
-    
+
     for test in pri1_tests:
         priority_marked_tests[test] = 1
     for test in pri0_tests:

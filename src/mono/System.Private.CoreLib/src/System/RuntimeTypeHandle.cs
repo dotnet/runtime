@@ -90,6 +90,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
+
         public static bool operator ==(RuntimeTypeHandle left, object right)
         {
             return (right != null) && (right is RuntimeTypeHandle) && left.Equals((RuntimeTypeHandle)right);
@@ -236,7 +240,7 @@ namespace System
 #pragma warning disable IDE0060
         internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
         {
-            // refence check is done earlier and we don't recognize anything else
+            // reference check is done earlier and we don't recognize anything else
             return false;
         }
 #pragma warning restore IDE0060

@@ -534,7 +534,7 @@ namespace System.ComponentModel.Design
             internal const int cmdidCollapse = 188; // Collapse links
             internal const int cmdidRefresh = 189; // Refresh Webscope diagram
             internal const int cmdidLayout = 190; // Layout websope diagram
-            internal const int cmdidShowResources = 191; // Show resouce objects in webscope diagram
+            internal const int cmdidShowResources = 191; // Show resource objects in webscope diagram
             internal const int cmdidInsertHTMLWizard = 192; // Insert HTML using a Wizard
             internal const int cmdidShowDownloads = 193; // Show download objects in webscope diagram
             internal const int cmdidShowExternals = 194; // Show external objects in webscope diagram

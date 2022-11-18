@@ -57,8 +57,20 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_localeNumberData.c
     pal_localeStringData.c
     pal_normalization.c
-    pal_icushim.c
 )
+
+if (LOCAL_BUILD)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
+    add_definitions(-DLOCAL_BUILD)
+    add_definitions(-DSTATIC_ICU)
+    add_definitions(-DPALEXPORT=EXTERN_C)
+    add_definitions(-DTARGET_UNIX)
+    # For minipal files
+    include_directories(../../)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR})
+else()
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim.c)
+endif()
 
 if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m)
@@ -119,5 +131,28 @@ if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMA
                 "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
             VERBATIM
         )
+    endif()
+endif()
+
+if(CLR_CMAKE_TARGET_WIN32)
+    if(STATIC_LIBS_ONLY)
+        add_library(System.Globalization.Native.Aot
+            STATIC
+            ${NATIVEGLOBALIZATION_SOURCES}
+        )
+        target_compile_options(System.Globalization.Native.Aot PRIVATE /guard:cf-)
+        target_compile_options(System.Globalization.Native.Aot PRIVATE /GL-)
+
+        add_library(System.Globalization.Native.Aot.GuardCF
+            STATIC
+            ${NATIVEGLOBALIZATION_SOURCES}
+        )
+        target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
+
+        target_link_libraries(System.Globalization.Native.Aot ${__LinkLibraries})
+        target_link_libraries(System.Globalization.Native.Aot.GuardCF ${__LinkLibraries})
+
+        install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
+        install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
     endif()
 endif()

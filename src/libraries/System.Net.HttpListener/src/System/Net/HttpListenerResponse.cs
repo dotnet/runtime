@@ -79,20 +79,11 @@ namespace System.Net
             set => EntitySendFormat = value ? EntitySendFormat.Chunked : EntitySendFormat.ContentLength;
         }
 
-        // We MUST NOT send message-body when we send responses with these Status codes
-        private static readonly int[] s_noResponseBody = { 100, 101, 204, 205, 304 };
 
-        private static bool CanSendResponseBody(int responseCode)
-        {
-            for (int i = 0; i < s_noResponseBody.Length; i++)
-            {
-                if (responseCode == s_noResponseBody[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+
+        private static bool CanSendResponseBody(int responseCode) =>
+            // We MUST NOT send message-body when we send responses with these Status codes
+            responseCode is not (100 or 101 or 204 or 205 or 304);
 
         public long ContentLength64
         {
@@ -115,7 +106,7 @@ namespace System.Net
 
         public CookieCollection Cookies
         {
-            get => _cookies ?? (_cookies = new CookieCollection());
+            get => _cookies ??= new CookieCollection();
             set => _cookies = value;
         }
 
@@ -161,17 +152,9 @@ namespace System.Net
         {
             get
             {
-                if (_statusDescription == null)
-                {
-                    // if the user hasn't set this, generated on the fly, if possible.
-                    // We know this one is safe, no need to verify it as in the setter.
-                    _statusDescription = HttpStatusDescription.Get(StatusCode);
-                }
-                if (_statusDescription == null)
-                {
-                    _statusDescription = string.Empty;
-                }
-                return _statusDescription;
+                // if the user hasn't set this, generate on the fly, if possible.
+                // We know this one is safe, no need to verify it as in the setter.
+                return _statusDescription ??= HttpStatusDescription.Get(StatusCode) ?? string.Empty;
             }
             set
             {

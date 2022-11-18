@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -4500,7 +4500,7 @@ tiline\"another\" String\\"],"str":"\"\""}</value>
     "name": "Hendricks Moses",
     "gender": "male",
     "company": "REALYSIS",
-    "email": "hendricksmoses@realysis.com",
+    "email": "hendricksmoses@reallysis.com",
     "phone": "+1 (849) 472-2657",
     "address": "809 Canton Court, Golconda, Ohio, 3579",
     "about": "Quis eu elit ut fugiat cillum ad laboris non sint eiusmod nisi magna. Ea exercitation esse laboris adipisicing ad cillum enim velit voluptate exercitation culpa dolor elit aliqua. Et cupidatat et laboris culpa consectetur. Eu reprehenderit in mollit et ea nulla pariatur occaecat.",
@@ -14224,7 +14224,7 @@ tiline\"another\" String\\"],"str":"\"\""}</value>
     "name": "Jasmine Williams",
     "gender": "female",
     "company": "REALYSIS",
-    "email": "jasminewilliams@realysis.com",
+    "email": "jasminewilliams@reallysis.com",
     "phone": "+1 (994) 533-3345",
     "address": "257 Lenox Road, Rosedale, District Of Columbia, 1766",
     "about": "Fugiat et incididunt cupidatat ad minim cillum. Excepteur esse ad laboris tempor duis velit duis. Deserunt qui duis culpa magna.",

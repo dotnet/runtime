@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.IO;
 using System.Text;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     //[TestCase(Name = "XmlWriterSettings: NamespaceHandling")]
     public partial class TCNamespaceHandling
@@ -758,7 +758,7 @@ namespace System.Xml.Tests
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
@@ -780,7 +780,7 @@ namespace System.Xml.Tests
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
@@ -803,7 +803,7 @@ namespace System.Xml.Tests
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
             XmlWriter w = CreateMemWriter(utils, wSettings);
-            byte[] buffer = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+            byte[] buffer = "abc"u8.ToArray();
 
             w.WriteStartElement("A");
             w.WriteAttributeString("xmlns", "p", null, "ns1");

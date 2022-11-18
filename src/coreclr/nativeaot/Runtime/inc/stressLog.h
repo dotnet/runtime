@@ -13,7 +13,7 @@
 //   stress log will log all facilities, and only filter on logging level.
 //
 // The log has a very simple structure, and is meant to be dumped from an NTSD
-//   extention (eg. strike).
+//   extension (eg. strike).
 //
 // debug\rhsos\stresslogdump.cpp contains the dumper utility that parses this
 //   log.
@@ -60,12 +60,12 @@ enum LogFacilitiesEnum: unsigned int {
 
 
 #define LL_EVERYTHING  10
-#define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trival run
-#define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trival run
-#define LL_INFO10000    7       // can be expected to generate 10,000 logs per small but not trival run
-#define LL_INFO1000     6       // can be expected to generate 1,000 logs per small but not trival run
-#define LL_INFO100      5       // can be expected to generate 100 logs per small but not trival run
-#define LL_INFO10       4       // can be expected to generate 10 logs per small but not trival run
+#define LL_INFO1000000  9       // can be expected to generate 1,000,000 logs per small but not trivial run
+#define LL_INFO100000   8       // can be expected to generate 100,000 logs per small but not trivial run
+#define LL_INFO10000    7       // can be expected to generate 10,000 logs per small but not trivial run
+#define LL_INFO1000     6       // can be expected to generate 1,000 logs per small but not trivial run
+#define LL_INFO100      5       // can be expected to generate 100 logs per small but not trivial run
+#define LL_INFO10       4       // can be expected to generate 10 logs per small but not trivial run
 #define LL_WARNING      3
 #define LL_ERROR        2
 #define LL_FATALERROR   1
@@ -96,22 +96,23 @@ enum LogFacilitiesEnum: unsigned int {
 //          %pK     // The pointer is a code address (used for call stacks or method names)
 //
 
-// STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
-//   in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
-//   string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
-//   This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
-//   getting passed in and using va_args would require parsing the format string during the GC
-//
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
+    string during the GC
+*/
+#define _Args(...) __VA_ARGS__
 
-#define STRESS_LOG_VA(msg) do {                                                     \
-            if (StressLog::StressLogOn(LF_GC, LL_ALWAYS))                           \
-                StressLog::LogMsgOL msg;                                            \
+#define STRESS_LOG_VA(dprintfLevel,msg) do {                                                 \
+            if (StressLog::StressLogOn(LF_ALWAYS|(dprintfLevel<<16)|LF_GC, LL_ALWAYS))       \
+                StressLog::LogMsgOL(_Args msg);                                              \
             } WHILE_0
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
                 StressLog::LogMsg(facility, 0, msg);                                \
-            } WHILE_0                                                              \
+            } WHILE_0                                                               \
 
 #define STRESS_LOG1(facility, level, msg, data1) do {                               \
             if (StressLog::StressLogOn(facility, level))                            \
@@ -314,7 +315,7 @@ public:
     static long NewChunk ()     { return PalInterlockedIncrement (&theLog.totalChunk); }
     static long ChunkDeleted () { return PalInterlockedDecrement (&theLog.totalChunk); }
 
-    //the result is not 100% accurate. If multiple threads call this funciton at the same time,
+    //the result is not 100% accurate. If multiple threads call this function at the same time,
     //we could allow the total size be bigger than required. But the memory won't grow forever
     //and this is not critical so we don't try to fix the race
     static bool AllowNewChunk (long numChunksInCurThread);
@@ -426,6 +427,41 @@ public:
         LogMsg(LF_GC, 7, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7);
     }
 
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*));
+        LogMsg(LF_GC, 8, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8);
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*));
+        LogMsg(LF_GC, 9, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9);
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*));
+        LogMsg(LF_GC, 10, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10);
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*));
+        LogMsg(LF_GC, 11, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10, (void*)(size_t)data11);
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12 >
+    static void LogMsgOL(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12)
+    {
+        C_ASSERT(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*));
+        LogMsg(LF_GC, 12, format, (void*)(size_t)data1, (void*)(size_t)data2, (void*)(size_t)data3, (void*)(size_t)data4, (void*)(size_t)data5, (void*)(size_t)data6, (void*)(size_t)data7, (void*)(size_t)data8, (void*)(size_t)data9, (void*)(size_t)data10, (void*)(size_t)data11, (void*)(size_t)data12);
+    }
+
     #ifdef _MSC_VER
     #pragma warning( pop )
     #endif
@@ -459,10 +495,12 @@ public:
 // space on 32-bit platforms
 //
 struct StressMsg {
+    static const size_t formatOffsetBits = 26;
     union {
         struct {
             uint32_t numberOfArgs  : 3;   // at most 7 arguments
-            uint32_t formatOffset  : 29;  // offset of string in mscorwks
+            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
+            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
         };
         uint32_t fmtOffsCArgs;            // for optimized access
     };
@@ -470,8 +508,8 @@ struct StressMsg {
     unsigned __int64 timeStamp;         // time when mssg was logged
     void*     args[0];                  // size given by numberOfArgs
 
-    static const size_t maxArgCnt = 7;
-    static const size_t maxOffset = 0x20000000;
+    static const size_t maxArgCnt = 63;
+    static const size_t maxOffset = 1 << formatOffsetBits;
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
@@ -598,31 +636,9 @@ public:
         return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
     }
 
-    static const char* gcStartMsg()
-    {
-        return "{ =========== BEGINGC %d, (requested generation = %lu, collect_classes = %lu) ==========\n";
-    }
-
-    static const char* gcEndMsg()
-    {
-        return "========== ENDGC %d (gen = %lu, collect_classes = %lu) ===========}\n";
-    }
-
-    static const char* gcRootMsg()
-    {
-        return "    GC Root %p RELOCATED %p -> %p  MT = %pT\n";
-    }
-
-    static const char* gcRootPromoteMsg()
-    {
-        return "    GCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
-    }
-
-    static const char* gcPlugMoveMsg()
-    {
-        return "GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n";
-    }
-
+    #define STATIC_CONTRACT_LEAF
+    #include "../../../inc/gcmsg.inl"
+    #undef STATIC_CONTRACT_LEAF
 };
 
 

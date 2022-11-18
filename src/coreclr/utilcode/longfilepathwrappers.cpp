@@ -54,14 +54,11 @@ LoadLibraryExWrapper(
 
     EX_TRY
     {
-
         LongPathString path(LongPathString::Literal, lpLibFileName);
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
 #ifdef HOST_WINDOWS
-            //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
-            _ASSERTE(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
             LongFile::NormalizeDirectorySeparators(path);
 #endif //HOST_WINDOWS
 
@@ -226,96 +223,6 @@ GetFileAttributesExWrapper(
     return ret;
 }
 
-BOOL
-DeleteFileWrapper(
-        _In_ LPCWSTR lpFileName
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL   ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = DeleteFileW(
-                    path.GetUnicode()
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
-BOOL
-MoveFileExWrapper(
-        _In_     LPCWSTR lpExistingFileName,
-        _In_opt_ LPCWSTR lpNewFileName,
-        _In_     DWORD    dwFlags
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr  = S_OK;
-    BOOL    ret = FALSE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
-        {
-            ret = MoveFileExW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode(),
-                    dwFlags
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-
-}
-
 DWORD
 SearchPathWrapper(
         _In_opt_ LPCWSTR lpPath,
@@ -467,53 +374,6 @@ GetModuleFileNameWrapper(
     return ret;
 }
 
-UINT WINAPI GetTempFileNameWrapper(
-    _In_  LPCTSTR lpPathName,
-    _In_  LPCTSTR lpPrefixString,
-    _In_  UINT    uUnique,
-    SString&  lpTempFileName
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    UINT ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-        WCHAR* buffer = lpTempFileName.OpenUnicodeBuffer(size - 1);
-        ret  = GetTempFileNameW(
-            lpPathName,
-            lpPrefixString,
-            uUnique,
-            buffer
-            );
-
-        lastError = GetLastError();
-        size = (COUNT_T)wcslen(buffer);
-        lpTempFileName.CloseBuffer(size);
-
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
 DWORD WINAPI GetTempPathWrapper(
     SString& lpBuffer
     )
@@ -534,47 +394,6 @@ DWORD WINAPI GetTempPathWrapper(
         COUNT_T size = MAX_LONGPATH;
 
         ret = GetTempPathW(
-            size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
-            );
-
-        lastError = GetLastError();
-        lpBuffer.CloseBuffer(ret);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
-DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString&  lpBuffer
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DWORD ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-
-        ret = GetCurrentDirectoryW(
             size,
             lpBuffer.OpenUnicodeBuffer(size - 1)
             );
@@ -624,7 +443,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
         // We loop round getting the length of the env var and then trying to copy
         // the value into a the allocated buffer. Usually we'll go through this loop
-        // precisely once, but the caution is ncessary in case the variable mutates
+        // precisely once, but the caution is necessary in case the variable mutates
         // beneath us, as the environment variable can be modified by another thread
         //between two calls to GetEnvironmentVariableW
 
@@ -705,58 +524,6 @@ CopyFileExWrapper(
         SetLastError(hr);
     }
     else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
-HANDLE
-FindFirstFileExWrapper(
-        _In_ LPCWSTR lpFileName,
-        _In_ FINDEX_INFO_LEVELS fInfoLevelId,
-        _Out_writes_bytes_(sizeof(WIN32_FIND_DATAW)) LPVOID lpFindFileData,
-        _In_ FINDEX_SEARCH_OPS fSearchOp,
-        _Reserved_ LPVOID lpSearchFilter,
-        _In_ DWORD dwAdditionalFlags
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    HANDLE ret = INVALID_HANDLE_VALUE;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = FindFirstFileExW(
-                    path.GetUnicode(),
-                    fInfoLevelId,
-                    lpFindFileData,
-                    fSearchOp,
-                    lpSearchFilter,
-                    dwAdditionalFlags
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == INVALID_HANDLE_VALUE)
     {
         SetLastError(lastError);
     }
@@ -937,6 +704,3 @@ BOOL LongFile::IsDirectorySeparator(WCHAR c)
 {
     return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
 }
-
-
-

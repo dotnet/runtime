@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -131,10 +132,9 @@ namespace System.Net.Http.Functional.Tests
                 TaskCompletionSource tcsFirstConnectionInitiated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                using (var handler = CreateHttpClientHandler())
+                using (var handler = CreateHttpClientHandler(allowAllCertificates: true))
                 using (var client = CreateHttpClient(handler))
                 {
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -291,6 +291,108 @@ namespace System.Net.Http.Functional.Tests
                     await connection.HandleRequestAsync();
                 });
             });
+        }
+
+        [OuterLoop("We wait for PendingConnectionTimeout which defaults to 5 seconds.")]
+        [Fact]
+        public async Task CancelPendingRequest_DropsStalledConnectionAttempt()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            await CancelPendingRequest_DropsStalledConnectionAttempt_Impl(UseVersion.ToString());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CancelPendingRequest_DropsStalledConnectionAttempt_CustomPendingConnectionTimeout()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "42";
+
+            RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, UseVersion.ToString(), options).Dispose();
+        }
+
+        private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString)
+        {
+            using var requestCts = new CancellationTokenSource();
+            var requestCanceledTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                ConnectCallback = async (context, cancellation) =>
+                {
+                    requestCts.Cancel();
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => Task.Delay(-1, cancellation)).WaitAsync(TestHelper.PassingTestTimeout);
+                    requestCanceledTcs.SetResult();
+                    cancellation.ThrowIfCancellationRequested();
+                    throw new UnreachableException();
+                }
+            };
+
+            using var client = CreateHttpClient(handler, versionString);
+
+            await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy", requestCts.Token)).WaitAsync(TestHelper.PassingTestTimeout);
+
+            await requestCanceledTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+        }
+
+        [OuterLoop("We wait for PendingConnectionTimeout which defaults to 5 seconds.")]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(20_000)]
+        [InlineData(Timeout.Infinite)]
+        public void PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            RemoteExecutor.Invoke(static async (versionString, timoutStr) =>
+            {
+                // Setup "infinite" timeout of int.MaxValue milliseconds
+                AppContext.SetData("System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion", int.Parse(timoutStr));
+
+                using var requestCts = new CancellationTokenSource();
+                var connectionTestTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                using var handler = new SocketsHttpHandler
+                {
+                    ConnectCallback = async (context, cancellation) =>
+                    {
+                        requestCts.Cancel();
+
+                        try
+                        {
+                            // Give PendingConnectionTimeout a chance to cancel the connection.
+                            // 6 seconds is higher than the default 5 seconds
+                            await Task.Delay(6_000, cancellation);
+                            connectionTestTcs.SetResult();
+                        }
+                        catch (Exception ex)
+                        {
+                            connectionTestTcs.SetException(ex);
+                        }
+
+                        return Stream.Null;
+                    }
+                };
+
+                using var client = CreateHttpClient(handler, versionString);
+
+                await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy", requestCts.Token)).WaitAsync(TestHelper.PassingTestTimeout);
+
+                await connectionTestTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            }, UseVersion.ToString(), timeout.ToString()).Dispose();
         }
 
         private sealed class SetTcsContent : StreamContent

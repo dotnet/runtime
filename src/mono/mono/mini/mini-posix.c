@@ -785,7 +785,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	if (!double_faulted) {
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
-		g_async_safe_printf ("\nAn error has occured in the native fault reporting. Some diagnostic information will be unavailable.\n");
+		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
 
 	}
 

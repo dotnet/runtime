@@ -10,7 +10,7 @@
 **          Example: test_directory\level1\..\testing.tmp.
 **          To add to this test, we will also call SetCurrentDirectory to
 **          ensure this is handled properly.
-**          The test will create a file with in the parent directory 
+**          The test will create a file with in the parent directory
 **          to verify that the returned directory is valid.
 **
 ** Depends: SetCurrentDirectory,
@@ -22,7 +22,7 @@
 **          strcmp,
 **          DeleteFileA,
 **          RemoveDirectory.
-**      
+**
 
 **
 **===================================================================*/
@@ -33,9 +33,9 @@
 PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3")
 {
 #ifdef WIN32
-    const char* szSeperator = "\\";
+    const char* szSeparator = "\\";
 #else
-    const char* szSeperator = "//";
+    const char* szSeparator = "//";
 #endif
 
     const char* szDotDot   = "..\\";
@@ -72,7 +72,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
              GetLastError(),
              szDotDot);
     }
-    
+
     /* Create the path to the next level of directory to create.
      */
     strcat( szDirectory, szCreatedDir );
@@ -89,7 +89,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
 
     /* Create the path to the next level of directory to create.
      */
-    strcat( szDirectory, szSeperator );
+    strcat( szDirectory, szSeparator );
     strcat( szDirectory, szCreatedNextDir );
 
     /* Create a test directory.
@@ -102,7 +102,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
         bRetVal = FAIL;
         goto cleanUpOne;
     }
-    
+
     /* Initialize the receiving char buffers.
      */
     memset(szReturnedPath, 0, _MAX_DIR+1);
@@ -112,14 +112,15 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
      * in the middle of the path.
      */
     strcat(szFullFileName, szCreatedDir);
+    strcat(szFullFileName, szSeparator);
     strcat(szFullFileName, szDotDot);
     strcat(szFullFileName, szFileName);
 
     /* Get the full path to the filename.
      */
-    dwRc = GetFullPathNameA(szFullFileName, 
+    dwRc = GetFullPathNameA(szFullFileName,
                             _MAX_DIR,
-                            szReturnedPath, 
+                            szReturnedPath,
                             &pPathPtr);
     if (dwRc == 0)
     {
@@ -131,7 +132,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
         goto cleanUpTwo;
     }
 
-    /* The returned value should be the parent directory with the 
+    /* The returned value should be the parent directory with the
      * file name appended. */
     hFile = CreateFileA(szReturnedPath,
                         GENERIC_READ,
@@ -143,7 +144,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        Trace("ERROR :%ld: CreateFileA failed to create \"%s\".\n", 
+        Trace("ERROR :%ld: CreateFileA failed to create \"%s\".\n",
               GetLastError(),
               szReturnedPath);
         bRetVal = FAIL;
@@ -160,7 +161,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
         goto cleanUpThree;
     }
 
-    /* Verify that the file was created, attempt to create 
+    /* Verify that the file was created, attempt to create
      * the file again. */
     hFile = CreateFileA(szReturnedPath,
                         GENERIC_READ,
@@ -169,7 +170,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
                         CREATE_NEW,
                         FILE_ATTRIBUTE_NORMAL,
                         NULL);
-    if ((hFile != INVALID_HANDLE_VALUE) && 
+    if ((hFile != INVALID_HANDLE_VALUE) &&
         (GetLastError() != ERROR_ALREADY_EXISTS))
     {
         Trace("ERROR :%ld: CreateFileA succeeded to create file "
@@ -186,7 +187,7 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
     {
         Trace("ERROR : Returned filename \"%s\" is not equal to "
              "supplied filename \"%s\".\n",
-             pPathPtr, 
+             pPathPtr,
              szFileName);
         bRetVal = FAIL;
         goto cleanUpThree;
@@ -197,8 +198,8 @@ PALTEST(file_io_GetFullPathNameA_test3_paltest_getfullpathnamea_test3, "file_io/
     bRetVal = PASS;
 
 cleanUpThree:
-    
-    /* Delete the create file. 
+
+    /* Delete the create file.
      */
     if (DeleteFileA(szReturnedPath) != TRUE)
     {

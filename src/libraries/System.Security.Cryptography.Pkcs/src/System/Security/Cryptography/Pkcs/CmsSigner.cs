@@ -181,58 +181,60 @@ namespace System.Security.Cryptography.Pkcs
             out X509Certificate2Collection chainCerts)
         {
             HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm);
-            IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName);
-
-            hasher.AppendData(data.Span);
-            byte[] dataHash = hasher.GetHashAndReset();
-
             SignerInfoAsn newSignerInfo = default;
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm.Value!;
+            byte[] dataHash;
 
-            // If the user specified attributes (not null, count > 0) we need attributes.
-            // If the content type is null we're counter-signing, and need the message digest attr.
-            // If the content type is otherwise not-data we need to record it as the content-type attr.
-            if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
             {
-                List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
+                hasher.AppendData(data.Span);
+                dataHash = hasher.GetHashAndReset();
 
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                writer.WriteOctetString(dataHash);
-
-                signedAttrs.Add(
-                    new AttributeAsn
-                    {
-                        AttrType = Oids.MessageDigest,
-                        AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                    });
-
-                if (contentTypeOid != null)
+                // If the user specified attributes (not null, count > 0) we need attributes.
+                // If the content type is null we're counter-signing, and need the message digest attr.
+                // If the content type is otherwise not-data we need to record it as the content-type attr.
+                if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
                 {
-                    writer.Reset();
-                    writer.WriteObjectIdentifierForCrypto(contentTypeOid);
+                    List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
+
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    writer.WriteOctetString(dataHash);
 
                     signedAttrs.Add(
                         new AttributeAsn
                         {
-                            AttrType = Oids.ContentType,
+                            AttrType = Oids.MessageDigest,
                             AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
                         });
+
+                    if (contentTypeOid != null)
+                    {
+                        writer.Reset();
+                        writer.WriteObjectIdentifierForCrypto(contentTypeOid);
+
+                        signedAttrs.Add(
+                            new AttributeAsn
+                            {
+                                AttrType = Oids.ContentType,
+                                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+                            });
+                    }
+
+                    // Use the serializer/deserializer to DER-normalize the attribute order.
+                    SignedAttributesSet signedAttrsSet = default;
+                    signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
+                        signedAttrs.ToArray(),
+                        hasher.AppendData);
+
+                    // Since this contains user data in a context where BER is permitted, use BER.
+                    // There shouldn't be any observable difference here between BER and DER, though,
+                    // since the top level fields were written by NormalizeSet.
+                    AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER);
+                    signedAttrsSet.Encode(attrsWriter);
+                    newSignerInfo.SignedAttributes = attrsWriter.Encode();
+
+                    dataHash = hasher.GetHashAndReset();
                 }
-
-                // Use the serializer/deserializer to DER-normalize the attribute order.
-                SignedAttributesSet signedAttrsSet = default;
-                signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
-                    signedAttrs.ToArray(),
-                    normalized => hasher.AppendData(normalized));
-
-                // Since this contains user data in a context where BER is permitted, use BER.
-                // There shouldn't be any observable difference here between BER and DER, though,
-                // since the top level fields were written by NormalizeSet.
-                AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER);
-                signedAttrsSet.Encode(attrsWriter);
-                newSignerInfo.SignedAttributes = attrsWriter.Encode();
-
-                dataHash = hasher.GetHashAndReset();
             }
 
             switch (SignerIdentifierType)

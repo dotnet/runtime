@@ -7,9 +7,9 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILVerification.projitems" />

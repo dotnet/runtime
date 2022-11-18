@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
@@ -32,13 +33,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
-            if (concat.Kind != RegexNodeKind.Concatenate)
-            {
-                throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
-            }
+            Debug.Assert(concat.Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {concat.Kind}");
 
-            Span<char> vsbStack = stackalloc char[256];
-            var vsb = new ValueStringBuilder(vsbStack);
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
             FourStackStrings stackStrings = default;
             var strings = new ValueListBuilder<string>(MemoryMarshal.CreateSpan(ref stackStrings.Item1!, 4));
             var rules = new ValueListBuilder<int>(stackalloc int[64]);
@@ -62,8 +59,8 @@ namespace System.Text.RegularExpressions
                         if (vsb.Length > 0)
                         {
                             rules.Append(strings.Length);
-                            strings.Append(vsb.ToString());
-                            vsb = new ValueStringBuilder(vsbStack);
+                            strings.Append(vsb.AsSpan().ToString());
+                            vsb.Length = 0;
                         }
                         int slot = child.M;
 
@@ -77,7 +74,8 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
+                        Debug.Fail($"Unexpected child kind {child.Kind}");
+                        break;
                 }
             }
 
@@ -86,6 +84,7 @@ namespace System.Text.RegularExpressions
                 rules.Append(strings.Length);
                 strings.Append(vsb.ToString());
             }
+            vsb.Dispose();
 
             Pattern = rep;
             _strings = strings.AsSpan().ToArray();
@@ -228,7 +227,7 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
-                state.segments.Add(state.inputMemory.Slice(state.prevat, input.Length - state.prevat));
+                state.segments.Add(state.inputMemory.Slice(state.prevat));
             }
             else
             {

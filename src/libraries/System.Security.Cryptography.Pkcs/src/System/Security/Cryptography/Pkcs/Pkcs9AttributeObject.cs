@@ -39,6 +39,15 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
         }
 
+        internal Pkcs9AttributeObject(Oid oid, ReadOnlySpan<byte> encodedData)
+#if NET
+            : this(new AsnEncodedData(oid, encodedData))
+#else
+            : this(new AsnEncodedData(oid, encodedData.ToArray()))
+#endif
+        {
+        }
+
         internal Pkcs9AttributeObject(Oid oid)
         {
             base.Oid = oid;

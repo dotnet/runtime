@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public FieldInfo Field => _field ?? (_field = _resolver.AsField(Token));
+        public FieldInfo Field => _field ??= _resolver.AsField(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineFieldInstruction(this);
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public MethodBase Method => _method ?? (_method = _resolver.AsMethod(Token));
+        public MethodBase Method => _method ??= _resolver.AsMethod(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineMethodInstruction(this);
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public Type Type => _type ?? (_type = _resolver.AsType(Token));
+        public Type Type => _type ??= _resolver.AsType(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineTypeInstruction(this);
@@ -221,7 +221,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public byte[] Signature => _signature ?? (_signature = _resolver.AsSignature(Token));
+        public byte[] Signature => _signature ??= _resolver.AsSignature(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineSigInstruction(this);
@@ -239,7 +239,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public MemberInfo Member => _member ?? (_member = _resolver.AsMember(Token));
+        public MemberInfo Member => _member ??= _resolver.AsMember(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineTokInstruction(this);
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public string String => _string ?? (_string = _resolver.AsString(Token));
+        public string String => _string ??= _resolver.AsString(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineStringInstruction(this);

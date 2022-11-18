@@ -363,18 +363,18 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -482,7 +482,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -494,7 +496,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -625,6 +629,8 @@ namespace System.Runtime.InteropServices
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -993,16 +999,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1040,16 +1040,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1203,7 +1197,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, SysStringByteLen(s));
+            NativeMemory.Clear((void*)s, SysStringByteLen(s));
             FreeBSTR(s);
         }
 
@@ -1218,7 +1212,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeCoTaskMem(s);
         }
 
@@ -1228,7 +1222,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeCoTaskMem(s);
         }
 
@@ -1238,7 +1232,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeHGlobal(s);
         }
 
@@ -1248,7 +1242,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeHGlobal(s);
         }
 
@@ -1284,8 +1278,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
         /// </summary>
-        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
-        /// <param name="handle">Pre-existing handle</param>
+        /// <param name="safeHandle">The <see cref="SafeHandle"/> instance to update.</param>
+        /// <param name="handle">The pre-existing handle.</param>
         public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
@@ -1295,6 +1289,15 @@ namespace System.Runtime.InteropServices
         public static int GetLastWin32Error()
         {
             return GetLastPInvokeError();
+        }
+
+        /// <summary>
+        /// Gets the system error message for the last PInvoke error code.
+        /// </summary>
+        /// <returns>The error message associated with the last PInvoke error code.</returns>
+        public static string GetLastPInvokeErrorMessage()
+        {
+            return GetPInvokeErrorMessage(GetLastPInvokeError());
         }
     }
 }

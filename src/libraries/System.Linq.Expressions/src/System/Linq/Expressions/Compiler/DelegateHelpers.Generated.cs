@@ -67,10 +67,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Type lookingUp = initialArg;
             TypeInfo nextTypeInfo;
-            if (curTypeInfo.TypeChain == null)
-            {
-                curTypeInfo.TypeChain = new Dictionary<Type, TypeInfo>();
-            }
+            curTypeInfo.TypeChain ??= new Dictionary<Type, TypeInfo>();
 
             if (!curTypeInfo.TypeChain.TryGetValue(lookingUp, out nextTypeInfo))
             {

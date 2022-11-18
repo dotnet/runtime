@@ -188,17 +188,8 @@ namespace System.Xml.Schema
 
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroupRef))]
-        public XmlSchemaObjectCollection Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                {
-                    _attributes = new XmlSchemaObjectCollection();
-                }
-                return _attributes;
-            }
-        }
+        public XmlSchemaObjectCollection Attributes =>
+            _attributes ??= new XmlSchemaObjectCollection();
 
         [XmlElement("anyAttribute")]
         public XmlSchemaAnyAttribute? AnyAttribute
@@ -227,17 +218,8 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaObjectTable AttributeUses
-        {
-            get
-            {
-                if (_attributeUses == null)
-                {
-                    _attributeUses = new XmlSchemaObjectTable();
-                }
-                return _attributeUses;
-            }
-        }
+        public XmlSchemaObjectTable AttributeUses =>
+            _attributeUses ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
         public XmlSchemaAnyAttribute? AttributeWildcard
@@ -246,17 +228,8 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlSchemaObjectTable LocalElements
-        {
-            get
-            {
-                if (_localElements == null)
-                {
-                    _localElements = new XmlSchemaObjectTable();
-                }
-                return _localElements;
-            }
-        }
+        internal XmlSchemaObjectTable LocalElements =>
+            _localElements ??= new XmlSchemaObjectTable();
 
         internal void SetContentTypeParticle(XmlSchemaParticle value)
         {
@@ -479,7 +452,7 @@ namespace System.Xml.Schema
             return newParticles;
         }
 
-        [return: NotNullIfNotNull("particle")]
+        [return: NotNullIfNotNull(nameof(particle))]
         internal static XmlSchemaParticle? CloneParticle(XmlSchemaParticle? particle, XmlSchema? parentSchema)
         {
             XmlSchemaGroupBase? groupBase = particle as XmlSchemaGroupBase;

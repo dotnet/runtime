@@ -294,10 +294,10 @@ public class ReliabilityFramework
 
     /// <summary>
     /// Runs the reliability tests.  Called from Main with the name of the configuration file we should be using.
-    /// All code in here runs in our starting app domain.  
+    /// All code in here runs in our starting app domain.
     /// </summary>
     /// <param name="testConfig">configuration file to use</param>
-    /// <returns>100 on sucess, another number on failure.</returns>
+    /// <returns>100 on success, another number on failure.</returns>
     public int RunReliabilityTests(string testConfig, bool doReplay)
     {
         _totalSuccess = true;
@@ -321,7 +321,7 @@ public class ReliabilityFramework
         // save the current directory
         string curDir = Directory.GetCurrentDirectory();
 
-        // Enumerator through all the test sets...					
+        // Enumerator through all the test sets...
         foreach (ReliabilityTestSet testSet in _reliabilityConfig)
         {
             if (testSet.InstallDetours)
@@ -541,7 +541,7 @@ public class ReliabilityFramework
             DebugBreak();
         }
         {
-            // We need to stop the process now, 
+            // We need to stop the process now,
             // but all the threads are still running
             try
             {
@@ -585,14 +585,14 @@ public class ReliabilityFramework
     /// <summary>
     /// TestStarter monitors the current situation and starts tests as appropriate.
     /// </summary>
-    /// 
+    ///
     private void TestStarter()
     {
         int totalTestsToRun = CalculateTestsToRun();
         int lastTestStarted = 0;			// this is our index into the array of tests, this ensures fair distribution over all the tests.
         DateTime lastStart = DateTime.Now;	// keeps track of when we last started a test
         TimeSpan minTimeToStartTest = new TimeSpan(0, 5, 0);	// after 5 minutes if we haven't started a test we're having problems...
-        int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages 
+        int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
@@ -647,7 +647,7 @@ public class ReliabilityFramework
                         {
                             startTest = true;
                             // the more we adjust the adjuster the harder we make to adjust it in the future.  We have to fall out
-                            // of the range of 1/4 of the adjuster value to increment it again.  (so, if mem %==50, and memAdjust==8, 
+                            // of the range of 1/4 of the adjuster value to increment it again.  (so, if mem %==50, and memAdjust==8,
                             // we need to fall below 48 before we'll adjust it again)
                             if (memVal < (_curTestSet.MinPercentMem - (memAdjust >> 2)) && memAdjust < 25)
                             {
@@ -659,7 +659,7 @@ public class ReliabilityFramework
                         {
                             startTest = true;
                             // the more we adjust the adjuster the harder we make to adjust it in the future.  We have to fall out
-                            // of the range of 1/4 of the adjuster value to increment it again.  (so, if cpu %==50, and cpuAdjust==8, 
+                            // of the range of 1/4 of the adjuster value to increment it again.  (so, if cpu %==50, and cpuAdjust==8,
                             // we need to fall below 48 before we'll adjust it again)
                             if (cpuVal < (_curTestSet.GetCurrentMinPercentCPU(timeRunning) - (cpuAdjust >> 2)) && cpuAdjust < 25)
                             {
@@ -1024,8 +1024,8 @@ public class ReliabilityFramework
 
                                 // HACKHACK: VSWhidbey bug #113535: Breaking change.  Tests that return a value via Environment.ExitCode
                                 // will not have their value propagated back properly via AppDomain.ExecuteAssembly.   These tests will
-                                // typically have a return value of 0 (because they have a void entry point).  We will check 
-                                // Environment.ExitCode and if it's not zero, we'll treat that as our return value (then reset 
+                                // typically have a return value of 0 (because they have a void entry point).  We will check
+                                // Environment.ExitCode and if it's not zero, we'll treat that as our return value (then reset
                                 // Env.ExitCode back to 0).
 
                                 if (exitCode == 0 && Environment.ExitCode != 0)
@@ -1141,7 +1141,7 @@ public class ReliabilityFramework
 
                         if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.FullIsolation || _curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)
                         {
-                            // we're in full isolation & have test runs left.  we need to 
+                            // we're in full isolation & have test runs left.  we need to
                             // recreate the AssemblyLoadContext so that we don't die on statics.
                             lock (daTest)
                             {
@@ -1366,8 +1366,8 @@ public class ReliabilityFramework
     /// <summary>
     /// Pre-loads a test into the correct AssemblyLoadContext for the current loader mode.
     /// This method behaves in the same way as the TestPreLoader_AppDomain, the difference
-    /// (besides the AssemblyLoadContext vs AppDomain creation differences) is that it uses 
-    /// reflection to get and invoke the methods on the LoaderClass loaded into 
+    /// (besides the AssemblyLoadContext vs AppDomain creation differences) is that it uses
+    /// reflection to get and invoke the methods on the LoaderClass loaded into
     /// the AssemblyLoadContext.
     /// </summary>
     /// <param name="test"></param>
@@ -1554,7 +1554,7 @@ public class ReliabilityFramework
     /// This method will send a failure message to the test owner that their test has failed.
     /// </summary>
     /// <param name="testCase">the test case which failed</param>
-    /// <param name="returnCode">return code of the test, -1 for none provided</param>    
+    /// <param name="returnCode">return code of the test, -1 for none provided</param>
     private void SendFailMail(ReliabilityTest testCase, string message)
     {
         //SendFailMail(testCase, message, null, null, null);
@@ -1640,17 +1640,17 @@ public class ReliabilityFramework
 <tr><td bgcolor=#cccccc>Comments	 :</td><td> {3}</td></tr>
 </table>
 
-<P>If you are listed on the To: line, you have test failures to investigate.  
+<P>If you are listed on the To: line, you have test failures to investigate.
 
-<p>For all failures please find the machine listed above on the <a href=""http://urtframeworks/stress/stressdetails.aspx?team=CLR"">CLR Stress Details Web Page</a> and open a tracking bug if one has not already been created for this stress run.  
+<p>For all failures please find the machine listed above on the <a href=""http://urtframeworks/stress/stressdetails.aspx?team=CLR"">CLR Stress Details Web Page</a> and open a tracking bug if one has not already been created for this stress run.
 
-<p>If this is a product failure please e-mail the 
+<p>If this is a product failure please e-mail the
 <a href=""mailto:corqrd"">CLR Quick Response Dev Team</a> with the failure information and tracking bug number.  The QRT will then open a product bug if appropriate and resolve the tracking bug as a duplicate.
 
 <p>If this is a test failure please open a tracking bug via the CLR Stress Details web page and assign if to yourself.  Resolve the bug once you have fixed the test issue.
 
 <p>If this is a stress harness issue please contact <a href=""mailto:timme;dinov"">the stress developers</a>.
-	
+
 Thanks for contributing to CLR Stress!
 	</P></BODY></HTML>", Environment.MachineName, testCase == null ? "None" : testCase.Assembly, testCase == null ? "None" : testCase.Arguments, message);
                 }

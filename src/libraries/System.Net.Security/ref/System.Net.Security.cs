@@ -35,6 +35,67 @@ namespace System.Net.Security
         NoEncryption = 2,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public sealed partial class NegotiateAuthentication : System.IDisposable
+    {
+        public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationClientOptions clientOptions) { }
+        public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationServerOptions serverOptions) { }
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel { get { throw null; } }
+        public bool IsAuthenticated { get { throw null; } }
+        public bool IsEncrypted { get { throw null; } }
+        public bool IsMutuallyAuthenticated { get { throw null; } }
+        public bool IsServer { get { throw null; } }
+        public bool IsSigned { get { throw null; } }
+        public string Package { get { throw null; } }
+        public System.Net.Security.ProtectionLevel ProtectionLevel { get { throw null; } }
+        public System.Security.Principal.IIdentity RemoteIdentity { get { throw null; } }
+        public string? TargetName { get { throw null; } }
+        public void Dispose() { }
+        public byte[]? GetOutgoingBlob(System.ReadOnlySpan<byte> incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
+        public string? GetOutgoingBlob(string? incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
+        public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
+        public System.Net.Security.NegotiateAuthenticationStatusCode Unwrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, out bool wasEncrypted) { throw null; }
+        public System.Net.Security.NegotiateAuthenticationStatusCode UnwrapInPlace(System.Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted) { throw null; }
+    }
+    public partial class NegotiateAuthenticationClientOptions
+    {
+        public NegotiateAuthenticationClientOptions() { }
+        public System.Security.Principal.TokenImpersonationLevel AllowedImpersonationLevel { get { throw null; } set { } }
+        public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
+        public System.Net.NetworkCredential Credential { get { throw null; } set { } }
+        public string Package { get { throw null; } set { } }
+        public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
+        public bool RequireMutualAuthentication { get { throw null; } set { } }
+        public string? TargetName { get { throw null; } set { } }
+    }
+    public partial class NegotiateAuthenticationServerOptions
+    {
+        public NegotiateAuthenticationServerOptions() { }
+        public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
+        public System.Net.NetworkCredential Credential { get { throw null; } set { } }
+        public string Package { get { throw null; } set { } }
+        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? Policy { get { throw null; } set { } }
+        public System.Security.Principal.TokenImpersonationLevel RequiredImpersonationLevel { get { throw null; } set { } }
+        public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
+    }
+    public enum NegotiateAuthenticationStatusCode
+    {
+        Completed = 0,
+        ContinueNeeded = 1,
+        GenericFailure = 2,
+        BadBinding = 3,
+        Unsupported = 4,
+        MessageAltered = 5,
+        ContextExpired = 6,
+        CredentialsExpired = 7,
+        InvalidCredentials = 8,
+        InvalidToken = 9,
+        UnknownCredentials = 10,
+        QopNotSupported = 11,
+        OutOfSequence = 12,
+        SecurityQosFailed = 13,
+        TargetUnknown = 14,
+        ImpersonationValidationFailed = 15,
+    }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
@@ -146,6 +207,7 @@ namespace System.Net.Security
         public System.Net.Security.LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public string? TargetHost { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
     }
     public readonly partial struct SslClientHelloInfo
     {
@@ -168,6 +230,7 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Certificate? ServerCertificate { get { throw null; } set { } }
         public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
     }
     public partial class SslStream : System.Net.Security.AuthenticatedStream
     {

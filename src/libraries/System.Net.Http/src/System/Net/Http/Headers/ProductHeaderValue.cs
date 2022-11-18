@@ -76,7 +76,7 @@ namespace System.Net.Http.Headers
 
             if (!string.IsNullOrEmpty(_version))
             {
-                result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_version);
+                result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(_version);
             }
 
             return result;
@@ -122,7 +122,7 @@ namespace System.Net.Http.Headers
 
             string name = input.Substring(startIndex, nameLength);
             int current = startIndex + nameLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != '/'))
             {
@@ -131,7 +131,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // Skip '/' delimiter.
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // Parse the name string: <version> in '<name>/<version>'.
             int versionLength = HttpRuleParser.GetTokenLength(input, current);
@@ -143,8 +143,8 @@ namespace System.Net.Http.Headers
 
             string version = input.Substring(current, versionLength);
 
-            current = current + versionLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += versionLength;
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             parsedValue = new ProductHeaderValue(name, version);
             return current - startIndex;

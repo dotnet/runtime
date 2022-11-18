@@ -314,7 +314,6 @@ namespace System.Data
         }
 
         internal static Exception _Argument(string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
-        internal static Exception _Argument(string paramName, string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
         internal static Exception _Argument(string error, Exception? innerException) => TraceExceptionAsReturnValue(new ArgumentException(error, innerException));
         private static Exception _ArgumentNull(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentNullException(paramName, msg));
         internal static Exception _ArgumentOutOfRange(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentOutOfRangeException(paramName, msg));
@@ -349,9 +348,20 @@ namespace System.Data
         public static Exception ArgumentNull(string paramName) => _ArgumentNull(paramName, SR.Format(SR.Data_ArgumentNull, paramName));
         public static Exception ArgumentOutOfRange(string paramName) => _ArgumentOutOfRange(paramName, SR.Format(SR.Data_ArgumentOutOfRange, paramName));
         public static Exception BadObjectPropertyAccess(string error) => _InvalidOperation(SR.Format(SR.DataConstraint_BadObjectPropertyAccess, error));
-        public static Exception ArgumentContainsNull(string paramName) => _Argument(paramName, SR.Format(SR.Data_ArgumentContainsNull, paramName));
+        public static Exception ArgumentContainsNull(string paramName) => TraceExceptionAsReturnValue(new ArgumentException(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
+        //
+        // Batch
+        //
+
+        public static Exception NotSupportedOnDataSourceBatch() => Common.ADP.NotSupported(SR.Batch_NotSupportedOnDataSourceBatch);
+
+        //
+        // Command
+        //
+
+        public static Exception NotSupportedOnDataSourceCommand() => Common.ADP.NotSupported(SR.Command_NotSupportedOnDataSourceCommand);
 
         //
         // Collections
@@ -383,7 +393,7 @@ namespace System.Data
         public static Exception CannotRemoveConstraint(string constraint, string table) => _Argument(SR.Format(SR.DataColumns_RemoveConstraint, constraint, table));
         public static Exception CannotRemoveExpression(string column, string expression) => _Argument(SR.Format(SR.DataColumns_RemoveExpression, column, expression));
         public static Exception ColumnNotInTheUnderlyingTable(string column, string table) => _Argument(SR.Format(SR.DataColumn_NotInTheUnderlyingTable, column, table));
-        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximun, (ordinal).ToString(CultureInfo.InvariantCulture)));
+        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximum, (ordinal).ToString(CultureInfo.InvariantCulture)));
 
         //
         // _Constraint and ConstrainsCollection

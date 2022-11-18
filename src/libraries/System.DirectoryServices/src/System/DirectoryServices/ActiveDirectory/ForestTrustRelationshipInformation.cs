@@ -35,7 +35,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (unmanagedTrust.NetbiosDomainName != (IntPtr)0)
                 tmpNetBIOSName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
 
-            this.target = (tmpDNSName == null ? tmpNetBIOSName : tmpDNSName);
+            this.target = tmpDNSName ?? tmpNetBIOSName;
             // direction
             if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
                 (unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         global::Interop.BOOL result = global::Interop.Advapi32.ConvertStringSidToSid(tmp.DomainSid, out pSid);
                         if (result == global::Interop.BOOL.FALSE)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         record.DomainInfo.sid = pSid;
                         sidList.Add(pSid);

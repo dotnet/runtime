@@ -56,10 +56,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Ensure startup hook tracing works
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining("Property STARTUP_HOOKS = " + startupHookDll)
@@ -198,7 +196,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("System.IO.FileNotFoundException: Could not load file or assembly 'Newtonsoft.Json");
         }
@@ -223,7 +221,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdOutContaining("Hello from startup hook with dependency!")
@@ -235,7 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("System.ArgumentException: The startup hook simple assembly name ' ' is invalid.");
 
@@ -245,7 +243,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdOutContaining("Hello World");
@@ -256,7 +254,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdOutContaining("Hello from startup hook with dependency!")
@@ -283,7 +281,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.NotHaveStdErrContaining("--->");
@@ -294,7 +292,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.NotHaveStdErrContaining("--->");
@@ -305,7 +303,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.NotHaveStdErrContaining("--->");
@@ -316,7 +314,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.NotHaveStdErrContaining("--->");
@@ -327,7 +325,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.NotHaveStdErrContaining("--->");
@@ -338,7 +336,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.HaveStdErrContaining("---> System.IO.FileLoadException: The given assembly name was invalid.");
@@ -349,7 +347,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, relativeAssemblyPath))
                 .And.NotHaveStdOutContaining("Hello from startup hook!");
@@ -373,7 +371,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.HaveStdErrContaining($"---> System.IO.FileNotFoundException: Could not load file or assembly '{startupHookVar}'. The system cannot find the file specified.");
@@ -384,7 +382,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
                 .And.HaveStdErrContaining($"---> System.IO.FileNotFoundException: Could not load file or assembly '{startupHookVar}");
@@ -436,7 +434,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath(startupHookMissingDll)));
 
@@ -446,7 +444,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdErrContaining(string.Format(expectedError, Path.GetFullPath((startupHookMissingDll))));
@@ -473,7 +471,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookInvalidAssemblyDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(expectedError);
 
@@ -483,7 +481,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(expectedError);
         }
@@ -507,7 +505,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookMissingTypeDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("System.TypeLoadException: Could not load type 'StartupHook' from assembly 'StartupHook");
 
@@ -517,7 +515,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdErrContaining("System.TypeLoadException: Could not load type 'StartupHook' from assembly 'StartupHookWithoutStartupHookType");
@@ -545,7 +543,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookMissingMethodDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(expectedError);
 
@@ -555,7 +553,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdErrContaining(expectedError);
@@ -581,7 +579,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookWithInstanceMethodDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithInstanceMethodDll));
 
@@ -592,7 +590,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookWithParameterDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithParameterDll));
 
@@ -603,7 +601,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookWithReturnTypeDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithReturnTypeDll));
 
@@ -614,7 +612,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookWithMultipleIncorrectSignaturesDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
 
@@ -624,7 +622,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Hello from startup hook!")
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookWithMultipleIncorrectSignaturesDll));
@@ -685,7 +683,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec(appDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("FileNotFoundException: Could not load file or assembly 'SharedLibrary");
 
@@ -694,7 +692,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.ExitWith(2);
         }

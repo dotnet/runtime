@@ -89,8 +89,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Interop.Crypto.CheckValidOpenSslHandle(pkcs7);
                     return Interop.Crypto.OpenSslEncode(
-                        handle => Interop.Crypto.GetPkcs7DerSize(handle),
-                        (handle, buf) => Interop.Crypto.EncodePkcs7(handle, buf),
+                        Interop.Crypto.GetPkcs7DerSize,
+                        Interop.Crypto.EncodePkcs7,
                         pkcs7);
                 }
             }

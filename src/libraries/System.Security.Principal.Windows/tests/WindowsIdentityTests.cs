@@ -99,7 +99,7 @@ public class WindowsIdentityTests
     [Fact]
     public static void GetTokenHandle()
     {
-        WindowsIdentity id = WindowsIdentity.GetCurrent();
+        using WindowsIdentity id = WindowsIdentity.GetCurrent();
         Assert.Equal(id.AccessToken.DangerousGetHandle(), id.Token);
     }
 
@@ -170,7 +170,8 @@ public class WindowsIdentityTests
     private static void BeginTask(RunImpersonatedAsyncTestInfo testInfo)
     {
         testInfo.continueTask = new SemaphoreSlim(0, 1);
-        using (SafeAccessTokenHandle token = WindowsIdentity.GetCurrent().AccessToken)
+        using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+        using (SafeAccessTokenHandle token = currentIdentity.AccessToken)
         {
             WindowsIdentity.RunImpersonated(token, () =>
             {
@@ -217,7 +218,8 @@ public class WindowsIdentityTests
     private static void TestUsingAccessToken(Action<IntPtr> ctorOrPropertyTest)
     {
         // Retrieve the Windows account token for the current user.
-        SafeAccessTokenHandle token = WindowsIdentity.GetCurrent().AccessToken;
+        using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+        SafeAccessTokenHandle token = currentIdentity.AccessToken;
         bool gotRef = false;
         try
         {

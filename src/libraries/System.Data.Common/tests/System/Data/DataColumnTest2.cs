@@ -77,7 +77,7 @@ namespace System.Data.Tests
             // Checking default value (False)
             Assert.False(dc.AutoIncrement);
 
-            //Cheking Set
+            //Checking Set
             dc.AutoIncrement = true;
             // Checking Get
             Assert.True(dc.AutoIncrement);
@@ -92,12 +92,12 @@ namespace System.Data.Tests
             // Checking default value 0
             Assert.Equal(0, dc.AutoIncrementSeed);
 
-            //Cheking Set
+            //Checking Set
             dc.AutoIncrementSeed = long.MaxValue;
             // Checking Get MaxValue
             Assert.Equal(long.MaxValue, dc.AutoIncrementSeed);
 
-            //Cheking Set
+            //Checking Set
             dc.AutoIncrementSeed = long.MinValue;
             // Checking Get MinValue
             Assert.Equal(long.MinValue, dc.AutoIncrementSeed);
@@ -111,12 +111,12 @@ namespace System.Data.Tests
             // Checking default value 1
             Assert.Equal(1, dc.AutoIncrementStep);
 
-            //Cheking Set
+            //Checking Set
             dc.AutoIncrementStep = long.MaxValue;
             // Checking Get MaxValue
             Assert.Equal(long.MaxValue, dc.AutoIncrementStep);
 
-            //Cheking Set
+            //Checking Set
             dc.AutoIncrementStep = long.MinValue;
             // Checking Get MinValue
             Assert.Equal(long.MinValue, dc.AutoIncrementStep);
@@ -133,7 +133,7 @@ namespace System.Data.Tests
             // Checking default value ( ColumnName )
             Assert.Equal(dc.ColumnName, dc.Caption);
 
-            //Cheking Set
+            //Checking Set
             dc.Caption = sCaption;
             // Checking Get
             Assert.Equal(sCaption, dc.Caption);
@@ -150,7 +150,7 @@ namespace System.Data.Tests
             // ColumnName default value
             Assert.Equal(string.Empty, dc.ColumnName);
 
-            //Cheking Set
+            //Checking Set
             dc.ColumnName = sName;
             //Checking Get
             // ColumnName Get/Set
@@ -179,7 +179,7 @@ namespace System.Data.Tests
 
             foreach (Type type in typeArr)
             {
-                //Cheking Set
+                //Checking Set
                 dc.DataType = type;
                 // Checking GetType " + sType);
                 Assert.Equal(type, dc.DataType);
@@ -194,7 +194,7 @@ namespace System.Data.Tests
             dc = new DataColumn();
 
             pc = dc.ExtendedProperties;
-            // Checking ExtendedProperties default 
+            // Checking ExtendedProperties default
             Assert.NotNull(pc);
 
             // Checking ExtendedProperties count
@@ -226,13 +226,13 @@ namespace System.Data.Tests
             // MaxLength default
             Assert.Equal(-1, dc.MaxLength);
 
-            //Cheking Set MaxValue
+            //Checking Set MaxValue
             dc.MaxLength = int.MaxValue;
             //Checking Get MaxValue
             // MaxLength MaxValue
             Assert.Equal(int.MaxValue, dc.MaxLength);
 
-            //Cheking Set MinValue
+            //Checking Set MinValue
             dc.MaxLength = int.MinValue;
             //Checking Get MinValue
             // MaxLength MinValue
@@ -258,7 +258,7 @@ namespace System.Data.Tests
             // Namespace default
             Assert.Equal(string.Empty, dc.Namespace);
 
-            //Cheking Set
+            //Checking Set
             dc.Namespace = sName;
             //Checking Get
             // Namespace Get/Set
@@ -275,7 +275,7 @@ namespace System.Data.Tests
             // Prefix Checking default value (string.Empty)
             Assert.Equal(string.Empty, dc.Prefix);
 
-            //Cheking Set
+            //Checking Set
             dc.Prefix = sPrefix;
             //Checking Get
             // Prefix Checking Get
@@ -292,7 +292,7 @@ namespace System.Data.Tests
             // ReadOnly default
             Assert.False(dc.ReadOnly);
 
-            //Cheking Set
+            //Checking Set
             dc.ReadOnly = true;
             //Checking Get
             // ReadOnly Get/Set
@@ -347,7 +347,7 @@ namespace System.Data.Tests
             // Unique default
             Assert.False(dc.Unique);
 
-            //Cheking Set
+            //Checking Set
             dc.Unique = true;
 
             //Checking Get
@@ -412,7 +412,7 @@ namespace System.Data.Tests
         public void ctor_ByColumnNameTypeExpressionMappingType()
         {
             DataColumn dc;
-            //Cheking constructor for each Enum MappingType
+            //Checking constructor for each Enum MappingType
             foreach (int i in Enum.GetValues(typeof(MappingType)))
             {
                 dc = new DataColumn("ColName", typeof(string), "Price * 1.18", (MappingType)i);

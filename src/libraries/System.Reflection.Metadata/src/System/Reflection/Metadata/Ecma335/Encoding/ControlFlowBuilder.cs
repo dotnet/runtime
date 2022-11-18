@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 if (isShortBranch && unchecked((sbyte)distance) != distance)
                 {
-                    // We could potentially implement algorithm that automatically fixes up branch instructions to accomodate for bigger distances (short vs long),
+                    // We could potentially implement algorithm that automatically fixes up branch instructions to accommodate for bigger distances (short vs long),
                     // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
                     // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
                     // distance is unknown upfront. If they do they probably implement more sophisticated algorithm for IL layout optimization already.
@@ -215,10 +215,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
 
-            if (_lazyExceptionHandlers == null)
-            {
-                _lazyExceptionHandlers = ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
-            }
+            _lazyExceptionHandlers ??= ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
 
             _lazyExceptionHandlers.Add(new ExceptionHandlerInfo(kind, tryStart, tryEnd, handlerStart, handlerEnd, filterStart, catchType));
         }

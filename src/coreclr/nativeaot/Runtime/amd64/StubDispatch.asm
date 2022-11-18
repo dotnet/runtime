@@ -45,7 +45,7 @@ CurrentEntry = 0
 CurrentEntry = CurrentEntry + 1
     endm
 
-        ;; r10 still contains the the indirection cell address.
+        ;; r10 still contains the indirection cell address.
 
         jmp RhpInterfaceDispatchSlow
 

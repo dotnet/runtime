@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-
     internal sealed class ActionFrame
     {
         private int _state;         // Action execution state
@@ -24,13 +24,13 @@ namespace System.Xml.Xsl.XsltOld
         private XPathNodeIterator? _newNodeSet;    // Node set for processing children or other templates
 
         // Variables to store action data between states:
-        private PrefixQName? _calulatedName; // Used in ElementAction and AttributeAction
+        private PrefixQName? _calculatedName; // Used in ElementAction and AttributeAction
         private string? _storedOutput;  // Used in NumberAction, CopyOfAction, ValueOfAction and ProcessingInstructionAction
 
-        internal PrefixQName? CalulatedName
+        internal PrefixQName? CalculatedName
         {
-            get { return _calulatedName; }
-            set { _calulatedName = value; }
+            get { return _calculatedName; }
+            set { _calculatedName = value; }
         }
 
         internal string? StoredOutput
@@ -109,27 +109,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SetParameter(XmlQualifiedName name, object value)
         {
-            if (_withParams == null)
-            {
-                _withParams = new Hashtable();
-            }
+            _withParams ??= new Hashtable();
             Debug.Assert(!_withParams.Contains(name), "We should check duplicate params at compile time");
             _withParams[name] = value;
         }
 
         internal void ResetParams()
         {
-            if (_withParams != null)
-                _withParams.Clear();
+            _withParams?.Clear();
         }
 
         internal object? GetParameter(XmlQualifiedName name)
         {
-            if (_withParams != null)
-            {
-                return _withParams[name];
-            }
-            return null;
+            return _withParams?[name];
         }
 
         internal void InitNodeSet(XPathNodeIterator nodeSet)

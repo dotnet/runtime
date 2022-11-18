@@ -375,6 +375,10 @@ IErrorMarshalTesting : IUnknown
         /*[in]*/ int hresultToReturn ) = 0;
       virtual int STDMETHODCALLTYPE Return_As_HResult_Struct (
         /*[in]*/ int hresultToReturn ) = 0;
+      virtual HRESULT STDMETHODCALLTYPE Throw_HResult_HelpLink (
+        /*[in]*/ int hresultToReturn,
+        /*[in]*/ LPCWSTR helpLink,
+        /*[in]*/ DWORD helpContext ) = 0;
 };
 
 enum IDispatchTesting_Exception

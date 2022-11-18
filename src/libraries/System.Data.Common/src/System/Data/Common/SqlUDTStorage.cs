@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Data.SqlTypes;
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
-using System.Reflection;
+using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data.Common
 {
@@ -35,7 +35,7 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(t));
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, GetStaticNullForUdtTypeCore);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The only callsite is marked with DynamicallyAccessedMembers. Workaround for https://github.com/mono/linker/issues/1981")]
@@ -137,12 +137,7 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            object[] newValues = new object[capacity];
-            if (_values != null)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
             base.SetCapacity(capacity);
         }
 
@@ -155,7 +150,7 @@ namespace System.Data.Common
             {
                 object Obj = System.Activator.CreateInstance(_dataType, true)!;
 
-                string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
+                string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragment to reader
                 StringReader strReader = new StringReader(tempStr);
 
                 using (XmlTextReader xmlTextReader = new XmlTextReader(strReader))

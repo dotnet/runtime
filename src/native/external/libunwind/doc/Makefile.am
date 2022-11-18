@@ -7,6 +7,7 @@ man3_MANS = libunwind.man libunwind-dynamic.man libunwind-ia64.man	\
 	unw_get_accessors.man						\
 	unw_get_proc_info.man						\
 	unw_get_proc_info_by_ip.man					\
+	unw_get_proc_info_in_range.man					\
 	unw_get_proc_name.man						\
 	unw_get_fpreg.man						\
 	unw_get_reg.man							\
@@ -37,6 +38,7 @@ EXTRA_DIST = NOTES libunwind.trans					\
 	unw_get_accessors.tex						\
 	unw_get_proc_info.tex						\
 	unw_get_proc_info_by_ip.tex					\
+	unw_get_proc_info_in_range.tex					\
 	unw_get_proc_name.tex						\
 	unw_get_fpreg.tex						\
 	unw_get_reg.tex							\

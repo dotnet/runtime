@@ -80,7 +80,6 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(ConstructorInfoInvoke), new Type[] { typeof(int) })]
         [InlineData(typeof(string), new Type[] { typeof(char), typeof(int) })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void Properties(Type type, Type[] typeParameters)
         {
             ConstructorInfo constructor = TypeExtensions.GetConstructor(type, typeParameters);

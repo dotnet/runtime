@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -282,6 +283,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Decrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => base.DecryptValue(rgb);
 
         /// <summary>
@@ -341,6 +344,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Encrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => base.EncryptValue(rgb);
 
         /// <summary>
@@ -377,7 +382,7 @@ namespace System.Security.Cryptography
         /// <param name="keyBlob"></param>
         public void ImportCspBlob(byte[] keyBlob)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             SafeCapiKeyHandle safeKeyHandle;
 
             if (IsPublic(keyBlob))
@@ -411,7 +416,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
         }
 
@@ -420,7 +425,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
@@ -501,9 +506,12 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(rgbHash != null);
 
+            // Read the SafeKeyHandle property to force the key to load
+            SafeCapiKeyHandle localHandle = SafeKeyHandle;
+            Debug.Assert(localHandle != null);
+
             return CapiHelper.SignValue(
                 SafeProvHandle,
-                SafeKeyHandle,
                 _parameters.KeyNumber,
                 CapiHelper.CALG_RSA_SIGN,
                 calgHash,
@@ -672,14 +680,6 @@ namespace System.Security.Cryptography
         private static Exception PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(DSACryptoServiceProvider));
-            }
         }
     }
 }

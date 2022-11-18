@@ -23,6 +23,7 @@ namespace System.Globalization
         private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
         private const uint CAL_SERASTRING = 0x00000004;
         private const uint CAL_SABBREVERASTRING = 0x00000039;
+        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private const uint ENUM_ALL_CALENDARS = 0xffffffff;
 
@@ -69,19 +70,17 @@ namespace System.Globalization
             if (value == null)
                 return;
 
-            for (int i = 0; i < destination.Length; i++)
+            int i = Array.IndexOf(destination, value);
+            if (i >= 0)
             {
-                if (destination[i] == value)
+                if (i > 0)
                 {
-                    if (i > 0)
-                    {
-                        string tmp = destination[0];
-                        destination[0] = value;
-                        destination[i] = tmp;
-                    }
-
-                    return;
+                    string tmp = destination[0];
+                    destination[0] = value;
+                    destination[i] = tmp;
                 }
+
+                return;
             }
 
             string[] newArray = new string[destination.Length + 1];
@@ -170,13 +169,13 @@ namespace System.Globalization
                     calendarId = CalendarId.JAPAN;
                     break;
                 case CalendarId.JULIAN:               // Data looks like gregorian US
-                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevent
-                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
-                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
+                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevant
+                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
+                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
                     calendarId = CalendarId.GREGORIAN_US;
                     break;
             }
@@ -212,7 +211,7 @@ namespace System.Globalization
                     // See if this works
                     if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
-                        // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
+                        // Failed, set it to a locale (fa-IR) that always has Gregorian US available in the OS
                         localeName = "fa-IR";
 
                         // See if that works
@@ -427,6 +426,15 @@ namespace System.Globalization
 
             // Now we have a list of data, return the count
             return data.calendars.Count;
+        }
+
+        // Get native two digit year max
+        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        {
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
         }
     }
 }

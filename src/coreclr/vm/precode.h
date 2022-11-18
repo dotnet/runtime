@@ -300,9 +300,6 @@ struct FixupPrecode
         }
         CONTRACTL_END;
 
-        MethodDesc * pMD = (MethodDesc*)GetMethodDesc();
-        g_IBCLogger.LogMethodPrecodeWriteAccess(pMD);
-
         PCODE oldTarget = (PCODE)GetData()->Target;
         if (oldTarget != ((PCODE)this + FixupCodeOffset))
         {
@@ -554,12 +551,6 @@ public:
         }
 
         PTR_Precode pPrecode = PTR_Precode(pInstr);
-
-        if (!fSpeculative)
-        {
-            g_IBCLogger.LogMethodPrecodeAccess(pPrecode->GetMethodDesc());
-        }
-
         return pPrecode;
     }
 

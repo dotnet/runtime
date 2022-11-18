@@ -9,6 +9,7 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+#pragma warning disable IDE0060
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -32,6 +33,7 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -108,6 +110,8 @@ namespace System.Diagnostics
         {
             throw new PlatformNotSupportedException();
         }
+
+#pragma warning restore IDE0060
 
         /// <summary>Gets execution path</summary>
         private static string GetPathToOpenFile()

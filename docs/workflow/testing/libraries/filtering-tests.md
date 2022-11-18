@@ -206,7 +206,7 @@ public class TestClass
     }
 
     [ConditionalTheory(nameof(ConditionProperty))]
-    [MemberData(nameof(Equals_TestData))]
+    [MemberData(nameof(Subtract_TestData))]
     public static void Subtract(IntPtr ptr, int offset, long expected)
     {
         IntPtr p1 = IntPtr.Subtract(ptr, offset);

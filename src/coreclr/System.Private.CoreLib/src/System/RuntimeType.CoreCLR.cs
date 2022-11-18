@@ -467,7 +467,7 @@ namespace System
                             case MemberListType.All:
                                 if (!m_cacheComplete)
                                 {
-                                    MergeWithGlobalList(list);
+                                    MergeWithGlobalListInOrder(list);
 
                                     // Trim null entries at the end of m_allMembers array
                                     int memberCount = m_allMembers!.Length;
@@ -497,6 +497,36 @@ namespace System
                             Monitor.Exit(this);
                         }
                     }
+                }
+
+                private void MergeWithGlobalListInOrder(T[] list)
+                {
+                    T?[]? cachedMembers = m_allMembers;
+
+                    if (cachedMembers == null)
+                    {
+                        m_allMembers = list;
+                        return;
+                    }
+
+                    foreach (T? cachedMemberInfo in cachedMembers)
+                    {
+                        if (cachedMemberInfo == null)
+                            break;
+
+                        for (int i = 0; i < list.Length; i++)
+                        {
+                            T newMemberInfo = list[i];
+
+                            if (newMemberInfo.CacheEquals(cachedMemberInfo))
+                            {
+                                list[i] = cachedMemberInfo;
+                                break;
+                            }
+                        }
+                    }
+
+                    m_allMembers = list;
                 }
 
                 // Modifies the existing list.
@@ -1254,7 +1284,7 @@ namespace System
 
                         // All elements initialized to false.
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
-                        Span<bool> usedSlots = stackalloc bool[0];
+                        scoped Span<bool> usedSlots;
                         if (numVirtuals <= 128) // arbitrary stack limit
                         {
                             usedSlots = stackalloc bool[numVirtuals];
@@ -1336,7 +1366,7 @@ namespace System
                             // The inheritance of properties are defined by the inheritance of their
                             // getters and setters.
                             //
-                            // A property on a base type is "overriden" by a property on a sub type
+                            // A property on a base type is "overridden" by a property on a sub type
                             // if the getter/setter of the latter occupies the same vtable slot as
                             // the getter/setter of the former.
                             //
@@ -2079,7 +2109,7 @@ namespace System
                     listType = MemberListType.CaseSensitive;
                 }
 
-                if (allowPrefixLookup && name.EndsWith("*", StringComparison.Ordinal))
+                if (allowPrefixLookup && name.EndsWith('*'))
                 {
                     // We set prefixLookup to true if name ends with a "*".
                     // We will also set listType to All so that all members are included in
@@ -2372,6 +2402,11 @@ namespace System
         #endregion
 
         #region Private\Internal Members
+
+        internal unsafe TypeHandle GetNativeTypeHandle()
+        {
+            return new TypeHandle((void*)m_handle);
+        }
 
         internal IntPtr GetUnderlyingNativeHandle()
         {
@@ -3330,7 +3365,57 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
 
-        internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);
+        protected override unsafe bool IsValueTypeImpl()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+
+            // We need to return true for generic parameters with the ValueType constraint.
+            if (th.IsTypeDesc)
+                return IsSubclassOf(typeof(ValueType));
+
+            bool isValueType = th.AsMethodTable()->IsValueType;
+            GC.KeepAlive(this);
+            return isValueType;
+        }
+
+        public override unsafe bool IsEnum
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                // We need to return true for generic parameters with the Enum constraint.
+                if (th.IsTypeDesc)
+                    return IsSubclassOf(typeof(Enum));
+
+                bool isEnum = th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                GC.KeepAlive(this);
+                return isEnum;
+            }
+        }
+
+        // This returns true for actual enum types only.
+        internal unsafe bool IsActualEnum
+        {
+            [Intrinsic]
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                GC.KeepAlive(this);
+                return isEnum;
+            }
+        }
+
+        internal unsafe bool IsDelegate()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+
+            bool isDelegate = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<MulticastDelegate>().AsMethodTable();
+            GC.KeepAlive(this);
+            return isDelegate;
+        }
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -3495,213 +3580,18 @@ namespace System
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateValueType(RuntimeType type, object? value, bool fForceTypeChange);
+        private static extern object AllocateValueType(RuntimeType type, object? value);
 
-        private enum CheckValueStatus
-        {
-            Success = 0,
-            ArgumentException,
-            NotSupported_ByRefLike
-        }
-
-#if DEBUG
-        internal void VerifyValueType(object? value)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(
-                value.GetType() == this ||
-                (IsPointer && value.GetType() == typeof(IntPtr)) ||
-                (IsByRef && value.GetType() == RuntimeTypeHandle.GetElementType(this)) ||
-                (value.GetType().IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)) ||
-                (IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)));
-        }
-#endif
-
-        /// <summary>
-        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
-        /// </summary>
-        /// <returns>True if the value should be considered a value type, False otherwise</returns>
-        internal bool CheckValue(
-            ref object? value,
-            ref bool copyBack,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr)
-        {
-            // Already fast-pathed by the caller.
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
-
-            // Fast path to whether a value can be assigned without conversion.
-            if (IsInstanceOfType(value))
-            {
-                // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
-                // because it is faster than IsValueType
-                Debug.Assert(!IsGenericParameter);
-
-                if (RuntimeTypeHandle.IsValueType(this))
-                {
-                    // Nullable is the only value type that will get here.
-                    Debug.Assert(IsNullableOfT);
-
-                    // Fall through and treat as a reference type.
-                }
-
-                return false;
-            }
-
-            bool isValueType;
-            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType);
-            if (result == CheckValueStatus.Success)
-            {
-                return isValueType;
-            }
-
-            if (result == CheckValueStatus.ArgumentException && (invokeAttr & BindingFlags.ExactBinding) == 0)
-            {
-                Debug.Assert(value != null);
-
-                // Use the binder
-                if (binder != null && binder != DefaultBinder)
-                {
-                    value = binder.ChangeType(value, this, culture);
-                    if (IsInstanceOfType(value))
-                    {
-                        copyBack = true;
-                        return IsValueType;
-                    }
-
-                    result = TryChangeType(ref value, out copyBack, out isValueType);
-                    if (result == CheckValueStatus.Success)
-                    {
-                        return isValueType;
-                    }
-                }
-            }
-
-            switch (result)
-            {
-                case CheckValueStatus.ArgumentException:
-                    throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
-                case CheckValueStatus.NotSupported_ByRefLike:
-                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
-            }
-
-            Debug.Fail("Error result not expected");
-            return false;
-        }
-
-        private CheckValueStatus TryChangeType(
-            ref object? value,
-            out bool copyBack,
+        private CheckValueStatus TryChangeTypeSpecial(
+            ref object value,
             out bool isValueType)
         {
-            // If this is a ByRef get the element type and check if it's compatible
-            if (IsByRef)
-            {
-                RuntimeType sigElementType = RuntimeTypeHandle.GetElementType(this);
-
-                // If a nullable, pass the object even though it's a value type.
-                if (sigElementType.IsNullableOfT)
-                {
-                    // Treat as a reference type since a null value may be replaced with T or vise-versa.
-                    isValueType = false;
-                    copyBack = true;
-                    return CheckValueStatus.Success;
-                }
-
-                if (sigElementType.IsInstanceOfType(value))
-                {
-                    // Need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
-                    value = AllocateValueType(sigElementType, value, fForceTypeChange: false);
-                    isValueType = sigElementType.IsValueType;
-                    copyBack = true;
-                    return CheckValueStatus.Success;
-                }
-
-                if (value == null)
-                {
-                    if (IsByRefLike)
-                    {
-                        isValueType = copyBack = default;
-                        return CheckValueStatus.NotSupported_ByRefLike;
-                    }
-
-                    value = AllocateValueType(sigElementType, value, fForceTypeChange: false);
-                    isValueType = sigElementType.IsValueType;
-                    copyBack = true;
-                    return CheckValueStatus.Success;
-                }
-
-                if (NeedsSpecialCast())
-                {
-                    if (SpecialCast(sigElementType, ref value) == CheckValueStatus.Success)
-                    {
-                        isValueType = true;
-                        copyBack = false;
-                        return CheckValueStatus.Success;
-                    }
-                }
-
-                isValueType = copyBack = default;
-                return CheckValueStatus.ArgumentException;
-            }
-
-            if (value == null)
-            {
-                if (!RuntimeTypeHandle.IsValueType(this))
-                {
-                    isValueType = false;
-                    copyBack = false;
-                    return CheckValueStatus.Success;
-                }
-
-                if (IsNullableOfT)
-                {
-                    // Treat as a boxed value.
-                    isValueType = false;
-                    copyBack = false;
-                    return CheckValueStatus.Success;
-                }
-
-                if (RuntimeTypeHandle.IsByRefLike(this))
-                {
-                    isValueType = copyBack = default;
-                    return CheckValueStatus.NotSupported_ByRefLike;
-                }
-
-                // Need to create a default instance of the value type.
-                value = AllocateValueType(this, value: null, fForceTypeChange: false);
-                isValueType = true;
-                copyBack = false;
-                return CheckValueStatus.Success;
-            }
-
-            if (NeedsSpecialCast())
-            {
-                if (SpecialCast(this, ref value) == CheckValueStatus.Success)
-                {
-                    isValueType = true;
-                    copyBack = false;
-                    return CheckValueStatus.Success;
-                }
-            }
-
-            isValueType = copyBack = default;
-            return CheckValueStatus.ArgumentException;
-
-            // Check the strange ones courtesy of reflection:
-            // - implicit cast between primitives
-            // - enum treated as underlying type
-            // - IntPtr and System.Reflection.Pointer to pointer types
-            bool NeedsSpecialCast() => IsPointer || IsEnum || IsPrimitive;
-
-            static CheckValueStatus SpecialCast(RuntimeType type, ref object value)
-            {
                 Pointer? pointer = value as Pointer;
                 RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
-                if (!CanValueSpecialCast(srcType, type))
+                if (!CanValueSpecialCast(srcType, this))
                 {
+                    isValueType = false;
                     return CheckValueStatus.ArgumentException;
                 }
 
@@ -3712,25 +3602,15 @@ namespace System
                 else
                 {
                     CorElementType srcElementType = GetUnderlyingType(srcType);
-                    CorElementType dstElementType = GetUnderlyingType(type);
+                    CorElementType dstElementType = GetUnderlyingType(this);
                     if (dstElementType != srcElementType)
                     {
-                        value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, type, dstElementType);
+                        value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
                     }
                 }
 
+                isValueType = true;
                 return CheckValueStatus.Success;
-            }
-        }
-
-        private static CorElementType GetUnderlyingType(RuntimeType type)
-        {
-            if (type.IsEnum)
-            {
-                type = (RuntimeType)Enum.GetUnderlyingType(type);
-            }
-
-            return RuntimeTypeHandle.GetCorElementType(type);
         }
 
         #endregion
@@ -3769,10 +3649,6 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
@@ -3852,7 +3728,7 @@ namespace System
                     }
 
                     // fast path??
-                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+                    instance = CreateInstanceLocal(wrapExceptions: wrapExceptions);
                 }
                 else
                 {
@@ -3863,6 +3739,13 @@ namespace System
             }
 
             return instance;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+                Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+            object? CreateInstanceLocal(bool wrapExceptions)
+            {
+                return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+            }
         }
 
         /// <summary>

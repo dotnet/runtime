@@ -260,7 +260,7 @@ public class C_BOOLArray_Seq
 
 #region Explicit
 
-#region explicit stuct definition
+#region explicit struct definition
 [StructLayout(LayoutKind.Explicit)]
 public struct S_INTArray_Exp
 {
@@ -1176,7 +1176,7 @@ class Test
         Assert.True(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

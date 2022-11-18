@@ -262,7 +262,7 @@
 #define UCONTEXT_REG_XMM15(ctx) (UCONTEXT_FREGS ((ctx)) [AMD64_XMM15])
 #endif
 
-#elif defined(__mono_ppc__)
+#elif defined(TARGET_POWERPC)
 
 #if HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -274,7 +274,7 @@
 #include <asm/ptrace.h>
 	typedef ucontext_t os_ucontext;
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 	#define UCONTEXT_REG_Rn(ctx, n)   (((os_ucontext*)(ctx))->uc_mcontext.gp_regs [(n)])
 	#define UCONTEXT_REG_FPRn(ctx, n) (((os_ucontext*)(ctx))->uc_mcontext.fp_regs [(n)])
 	#define UCONTEXT_REG_NIP(ctx)     (((os_ucontext*)(ctx))->uc_mcontext.gp_regs [PT_NIP])

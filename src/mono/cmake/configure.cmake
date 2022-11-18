@@ -67,7 +67,7 @@ endfunction()
 ac_check_headers (
   sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sys/resource.h
-  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
+  sys/ioctl.h sys/errno.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
   strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h
   android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
@@ -77,11 +77,11 @@ ac_check_headers (
 ac_check_funcs (
   sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
-  sched_getaffinity sched_setaffinity getpwuid_r chmod lstat getdtablesize ftruncate msync
+  sched_getaffinity sched_setaffinity chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
+  poll getfsstat mremap posix_fadvise vsnprintf statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
-  vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
+  vasprintf strndup getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
@@ -128,6 +128,10 @@ check_struct_has_member("struct sockaddr_in" sin_len "netinet/in.h" HAVE_SOCKADD
 check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKADDR_IN6_SIN_LEN)
 check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)
 check_struct_has_member("struct stat" st_atimespec "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIMESPEC)
+
+if (HOST_DARWIN)
+  check_struct_has_member("struct objc_super" super_class "objc/runtime.h;objc/message.h" HAVE_OBJC_SUPER_SUPER_CLASS)
+endif()
 
 check_type_size("int" SIZEOF_INT)
 check_type_size("void*" SIZEOF_VOID_P)
@@ -245,7 +249,6 @@ if(HOST_WIN32)
   set(HAVE_EXECVP 0)
 elseif(HOST_IOS)
   set(HAVE_SYSTEM 0)
-  set(HAVE_GETPWUID_R 0)
   set(HAVE_SYS_USER_H 0)
   set(HAVE_GETENTROPY 0)
   if(HOST_TVOS)
@@ -273,7 +276,6 @@ elseif(HOST_WASI)
   set(HAVE_SYS_UN_H 0)
   set(HAVE_NETINET_TCP_H 0)
   set(HAVE_ARPA_INET_H 0)
-  set(HAVE_GETPWUID_R 0)
   set(HAVE_MKDTEMP 0)
   set(HAVE_EXECVE 0)
   set(HAVE_FORK 0)

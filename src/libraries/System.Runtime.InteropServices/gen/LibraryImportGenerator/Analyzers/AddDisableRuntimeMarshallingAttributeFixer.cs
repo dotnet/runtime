@@ -53,12 +53,9 @@ namespace Microsoft.Interop.Analyzers
 
         private static async Task<Solution> AddDisableRuntimeMarshallingAttributeApplicationToProject(Project project, CancellationToken cancellationToken)
         {
-            Document? assemblyInfo = project.Documents.FirstOrDefault(IsPropertiesAssemblyInfo);
-
-            if (assemblyInfo is null)
-            {
-                assemblyInfo = project.AddDocument(AssemblyInfoFileName, "", folders: new[] { PropertiesFolderName });
-            }
+            Document? assemblyInfo =
+                project.Documents.FirstOrDefault(IsPropertiesAssemblyInfo) ??
+                project.AddDocument(AssemblyInfoFileName, "", folders: new[] { PropertiesFolderName });
 
             DocumentEditor editor = await DocumentEditor.CreateAsync(assemblyInfo, cancellationToken).ConfigureAwait(false);
 

@@ -41,9 +41,9 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdOut()
                 .Start();
 
-            const int twoMitutes = 120000 /*milliseconds*/;
+            const int twoMinutes = 120000 /*milliseconds*/;
             int waitTime = 0;
-            while (!File.Exists(waitFile) && !singleExe.Process.HasExited && waitTime < twoMitutes)
+            while (!File.Exists(waitFile) && !singleExe.Process.HasExited && waitTime < twoMinutes)
             {
                 Thread.Sleep(100);
                 waitTime += 100;
@@ -54,13 +54,9 @@ namespace AppHost.Bundle.Tests
             File.Move(singleFile, renameFile);
             File.Create(resumeFile).Close();
 
-            var result = singleExe.WaitForExit(fExpectedToFail: false, twoMitutes);
-
-            result
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello World!");
+            singleExe.WaitForExit(expectedToFail: false, twoMinutes)
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World!");
         }
 
         public class SharedTestState : SharedTestStateBase, IDisposable

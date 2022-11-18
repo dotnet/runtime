@@ -8,7 +8,7 @@ namespace MS.Internal.Xml.XPath
     // We need this wrapper object to:
     //      1. Calculate position
     //      2. Protect internal query.Current from user who may call MoveNext().
-    internal sealed class XPathSelectionIterator : ResetableIterator
+    internal sealed class XPathSelectionIterator : ResettableIterator
     {
         private XPathNavigator _nav;
         private readonly Query _query;

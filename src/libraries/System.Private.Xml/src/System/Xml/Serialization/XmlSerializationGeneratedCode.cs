@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Collections;
+using System.ComponentModel;
+using System.Threading;
+using System.Reflection;
+using System.Security;
+using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Threading;
-    using System.Reflection;
-    using System.Security;
-    using System.Globalization;
-    using System.Diagnostics.CodeAnalysis;
-
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {
@@ -364,7 +364,7 @@ namespace System.Xml.Serialization
             _writer.WriteLine("}");
         }
 
-        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type?[] types, string readerType, string?[] readMethods, string writerType, string?[] writerMethods, Hashtable serializers)
+        internal void GenerateSerializerContract(XmlMapping[] xmlMappings, Type?[] types, string readerType, string?[] readMethods, string writerType, string?[] writerMethods, Hashtable serializers)
         {
             _writer.WriteLine();
             _writer.Write("public class XmlSerializerContract : global::");

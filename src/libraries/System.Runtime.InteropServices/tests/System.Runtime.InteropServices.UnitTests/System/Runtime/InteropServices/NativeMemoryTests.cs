@@ -435,5 +435,204 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.Free(newPtr);
         }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        [InlineData(1, 3)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(8, 0)]
+        [InlineData(9, 0)]
+        [InlineData(16, 0)]
+        [InlineData(16, 1)]
+        [InlineData(16, 3)]
+        [InlineData(16, 7)]
+        [InlineData(32, 0)]
+        [InlineData(64, 0)]
+        [InlineData(128, 0)]
+        [InlineData(256, 0)]
+        [InlineData(256, 1)]
+        [InlineData(256, 2)]
+        [InlineData(256, 3)]
+        [InlineData(256, 5)]
+        [InlineData(512, 0)]
+        [InlineData(547, 0)]
+        [InlineData(1 * 1024, 0)]
+        public void ClearTest(int size, int offset)
+        {
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc((nuint)(size + offset), 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            new Span<byte>(ptr, size + offset).Fill(0b10101010);
+
+            NativeMemory.Clear(ptr + offset, (nuint)size);
+
+            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept((byte)0));
+
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        [InlineData(1, 3)]
+        [InlineData(1, 44)]
+        [InlineData(1, 367)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(8, 0)]
+        [InlineData(9, 0)]
+        [InlineData(9, 2)]
+        [InlineData(9, 111)]
+        [InlineData(9, 289)]
+        [InlineData(16, 0)]
+        [InlineData(16, 1)]
+        [InlineData(16, 3)]
+        [InlineData(16, 7)]
+        [InlineData(32, 0)]
+        [InlineData(64, 0)]
+        [InlineData(128, 0)]
+        [InlineData(256, 0)]
+        [InlineData(256, 1)]
+        [InlineData(256, 2)]
+        [InlineData(256, 3)]
+        [InlineData(256, 5)]
+        [InlineData(256, 67)]
+        [InlineData(256, 143)]
+        public void ClearWithExactRangeTest(int size, int offset)
+        {
+            int headLength = offset;
+            int bodyLength = size;
+            int tailLength = 512 - headLength - bodyLength;
+            int headOffset = 0;
+            int bodyOffset = headLength;
+            int tailOffset = headLength + bodyLength;
+
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc(512, 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            new Span<byte>(ptr, 512).Fill(0b10101010);
+
+            NativeMemory.Clear(ptr + bodyOffset, (nuint)bodyLength);
+
+            Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept((byte)0b10101010));
+            Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept((byte)0));
+            Assert.Equal(-1, new Span<byte>(ptr + tailOffset, tailLength).IndexOfAnyExcept((byte)0b10101010));
+
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(167)]
+        public void ClearWithSizeEqualTo0ShouldNoOpTest(int offset)
+        {
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc(512, 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            new Span<byte>(ptr, 512).Fill(0b10101010);
+
+            NativeMemory.Clear(ptr + offset, 0);
+
+            Assert.Equal(-1, new Span<byte>(ptr, 512).IndexOfAnyExcept((byte)0b10101010));
+
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
+        public void ClearWithNullPointerAndZeroByteCountTest()
+        {
+            NativeMemory.Clear(null, 0);
+
+            // This test method just needs to check that no exceptions are thrown
+        }
+
+        [Fact]
+        public void CopyNullBlockShouldNoOpTest()
+        {
+            // This should not throw
+            NativeMemory.Copy(null, null, 0);
+        }
+
+        [Fact]
+        public void CopyEmptyBlockShouldNoOpTest()
+        {
+            int* source = stackalloc int[1] { 42 };
+            int* destination = stackalloc int[1] { 0 };
+
+            NativeMemory.Copy(source, destination, 0);
+
+            Assert.Equal(0, destination[0]);
+        }
+
+        [Theory]
+        [InlineData(1, 1, 1)]
+        [InlineData(7, 9, 5)]
+        [InlineData(1, 16, 1)]
+        [InlineData(16, 16, 16)]
+        [InlineData(29, 37, 19)]
+        [InlineData(1024, 16, 16)]
+        public void CopyTest(int sourceSize, int destinationSize, int byteCount)
+        {
+            void* source = NativeMemory.AllocZeroed((nuint)sourceSize);
+            void* destination = NativeMemory.AllocZeroed((nuint)destinationSize);
+
+            new Span<byte>(source, sourceSize).Fill(0b10101010);
+
+            NativeMemory.Copy(source, destination, (nuint)byteCount);
+
+            Equals(byteCount - 1, new Span<byte>(destination, destinationSize).LastIndexOf<byte>(0b10101010));
+
+            NativeMemory.Free(source);
+            NativeMemory.Free(destination);
+        }
+
+        [Theory]
+        [InlineData(311, 100, 50)]
+        [InlineData(33, 0, 12)]
+        [InlineData(150, 50, 100)]
+        public void CopyToOverlappedMemoryTest(int size, int offset, int byteCount)
+        {
+            byte* source = (byte*)NativeMemory.AllocZeroed((nuint)size);
+
+            var expectedBlock = new byte[byteCount];
+            Random.Shared.NextBytes(expectedBlock);
+            expectedBlock.CopyTo(new Span<byte>(source, byteCount));
+
+            NativeMemory.Copy(source, source + offset, (nuint)byteCount);
+
+            Assert.True(expectedBlock.AsSpan().SequenceEqual(new ReadOnlySpan<byte>(source + offset, byteCount)));
+
+            NativeMemory.Free(source);
+        }
+
+        [Fact]
+        public void FillNullMemoryBlockShouldNoOpTest()
+        {
+            // This should not throw
+            NativeMemory.Fill(null, 0, 42);
+        }
+
+        [Fact]
+        public void FillEmptyMemoryBlockShouldNoOpTest()
+        {
+            void* source = stackalloc byte[7] { 0, 0, 0, 0, 0, 0, 0 };
+
+            NativeMemory.Fill(source, 0, 42);
+
+            Assert.Equal(-1, new Span<byte>(source, 7).IndexOf<byte>(42));
+        }
     }
 }

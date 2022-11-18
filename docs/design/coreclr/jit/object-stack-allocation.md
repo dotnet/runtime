@@ -137,7 +137,7 @@ but without field edges in the connection graph.
 * Only simple objects are stack allocated, arrays of constant size are not analyzed.
 * Only objects that are allocated unconditionally in the method are moved to the stack. An improvement here would
 be allocating other objects dynamically on the stack.
-* If at least one object in a method is stack allocated, all objects are conservatively reported as as TYPE_GC_BYREF
+* If at least one object in a method is stack allocated, all objects are conservatively reported as TYPE_GC_BYREF
 and a checked write barrier is used in the method.
 * All objects allocated on the stack also have a pre-header allocated. Pre-header is used for synchronization
 and hashing so we could eliminate it if we proved the object wasn't used for synchronization and hashing.

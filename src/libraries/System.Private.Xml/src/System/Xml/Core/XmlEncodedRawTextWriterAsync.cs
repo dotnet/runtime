@@ -4,7 +4,6 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
-#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -37,7 +36,7 @@ namespace System.Xml
             // Output xml declaration only if user allows it and it was not already output
             if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
                 await RawTextAsync("<?xml version=\"").ConfigureAwait(false);
 
                 // Version
@@ -101,7 +100,7 @@ namespace System.Xml
                         }
                         finally
                         {
-                            _stream = null;
+                            _stream = null!;
                         }
                     }
                 }
@@ -122,7 +121,7 @@ namespace System.Xml
                         }
                         finally
                         {
-                            _writer = null;
+                            _writer = null!;
                         }
                     }
                 }
@@ -130,12 +129,12 @@ namespace System.Xml
         }
 
         // Serialize the document type declaration.
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             await RawTextAsync("<!DOCTYPE ").ConfigureAwait(false);
             await RawTextAsync(name).ConfigureAwait(false);
@@ -172,13 +171,13 @@ namespace System.Xml
         }
 
         // Serialize the beginning of an element start tag: "<prefix:localName"
-        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsyncCall();
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             Task task;
             _bufChars[_bufPos++] = (char)'<';
@@ -206,7 +205,7 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             if (_contentPos != _bufPos)
             {
@@ -241,7 +240,7 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'<';
             _bufChars[_bufPos++] = (char)'/';
@@ -257,13 +256,13 @@ namespace System.Xml
         }
 
         // Serialize an attribute tag using double quotes around the attribute value: 'prefix:localName="'
-        protected internal override Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             CheckAsyncCall();
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             if (_attrEndPos == _bufPos)
             {
@@ -293,7 +292,7 @@ namespace System.Xml
         {
             CheckAsyncCall();
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'"';
             _inAttributeValue = false;
@@ -317,7 +316,7 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(prefix != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             if (prefix.Length == 0)
             {
@@ -340,7 +339,7 @@ namespace System.Xml
         {
             CheckAsyncCall();
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _inAttributeValue = false;
 
@@ -352,12 +351,12 @@ namespace System.Xml
 
         // Serialize a CData section.  If the "]]>" pattern is found within
         // the text, replace it with "]]><![CDATA[>".
-        public override async Task WriteCDataAsync(string text)
+        public override async Task WriteCDataAsync(string? text)
         {
             CheckAsyncCall();
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             if (_mergeCDataSections && _bufPos == _cdataPos)
             {
@@ -390,12 +389,12 @@ namespace System.Xml
         }
 
         // Serialize a comment.
-        public override async Task WriteCommentAsync(string text)
+        public override async Task WriteCommentAsync(string? text)
         {
             CheckAsyncCall();
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'<';
             _bufChars[_bufPos++] = (char)'!';
@@ -410,13 +409,13 @@ namespace System.Xml
         }
 
         // Serialize a processing instruction.
-        public override async Task WriteProcessingInstructionAsync(string name, string text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'<';
             _bufChars[_bufPos++] = (char)'?';
@@ -438,7 +437,7 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'&';
             await RawTextAsync(name).ConfigureAwait(false);
@@ -464,7 +463,7 @@ namespace System.Xml
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
             }
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'&';
             _bufChars[_bufPos++] = (char)'#';
@@ -482,12 +481,12 @@ namespace System.Xml
 
         // Serialize a whitespace node.
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsyncCall();
             Debug.Assert(ws != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             if (_inAttributeValue)
             {
@@ -501,7 +500,7 @@ namespace System.Xml
 
         // Serialize either attribute or element text using XML rules.
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             CheckAsyncCall();
             Debug.Assert(text != null);
@@ -523,7 +522,7 @@ namespace System.Xml
         {
             CheckAsyncCall();
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             int surrogateChar = XmlCharType.CombineSurrogateChar(lowChar, highChar);
 
@@ -567,7 +566,7 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             await WriteRawWithCharCheckingAsync(buffer, index, count).ConfigureAwait(false);
 
@@ -581,7 +580,7 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(data != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             await WriteRawWithCharCheckingAsync(data).ConfigureAwait(false);
 
@@ -622,21 +621,21 @@ namespace System.Xml
                     {
                         if (_trackTextContent)
                         {
-                            _charEntityFallback.Reset(_textContentMarks, _lastMarkPos);
+                            _charEntityFallback!.Reset(_textContentMarks!, _lastMarkPos);
                             // reset text content tracking
 
                             if ((_lastMarkPos & 1) != 0)
                             {
                                 // If the previous buffer ended inside a text content we need to preserve that info
                                 //   which means the next index to which we write has to be even
-                                _textContentMarks[1] = 1;
+                                _textContentMarks![1] = 1;
                                 _lastMarkPos = 1;
                             }
                             else
                             {
                                 _lastMarkPos = 0;
                             }
-                            Debug.Assert(_textContentMarks[0] == 1);
+                            Debug.Assert(_textContentMarks![0] == 1);
                         }
                         await EncodeCharsAsync(1, _bufPos, true).ConfigureAwait(false);
                     }
@@ -645,7 +644,7 @@ namespace System.Xml
                         if (_bufPos - 1 > 0)
                         {
                             // Write text to TextWriter
-                            await _writer.WriteAsync(_bufChars.AsMemory(1, _bufPos - 1)).ConfigureAwait(false);
+                            await _writer!.WriteAsync(_bufChars.AsMemory(1, _bufPos - 1)).ConfigureAwait(false);
                         }
                     }
                 }
@@ -682,18 +681,18 @@ namespace System.Xml
                 {
                     _charEntityFallback.StartOffset = startOffset;
                 }
-                _encoder.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes, _bufBytesUsed, _bufBytes.Length - _bufBytesUsed, false, out chEnc, out bEnc, out _);
+                _encoder!.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes!, _bufBytesUsed, _bufBytes!.Length - _bufBytesUsed, false, out chEnc, out bEnc, out _);
                 startOffset += chEnc;
                 _bufBytesUsed += bEnc;
                 if (_bufBytesUsed >= (_bufBytes.Length - 16))
                 {
-                    await _stream.WriteAsync(_bufBytes.AsMemory(0, _bufBytesUsed)).ConfigureAwait(false);
+                    await _stream!.WriteAsync(_bufBytes.AsMemory(0, _bufBytesUsed)).ConfigureAwait(false);
                     _bufBytesUsed = 0;
                 }
             }
             if (writeAllToStream && _bufBytesUsed > 0)
             {
-                await _stream.WriteAsync(_bufBytes.AsMemory(0, _bufBytesUsed)).ConfigureAwait(false);
+                await _stream!.WriteAsync(_bufBytes.AsMemory(0, _bufBytesUsed)).ConfigureAwait(false);
                 _bufBytesUsed = 0;
             }
         }
@@ -705,7 +704,7 @@ namespace System.Xml
             {
                 int bEnc;
                 // decode no chars, just flush
-                _encoder.Convert(_bufChars, 1, 0, _bufBytes, 0, _bufBytes.Length, true, out _, out bEnc, out _);
+                _encoder!.Convert(_bufChars, 1, 0, _bufBytes!, 0, _bufBytes!.Length, true, out _, out bEnc, out _);
                 if (bEnc != 0)
                 {
                     return _stream.WriteAsync(_bufBytes, 0, bEnc);
@@ -1250,7 +1249,7 @@ namespace System.Xml
                 Task.CompletedTask;
         }
 
-        protected Task RawTextAsync(string text1, string text2 = null, string text3 = null, string text4 = null)
+        protected Task RawTextAsync(string text1, string? text2 = null, string? text3 = null, string? text4 = null)
         {
             Debug.Assert(text1 != null);
             Debug.Assert(text2 != null || (text3 == null && text4 == null));
@@ -1308,7 +1307,7 @@ namespace System.Xml
 
         private async Task _RawTextAsync(
             string text1, int curIndex1, int leftCount1,
-            string text2 = null, string text3 = null, string text4 = null)
+            string? text2 = null, string? text3 = null, string? text4 = null)
         {
             Debug.Assert(text1 != null);
             Debug.Assert(text2 != null || (text3 == null && text4 == null));
@@ -1901,7 +1900,7 @@ namespace System.Xml
     // Same as base text writer class except that elements, attributes, comments, and pi's are indented.
     internal partial class XmlEncodedRawTextWriterIndent : XmlEncodedRawTextWriter
     {
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             // Add indentation
@@ -1912,7 +1911,7 @@ namespace System.Xml
             await base.WriteDocTypeAsync(name, pubid, sysid, subset).ConfigureAwait(false);
         }
 
-        public override async Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsyncCall();
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
@@ -1965,7 +1964,7 @@ namespace System.Xml
         }
 
         // Same as base class, plus possible indentation.
-        protected internal override async Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal override async Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             CheckAsyncCall();
             // Add indentation
@@ -1977,14 +1976,14 @@ namespace System.Xml
             await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
         }
 
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             CheckAsyncCall();
             _mixedContent = true;
             return base.WriteCDataAsync(text);
         }
 
-        public override async Task WriteCommentAsync(string text)
+        public override async Task WriteCommentAsync(string? text)
         {
             CheckAsyncCall();
             if (!_mixedContent && base._textPos != base._bufPos)
@@ -1995,7 +1994,7 @@ namespace System.Xml
             await base.WriteCommentAsync(text).ConfigureAwait(false);
         }
 
-        public override async Task WriteProcessingInstructionAsync(string target, string text)
+        public override async Task WriteProcessingInstructionAsync(string target, string? text)
         {
             CheckAsyncCall();
             if (!_mixedContent && base._textPos != base._bufPos)
@@ -2027,14 +2026,14 @@ namespace System.Xml
             return base.WriteSurrogateCharEntityAsync(lowChar, highChar);
         }
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             CheckAsyncCall();
             _mixedContent = true;
             return base.WriteWhitespaceAsync(ws);
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             CheckAsyncCall();
             _mixedContent = true;

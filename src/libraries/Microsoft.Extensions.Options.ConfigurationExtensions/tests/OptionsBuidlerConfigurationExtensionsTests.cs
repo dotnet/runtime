@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 {
-    public class OptionsBuidlerConfigurationExtensionsTests
+    public class OptionsBuilderConfigurationExtensionsTests
     {
         [Fact]
         public static void BindConfiguration_ThrowsForNullBuilder()

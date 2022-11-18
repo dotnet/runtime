@@ -1,20 +1,10 @@
 {
-  "compilerOptions": {
-    "noImplicitAny": true,
-    "noEmitOnError": true,
-    "removeComments": false,
-    "sourceMap": false,
-    "target": "ES2018",
-    "moduleResolution": "Node",
-    "lib": [
-      "esnext",
-      "dom"
-    ],
-    "strict": true,
+    "extends": "./tsconfig.shared.json",
+    "compilerOptions": {
+        "lib": [
+            "esnext",
+            "dom"
+        ],
     "outDir": "bin",
-  },
-  "exclude": [
-    "dotnet.d.ts",
-    "bin"
-  ]
+    }
 }

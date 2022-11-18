@@ -81,15 +81,15 @@ void ExecutableAllocator::DumpHolderUsage()
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
 
-    fprintf(stderr, "Map time with lock sum: %I64dms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map time sum: %I64dms\n", g_mapTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map find RX time sum: %I64dms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map create time sum: %I64dms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time with lock sum: %I64dms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time sum: %I64dms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
 
-    fprintf(stderr, "Reserve count: %I64d\n", g_reserveCount);
-    fprintf(stderr, "Release count: %I64d\n", g_releaseCount);
+    fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
+    fprintf(stderr, "Release count: %lld\n", g_releaseCount);
 
     fprintf(stderr, "ExecutableWriterHolder usage:\n");
 
@@ -195,7 +195,7 @@ void ExecutableAllocator::ResetLazyPreferredRangeHint()
     g_lazyPreferredRangeHint = g_lazyPreferredRangeStart;
 #endif
 }
-// Returns TRUE if p is is located in the memory area where we prefer to put
+// Returns TRUE if p is located in the memory area where we prefer to put
 // executable code and static fields. This area is typically close to the
 // coreclr library.
 bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
@@ -249,7 +249,8 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
-            return false;
+            g_isWXorXEnabled = false;
+            return true;
         }
 
         m_CriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock,CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -258,7 +259,7 @@ bool ExecutableAllocator::Initialize()
     return true;
 }
 
-//#define ENABLE_CACHED_MAPPINGS
+#define ENABLE_CACHED_MAPPINGS
 
 void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {
@@ -285,7 +286,7 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
         m_cachedMapping = pBlock;
         pBlock->refCount++;
     }
-#endif // ENABLE_CACHED_MAPPINGS    
+#endif // ENABLE_CACHED_MAPPINGS
 }
 
 void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
@@ -452,7 +453,10 @@ void ExecutableAllocator::Release(void* pRX)
 
         if (pBlock != NULL)
         {
-            VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size);
+            if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+            {
+                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+            }
             // Put the released block into the free block list
             pBlock->baseRX = NULL;
             pBlock->next = m_pFirstFreeBlockRX;
@@ -584,7 +588,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }
@@ -676,7 +680,7 @@ void* ExecutableAllocator::Reserve(size_t size)
                 block->baseRX = result;
                 AddRXBlock(block);
             }
-            else 
+            else
             {
                 BackoutBlock(block, isFreeBlock);
             }
@@ -727,7 +731,7 @@ void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }

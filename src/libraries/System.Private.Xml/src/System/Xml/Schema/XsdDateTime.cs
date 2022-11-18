@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Numerics;
+using System.Text;
+using System.Xml;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Xml;
-    using System.Diagnostics;
-    using System.Text;
-
     /// <summary>
     /// This enum specifies what format should be used when converting string to XsdDateTime
     /// </summary>
@@ -176,10 +177,10 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDateTime(DateTime dateTime, XsdDateTimeFlags kinds)
         {
-            Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
+            Debug.Assert(BitOperations.IsPow2((uint)kinds), "One and only one DateTime type code can be set.");
             _dt = dateTime;
 
-            DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
+            DateTimeTypeCode code = (DateTimeTypeCode)BitOperations.TrailingZeroCount((uint)kinds);
             int zoneHour = 0;
             int zoneMinute = 0;
             XsdDateTimeKind kind;
@@ -220,12 +221,12 @@ namespace System.Xml.Schema
 
         public XsdDateTime(DateTimeOffset dateTimeOffset, XsdDateTimeFlags kinds)
         {
-            Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
+            Debug.Assert(BitOperations.IsPow2((uint)kinds), "Only one DateTime type code can be set.");
 
             _dt = dateTimeOffset.DateTime;
 
             TimeSpan zoneOffset = dateTimeOffset.Offset;
-            DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
+            DateTimeTypeCode code = (DateTimeTypeCode)BitOperations.TrailingZeroCount((uint)kinds);
             XsdDateTimeKind kind;
             if (zoneOffset.TotalMinutes < 0)
             {

@@ -176,54 +176,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    // Try to widen the ops if they are going into a local var.
-    GenTree* op1 = storeLoc->gtGetOp1();
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
-    {
-        GenTreeIntCon* con    = op1->AsIntCon();
-        ssize_t        ival   = con->gtIconVal;
-        unsigned       varNum = storeLoc->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(varNum);
-
-        if (varDsc->lvIsSIMDType())
-        {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
-        }
-    }
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
@@ -414,6 +366,60 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     addr->AsAddrMode()->SetScale(0);
     addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
     addr->SetContained();
+}
+
+//------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgNode - The node to lower
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    GenTree* src = putArgNode->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        MakeSrcContained(putArgNode, src);
+
+        // Currently, codegen does not support LCL_VAR/LCL_FLD sources, so we morph them to OBJs.
+        // TODO-ADDR: support the local nodes in codegen and remove this code.
+        if (src->OperIsLocalRead())
+        {
+            unsigned     lclNum  = src->AsLclVarCommon()->GetLclNum();
+            ClassLayout* layout  = nullptr;
+            GenTree*     lclAddr = nullptr;
+
+            if (src->OperIs(GT_LCL_VAR))
+            {
+                layout  = comp->lvaGetDesc(lclNum)->GetLayout();
+                lclAddr = comp->gtNewLclVarAddrNode(lclNum);
+
+                comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
+            else
+            {
+                layout  = src->AsLclFld()->GetLayout();
+                lclAddr = comp->gtNewLclFldAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
+            }
+
+            src->ChangeOper(GT_OBJ);
+            src->AsObj()->SetAddr(lclAddr);
+            src->AsObj()->SetLayout(layout);
+            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
+            src->AsObj()->gtBlkOpGcUnsafe = false;
+
+            BlockRange().InsertBefore(src, lclAddr);
+        }
+
+        // Codegen supports containment of local addresses under OBJs.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        {
+            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
+            MakeSrcContained(src, src->AsObj()->Addr());
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -733,17 +739,13 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc))
+    if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
     {
         // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
-        if ((op1->IsIntegralConst(0) || op1->IsSIMDZero()) && varDsc->lvDoNotEnregister)
+        if ((op1->IsIntegralConst(0) || op1->IsVectorZero()) && varDsc->lvDoNotEnregister)
         {
             // For an InitBlk we want op1 to be contained
             MakeSrcContained(storeLoc, op1);
-            if (op1->IsSIMDZero())
-            {
-                MakeSrcContained(op1, op1->gtGetOp1());
-            }
         }
         return;
     }

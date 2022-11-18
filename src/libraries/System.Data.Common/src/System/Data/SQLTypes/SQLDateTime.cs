@@ -79,7 +79,7 @@ namespace System.Data.SqlTypes
         private const DateTimeStyles x_DateTimeStyle = DateTimeStyles.AllowWhiteSpaces;
 
         // construct a Null
-        private SqlDateTime(bool fNull)
+        private SqlDateTime(bool _)
         {
             m_fNotNull = false;
             m_day = 0;
@@ -597,10 +597,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlDateTime)
+            if (value is SqlDateTime i)
             {
-                SqlDateTime i = (SqlDateTime)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlDateTime));

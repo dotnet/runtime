@@ -159,7 +159,12 @@ namespace System.Security.Cryptography.Tests
             private readonly DSA _dsa;
 
             public OverrideAbstractDSA(DSA dsa) => _dsa = dsa;
-            protected override void Dispose(bool disposing) => _dsa.Dispose();
+
+            protected override void Dispose(bool disposing)
+            {
+                _dsa.Dispose();
+                base.Dispose(disposing);
+            }
 
             public override byte[] CreateSignature(byte[] rgbHash) => _dsa.CreateSignature(rgbHash);
             public override DSAParameters ExportParameters(bool includePrivateParameters) => _dsa.ExportParameters(includePrivateParameters);

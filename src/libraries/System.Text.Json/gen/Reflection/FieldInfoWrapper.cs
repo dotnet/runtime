@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace System.Text.Json.Reflection
 {
-    internal class FieldInfoWrapper : FieldInfo
+    internal sealed class FieldInfoWrapper : FieldInfo
     {
         private readonly IFieldSymbol _field;
         private readonly MetadataLoadContextInternal _metadataLoadContext;
@@ -16,6 +17,8 @@ namespace System.Text.Json.Reflection
         {
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;
+
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_field.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(_field.Name) != SyntaxKind.None;
         }
 
         private FieldAttributes? _attributes;
@@ -63,6 +66,8 @@ namespace System.Text.Json.Reflection
         public override Type DeclaringType => _field.ContainingType.AsType(_metadataLoadContext);
 
         public override string Name => _field.Name;
+
+        public bool NeedsAtSign { get; }
 
         public override Type ReflectedType => throw new NotImplementedException();
 

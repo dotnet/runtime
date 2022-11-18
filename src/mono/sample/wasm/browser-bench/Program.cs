@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace Sample
 {
@@ -22,22 +23,24 @@ namespace Sample
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new SpanTask(),
             new VectorTask(),
-            new WebSocketTask()
+            new JSInteropTask(),
+            new WebSocketTask(),
         };
         static Test instance = new Test();
         Formatter formatter = new HTMLFormatter();
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [JSExport]
         public static Task<string> RunBenchmark()
         {
             return instance.RunTasks();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         // the constructors of the task we care about are already used when createing tasks field
         [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
         [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
+        [JSExport]
         public static void SetTasks(string taskNames)
         {
             Regex pattern;
@@ -72,6 +75,12 @@ namespace Sample
             instance.tasks = tasksList;
         }
 
+        [JSExport]
+        public static string GetFullJsonResults()
+        {
+            return instance.GetJsonResults();
+        }
+
         int taskCounter = 0;
         int measurementIdx = 0;
         int runIdx = 0;
@@ -82,6 +91,7 @@ namespace Sample
             set { task = value; }
         }
         List<BenchTask.Result> results = new();
+        Dictionary<string, double> minTimes = new();
         bool resultsReturned;
 
         bool NextTask()
@@ -113,7 +123,7 @@ namespace Sample
             {
                 measurementIdx++;
 
-                if (Task.pattern == null || Task.pattern.Match(Task.Measurements[measurementIdx].Name).Success)
+                if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))
                     return true;
             }
 
@@ -146,9 +156,9 @@ namespace Sample
 
         string ResultsSummary()
         {
-            var minTimes = ProcessResults();
+            ProcessResults();
             if (JsonResults)
-                PrintJsonResults(minTimes);
+                PrintJsonResults();
 
             StringBuilder sb = new($"{formatter.NewLine}Summary{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
@@ -175,9 +185,9 @@ namespace Sample
             return sb.ToString();
         }
 
-        private Dictionary<string, double> ProcessResults()
+        private void ProcessResults()
         {
-            Dictionary<string, double> minTimes = new Dictionary<string, double>();
+            minTimes.Clear();
 
             foreach (var result in results)
             {
@@ -189,24 +199,26 @@ namespace Sample
 
                 minTimes[key] = t;
             }
-
-            return minTimes;
         }
 
         class JsonResultsData
         {
             public List<BenchTask.Result> results;
             public Dictionary<string, double> minTimes;
+            public DateTime timeStamp;
         }
 
-        private void PrintJsonResults(Dictionary<string, double> minTimes)
+        string GetJsonResults()
         {
-            DateTime now = DateTime.Now;
             var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
-            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes };
-            var str = JsonSerializer.Serialize(jsonObject, options);
+            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
+            return JsonSerializer.Serialize(jsonObject, options);
+        }
+
+        private void PrintJsonResults()
+        {
             Console.WriteLine("=== json results start ===");
-            Console.WriteLine(str);
+            Console.WriteLine(GetJsonResults());
             Console.WriteLine("=== json results end ===");
         }
     }

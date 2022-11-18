@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
-
-using AssemblyName = System.Reflection.AssemblyName;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
@@ -77,7 +75,7 @@ namespace Internal.IL.Stubs.StartupCode
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(method));
                 }
             }
-            
+
             MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
 
             // Initialize command line args if the class library supports this
@@ -105,13 +103,14 @@ namespace Internal.IL.Stubs.StartupCode
             MethodDesc initApartmentState = startup?.GetMethod("InitializeApartmentState", null);
             if (initApartmentState != null)
             {
-                if (_mainMethod.HasCustomAttribute("System", "STAThreadAttribute"))
+                if (_mainMethod.WrappedMethod.HasCustomAttribute("System", "STAThreadAttribute"))
                 {
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.STA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }
-                if (_mainMethod.HasCustomAttribute("System", "MTAThreadAttribute"))
+                else
                 {
+                    // Initialize to MTA by default
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.MTA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }
@@ -174,14 +173,11 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
                             Context.GetWellKnownType(WellKnownType.Int32),
                             new TypeDesc[2] {
                                 Context.GetWellKnownType(WellKnownType.Int32),
                                 Context.GetWellKnownType(WellKnownType.IntPtr) });
-                }
 
                 return _signature;
             }
@@ -203,7 +199,7 @@ namespace Internal.IL.Stubs.StartupCode
         /// environment without it being fully initialized. (In particular, the unhandled exception experience
         /// won't be initialized, making this difficult to diagnose.)
         /// </summary>
-        private partial class MainMethodWrapper : ILStubMethod
+        private sealed partial class MainMethodWrapper : ILStubMethod
         {
             public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
             {

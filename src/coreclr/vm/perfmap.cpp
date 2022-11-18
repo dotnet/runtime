@@ -160,8 +160,7 @@ void PerfMap::WriteLine(SString& line)
     {
         // Write the line.
         // The PAL already takes a lock when writing, so we don't need to do so here.
-        StackScratchBuffer scratch;
-        const char * strLine = line.GetANSI(scratch);
+        const char * strLine = line.GetUTF8();
         ULONG inCount = line.GetCount();
         ULONG outCount;
         m_FileStream->Write(strLine, inCount, &outCount);
@@ -203,17 +202,16 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
         pMethod->GetFullMethodInfo(name);
 
         // Build the map file line.
-        StackScratchBuffer scratch;
         if (optimizationTier != nullptr && s_ShowOptimizationTiers)
         {
             name.AppendPrintf("[%s]", optimizationTier);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
         // Write the line.
         WriteLine(line);
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -246,10 +244,10 @@ void PerfMap::LogImage(PEAssembly * pPEAssembly)
 
     EX_TRY
     {
-        WCHAR wszSignature[39];
-        GetNativeImageSignature(pPEAssembly, wszSignature, ARRAY_SIZE(wszSignature));
+        CHAR szSignature[GUID_STR_BUFFER_LEN];
+        GetNativeImageSignature(pPEAssembly, szSignature, ARRAY_SIZE(szSignature));
 
-        m_PerfInfo->LogImage(pPEAssembly, wszSignature);
+        m_PerfInfo->LogImage(pPEAssembly, szSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -298,18 +296,16 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         SString name;
         pMethod->GetFullMethodInfo(name);
 
-        StackScratchBuffer scratch;
-
         if (s_ShowOptimizationTiers)
         {
-            name.AppendPrintf(W("[PreJIT]"));
+            name.Append(W("[PreJIT]"));
         }
 
         // NGEN can split code between hot and cold sections which are separate in memory.
         // Emit an entry for each section if it is used.
         if (methodRegionInfo.hotSize > 0)
         {
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetANSI(scratch), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr);
         }
 
         if (methodRegionInfo.coldSize > 0)
@@ -317,9 +313,9 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
             if (s_ShowOptimizationTiers)
             {
                 pMethod->GetFullMethodInfo(name);
-                name.AppendPrintf(W("[PreJit-cold]"));
+                name.Append(W("[PreJit-cold]"));
             }
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetANSI(scratch), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
         }
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
@@ -347,35 +343,34 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             stubType = "?";
         }
 
-        // Build the map file line.
-        StackScratchBuffer scratch;
         SString name;
+        // Build the map file line.
         name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
         // Write the line.
         s_Current->WriteLine(line);
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize)
+void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize)
 {
     CONTRACTL{
         PRECONDITION(pPEAssembly != nullptr);
-        PRECONDITION(pwszSig != nullptr);
-        PRECONDITION(nSigSize >= 39);
+        PRECONDITION(pszSig != nullptr);
+        PRECONDITION(nSigSize >= GUID_STR_BUFFER_LEN);
     } CONTRACTL_END;
 
     // We use the MVID as the signature, since ready to run images
     // don't have a native image signature.
     GUID mvid;
     pPEAssembly->GetMVID(&mvid);
-    if(!StringFromGUID2(mvid, pwszSig, nSigSize))
+    if(!GuidToLPSTR(mvid, pszSig, nSigSize))
     {
-        pwszSig[0] = '\0';
+        pszSig[0] = '\0';
     }
 }
 
@@ -392,13 +387,13 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
 
     // Get the native image signature (GUID).
     // Used to ensure that we match symbols to the correct NGEN image.
-    WCHAR wszSignature[39];
-    GetNativeImageSignature(pAssembly->GetPEAssembly(), wszSignature, ARRAY_SIZE(wszSignature));
+    CHAR szSignature[GUID_STR_BUFFER_LEN];
+    GetNativeImageSignature(pAssembly->GetPEAssembly(), szSignature, ARRAY_SIZE(szSignature));
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
     SString sDestPerfMapPath;
-    sDestPerfMapPath.Printf("%S%s.ni.%S.map", pDestPath, lpcSimpleName, wszSignature);
+    sDestPerfMapPath.Printf("%S%s.ni.%s.map", pDestPath, lpcSimpleName, szSignature);
 
     // Open the perf map file.
     OpenFile(sDestPerfMapPath);

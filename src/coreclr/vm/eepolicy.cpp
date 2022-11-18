@@ -41,7 +41,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     // other DLLs call Release() on us in their detach [dangerous!], etc.
     GCX_PREEMP_NO_DTOR();
 
-    FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
+    InterlockedExchange((LONG*)&g_fForbidEnterEE, TRUE);
 
     // Note that for free and retail builds StressLog must also be enabled
     if (g_pConfig && g_pConfig->StressLog())
@@ -325,24 +325,31 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
-    static Thread *const FatalErrorNotSeenYet = nullptr;
-    static Thread *const FatalErrorLoggingFinished = reinterpret_cast<Thread *>(1);
+    static size_t s_pCrashingThreadID;
 
-    static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
+    size_t currentThreadID;
+#ifndef TARGET_UNIX
+    currentThreadID = GetCurrentThreadId();
+#else
+    currentThreadID = PAL_GetCurrentOSThreadId();
+#endif
 
-    Thread *pThread = GetThreadNULLOk();
-    Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
+    size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);
 
-    if (pPreviousThread == pThread)
+    // Let the first crashing thread take care of the reporting.
+    if (previousThreadID != 0)
     {
-        PrintToStdErrA("Fatal error while logging another fatal error.\n");
-        return;
-    }
-    else if (pPreviousThread != nullptr)
-    {
-        while (s_pCrashingThread != FatalErrorLoggingFinished)
+        if (previousThreadID == currentThreadID)
         {
-            ClrSleepEx(50, /*bAlertable*/ FALSE);
+            PrintToStdErrA("Fatal error while logging another fatal error.\n");
+        }
+        else
+        {
+            // Switch to preemptive mode to avoid blocking the crashing thread. It may try to suspend the runtime
+            // for GC during the stacktrace reporting.
+            GCX_PREEMP();
+
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
         }
         return;
     }
@@ -378,9 +385,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         PrintToStdErrA("\n");
 
+        Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker(GetThread());
+            LogCallstackForLogWorker(pThread);
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -391,12 +399,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-
-    InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
-BOOL g_fFatalErrorOccuredOnGCThread = FALSE;
+BOOL g_fFatalErrorOccurredOnGCThread = FALSE;
 //
 // Log an error to the event log if possible, then throw up a dialog box.
 //
@@ -439,10 +445,12 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 failureType = EventReporter::ERT_ManagedFailFast;
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
+            else if (exitCode == EXCEPTION_ACCESS_VIOLATION)
+                failureType = EventReporter::ERT_UnhandledException;
             EventReporter reporter(failureType);
             StackSString s(argExceptionString);
 
-            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
+            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM) || (exitCode == EXCEPTION_ACCESS_VIOLATION))
             {
                 if (pszMessage)
                 {
@@ -459,13 +467,8 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             }
             else
             {
-                // Fetch the localized Fatal Execution Engine Error text or fall back on a hardcoded variant if things get dire.
-                InlineSString<80> ssMessage;
-                InlineSString<80> ssErrorFormat;
-                if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
-                SmallStackSString addressString;
-                addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
+                WCHAR addressString[MaxIntegerDecHexString + 1];
+                FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", pExceptionInfo ? (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress : (SIZE_T)address);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);
@@ -473,14 +476,15 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
-                SmallStackSString runtimeBaseAddressString;
-                runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
+                WCHAR runtimeBaseAddressString[MaxIntegerDecHexString + 1];
+                FormatInteger(runtimeBaseAddressString, ARRAY_SIZE(runtimeBaseAddressString), "%p", (SIZE_T)GetClrModuleBase());
 
-                SmallStackSString exitCodeString;
-                exitCodeString.Printf(W("%x"), exitCode);
+                WCHAR exitCodeString[MaxIntegerDecHexString + 1];
+                FormatInteger(exitCodeString, ARRAY_SIZE(exitCodeString), "%x", exitCode);
 
                 // Format the string
-                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, addressString, runtimeBaseAddressString,
+                InlineSString<80> ssMessage;
+                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("at IP 0x%1 (0x%2) with exit code 0x%3."), 0, 0, addressString, runtimeBaseAddressString,
                     exitCodeString);
                 reporter.AddDescription(ssMessage);
             }
@@ -520,7 +524,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
         //Give a managed debugger a chance if this fatal error is on a managed thread.
         Thread *pThread = GetThreadNULLOk();
 
-        if (pThread && !g_fFatalErrorOccuredOnGCThread)
+        if (pThread && !g_fFatalErrorOccurredOnGCThread)
         {
             GCX_COOP();
 
@@ -765,11 +769,11 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
 
 
-        // Setting g_fFatalErrorOccuredOnGCThread allows code to avoid attempting to make GC mode transitions which could
-        // block indefinately if the fatal error occured during the GC.
+        // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
+        // block indefinitely if the fatal error occurred during the GC.
         if (IsGCSpecialThread() && GCHeapUtilities::IsGCInProgress())
         {
-            g_fFatalErrorOccuredOnGCThread = TRUE;
+            g_fFatalErrorOccurredOnGCThread = TRUE;
         }
 
         // ThreadStore lock needs to be released before continuing with the FatalError handling should

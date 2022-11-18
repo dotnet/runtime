@@ -155,9 +155,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     for (int i = 0; i < memberTypes.Length; i++)
                     {
                         Type type =
-                            memberTypes[i] != null ? memberTypes[i] :
-                            memberData[i] != null ? GetType(memberData[i]!) :
-                            Converter.s_typeofObject;
+                            memberTypes[i] ?? (memberData[i] != null ? GetType(memberData[i]!) :
+                            Converter.s_typeofObject);
 
                         InternalPrimitiveTypeE code = ToCode(type);
                         if ((code == InternalPrimitiveTypeE.Invalid) &&
@@ -964,10 +963,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private long GetAssemblyId(WriteObjectInfo objectInfo)
         {
             //use objectInfo to get assembly string with new criteria
-            if (_assemblyToIdTable == null)
-            {
-                _assemblyToIdTable = new Dictionary<string, long>();
-            }
+            _assemblyToIdTable ??= new Dictionary<string, long>();
 
             long assemId;
             string assemblyString = objectInfo.GetAssemblyString();

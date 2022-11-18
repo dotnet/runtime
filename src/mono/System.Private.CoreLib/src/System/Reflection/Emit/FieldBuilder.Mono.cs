@@ -81,7 +81,12 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return typeb; }
+            get
+            {
+                if (typeb.is_hidden_global_type)
+                    return null;
+                return typeb;
+            }
         }
 
         public override RuntimeFieldHandle FieldHandle
@@ -148,7 +153,7 @@ namespace System.Reflection.Emit
 
         internal void SetRVAData(byte[] data)
         {
-            attrs = attrs | FieldAttributes.HasFieldRVA;
+            attrs |= FieldAttributes.HasFieldRVA;
             rva_data = (byte[])data.Clone();
         }
 

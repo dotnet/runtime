@@ -287,10 +287,7 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting capture");
 
-                if (cachedContext == null)
-                {
-                    cachedContext = ExecutionContext.Capture();
-                }
+                cachedContext ??= ExecutionContext.Capture();
 
                 if (cachedContext != null)
                 {

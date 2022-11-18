@@ -33,17 +33,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _member; }
         }
 
-        public override IDictionary<string, object?> Metadata
-        {
-            get
-            {
-                if (_metadata == null)
-                {
-                    _metadata = _exportDefinition.Metadata.AsReadOnly();
-                }
-                return _metadata;
-            }
-        }
+        public override IDictionary<string, object?> Metadata => _metadata ??= _exportDefinition.Metadata.AsReadOnly();
 
         string ICompositionElement.DisplayName
         {

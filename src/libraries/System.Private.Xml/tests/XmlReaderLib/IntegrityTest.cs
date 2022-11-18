@@ -473,7 +473,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -490,7 +490,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -506,7 +506,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -522,7 +522,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -538,7 +538,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -554,7 +554,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -570,7 +570,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -593,7 +593,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -616,7 +616,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -639,7 +639,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -662,7 +662,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else
@@ -685,7 +685,7 @@ namespace System.Xml.Tests
             if (IntegrityVer == EINTEGRITY.BEFORE_READ ||
                 IntegrityVer == EINTEGRITY.AFTER_RESETSTATE)
             {
-                // not interseting for test
+                // not interesting for test
                 return TEST_SKIPPED;
             }
             else

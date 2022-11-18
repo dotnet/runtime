@@ -41,16 +41,6 @@ namespace System.Security.Principal
             base.GetObjectData(serializationInfo, streamingContext);
         }
 
-        public IdentityReferenceCollection UnmappedIdentities
-        {
-            get
-            {
-                if (_unmappedIdentities == null)
-                {
-                    _unmappedIdentities = new IdentityReferenceCollection();
-                }
-                return _unmappedIdentities;
-            }
-        }
+        public IdentityReferenceCollection UnmappedIdentities => _unmappedIdentities ??= new IdentityReferenceCollection();
     }
 }

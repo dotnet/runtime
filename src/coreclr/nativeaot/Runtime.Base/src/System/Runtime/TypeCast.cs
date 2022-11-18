@@ -266,7 +266,7 @@ namespace System.Runtime
 
         internal static unsafe bool ImplementsInterface(MethodTable* pObjType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
-            Debug.Assert(!pTargetType->IsParameterizedType, "did not expect paramterized type");
+            Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
             // This can happen with generic interface types
@@ -337,7 +337,7 @@ namespace System.Runtime
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
-                        Debug.Assert(targetArity == interfaceArity, "arity mismatch betweeen generic instantiations");
+                        Debug.Assert(targetArity == interfaceArity, "arity mismatch between generic instantiations");
 
                         // Compare the instantiations to see if they're compatible taking variance into account.
                         if (TypeParametersAreCompatible(targetArity,
@@ -379,7 +379,7 @@ namespace System.Runtime
 
                 // The types represent different instantiations of the same generic type. The
                 // arity of both had better be the same.
-                Debug.Assert(targetArity == sourceArity, "arity mismatch betweeen generic instantiations");
+                Debug.Assert(targetArity == sourceArity, "arity mismatch between generic instantiations");
 
                 // Compare the instantiations to see if they're compatible taking variance into account.
                 if (TypeParametersAreCompatible(targetArity,
@@ -721,7 +721,7 @@ namespace System.Runtime
             // if the element type is a ValueType. The issue here is Universal Generics. The Universal
             // Generic codegen will generate a call to this helper for all ldelema opcodes if the exact
             // type is not known, and this can include ValueTypes. For ValueTypes, the exact check is not
-            // desireable as enum's are allowed to pass through this code if they are size matched.
+            // desirable as enum's are allowed to pass through this code if they are size matched.
             // While this check is overly broad and allows non-enum valuetypes to also skip the check
             // that is OK, because in the non-enum case the casting operations are sufficient to ensure
             // type safety.
@@ -743,7 +743,7 @@ namespace System.Runtime
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
         [RuntimeExport("RhpStelemRef")]
-        public static unsafe void StelemRef(Array array, int index, object obj)
+        public static unsafe void StelemRef(Array array, nint index, object obj)
         {
             // This is supported only on arrays
             Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
@@ -814,7 +814,7 @@ assigningNull:
         }
 
         [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref object LdelemaRef(Array array, int index, IntPtr elementType)
+        public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
         {
             Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
 
@@ -906,6 +906,43 @@ assigningNull:
                 return null; // We handled arrays above so this is for pointers and byrefs only.
             else
                 return IsInstanceOfClass(pTargetType, obj);
+        }
+
+        [RuntimeExport("RhTypeCast_IsInstanceOfException")]
+        public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
+        {
+            // Based on IsInstanceOfClass_Helper
+
+            if (obj == null)
+                return false;
+
+            MethodTable* pObjType = obj.GetMethodTable();
+
+            if (pTargetType->IsCloned)
+                pTargetType = pTargetType->CanonicalEEType;
+
+            if (pObjType->IsCloned)
+                pObjType = pObjType->CanonicalEEType;
+
+            if (pObjType == pTargetType)
+                return true;
+
+            // arrays can be cast to System.Object and System.Array
+            if (pObjType->IsArray)
+                return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
+
+            while (true)
+            {
+                pObjType = pObjType->NonClonedNonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType->IsCloned)
+                    pObjType = pObjType->CanonicalEEType;
+
+                if (pObjType == pTargetType)
+                    return true;
+            }
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
@@ -1062,7 +1099,7 @@ assigningNull:
 
             // This method is an optimized and customized version of AreTypesAssignable that achieves better performance
             // than AreTypesAssignableInternal through 2 significant changes
-            // 1. Removal of sourceType to targetType check (This propery must be known before calling this function. At time
+            // 1. Removal of sourceType to targetType check (This property must be known before calling this function. At time
             //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
             // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
             //    high in performance impact.)

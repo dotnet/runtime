@@ -60,7 +60,7 @@ extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID)
     END_QCALL;
 }
 
-extern "C" bool QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo)
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo)
 {
     QCALL_CONTRACT;
 
@@ -229,7 +229,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     END_QCALL;
 }
 
-extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance)
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance)
 {
     QCALL_CONTRACT;
 
@@ -255,17 +255,30 @@ extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, Event
     return pNextInstance != NULL;
 }
 
-extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(UINT64 sessionID)
+extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID)
 {
     QCALL_CONTRACT;
 
-    HANDLE waitHandle = NULL;
+    bool result = false;
     BEGIN_QCALL;
 
-    waitHandle = EventPipeAdapter::GetWaitHandle(sessionID);
+    result = EventPipeAdapter::SignalSession(sessionID);
 
     END_QCALL;
-    return waitHandle;
+    return result;
+}
+
+extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionID, INT32 timeoutMs)
+{
+    QCALL_CONTRACT;
+
+    bool result = false;
+    BEGIN_QCALL;
+
+    result = EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
+
+    END_QCALL;
+    return result;
 }
 
 #endif // FEATURE_PERFTRACING

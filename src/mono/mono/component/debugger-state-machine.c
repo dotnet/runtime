@@ -298,7 +298,7 @@ mono_debugger_state (JsonWriter *writer)
 		mono_json_writer_object_key(writer, "breakpoints");
 		mono_json_writer_array_begin (writer);
 
-		for (int i=0; i < breakpoint_copy->len; i++) {
+		for (guint i=0; i < breakpoint_copy->len; i++) {
 			MonoBreakpoint *bp = (MonoBreakpoint *) g_ptr_array_index (breakpoint_copy, i);
 
 			mono_json_writer_indent (writer);

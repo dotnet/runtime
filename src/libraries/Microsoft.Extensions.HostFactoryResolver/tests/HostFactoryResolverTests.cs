@@ -108,6 +108,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderPatternTestSite.Program))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Host))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CreateHostBuilderPattern_CanFindServiceProvider()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderPatternTestSite.Program).Assembly);
@@ -137,6 +138,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoSpecialEntryPointPattern()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
@@ -235,6 +237,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoSpecialEntryPointPatternMainNoArgs()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly, s_WaitTimeout);
@@ -244,6 +247,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "TopLevelStatements")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void TopLevelStatements()
         {
             var assembly = Assembly.Load("TopLevelStatements");
@@ -254,6 +259,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "TopLevelStatementsTestsTimeout")]
         public void TopLevelStatementsTestsTimeout()
         {
             var assembly = Assembly.Load("TopLevelStatementsTestsTimeout");
@@ -264,18 +270,21 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void ApplicationNameSetFromAgrument()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "ApplicationNameSetFromArgument")]
+        public void ApplicationNameSetFromArgument()
         {
-            Assembly assembly = Assembly.Load("ApplicationNameSetFromAgrument");
+            Assembly assembly = Assembly.Load("ApplicationNameSetFromArgument");
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
             IServiceProvider? serviceProvider = factory(Array.Empty<string>());
 
             var configuration = (IConfiguration)serviceProvider.GetService(typeof(IConfiguration));
-            Assert.Contains("ApplicationNameSetFromAgrument", configuration["applicationName"]);
+            Assert.Contains("ApplicationNameSetFromArgument", configuration["applicationName"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73420", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoSpecialEntryPointPatternCanRunInParallel()
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);

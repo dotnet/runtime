@@ -97,76 +97,12 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	return res;
 }
 
-gchar*
-g_win32_getlocale(void)
-{
-	return NULL;
-}
-
 gboolean
 g_path_is_absolute (const char *filename)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
 	return (*filename == '/');
-}
-
-static pthread_mutex_t pw_lock = PTHREAD_MUTEX_INITIALIZER;
-static const gchar *home_dir;
-static const gchar *user_name;
-
-static void
-get_pw_data (void)
-{
-#ifdef HAVE_GETPWUID_R
-	struct passwd pw;
-	struct passwd *result = NULL;
-	char buf [4096];
-#endif
-
-	if (user_name != NULL)
-		return;
-
-	pthread_mutex_lock (&pw_lock);
-	if (user_name != NULL) {
-		pthread_mutex_unlock (&pw_lock);
-		return;
-	}
-
-	home_dir = g_getenv ("HOME");
-	user_name = g_getenv ("USER");
-
-#ifdef HAVE_GETPWUID_R
-	if (home_dir == NULL || user_name == NULL) {
-		if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0 && result) {
-			if (home_dir == NULL)
-				home_dir = g_strdup (pw.pw_dir);
-			if (user_name == NULL)
-				user_name = g_strdup (pw.pw_name);
-		}
-	}
-#endif
-
-	if (user_name == NULL)
-		user_name = "somebody";
-	if (home_dir == NULL)
-		home_dir = "/";
-
-	pthread_mutex_unlock (&pw_lock);
-}
-
-const gchar *
-g_get_home_dir (void)
-{
-	get_pw_data ();
-	return home_dir;
-}
-
-const gchar *
-g_get_user_name (void)
-{
-	get_pw_data ();
-	return user_name;
 }
 
 static const char *tmp_dir;

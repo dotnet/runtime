@@ -133,10 +133,10 @@ namespace System.Net.Mail
             int offset = 0;
             try
             {
-                string value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                string value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset >= mediaType.Length || mediaType[offset++] != '/')
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
-                value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset < mediaType.Length)
                 {
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
@@ -204,7 +204,7 @@ namespace System.Net.Mail
                     ContentId = cid;
                     return cid;
                 }
-                if (cid.Length >= 2 && cid[0] == '<' && cid[cid.Length - 1] == '>')
+                if (cid.StartsWith('<') && cid.EndsWith('>'))
                 {
                     return cid.Substring(1, cid.Length - 2);
                 }

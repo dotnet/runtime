@@ -35,7 +35,6 @@ public sealed class TestEventListener : EventListener
         "Private.InternalDiagnostics.System.Net.HttpListener",
         "Private.InternalDiagnostics.System.Net.Mail",
         "Private.InternalDiagnostics.System.Net.NetworkInformation",
-        "Private.InternalDiagnostics.System.Net.Ping",
         "Private.InternalDiagnostics.System.Net.Primitives",
         "Private.InternalDiagnostics.System.Net.Requests",
     };

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Enumeration
 {
@@ -9,14 +10,20 @@ namespace System.IO.Enumeration
     /// Lower level view of FileSystemInfo used for processing and filtering find results.
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
-   {
+    {
         private Interop.Sys.DirectoryEntry _directoryEntry;
         private bool _isDirectory;
         private FileStatus _status;
         private Span<char> _pathBuffer;
         private ReadOnlySpan<char> _fullPath;
         private ReadOnlySpan<char> _fileName;
-        private fixed char _fileNameBuffer[Interop.Sys.DirectoryEntry.NameBufferSize];
+        private FileNameBuffer _fileNameBuffer;
+
+        // Wrap the fixed buffer to workaround visibility issues in api compat verification
+        private struct FileNameBuffer
+        {
+            internal fixed char _buffer[Interop.Sys.DirectoryEntry.NameBufferSize];
+        }
 
         internal static FileAttributes Initialize(
             ref FileSystemEntry entry,
@@ -88,11 +95,8 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    fixed (char* c = _fileNameBuffer)
-                    {
-                        Span<char> buffer = new Span<char>(c, Interop.Sys.DirectoryEntry.NameBufferSize);
-                        _fileName = _directoryEntry.GetName(buffer);
-                    }
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._buffer[0], Interop.Sys.DirectoryEntry.NameBufferSize);
+                    _fileName = _directoryEntry.GetName(buffer);
                 }
 
                 return _fileName;

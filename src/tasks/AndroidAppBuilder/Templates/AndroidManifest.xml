@@ -7,7 +7,8 @@
   <uses-permission a:name="android.permission.INTERNET"/>
   <uses-permission a:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-  <application a:label="%PackageName%" 
+  <application a:label="%PackageName%"
+               %NetworkSecurityConfig%
                a:largeHeap="true">
     <activity a:name="net.dot.MainActivity" a:exported="true">
       <intent-filter>

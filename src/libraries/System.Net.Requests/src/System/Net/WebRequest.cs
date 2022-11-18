@@ -548,7 +548,7 @@ namespace System.Net
 
         public static IWebProxy? DefaultWebProxy
         {
-            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
+            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, GetSystemWebProxy);
             set
             {
                 lock (s_internalSyncObject)

@@ -64,11 +64,7 @@ namespace System
 
                 // Compare the memory
                 int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
-                for (int i = 0; i < valueTypeSize; i++)
-                {
-                    if (Unsafe.Add(ref thisRawData, i) != Unsafe.Add(ref thatRawData, i))
-                        return false;
-                }
+                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
             }
             else
             {
@@ -113,7 +109,7 @@ namespace System
             if (numFields == UseFastHelper)
                 return FastGetValueTypeHashCodeHelper(this.GetEETypePtr(), ref this.GetRawData());
 
-            return RegularGetValueTypeHashCode(this.GetEETypePtr(), ref this.GetRawData(), numFields);
+            return RegularGetValueTypeHashCode(ref this.GetRawData(), numFields);
         }
 
         private static int FastGetValueTypeHashCodeHelper(EETypePtr type, ref byte data)
@@ -132,7 +128,7 @@ namespace System
             return hashCode;
         }
 
-        private int RegularGetValueTypeHashCode(EETypePtr type, ref byte data, int numFields)
+        private int RegularGetValueTypeHashCode(ref byte data, int numFields)
         {
             int hashCode = 0;
 

@@ -33,10 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 2 integer values.
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
@@ -67,10 +64,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));

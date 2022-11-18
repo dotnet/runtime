@@ -252,6 +252,13 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
+    // Write-barriers are no-op for frozen objects (as values)
+    if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        // Ignore frozen objects
+        return WBF_NoBarrier;
+    }
+
     WriteBarrierForm wbf = gcWriteBarrierFormFromTargetAddress(store->Addr());
 
     if (wbf == WBF_BarrierUnknown)
@@ -344,25 +351,6 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     {
         // No need for a GC barrier when writing to a local variable.
         return GCInfo::WBF_NoBarrier;
-    }
-
-    if (tgtAddr->OperGet() == GT_LCL_VAR)
-    {
-        unsigned   lclNum = tgtAddr->AsLclVar()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-
-        // Instead of marking LclVar with 'lvStackByref',
-        // Consider decomposing the Value Number given to this LclVar to see if it was
-        // created using a GT_ADDR(GT_LCLVAR)  or a GT_ADD( GT_ADDR(GT_LCLVAR), Constant)
-
-        // We may have an internal compiler temp created in fgMorphCopyBlock() that we know
-        // points at one of our stack local variables, it will have lvStackByref set to true.
-        //
-        if (varDsc->lvStackByref)
-        {
-            assert(varDsc->TypeGet() == TYP_BYREF);
-            return GCInfo::WBF_NoBarrier;
-        }
     }
 
     if (tgtAddr->TypeGet() == TYP_REF)

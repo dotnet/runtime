@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace BrowserDebugProxy
 {
@@ -51,8 +52,8 @@ namespace BrowserDebugProxy
                                                 long initialPos,
                                                 string className,
                                                 int typeId,
-                                                int numValues,
                                                 bool isEnum,
+                                                bool includeStatic,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -60,32 +61,27 @@ namespace BrowserDebugProxy
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
 
             IReadOnlyList<FieldTypeClass> fieldTypes = await sdbAgent.GetTypeFields(typeId, token);
-            // statics should not be in valueType fields: CallFunctionOnTests.PropertyGettersTest
+
+            JArray fields = new();
+            if (includeStatic)
+            {
+                IEnumerable<FieldTypeClass> staticFields =
+                    fieldTypes.Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
+                foreach (var field in staticFields)
+                {
+                    var fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
+                    fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: true));
+                }
+            }
+
             IEnumerable<FieldTypeClass> writableFields = fieldTypes
                 .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
 
-            JArray fields = new();
             foreach (var field in writableFields)
             {
-                var fieldValue = await sdbAgent.CreateJObjectForVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
-
-                fieldValue["__section"] = field.Attributes switch
-                {
-                    FieldAttributes.Private => "private",
-                    FieldAttributes.Public => "result",
-                    _ => "internal"
-                };
-
-                if (field.IsBackingField)
-                    fieldValue["__isBackingField"] = true;
-                else
-                {
-                    typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                    fieldValue["__state"] = state?.ToString();
-                }
-
-                fields.Add(fieldValue);
+                var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
+                fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
             }
 
             long endPos = cmdReader.BaseStream.Position;
@@ -95,6 +91,24 @@ namespace BrowserDebugProxy
             cmdReader.BaseStream.Position = endPos;
 
             return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum);
+
+            JObject GetFieldWithMetadata(FieldTypeClass field, JObject fieldValue, bool isStatic)
+            {
+                // GetFieldValue returns JObject without name and we need this information
+                if (isStatic)
+                    fieldValue["name"] = field.Name;
+                FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
+                fieldValue[InternalUseFieldName.Section.Name] = attr == FieldAttributes.Private ? "private" : "result";
+
+                if (field.IsBackingField)
+                {
+                    fieldValue[InternalUseFieldName.IsBackingField.Name] = true;
+                    return fieldValue;
+                }
+                typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
+                fieldValue[InternalUseFieldName.State.Name] = state?.ToString();
+                return fieldValue;
+            }
         }
 
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
@@ -102,9 +116,11 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                int methodId = await sdbAgent.GetMethodIdByName(TypeId, "ToString", token);
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
-                description = retMethod["value"]?["value"].Value<string>();
+                var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                if (toString == null)
+                    sdbAgent.logger.LogDebug($"Error while evaluating ToString method on typeId = {TypeId}");
+                else
+                    description = toString;
                 if (className.Equals("System.Guid"))
                     description = description.ToUpperInvariant(); //to keep the old behavior
             }
@@ -112,11 +128,24 @@ namespace BrowserDebugProxy
             {
                 string displayString = await sdbAgent.GetValueFromDebuggerDisplayAttribute(Id, TypeId, token);
                 if (displayString != null)
+                {
                     description = displayString;
+                }
+                else
+                {
+                    var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                    if (toString != null)
+                        description = toString;
+                }
             }
-
-            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, className, Id.ToString(), null, null, true, true, IsEnum);
-            return obj;
+            return JObjectValueCreator.Create(
+                IsEnum ? fields[0]["value"] : null,
+                "object",
+                description,
+                className,
+                Id.ToString(),
+                isValueType: true,
+                isEnum: IsEnum);
         }
 
         public async Task<JArray> GetProxy(MonoSDBHelper sdbHelper, CancellationToken token)
@@ -184,9 +213,7 @@ namespace BrowserDebugProxy
             if (!getObjectOptions.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
                 // FIXME: cache?
-                result = await sdbHelper.GetValuesFromDebuggerProxyAttribute(Id.Value, TypeId, token);
-                if (result != null)
-                    Console.WriteLine($"Investigate GetValuesFromDebuggerProxyAttribute\n{result}. There was a change of logic from loop to one iteration");
+                result = await sdbHelper.GetValuesFromDebuggerProxyAttributeForValueTypes(Id.Value, TypeId, token);
             }
 
             if (result == null && getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
@@ -195,14 +222,10 @@ namespace BrowserDebugProxy
                 result = _combinedResult.Clone();
                 RemovePropertiesFrom(result.Result);
                 RemovePropertiesFrom(result.PrivateMembers);
-                RemovePropertiesFrom(result.OtherMembers);
             }
 
-            if (result == null)
-            {
-                // 4 - fields + properties
-                result = _combinedResult.Clone();
-            }
+            // 4 - fields + properties
+            result ??= _combinedResult.Clone();
 
             return result;
 
@@ -227,7 +250,7 @@ namespace BrowserDebugProxy
             JArray visibleFields = new();
             foreach (JObject field in fields)
             {
-                if (!Enum.TryParse(field["__state"]?.Value<string>(), out DebuggerBrowsableState state))
+                if (!Enum.TryParse(field[InternalUseFieldName.State.Name]?.Value<string>(), out DebuggerBrowsableState state))
                 {
                     visibleFields.Add(field);
                     continue;
@@ -265,12 +288,12 @@ namespace BrowserDebugProxy
                 // isParent:
                 if (i != 0) typeId = getParentsReader.ReadInt32();
 
-                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                allMembers = await MemberObjectsExplorer.ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     className,
                     Buffer,
-                    autoExpand,
+                    autoExpand ? GetObjectCommandOptions.AutoExpandable : GetObjectCommandOptions.None,
                     Id,
                     isValueType: true,
                     isOwn: i == 0,

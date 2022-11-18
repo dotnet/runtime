@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -367,11 +368,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     int count = _itemCountingFunc != null ? _itemCountingFunc(_owningSource, default(TOutput)!, items) : countReceived;
                     _itemsRemovedAction(_owningSource, count);
                 }
-#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
+
+                Debug.Assert(items != null);
                 return true;
-#pragma warning restore CS8762
             }
-            else return false;
+
+            return false;
         }
 
         /// <summary>Gets the number of items available to be received from this block.</summary>

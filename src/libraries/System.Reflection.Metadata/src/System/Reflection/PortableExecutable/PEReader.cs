@@ -718,7 +718,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e)
             {
-                throw new ArgumentException(e.Message, nameof(peImagePath));
+                throw new ArgumentException(e.Message, nameof(peImagePath), e);
             }
 
             Exception? errorToReport = null;
@@ -768,7 +768,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
-                errorToReport = errorToReport ?? e;
+                errorToReport ??= e;
                 return false;
             }
 
@@ -832,7 +832,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
-                errorToReport = errorToReport ?? e;
+                errorToReport ??= e;
                 return false;
             }
             finally

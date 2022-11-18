@@ -3,14 +3,15 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonObjectConverter : JsonConverter<JsonObject>
     {
-        internal override object CreateObject(JsonSerializerOptions options)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            return new JsonObject(options.GetNodeOptions());
+            jsonTypeInfo.CreateObjectForExtensionDataProperty = () => new JsonObject(options.GetNodeOptions());
         }
 
         internal override void ReadElementAndSetProperty(
@@ -18,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
             string propertyName,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            scoped ref ReadStack state)
         {
             bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out JsonNode? value);
             Debug.Assert(success); // Node converters are not resumable.
@@ -27,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonObject jObject = (JsonObject)obj;
 
             Debug.Assert(value == null || value is JsonNode);
-            JsonNode? jNodeValue = (JsonNode?)value;
+            JsonNode? jNodeValue = value;
 
             jObject[propertyName] = jNodeValue;
         }

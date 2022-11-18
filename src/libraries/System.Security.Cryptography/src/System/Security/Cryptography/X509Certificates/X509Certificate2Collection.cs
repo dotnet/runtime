@@ -417,16 +417,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_ExportFailed);
             }
 
-            int encodedSize = PemEncoding.GetEncodedSize(PemLabels.Pkcs7Certificate.Length, pkcs7.Length);
-
-            return string.Create(encodedSize, pkcs7, static (destination, pkcs7) => {
-                if (!PemEncoding.TryWrite(PemLabels.Pkcs7Certificate, pkcs7, destination, out int written) ||
-                    written != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
+            return PemEncoding.WriteString(PemLabels.Pkcs7Certificate, pkcs7);
         }
 
         /// <summary>

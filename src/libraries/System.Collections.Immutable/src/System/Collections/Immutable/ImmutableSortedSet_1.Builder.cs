@@ -456,12 +456,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedSet<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
-                {
-                    _immutable = ImmutableSortedSet<T>.Wrap(this.Root, _comparer);
-                }
-
-                return _immutable;
+                return _immutable ??= ImmutableSortedSet<T>.Wrap(this.Root, _comparer);
             }
 
             /// <summary>

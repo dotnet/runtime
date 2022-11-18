@@ -341,17 +341,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets the collection of Properties associated with the <see cref="Claim"/>.
         /// </summary>
-        public IDictionary<string, string> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, string>();
-                }
-                return _properties;
-            }
-        }
+        public IDictionary<string, string> Properties => _properties ??= new Dictionary<string, string>();
 
         /// <summary>
         /// Gets the subject of the <see cref="Claim"/>.

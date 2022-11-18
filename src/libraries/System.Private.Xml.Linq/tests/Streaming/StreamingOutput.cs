@@ -47,7 +47,7 @@ namespace XDocumentTests.Streaming
         {
             get
             {
-                return _diff ?? (_diff = new XmlDiff());
+                return _diff ??= new XmlDiff();
             }
         }
 

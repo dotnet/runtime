@@ -55,18 +55,15 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal ProviderMetadata(string providerName, EventLogSession session, CultureInfo targetCultureInfo, string logFilePath)
         {
-            if (targetCultureInfo == null)
-                targetCultureInfo = CultureInfo.CurrentCulture;
-
-            if (session == null)
-                session = EventLogSession.GlobalSession;
+            targetCultureInfo ??= CultureInfo.CurrentCulture;
+            session ??= EventLogSession.GlobalSession;
 
             _session = session;
             _providerName = providerName;
             _cultureInfo = targetCultureInfo;
             _logFilePath = logFilePath;
 
-            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0, 0);
+            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0);
 
             _syncObject = new object();
         }
@@ -208,7 +205,7 @@ namespace System.Diagnostics.Eventing.Reader
                                 {
                                     if (_defaultProviderHandle.IsInvalid)
                                     {
-                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                                     }
 
                                     channelRefDisplayName = NativeWrapper.EvtFormatMessage(_defaultProviderHandle, unchecked((uint)channelRefMessageId));
@@ -240,8 +237,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal string FindStandardLevelDisplayName(string name, uint value)
         {
-            if (_standardLevels == null)
-                _standardLevels = (List<EventLevel>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataLevels);
+            _standardLevels ??= (List<EventLevel>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataLevels);
             foreach (EventLevel standardLevel in _standardLevels)
             {
                 if (standardLevel.Name == name && standardLevel.Value == value)
@@ -251,8 +247,7 @@ namespace System.Diagnostics.Eventing.Reader
         }
         internal string FindStandardOpcodeDisplayName(string name, uint value)
         {
-            if (_standardOpcodes == null)
-                _standardOpcodes = (List<EventOpcode>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataOpcodes);
+            _standardOpcodes ??= (List<EventOpcode>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataOpcodes);
             foreach (EventOpcode standardOpcode in _standardOpcodes)
             {
                 if (standardOpcode.Name == name && standardOpcode.Value == value)
@@ -262,8 +257,7 @@ namespace System.Diagnostics.Eventing.Reader
         }
         internal string FindStandardKeywordDisplayName(string name, long value)
         {
-            if (_standardKeywords == null)
-                _standardKeywords = (List<EventKeyword>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataKeywords);
+            _standardKeywords ??= (List<EventKeyword>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataKeywords);
             foreach (EventKeyword standardKeyword in _standardKeywords)
             {
                 if (standardKeyword.Name == name && standardKeyword.Value == value)
@@ -273,8 +267,7 @@ namespace System.Diagnostics.Eventing.Reader
         }
         internal string FindStandardTaskDisplayName(string name, uint value)
         {
-            if (_standardTasks == null)
-                _standardTasks = (List<EventTask>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataTasks);
+            _standardTasks ??= (List<EventTask>)GetProviderListProperty(_defaultProviderHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataTasks);
             foreach (EventTask standardTask in _standardTasks)
             {
                 if (standardTask.Name == name && standardTask.Value == value)
@@ -365,7 +358,7 @@ namespace System.Diagnostics.Eventing.Reader
                         {
                             if (_defaultProviderHandle.IsInvalid)
                             {
-                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                             }
 
                             generalDisplayName = objectTypeName switch

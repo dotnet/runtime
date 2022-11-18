@@ -284,11 +284,7 @@ namespace System.Data.ProviderBase
 
         internal void NotifyWeakReference(int message)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Notify(message);
-            }
+            ReferenceCollection?.Notify(message);
         }
 
         internal virtual void OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
@@ -414,11 +410,7 @@ namespace System.Data.ProviderBase
 
         internal void RemoveWeakReference(object value)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Remove(value);
-            }
+            ReferenceCollection?.Remove(value);
         }
 
         /// <summary>

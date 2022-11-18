@@ -11,6 +11,9 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_LoadLibrary", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial IntPtr LoadLibrary(string filename);
 
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetLoadLibraryError")]
+        internal static partial IntPtr GetLoadLibraryError();
+
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress")]
         internal static partial IntPtr GetProcAddress(IntPtr handle, byte* symbol);
 

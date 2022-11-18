@@ -69,15 +69,7 @@ namespace System.Net.Http.Tests
         public MockContent(byte[] mockData, MockOptions options)
         {
             _options = options;
-
-            if (mockData == null)
-            {
-                _mockData = Encoding.UTF8.GetBytes("data");
-            }
-            else
-            {
-                _mockData = mockData;
-            }
+            _mockData = mockData ?? "data"u8.ToArray();
         }
 
         public byte[] GetMockData()

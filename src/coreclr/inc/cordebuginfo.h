@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Keep in sync with https://github.com/dotnet/corert/blob/master/src/Native/ObjWriter/cordebuginfo.h
+// Keep in sync with llvm/tools/objwriter/cordebuginfo.h in current objwriter branch in https://github.com/dotnet/llvm-project repo
 //
 
 /**********************************************************************************/
@@ -18,7 +18,7 @@ public:
         NO_MAPPING  = -1,
         PROLOG      = -2,
         EPILOG      = -3,
-        MAX_MAPPING_VALUE = -3 // Sentinal value. This should be set to the largest magnitude value in the enum
+        MAX_MAPPING_VALUE = -3 // Sentinel value. This should be set to the largest magnitude value in the enum
                                // so that the compression routines know the enum's range.
     };
 
@@ -297,7 +297,7 @@ public:
     };
 
     // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+    // eg. ST(3). Actually it is ST("FPstkHeight - vpFpStk")
 
     struct vlFPstk
     {
@@ -351,7 +351,7 @@ public:
 
         UNKNOWN_ILNUM       = -4, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in th enum
+        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in th enum
                                   // so that the compression routines know the enum's range.
     };
 
@@ -368,5 +368,32 @@ public:
         uint32_t        endOffset;
         uint32_t        varNumber;
         VarLoc          loc;
+    };
+
+    // Represents an individual entry in the inline tree.
+    // This is ordinarily stored as a flat array in which [0] is the root, and
+    // the indices below indicate the tree structure.
+    struct InlineTreeNode
+    {
+        // Method handle of inlinee (or root)
+        CORINFO_METHOD_HANDLE Method;
+        // IL offset of IL instruction resulting in the inline
+        uint32_t ILOffset;
+        // Index of child in tree, 0 if no children
+        uint32_t Child;
+        // Index of sibling in tree, 0 if no sibling
+        uint32_t Sibling;
+    };
+
+    struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        uint32_t NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        uint32_t Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        uint32_t ILOffset;
+        // Source information about the IL instruction in the inlinee
+        SourceTypes Source;
     };
 };

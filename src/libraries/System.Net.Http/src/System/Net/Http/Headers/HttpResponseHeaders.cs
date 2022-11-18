@@ -25,13 +25,8 @@ namespace System.Net.Http.Headers
             // 5 properties each lazily allocate a collection to store the value(s) for that property.
             // Rather than having a field for each of these, store them untyped in an array that's lazily
             // allocated.  Then we only pay for the 45 bytes for those fields when any is actually accessed.
-            object[] collections = _specialCollectionsSlots ?? (_specialCollectionsSlots = new object[NumCollectionsSlots]);
-            object result = collections[slot];
-            if (result == null)
-            {
-                collections[slot] = result = creationFunc(this)!;
-            }
-            return (T)result;
+            object[] collections = _specialCollectionsSlots ??= new object[NumCollectionsSlots];
+            return (T)(collections[slot] ??= creationFunc(this)!);
         }
 
         public HttpHeaderValueCollection<string> AcceptRanges =>
@@ -172,6 +167,6 @@ namespace System.Net.Http.Headers
             return (knownHeader.HeaderType & HttpHeaderType.NonTrailing) == 0;
         }
 
-        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ??= new HttpGeneralHeaders(this);
     }
 }

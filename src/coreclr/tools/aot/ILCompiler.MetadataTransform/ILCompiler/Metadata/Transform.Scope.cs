@@ -16,7 +16,7 @@ using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs
             = new EntityMap<Cts.ModuleDesc, ScopeDefinition>(EqualityComparer<Cts.ModuleDesc>.Default);
@@ -24,7 +24,7 @@ namespace ILCompiler.Metadata
 
         private ScopeDefinition HandleScopeDefinition(Cts.ModuleDesc module)
         {
-            return _scopeDefs.GetOrCreate(module, _initScopeDef ?? (_initScopeDef = InitializeScopeDefinition));
+            return _scopeDefs.GetOrCreate(module, _initScopeDef ??= InitializeScopeDefinition);
         }
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
@@ -122,7 +122,7 @@ namespace ILCompiler.Metadata
 
         private ScopeReference HandleScopeReference(AssemblyName assemblyName)
         {
-            return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ?? (_initScopeRef = InitializeScopeReference));
+            return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ??= InitializeScopeReference);
         }
 
         private void InitializeScopeReference(AssemblyName assemblyName, ScopeReference scopeReference)
@@ -148,11 +148,11 @@ namespace ILCompiler.Metadata
             scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
         }
 
-        private class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
+        private sealed class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
         {
             public bool Equals(AssemblyName x, AssemblyName y)
             {
-                return Object.Equals(x.Name, y.Name);
+                return Equals(x.Name, y.Name);
             }
 
             public int GetHashCode(AssemblyName obj)

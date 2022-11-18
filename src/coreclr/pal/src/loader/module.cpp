@@ -1604,7 +1604,7 @@ Parameters :
                         goes in MODSTRUCT::lib_name
 
 Return value:
-    a pointer to a new, initialized MODSTRUCT strucutre, or NULL on failure.
+    a pointer to a new, initialized MODSTRUCT structure, or NULL on failure.
 
 Notes :
     'name' is used to initialize MODSTRUCT::lib_name. The other member is set to NULL

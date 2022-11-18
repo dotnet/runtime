@@ -12,5 +12,8 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetProcAddress(IntPtr hModule, byte* lpProcName);
+
+        [LibraryImport(Libraries.Kernel32, StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
     }
 }

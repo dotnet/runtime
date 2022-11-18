@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <Platform>AnyCPU</Platform>
-  </PropertyGroup>
-     
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
-</Project>

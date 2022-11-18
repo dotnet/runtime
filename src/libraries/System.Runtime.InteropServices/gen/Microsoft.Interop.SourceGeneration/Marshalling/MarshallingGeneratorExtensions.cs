@@ -96,7 +96,6 @@ namespace Microsoft.Interop
             return param;
         }
 
-
         private static bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
         {
             marshalAsAttribute = null!;
@@ -119,13 +118,20 @@ namespace Microsoft.Interop
                 CountInfo countInfo;
                 MarshallingInfo elementMarshallingInfo;
                 if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshalling
-                    && collectionMarshalling.UseDefaultMarshalling
-                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
-                    && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
-                    )
+                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo)
                 {
-                    countInfo = collectionMarshalling.ElementCountInfo;
-                    elementMarshallingInfo = collectionMarshalling.ElementMarshallingInfo;
+                    CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
+                    if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
+                        || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
+                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
+                    {
+                        countInfo = collectionMarshalling.ElementCountInfo;
+                        elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else if (info.MarshallingAttributeInfo is MissingSupportCollectionMarshallingInfo missingSupport)
                 {
@@ -139,7 +145,7 @@ namespace Microsoft.Interop
                     // Since the MarshalUsing attribute doesn't exist on downlevel platforms where we don't support arrays,
                     // this case is unlikely to come in supported scenarios, but could come up with a custom CoreLib implementation
                     // 2. User provides a MarsalAs attribute with the ArraySubType field set to UnmanagedType.CustomMarshaler
-                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially fowarding it.
+                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially forwarding it.
                     return false;
                 }
 
@@ -203,6 +209,7 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax)),
                 ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
+                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info).Type, IdentifierName(nativeIdentifier))),
                 _ => throw new InvalidOperationException()
             };
         }

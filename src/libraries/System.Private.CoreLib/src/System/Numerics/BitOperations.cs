@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Wasm;
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -51,7 +54,7 @@ namespace System.Numerics
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -93,7 +96,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static uint RoundUpToPowerOf2(uint value)
         {
-            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
+            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported || WasmBase.IsSupported)
             {
 #if TARGET_64BIT
                 return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
@@ -125,7 +128,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static ulong RoundUpToPowerOf2(ulong value)
         {
-            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported || WasmBase.IsSupported)
             {
                 int shift = 64 - LeadingZeroCount(value - 1);
                 return (1ul ^ (ulong)(shift >> 6)) << shift;
@@ -161,11 +164,24 @@ namespace System.Numerics
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(Int128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
+        }
+
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int LeadingZeroCount(uint value)
@@ -179,6 +195,11 @@ namespace System.Numerics
             if (ArmBase.IsSupported)
             {
                 return ArmBase.LeadingZeroCount(value);
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.LeadingZeroCount(value);
             }
 
             // Unguarded fallback contract is 0->31, BSR contract is 0->undefined
@@ -203,6 +224,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int LeadingZeroCount(ulong value)
@@ -216,6 +238,11 @@ namespace System.Numerics
             if (ArmBase.Arm64.IsSupported)
             {
                 return ArmBase.Arm64.LeadingZeroCount(value);
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.LeadingZeroCount(value);
             }
 
             if (X86Base.X64.IsSupported)
@@ -232,6 +259,18 @@ namespace System.Numerics
             }
 
             return LeadingZeroCount(hi);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(UInt128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
         }
 
         /// <summary>
@@ -279,6 +318,11 @@ namespace System.Numerics
                 return 31 ^ ArmBase.LeadingZeroCount(value);
             }
 
+            if (WasmBase.IsSupported)
+            {
+                return 31 ^ WasmBase.LeadingZeroCount(value);
+            }
+
             // BSR returns the log2 result directly. However BSR is slower than LZCNT
             // on AMD processors, so we leave it as a fallback only.
             if (X86Base.IsSupported)
@@ -314,6 +358,11 @@ namespace System.Numerics
             if (X86Base.X64.IsSupported)
             {
                 return (int)X86Base.X64.BitScanReverse(value);
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return 63 ^ WasmBase.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -510,6 +559,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int TrailingZeroCount(uint value)
@@ -523,6 +573,11 @@ namespace System.Numerics
             if (ArmBase.IsSupported)
             {
                 return ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.TrailingZeroCount(value);
             }
 
             // Unguarded fallback contract is 0->0, BSF contract is 0->undefined
@@ -558,6 +613,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int TrailingZeroCount(ulong value)
@@ -571,6 +627,11 @@ namespace System.Numerics
             if (ArmBase.Arm64.IsSupported)
             {
                 return ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+            }
+
+            if (WasmBase.IsSupported)
+            {
+                return WasmBase.TrailingZeroCount(value);
             }
 
             if (X86Base.X64.IsSupported)
@@ -704,6 +765,164 @@ namespace System.Numerics
 #else
             return (nuint)RotateRight((uint)value, offset);
 #endif
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, byte data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, ushort data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, uint data)
+        {
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(crc, data);
+            }
+
+            if (Crc32.IsSupported)
+            {
+                return Crc32.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        /// <summary>
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
+        /// </summary>
+        /// <param name="crc">The base value to calculate checksum on</param>
+        /// <param name="data">The data for which to compute the checksum</param>
+        /// <returns>The CRC-checksum</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Crc32C(uint crc, ulong data)
+        {
+            if (Sse42.X64.IsSupported)
+            {
+                // This intrinsic returns a 64-bit register with the upper 32-bits set to 0.
+                return (uint)Sse42.X64.Crc32(crc, data);
+            }
+
+            if (Sse42.IsSupported)
+            {
+                uint result = Sse42.Crc32(crc, (uint)(data));
+                return Sse42.Crc32(result, (uint)(data >> 32));
+            }
+
+            if (Crc32.Arm64.IsSupported)
+            {
+                return Crc32.Arm64.ComputeCrc32C(crc, data);
+            }
+
+            return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        private static class Crc32Fallback
+        {
+            // Pre-computed CRC-32 transition table.
+            // While this implementation is based on the Castagnoli CRC-32 polynomial (CRC-32C),
+            // x32 + x28 + x27 + x26 + x25 + x23 + x22 + x20 + x19 + x18 + x14 + x13 + x11 + x10 + x9 + x8 + x6 + x0,
+            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u
+            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+
+            internal static uint Crc32C(uint crc, byte data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, ushort data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, uint data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                return Crc32CCore(ref lookupTable, crc, data);
+            }
+
+            internal static uint Crc32C(uint crc, ulong data)
+            {
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+                data >>= 32;
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+
+                return crc;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint Crc32CCore(ref uint lookupTable, uint crc, uint data)
+            {
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
         }
 
         /// <summary>

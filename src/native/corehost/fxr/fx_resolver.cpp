@@ -368,7 +368,7 @@ void fx_resolver_t::update_newest_references(
 // - host_info
 //     Information about the host - mainly used to determine where to search for frameworks.
 // - override_settings
-//     Framework resolution settings which will win over anything found (settings comming from command line).
+//     Framework resolution settings which will win over anything found (settings coming from command line).
 //     Passed as fx_reference_t for simplicity, the version part of that structure is ignored.
 // - config
 //     Parsed runtime configuration to process.
@@ -438,7 +438,7 @@ StatusCode fx_resolver_t::read_framework(
 
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
-            // Resolve the effective framework reference against the the existing physical framework folders
+            // Resolve the effective framework reference against the existing physical framework folders
             fx_definition_t* fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), host_info.dotnet_root, disable_multilevel_lookup);
             if (fx == nullptr)
             {
@@ -448,7 +448,7 @@ StatusCode fx_resolver_t::read_framework(
                     _X("App: %s\n")
                     _X("Architecture: %s"),
                     app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
-                    get_arch());
+                    get_current_arch_name());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
                 return FrameworkMissingFailure;
             }

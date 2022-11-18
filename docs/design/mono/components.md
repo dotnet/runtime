@@ -24,7 +24,7 @@ time, instead of requiring custom builds of the runtime.
 For example, each of the following experiences requires different runtime
 capabilities:
 
-- Developer inner loop on on a mobile or WebAssembly workload: The runtime
+- Developer inner loop on a mobile or WebAssembly workload: The runtime
   should include support for the interpreter, hot reload, and the diagnostic
   server.
 - Release build iPhone app for the app store: The runtime should not include the

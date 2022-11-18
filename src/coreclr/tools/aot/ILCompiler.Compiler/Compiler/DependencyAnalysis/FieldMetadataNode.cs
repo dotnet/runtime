@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class FieldMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class FieldMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly FieldDesc _field;
 
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable field: " + _field.ToString();
+            return "Field metadata: " + _field.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

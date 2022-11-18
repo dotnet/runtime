@@ -293,9 +293,9 @@ namespace System.Reflection.Emit
 
         internal RuntimeModule InternalModule => _internalModule;
 
-        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
+        private protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
 
-        private static RuntimeModule GetRuntimeModuleFromModule(Module? m)
+        internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
         {
             RuntimeModuleBuilder? mb = m as RuntimeModuleBuilder;
             if (mb != null)
@@ -393,7 +393,7 @@ namespace System.Reflection.Emit
             Justification = "Module.ResolveMethod is marked as RequiresUnreferencedCode because it relies on tokens " +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break. " +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL " +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
         {
             // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>

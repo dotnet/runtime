@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <param name="type">The type.</param>
-        /// <return>The <see cref="ILogger"/> that was created.</return>
+        /// <returns>The <see cref="ILogger"/> that was created.</returns>
         public static ILogger CreateLogger(this ILoggerFactory factory, Type type)
         {
             ThrowHelper.ThrowIfNull(factory);

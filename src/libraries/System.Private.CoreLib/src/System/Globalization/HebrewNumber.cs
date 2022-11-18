@@ -80,9 +80,8 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append(StringBuilder outputBuffer, int Number)
+        internal static void Append(ref ValueStringBuilder outputBuffer, int Number)
         {
-            Debug.Assert(outputBuffer != null);
             int outputBufferStartingLength = outputBuffer.Length;
 
             char cTens = '\x0';
@@ -199,7 +198,10 @@ namespace System.Globalization
 
             if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                outputBuffer.Insert(outputBuffer.Length - 1, '"');
+                char last = outputBuffer[outputBuffer.Length - 1];
+                outputBuffer.Length--;
+                outputBuffer.Append('"');
+                outputBuffer.Append(last);
             }
             else
             {
@@ -315,9 +317,9 @@ namespace System.Globalization
         }
 
         //
-        // The state machine for Hebrew number pasing.
+        // The state machine for Hebrew number passing.
         //
-        private static readonly HS[] s_numberPasingState =
+        private static readonly HS[] s_numberPassingState =
         {
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
@@ -356,14 +358,14 @@ namespace System.Globalization
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
         };
 
-        // Count of valid HebrewToken, column count in the NumberPasingState array
+        // Count of valid HebrewToken, column count in the NumberPassingState array
         private const int HebrewTokenCount = 10;
 
         ////////////////////////////////////////////////////////////////////////
         //
         //  Actions:
         //      Parse the Hebrew number by passing one character at a time.
-        //      The state between characters are maintained at HebrewNumberPasingContext.
+        //      The state between characters are maintained at HebrewNumberPassingContext.
         //  Returns:
         //      Return a enum of HebrewNumberParsingState.
         //          NotHebrewDigit: The specified ch is not a valid Hebrew digit.
@@ -379,7 +381,7 @@ namespace System.Globalization
 
         internal static HebrewNumberParsingState ParseByChar(char ch, ref HebrewNumberParsingContext context)
         {
-            Debug.Assert(s_numberPasingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
+            Debug.Assert(s_numberPassingState.Length == HebrewTokenCount * ((int)HS.S9_DQ + 1));
 
             HebrewToken token;
             if (ch == '\'')
@@ -408,7 +410,7 @@ namespace System.Globalization
                     return HebrewNumberParsingState.NotHebrewDigit;
                 }
             }
-            context.state = s_numberPasingState[(int)context.state * (int)HebrewTokenCount + (int)token];
+            context.state = s_numberPassingState[(int)context.state * (int)HebrewTokenCount + (int)token];
             if (context.state == HS._err)
             {
                 // Invalid Hebrew state.  This indicates an incorrect Hebrew number.

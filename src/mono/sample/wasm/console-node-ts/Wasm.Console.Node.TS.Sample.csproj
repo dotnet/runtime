@@ -1,15 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.ts</WasmMainJSPath>
-    <!--
-    <WasmEnableES6>true</WasmEnableES6>
-    -->
+    <!-- Workaround before https://github.com/dotnet/runtime/issues/63465 is solved. -->
+    <WasmMainJSPath>tsconfig.json</WasmMainJSPath>
   </PropertyGroup>
 
-  <Target Name="TypeScript" AfterTargets="WasmBuildApp" DependsOnTargets="Build">
+  <!-- 
+    We need to install typescript definition (so tsc knows runtime types) and package.json (tsc knows about runtime files) from artifacts directory.
+  -->
+  <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/$(Configuration)/AppBundle/.npm-stamp">
+    <ItemGroup>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/$(Configuration)/AppBundle" SkipUnchangedFiles="true"/>
+    <Touch Files="bin/$(Configuration)/AppBundle/.npm-stamp" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="TypeScript" AfterTargets="WasmBuildApp" DependsOnTargets="Build;CopyRelinkedPackage">
     <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)"/>
-    <Exec Command="npm install $(MicrosoftNetCoreAppRuntimePackNativeDir) --no-save" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <!-- We need to have a runtime in the same directory as managed dlls, because path of dotnet.js is used as a root path for loading managed dlls. -->
+    <Exec Command="npm install bin/$(Configuration)/AppBundle --no-save" WorkingDirectory="$(MSBuildProjectDirectory)"/>
     <Exec Command="npm run tsc -- --outDir $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
   </Target>
 

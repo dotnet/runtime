@@ -1,0 +1,7 @@
+# NOTE: Types/members which are not publicly exposed in System.Runtime.dll but still used internally by libraries.
+#       Manually maintained, keep in sync with System.Private.CoreLib.cs
+
+T:System.Runtime.Serialization.DeserializationToken
+M:System.Runtime.Serialization.SerializationInfo.StartDeserialization
+T:System.Diagnostics.DebugProvider
+M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)

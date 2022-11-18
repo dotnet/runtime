@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -31,7 +31,7 @@ namespace System.Xml.Xsl.Runtime
         private const string kaGEmode = "ka-GE_modern";
 
         // Invariant: compops == (options & Options.mask)
-        private readonly CultureInfo _cultInfo;
+        private readonly CultureInfo? _cultInfo;
         private Options _options;
         private readonly CompareOptions _compops;
 
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Construct a collation that uses the specified culture and compare options.
         /// </summary>
-        private XmlCollation(CultureInfo cultureInfo, Options options)
+        private XmlCollation(CultureInfo? cultureInfo, Options options)
         {
             _cultInfo = cultureInfo;
             _options = options;
@@ -144,13 +144,14 @@ namespace System.Xml.Xsl.Runtime
 
         internal static XmlCollation Create(string collationLiteral)
         {
-            return Create(collationLiteral, /*throw:*/true);
+            return Create(collationLiteral, throwOnError: true)!;
         }
+
         // This function is used in both parser and F&O library, so just strictly map valid literals to XmlCollation.
         // Set compare options one by one:
         //     0, false: no effect; 1, true: yes
         // Disregard unrecognized options.
-        internal static XmlCollation Create(string collationLiteral, bool throwOnError)
+        internal static XmlCollation? Create(string collationLiteral, bool throwOnError)
         {
             Debug.Assert(collationLiteral != null, "collation literal should not be null");
 
@@ -159,8 +160,8 @@ namespace System.Xml.Xsl.Runtime
                 return CodePointCollation;
             }
 
-            Uri collationUri;
-            CultureInfo cultInfo = null;
+            Uri? collationUri;
+            CultureInfo? cultInfo = null;
             Options options = default;
 
             if (throwOnError)
@@ -213,7 +214,7 @@ namespace System.Xml.Xsl.Runtime
             // Sort & Compare option
             // at least a '?' will be returned for Uri.Query if not empty
             string query = collationUri.Query;
-            string sort = null;
+            string? sort = null;
 
             if (query.Length != 0)
             {
@@ -341,14 +342,14 @@ namespace System.Xml.Xsl.Runtime
         //-----------------------------------------------
 
         // Redefine Equals and GetHashCode methods, they are needed for UniqueList<XmlCollation>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (this == obj)
             {
                 return true;
             }
 
-            XmlCollation that = obj as XmlCollation;
+            XmlCollation? that = obj as XmlCollation;
             return that != null &&
                 _options == that._options &&
                 object.Equals(_cultInfo, that._cultInfo);

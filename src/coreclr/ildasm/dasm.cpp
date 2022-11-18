@@ -123,7 +123,6 @@ BOOL                    g_fCustomInstructionEncodingSystem = FALSE;
 COR_FIELD_OFFSET        *g_rFieldOffset = NULL;
 ULONG                   g_cFieldsMax, g_cFieldOffsets;
 
-char*                   g_pszExeFile;
 char                    g_szInputFile[MAX_FILENAME_LENGTH]; // in UTF-8
 WCHAR                   g_wszFullInputFile[MAX_PATH + 1]; // in UTF-16
 char                    g_szOutputFile[MAX_FILENAME_LENGTH]; // in UTF-8
@@ -1891,7 +1890,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1903,7 +1902,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1917,8 +1916,8 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     if(n) appendStr(out," ");
                     _gcvt_s(str,64,*((float*)dataPtr), 8);
                     float df = (float)atof(str);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
-                    // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
+                    // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                     if((*(ULONG*)&df != (ULONG)GET_UNALIGNED_VAL32(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64,"0x%08X",(ULONG)GET_UNALIGNED_VAL32(dataPtr));
                     appendStr(out,str);
@@ -1936,10 +1935,10 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     char *pch;
                     _gcvt_s(str,64,*((double*)dataPtr), 17);
                     double df = strtod(str, &pch);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
-                    // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
+                    // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                     if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||IsSpecialNumber(str))
-                        sprintf_s(str, 64, "0x%I64X",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                        sprintf_s(str, 64, "0x%llX",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -2218,7 +2217,7 @@ BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, vo
 {
     char* initszptr = szString + strlen(szString);
     PCCOR_SIGNATURE typePtr;            // type to convert,
-    ULONG typeLen;                  // the lenght of 'typePtr'
+    ULONG typeLen;                  // the length of 'typePtr'
     CHECK_LOCAL_STATIC_VAR(static CQuickBytes out); // where to put the pretty printed string
 
     IMDInternalImport *pIMDI = g_pImport; // ptr to IMDInternalImport class with ComSig
@@ -2598,18 +2597,18 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(%s)", KEYWORD((char *)(MDDV.m_byteValue ? "true" : "false")));
             break;
         case ELEMENT_TYPE_I8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("int64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("int64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_U8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("uint64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("uint64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
                 _gcvt_s(szf,32,MDDV.m_fltValue, 8);
                 float df = (float)atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                 if((*(ULONG*)&df == MDDV.m_ulValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float32"),szf);
                 else
@@ -2623,12 +2622,12 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 _gcvt_s(szf,32,MDDV.m_dblValue, 17);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                 if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float64"),szf);
                 else
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%I64X) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%llX) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
             }
             break;
 
@@ -3744,7 +3743,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                     sprintf_s(pszArgname[j].name,16,"A_%d",g_fThisIsInstanceMethod ? j+1 : j);
                 }
             }// end for( along the argnames)
-            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszArgname);
+            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%zd0",(size_t)pszArgname);
         } //end if (ulArgs)
         g_pImport->EnumClose(&hArgEnum);
     }
@@ -5155,11 +5154,11 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     ULONG iCount = VAL32(CORHeader->CodeManagerTable.Size) / sizeof(GUID);
     for (ULONG i=0;  i<iCount;  i++)
     {
-        WCHAR        rcguid[128];
+        CHAR         rcguid[GUID_STR_BUFFER_LEN];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        StringFromGUID2(Guid, rcguid, ARRAY_SIZE(rcguid));
-        sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %S", i, rcguid);
+        GuidToLPSTR(Guid, rcguid);
+        sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %s", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;
     }
@@ -7030,7 +7029,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    sprintf_s(szString,SZSTRING_SIZE,"//  .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {

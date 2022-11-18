@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     internal sealed class RowBinding : System.Data.ProviderBase.DbBuffer
@@ -151,7 +149,7 @@ namespace System.Data.OleDb
             for (int indexWithinAccessor = 0; indexWithinAccessor < columns.Length; ++indexWithinAccessor)
             {
                 int index = indexStart + indexWithinAccessor;
-                OleDbParameter? parameter = ((null != parameters) ? parameters[index] : null);
+                OleDbParameter? parameter = parameters?[index];
                 columns[indexWithinAccessor] = new ColumnBinding(
                     dataReader!, index, indexForAccessor, indexWithinAccessor,
                     parameter, this, bindings, dbbindings[indexWithinAccessor], _headerLength,
@@ -168,7 +166,7 @@ namespace System.Data.OleDb
 
         internal object GetVariantValue(int offset)
         {
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
@@ -191,14 +189,14 @@ namespace System.Data.OleDb
                 }
             }
 
-            return ((null != value) ? value : DBNull.Value);
+            return value ?? DBNull.Value;
         }
 
         // translate to native
         internal void SetVariantValue(int offset, object value)
         {
-            // two contigous VARIANT structures, second should be a binary copy of the first
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            // two contiguous VARIANT structures, second should be a binary copy of the first
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
@@ -238,9 +236,9 @@ namespace System.Data.OleDb
         // translate to native
         internal void SetBstrValue(int offset, string value)
         {
-            // two contigous BSTR ptr, second should be a binary copy of the first
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            // two contiguous BSTR ptr, second should be a binary copy of the first
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
             IntPtr ptr;
@@ -259,7 +257,7 @@ namespace System.Data.OleDb
 
                     // safe to copy ptr, even if SysAllocStringLen failed
                     Marshal.WriteIntPtr(base.handle, offset, ptr);
-                    Marshal.WriteIntPtr(base.handle, offset + ADP.PtrSize, ptr);
+                    Marshal.WriteIntPtr(base.handle, offset + IntPtr.Size, ptr);
                 }
             }
             finally
@@ -278,11 +276,11 @@ namespace System.Data.OleDb
         // translate to native
         internal void SetByRefValue(int offset, IntPtr pinnedValue)
         {
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
-            if (ADP.PtrZero == pinnedValue)
+            if (IntPtr.Zero == pinnedValue)
             { // empty array scenario
                 pinnedValue = ADP.IntPtrOffset(base.handle, _emptyStringOffset);
             }
@@ -298,7 +296,7 @@ namespace System.Data.OleDb
                 finally
                 {
                     Marshal.WriteIntPtr(base.handle, offset, pinnedValue);               // parameter input value
-                    Marshal.WriteIntPtr(base.handle, offset + ADP.PtrSize, pinnedValue); // original parameter value
+                    Marshal.WriteIntPtr(base.handle, offset + IntPtr.Size, pinnedValue); // original parameter value
                 }
             }
             finally
@@ -368,7 +366,7 @@ namespace System.Data.OleDb
                 _haveData = false;
             }
 #if DEBUG
-            // verify types that need reseting are not forgotton, since the code
+            // verify types that need resetting are not forgotton, since the code
             // that sets this up is in dbbinding.cs, MaxLen { set; }
             if (!_needToReset)
             {
@@ -394,7 +392,7 @@ namespace System.Data.OleDb
 
         private unsafe void ResetValues(IntPtr buffer, object? iaccessor)
         {
-            Debug.Assert(ADP.PtrZero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
+            Debug.Assert(IntPtr.Zero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
             for (int i = 0; i < _bindingCount; ++i)
             {
                 IntPtr ptr = ADP.IntPtrOffset(buffer, (i * ODB.SizeOf_tagDBBINDING));
@@ -473,7 +471,7 @@ namespace System.Data.OleDb
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
             UnsafeNativeMethods.IChapteredRowset chapteredRowset = (iaccessor as UnsafeNativeMethods.IChapteredRowset)!;
-            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), ADP.PtrZero);
+            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), IntPtr.Zero);
             if (ODB.DB_NULL_HCHAPTER != chapter)
             {
                 chapteredRowset.ReleaseChapter(chapter, out _);
@@ -484,7 +482,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
-            // two contigous BSTR ptrs that need to be freed
+            // two contiguous BSTR ptrs that need to be freed
             // the second should only be freed if different from the first
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -492,20 +490,20 @@ namespace System.Data.OleDb
             finally
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
-                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
+                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + IntPtr.Size);
 
-                if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
+                if ((IntPtr.Zero != currentValue) && (currentValue != originalValue))
                 {
                     Interop.OleAut32.SysFreeString(currentValue);
                 }
-                if (ADP.PtrZero != originalValue)
+                if (IntPtr.Zero != originalValue)
                 {
                     Interop.OleAut32.SysFreeString(originalValue);
                 }
 
                 // for debugability - delay clearing memory until after FreeBSTR
-                Marshal.WriteIntPtr(buffer, valueOffset, ADP.PtrZero);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, ADP.PtrZero);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + IntPtr.Size, IntPtr.Zero);
             }
         }
 
@@ -513,7 +511,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
-            // two contigous CoTaskMemAlloc ptrs that need to be freed
+            // two contiguous CoTaskMemAlloc ptrs that need to be freed
             // the first should only be freed if different from the first
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -521,23 +519,23 @@ namespace System.Data.OleDb
             finally
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
-                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
+                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + IntPtr.Size);
 
                 // originalValue is pinned managed memory or pointer to emptyStringOffset
-                if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
+                if ((IntPtr.Zero != currentValue) && (currentValue != originalValue))
                 {
                     Interop.Ole32.CoTaskMemFree(currentValue);
                 }
 
                 // for debugability - delay clearing memory until after CoTaskMemFree
-                Marshal.WriteIntPtr(buffer, valueOffset, ADP.PtrZero);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, ADP.PtrZero);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + IntPtr.Size, IntPtr.Zero);
             }
         }
 
         private static void FreeVariant(IntPtr buffer, int valueOffset)
         {
-            // two contigous VARIANT structures that need to be freed
+            // two contiguous VARIANT structures that need to be freed
             // the second should only be freed if different from the first
 
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
@@ -569,7 +567,7 @@ namespace System.Data.OleDb
 
         private static unsafe void FreePropVariant(IntPtr buffer, int valueOffset)
         {
-            // two contigous PROPVARIANT structures that need to be freed
+            // two contiguous PROPVARIANT structures that need to be freed
             // the second should only be freed if different from the first
             Debug.Assert(0 == (sizeof(PROPVARIANT) % 8), "unexpected PROPVARIANT size mutiplier");
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
@@ -601,7 +599,7 @@ namespace System.Data.OleDb
         internal IntPtr InterlockedExchangePointer(int offset)
         {
             ValidateCheck(offset, IntPtr.Size);
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             IntPtr value;
             bool mustRelease = false;

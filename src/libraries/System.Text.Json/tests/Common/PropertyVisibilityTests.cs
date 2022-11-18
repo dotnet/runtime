@@ -1177,8 +1177,8 @@ namespace System.Text.Json.Serialization.Tests
             // Only when the collection contains elements.
 
             var dictionary = new Dictionary<object, object>();
-            // Uri is an unsupported dictionary key.
-            dictionary.Add(new Uri("http://foo"), "bar");
+            // ValueTuple is an unsupported dictionary key.
+            dictionary.Add((0, 1), "bar");
 
             var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
 
@@ -2751,8 +2751,8 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
             // Without [JsonIgnore], serializer throws exceptions due to runtime-reflection-based property metadata inspection.
-            await Assert.ThrowsAsync<ArgumentException>(async () => await Serializer.SerializeWrapper(new TypeWith_RefStringProp()));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await Serializer.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new TypeWith_RefStringProp()));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new TypeWith_PropWith_BadConverter()));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<TypeWith_PropWith_BadConverter>("{}"));

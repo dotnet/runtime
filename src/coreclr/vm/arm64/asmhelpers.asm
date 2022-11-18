@@ -16,12 +16,12 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
 #endif
+    IMPORT HijackHandler
+    IMPORT ThrowControlForThread
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -233,7 +233,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -1032,24 +1032,28 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 ; ------------------------------------------------------------------
 ;
-; Helpers for async (NullRef, AccessViolation) exceptions
+; Helpers for ThreadAbort exceptions
 ;
 
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
+        NESTED_ENTRY RedirectForThreadAbort2,,HijackHandler
         PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+
+        ; stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
 
         ; On entry:
         ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
+        ; x0 = address of FaultingExceptionFrame
+        ;
+        ; Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              ThrowControlForThread
 
-        ; Target should not return.
+        ; ThrowControlForThread doesn't return.
         EMIT_BREAKPOINT
 
-        NESTED_END NakedThrowHelper2
+        NESTED_END RedirectForThreadAbort2
 
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
+        GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
@@ -1108,10 +1112,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG

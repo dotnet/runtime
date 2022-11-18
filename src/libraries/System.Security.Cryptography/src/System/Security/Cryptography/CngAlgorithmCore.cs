@@ -26,10 +26,7 @@ namespace System.Security.Cryptography
 
         public static CngKey Duplicate(CngKey key)
         {
-            using (SafeNCryptKeyHandle keyHandle = key.Handle)
-            {
-                return CngKey.Open(keyHandle, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
-            }
+            return CngKey.Open(key.HandleNoDuplicate, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
         }
 
         public bool IsKeyGeneratedNamedCurve()
@@ -66,7 +63,11 @@ namespace System.Security.Cryptography
                     ExportPolicy = CngExportPolicies.AllowPlaintextExport,
                 };
 
-                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(keySize), CngPropertyOptions.None);
+                Span<byte> keySizeBuffer = stackalloc byte[sizeof(int)];
+                bool success = BitConverter.TryWriteBytes(keySizeBuffer, keySize);
+                Debug.Assert(success);
+
+                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, keySizeBuffer, CngPropertyOptions.None);
                 creationParameters.Parameters.Add(keySizeProperty);
 
                 _lazyKey = CngKey.Create(algorithm, null, creationParameters);

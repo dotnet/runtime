@@ -974,21 +974,21 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void ApplySort_ApplySortCoreOverriden_DoesNotThrow()
+        public void ApplySort_ApplySortCoreOverridden_DoesNotThrow()
         {
             IBindingList bindingList = new SubBindingList();
             bindingList.ApplySort(null, ListSortDirection.Descending);
         }
 
         [Fact]
-        public void RemoveSort_RemoveSortCoreOverriden_DoesNotThrow()
+        public void RemoveSort_RemoveSortCoreOverridden_DoesNotThrow()
         {
             IBindingList bindingList = new SubBindingList();
             bindingList.RemoveSort();
         }
 
         [Fact]
-        public void Find_FindCoreOverriden_DoesNotThrow()
+        public void Find_FindCoreOverridden_DoesNotThrow()
         {
             IBindingList bindingList = new SubBindingList();
             Assert.Equal(200, bindingList.Find(null, null));

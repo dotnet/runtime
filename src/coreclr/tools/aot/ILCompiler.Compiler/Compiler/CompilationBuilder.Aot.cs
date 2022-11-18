@@ -3,11 +3,9 @@
 
 using System;
 
-using Internal.JitInterface;
-
 namespace ILCompiler
 {
-    partial class CompilationBuilder
+    public partial class CompilationBuilder
     {
         private PreinitializationManager _preinitializationManager;
 
@@ -24,6 +22,7 @@ namespace ILCompiler
         protected bool _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
+        protected bool _dehydrate;
         protected bool _useDwarf5;
 
         partial void InitializePartial()
@@ -83,6 +82,12 @@ namespace ILCompiler
         public CompilationBuilder UseSecurityMitigationOptions(SecurityMitigationOptions options)
         {
             _mitigationOptions = options;
+            return this;
+        }
+
+        public CompilationBuilder UseDehydration(bool dehydrate)
+        {
+            _dehydrate = dehydrate;
             return this;
         }
 

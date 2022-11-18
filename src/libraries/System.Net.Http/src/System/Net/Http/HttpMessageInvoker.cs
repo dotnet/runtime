@@ -35,7 +35,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
@@ -65,7 +65,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
@@ -125,14 +125,6 @@ namespace System.Net.Http
                 {
                     _handler.Dispose();
                 }
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
     }

@@ -5,7 +5,7 @@ using System.Xml.Schema;
 using System.Xml.XPath;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public class ArrayTests
     {

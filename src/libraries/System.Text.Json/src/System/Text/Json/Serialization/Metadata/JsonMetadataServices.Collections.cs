@@ -328,6 +328,24 @@ namespace System.Text.Json.Serialization.Metadata
                 () => new IEnumerableOfTConverter<TCollection, TElement>());
 
         /// <summary>
+        /// Creates serialization metadata for types assignable to <see cref="IAsyncEnumerable{T}"/>.
+        /// </summary>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
+        /// <typeparam name="TElement">The generic definition of the element type.</typeparam>
+        /// <param name="options"></param>
+        /// <param name="collectionInfo">Provides serialization metadata about the collection type.</param>
+        /// <returns>Serialization metadata for the given type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<TCollection> CreateIAsyncEnumerableInfo<TCollection, TElement>(
+            JsonSerializerOptions options,
+            JsonCollectionInfoValues<TCollection> collectionInfo)
+            where TCollection : IAsyncEnumerable<TElement>
+            => new SourceGenJsonTypeInfo<TCollection>(
+                options,
+                collectionInfo,
+                () => new IAsyncEnumerableOfTConverter<TCollection, TElement>());
+
+        /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="IDictionary"/>.
         /// </summary>
         /// <typeparam name="TCollection">The generic definition of the type.</typeparam>

@@ -6,92 +6,106 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Marshaller for ANSI strings
+    /// Represents a marshaller for ANSI strings.
     /// </summary>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
-    public unsafe ref struct AnsiStringMarshaller
+    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(AnsiStringMarshaller))]
+    [CustomMarshaller(typeof(string), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
+    public static unsafe class AnsiStringMarshaller
     {
-        private byte* _allocated;
-        private readonly Span<byte> _span;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
+        /// Converts a string to an unmanaged version.
         /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        public AnsiStringMarshaller(string? str)
-            : this(str, default)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
-        /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        /// </remarks>
-        public AnsiStringMarshaller(string? str, Span<byte> buffer)
+        /// <param name="managed">The managed string to convert.</param>
+        /// <returns>An unmanaged string.</returns>
+        public static byte* ConvertToUnmanaged(string? managed)
         {
-            _allocated = null;
-            if (str is null)
-            {
-                _span = default;
-                return;
-            }
+            if (managed is null)
+                return null;
 
-            // + 1 for null terminator
-            int maxByteCount = (str.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1;
-            if (buffer.Length >= maxByteCount)
-            {
-                Marshal.StringToAnsiString(str, (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer)), buffer.Length);
-                _span = buffer;
-            }
-            else
-            {
-                _allocated = (byte*)Marshal.StringToCoTaskMemAnsi(str);
-                _span = default;
-            }
+            int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
+            byte* mem = (byte*)Marshal.AllocCoTaskMem(exactByteCount);
+            Span<byte> buffer = new (mem, exactByteCount);
+
+            Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator
+            return mem;
         }
 
         /// <summary>
-        /// Returns the native value representing the string.
+        /// Converts an unmanaged string to a managed version.
         /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public byte* ToNativeValue() => _allocated != null ? _allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
+        /// <param name="unmanaged">The unmanaged string to convert.</param>
+        /// <returns>A managed string.</returns>
+        public static string? ConvertToManaged(byte* unmanaged)
+            => Marshal.PtrToStringAnsi((IntPtr)unmanaged);
 
         /// <summary>
-        /// Sets the native value representing the string.
+        /// Frees the memory for the unmanaged string.
         /// </summary>
-        /// <param name="value">The native value.</param>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public void FromNativeValue(byte* value) => _allocated = value;
+        /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
+        public static void Free(byte* unmanaged)
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
-        /// Returns the managed string.
+        /// Custom marshaller to marshal a managed string as a ANSI unmanaged string.
         /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
-        public string? ToManaged() => _allocated == null ? null : new string((sbyte*)_allocated);
-
-        /// <summary>
-        /// Frees native resources.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
-        public void FreeNative()
+        public ref struct ManagedToUnmanagedIn
         {
-            if (_allocated != null)
-                Marshal.FreeCoTaskMem((IntPtr)_allocated);
+            /// <summary>
+            /// Gets the requested buffer size for optimized marshalling.
+            /// </summary>
+            public static int BufferSize => 0x100;
+
+            private byte* _unmanagedValue;
+            private bool _allocated;
+
+            /// <summary>
+            /// Initializes the marshaller with a managed string and requested buffer.
+            /// </summary>
+            /// <param name="managed">The managed string to initialize the marshaller with.</param>
+            /// <param name="buffer">A request buffer of at least size <see cref="BufferSize"/>.</param>
+            public void FromManaged(string? managed, Span<byte> buffer)
+            {
+                _allocated = false;
+
+                if (managed is null)
+                {
+                    _unmanagedValue = null;
+                    return;
+                }
+
+                // >= for null terminator
+                // Use the cast to long to avoid the checked operation
+                if ((long)Marshal.SystemMaxDBCSCharSize * managed.Length >= buffer.Length)
+                {
+                    // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient
+                    int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
+                    if (exactByteCount > buffer.Length)
+                    {
+                        buffer = new Span<byte>((byte*)NativeMemory.Alloc((nuint)exactByteCount), exactByteCount);
+                        _allocated = true;
+                    }
+                }
+
+                _unmanagedValue = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+
+                Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator
+            }
+
+            /// <summary>
+            /// Converts the current managed string to an unmanaged string.
+            /// </summary>
+            /// <returns>The converted unmanaged string.</returns>
+            public byte* ToUnmanaged() => _unmanagedValue;
+
+            /// <summary>
+            /// Frees any allocated unmanaged string memory.
+            /// </summary>
+            public void Free()
+            {
+                if (_allocated)
+                    NativeMemory.Free(_unmanagedValue);
+            }
         }
     }
 }

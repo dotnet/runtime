@@ -102,7 +102,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, null));
             Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
             Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
-            
+
         }
 
         [Fact]
@@ -187,7 +187,7 @@ namespace System.IO.Tests
 
             watcher.EnableRaisingEvents = false;
             Assert.False(watcher.EnableRaisingEvents);
-            
+
         }
 
         [Fact]
@@ -459,7 +459,7 @@ namespace System.IO.Tests
             string file = CreateTestFile(TestDirectory, "file");
             using (var fsw = new FileSystemWatcher(TestDirectory))
             {
-                AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccured;
+                AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccurred;
 
                 string newPath = Path.Combine(TestDirectory, "newPath");
 
@@ -563,7 +563,7 @@ namespace System.IO.Tests
             File.SetLastWriteTime(filePath, File.GetLastWriteTime(filePath).AddDays(1));
             Assert.True(are.WaitOne(10000));
             Assert.Throws<ObjectDisposedException>(() => watcher.EnableRaisingEvents = true);
-            
+
         }
 
         [Fact]
@@ -572,7 +572,7 @@ namespace System.IO.Tests
             string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var fsw = new FileSystemWatcher(dir))
             {
-                AutoResetEvent are = WatchCreated(fsw).EventOccured;
+                AutoResetEvent are = WatchCreated(fsw).EventOccurred;
 
                 fsw.Filter = "*";
                 fsw.EnableRaisingEvents = true;
@@ -871,7 +871,7 @@ namespace System.IO.Tests
             watcher.Filters.Clear();
             Assert.Equal("*", watcher.Filter);
             Assert.Equal(new string[] { }, watcher.Filters);
-            
+
         }
 
         [Fact]
@@ -886,7 +886,7 @@ namespace System.IO.Tests
             Assert.Equal(0, watcher.Filters.Count);
             Assert.Empty(watcher.Filters);
             Assert.NotNull(watcher.Filters);
-            
+
         }
 
         [Fact]
@@ -917,7 +917,7 @@ namespace System.IO.Tests
 
             watcher.Filters.Clear();
             Assert.Equal("*", watcher.Filter);
-            
+
         }
 
         [Fact]
@@ -926,7 +926,7 @@ namespace System.IO.Tests
             var watcher = new FileSystemWatcher(TestDirectory, "*.pdb");
             watcher.Filters.Add("foo");
             Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
-            
+
         }
 
         [Fact]

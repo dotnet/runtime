@@ -11,6 +11,11 @@
 
   <Target Name="Build">
     <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)" />
+
+    <!-- Create breadcrumb to disable dynamic linking of release crt for debug runtime -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
+      Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
   </Target>
 
   <Target Name="Restore" />

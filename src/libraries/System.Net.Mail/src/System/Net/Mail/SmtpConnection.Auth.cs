@@ -18,9 +18,7 @@ namespace System.Net.Mail
 #pragma warning disable CS0414      // Field is not used in test project
         private bool _serverSupportsStartTls;
 #pragma warning restore CS0414
-#if !NO_NTAUTHENTICATION
         private bool _sawNegotiate;
-#endif
         private SupportedAuth _supportedAuth = SupportedAuth.None;
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
 
@@ -93,7 +91,6 @@ namespace System.Net.Mail
                     return true;
                 }
             }
-#if !NO_NTAUTHENTICATION
             else if (module is SmtpNegotiateAuthenticationModule)
             {
                 if ((_supportedAuth & SupportedAuth.GSSAPI) > 0)
@@ -110,7 +107,6 @@ namespace System.Net.Mail
                     return true;
                 }
             }
-#endif
 
             return false;
         }

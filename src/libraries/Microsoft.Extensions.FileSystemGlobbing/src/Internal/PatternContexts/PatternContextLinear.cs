@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 }
 
                 // directory matches segment, advance position in pattern
-                frame.SegmentIndex = frame.SegmentIndex + 1;
+                frame.SegmentIndex++;
             }
 
             PushDataFrame(frame);

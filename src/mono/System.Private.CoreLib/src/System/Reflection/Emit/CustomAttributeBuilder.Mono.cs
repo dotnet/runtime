@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
                     if (!(fi.FieldType is TypeBuilder) && !fi.FieldType.IsEnum && !fi.FieldType.IsInstanceOfType(fieldValues[i]))
                     {
                         //
-                        // mcs allways uses object[] for array types and
+                        // mcs always uses object[] for array types and
                         // MS.NET allows this
                         //
                         if (!fi.FieldType.IsArray)
@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
                 paramType = ((int)data[pos++]);
                 if (paramType == 0x55)
                 {
-                    /* enums, the value is preceeded by the type */
+                    /* enums, the value is preceded by the type */
                     decode_string(data, pos, out pos);
                 }
                 string? named_name = decode_string(data, pos, out pos);

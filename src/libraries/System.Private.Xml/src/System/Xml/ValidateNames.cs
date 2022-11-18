@@ -243,7 +243,7 @@ namespace System.Xml
             {
                 // Non-empty NCName, so look for colon if there are any characters left
                 offset += len;
-                if (offset < s.Length && s[offset] == ':')
+                if ((uint)offset < (uint)s.Length && s[offset] == ':')
                 {
                     // First NCName was prefix, so look for local name part
                     lenLocal = ParseNCName(s, offset + 1);
@@ -306,7 +306,7 @@ namespace System.Xml
         {
             int len, lenLocal, offset;
 
-            if (s.Length != 0 && s[0] == '*')
+            if (s.StartsWith('*'))
             {
                 // '*' as a NameTest
                 prefix = localName = null;
@@ -320,12 +320,12 @@ namespace System.Xml
                 {
                     // Non-empty NCName, so look for colon if there are any characters left
                     localName = s.Substring(0, len);
-                    if (len < s.Length && s[len] == ':')
+                    if ((uint)len < (uint)s.Length && s[len] == ':')
                     {
                         // First NCName was prefix, so look for local name part
                         prefix = localName;
                         offset = len + 1;
-                        if (offset < s.Length && s[offset] == '*')
+                        if ((uint)offset < (uint)s.Length && s[offset] == '*')
                         {
                             // '*' as a local name part, add 2 to len for colon and star
                             localName = null;
@@ -410,22 +410,8 @@ namespace System.Xml
         /// <summary>
         /// Returns true if "prefix" starts with the characters 'x', 'm', 'l' (case-insensitive).
         /// </summary>
-        internal static bool StartsWithXml(string s)
-        {
-            if (s.Length < 3)
-                return false;
-
-            if (s[0] != 'x' && s[0] != 'X')
-                return false;
-
-            if (s[1] != 'm' && s[1] != 'M')
-                return false;
-
-            if (s[2] != 'l' && s[2] != 'L')
-                return false;
-
-            return true;
-        }
+        internal static bool StartsWithXml(string s) =>
+            s.StartsWith("xml", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Returns true if "s" is a namespace that is reserved by Xml 1.0 or Namespace 1.0.
@@ -440,7 +426,7 @@ namespace System.Xml
         /// specified by the Flags.
         /// NOTE: Namespaces should be passed using a prefix, ns pair.  "localName" is always string.Empty.
         /// </summary>
-        internal static void ValidateNameThrow(string prefix, string localName, string ns, XPathNodeType nodeKind, Flags flags)
+        internal static void ValidateNameThrow(string? prefix, string localName, string? ns, XPathNodeType nodeKind, Flags flags)
         {
             // throwOnError = true
             ValidateNameInternal(prefix, localName, ns, nodeKind, flags, true);
@@ -451,7 +437,7 @@ namespace System.Xml
         /// specified by the Flags.
         /// NOTE: Namespaces should be passed using a prefix, ns pair.  "localName" is always string.Empty.
         /// </summary>
-        internal static bool ValidateName(string prefix, string localName, string ns, XPathNodeType nodeKind, Flags flags)
+        internal static bool ValidateName(string? prefix, string localName, string? ns, XPathNodeType nodeKind, Flags flags)
         {
             // throwOnError = false
             return ValidateNameInternal(prefix, localName, ns, nodeKind, flags, false);
@@ -462,7 +448,7 @@ namespace System.Xml
         /// that are specified by the Flags.
         /// NOTE: Namespaces should be passed using a prefix, ns pair.  "localName" is always string.Empty.
         /// </summary>
-        private static bool ValidateNameInternal(string prefix, string localName, string ns, XPathNodeType nodeKind, Flags flags, bool throwOnError)
+        private static bool ValidateNameInternal(string? prefix, string localName, string? ns, XPathNodeType nodeKind, Flags flags, bool throwOnError)
         {
             Debug.Assert(prefix != null && localName != null && ns != null);
 
@@ -626,7 +612,7 @@ namespace System.Xml
             {
                 prefix = name.Substring(0, colonPos);
                 colonPos++; // move after colon
-                lname = name.Substring(colonPos, name.Length - colonPos);
+                lname = name.Substring(colonPos);
             }
         }
     }

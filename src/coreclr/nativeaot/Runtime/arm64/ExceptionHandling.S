@@ -201,7 +201,7 @@
 
 .macro GetThreadX2
     stp x0, x1, [sp, -16]!
-    bl RhpGetThread
+    bl C_FUNC(RhpGetThread)
     mov x2, x0
     ldp x0, x1, [sp], 16
 .endm
@@ -243,7 +243,7 @@
 
         // w0: exception code
         // x1: ExInfo*
-        bl          RhThrowHwEx
+        bl          C_FUNC(RhThrowHwEx)
 
     EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
@@ -330,7 +330,7 @@ NotHijacked:
 
         // x0: exception object
         // x1: ExInfo*
-        bl          RhThrowEx
+        bl          C_FUNC(RhThrowEx)
 
     EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
@@ -375,7 +375,7 @@ NotHijacked:
 
         // x0 contains the currently active ExInfo
         // x1 contains the address of the new ExInfo
-        bl          RhRethrow
+        bl          C_FUNC(RhRethrow)
 
     EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 
@@ -417,7 +417,7 @@ NotHijacked:
         // clear the DoNotTriggerGc flag, trashes x4-x6
         //
 
-        bl RhpGetThread
+        bl C_FUNC(RhpGetThread)
         str x0, [sp, rsp_CatchFunclet_offset_thread]
         mov x5,x0
         ldp x0, x1,   [sp, #0x40]
@@ -469,7 +469,7 @@ ClearSuccess_Catch:
         ldr         x0, [sp, rsp_CatchFunclet_offset_thread]    // x0 <- Thread*
         ldr         x1, [sp, #rsp_offset_x3]                    // x1 <- current ExInfo*
         ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
-        bl          RhpValidateExInfoPop
+        bl          C_FUNC(RhpValidateExInfoPop)
 
         ldr         x2, [sp, rsp_offset_x2]                             // x2 <- REGDISPLAY*
 
@@ -510,7 +510,7 @@ DonePopping:
         mov         x1, x0                                     // x1 <- continuation address as exception PC
         mov         w0, #STATUS_REDHAWK_THREAD_ABORT
         mov         sp, x2
-        b           RhpThrowHwEx
+        b           C_FUNC(RhpThrowHwEx)
 
 NoAbort:
         // reset SP and jump to continuation address
@@ -552,7 +552,7 @@ NoAbort:
         // clear the DoNotTriggerGc flag, trashes x2-x4
         //
 
-        bl RhpGetThread
+        bl C_FUNC(RhpGetThread)
         str x0, [sp, rsp_FinallyFunclet_offset_thread]
         mov x2, x0
         ldp x0, x1, [sp, #0x40]

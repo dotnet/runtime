@@ -64,10 +64,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetProtocols_AfterRequest_ThrowsException()
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -244,11 +243,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
@@ -290,11 +287,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.SslProtocols = allowedClientProtocols;
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedServerProtocols };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>

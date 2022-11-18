@@ -6,6 +6,8 @@
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
+
+#include <commctrl.h>
 #include <shellapi.h>
 
 namespace
@@ -73,7 +75,7 @@ namespace
     pal::string_t get_apphost_details_message()
     {
         pal::string_t msg = _X("Architecture: ");
-        msg.append(get_arch());
+        msg.append(get_current_arch_name());
         msg.append(_X("\n")
             _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
         return msg;
@@ -86,7 +88,44 @@ namespace
         return msg;
     }
 
-    void show_error_dialog(const pal::char_t *executable_name, int error_code)
+    void enable_visual_styles()
+    {
+        // Create an activation context using a manifest that enables visual styles
+        // See https://learn.microsoft.com/windows/win32/controls/cookbook-overview
+        // To avoid increasing the size of all applications by embedding a manifest,
+        // we just use the WindowsShell manifest.
+        pal::char_t buf[MAX_PATH];
+        UINT len = ::GetWindowsDirectoryW(buf, MAX_PATH);
+        if (len == 0 || len >= MAX_PATH)
+        {
+            trace::verbose(_X("GetWindowsDirectory failed. Error code: %d"), ::GetLastError());
+            return;
+        }
+
+        pal::string_t manifest(buf);
+        append_path(&manifest, _X("WindowsShell.Manifest"));
+
+        // Since this is only for errors shown when the process is about to exit, we
+        // skip releasing/deactivating the context to minimize impact on apphost size
+        ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
+        HANDLE context_handle = ::CreateActCtxW(&actctx);
+        if (context_handle == INVALID_HANDLE_VALUE)
+        {
+            trace::verbose(_X("CreateActCtxW failed using manifest '%s'. Error code: %d"), manifest.c_str(), ::GetLastError());
+            return;
+        }
+
+        ULONG_PTR cookie;
+        if (::ActivateActCtx(context_handle, &cookie) == FALSE)
+        {
+            trace::verbose(_X("ActivateActCtx failed. Error code: %d"), ::GetLastError());
+            return;
+        }
+
+        return;
+    }
+
+    void show_error_dialog(const pal::char_t* executable_name, int error_code)
     {
         pal::string_t gui_errors_disabled;
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
@@ -168,14 +207,16 @@ namespace
         }
 
         dialogMsg.append(
-            _X("Would you like to download it now?\n\n")
             _X("Learn about "));
         dialogMsg.append(error_code == StatusCode::FrameworkMissingFailure ? _X("framework resolution:") : _X("runtime installation:"));
-        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL);
+        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
+            _X("Would you like to download it now?"));
 
         assert(url.length() > 0);
         assert(is_gui_application());
         url.append(_X("&gui=true"));
+
+        enable_visual_styles();
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - dialog message: %s"), executable_name, error_code, url.c_str(), dialogMsg.c_str());
         if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)

@@ -33,11 +33,11 @@ namespace System.Reflection.TypeLoading
 
         // Naming
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
-        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ?? (_lazyAssemblyNameData = ComputeNameData());
+        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ??= ComputeNameData();
         protected abstract AssemblyNameData ComputeNameData();
         private volatile AssemblyNameData? _lazyAssemblyNameData;
 
-        public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
+        public sealed override string FullName => _lazyFullName ??= GetName().FullName;
         private volatile string? _lazyFullName;
 
         internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
@@ -152,7 +152,7 @@ namespace System.Reflection.TypeLoading
             return result;
         }
 
-        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ?? (_lazyAssemblyReferences = ComputeAssemblyReferences());
+        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ??= ComputeAssemblyReferences();
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
         private volatile AssemblyNameData[]? _lazyAssemblyReferences;
 

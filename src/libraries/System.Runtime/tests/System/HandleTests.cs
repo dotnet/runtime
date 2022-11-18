@@ -33,6 +33,11 @@ public static class HandleTests
 
         Assert.False(h == default(RuntimeFieldHandle));
         Assert.True(h != default(RuntimeFieldHandle));
+
+        IntPtr hPtr = RuntimeFieldHandle.ToIntPtr(h);
+        RuntimeFieldHandle hNew = RuntimeFieldHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
     }
 
     [Fact]
@@ -59,6 +64,14 @@ public static class HandleTests
 
         Assert.False(h == default(RuntimeMethodHandle));
         Assert.True(h != default(RuntimeMethodHandle));
+
+        IntPtr hPtr = RuntimeMethodHandle.ToIntPtr(h);
+        RuntimeMethodHandle hNew = RuntimeMethodHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
+
+        // Confirm the created handle is valid
+        Assert.Equal(mi, MethodBase.GetMethodFromHandle(hNew));
     }
 
     [Fact]
@@ -96,6 +109,11 @@ public static class HandleTests
         Assert.False(null == h);
         Assert.True(h != null);
         Assert.True(null != h);
+
+        IntPtr hPtr = RuntimeTypeHandle.ToIntPtr(h);
+        RuntimeTypeHandle hNew = RuntimeTypeHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
     }
 
     private class Base

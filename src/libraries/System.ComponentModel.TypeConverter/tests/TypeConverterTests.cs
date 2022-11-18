@@ -93,6 +93,74 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public static void ConvertFrom_DateOnlyInstanceDescriptor()
+        {
+            using (new ThreadCultureChange("fr-FR"))
+            {
+                DateOnly testDateOnly = DateOnly.FromDateTime(DateTime.UtcNow);
+                ConstructorInfo ctor = typeof(DateOnly).GetConstructor(new Type[]
+                {
+                    typeof(int), typeof(int), typeof(int)
+                });
+
+                InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
+                {
+                    testDateOnly.Year, testDateOnly.Month, testDateOnly.Day
+                });
+
+                const string format = "dd MMM yyyy";
+                object o = s_converter.ConvertFrom(descriptor);
+                Assert.Equal(testDateOnly.ToString(format), ((DateOnly)o).ToString(format));
+            }
+        }
+
+        [Fact]
+        public static void ConvertFrom_TimeOnlyInstanceDescriptor()
+        {
+            using (new ThreadCultureChange("fr-FR"))
+            {
+                TimeOnly testTimeOnly = TimeOnly.FromDateTime(DateTime.UtcNow);
+                ConstructorInfo ctor = typeof(TimeOnly).GetConstructor(new Type[]
+                {
+                    typeof(int), typeof(int), typeof(int), typeof(int), typeof(int)
+                });
+
+                InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
+                {
+                    testTimeOnly.Hour, testTimeOnly.Minute, testTimeOnly.Second, testTimeOnly.Millisecond, testTimeOnly.Microsecond
+                });
+
+                const string format = "HH mm ss fff tt";
+                object o = s_converter.ConvertFrom(descriptor);
+                Assert.Equal(testTimeOnly.ToString(format), ((TimeOnly)o).ToString(format));
+            }
+        }
+
+        [Fact]
+        public static void TestConverters()
+        {
+            TypeConverter dateOnlyConverter = TypeDescriptor.GetConverter(typeof(DateOnly));
+            DateOnly? date = dateOnlyConverter.ConvertFromString("1940-10-09") as DateOnly?;
+            Assert.Equal(new DateOnly(1940, 10, 9), date);
+
+            TypeConverter timeOnlyConverter = TypeDescriptor.GetConverter(typeof(TimeOnly));
+            TimeOnly? time = timeOnlyConverter.ConvertFromString("20:30:50") as TimeOnly?;
+            Assert.Equal(new TimeOnly(20, 30, 50), time);
+
+            TypeConverter halfConverter = TypeDescriptor.GetConverter(typeof(Half));
+            Half? half = halfConverter.ConvertFromString(((Half)(-1.2)).ToString()) as Half?;
+            Assert.Equal((Half)(-1.2), half);
+
+            TypeConverter Int128Converter = TypeDescriptor.GetConverter(typeof(Int128));
+            Int128? int128 = Int128Converter.ConvertFromString("170141183460469231731687303715884105727") as Int128?;
+            Assert.Equal(Int128.MaxValue, int128);
+
+            TypeConverter UInt128Converter = TypeDescriptor.GetConverter(typeof(UInt128));
+            UInt128? uint128 = UInt128Converter.ConvertFromString("340282366920938463463374607431768211455") as UInt128?;
+            Assert.Equal(UInt128.MaxValue, uint128);
+        }
+
+        [Fact]
         public static void ConvertFromString_WithContext()
         {
             Assert.Throws<NotSupportedException>(

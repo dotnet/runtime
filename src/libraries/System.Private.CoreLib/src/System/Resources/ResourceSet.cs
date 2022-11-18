@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        protected IResourceReader Reader = null!;
+        protected IResourceReader? Reader; // The field is protected for .NET Framework compatibility
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -83,8 +83,7 @@ namespace System.Resources
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
                 Reader = null!;
-                if (copyOfReader != null)
-                    copyOfReader.Close();
+                copyOfReader?.Close();
             }
             Reader = null!;
             _caseInsensitiveTable = null;

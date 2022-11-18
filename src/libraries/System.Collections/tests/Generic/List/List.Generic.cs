@@ -50,6 +50,8 @@ namespace System.Collections.Tests
         }
 
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
+        
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
     }
 
     public class List_Generic_Tests_int_ReadOnly : List_Generic_Tests<int>
@@ -73,5 +75,7 @@ namespace System.Collections.Tests
         }
 
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
+
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
     }
 }

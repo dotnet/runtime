@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class MethodMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class MethodMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
 
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable method: " + _method.ToString();
+            return "Method metadata: " + _method.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

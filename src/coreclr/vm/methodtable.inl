@@ -43,8 +43,6 @@ inline PTR_EEClass MethodTable::GetClass()
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE_IMPL(GetClass_NoLogging() != NULL);
-
-    g_IBCLogger.LogEEClassAndMethodTableAccess(this);
     return GetClass_NoLogging();
 }
 
@@ -300,8 +298,6 @@ inline BOOL MethodTable::IsEnum()
 inline BOOL MethodTable::IsValueType()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    g_IBCLogger.LogMethodTableAccess(this);
 
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
@@ -839,7 +835,6 @@ inline BOOL MethodTable::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemp
     }
     CONTRACTL_END;
 
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComCallWrapperTemplate(pTemplate);
 }
 
@@ -862,7 +857,6 @@ inline BOOL MethodTable::SetComClassFactory(ClassFactoryBase *pFactory)
     }
     CONTRACTL_END;
 
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComClassFactory(pFactory);
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -955,6 +949,13 @@ inline BOOL MethodTable::IsAutoLayoutOrHasAutoLayoutField()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::IsInt128OrHasInt128Fields()
+{
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetClass()->IsInt128OrHasInt128Fields();
+}
+
+//==========================================================================================
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -999,8 +1000,6 @@ inline DWORD MethodTable::GetInstAndDictSize(DWORD *pSlotSize)
 inline BOOL MethodTable::IsSharedByGenericInstantiations()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    g_IBCLogger.LogMethodTableAccess(this);
 
     return TestFlagWithMask(enum_flag_GenericsMask, enum_flag_GenericsMask_SharedInst);
 }
@@ -1283,31 +1282,6 @@ inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
 }
 
 //==========================================================================================
-// unbox src into argument, making sure src is of the correct type.
-
-inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Nullable::IsNullableType(TypeHandle(this)))
-        return Nullable::UnBoxIntoArgNoGC(argDest, src, this);
-    else
-    {
-        if (src == NULL || src->GetMethodTable() != this)
-            return FALSE;
-
-        CopyValueClassArg(argDest, src->UnBox(), this, 0);
-    }
-    return TRUE;
-}
-
-//==========================================================================================
 // unbox src into dest, No checks are done
 
 inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
@@ -1360,19 +1334,16 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
     return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle();
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Logging will be done by the slow path
-    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
+    const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
 
     OBJECTREF retVal;
-
-    // GET_LOADERHANDLE_VALUE_FAST macro is inlined here to let us give hint to the compiler
-    // when the return value is not null.
-    if (!LoaderAllocator::GetHandleValueFast(handle, &retVal) &&
+    if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
         !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
     {
         return NULL;
@@ -1381,6 +1352,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     COMPILER_ASSUME(retVal != NULL);
     return retVal;
 }
+#endif
 
 //==========================================================================================
 inline void MethodTable::SetIsArray(CorElementType arrayType)

@@ -468,7 +468,7 @@ public:
     RefPosition* lastRefPosition;
 
     // Get the position of the next reference which is at or greater than
-    // the current location (relies upon recentRefPosition being udpated
+    // the current location (relies upon recentRefPosition being updated
     // during traversal).
     RefPosition* getNextRefPosition();
     LsraLocation getNextRefLocation();
@@ -615,7 +615,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual void doLinearScan();
+    virtual PhaseStatus doLinearScan();
 
     static bool isSingleRegister(regMaskTP regMask)
     {
@@ -693,10 +693,16 @@ public:
                                 regNumberSmall* location,
                                 regNumber       toReg,
                                 regNumber       fromReg,
-                                ResolveType     resolveType);
+                                ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)
+                                    DEBUG_ARG(BasicBlock* toBlock));
 #endif
-    void addResolution(
-        BasicBlock* block, GenTree* insertionPoint, Interval* interval, regNumber outReg, regNumber inReg);
+
+    void addResolution(BasicBlock* block,
+                       GenTree*    insertionPoint,
+                       Interval*   interval,
+                       regNumber   outReg,
+                       regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
+                           DEBUG_ARG(const char* reason));
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
@@ -1359,7 +1365,7 @@ private:
     //     tree nodes are consumed.
     //   - In LSRA_DUMP_REFPOS, which is after the intervals are built, but before
     //     register allocation, each node is dumped, along with all of the RefPositions,
-    //     The Intervals are identifed as Lnnn for lclVar intervals, Innn for for other
+    //     The Intervals are identifed as Lnnn for lclVar intervals, Innn for other
     //     intervals, and Tnnn for internal temps.
     //   - In LSRA_DUMP_POST, which is after register allocation, the registers are
     //     shown.
@@ -1390,7 +1396,7 @@ private:
     char             shortRefPositionFormat[MAX_FORMAT_CHARS];
     char             emptyRefPositionFormat[MAX_FORMAT_CHARS];
     char             indentFormat[MAX_FORMAT_CHARS];
-    static const int MAX_LEGEND_FORMAT_CHARS = 25;
+    static const int MAX_LEGEND_FORMAT_CHARS = 34;
     char             bbRefPosFormat[MAX_LEGEND_FORMAT_CHARS];
     char             legendFormat[MAX_LEGEND_FORMAT_CHARS];
 
@@ -1416,6 +1422,8 @@ private:
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
     // Print the number of spaces occupied by a dumpRefPositionShort()
     void dumpEmptyRefPosition();
+    // Print the number of spaces occupied by tree ID.
+    void dumpEmptyTreeID();
     // A dump of Referent, in exactly regColumnWidth characters
     void dumpIntervalName(Interval* interval);
 
@@ -1557,6 +1565,12 @@ private:
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 
+#ifdef DEBUG
+    // Tracks the GenTree* for which intervals are being
+    // built. Use for displaying in allocation table.
+    GenTree* currBuildNode;
+#endif
+
     // True if there are any register candidate lclVars available for allocation.
     bool enregisterLocalVars;
 
@@ -1580,10 +1594,29 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
+    // Register mask of argument registers currently occupied because we saw a
+    // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
+    // CALL node and is used to avoid preferring these registers for locals
+    // which would otherwise force a spill.
+    regMaskTP placedArgRegs;
+
+    struct PlacedLocal
+    {
+        unsigned  VarIndex;
+        regNumber Reg;
+    };
+
+    // Locals that are currently placed in registers via PUTARG_REG. These
+    // locals are available due to the special PUTARG treatment, and we keep
+    // track of them between the PUTARG_REG and CALL to ensure we keep the
+    // register they are placed in in the preference set.
+    PlacedLocal placedArgLocals[REG_COUNT];
+    size_t      numPlacedArgLocals;
+
     // The set of all register candidates. Note that this may be a subset of tracked vars.
     VARSET_TP registerCandidateVars;
     // Current set of live register candidate vars, used during building of RefPositions to determine
-    // whether to preference to callee-save.
+    // whether to give preference to callee-save.
     VARSET_TP currentLiveVars;
     // Set of variables that may require resolution across an edge.
     // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
@@ -1809,6 +1842,7 @@ private:
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+    int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
 #ifdef TARGET_XARCH
     int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
 #endif // !TARGET_XARCH
@@ -1816,6 +1850,7 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
+    void UpdatePreferencesOfDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
@@ -1998,7 +2033,7 @@ public:
 
     // True if this interval is defined by a putArg, whose source is a non-last-use lclVar.
     // During allocation, this flag will be cleared if the source is not already in the required register.
-    // Othewise, we will leave the register allocated to the lclVar, but mark the RegRecord as
+    // Otherwise, we will leave the register allocated to the lclVar, but mark the RegRecord as
     // isBusyUntilKill, so that it won't be reused if the lclVar goes dead before the call.
     bool isSpecialPutArg : 1;
 
@@ -2222,7 +2257,7 @@ public:
     // Used by RefTypeDef/Use positions of a multi-reg call node.
     // Indicates the position of the register that this ref position refers to.
     // The max bits needed is based on max value of MAX_RET_REG_COUNT value
-    // across all targets and that happens 4 on on Arm.  Hence index value
+    // across all targets and that happened to be 4 on Arm.  Hence index value
     // would be 0..MAX_RET_REG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
@@ -2234,7 +2269,7 @@ public:
     //   spillAfter indicates that the value is spilled here, so a spill must be added.
     //   singleDefSpill indicates that it is associated with a single-def var and if it
     //      is decided to get spilled, it will be spilled at firstRefPosition def. That
-    //      way, the the value of stack will always be up-to-date and no more spills or
+    //      way, the value of stack will always be up-to-date and no more spills or
     //      resolutions (from reg to stack) will be needed for such single-def var.
     //   copyReg indicates that the value needs to be copied to a specific register,
     //      but that it will also retain its current assigned register.
@@ -2293,9 +2328,16 @@ public:
     // The unique RefPosition number, equal to its index in the
     // refPositions list. Only used for debugging dumps.
     unsigned rpNum;
+
+    // Tracks the GenTree* for which this refposition was built.
+    // Use for displaying in allocation table.
+    GenTree* buildNode;
 #endif // DEBUG
 
-    RefPosition(unsigned int bbNum, LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
+    RefPosition(unsigned int bbNum,
+                LsraLocation nodeLocation,
+                GenTree*     treeNode,
+                RefType refType DEBUG_ARG(GenTree* buildNode))
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
@@ -2319,6 +2361,7 @@ public:
 #ifdef DEBUG
         , minRegCandidateCount(1)
         , rpNum(0)
+        , buildNode(buildNode)
 #endif
     {
     }

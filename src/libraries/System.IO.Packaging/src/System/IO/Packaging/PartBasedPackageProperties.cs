@@ -623,7 +623,7 @@ namespace System.IO.Packaging
             //  The namespace of the prefix (string before ":") matches "ns"
             //  The name (string after ":") matches "name"
             if (!object.ReferenceEquals(ns, reader.LookupNamespace(typeValue.Substring(0, index)))
-                    || string.CompareOrdinal(name, typeValue.Substring(index + 1, typeValue.Length - index - 1)) != 0)
+                    || string.CompareOrdinal(name, typeValue.Substring(index + 1)) != 0)
             {
                 throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),
                     null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

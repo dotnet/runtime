@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class FieldDesc
+    public partial class FieldDesc
     {
         /// <summary>
         /// Returns description of how the field should be marshalled to native code.
@@ -14,7 +14,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class FieldForInstantiatedType
+    public partial class FieldForInstantiatedType
     {
         public override MarshalAsDescriptor GetMarshalAsDescriptor()
         {

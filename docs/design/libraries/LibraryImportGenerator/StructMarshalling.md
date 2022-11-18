@@ -4,6 +4,8 @@ As part of the new source-generated direction for .NET Interop, we are looking a
 
 These types pose an interesting problem for a number of reasons listed below. With a few constraints, I believe we can create a system that will enable users to use their own user-defined types and pass them by-value to native code.
 
+> NOTE: These design docs are kept for historical purposes. The designs in this file are superseded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
+
 ## Problems
 
 - What types require marshalling and what types can be passed as-is to native code?
@@ -139,7 +141,7 @@ When these `CallerAllocatedBuffer` feature flag is present, the source generator
 
 Type authors can pass down the `buffer` pointer to native code by using the `TwoStageMarshalling` feature to provide a `ToNativeValue` method that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. The `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
-### Determining if a type is doesn't need marshalling
+### Determining if a type doesn't need marshalling
 
 For this design, we need to decide how to determine a type doesn't need to be marshalled and already has a representation we can pass directly to native code - that is, we need a definition for "does not require marshalling". We have two designs that we have experimented with below, and we have decided to go with design 2.
 
@@ -246,7 +248,23 @@ As an alternative design, we can use a different definition of "does not require
 
 For the auto-layout clause, we have one small issue; today, our ref-assemblies do not expose if a value type is marked as `[StructLayout(LayoutKind.Auto)]`, so we'd still have some cases where we might have runtime failures. However, we can update the tooling used in dotnet/runtime, GenAPI, to expose this information if we so desire. Once that case is handled, we have a mechanism that we can safely use to determine, at compile time, which types will not require marshalling. If we decide to not cover this case (as cases where users mark types as `LayoutKind.Auto` manually are exceptionally rare), we still have a solid design as Roslyn will automatically determine for us if a type is `unmanaged`, so we don't need to do any additional work.
 
-As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the LibraryImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when custom user-defined types are used. As we believe that users should be able to move over their assemblies to the new source-generated interop world as a whole assembly, we do not believe that this will cause any serious issues in adoption. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator.
+As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the LibraryImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when non-trivial custom user-defined types are used. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator. New codebases that adopt the source-generated interop world should immediately apply `DisableRuntimeMarshallingAttribute`.
+
+Applying `DisableRuntimeMarshallingAttribute` can impact existing codebases depending on what interop APIs are used. Along with the potential difficultly in tracking down these places there is also an argument to made around the UX of the source-generator. Users are permitted to rely upon the runtime's definition of blittable and not apply `DisableRuntimeMarshallingAttribute` if all the types to be marshalled adhere to the following constraints, termed "strictly blittable" in code:
+
+1) Is always blittable (for example, `int` or `double`, but not `char`).
+2) Is a value type defined in the source project the current source generator is running on.
+3) Is a type composed of types adhering to (1) and (2).
+
+For example, the following value type would require the consumer of the source generator to apply `DisableRuntimeMarshallingAttribute` if the above was not permitted.
+
+```csharp
+struct S
+{
+    public short A;
+    public short B;
+}
+```
 
 ### Usage
 
@@ -254,7 +272,7 @@ There are 2 usage mechanisms of these attributes.
 
 #### Usage 1, Source-generated interop
 
-The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type requires marshalling. If it does, it will generate a representation of the struct that does not require marshalling with the aformentioned required shape and apply the `NativeMarshallingAttribute` and point it to that new type. This generated representation can either be generated as a separate top-level type or as a nested type on `S`.
+The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type requires marshalling. If it does, it will generate a representation of the struct that does not require marshalling with the aforementioned required shape and apply the `NativeMarshallingAttribute` and point it to that new type. This generated representation can either be generated as a separate top-level type or as a nested type on `S`.
 
 #### Usage 2, Manual interop
 
@@ -320,7 +338,7 @@ public struct TMarshaller
 
 In this case, the underlying native type would actually be an `int`, but the user could use the strongly-typed `HResult` type as the public surface area.
 
-If a type `TMarshaller` with the `CustomTypeMarshaller` attribute specifies the `TwoStageMarshalling` feature, then it must provide the `ToNativeValue` feature if it supports the `In` direction, and the `FromNativeValue` method if it supports the `Out` direction. The return value of the `ToNativeValue` method will be passed to native code instead of the `TMarshaller` value itself. As a result, the type `TMarshaller` will be allowed to require marshalling and the return type of the `ToNativeValue` method, will be required be passable to native code without any additional marshalling. When marshalling in the native-to-managed direction, a default value of `TMarshaller` will have the `FromNativeValu` method called with the native value. If we are marshalling a scenario where a single frame covers the whole native call and we are marshalling in and out, then the same instance of the marshller will be reused.
+If a type `TMarshaller` with the `CustomTypeMarshaller` attribute specifies the `TwoStageMarshalling` feature, then it must provide the `ToNativeValue` feature if it supports the `In` direction, and the `FromNativeValue` method if it supports the `Out` direction. The return value of the `ToNativeValue` method will be passed to native code instead of the `TMarshaller` value itself. As a result, the type `TMarshaller` will be allowed to require marshalling and the return type of the `ToNativeValue` method, will be required be passable to native code without any additional marshalling. When marshalling in the native-to-managed direction, a default value of `TMarshaller` will have the `FromNativeValue` method called with the native value. If we are marshalling a scenario where a single frame covers the whole native call and we are marshalling in and out, then the same instance of the marshller will be reused.
 
 If the `TwoStageMarshalling` feature is specified, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `ToNativeValue` method is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned value will not be used (it acts exclusively as a side-effect). As a result, `GetPinnableReference` can return a `ref` to any `T` that can be used in a fixed statement (a C# `unmanaged` type).
 

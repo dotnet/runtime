@@ -5,16 +5,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     [StructLayout(LayoutKind.Explicit, Size = 16)]
-#if ES_BUILD_STANDALONE
-    [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif
     internal readonly struct EventDescriptor : IEquatable<EventDescriptor>
     {
         #region private

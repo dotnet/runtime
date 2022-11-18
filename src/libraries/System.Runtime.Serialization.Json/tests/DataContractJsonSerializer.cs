@@ -17,6 +17,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
+using System.Runtime.Serialization.Tests;
 
 public static partial class DataContractJsonSerializerTests
 {
@@ -140,7 +141,9 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_DoubleAsRoot()
     {
         Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2, "-1.2"));
-        Assert.StrictEqual(0, SerializeAndDeserialize<double>(0, "0"));
+        Assert.StrictEqual(0.0, SerializeAndDeserialize<double>(0.0, "0"));
+        Assert.StrictEqual(0.0, SerializeAndDeserialize<double>(-0.0, "-0"));
+        Assert.Equal("-0", SerializeAndDeserialize<double>(-0.0, "-0").ToString());
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3, "2.3"));
         Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"));
         Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"));
@@ -150,7 +153,9 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_FloatAsRoot()
     {
         Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2, "-1.2"));
-        Assert.StrictEqual((float)0, SerializeAndDeserialize<float>((float)0, "0"));
+        Assert.StrictEqual((float)0.0, SerializeAndDeserialize<float>((float)0.0, "0"));
+        Assert.StrictEqual((float)0.0, SerializeAndDeserialize<float>((float)-0.0, "-0"));
+        Assert.Equal("-0", SerializeAndDeserialize<float>((float)-0.0, "-0").ToString());
         Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3, "2.3"));
     }
 

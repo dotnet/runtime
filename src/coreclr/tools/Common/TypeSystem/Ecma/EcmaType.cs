@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
-using Debug = System.Diagnostics.Debug;
 
 using Internal.NativeFormat;
 
@@ -106,7 +105,7 @@ namespace Internal.TypeSystem.Ecma
             }
             else
             {
-                _genericParameters = TypeDesc.EmptyTypes;
+                _genericParameters = EmptyTypes;
             }
         }
 
@@ -216,7 +215,7 @@ namespace Internal.TypeSystem.Ecma
                         flags |= TypeFlags.Class;
                 }
 
-                // All other cases are handled during TypeSystemContext intitialization
+                // All other cases are handled during TypeSystemContext initialization
             }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
@@ -374,7 +373,12 @@ namespace Internal.TypeSystem.Ecma
                     && stringComparer.Equals(methodDefinition.Name, ".ctor"))
                 {
                     var method = (EcmaMethod)_module.GetObject(handle);
-                    if (method.Signature.Length != 0)
+                    MethodSignature sig = method.Signature;
+
+                    if (sig.Length != 0)
+                        continue;
+
+                    if ((sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
                         continue;
 
                     return method;
@@ -422,6 +426,24 @@ namespace Internal.TypeSystem.Ecma
             {
                 var field = (EcmaField)_module.GetObject(handle);
                 yield return field;
+            }
+        }
+
+        public override TypeDesc UnderlyingType
+        {
+            get
+            {
+                if (!IsEnum)
+                    return this;
+
+                foreach (var handle in _typeDefinition.GetFields())
+                {
+                    var field = (EcmaField)_module.GetObject(handle);
+                    if (!field.IsStatic)
+                        return field.FieldType;
+                }
+
+                return base.UnderlyingType; // Use the base implementation to get consistent error behavior
             }
         }
 

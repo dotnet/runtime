@@ -107,7 +107,7 @@ namespace System.Net
             return Header;
         }
 
-        private static readonly byte[] s_CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_CRLFArray = "\r\n"u8.ToArray();
 
         internal HttpResponseStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
         {
@@ -200,12 +200,18 @@ namespace System.Net
                     if (asyncResult._dataChunks == null)
                     {
                         result = (uint)0;
-                        if (NetEventSource.Log.IsEnabled()) { NetEventSource.DumpBuffer(null, IntPtr.Zero, 0); }
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(null, Array.Empty<byte>());
                     }
                     else
                     {
                         result = asyncResult._dataChunks.Length == 1 ? asyncResult._dataChunks[0].BufferLength : 0;
-                        if (NetEventSource.Log.IsEnabled()) { for (int i = 0; i < asyncResult._dataChunks.Length; i++) { NetEventSource.DumpBuffer(null, (IntPtr)asyncResult._dataChunks[0].pBuffer, (int)asyncResult._dataChunks[0].BufferLength); } }
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            foreach (Interop.HttpApi.HTTP_DATA_CHUNK chunk in asyncResult._dataChunks)
+                            {
+                                NetEventSource.DumpBuffer(null, new ReadOnlySpan<byte>(chunk.pBuffer, (int)chunk.BufferLength));
+                            }
+                        }
                     }
                 }
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "Calling Complete()");

@@ -9,7 +9,7 @@ namespace Runtime_60035
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             byte[] inputBytes = Encoding.UTF8.GetBytes("https://github.com/dotnet/runtime");
             Console.WriteLine(UrlEncoder.Default.FindFirstCharacterToEncodeUtf8(inputBytes));

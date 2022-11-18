@@ -100,7 +100,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             pal::get_default_installation_dir(&default_install_location);
         }
 
-        pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location();
+        pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location(get_current_arch());
         trace::verbose(_X("The required library %s could not be found. Searched with root path [%s], environment variable [%s], default install location [%s], self-registered config location [%s]"),
             LIBFXR_NAME,
             root_path.c_str(),
@@ -124,7 +124,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             _X("Download the .NET runtime:\n")
             _X("%s&apphost_version=%s"),
             host_path.c_str(),
-            get_arch(),
+            get_current_arch_name(),
             _STRINGIFY(COMMON_HOST_PKG_VER),
             get_download_url().c_str(),
             _STRINGIFY(COMMON_HOST_PKG_VER));

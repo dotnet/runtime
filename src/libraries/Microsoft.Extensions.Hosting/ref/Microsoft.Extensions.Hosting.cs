@@ -25,15 +25,22 @@ namespace Microsoft.Extensions.Hosting
     }
     public static partial class Host
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder(string[]? args) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[]? args) { throw null; }
     }
     public sealed partial class HostApplicationBuilder
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public HostApplicationBuilder() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public HostApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings? settings) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public HostApplicationBuilder(string[]? args) { }
         public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get { throw null; } }
@@ -54,6 +61,7 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial class HostBuilder : Microsoft.Extensions.Hosting.IHostBuilder
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public HostBuilder() { }
         public System.Collections.Generic.IDictionary<object, object> Properties { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHost Build() { throw null; }
@@ -68,34 +76,37 @@ namespace Microsoft.Extensions.Hosting
     {
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureAppConfiguration(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<TContainerBuilder> configureDelegate) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureDefaults(this Microsoft.Extensions.Hosting.IHostBuilder builder, string[]? args) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostOptions(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Hosting.HostOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostOptions(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureLogging(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Logging.ILoggingBuilder> configureLogging) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureLogging(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Logging.ILoggingBuilder> configureLogging) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.Task RunConsoleAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseConsoleLifetime(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseContentRoot(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, string contentRoot) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseDefaultServiceProvider(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.DependencyInjection.ServiceProviderOptions> configure) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.")]
         public static Microsoft.Extensions.Hosting.IHostBuilder UseDefaultServiceProvider(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.ServiceProviderOptions> configure) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseEnvironment(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, string environment) { throw null; }
     }
@@ -118,10 +129,10 @@ namespace Microsoft.Extensions.Hosting.Internal
         public void NotifyStopped() { }
         public void StopApplication() { }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class ConsoleLifetime : Microsoft.Extensions.Hosting.IHostLifetime, System.IDisposable
     {
         public ConsoleLifetime(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.HostOptions> hostOptions) { }
@@ -133,7 +144,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
     {
         public HostingEnvironment() { }
-        public string? ApplicationName { get { throw null; } set { } }
+        public string ApplicationName { get { throw null; } set { } }
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get { throw null; } set { } }
         public string ContentRootPath { get { throw null; } set { } }
         public string EnvironmentName { get { throw null; } set { } }

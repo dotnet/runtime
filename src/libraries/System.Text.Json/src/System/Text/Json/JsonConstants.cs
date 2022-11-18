@@ -14,7 +14,7 @@ namespace System.Text.Json
         public const byte LineFeed = (byte)'\n';
         public const byte Tab = (byte)'\t';
         public const byte ListSeparator = (byte)',';
-        public const byte KeyValueSeperator = (byte)':';
+        public const byte KeyValueSeparator = (byte)':';
         public const byte Quote = (byte)'"';
         public const byte BackSlash = (byte)'\\';
         public const byte Slash = (byte)'/';
@@ -49,9 +49,6 @@ namespace System.Text.Json
 
         public const int SpacesPerIndent = 2;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
-
-        public const int StackallocByteThreshold = 256;
-        public const int StackallocCharThreshold = StackallocByteThreshold / 2;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
         // For example: '+' becomes '\u0043'

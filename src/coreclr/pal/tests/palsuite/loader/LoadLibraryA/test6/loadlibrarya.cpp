@@ -77,7 +77,7 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
         return (FAIL);
     }
 
-    /* Initalize the buffer.
+    /* Initialize the buffer.
      */
     memset(fullPath, 0, _MAX_DIR);
 

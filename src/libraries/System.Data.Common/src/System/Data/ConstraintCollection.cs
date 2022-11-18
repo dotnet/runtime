@@ -113,9 +113,8 @@ namespace System.Data
                 }
                 AddUniqueConstraint((UniqueConstraint)constraint);
             }
-            else if (constraint is ForeignKeyConstraint)
+            else if (constraint is ForeignKeyConstraint fk)
             {
-                ForeignKeyConstraint fk = (ForeignKeyConstraint)constraint;
                 if (addUniqueWhenAddingForeign)
                 {
                     UniqueConstraint? key = fk.RelatedTable.Constraints.FindKeyConstraint(fk.RelatedColumnsReference);

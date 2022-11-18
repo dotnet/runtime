@@ -277,8 +277,7 @@ namespace Internal.Runtime.TypeLoader
                 methodInstantiation,
                 out hasThis,
                 out parameters,
-                out parametersWithGenericDependentLayout,
-                null);
+                out parametersWithGenericDependentLayout);
         }
 
         internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Common(
@@ -288,8 +287,7 @@ namespace Internal.Runtime.TypeLoader
             Instantiation methodInstantiation,
             out bool hasThis,
             out TypeDesc[] parameters,
-            out bool[] parametersWithGenericDependentLayout,
-            NativeReader nativeReader)
+            out bool[] parametersWithGenericDependentLayout)
         {
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
 
@@ -479,7 +477,7 @@ namespace Internal.Runtime.TypeLoader
                             for (uint i = 0; i < data; i++)
                                 result = TypeSignatureHasVarsNeedingCallingConventionConverter(ref parser, moduleHandle, context, HasVarsInvestigationLevel.NotParameter) || result;
 
-                            if ((result == true) && (investigationLevel == HasVarsInvestigationLevel.Parameter))
+                            if (result && (investigationLevel == HasVarsInvestigationLevel.Parameter))
                             {
                                 if (!TryComputeHasInstantiationDeterminedSize(genericTypeDef, context, out result))
                                     Environment.FailFast("Unable to setup calling convention converter correctly");

@@ -91,7 +91,7 @@ struct AutoExpVisibleValue
 
 //-----------------------------------------------------------------------------
 // Holder is the base class of all holder objects.  Any backout object should derive from it.
-// (Eventually some additional bookeeping and exception handling code will be placed in this
+// (Eventually some additional bookkeeping and exception handling code will be placed in this
 // base class.)
 //
 // There are several ways to use this class:
@@ -130,12 +130,12 @@ class HolderBase
 
     void DoAcquire()
     {
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
     }
 
     void DoRelease()
     {
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
     }
 
 #ifdef _DEBUG
@@ -347,7 +347,7 @@ class StateHolder
     FORCEINLINE void Acquire()
     {
         STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
 
         _ASSERTE(!m_acquired);
 
@@ -357,7 +357,7 @@ class StateHolder
     FORCEINLINE void Release()
     {
         STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
 
         if (m_acquired)
         {
@@ -408,7 +408,7 @@ class ConditionalStateHolder
     FORCEINLINE BOOL Acquire()
     {
         STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
 
         _ASSERTE(!m_acquired);
 
@@ -419,7 +419,7 @@ class ConditionalStateHolder
     FORCEINLINE void Release()
     {
         STATIC_CONTRACT_WRAPPER;
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
 
         if (m_acquired)
         {
@@ -1144,14 +1144,6 @@ typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidFindClose, (UINT_PTR) -1> FindHan
 
 typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
-#ifdef WszDeleteFile
-// Deletes a file with the specified path.  Do not use if you care about failures
-// deleting the file, as failures are ignored by VoidDeleteFile.
-FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath); }
-typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
-#endif // WszDeleteFile
-
-
 //-----------------------------------------------------------------------------
 // Misc holders
 //-----------------------------------------------------------------------------
@@ -1331,7 +1323,7 @@ class DacHolder
     }
     FORCEINLINE void Release()
     {
-        // Insert any global or thread bookeeping here
+        // Insert any global or thread bookkeeping here
 
         if (m_acquired)
         {

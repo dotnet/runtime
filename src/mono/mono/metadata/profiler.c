@@ -22,6 +22,10 @@ typedef void (*MonoProfilerInitializer) (const char *);
 #define OLD_INITIALIZER_NAME "mono_profiler_startup"
 #define NEW_INITIALIZER_NAME "mono_profiler_init"
 
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
+MONO_API void mono_profiler_init_browser (const char *desc);
+#endif
+
 static gboolean
 load_profiler (MonoDl *module, const char *name, const char *desc)
 {
@@ -148,6 +152,9 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
  *
  * This function may \b only be called by embedders prior to running managed
  * code.
+ *
+ * This could could be triggered by \c MONO_PROFILE env variable in normal mono process or
+ * by \c --profile=foo argument to mono-aot-cross.exe command line.
  */
 void
 mono_profiler_load (const char *desc)
@@ -165,11 +172,20 @@ mono_profiler_load (const char *desc)
 #endif
 
 	if ((col = strchr (desc, ':')) != NULL) {
-		mname = (char *) g_memdup (desc, col - desc + 1);
+		mname = (char *) g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		mname [col - desc] = 0;
 	} else {
 		mname = g_strdup (desc);
 	}
+
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
+	// this code could be running as part of mono-aot-cross.exe
+	// in case of WASM we staticaly link in the browser.c profiler plugin
+	if(strcmp (mname, "browser") == 0) {
+		mono_profiler_init_browser (desc);
+		goto done;
+	}
+#endif
 
 	if (load_profiler_from_executable (mname, desc))
 		goto done;
@@ -388,7 +404,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 		guchar *cil_code = info->data [i].cil_code;
 
 		if (cil_code && cil_code >= start && cil_code < end) {
-			guint32 offset = cil_code - start;
+			guint32 offset = GPTRDIFF_TO_UINT32 (cil_code - start);
 
 			MonoProfilerCoverageData data;
 			memset (&data, 0, sizeof (data));

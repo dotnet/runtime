@@ -11,7 +11,8 @@ namespace System.Net.Security.Tests
     {
         public static void AssertIsCurrentIdentity(IIdentity identity)
         {
-            Assert.Equal(WindowsIdentity.GetCurrent().Name, identity.Name);
+            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            Assert.Equal(currentIdentity.Name, identity.Name);
         }
 
         public static void AssertHasName(IIdentity identity, string expectedName)

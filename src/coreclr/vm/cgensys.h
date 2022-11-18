@@ -101,6 +101,7 @@ extern "C" void __stdcall __cpuid(int cpuInfo[4], int function_id);
 extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif // TARGET_UNIX
 extern "C" DWORD __stdcall xmmYmmStateSupport();
+extern "C" DWORD __stdcall avx512StateSupport();
 #endif
 
 const int CPUID_EAX = 0;

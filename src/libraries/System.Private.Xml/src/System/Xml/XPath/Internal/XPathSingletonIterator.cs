@@ -6,7 +6,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathSingletonIterator : ResetableIterator
+    internal sealed class XPathSingletonIterator : ResettableIterator
     {
         private readonly XPathNavigator _nav;
         private int _position;

@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="path">The path.</param>
         /// <returns>The last path segment of the path.</returns>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         public static string? GetSectionKey(string? path)
         {
             if (string.IsNullOrEmpty(path))

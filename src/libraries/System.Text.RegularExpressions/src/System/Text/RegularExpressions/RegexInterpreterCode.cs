@@ -247,6 +247,7 @@ namespace System.Text.RegularExpressions
 
             return sb.ToString();
 
+            [ExcludeFromCodeCoverage(Justification = "Used only for debugging assistance")]
             string Indent() => new string(' ', Math.Max(1, 25 - sb.Length));
         }
 #endif

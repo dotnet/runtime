@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection.
-        private bool TryConnect(int timeout, CancellationToken cancellationToken)
+        private bool TryConnect(int timeout)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
 
@@ -49,6 +49,8 @@ namespace System.IO.Pipes
             if (handle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                handle.Dispose();
 
                 // CreateFileW: "If the CreateNamedPipe function was not successfully called on the server prior to this operation,
                 // a pipe will not exist and CreateFile will fail with ERROR_FILE_NOT_FOUND"
@@ -84,6 +86,8 @@ namespace System.IO.Pipes
                 if (handle.IsInvalid)
                 {
                     errorCode = Marshal.GetLastPInvokeError();
+
+                    handle.Dispose();
 
                     // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
                     // because the instance was closed by the server or opened by another client."

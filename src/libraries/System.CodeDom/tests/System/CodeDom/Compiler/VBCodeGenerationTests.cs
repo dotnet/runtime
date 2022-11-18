@@ -1318,7 +1318,7 @@ namespace System.CodeDom.Compiler.Tests
             structA.Members.Add(innerStruct);
             class1.Members.Add(structA);
 
-            // create second struct to test tructs of non-primative types
+            // create second struct to test tructs of non-primitive types
             CodeTypeDeclaration structC = new CodeTypeDeclaration("structC");
             structC.IsStruct = true;
 
@@ -1349,14 +1349,14 @@ namespace System.CodeDom.Compiler.Tests
             nestedStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1")));
             class1.Members.Add(nestedStructMethod);
 
-            // create method to test nested non primative struct member
-            CodeMemberMethod nonPrimativeStructMethod = new CodeMemberMethod();
-            nonPrimativeStructMethod.Name = "NonPrimativeStructMethod";
-            nonPrimativeStructMethod.ReturnType = new CodeTypeReference(typeof(DateTime));
-            nonPrimativeStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+            // create method to test nested non primitive struct member
+            CodeMemberMethod nonPrimitiveStructMethod = new CodeMemberMethod();
+            nonPrimitiveStructMethod.Name = "NonPrimitiveStructMethod";
+            nonPrimitiveStructMethod.ReturnType = new CodeTypeReference(typeof(DateTime));
+            nonPrimitiveStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             CodeVariableDeclarationStatement varStructC = new CodeVariableDeclarationStatement("structC", "varStructC");
-            nonPrimativeStructMethod.Statements.Add(varStructC);
-            nonPrimativeStructMethod.Statements.Add
+            nonPrimitiveStructMethod.Statements.Add(varStructC);
+            nonPrimitiveStructMethod.Statements.Add
                 (
                 new CodeAssignStatement
                 (
@@ -1366,8 +1366,8 @@ namespace System.CodeDom.Compiler.Tests
                 /* Expression2 */ new CodeObjectCreateExpression("DateTime", new CodeExpression[] { new CodePrimitiveExpression(1), new CodePrimitiveExpression(-1) })
                 )
                 );
-            nonPrimativeStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructC"), "pt1")));
-            class1.Members.Add(nonPrimativeStructMethod);
+            nonPrimitiveStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructC"), "pt1")));
+            class1.Members.Add(nonPrimitiveStructMethod);
 
             AssertEqual(ns,
                 @"Imports System
@@ -1378,7 +1378,7 @@ namespace System.CodeDom.Compiler.Tests
                               varStructA.innerStruct.int1 = 3
                               Return varStructA.innerStruct.int1
                           End Function
-                          Public Shared Function NonPrimativeStructMethod() As Date
+                          Public Shared Function NonPrimitiveStructMethod() As Date
                               Dim varStructC As structC
                               varStructC.pt1 = New DateTime(1, -1)
                               Return varStructC.pt1
@@ -3269,7 +3269,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
         {
-            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
             {
                 IsClass = true,
                 Comments =
@@ -3291,7 +3291,7 @@ namespace System.CodeDom.Compiler.Tests
                   'but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
                   '' Not even lines starting with only one single quote
                   '''' or three single quotes.
-                  Public Class ClassWithCommment
+                  Public Class ClassWithComment
                   End Class
                 ");
         }
@@ -3300,7 +3300,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
         {
-            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
             {
                 IsClass = true,
                 Comments =
@@ -3318,7 +3318,7 @@ namespace System.CodeDom.Compiler.Tests
                   ''' ' Lines starting with a single quote
                   ''' '' or more than one quote, each get a separating space,
                   '''but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
-                  Public Class ClassWithCommment
+                  Public Class ClassWithComment
                   End Class
                 ");
         }

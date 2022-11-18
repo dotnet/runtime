@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -51,7 +52,6 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
         private ReadOnlySpan<char> _input;
         private int _index;
 
@@ -74,7 +74,7 @@ namespace System.Reflection
             return new AssemblyNameParser(name).Parse();
         }
 
-        private void RecordNewSeenOrThrow(ref AttributeKind seenAttributes, AttributeKind newAttribute)
+        private void RecordNewSeenOrThrow(scoped ref AttributeKind seenAttributes, AttributeKind newAttribute)
         {
             if ((seenAttributes & newAttribute) != 0)
             {
@@ -90,7 +90,7 @@ namespace System.Reflection
             if (token != Token.String)
                 ThrowInvalidAssemblyName();
 
-            if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
+            if (string.IsNullOrEmpty(name) || name.AsSpan().IndexOfAny('/', '\\', ':') != -1)
                 ThrowInvalidAssemblyName();
 
             Version? version = null;
@@ -206,7 +206,8 @@ namespace System.Reflection
                         if (!char.IsDigit(parts[i][j]))
                             ThrowInvalidAssemblyName();
                     }
-                    if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
+
+                    if (!ushort.TryParse(parts[i], NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
                     {
                         ThrowInvalidAssemblyName();
                     }
@@ -269,14 +270,12 @@ namespace System.Reflection
 
         private byte ParseHexNybble(char c)
         {
-            if (c >= '0' && c <= '9')
-                return (byte)(c - '0');
-            if (c >= 'a' && c <= 'f')
-                return (byte)(c - 'a' + 10);
-            if (c >= 'A' && c <= 'F')
-                return (byte)(c - 'A' + 10);
-            ThrowInvalidAssemblyName();
-            return default; // unreachable
+            int value = HexConverter.FromChar(c);
+            if (value == 0xFF)
+            {
+                ThrowInvalidAssemblyName();
+            }
+            return (byte)value;
         }
 
         //

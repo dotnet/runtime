@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class CallFunctionOnTests : DebuggerTests
     {
+        public CallFunctionOnTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         // This tests `callFunctionOn` with a function that the vscode-js-debug extension uses
         // Using this here as a non-trivial test case
@@ -544,7 +547,7 @@ namespace DebuggerTests
             // Chrome sends this one
             {
                 "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
-                "PropertyGettersTest",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
@@ -554,7 +557,7 @@ namespace DebuggerTests
             },
             {
                 "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
-                "MoveNext",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
@@ -566,7 +569,7 @@ namespace DebuggerTests
             // VSCode sends this one
             {
                 "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
-                "PropertyGettersTest",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
                 "function(e){return this[e]}",
@@ -576,7 +579,7 @@ namespace DebuggerTests
             },
             {
                 "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
-                "MoveNext",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
                 "function(e){return this[e]}",
@@ -622,7 +625,12 @@ namespace DebuggerTests
 
                    // Auto properties show w/o getters, because they have
                    // a backing field
-                   DTAutoProperty = TDateTime(dt)
+                   DTAutoProperty = TDateTime(dt),
+
+                   // Static properties
+                   PublicStaticDTProp = TGetter("PublicStaticDTProp"),
+                   PrivateStaticDTProp = TGetter("PrivateStaticDTProp"),
+                   InternalStaticDTProp = TGetter("InternalStaticDTProp"),
                }, local_name);
 
                // Invoke getters, and check values
@@ -674,7 +682,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvokeInheritedAndPrivateGetters() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "DebuggerTests.GetPropertiesTests.DerivedClass.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -830,11 +838,11 @@ namespace DebuggerTests
             var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
             var ptd_id = ptd["value"]["objectId"].Value<string>();
 
-            var invalid_args = new object[] { "NonExistant", String.Empty, null, 12310 };
+            var invalid_args = new object[] { "NonExistent", String.Empty, null, 12310 };
             foreach (var invalid_arg in invalid_args)
             {
                 var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
-                AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
+                AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existent accessor - {invalid_arg}");
             }
         }
 

@@ -281,6 +281,21 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            int index = rawIndex - GetLowerBound(0);
+            int length = GetLength(0);
+
+            if ((uint)index >= (uint)length)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            Debug.Assert((uint)index < (nuint)LongLength);
+            return index;
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
@@ -317,6 +332,8 @@ namespace System
 
         public void Initialize()
         {
+            object arr = this;
+            InitializeInternal(ObjectHandleOnStack.Create(ref arr));
         }
 
         private static int IndexOfImpl<T>(T[] array, T value, int startIndex, int count)
@@ -389,6 +406,9 @@ namespace System
         // CAUTION! No bounds checking!
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void SetValueImpl(object? value, int pos);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void InitializeInternal(ObjectHandleOnStack arr);
 
         // CAUTION! No bounds checking!
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

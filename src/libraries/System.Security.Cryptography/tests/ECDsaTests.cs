@@ -14,8 +14,10 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Create_InvalidArgument_Throws()
         {
+#pragma warning disable SYSLIB0045 // String factory methods are obsolete
             AssertExtensions.Throws<ArgumentNullException>("algorithm", () => ECDsa.Create(null));
             Assert.Null(ECDsa.Create(Guid.NewGuid().ToString("N")));
+#pragma warning restore SYSLIB0045 // String factory methods are obsolete
         }
 
         [Fact]
@@ -143,6 +145,12 @@ namespace System.Security.Cryptography.Tests
             private readonly ECDsa _ecdsa;
 
             public OverrideAbstractECDsa(ECDsa ecdsa) => _ecdsa = ecdsa;
+
+            protected override void Dispose(bool disposing)
+            {
+                _ecdsa.Dispose();
+                base.Dispose(disposing);
+            }
 
             public override int KeySize
             {

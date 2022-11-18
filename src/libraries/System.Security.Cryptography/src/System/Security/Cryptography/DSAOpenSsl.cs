@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the DSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeDsaHandle currentKey = _key.Value;
+            SafeDsaHandle currentKey = GetKey();
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try

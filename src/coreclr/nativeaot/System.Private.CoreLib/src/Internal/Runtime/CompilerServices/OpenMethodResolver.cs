@@ -245,7 +245,7 @@ namespace Internal.Runtime.CompilerServices
                 IntPtr returnValue;
                 if (s_internedResolverHash.TryGetValue(this, out returnValue))
                     return returnValue;
-                returnValue = Marshal.AllocHGlobal(sizeof(OpenMethodResolver));
+                returnValue = (IntPtr)NativeMemory.Alloc((nuint)sizeof(OpenMethodResolver));
                 *((OpenMethodResolver*)returnValue) = this;
                 s_internedResolverHash.Add(this, returnValue);
                 return returnValue;

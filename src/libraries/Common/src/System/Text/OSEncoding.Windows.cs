@@ -178,17 +178,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                if (_encodingName == null)
-                {
-                    _encodingName = "Codepage - " + _codePage.ToString();
-                }
-                return _encodingName;
-            }
-        }
+        public override string EncodingName => _encodingName ??= $"Codepage - {_codePage}";
 
         public override string WebName
         {
@@ -235,7 +225,7 @@ namespace System.Text
 
         internal static unsafe int WideCharToMultiByte(int codePage, char* pChars, int count, byte* pBytes, int byteCount)
         {
-            int result = Interop.Kernel32.WideCharToMultiByte((uint)codePage, 0, pChars, count, pBytes, byteCount, IntPtr.Zero, IntPtr.Zero);
+            int result = Interop.Kernel32.WideCharToMultiByte((uint)codePage, 0, pChars, count, pBytes, byteCount, null, null);
             if (result <= 0)
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
             return result;

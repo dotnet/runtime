@@ -80,7 +80,7 @@ public class GitHub21379
             // Basic: forward SZArray
             BinarySearch_Array(array, index, length, value, (IComparer)comparer, expected);
         }
-            
+
         if (index == 0 && length == array.Length)
         {
             if (isDefaultComparer)

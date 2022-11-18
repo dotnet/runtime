@@ -31,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
         internal static async Task HandleAuthenticationRequest(LoopbackServer.Connection connection, bool useNtlm, bool useNegotiate, bool closeConnection)
         {
             HttpRequestData request = await connection.ReadRequestDataAsync();
-            NTAuthentication authContext = null;
+            NegotiateAuthentication authContext = null;
             string authHeader = null;
 
             foreach (HttpHeaderData header in request.Headers)
@@ -64,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
                 request = await connection.ReadRequestDataAsync();
             }
 
-            SecurityStatusPal statusCode;
+            NegotiateAuthenticationStatusCode statusCode;
             do
             {
                 foreach (HttpHeaderData header in request.Headers)
@@ -81,11 +81,11 @@ namespace System.Net.Http.Functional.Tests
                 // Should be type and base64 encoded blob
                 Assert.Equal(2, tokens.Length);
 
-                authContext ??= new NTAuthentication(isServer: true, tokens[0], CredentialCache.DefaultNetworkCredentials, null, ContextFlagsPal.Connection, null);
+                authContext ??= new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Package = tokens[0] });
 
-                byte[]? outBlob = authContext.GetOutgoingBlob(Convert.FromBase64String(tokens[1]), throwOnError: false, out statusCode);
+                byte[]? outBlob = authContext.GetOutgoingBlob(Convert.FromBase64String(tokens[1]), out statusCode);
 
-                if (outBlob != null && statusCode.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded)
+                if (outBlob != null && statusCode == NegotiateAuthenticationStatusCode.ContinueNeeded)
                 {
                     authHeader = $"WWW-Authenticate: {tokens[0]} {Convert.ToBase64String(outBlob)}\r\n";
                     await connection.SendResponseAsync(HttpStatusCode.Unauthorized, authHeader);
@@ -94,15 +94,12 @@ namespace System.Net.Http.Functional.Tests
                     request = await connection.ReadRequestDataAsync();
                 }
             }
-            while (statusCode.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+            while (statusCode == NegotiateAuthenticationStatusCode.ContinueNeeded);
 
-            if (statusCode.ErrorCode == SecurityStatusPalErrorCode.OK)
+            if (statusCode == NegotiateAuthenticationStatusCode.Completed)
             {
                 // If authentication succeeded ask Windows about the identity and send it back as custom header.
-                SecurityContextTokenHandle? userContext = null;
-                using SafeDeleteContext securityContext = authContext.GetContext(out SecurityStatusPal statusCodeNew)!;
-                SSPIWrapper.QuerySecurityContextToken(GlobalSSPI.SSPIAuth, securityContext, out userContext);
-                using WindowsIdentity identity = new WindowsIdentity(userContext.DangerousGetHandle(), authContext.ProtocolName);
+                IIdentity identity = authContext.RemoteIdentity;
 
                 authHeader = $"{UserHeaderName}: {identity.Name}\r\n";
                 if (closeConnection)
@@ -111,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 await connection.SendResponseAsync(HttpStatusCode.OK, authHeader, "foo");
-                userContext.Dispose();
+                authContext.Dispose();
             }
             else
             {

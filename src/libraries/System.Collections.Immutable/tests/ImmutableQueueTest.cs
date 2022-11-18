@@ -236,7 +236,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Same(ImmutableQueue.Create<int>(), ImmutableQueue<int>.Empty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableQueue.Create<int>());
@@ -247,7 +247,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(queue, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableQueue.Create<int>());

@@ -88,10 +88,7 @@ namespace System.ComponentModel
                 out License? license,
                 out string? licenseKey)
             {
-                if (context == null)
-                {
-                    context = LicenseManager.CurrentContext;
-                }
+                context ??= LicenseManager.CurrentContext;
 
                 return LicenseManager.ValidateInternalRecursive(
                     context,

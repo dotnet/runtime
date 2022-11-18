@@ -123,7 +123,7 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Marshal.PtrToStringAnsi((IntPtr)kinfo->ki_comm)!;
+                info.ProcessName = Marshal.PtrToStringUTF8((IntPtr)kinfo->ki_comm)!;
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;
@@ -136,7 +136,7 @@ internal static partial class Interop
                         _processId = pid,
                         _threadId = (ulong)process[i].ki_tid,
                         _basePriority = process[i].ki_nice,
-                        _startAddress = (IntPtr)process[i].ki_tdaddr
+                        _startAddress = process[i].ki_tdaddr
                     };
                     info._threadInfoList.Add(ti);
                 }

@@ -38,6 +38,11 @@ void* SystemNative_LoadLibrary(const char* filename)
     return dlopen(filename, RTLD_LAZY);
 }
 
+void* SystemNative_GetLoadLibraryError(void)
+{
+    return dlerror();
+}
+
 void* SystemNative_GetProcAddress(void* handle, const char* symbol)
 {
     // We're not trying to disambiguate between "symbol was not found" and "symbol found, but

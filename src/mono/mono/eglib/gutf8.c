@@ -122,7 +122,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 			}
 
 			length = g_utf8_jump_table[*inptr];
-			min = MIN (length, max_len - n);
+			min = MIN (length, GSSIZE_TO_UINT (max_len - n));
 
 			if (!utf8_validate (inptr, min)) {
 				valid = FALSE;

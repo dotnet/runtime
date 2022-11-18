@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    [UnsupportedOSPlatform("browser")]
     public class HMACSHA256 : HMAC
     {
         /// <summary>
@@ -186,7 +185,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, HashSizeInBytes, key, source, destination);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, key, source, destination);
         }
 
         /// <summary>
@@ -253,7 +252,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, HashSizeInBytes, key.Span, source, cancellationToken);
+            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, key.Span, source, cancellationToken);
         }
 
         /// <summary>
@@ -319,7 +318,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA256,
-                HashSizeInBytes,
                 key.Span,
                 source,
                 destination,

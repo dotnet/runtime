@@ -43,5 +43,8 @@ namespace System.Text.RegularExpressions.Symbolic
             WordLetter => @"\w",
             _ => string.Empty,
         };
+
+        /// <summary>Returns whether the given value is in the range of valid character kinds.</summary>
+        internal static bool IsValidCharKind(uint charKind) => charKind < CharKindCount;
     }
 }

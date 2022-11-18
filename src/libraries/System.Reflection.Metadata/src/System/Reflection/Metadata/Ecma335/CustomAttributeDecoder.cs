@@ -22,6 +22,7 @@ namespace System.Reflection.Metadata.Ecma335
         public CustomAttributeValue<TType> DecodeValue(EntityHandle constructor, BlobHandle value)
         {
             BlobHandle signature;
+            BlobHandle attributeOwningTypeSpec = default;
             switch (constructor.Kind)
             {
                 case HandleKind.MethodDefinition:
@@ -32,6 +33,13 @@ namespace System.Reflection.Metadata.Ecma335
                 case HandleKind.MemberReference:
                     MemberReference reference = _reader.GetMemberReference((MemberReferenceHandle)constructor);
                     signature = reference.Signature;
+
+                    // If this is a generic attribute, we'll need its instantiation to decode the signatures
+                    if (reference.Parent.Kind == HandleKind.TypeSpecification)
+                    {
+                        TypeSpecification genericOwner = _reader.GetTypeSpecification((TypeSpecificationHandle)reference.Parent);
+                        attributeOwningTypeSpec = genericOwner.Signature;
+                    }
                     break;
 
                 default:
@@ -60,12 +68,38 @@ namespace System.Reflection.Metadata.Ecma335
                 throw new BadImageFormatException();
             }
 
-            ImmutableArray<CustomAttributeTypedArgument<TType>> fixedArguments = DecodeFixedArguments(ref signatureReader, ref valueReader, parameterCount);
+            BlobReader genericContextReader = default;
+            if (!attributeOwningTypeSpec.IsNil)
+            {
+                // If this is a generic attribute, grab the instantiation arguments so that we can
+                // interpret the constructor signature, should it refer to the generic context.
+                genericContextReader = _reader.GetBlobReader(attributeOwningTypeSpec);
+                if (genericContextReader.ReadSignatureTypeCode() == SignatureTypeCode.GenericTypeInstance)
+                {
+                    int kind = genericContextReader.ReadCompressedInteger();
+                    if (kind != (int)SignatureTypeKind.Class && kind != (int)SignatureTypeKind.ValueType)
+                    {
+                        throw new BadImageFormatException();
+                    }
+
+                    genericContextReader.ReadTypeHandle();
+
+                    // At this point, the reader points to the "GenArgCount Type Type*" part of the signature.
+                }
+                else
+                {
+                    // Some other invalid TypeSpec. Don't accidentally allow resolving generic parameters
+                    // from the constructor signature into a broken blob.
+                    genericContextReader = default;
+                }
+            }
+
+            ImmutableArray<CustomAttributeTypedArgument<TType>> fixedArguments = DecodeFixedArguments(ref signatureReader, ref valueReader, parameterCount, genericContextReader);
             ImmutableArray<CustomAttributeNamedArgument<TType>> namedArguments = DecodeNamedArguments(ref valueReader);
             return new CustomAttributeValue<TType>(fixedArguments, namedArguments);
         }
 
-        private ImmutableArray<CustomAttributeTypedArgument<TType>> DecodeFixedArguments(ref BlobReader signatureReader, ref BlobReader valueReader, int count)
+        private ImmutableArray<CustomAttributeTypedArgument<TType>> DecodeFixedArguments(ref BlobReader signatureReader, ref BlobReader valueReader, int count, BlobReader genericContextReader)
         {
             if (count == 0)
             {
@@ -76,7 +110,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             for (int i = 0; i < count; i++)
             {
-                ArgumentTypeInfo info = DecodeFixedArgumentType(ref signatureReader);
+                ArgumentTypeInfo info = DecodeFixedArgumentType(ref signatureReader, genericContextReader);
                 arguments.Add(DecodeArgument(ref valueReader, info));
             }
 
@@ -124,7 +158,7 @@ namespace System.Reflection.Metadata.Ecma335
         // better perf-wise, but even more important is that we can't actually reason about
         // a method signature with opaque TType values without adding some unnecessary chatter
         // with the provider.
-        private ArgumentTypeInfo DecodeFixedArgumentType(ref BlobReader signatureReader, bool isElementType = false)
+        private ArgumentTypeInfo DecodeFixedArgumentType(ref BlobReader signatureReader, BlobReader genericContextReader, bool isElementType = false)
         {
             SignatureTypeCode signatureTypeCode = signatureReader.ReadSignatureTypeCode();
 
@@ -170,11 +204,32 @@ namespace System.Reflection.Metadata.Ecma335
                         throw new BadImageFormatException();
                     }
 
-                    var elementInfo = DecodeFixedArgumentType(ref signatureReader, isElementType: true);
+                    var elementInfo = DecodeFixedArgumentType(ref signatureReader, genericContextReader, isElementType: true);
                     info.ElementType = elementInfo.Type;
                     info.ElementTypeCode = elementInfo.TypeCode;
                     info.Type = _provider.GetSZArrayType(info.ElementType);
                     break;
+
+                case SignatureTypeCode.GenericTypeParameter:
+                    if (genericContextReader.Length == 0)
+                    {
+                        throw new BadImageFormatException();
+                    }
+
+                    int parameterIndex = signatureReader.ReadCompressedInteger();
+                    int numGenericParameters = genericContextReader.ReadCompressedInteger();
+                    if (parameterIndex >= numGenericParameters)
+                    {
+                        throw new BadImageFormatException();
+                    }
+
+                    while (parameterIndex > 0)
+                    {
+                        SkipType(ref genericContextReader);
+                        parameterIndex--;
+                    }
+
+                    return DecodeFixedArgumentType(ref genericContextReader, default, isElementType);
 
                 default:
                     throw new BadImageFormatException();
@@ -363,5 +418,95 @@ namespace System.Reflection.Metadata.Ecma335
                 HandleKind.TypeReference => _provider.GetTypeFromReference(_reader, (TypeReferenceHandle)handle, 0),
                 _ => throw new BadImageFormatException(SR.NotTypeDefOrRefHandle),
             };
+
+        private static void SkipType(ref BlobReader blobReader)
+        {
+            int typeCode = blobReader.ReadCompressedInteger();
+
+            switch (typeCode)
+            {
+                case (int)SignatureTypeCode.Boolean:
+                case (int)SignatureTypeCode.Char:
+                case (int)SignatureTypeCode.SByte:
+                case (int)SignatureTypeCode.Byte:
+                case (int)SignatureTypeCode.Int16:
+                case (int)SignatureTypeCode.UInt16:
+                case (int)SignatureTypeCode.Int32:
+                case (int)SignatureTypeCode.UInt32:
+                case (int)SignatureTypeCode.Int64:
+                case (int)SignatureTypeCode.UInt64:
+                case (int)SignatureTypeCode.Single:
+                case (int)SignatureTypeCode.Double:
+                case (int)SignatureTypeCode.IntPtr:
+                case (int)SignatureTypeCode.UIntPtr:
+                case (int)SignatureTypeCode.Object:
+                case (int)SignatureTypeCode.String:
+                case (int)SignatureTypeCode.Void:
+                case (int)SignatureTypeCode.TypedReference:
+                    return;
+
+                case (int)SignatureTypeCode.Pointer:
+                case (int)SignatureTypeCode.ByReference:
+                case (int)SignatureTypeCode.Pinned:
+                case (int)SignatureTypeCode.SZArray:
+                    SkipType(ref blobReader);
+                    return;
+
+                case (int)SignatureTypeCode.FunctionPointer:
+                    SignatureHeader header = blobReader.ReadSignatureHeader();
+                    if (header.IsGeneric)
+                    {
+                        blobReader.ReadCompressedInteger(); // arity
+                    }
+
+                    int paramCount = blobReader.ReadCompressedInteger();
+                    SkipType(ref blobReader);
+                    for (int i = 0; i < paramCount; i++)
+                        SkipType(ref blobReader);
+                    return;
+
+                case (int)SignatureTypeCode.Array:
+                    SkipType(ref blobReader);
+                    blobReader.ReadCompressedInteger(); // rank
+                    int boundsCount = blobReader.ReadCompressedInteger();
+                    for (int i = 0; i < boundsCount; i++)
+                    {
+                        blobReader.ReadCompressedInteger();
+                    }
+                    int lowerBoundsCount = blobReader.ReadCompressedInteger();
+                    for (int i = 0; i < lowerBoundsCount; i++)
+                    {
+                        blobReader.ReadCompressedSignedInteger();
+                    }
+                    return;
+
+                case (int)SignatureTypeCode.RequiredModifier:
+                case (int)SignatureTypeCode.OptionalModifier:
+                    blobReader.ReadTypeHandle();
+                    SkipType(ref blobReader);
+                    return;
+
+                case (int)SignatureTypeCode.GenericTypeInstance:
+                    SkipType(ref blobReader);
+                    int count = blobReader.ReadCompressedInteger();
+                    for (int i = 0; i < count; i++)
+                    {
+                        SkipType(ref blobReader);
+                    }
+                    return;
+
+                case (int)SignatureTypeCode.GenericTypeParameter:
+                    blobReader.ReadCompressedInteger();
+                    return;
+
+                case (int)SignatureTypeKind.Class:
+                case (int)SignatureTypeKind.ValueType:
+                    SkipType(ref blobReader);
+                    break;
+
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
     }
 }

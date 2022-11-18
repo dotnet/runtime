@@ -30,7 +30,7 @@ namespace System.Formats.Tar.Tests
             malformed.Seek(0, SeekOrigin.Begin);
 
             using TarReader reader = new TarReader(malformed);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archive = new MemoryStream();
 
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.Directory, "dir");
                 writer.WriteEntry(entry);
@@ -72,7 +72,7 @@ namespace System.Formats.Tar.Tests
         {
             string expectedText = "Hello world!";
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -118,7 +118,7 @@ namespace System.Formats.Tar.Tests
         {
             string expectedText = "Hello world!";
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -165,7 +165,7 @@ namespace System.Formats.Tar.Tests
         public void GetNextEntry_CopyDataFalse_UnseekableArchive_Exceptions()
         {
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -208,7 +208,7 @@ namespace System.Formats.Tar.Tests
         public void GetNextEntry_UnseekableArchive_ReplaceDataStream_ExcludeFromDisposing(bool copyData)
         {
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -249,6 +249,47 @@ namespace System.Formats.Tar.Tests
             {
                 Assert.Equal("Substituted", streamReader.ReadLine());
             }
+        }
+
+        [Theory]
+        [InlineData(512, false)]
+        [InlineData(512, true)]
+        [InlineData(512 + 1, false)]
+        [InlineData(512 + 1, true)]
+        [InlineData(512 + 512 - 1, false)]
+        [InlineData(512 + 512 - 1, true)]
+        public void BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize, bool copyData)
+        {
+            byte[] fileContents = new byte[contentSize];
+            Array.Fill<byte>(fileContents, 0x1);
+
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file");
+                entry1.DataStream = new MemoryStream(fileContents);
+                writer.WriteEntry(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
+                writer.WriteEntry(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry e = reader.GetNextEntry(copyData);
+            Assert.Equal(contentSize, e.Length);
+
+            byte[] buffer = new byte[contentSize];
+            while (e.DataStream.Read(buffer) > 0) ;
+            AssertExtensions.SequenceEqual(fileContents, buffer);
+
+            e = reader.GetNextEntry(copyData);
+            Assert.Equal(0, e.Length);
+
+            e = reader.GetNextEntry(copyData);
+            Assert.Null(e);
         }
     }
 }

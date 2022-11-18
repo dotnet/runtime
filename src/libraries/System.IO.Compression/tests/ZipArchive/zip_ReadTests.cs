@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -206,6 +207,47 @@ namespace System.IO.Compression.Tests
 
             using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read, true);
             Assert.Equal(archive.Entries[0].LastWriteTime, emptyDateIndicator);
+        }
+
+        [Theory]
+        [InlineData("normal.zip")]
+        [InlineData("small.zip")]
+        public static async Task EntriesNotEncryptedByDefault(string zipFile)
+        {
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    Assert.False(entry.IsEncrypted);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("encrypted_entries_weak.zip")]
+        [InlineData("encrypted_entries_aes256.zip")]
+        [InlineData("encrypted_entries_mixed.zip")]
+        public static async Task IdentifyEncryptedEntries(string zipFile)
+        {
+            var entriesEncrypted = new Dictionary<string, bool>();
+
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    entriesEncrypted.Add(entry.Name, entry.IsEncrypted);
+                }
+            }
+
+            var expectedEntries = new Dictionary<string, bool>()
+            {
+                { "file1-encrypted.txt", true },
+                { "file2-unencrypted.txt", false },
+                { "file3-encrypted.txt", true },
+                { "file4-unencrypted.txt", false },
+            };
+
+            Assert.Equal(expectedEntries, entriesEncrypted);
         }
     }
 }

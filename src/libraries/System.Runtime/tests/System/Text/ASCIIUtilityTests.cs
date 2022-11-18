@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -161,7 +162,7 @@ namespace System.Text.Tests
             //
             // The 5 * Vector test should make sure that we're exercising all possible
             // code paths across both implementations. The sizeof(char) is because we're
-            // specifying element count, but underlying implementation reintepret casts to bytes.
+            // specifying element count, but underlying implementation reinterpret casts to bytes.
             //
             // Use U+0123 instead of U+0080 for this test because if our implementation
             // uses pminuw / pmovmskb incorrectly, U+0123 will incorrectly show up as ASCII,
@@ -427,9 +428,10 @@ namespace System.Text.Tests
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private static Type GetAsciiUtilityType()
         {
-            return typeof(object).Assembly.GetType("System.Text.ASCIIUtility");
+            return Type.GetType("System.Text.ASCIIUtility, System.Private.CoreLib");
         }
 
         private sealed class UnsafeLazyDelegate<TDelegate> where TDelegate : Delegate

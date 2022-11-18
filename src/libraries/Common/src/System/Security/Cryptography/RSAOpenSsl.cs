@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Versioning;
@@ -16,7 +17,7 @@ namespace System.Security.Cryptography
     {
         private const int BitsPerByte = 8;
 
-        private Lazy<SafeEvpPKeyHandle> _key;
+        private Lazy<SafeEvpPKeyHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -636,7 +637,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 FreeKey();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -651,7 +652,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_key))]
         private void SetKey(SafeEvpPKeyHandle newKey)
         {
             Debug.Assert(!newKey.IsInvalid);
@@ -700,6 +701,7 @@ namespace System.Security.Cryptography
             return true;
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
             if (_key == null)

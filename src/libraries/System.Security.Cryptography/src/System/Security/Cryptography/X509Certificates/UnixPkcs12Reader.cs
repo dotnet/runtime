@@ -275,10 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private void Decrypt(ReadOnlySpan<char> password, ReadOnlyMemory<byte> authSafeContents)
         {
-            if (_safeContentsValues == null)
-            {
-                _safeContentsValues = DecodeSafeContents(authSafeContents);
-            }
+            _safeContentsValues ??= DecodeSafeContents(authSafeContents);
 
             // The average PFX contains one cert, and one key.
             // The next most common PFX contains 3 certs, and one key.

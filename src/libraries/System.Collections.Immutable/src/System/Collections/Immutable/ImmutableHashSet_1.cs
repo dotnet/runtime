@@ -418,10 +418,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
-            if (equalityComparer == null)
-            {
-                equalityComparer = EqualityComparer<T>.Default;
-            }
+            equalityComparer ??= EqualityComparer<T>.Default;
 
             if (equalityComparer == _equalityComparer)
             {

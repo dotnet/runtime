@@ -13,7 +13,7 @@ namespace System.Net.Tests
     {
         protected HttpListenerFactory Factory { get; }
         protected Socket Client { get; }
-        protected static byte[] SimpleMessage { get; } = Encoding.UTF8.GetBytes("Hello");
+        protected static byte[] SimpleMessage { get; } = "Hello"u8.ToArray();
 
         public HttpListenerResponseTestBase()
         {
@@ -160,7 +160,7 @@ namespace System.Net.Tests
             Client.Send(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
             HttpListenerContext context = await Factory.GetListener().GetContextAsync();
             HttpListenerResponse response = context.Response;
-            Stream ouputStream = response.OutputStream;
+            Stream outputStream = response.OutputStream;
             response.Abort();
 
             // Aborting the response should dispose the response.
@@ -172,7 +172,7 @@ namespace System.Net.Tests
             bool threwObjectDisposedException = false;
             try
             {
-                ouputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
+                outputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
             }
             catch (ObjectDisposedException)
             {
@@ -194,14 +194,14 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Stream ouputStream = response.OutputStream;
+                Stream outputStream = response.OutputStream;
                 response.Close();
 
                 // Aborting the response should dispose the response.
                 Assert.Throws<ObjectDisposedException>(() => response.ContentType = null);
 
                 // The output stream should be not disposed.
-                ouputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
+                outputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
                 // The connection should not be forcibly terminated.
                 string clientResponse = GetClientResponse(120);
@@ -219,14 +219,14 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Stream ouputStream = response.OutputStream;
+                Stream outputStream = response.OutputStream;
                 ((IDisposable)response).Dispose();
 
                 // Aborting the response should dispose the response.
                 Assert.Throws<ObjectDisposedException>(() => response.ContentType = null);
 
                 // The output stream should be disposed.
-                ouputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
+                outputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
                 // The connection should not be forcibly terminated.
                 string clientResponse = GetClientResponse(120);

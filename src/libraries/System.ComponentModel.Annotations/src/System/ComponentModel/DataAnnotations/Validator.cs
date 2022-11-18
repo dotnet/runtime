@@ -518,7 +518,7 @@ namespace System.ComponentModel.DataAnnotations
         private static ICollection<KeyValuePair<ValidationContext, object?>> GetPropertyValues(object instance,
             ValidationContext validationContext)
         {
-            var properties = TypeDescriptor.GetProperties(instance);
+            var properties = TypeDescriptor.GetProperties(instance.GetType());
             var items = new List<KeyValuePair<ValidationContext, object?>>(properties.Count);
             foreach (PropertyDescriptor property in properties)
             {

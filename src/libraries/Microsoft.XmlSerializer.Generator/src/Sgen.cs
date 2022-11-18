@@ -222,7 +222,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
-            Assembly assembly = LoadAssembly(assemblyName, true);
+            Assembly assembly = LoadAssembly(assemblyName);
             Type[] types;
 
             if (typeNames == null || typeNames.Count == 0)
@@ -319,7 +319,7 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = mappings.ToArray();
 
                 bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+                outputDirectory ??= (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location));
 
                 if (!Directory.Exists(outputDirectory))
                 {
@@ -473,7 +473,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
         }
 
-        private static Assembly LoadAssembly(string assemblyName, bool throwOnFail)
+        private static Assembly LoadAssembly(string assemblyName)
         {
             Assembly assembly;
             string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
@@ -618,10 +618,8 @@ namespace Microsoft.XmlSerializer.Generator
                     return null;
                 }
 
-                if (s_referencedic.ContainsKey(assemblyname))
+                if (s_referencedic.TryGetValue(assemblyname, out string reference))
                 {
-                    string reference = s_referencedic[assemblyname];
-
                     // For System.ServiceModel.Primitives, we need to load its runtime assembly rather than reference assembly
                     if (assemblyname.Equals("System.ServiceModel.Primitives"))
                     {

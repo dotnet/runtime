@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     /// <summary>
-    /// Manages policies around static constructors (.cctors) and static data initialization. 
+    /// Manages policies around static constructors (.cctors) and static data initialization.
     /// </summary>
     public class PreinitializationManager
     {
@@ -76,7 +76,7 @@ namespace ILCompiler
         private static bool HasEagerConstructorAttribute(TypeDesc type)
         {
             MetadataType mdType = type as MetadataType;
-            return mdType != null && 
+            return mdType != null &&
                 mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute");
         }
 
@@ -88,7 +88,7 @@ namespace ILCompiler
 
             if (!type.HasStaticConstructor)
                 return false;
-            
+
             // The cctor on the Module type is the module constructor. That's special.
             if (type.IsModuleType)
                 return false;
@@ -115,16 +115,16 @@ namespace ILCompiler
                     totalEligibleTypes++;
                     if (item.IsPreinitialized)
                     {
-                        logger.Writer.WriteLine($"Preinitialized type '{item.Type}'");
+                        logger.LogMessage($"Preinitialized type '{item.Type}'");
                         totalPreinitializedTypes++;
                     }
                     else
                     {
-                        logger.Writer.WriteLine($"Could not preinitialize '{item.Type}': {item.FailureReason}");
+                        logger.LogMessage($"Could not preinitialize '{item.Type}': {item.FailureReason}");
                     }
                 }
 
-                logger.Writer.WriteLine($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+                logger.LogMessage($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
             }
         }
 
@@ -133,7 +133,7 @@ namespace ILCompiler
             return _preinitHashTable.GetOrCreateValue(type);
         }
 
-        class PreinitializationInfoHashtable : LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>
+        private sealed class PreinitializationInfoHashtable : LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>
         {
             private readonly CompilationModuleGroup _compilationGroup;
             private readonly ILProvider _ilProvider;

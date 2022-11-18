@@ -24,7 +24,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType => typeof(object);
+        public sealed override Type ReturnType => typeof(object);
 
         /// <summary>
         /// The binary operation kind.
@@ -72,7 +72,7 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal override sealed bool IsStandardBinder => true;
+        internal sealed override bool IsStandardBinder => true;
 
         internal static bool OperationIsValid(ExpressionType operation)
         {

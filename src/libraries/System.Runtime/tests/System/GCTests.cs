@@ -69,7 +69,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(GCCollectionMode.Default - 1)]
-        [InlineData(GCCollectionMode.Optimized + 1)]
+        [InlineData(GCCollectionMode.Aggressive + 1)]
         public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode));
@@ -449,9 +449,8 @@ namespace System.Tests
         /// <summary>
         /// NoGC regions will be automatically exited if more than the requested budget
         /// is allocated while still in the region. In order to avoid this, the budget is set
-        /// to be higher than what the test should be allocating. When running on CoreCLR/DesktopCLR,
-        /// these tests generally do not allocate because they are implemented as fcalls into the runtime
-        /// itself, but the CoreRT runtime is written in mostly managed code and tends to allocate more.
+        /// to be higher than what the test should be allocating to compensate for allocations
+        /// made internally by the runtime.
         ///
         /// This budget should be high enough to avoid exiting no-gc regions when doing normal unit
         /// tests, regardless of the runtime.
@@ -637,8 +636,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 // The budget for this test is 4mb, because the act of throwing an exception with a message
-                // contained in a resource file has to potential to allocate a lot on CoreRT. In particular, when compiling
-                // in multi-file mode, this will trigger a resource lookup in System.Private.CoreLib.
+                // contained in a System.Private.CoreLib resource file has to potential to allocate a lot.
                 //
                 // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
                 Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));

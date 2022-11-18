@@ -4,18 +4,18 @@
 .class public sequential ansi sealed beforefieldinit IsByRefLike.InvalidStruct
        extends [CoreTestAssembly]System.ValueType
 {
-  .field private valuetype [CoreTestAssembly]System.ByReference`1<object> ByRef
+  .field private object& ByRef
 }
 
 .class public auto ansi beforefieldinit IsByRefLike.InvalidClass1
        extends [CoreTestAssembly]System.Object
 {
-  .field private valuetype [CoreTestAssembly]System.ByReference`1<object> ByRef
+  .field private object& ByRef
 }
 
 .class public auto ansi beforefieldinit IsByRefLike.InvalidClass2
        extends [CoreTestAssembly]System.Object
 {
-  .custom instance void [CoreTestAssembly]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 ) 
-  .field private valuetype [CoreTestAssembly]System.ByReference`1<object> ByRef
+  .custom instance void [CoreTestAssembly]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+  .field private object& ByRef
 }

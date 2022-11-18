@@ -64,6 +64,9 @@
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
   </data>
+  <data name="net_io_out_range" xml:space="preserve">
+    <value>The byte count must not exceed {0} bytes for this stream type.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>

@@ -22,7 +22,7 @@ inline ULONG PEImage::AddRef()
     }
     CONTRACT_END;
 
-    RETURN (static_cast<ULONG>(FastInterlockIncrement(&m_refCount)));
+    RETURN (static_cast<ULONG>(InterlockedIncrement(&m_refCount)));
 }
 
 inline const SString &PEImage::GetPath()

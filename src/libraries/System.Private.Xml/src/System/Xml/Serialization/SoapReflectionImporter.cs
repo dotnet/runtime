@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System;
+using System.Globalization;
+using System.Xml.Schema;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.Globalization;
-    using System.Xml.Schema;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Threading;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-
     public class SoapReflectionImporter
     {
         private readonly TypeScope _typeScope;
@@ -38,12 +38,8 @@ namespace System.Xml.Serialization
 
         public SoapReflectionImporter(SoapAttributeOverrides? attributeOverrides, string? defaultNamespace)
         {
-            if (defaultNamespace == null)
-                defaultNamespace = string.Empty;
-            if (attributeOverrides == null)
-                attributeOverrides = new SoapAttributeOverrides();
-            _attributeOverrides = attributeOverrides;
-            _defaultNs = defaultNamespace;
+            _defaultNs = defaultNamespace ?? string.Empty;
+            _attributeOverrides = attributeOverrides ?? new SoapAttributeOverrides();
             _typeScope = new TypeScope();
             _modelScope = new ModelScope(_typeScope);
         }
@@ -51,6 +47,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void IncludeTypes(ICustomAttributeProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
             IncludeTypes(provider, new RecursionLimiter());
         }
 
@@ -89,7 +86,7 @@ namespace System.Xml.Serialization
             element.IsSoap = true;
             element.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(type), new RecursionLimiter());
             element.Name = element.Mapping.DefaultElementName;
-            element.Namespace = element.Mapping.Namespace == null ? defaultNamespace : element.Mapping.Namespace;
+            element.Namespace = element.Mapping.Namespace ?? defaultNamespace;
             element.Form = XmlSchemaForm.Qualified;
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, element);
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, null, defaultNamespace));
@@ -101,31 +98,35 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members)
         {
+            ArgumentNullException.ThrowIfNull(members);
             return ImportMembersMapping(elementName, ns, members, true, true, false);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors)
         {
+            ArgumentNullException.ThrowIfNull(members);
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, writeAccessors, false);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate)
         {
+            ArgumentNullException.ThrowIfNull(members);
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, writeAccessors, validate, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate, XmlMappingAccess access)
         {
+            ArgumentNullException.ThrowIfNull(members);
             ElementAccessor element = new ElementAccessor();
             element.IsSoap = true;
             element.Name = elementName == null || elementName.Length == 0 ? elementName : XmlConvert.EncodeLocalName(elementName);
 
             element.Mapping = ImportMembersMapping(members, ns, hasWrapperElement, writeAccessors, validate, new RecursionLimiter());
             element.Mapping.TypeName = elementName;
-            element.Namespace = element.Mapping.Namespace == null ? ns : element.Mapping.Namespace;
+            element.Namespace = element.Mapping.Namespace ?? ns;
             element.Form = XmlSchemaForm.Qualified;
             XmlMembersMapping xmlMapping = new XmlMembersMapping(_typeScope, element, access);
             xmlMapping.IsSoap = true;
@@ -205,9 +206,9 @@ namespace System.Xml.Serialization
                             typeNs = baseAttributes.SoapType.Namespace;
                         TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
                         string xsdTypeName = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc!.Name : dataType;
-                        TypeMapping? baseMapping = GetTypeMapping(xsdTypeName, typeNs, valueTypeDesc);
-                        if (baseMapping == null)
-                            baseMapping = ImportTypeMapping(_modelScope.GetTypeModel(baseTypeDesc.Type!), dataType, limiter);
+                        TypeMapping baseMapping =
+                            GetTypeMapping(xsdTypeName, typeNs, valueTypeDesc) ??
+                            ImportTypeMapping(_modelScope.GetTypeModel(baseTypeDesc.Type!), dataType, limiter);
                         return CreateNullableMapping(baseMapping, model.TypeDesc.Type!);
                     }
                     else
@@ -408,7 +409,7 @@ namespace System.Xml.Serialization
                 members.Add(member);
             }
             mapping.Members = members.ToArray();
-            if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
+            mapping.BaseMapping ??= GetRootMapping();
             IncludeTypes(model.Type, limiter);
 
             return true;
@@ -508,9 +509,8 @@ namespace System.Xml.Serialization
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
             {
-                if (existingMapping is ArrayMapping)
+                if (existingMapping is ArrayMapping arrayMapping)
                 {
-                    ArrayMapping arrayMapping = (ArrayMapping)existingMapping;
                     if (AccessorMapping.ElementsMatch(arrayMapping.Elements, mapping.Elements))
                     {
                         break;
@@ -593,8 +593,7 @@ namespace System.Xml.Serialization
             if (a.SoapIgnore) return null;
             if ((a.GetSoapFlags() & ~SoapAttributeFlags.Enum) != 0)
                 throw new InvalidOperationException(SR.XmlInvalidEnumAttribute);
-            if (a.SoapEnum == null)
-                a.SoapEnum = new SoapEnumAttribute();
+            a.SoapEnum ??= new SoapEnumAttribute();
 
             ConstantMapping constant = new ConstantMapping();
             constant.XmlName = a.SoapEnum.Name.Length == 0 ? model.Name : a.SoapEnum.Name;

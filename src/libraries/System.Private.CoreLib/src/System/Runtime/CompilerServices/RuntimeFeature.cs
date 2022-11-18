@@ -38,6 +38,11 @@ namespace System.Runtime.CompilerServices
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
 
         /// <summary>
+        /// Indicates that this version of runtime supports <see cref="System.IntPtr" /> and <see cref="System.UIntPtr" /> as numeric types.
+        /// </summary>
+        public const string NumericIntPtr = nameof(NumericIntPtr);
+
+        /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
         /// </summary>
         public static bool IsSupported(string feature)
@@ -50,6 +55,7 @@ namespace System.Runtime.CompilerServices
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
                 case VirtualStaticsInInterfaces:
+                case NumericIntPtr:
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

@@ -91,11 +91,7 @@ namespace System.Reflection
         {
             MonoEventInfo info = GetEventInfo(this);
 
-            MethodInfo method = info.add_method;
-            if (method == null)
-                method = info.remove_method;
-            if (method == null)
-                method = info.raise_method;
+            MethodInfo method = info.add_method ?? info.remove_method ?? info.raise_method;
 
             return RuntimeType.FilterPreCalculate(method != null && method.IsPublic, GetDeclaringTypeInternal() != ReflectedType, method != null && method.IsStatic);
         }

@@ -22,23 +22,23 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
     internal FirefoxMonoProxy? FirefoxMonoProxy { get; private set; }
 
     [MemberNotNull(nameof(s_tcpListener))]
-    public static void StartListener(int proxyPort, ILogger logger)
+    public static void StartListener(int proxyPort, ILogger logger, int browserPort = -1)
     {
         if (s_tcpListener is null)
         {
             s_tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
             s_tcpListener.Start();
-            logger.LogInformation($"Now listening for Firefox on: {s_tcpListener.LocalEndpoint}");
+            Console.WriteLine($"Debug proxy for firefox now listening on tcp://{s_tcpListener.LocalEndpoint}." +
+                                (browserPort >= 0 ? $" And expecting firefox at port {browserPort} ." : string.Empty));
         }
     }
 
-    public static async Task Run(int browserPort, int proxyPort, ILoggerFactory loggerFactory, ILogger logger)
+    public static async Task RunServerLoopAsync(int browserPort, int proxyPort, ILoggerFactory loggerFactory, ILogger logger, CancellationToken token, ProxyOptions? options = null)
     {
-        StartListener(proxyPort, logger);
-        logger.LogInformation($"Expecting firefox to be listening on {browserPort}");
-        while (true)
+        StartListener(proxyPort, logger, browserPort);
+        while (!token.IsCancellationRequested)
         {
-            TcpClient ideClient = await s_tcpListener.AcceptTcpClientAsync();
+            TcpClient ideClient = await s_tcpListener.AcceptTcpClientAsync(token);
             _ = Task.Run(async () =>
                         {
                             CancellationTokenSource cts = new();
@@ -46,29 +46,28 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
                             {
                                 int id = Interlocked.Increment(ref s_nextId);
                                 logger.LogInformation($"IDE connected to the proxy, id: {id}");
-                                var monoProxy = new FirefoxMonoProxy(loggerFactory, id.ToString());
+                                var monoProxy = new FirefoxMonoProxy(loggerFactory.CreateLogger($"{nameof(FirefoxMonoProxy)}-{id}"), id.ToString(), options);
                                 await monoProxy.RunForFirefox(ideClient: ideClient, browserPort, cts);
                             }
                             catch (Exception ex)
                             {
                                 logger.LogError($"{nameof(FirefoxMonoProxy)} crashed with {ex}");
-                                throw;
                             }
                             finally
                             {
                                 cts.Cancel();
                             }
-                        }, CancellationToken.None)
+                        }, token)
                         .ConfigureAwait(false);
         }
     }
 
     public async Task RunForTests(int browserPort, int proxyPort, string testId, ILoggerFactory loggerFactory, ILogger logger, CancellationTokenSource cts)
     {
-        StartListener(proxyPort, logger);
+        StartListener(proxyPort, logger, browserPort);
 
         TcpClient ideClient = await s_tcpListener.AcceptTcpClientAsync(cts.Token);
-        FirefoxMonoProxy = new FirefoxMonoProxy(loggerFactory, testId);
+        FirefoxMonoProxy = new FirefoxMonoProxy(loggerFactory.CreateLogger($"FirefoxMonoProxy-{testId}"), testId);
         FirefoxMonoProxy.RunLoopStopped += (_, args) => ExitState = args;
         await FirefoxMonoProxy.RunForFirefox(ideClient: ideClient, browserPort, cts);
     }

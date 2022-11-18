@@ -14,22 +14,19 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(null, null, null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void SetComObjectData_NullObj_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("obj", () => Marshal.SetComObjectData(null, new object(), 3));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void SetComObjectData_NullKey_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => Marshal.SetComObjectData(new object(), null, 3));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void SetComObjectData_NonComObjectObj_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.SetComObjectData(1, 2, 3));

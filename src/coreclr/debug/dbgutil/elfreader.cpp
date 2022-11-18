@@ -103,7 +103,7 @@ ElfReader::~ElfReader()
 
 //
 // Initialize the ELF reader from a module the base address. This function
-// caches the info neccessary in the ElfReader class look up symbols.
+// caches the info necessary in the ElfReader class look up symbols.
 //
 bool
 ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)

@@ -35,7 +35,19 @@ namespace System.IO.Pipelines
         /// <param name="minimumSize">The minimum length that needs to be buffered in order to for the call to return.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
         /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
-        /// <remarks>The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.</remarks>
+        /// <remarks>
+        ///     <para>
+        ///     The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.
+        ///     </para>
+        ///     <para>
+        ///     Passing a value of 0 for <paramref name="minimumSize" /> will return a <see cref="System.Threading.Tasks.ValueTask{T}" /> that will not complete until
+        ///     further data is available. You should instead call <see cref="System.IO.Pipelines.PipeReader.TryRead" /> to avoid a blocking call.
+        ///     </para>
+        ///     <para>
+        ///     Subsequent calls to <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" /> should
+        ///     examine at least <paramref name="minimumSize" /> bytes in order to avoid an <see cref="System.InvalidOperationException" />.
+        ///     </para>
+        /// </remarks>
         public ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
         {
             if (minimumSize < 0)
@@ -251,7 +263,7 @@ namespace System.IO.Pipelines
                         }
                     }
 
-                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    // The while loop completed successfully, so we've consumed the entire buffer.
                     consumed = buffer.End;
 
                     if (result.IsCompleted)

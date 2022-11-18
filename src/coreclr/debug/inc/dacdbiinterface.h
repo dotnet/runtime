@@ -118,7 +118,7 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //         Module::GetName should either return the name, or fail)
 //
 //         Cordb must neuter any Cordb objects that have any pre-existing handles to the object.
-//             After this point, gauranteed that nobody can discover the VMPTR any more:
+//             After this point, guaranteed that nobody can discover the VMPTR any more:
 //             - doesn't show up in enumerations (so can't be discoverered implicitly)
 //             - object should not be discoverable by other objects in VM.
 //             - any Cordb object that already had it would be neutered by Dbi.
@@ -201,10 +201,10 @@ public:
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
     // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
-    // return results even with a corrupt or unsyncrhonized target. See
+    // return results even with a corrupt or unsynchronized target. See
     // code:ClrDataAccess::TargetConsistencyAssertsEnabled for more details.
     //
-    // When testing with a non-corrupt and properly syncrhonized target, this should be enabled to
+    // When testing with a non-corrupt and properly synchronized target, this should be enabled to
     // help catch bugs.
     //
     // Arguments:
@@ -244,7 +244,7 @@ public:
     //
     //
     // Return Value:
-    //    BOOL whether Left-side is intialized.
+    //    BOOL whether Left-side is initialized.
     //
     // Notes:
     //   If the Left-side is not yet started up, then data in the LS is not yet initialized enough
@@ -407,7 +407,7 @@ public:
     //   doesn't have a filename.
     //
     //   The simple name does not have any meaning. It is not a filename, does not necessarily have any
-    //   relationship to the filename, and it's not necesarily the metadata name.
+    //   relationship to the filename, and it's not necessarily the metadata name.
     //   Do not use the simple name for anything other than as a pretty string to give the an end user.
     //
     virtual
@@ -511,7 +511,7 @@ public:
     //    vmModule - target module to get metadata for.
     //    pTargetBuffer - Out parameter to get target-buffer for metadata. Gauranteed to be non-empty on
     //       return. This will throw CORDBG_E_MISSING_METADATA hr if the buffer is empty.
-    //       This does not gaurantee that the buffer is readable. For example, in a minidump, buffer's
+    //       This does not guarantee that the buffer is readable. For example, in a minidump, buffer's
     //       memory may not be present.
     //
     // Notes:
@@ -1065,7 +1065,7 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
-    
+
     //
     // Get the allocation info corresponding to the specified thread.
     //
@@ -2201,7 +2201,7 @@ public:
     // types of pregenerated code. With respect to debugging this is used to specify that
     // the NGEN image must be debuggable aka non-optimized code. Note that these flags
     // are merged with other sources of configuration so it is possible that the final
-    // result retrieved from GetDesiredNGENCompilerFlags does not match what was specfied
+    // result retrieved from GetDesiredNGENCompilerFlags does not match what was specified
     // in this call.
     //
     // If an NGEN image of the appropriate type isn't available then one of two things happens:
@@ -2274,7 +2274,7 @@ public:
     virtual
     HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT) = 0;
 
-    // Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
     // Arguments:
     //     handle: the GC handle which refers to the object of interest
@@ -2471,7 +2471,7 @@ public:
     //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
-    //      An HRESULT indicating whether it succeded or failed.
+    //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Does not throw, but does not catch exceptions either.
     virtual
@@ -2660,7 +2660,7 @@ public:
         HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode) = 0;
 
     // Retrieves the ILCodeVersionNode for a given NativeCodeVersionNode.
-    // This may return a NULL node if the native code belongs to the default IL version for this this method.
+    // This may return a NULL node if the native code belongs to the default IL version for this method.
     //
     //
     // Arguments:

@@ -38,7 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // source
             this.source = source;
             // target
-            this.target = (obj.DnsDomainName == null ? obj.NetbiosDomainName : obj.DnsDomainName);
+            this.target = obj.DnsDomainName ?? obj.NetbiosDomainName;
             // direction
             if ((obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
                 (obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)

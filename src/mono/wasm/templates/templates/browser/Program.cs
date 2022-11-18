@@ -1,12 +1,18 @@
 using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 
-Console.WriteLine ("Hello, Console!");
+Console.WriteLine("Hello, Browser!");
 
-public class MyClass {
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static string CallMeFromJS()
+public partial class MyClass
+{
+    [JSExport]
+    internal static string Greeting()
     {
-        return "Hello, World!";
+        var text = $"Hello, World! Greetings from {GetHRef()}";
+        Console.WriteLine(text);
+        return text;
     }
+
+    [JSImport("window.location.href", "main.js")]
+    internal static partial string GetHRef();
 }

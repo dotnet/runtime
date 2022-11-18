@@ -50,6 +50,16 @@ namespace ILCompiler
             }
         }
 
+        // The target method might be constrained if this was a "constrained ldftn" IL instruction.
+        // The real target can be computed after resolving the constraint.
+        public MethodDesc PossiblyUnresolvedTargetMethod
+        {
+            get
+            {
+                return _targetMethod;
+            }
+        }
+
         private bool TargetMethodIsUnboxingThunk
         {
             get

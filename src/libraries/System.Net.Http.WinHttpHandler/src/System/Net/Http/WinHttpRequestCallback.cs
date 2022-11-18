@@ -43,11 +43,10 @@ namespace System.Net.Http
             WinHttpRequestState? state = WinHttpRequestState.FromIntPtr(context);
             Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
 
-            RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
+            RequestCallback(state, internetStatus, statusInformation, statusInformationLength);
         }
 
         private static void RequestCallback(
-            IntPtr handle,
             WinHttpRequestState state,
             uint internetStatus,
             IntPtr statusInformation,
@@ -109,18 +108,16 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 state.SavedException = ex;
-                if (state.RequestHandle != null)
-                {
-                    // Since we got a fatal error processing the request callback,
-                    // we need to close the WinHttp request handle in order to
-                    // abort the currently executing WinHttp async operation.
-                    //
-                    // We must always call Dispose() against the SafeWinHttpHandle
-                    // wrapper and never close directly the raw WinHttp handle.
-                    // The SafeWinHttpHandle wrapper is thread-safe and guarantees
-                    // calling the underlying WinHttpCloseHandle() function only once.
-                    state.RequestHandle.Dispose();
-                }
+
+                // Since we got a fatal error processing the request callback,
+                // we need to close the WinHttp request handle in order to
+                // abort the currently executing WinHttp async operation.
+                //
+                // We must always call Dispose() against the SafeWinHttpHandle
+                // wrapper and never close directly the raw WinHttp handle.
+                // The SafeWinHttpHandle wrapper is thread-safe and guarantees
+                // calling the underlying WinHttpCloseHandle() function only once.
+                state.RequestHandle?.Dispose();
             }
         }
 
@@ -310,11 +307,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (chain != null)
-                    {
-                        chain.Dispose();
-                    }
-
+                    chain?.Dispose();
                     serverCertificate.Dispose();
                 }
 

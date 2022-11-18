@@ -431,7 +431,7 @@ namespace System.Globalization
             {
                 char c = subject[i];
 
-                if ((uint)(c - 'A') <= ('Z' - 'A') || (uint)(c - 'a') <= ('z' - 'a') || (uint)(c - '0') <= ('9' - '0') || c == '\0')
+                if (char.IsAsciiLetterOrDigit(c) || c == '\0')
                 {
                     continue;
                 }
