@@ -249,3 +249,9 @@ mono_metadata_update_added_properties_iter (MonoClass *klass, gpointer *iter)
 {
 	return mono_component_hot_reload()->added_properties_iter (klass, iter);
 }
+
+uint32_t
+mono_metadata_update_get_property_idx (MonoProperty *prop)
+{
+        return mono_component_hot_reload()->get_property_idx (prop);
+}

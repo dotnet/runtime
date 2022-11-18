@@ -103,4 +103,7 @@ mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_t
 MonoProperty *
 mono_metadata_update_added_properties_iter (MonoClass *klass, gpointer *iter);
 
+uint32_t
+mono_metadata_update_get_property_idx (MonoProperty *prop);
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

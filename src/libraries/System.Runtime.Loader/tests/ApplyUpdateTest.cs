@@ -380,6 +380,16 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal("abcdTest", x2.GetStringProp);
 
+                var addedPropToken = propInfo.MetadataToken;
+
+                Assert.True (addedPropToken > 0);
+
+                // we don't know exactly what token Roslyn will assign to the added property, but
+                // since the AddInstanceField.dll assembly is relatively small, assume that the
+                // total number of properties in the updated generation is less than 64 and the
+                // token is in that range.  If more code is added, revise this test.
+
+                Assert.True ((addedPropToken & 0x00ffffff) < 64);
 
             });
         }

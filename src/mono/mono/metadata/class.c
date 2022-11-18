@@ -2637,7 +2637,7 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 		}
 		return NULL;
 	}
-	/* TODO: metadata-update: if property is from update, get the token directly. */
+	/* metadata-update: Roslyn doesn't emit HasDefault on added properties. */
 	g_assert (!m_property_is_from_update (property));
 	cindex = mono_metadata_get_constant_index (klass_image, mono_class_get_property_token (property), 0);
 	if (!cindex)
@@ -2699,6 +2699,14 @@ guint32
 mono_class_get_property_token (MonoProperty *prop)
 {
 	MonoClass *klass = prop->parent;
+
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_property_is_from_update (prop))) {
+			uint32_t idx = mono_metadata_update_get_property_idx (prop);
+			return mono_metadata_make_token (MONO_TABLE_PROPERTY, idx);
+		}
+	}
+
 	while (klass) {
 		MonoProperty* p;
 		int i = 0;

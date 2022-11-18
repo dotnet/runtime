@@ -169,6 +169,8 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property)
 {
+        if (G_UNLIKELY (m_property_is_from_update (property)))
+                return mono_metadata_update_get_property_idx (property);
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {

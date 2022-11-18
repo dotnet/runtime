@@ -6519,6 +6519,9 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 		return NULL_HANDLE;
 	}
 
+	/* metadata-update: looks like Roslyn doesn't set the HasDefault attribute for updates */
+	g_assert (!m_property_is_from_update (prop));
+
 	def_value = mono_class_get_property_default_value (prop, &def_type);
 
 	mono_type_from_blob_type (&blob_type, def_type, type);
