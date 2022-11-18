@@ -19,6 +19,11 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             IncRefDouble (ref _doubleField2);
 
             AddedStringAutoProp = "abcd";
+
+            AddedEvent += MyHandler;
+
+            void MyHandler (object sender, double data) {
+            }
         }
 
         public void IncRefDouble (ref double d)
@@ -60,6 +65,13 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 
         public string AddedStringAutoProp { get; set; }
 
+        public event EventHandler<double> ExistingEvent;
+        public event EventHandler<double> AddedEvent;
+
+        public void FireEvents() {
+            ExistingEvent(this, 123.0);
+            AddedEvent(this, 123.0);
+        }
 
     }
 }

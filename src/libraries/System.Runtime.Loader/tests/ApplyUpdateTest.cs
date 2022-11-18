@@ -391,6 +391,11 @@ namespace System.Reflection.Metadata
 
                 Assert.True ((addedPropToken & 0x00ffffff) < 64);
 
+
+                var eventInfo = x2.GetType().GetEvent("AddedEvent", BindingFlags.Public | BindingFlags.Instance);
+
+                Assert.NotNull (eventInfo);
+
             });
         }
 

@@ -32,5 +32,11 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         }
 
         public string GetStringProp => string.Empty;
+
+        public event EventHandler<double> ExistingEvent;
+
+        public void FireEvents() {
+            ExistingEvent(this, 123.0);
+        }
     }
 }
