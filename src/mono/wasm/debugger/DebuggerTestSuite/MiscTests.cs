@@ -966,7 +966,7 @@ namespace DebuggerTests
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
             "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-%C4%85%C5%82%C3%85.cs",
-            "debugger-test-special-char-in-path-%23%40/non-ascii-test-ąłÅ.cs")]
+            "debugger-test-special-char-in-path-%23%40/non-ascii-test-%C4%85%C5%82%C3%85.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
             string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
         {
@@ -977,7 +977,6 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
-            Console.WriteLine("olha thays - " + ret["callFrames"][0]["url"].Value<string>());
             Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
@@ -1107,7 +1106,7 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
-            Assert.EndsWith("debugger-test-chinese-char-in-path-ㄨ/test.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
+            Assert.EndsWith("debugger-test-chinese-char-in-path-%E3%84%A8/test.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Fact]
