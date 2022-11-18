@@ -186,14 +186,6 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
     return 0;
 }
 
-void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
-{
-    assert(signalHandler);
-    assert(g_posixSignalHandler == NULL || g_posixSignalHandler == signalHandler);
-
-    g_posixSignalHandler = signalHandler;
-}
-
 static struct sigaction* OrigActionFor(int sig)
 {
     return &g_origSigHandler[sig - 1];
@@ -250,8 +242,21 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     }
 }
 
+#endif /* TARGET_WASI */
+
+void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
+{
+    assert(signalHandler);
+#if !defined(TARGET_WASI)
+    assert(g_posixSignalHandler == NULL || g_posixSignalHandler == signalHandler);
+
+    g_posixSignalHandler = signalHandler;
+#endif /* TARGET_WASI */
+}
+
 void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 {
+#if !defined(TARGET_WASI)
     switch (signalCode)
     {
         case SIGCONT:
@@ -305,8 +310,10 @@ void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
             kill(g_pid, signalCode);
             break;
     }
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 // Entrypoint for the thread that handles signals where our handling
 // isn't signal-safe.  Those signal handlers write the signal to a pipe,
 // which this loop reads and processes.
@@ -477,10 +484,12 @@ static bool InstallSignalHandler(int sig, int flags)
     *isInstalled = true;
     return true;
 }
+#endif /* TARGET_WASI */
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
 {
     assert(callback != NULL);
+#if !defined(TARGET_WASI)
     assert(g_terminalInvalidationCallback == NULL);
     bool installed = false;
     (void)installed; // only used for assert
@@ -497,11 +506,13 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
         assert(installed);
     }
     pthread_mutex_unlock(&lock);
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
+#if !defined(TARGET_WASI)
     assert(g_sigChldCallback == NULL);
     bool installed = false;
     (void)installed; // only used for assert
@@ -514,15 +525,19 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
         assert(installed);
     }
     pthread_mutex_unlock(&lock);
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
 {
+#if !defined(TARGET_WASI)
     assert(g_sigChldConsoleConfigurationCallback == NULL);
 
     g_sigChldConsoleConfigurationCallback = callback;
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 static bool CreateSignalHandlerThread(int* readFdPtr)
 {
     pthread_attr_t attr;
@@ -620,9 +635,11 @@ int32_t InitializeSignalHandlingCore(void)
 
     return 1;
 }
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
 {
+#if !defined(TARGET_WASI)
     assert(g_posixSignalHandler != NULL);
     assert(signalCode > 0 && signalCode <= GetSignalMax());
 
@@ -636,10 +653,14 @@ int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
     pthread_mutex_unlock(&lock);
 
     return installed ? 1 : 0;
+#else /* TARGET_WASI */
+    return false;
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_DisablePosixSignalHandling(int signalCode)
 {
+#if !defined(TARGET_WASI)
     assert(signalCode > 0 && signalCode <= GetSignalMax());
 
     pthread_mutex_lock(&lock);
@@ -661,8 +682,10 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
         }
     }
     pthread_mutex_unlock(&lock);
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
 {
     bool installed;
@@ -703,11 +726,13 @@ void UninstallTTOUHandlerForConsole(void)
     }
     pthread_mutex_unlock(&lock);
 }
+#endif /* TARGET_WASI */
 
 #ifndef HAS_CONSOLE_SIGNALS
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
+#if !defined(TARGET_WASI)
     static int32_t initialized = 0;
 
     // The Process, Console and PosixSignalRegistration classes call this method for initialization.
@@ -721,52 +746,9 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
     }
 
     return initialized;
+#else /* TARGET_WASI */
+    return false;
+#endif /* TARGET_WASI */
 }
 
 #endif
-
-#else /* TARGET_WASI */
-
-int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0;
-}
-
-void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_RegisterForSigChld(SigChldCallback callback)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-    return 0;
-}
-
-void SystemNative_DisablePosixSignalHandling(int signalCode)
-{
-    printf ("TODOWASI %s\n", __FUNCTION__);
-}
-
-#endif /* TARGET_WASI */
