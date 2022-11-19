@@ -223,21 +223,7 @@ namespace System
         public T[] GetItems<T>(T[] choices, int length)
         {
             ArgumentNullException.ThrowIfNull(choices);
-
-            if (choices.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(choices));
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            T[] items = new T[length];
-
-            for (int i = 0; i < items.Length; i++)
-            {
-                items[i] = choices[Next(choices.Length)];
-            }
-
-            return items;
+            return GetItems(new ReadOnlySpan<T>(choices), length);
         }
 
         /// <summary>
@@ -257,19 +243,11 @@ namespace System
         /// </remarks>
         public T[] GetItems<T>(ReadOnlySpan<T> choices, int length)
         {
-            if (choices.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
-
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             T[] items = new T[length];
-
-            for (int i = 0; i < items.Length; i++)
-            {
-                items[i] = choices[Next(choices.Length)];
-            }
-
+            GetItems<T>(choices, items.AsSpan());
             return items;
         }
 
@@ -294,7 +272,7 @@ namespace System
         {
             int n = values.Length;
 
-            for (int i = 0; i <= n - 2; i++)
+            for (int i = 0; i < n - 1; i++)
             {
                 int j = Next(i, n);
                 T temp = values[i];
