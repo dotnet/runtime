@@ -793,6 +793,8 @@ export type JiterpreterOptions = {
     estimateHeat: boolean;
     // Count the number of times a trace bails out (branch taken, etc) and for what reason
     countBailouts: boolean;
+    // Dump the wasm blob for all compiled traces
+    dumpTraces: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
 }
@@ -808,6 +810,7 @@ const optionNames : { [jsName: string] : string } = {
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
     "countBailouts": "jiterpreter-count-bailouts",
+    "dumpTraces": "jiterpreter-dump-traces",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
 };

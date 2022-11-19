@@ -95,12 +95,14 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
 // Count the number of times a trace bails out (branch taken, etc) and for what reason
 DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Maintain accurate count of all trace bailouts based on cause")
+// Dump the wasm blob for all compiled traces
+DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the wasm blob for all compiled traces to the console")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
 DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 8, "Reject traces shorter than this number of meaningful opcodes")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times

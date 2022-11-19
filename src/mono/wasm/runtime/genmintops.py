@@ -16,10 +16,11 @@ src_header_path = sys.argv [1]
 output_ts_path = sys.argv [2]
 
 src = open(src_header_path, 'r')
-dest = open(output_ts_path, 'w')
 
 tab = "    "
 header = tab + src.read().replace("\n", "\n" + tab)
+src.close()
+
 opdef_regex = r'OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
 enum_values = re.sub(
     opdef_regex, lambda m : f"{m.group(1)}{' = 0' if (m.group(1) == 'MINT_NOP') else ''},", header
@@ -45,5 +46,14 @@ export const OpcodeInfo : OpcodeInfoTable = {{
 }};
 """
 
+dest = open(output_ts_path, 'r')
+if (dest.read() == generated):
+    print("mintops.ts up to date, exiting")
+    exit(0)
+
+dest.close()
+dest = open(output_ts_path, 'w')
 dest.write(generated)
+print("mintops.ts generated")
+dest.close()
 exit(0)

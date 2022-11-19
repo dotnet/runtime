@@ -41,8 +41,6 @@ const
     // Wraps traces in a JS function that will trap errors and log the trace responsible.
     // Very expensive!!!!
     trapTraceErrors = false,
-    // Dumps all compiled traces
-    dumpTraces = false,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -87,13 +85,12 @@ const traceInfo : { [key: string] : TraceInfo } = {};
 const // offsetOfStack = 12,
     offsetOfImethod = 4,
     offsetOfDataItems = 20,
-    sizeOfJiterpreterOpcode = 6, // opcode + 4 bytes for thunk id/fn ptr
     sizeOfDataItem = 4,
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
     // WASM implementations only allow compiling 4KB of code at once :-)
-    maxModuleSize = 4000 - 20 - 100;
+    maxModuleSize = 4000 - 160;
 
 /*
 struct MonoVTable {
@@ -634,8 +631,8 @@ function generate_wasm (
             elapsedTimes.generation += finished - started;
         }
 
-        if (threw || (!rejected && ((trace >= 2) || dumpTraces)) || instrument) {
-            if (threw || (trace >= 3) || dumpTraces || instrument) {
+        if (threw || (!rejected && ((trace >= 2) || mostRecentOptions!.dumpTraces)) || instrument) {
+            if (threw || (trace >= 3) || mostRecentOptions!.dumpTraces || instrument) {
                 for (let i = 0; i < builder.traceBuf.length; i++)
                     console.log(builder.traceBuf[i]);
             }
@@ -733,7 +730,8 @@ function generate_wasm_body (
     let result = 0;
     const traceIp = ip;
 
-    ip += <any>sizeOfJiterpreterOpcode;
+    // Skip over the enter opcode
+    ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
     let rip = ip;
 
     // Initialize eip, so that we will never return a 0 displacement
@@ -1279,7 +1277,7 @@ function generate_wasm_body (
         }
 
         if (ip) {
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || dumpTraces || instrumentedTraceId)
+            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId)
                 builder.traceBuf.push(`${(<any>ip).toString(16)} ${opname}`);
 
             if (!is_dead_opcode)

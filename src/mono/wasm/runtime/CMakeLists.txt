@@ -39,6 +39,7 @@ set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
 add_custom_target(GENERATE_MINTOPS_TYPESCRIPT ALL
     ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py "${CMAKE_CURRENT_SOURCE_DIR}/../../mono/mini/interp/mintops.def" "${CMAKE_CURRENT_SOURCE_DIR}/mintops.ts"
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py ${CMAKE_CURRENT_SOURCE_DIR}/../../mono/mini/interp/mintops.def
+    BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/mintops.ts
     VERBATIM
 )
 

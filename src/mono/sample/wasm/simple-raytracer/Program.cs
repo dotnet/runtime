@@ -289,35 +289,8 @@ public static partial class Program {
     [JSImport("renderCanvas", "main.js")]
     static partial void RenderCanvas ([JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> rgba);
 
-    private static int WeirdTransform (int arg) {
-        int x = arg;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        x++;
-        x *= 7777;
-        return x;
-    }
-
     [JSExport]
     internal static void OnClick () {
-        Console.WriteLine("Running test");
-        int j = 1;
-        for (int i = 0; i < 100000; i++)
-            j += WeirdTransform(i);
-        Console.WriteLine($"Test result={j}");
-
         var now = DateTime.UtcNow;
         Console.WriteLine("Rendering started");
 
