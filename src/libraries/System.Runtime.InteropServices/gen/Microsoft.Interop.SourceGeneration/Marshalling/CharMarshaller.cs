@@ -14,7 +14,7 @@ namespace Microsoft.Interop
 {
     public sealed class Utf16CharMarshaller : IMarshallingGenerator
     {
-        private static readonly PredefinedTypeSyntax s_nativeType = PredefinedType(Token(SyntaxKind.UShortKeyword));
+        private static readonly ManagedTypeInfo s_nativeType = new SpecialTypeInfo("ushort", "ushort", SpecialType.System_UInt16);
 
         public Utf16CharMarshaller()
         {
@@ -36,7 +36,7 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Char));
             return s_nativeType;
@@ -70,12 +70,12 @@ namespace Microsoft.Interop
                         ),
                         // ushort* <native> = (ushort*)<pinned>;
                         LocalDeclarationStatement(
-                            VariableDeclaration(PointerType(AsNativeType(info)),
+                            VariableDeclaration(PointerType(AsNativeType(info).Syntax),
                                 SingletonSeparatedList(
                                     VariableDeclarator(nativeIdentifier)
                                         .WithInitializer(EqualsValueClause(
                                             CastExpression(
-                                                PointerType(AsNativeType(info)),
+                                                PointerType(AsNativeType(info).Syntax),
                                                 IdentifierName(PinnedIdentifier(info.InstanceIdentifier))))))))
                     );
                 }

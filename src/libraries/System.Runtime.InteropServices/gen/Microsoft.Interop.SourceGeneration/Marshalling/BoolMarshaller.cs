@@ -14,12 +14,12 @@ namespace Microsoft.Interop
 {
     public abstract class BoolMarshallerBase : IMarshallingGenerator
     {
-        private readonly PredefinedTypeSyntax _nativeType;
+        private readonly ManagedTypeInfo _nativeType;
         private readonly int _trueValue;
         private readonly int _falseValue;
         private readonly bool _compareToTrue;
 
-        protected BoolMarshallerBase(PredefinedTypeSyntax nativeType, int trueValue, int falseValue, bool compareToTrue)
+        protected BoolMarshallerBase(ManagedTypeInfo nativeType, int trueValue, int falseValue, bool compareToTrue)
         {
             _nativeType = nativeType;
             _trueValue = trueValue;
@@ -29,7 +29,7 @@ namespace Microsoft.Interop
 
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Boolean));
             return _nativeType;
@@ -66,7 +66,7 @@ namespace Microsoft.Interop
                                 SyntaxKind.SimpleAssignmentExpression,
                                 IdentifierName(nativeIdentifier),
                                 CastExpression(
-                                    AsNativeType(info),
+                                    AsNativeType(info).Syntax,
                                     ParenthesizedExpression(
                                         ConditionalExpression(IdentifierName(managedIdentifier),
                                             LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_trueValue)),
@@ -119,7 +119,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the byte should be signed, otherwise false</param>
         public ByteBoolMarshaller(bool signed)
-            : base(PredefinedType(Token(signed ? SyntaxKind.SByteKeyword : SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(new SpecialTypeInfo(signed ? "sbyte" : "byte", signed ? "sbyte" : "byte", signed ? SpecialType.System_SByte : SpecialType.System_Byte), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -137,7 +137,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the int should be signed, otherwise false</param>
         public WinBoolMarshaller(bool signed)
-            : base(PredefinedType(Token(signed ? SyntaxKind.IntKeyword : SyntaxKind.UIntKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(new SpecialTypeInfo(signed ? "int" : "uint", signed ? "int" : "uint", signed ? SpecialType.System_Int32 : SpecialType.System_UInt32), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -150,7 +150,7 @@ namespace Microsoft.Interop
         private const short VARIANT_TRUE = -1;
         private const short VARIANT_FALSE = 0;
         public VariantBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.ShortKeyword)), trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
+            : base(new SpecialTypeInfo("short", "short", SpecialType.System_Int16), trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
         {
         }
     }
