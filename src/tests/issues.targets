@@ -3082,7 +3082,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
-
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
+            <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
         
     </ItemGroup>
 
