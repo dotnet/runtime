@@ -249,7 +249,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Fills a buffer with cryptographically random hexadecimal characters.
+        ///   Fills a buffer with cryptographically random hexadecimal characters.
         /// </summary>
         /// <param name="destination">The buffer to receive the characters.</param>
         /// <param name="lowercase">
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Creates a string filled with cryptographically random hexadecimal characters.
+        ///   Creates a string filled with cryptographically random hexadecimal characters.
         /// </summary>
         /// <param name="stringLength">The length of string to create.</param>
         /// <param name="lowercase">

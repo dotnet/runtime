@@ -781,6 +781,55 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
         }
 
+        [Fact]
+        public static void GetItems_Allocating_Array_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            byte[] items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Span_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            Span<byte> buffer = stackalloc byte[7];
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
+        }
+
         private static Random Create(bool derived, bool seeded, int seed = 42) =>
             (derived, seeded) switch
             {
