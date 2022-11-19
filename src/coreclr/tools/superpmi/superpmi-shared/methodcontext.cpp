@@ -5668,7 +5668,7 @@ static unsigned InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind ki
             return 8;
         case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
         case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
-            return sizeof(uintptr_t);
+            return static_cast<unsigned>(SpmiTargetPointerSize());
         default:
             LogError("Unexpected pgo schema data size (kind = %d)", kind);
             return 0;
@@ -5684,7 +5684,7 @@ static unsigned InstrumentationKindToAlignment(ICorJitInfo::PgoInstrumentationKi
         case ICorJitInfo::PgoInstrumentationKind::Align8Byte:
             return 8;
         case ICorJitInfo::PgoInstrumentationKind::AlignPointer:
-            return alignof(uintptr_t);
+            return static_cast<unsigned>(SpmiTargetPointerSize());
         default:
             return InstrumentationKindToSize(kind);
     }
