@@ -1372,7 +1372,7 @@ namespace System.Net.Sockets
             if (_localEndPoint == null)
             {   // We expect that the socket will have LocalEndPoint if not bound already.
                 // Addresses are mutable so we need to create new instance.
-                //_localEndPoint = new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? 4 : 16)), 0);
+                // It would be nice to simply set _localEndPoint here but the logic is complicated.
                 _rightEndPoint ??= new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? 4 : 16)), 0);
             }
 
