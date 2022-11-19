@@ -8506,8 +8506,7 @@ bool Compiler::fgValueNumberConstStringElemLoad(GenTreeIndir* tree)
 {
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
-    if (!tree->TypeIs(TYP_SHORT, TYP_USHORT) || !vnStore->GetVNFunc(addrVN, &funcApp) ||
-        ((genTreeOps)funcApp.m_func != GT_ADD) || !vnStore->IsVNConstant(funcApp.m_args[0]))
+    if (!varTypeIsShort(tree) || !vnStore->GetVNFunc(addrVN, &funcApp))
     {
         return false;
     }
@@ -8523,36 +8522,59 @@ bool Compiler::fgValueNumberConstStringElemLoad(GenTreeIndir* tree)
         return false;
     };
 
-    // We try to match two patterns:
-    //
-    //  1) (objHandle + firstCharOffset)
-    //  2) ((objHandle + firstCharOffset) + byteIndex)
-    //
-    size_t                dataOffset = 0;
-    CORINFO_OBJECT_HANDLE objHandle  = nullptr;
-    if (vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+    CORINFO_OBJECT_HANDLE objHandle = nullptr;
+    int                   index     = -1;
+
+    // First, let see if we have PtrToArrElem
+    ValueNum addr = funcApp.m_args[0];
+    if (funcApp.m_func == VNF_PtrToArrElem)
     {
-        dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
-    }
-    else
-    {
-        assert(vnStore->IsVNConstant(funcApp.m_args[0]));
-        const size_t byteDataIndex = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
-        if (vnStore->GetVNFunc(funcApp.m_args[1], &funcApp) && ((genTreeOps)funcApp.m_func == GT_ADD) &&
-            vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+        ValueNum arrVN  = funcApp.m_args[1];
+        ValueNum inxVN  = funcApp.m_args[2];
+        ssize_t  offset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[3]);
+
+        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && offset == 0 && vnStore->IsVNConstant(inxVN))
         {
-            dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]) + byteDataIndex;
+            index = (int)vnStore->CoercedConstantValue<size_t>(inxVN);
+        }
+    }
+    else if (((genTreeOps)funcApp.m_func == GT_ADD) && vnStore->IsVNConstant(funcApp.m_args[0]))
+    {
+        // Here we try to match these two patterns:
+        //
+        //  1) (objHandle + firstCharOffset)
+        //  2) ((objHandle + firstCharOffset) + byteIndex)
+        //
+        size_t dataOffset = 0;
+        if (vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+        {
+            dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+        }
+        else
+        {
+            assert(vnStore->IsVNConstant(funcApp.m_args[0]));
+            const size_t byteDataIndex = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
+            if (vnStore->GetVNFunc(funcApp.m_args[1], &funcApp) && ((genTreeOps)funcApp.m_func == GT_ADD) &&
+                vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+            {
+                dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]) + byteDataIndex;
+            }
+        }
+
+        // Convert dataOffset (that also includes offset to firstChar field) into char index
+        if ((dataOffset >= OFFSETOF__CORINFO_String__chars) && ((dataOffset % 2) == 0))
+        {
+            index = (int)(dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
         }
     }
 
-    if ((dataOffset >= OFFSETOF__CORINFO_String__chars) && ((dataOffset % 2) == 0))
+    if ((objHandle != nullptr) && (index >= 0))
     {
         assert(objHandle != nullptr);
-        const int charIndex = (int)(dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
-        USHORT    charValue;
-        if (info.compCompHnd->getStringChar(objHandle, charIndex, &charValue))
+        USHORT charValue;
+        if (info.compCompHnd->getStringChar(objHandle, index, &charValue))
         {
-            JITDUMP("Folding \"cns_str\"[%d] into %u\n", charIndex, (unsigned)charValue);
+            JITDUMP("Folding \"cns_str\"[%d] into %u\n", index, (unsigned)charValue);
             tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
             return true;
         }
@@ -8811,6 +8833,13 @@ void Compiler::fgValueNumberTree(GenTree* tree, Statement* stmt)
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
                 }
+                else if (tree->OperIs(GT_IND) && fgValueNumberConstStringElemLoad(tree->AsIndir()))
+                {
+                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                    // Update side-effect flags of parent trees if needed
+                    gtUpdateStmtSideEffects(stmt);
+                }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
                     fgValueNumberArrayElemLoad(tree, &funcApp);
@@ -8819,13 +8848,6 @@ void Compiler::fgValueNumberTree(GenTree* tree, Statement* stmt)
                 {
                     assert(fldSeq != nullptr);
                     fgValueNumberFieldLoad(tree, baseAddr, fldSeq, offset);
-                }
-                else if (tree->OperIs(GT_IND) && fgValueNumberConstStringElemLoad(tree->AsIndir()))
-                {
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
-                    // Update side-effect flags of parent trees if needed
-                    gtUpdateStmtSideEffects(stmt);
                 }
                 else // We don't know where the address points, so it is an ByrefExposed load.
                 {
