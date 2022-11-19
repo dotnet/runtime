@@ -8533,7 +8533,7 @@ bool Compiler::fgValueNumberConstStringElemLoad(GenTreeIndir* tree)
         ValueNum inxVN  = funcApp.m_args[2];
         ssize_t  offset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[3]);
 
-        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && offset == 0 && vnStore->IsVNConstant(inxVN))
+        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
         {
             index = (int)vnStore->CoercedConstantValue<size_t>(inxVN);
         }
