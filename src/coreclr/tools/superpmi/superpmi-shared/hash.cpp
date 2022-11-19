@@ -44,7 +44,7 @@ inline uint64_t fmix64(uint64_t k)
     return k;
 }
 
-void MurmurHash3_128(const void* key, const size_t len, const uint32_t seed, void* out)
+static void MurmurHash3_128(const void* key, const size_t len, const uint32_t seed, void* out)
 {
     const uint8_t* data = static_cast<const uint8_t*>(key);
     const size_t nblocks = len / MM3_HASH_BYTE_SIZE;
