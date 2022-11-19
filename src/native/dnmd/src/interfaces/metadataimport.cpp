@@ -415,6 +415,8 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
         mdToken matchedTk;
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
 
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
         // Iterate the Type's methods
         for (uint32_t i = 0; i < methodListCount; ++i)
         {
@@ -443,7 +445,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
             (void)md_cursor_next(&fieldList);
         }
 
-        *phEnum = enumImpl;
+        *phEnum = cleanup.release();
     }
 
     return enumImpl->ReadTokens(rMembers, cMax, pcTokens);
@@ -573,6 +575,8 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
             uint32_t action;
             mdToken toAdd;
             RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+
+            HCORENUMImpl_ptr cleanup{ enumImpl };
             for (uint32_t i = 0; i < count; ++i)
             {
                 if (1 == md_get_column_value_as_constant(cursor, mdtDeclSecurity_Action, 1, &action)
@@ -586,6 +590,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
                 if (!md_cursor_next(&cursor))
                     return CLDB_E_RECORD_NOTFOUND;
             }
+            enumImpl = cleanup.release();
         }
         *phEnum = enumImpl;
     }
@@ -1108,14 +1113,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     if (enumImpl == nullptr)
     {
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
-        hr = EnumNonEmptyUserStrings(_md_ptr.get(), *enumImpl);
-        if (FAILED(hr))
-        {
-            HCORENUMImpl::Destroy(enumImpl);
-            return hr;
-        }
 
-        *phEnum = enumImpl;
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+        RETURN_IF_FAILED(EnumNonEmptyUserStrings(_md_ptr.get(), *enumImpl));
+
+        *phEnum = cleanup.release();
     }
 
     return enumImpl->ReadTokens(rStrings, cMax, pcStrings);

@@ -606,4 +606,16 @@ private:
     HRESULT ResetDynamicEnum(_In_ uint32_t position) noexcept;
 };
 
+struct HCORENUMImplDeleter
+{
+    using pointer = HCORENUMImpl*;
+    void operator()(HCORENUMImpl* mem)
+    {
+        HCORENUMImpl::Destroy(mem);
+    }
+};
+
+// C++ lifetime wrapper for HCORENUMImpl memory
+using HCORENUMImpl_ptr = std::unique_ptr<HCORENUMImpl, HCORENUMImplDeleter>;
+
 #endif // _SRC_INTERFACES_IMPL_HPP_
