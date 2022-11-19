@@ -528,5 +528,28 @@ namespace System.SpanTests
                 Assert.Equal(-1, index);
             }
         }
+
+        [Fact]
+        //[OuterLoop("Takes about a second to execute")]
+        public static void TestIndexOfAny_RandomInputs_Byte()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: IndexOfAnyReferenceImpl,
+                indexOfAny: (searchSpace, values) => searchSpace.IndexOfAny(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.IndexOfAny(values));
+
+            static int IndexOfAnyReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
+            {
+                for (int i = 0; i < searchSpace.Length; i++)
+                {
+                    if (values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
     }
 }

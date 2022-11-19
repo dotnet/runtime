@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>Data structure used to optimize checks for whether a char is in a set of chars.</summary>
     /// <remarks>
@@ -72,6 +72,13 @@ namespace System
 
         private static unsafe void SetCharBit(uint* charMap, byte value) =>
             charMap[(uint)value & IndexMask] |= 1u << (value >> IndexShift);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool IsCharBitSet(byte value)
+        {
+            ref uint thisRef = ref Unsafe.As<ProbabilisticMap, uint>(ref Unsafe.AsRef(in this));
+            return (Unsafe.Add(ref thisRef, (uint)value & IndexMask) & (1u << (value >> IndexShift))) != 0;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ShouldUseSimpleLoop(int searchSpaceLength, int valuesLength)

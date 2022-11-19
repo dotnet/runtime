@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -775,12 +777,13 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [OuterLoop("Takes about a second to execute")]
+        //[OuterLoop("Takes about a second to execute")]
         public static void TestIndexOfAny_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
                 expected: IndexOfAnyReferenceImpl,
-                actual: (searchSpace, values) => searchSpace.IndexOfAny(values));
+                indexOfAny: (searchSpace, values) => searchSpace.IndexOfAny(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.IndexOfAny(values));
 
             static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -799,13 +802,20 @@ namespace System.SpanTests
 
     public static class IndexOfAnyCharTestHelper
     {
+        private const int MaxNeedleLength = 10;
+        private const int MaxHaystackLength = 40;
+
         private static readonly char[] s_randomAsciiChars;
+        private static readonly char[] s_randomLatin1Chars;
         private static readonly char[] s_randomChars;
+        private static readonly byte[] s_randomBytes;
 
         static IndexOfAnyCharTestHelper()
         {
-            s_randomAsciiChars = new char[10 * 1024];
+            s_randomAsciiChars = new char[100 * 1024];
+            s_randomLatin1Chars = new char[100 * 1024];
             s_randomChars = new char[1024 * 1024];
+            s_randomBytes = new byte[100 * 1024];
 
             var rng = new Random(42);
 
@@ -814,45 +824,83 @@ namespace System.SpanTests
                 s_randomAsciiChars[i] = (char)rng.Next(0, 128);
             }
 
+            for (int i = 0; i < s_randomLatin1Chars.Length; i++)
+            {
+                s_randomLatin1Chars[i] = (char)rng.Next(0, 256);
+            }
+
             rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+            rng.NextBytes(s_randomBytes);
         }
 
-        public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values);
+        public delegate int IndexOfAnySearchDelegate<T>(ReadOnlySpan<T> searchSpace, ReadOnlySpan<T> values) where T : IEquatable<T>?;
 
-        public static void TestRandomInputs(IndexOfAnySearchDelegate expected, IndexOfAnySearchDelegate actual)
+        public delegate int IndexOfAnyValuesSearchDelegate<T>(ReadOnlySpan<T> searchSpace, IndexOfAnyValues<T> values) where T : IEquatable<T>?;
+
+        public static void TestRandomInputs(IndexOfAnySearchDelegate<byte> expected, IndexOfAnySearchDelegate<byte> indexOfAny, IndexOfAnyValuesSearchDelegate<byte> indexOfAnyValues)
+        {
+            var rng = new Random(42);
+
+            for (int iterations = 0; iterations < 1_000_000; iterations++)
+            {
+                Test(rng, s_randomBytes, s_randomBytes, expected, indexOfAny, indexOfAnyValues);
+            }
+        }
+
+        public static void TestRandomInputs(IndexOfAnySearchDelegate<char> expected, IndexOfAnySearchDelegate<char> indexOfAny, IndexOfAnyValuesSearchDelegate<char> indexOfAnyValues)
         {
             var rng = new Random(42);
 
             for (int iterations = 0; iterations < 1_000_000; iterations++)
             {
                 // There are more interesting corner cases with ASCII needles, stress those more.
-                Test(s_randomChars, s_randomAsciiChars);
+                Test(rng, s_randomChars, s_randomAsciiChars, expected, indexOfAny, indexOfAnyValues);
 
-                Test(s_randomChars, s_randomChars);
+                Test(rng, s_randomChars, s_randomLatin1Chars, expected, indexOfAny, indexOfAnyValues);
+
+                Test(rng, s_randomChars, s_randomChars, expected, indexOfAny, indexOfAnyValues);
             }
+        }
 
-            void Test(ReadOnlySpan<char> haystackRandom, ReadOnlySpan<char> needleRandom)
+        private static void Test<T>(Random rng, ReadOnlySpan<T> haystackRandom, ReadOnlySpan<T> needleRandom,
+            IndexOfAnySearchDelegate<T> expected, IndexOfAnySearchDelegate<T> indexOfAny, IndexOfAnyValuesSearchDelegate<T> indexOfAnyValues)
+            where T : INumber<T>
+        {
+            ReadOnlySpan<T> haystack = GetRandomSlice(rng, haystackRandom, MaxHaystackLength);
+            ReadOnlySpan<T> needle = GetRandomSlice(rng, needleRandom, MaxNeedleLength);
+
+            IndexOfAnyValues<T> indexOfAnyValuesInstance = (IndexOfAnyValues<T>)(object)(typeof(T) == typeof(byte)
+                ? IndexOfAnyValues.Create(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(needle)), needle.Length))
+                : IndexOfAnyValues.Create(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(needle)), needle.Length)));
+
+            int expectedIndex = expected(haystack, needle);
+            int indexOfAnyIndex = indexOfAny(haystack, needle);
+            int indexOfAnyValuesIndex = indexOfAnyValues(haystack, indexOfAnyValuesInstance);
+
+            if (expectedIndex != indexOfAnyIndex)
             {
-                const int MaxNeedleLength = 8;
-                const int MaxHaystackLength = 40;
-
-                ReadOnlySpan<char> haystack = haystackRandom.Slice(rng.Next(haystackRandom.Length + 1));
-                haystack = haystack.Slice(0, Math.Min(haystack.Length, rng.Next(MaxHaystackLength)));
-
-                ReadOnlySpan<char> needle = needleRandom.Slice(rng.Next(needleRandom.Length + 1));
-                needle = needle.Slice(0, Math.Min(needle.Length, rng.Next(MaxNeedleLength)));
-
-                int expectedIndex = expected(haystack, needle);
-                int actualIndex = actual(haystack, needle);
-
-                if (expectedIndex != actualIndex)
-                {
-                    string readableNeedle = string.Join(", ", needle.ToString().Select(c => (int)c));
-                    string readableHaystack = string.Join(", ", haystack.ToString().Select(c => (int)c));
-
-                    Assert.True(false, $"Expected {expectedIndex}, got {actualIndex} for needle='{readableNeedle}', haystack='{readableHaystack}'");
-                }
+                AssertionFailed(haystack, needle, expectedIndex, indexOfAnyIndex, nameof(indexOfAny));
             }
+
+            if (expectedIndex != indexOfAnyValuesIndex)
+            {
+                AssertionFailed(haystack, needle, expectedIndex, indexOfAnyValuesIndex, nameof(indexOfAnyValues));
+            }
+        }
+
+        private static ReadOnlySpan<T> GetRandomSlice<T>(Random rng, ReadOnlySpan<T> span, int maxLength)
+        {
+            ReadOnlySpan<T> slice = span.Slice(rng.Next(span.Length + 1));
+            return slice.Slice(0, Math.Min(slice.Length, rng.Next(maxLength + 1)));
+        }
+
+        private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
+            where T : INumber<T>
+        {
+            string readableHaystack = string.Join(", ", haystack.ToString().Select(c => int.CreateChecked(c)));
+            string readableNeedle = string.Join(", ", needle.ToString().Select(c => int.CreateChecked(c)));
+
+            Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
         }
     }
 }

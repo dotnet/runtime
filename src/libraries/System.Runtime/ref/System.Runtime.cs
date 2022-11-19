@@ -7052,6 +7052,15 @@ namespace System.Buffers
     {
         System.Memory<T> Memory { get; }
     }
+    public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
+    {
+        internal IndexOfAnyValues() { }
+    }
+    public static class IndexOfAnyValues
+    {
+        public static System.Buffers.IndexOfAnyValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.IndexOfAnyValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+    }
     public partial interface IPinnable
     {
         System.Buffers.MemoryHandle Pin(int elementIndex);

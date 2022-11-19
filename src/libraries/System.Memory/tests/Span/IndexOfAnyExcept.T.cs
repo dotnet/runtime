@@ -55,12 +55,59 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [OuterLoop("Takes about a second to execute")]
+        //[OuterLoop("Takes about a second to execute")]
+        public static void TestIndexOfAnyExcept_RandomInputs_Byte()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: IndexOfAnyExceptReferenceImpl,
+                indexOfAny: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
+
+            static int IndexOfAnyExceptReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
+            {
+                for (int i = 0; i < searchSpace.Length; i++)
+                {
+                    if (!values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+
+        [Fact]
+        //[OuterLoop("Takes about a second to execute")]
+        public static void TestLastIndexOfAnyExcept_RandomInputs_Byte()
+        {
+            IndexOfAnyCharTestHelper.TestRandomInputs(
+                expected: LastIndexOfAnyExceptReferenceImpl,
+                indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
+
+            static int LastIndexOfAnyExceptReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
+            {
+                for (int i = searchSpace.Length - 1; i >= 0; i--)
+                {
+                    if (!values.Contains(searchSpace[i]))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+
+        [Fact]
+        //[OuterLoop("Takes about a second to execute")]
         public static void TestIndexOfAnyExcept_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
                 expected: IndexOfAnyExceptReferenceImpl,
-                actual: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
+                indexOfAny: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
 
             static int IndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -77,12 +124,13 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [OuterLoop("Takes about a second to execute")]
+        //[OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAnyExcept_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
                 expected: LastIndexOfAnyExceptReferenceImpl,
-                actual: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
+                indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
+                indexOfAnyValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
 
             static int LastIndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
