@@ -178,15 +178,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static T[] Shuffle<T>(Random random, T[] array)
             {
-                // In-place Fisher-Yates shuffle
-                for (int i = 0; i < array.Length - 1; ++i)
-                {
-                    int j = random.Next(i, array.Length);
-                    var tmp = array[i];
-                    array[i] = array[j];
-                    array[j] = tmp;
-                }
-                return array;
+                T[] copy = array.AsSpan().ToArray();
+                random.Shuffle(copy);
+                return copy;
             }
         }
     }

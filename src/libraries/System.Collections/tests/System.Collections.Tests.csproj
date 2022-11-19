@@ -45,8 +45,6 @@
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\ObjectCloner.cs"
              Link="Common\System\ObjectCloner.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomExtensions.cs"
-             Link="Common\System\RandomExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <!-- Generic tests -->
