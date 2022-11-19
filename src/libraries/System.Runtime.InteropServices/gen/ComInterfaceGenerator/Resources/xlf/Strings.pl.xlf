@@ -38,13 +38,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
-        <source>Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</source>
-        <target state="new">Using GeneratedComInterfaceAttribute with InterfaceTypeAttribute is only supported with argument InterfaceIsIUnknown</target>
+        <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
+        <target state="new">Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedTitle">
-        <source>Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</source>
-        <target state="new">Speficied InterfaceType is not supported with GeneratedComInterfaceAttribute</target>
+        <source>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</source>
+        <target state="new">'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
