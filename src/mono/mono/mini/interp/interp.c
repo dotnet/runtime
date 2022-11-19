@@ -6829,11 +6829,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			guint16 clause_index = *(ip + 1);
 
 			guint16 *ret_ip = *(guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]);
-			if (!ret_ip) {
+			if (!ret_ip)
 				// this clause was called from EH, return to eh
-				g_assert (clause_args && clause_args->exec_frame == frame);
 				goto exit_clause;
-			}
 			ip = ret_ip;
 			MINT_IN_BREAK;
 		}
