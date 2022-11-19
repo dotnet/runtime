@@ -684,11 +684,9 @@ void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& va
 }
 void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags, CORINFO_OS* os)
 {
-    AssertMapAndKeyExistNoMessage(CompileMethod, 0);
-
     Agnostic_CompileMethod value;
+    value = LookupByKeyOrMissNoMessage(CompileMethod, 0); // The only item in this set is a single group of inputs to CompileMethod
 
-    value = CompileMethod->Get((DWORD)0); // The only item in this set is a single group of inputs to CompileMethod
     DEBUG_REP(dmpCompileMethod(0, value));
 
     info->ftn        = (CORINFO_METHOD_HANDLE)value.info.ftn;
@@ -725,8 +723,7 @@ void MethodContext::dmpGetMethodClass(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetMethodClass(CORINFO_METHOD_HANDLE methodHandle)
 {
     DWORDLONG key = CastHandle(methodHandle);
-    AssertMapAndKeyExist(GetMethodClass, key, ": key %016llX", key);
-    DWORDLONG value = GetMethodClass->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetMethodClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetMethodClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -749,8 +746,7 @@ void MethodContext::dmpGetMethodModule(DWORDLONG key, DWORDLONG value)
 CORINFO_MODULE_HANDLE MethodContext::repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle)
 {
     DWORDLONG key = CastHandle(methodHandle);
-    AssertMapAndKeyExist(GetMethodModule, key, ": key %016llX", key);
-    DWORDLONG value = GetMethodModule->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetMethodModule, key, ": key %016llX", key);
     DEBUG_REP(dmpGetMethodModule(key, value));
     CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
     return result;
@@ -772,8 +768,7 @@ void MethodContext::dmpGetClassAttribs(DWORDLONG key, DWORD value)
 DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
     DWORDLONG key = CastHandle(classHandle);
-    AssertMapAndKeyExist(GetClassAttribs, key, ": key %016llX", key);
-    DWORD value = GetClassAttribs->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetClassAttribs, key, ": key %016llX", key);
     DEBUG_REP(dmpGetClassAttribs(key, value));
     return value;
 }
@@ -795,8 +790,7 @@ void MethodContext::dmpIsIntrinsic(DWORDLONG key, DWORD value)
 bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(IsIntrinsic, key, ": key %016llX", key);
-    DWORD value = IsIntrinsic->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsIntrinsic, key, ": key %016llX", key);
     DEBUG_REP(dmpIsIntrinsic(key, value));
     return value != 0;
 }
@@ -817,9 +811,8 @@ void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
     DWORDLONG key = CastHandle(methodHandle);
-    AssertMapAndKeyExist(GetMethodAttribs, key, ": key %016llX", key);
+    DWORD value = LookupByKeyOrMiss(GetMethodAttribs, key, ": key %016llX", key);
 
-    DWORD value = GetMethodAttribs->Get(key);
     DEBUG_REP(dmpGetMethodAttribs(key, value));
 
     if (cr->repSetMethodAttribs(methodHandle) == CORINFO_FLG_BAD_INLINEE)
@@ -844,8 +837,7 @@ void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
 CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassModule, key, ": key %016llX", key);
-    DWORDLONG value = GetClassModule->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetClassModule, key, ": key %016llX", key);
     DEBUG_REP(dmpGetClassModule(key, value));
     CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
     return result;
@@ -868,8 +860,7 @@ void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
 CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
 {
     DWORDLONG key = CastHandle(mod);
-    AssertMapAndKeyExist(GetModuleAssembly, key, ": key %016llX", key);
-    DWORDLONG value = GetModuleAssembly->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetModuleAssembly, key, ": key %016llX", key);
     DEBUG_REP(dmpGetModuleAssembly(key, value));
     CORINFO_ASSEMBLY_HANDLE result = (CORINFO_ASSEMBLY_HANDLE)value;
     return result;
@@ -1007,9 +998,8 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      ICorDebugInfo::BoundaryTypes* implicitBoundaries)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(GetBoundaries, key, ": key %016llX", key);
+    Agnostic_GetBoundaries value = LookupByKeyOrMiss(GetBoundaries, key, ": key %016llX", key);
 
-    Agnostic_GetBoundaries value = GetBoundaries->Get(key);
     DEBUG_REP(dmpGetBoundaries(key, value));
 
     *cILOffsets = (unsigned int)value.cILOffsets;
@@ -1187,7 +1177,7 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
     key.namespaceName = (namespaceName != nullptr);
     key.enclosingClassName = (enclosingClassName != nullptr);
 
-    AssertMapAndKeyExist(
+    Agnostic_CORINFO_METHODNAME_TOKENout value = LookupByKeyOrMiss(
         GetMethodNameFromMetadata,
         key,
         ": ftn-%016llX className-%u namespaceName-%u enclosingClassName-%u",
@@ -1195,8 +1185,6 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
         key.className,
         key.namespaceName,
         key.enclosingClassName);
-
-    Agnostic_CORINFO_METHODNAME_TOKENout value = GetMethodNameFromMetadata->Get(key);
 
     DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
 
@@ -1249,9 +1237,8 @@ void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
-    AssertMapAndKeyExistNoMessage(GetJitFlags, 0);
+    DD value = LookupByKeyOrMissNoMessage(GetJitFlags, 0);
 
-    DD value = GetJitFlags->Get(0);
     DEBUG_REP(dmpGetJitFlags(0, value));
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
@@ -1283,9 +1270,8 @@ void MethodContext::dmpGetJitTimeLogFilename(DWORD key, DWORD value)
 }
 LPCWSTR MethodContext::repGetJitTimeLogFilename()
 {
-    AssertMapAndKeyExistNoMessage(GetJitTimeLogFilename, 0);
+    DWORD offset = LookupByKeyOrMissNoMessage(GetJitTimeLogFilename, 0);
 
-    DWORD offset = GetJitTimeLogFilename->Get(0);
     DEBUG_REP(dmpGetJitTimeLogFilename(0, offset));
 
     LPCWSTR value = nullptr;
@@ -1384,15 +1370,11 @@ void MethodContext::dmpResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key
 }
 void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD* exceptionCode)
 {
-    AssertMapExists(ResolveToken, ": key %x", pResolvedToken->token);
-
     Agnostic_CORINFO_RESOLVED_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
 
-    AssertKeyExists(ResolveToken, key, ": token %x", pResolvedToken->token);
-
-    ResolveTokenValue value = ResolveToken->Get(key);
+    ResolveTokenValue value = LookupByKeyOrMiss(ResolveToken, key, ": token %x", pResolvedToken->token);
     DEBUG_REP(dmpResolveToken(key, value));
 
     SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
@@ -1424,15 +1406,11 @@ void MethodContext::dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& 
 }
 bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
-    AssertMapExists(TryResolveToken, ": key %x", pResolvedToken->token);
-
     Agnostic_CORINFO_RESOLVED_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
 
-    AssertKeyExists(TryResolveToken, key, ": token %x", pResolvedToken->token);
-
-    TryResolveTokenValue value = TryResolveToken->Get(key);
+    TryResolveTokenValue value = LookupByKeyOrMiss(TryResolveToken, key, ": token %x", pResolvedToken->token);
     DEBUG_REP(dmpTryResolveToken(key, value));
 
     SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
@@ -1577,10 +1555,8 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     key.callerHandle = CastHandle(callerHandle);
     key.flags        = (DWORD)flags;
 
-    AssertKeyExists(GetCallInfo, key, ": key %08x, %016llx",
+    Agnostic_CORINFO_CALL_INFO value = LookupByKeyOrMiss(GetCallInfo, key, ": key %08x, %016llx",
                     key.ResolvedToken.inValue.token, key.ResolvedToken.outValue.hClass);
-
-    Agnostic_CORINFO_CALL_INFO value = GetCallInfo->Get(key);
 
     if (value.exceptionCode != 0)
     {
@@ -1736,9 +1712,9 @@ void MethodContext::repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolve
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
 
-    AssertMapAndKeyExist(ExpandRawHandleIntrinsic, key, ": key %x", pResolvedToken->token);
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value =
+        LookupByKeyOrMiss(ExpandRawHandleIntrinsic, key, ": key %x", pResolvedToken->token);
 
-    Agnostic_CORINFO_GENERICHANDLE_RESULT value = ExpandRawHandleIntrinsic->Get(key);
     DEBUG_REP(dmpExpandRawHandleIntrinsic(key, value));
 
     pResult->lookup            = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
@@ -1763,8 +1739,7 @@ void MethodContext::dmpIsIntrinsicType(DWORDLONG key, DWORD value)
 bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsIntrinsicType, key, ": key %016llX", key);
-    DWORD value = IsIntrinsicType->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsIntrinsicType, key, ": key %016llX", key);
     DEBUG_REP(dmpIsIntrinsicType(key, value));
     return value != 0;
 }
@@ -1786,8 +1761,7 @@ void MethodContext::dmpAsCorInfoType(DWORDLONG key, DWORD value)
 CorInfoType MethodContext::repAsCorInfoType(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(AsCorInfoType, key, ": key %016llX", key);
-    DWORD value = AsCorInfoType->Get(key);
+    DWORD value = LookupByKeyOrMiss(AsCorInfoType, key, ": key %016llX", key);
     DEBUG_REP(dmpAsCorInfoType(key, value));
     CorInfoType result = (CorInfoType)value;
     return result;
@@ -1810,8 +1784,7 @@ void MethodContext::dmpIsValueClass(DWORDLONG key, DWORD value)
 bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsValueClass, key, ": key %016llX", key);
-    DWORD value = IsValueClass->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsValueClass, key, ": key %016llX", key);
     DEBUG_REP(dmpIsValueClass(key, value));
     return value != 0;
 }
@@ -1833,8 +1806,7 @@ void MethodContext::dmpGetClassSize(DWORDLONG key, DWORD val)
 unsigned MethodContext::repGetClassSize(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassSize, key, ": key %016llX", key);
-    DWORD value = GetClassSize->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetClassSize, key, ": key %016llX", key);
     DEBUG_REP(dmpGetClassSize(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -1857,8 +1829,7 @@ void MethodContext::dmpGetHeapClassSize(DWORDLONG key, DWORD val)
 unsigned MethodContext::repGetHeapClassSize(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetHeapClassSize, key, ": key %016llX", key);
-    DWORD value = GetHeapClassSize->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetHeapClassSize, key, ": key %016llX", key);
     DEBUG_REP(dmpGetHeapClassSize(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -1881,8 +1852,7 @@ void MethodContext::dmpCanAllocateOnStack(DWORDLONG key, DWORD val)
 bool MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(CanAllocateOnStack, key, ": key %016llX", key);
-    DWORD value = CanAllocateOnStack->Get(key);
+    DWORD value = LookupByKeyOrMiss(CanAllocateOnStack, key, ": key %016llX", key);
     DEBUG_REP(dmpCanAllocateOnStack(key, value));
     return value != 0;
 }
@@ -1904,8 +1874,7 @@ void MethodContext::dmpGetClassNumInstanceFields(DWORDLONG key, DWORD value)
 unsigned MethodContext::repGetClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassNumInstanceFields, key, ": key %016llX", key);
-    DWORD value = GetClassNumInstanceFields->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetClassNumInstanceFields, key, ": key %016llX", key);
     DEBUG_REP(dmpGetClassNumInstanceFields(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -1928,8 +1897,7 @@ void MethodContext::dmpGetNewArrHelper(DWORDLONG key, DWORD value)
 CorInfoHelpFunc MethodContext::repGetNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
     DWORDLONG key = CastHandle(arrayCls);
-    AssertMapAndKeyExist(GetNewArrHelper, key, ": key %016llX", key);
-    DWORD value = GetNewArrHelper->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetNewArrHelper, key, ": key %016llX", key);
     DEBUG_REP(dmpGetNewArrHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -1952,8 +1920,7 @@ void MethodContext::dmpGetSharedCCtorHelper(DWORDLONG key, DWORD value)
 CorInfoHelpFunc MethodContext::repGetSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     DWORDLONG key = CastHandle(clsHnd);
-    AssertMapAndKeyExist(GetSharedCCtorHelper, key, ": key %016llX", key);
-    DWORD value = GetSharedCCtorHelper->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetSharedCCtorHelper, key, ": key %016llX", key);
     DEBUG_REP(dmpGetSharedCCtorHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -1976,8 +1943,7 @@ void MethodContext::dmpGetTypeForBox(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetTypeForBox, key, ": key %016llX", key);
-    DWORDLONG value = GetTypeForBox->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBox, key, ": key %016llX", key);
     DEBUG_REP(dmpGetTypeForBox(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -2000,8 +1966,7 @@ void MethodContext::dmpGetBoxHelper(DWORDLONG key, DWORD value)
 CorInfoHelpFunc MethodContext::repGetBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetBoxHelper, key, ": key %016llX", key);
-    DWORD value = GetBoxHelper->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetBoxHelper, key, ": key %016llX", key);
     DEBUG_REP(dmpGetBoxHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -2024,8 +1989,7 @@ void MethodContext::dmpGetBuiltinClass(DWORD key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
 {
     DWORD key = (DWORD)classId;
-    AssertMapAndKeyExist(GetBuiltinClass, key, ": key %08X", key);
-    DWORDLONG value = GetBuiltinClass->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetBuiltinClass, key, ": key %08X", key);
     DEBUG_REP(dmpGetBuiltinClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -2048,8 +2012,7 @@ void MethodContext::dmpGetTypeForPrimitiveValueClass(DWORDLONG key, DWORD value)
 CorInfoType MethodContext::repGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetTypeForPrimitiveValueClass, key, ": key %016llX", key);
-    DWORD value = GetTypeForPrimitiveValueClass->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetTypeForPrimitiveValueClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetTypeForPrimitiveValueClass(key, value));
     CorInfoType result = (CorInfoType)value;
     return result;
@@ -2073,8 +2036,7 @@ void MethodContext::dmpGetTypeForPrimitiveNumericClass(DWORDLONG key, DWORD valu
 CorInfoType MethodContext::repGetTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetTypeForPrimitiveNumericClass, key, ": key %016llX", key);
-    DWORD value = GetTypeForPrimitiveNumericClass->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetTypeForPrimitiveNumericClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetTypeForPrimitiveNumericClass(key, value));
     CorInfoType result = (CorInfoType)value;
     return result;
@@ -2097,8 +2059,7 @@ void MethodContext::dmpGetParentType(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetParentType(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetParentType, key, ": key %016llX", key);
-    DWORDLONG value = GetParentType->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetParentType, key, ": key %016llX", key);
     DEBUG_REP(dmpGetParentType(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -2121,8 +2082,7 @@ void MethodContext::dmpIsSDArray(DWORDLONG key, DWORD value)
 bool MethodContext::repIsSDArray(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsSDArray, key, ": key %016llX", key);
-    DWORD value = IsSDArray->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsSDArray, key, ": key %016llX", key);
     DEBUG_REP(dmpIsSDArray(key, value));
     return value != 0;
 }
@@ -2144,8 +2104,7 @@ void MethodContext::dmpGetFieldClass(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetFieldClass(CORINFO_FIELD_HANDLE field)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetFieldClass, key, ": key %016llX", key);
-    DWORDLONG value = GetFieldClass->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetFieldClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetFieldClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -2168,8 +2127,7 @@ void MethodContext::dmpGetFieldOffset(DWORDLONG key, DWORD value)
 unsigned MethodContext::repGetFieldOffset(CORINFO_FIELD_HANDLE field)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetFieldOffset, key, ": key %016llX", key);
-    DWORD value = GetFieldOffset->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetFieldOffset, key, ": key %016llX", key);
     DEBUG_REP(dmpGetFieldOffset(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -2192,8 +2150,7 @@ void MethodContext::dmpGetLazyStringLiteralHelper(DWORDLONG key, DWORD value)
 CorInfoHelpFunc MethodContext::repGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
 {
     DWORDLONG key = CastHandle(handle);
-    AssertMapAndKeyExist(GetLazyStringLiteralHelper, key, ": key %016llX", key);
-    DWORD value = GetLazyStringLiteralHelper->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetLazyStringLiteralHelper, key, ": key %016llX", key);
     DEBUG_REP(dmpGetLazyStringLiteralHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -2216,8 +2173,7 @@ void MethodContext::dmpGetUnBoxHelper(DWORDLONG key, DWORD value)
 CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetUnBoxHelper, key, ": key %016llX", key);
-    DWORD value = GetUnBoxHelper->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetUnBoxHelper, key, ": key %016llX", key);
     DEBUG_REP(dmpGetUnBoxHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -2240,8 +2196,7 @@ void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
 CORINFO_OBJECT_HANDLE MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
-    DWORDLONG value = GetRuntimeTypePointer->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetRuntimeTypePointer, key, ": key %016llX", key);
     DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
     return (CORINFO_OBJECT_HANDLE)value;
 }
@@ -2263,8 +2218,7 @@ void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
 bool MethodContext::repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 {
     DWORDLONG key = (DWORDLONG)objPtr;
-    AssertMapAndKeyExist(IsObjectImmutable, key, ": key %016llX", key);
-    DWORD value = IsObjectImmutable->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsObjectImmutable, key, ": key %016llX", key);
     DEBUG_REP(dmpIsObjectImmutable(key, value));
     return (bool)value;
 }
@@ -2286,8 +2240,7 @@ void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     DWORDLONG key = (DWORDLONG)objPtr;
-    AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);
-    DWORDLONG value = GetObjectType->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetObjectType, key, ": key %016llX", key);
     DEBUG_REP(dmpGetObjectType(key, value));
     return (CORINFO_CLASS_HANDLE)value;
 }
@@ -2336,9 +2289,8 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
     key.GenericLookupKind = SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(pGenericLookupKind);
     key.id                = (DWORD)id;
 
-    AssertKeyExistsNoMessage(GetReadyToRunHelper, key);
+    GetReadyToRunHelper_TOKENout value = LookupByKeyOrMissNoMessage(GetReadyToRunHelper, key);
 
-    GetReadyToRunHelper_TOKENout value = GetReadyToRunHelper->Get(key);
     DEBUG_REP(dmpGetReadyToRunHelper(key, value));
 
     *pLookup = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.Lookup);
@@ -2387,9 +2339,8 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     key.targetConstraint = targetConstraint;
     key.delegateType     = CastHandle(delegateType);
 
-    AssertKeyExistsNoMessage(GetReadyToRunDelegateCtorHelper, key);
+    Agnostic_CORINFO_LOOKUP value = LookupByKeyOrMissNoMessage(GetReadyToRunDelegateCtorHelper, key);
 
-    Agnostic_CORINFO_LOOKUP value = GetReadyToRunDelegateCtorHelper->Get(key);
     DEBUG_REP(dmpGetReadyToRunDelegateCtorHelper(key, value));
 
     *pLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value);
@@ -2506,9 +2457,8 @@ CORINFO_JUST_MY_CODE_HANDLE MethodContext::repGetJustMyCodeHandle(CORINFO_METHOD
                                                                   CORINFO_JUST_MY_CODE_HANDLE** ppIndirection)
 {
     DWORDLONG key = CastHandle(method);
-    AssertMapAndKeyExist(GetJustMyCodeHandle, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(GetJustMyCodeHandle, key, ": key %016llX", key);
 
-    DLDL value = GetJustMyCodeHandle->Get(key);
     DEBUG_REP(dmpGetJustMyCodeHandle(key, value));
 
     *ppIndirection                     = (CORINFO_JUST_MY_CODE_HANDLE*)value.A;
@@ -2669,9 +2619,8 @@ InfoAccessType MethodContext::repConstructStringLiteral(CORINFO_MODULE_HANDLE mo
     key.A = CastHandle(moduleHandle);
     key.B = (DWORD)metaTok;
 
-    AssertMapAndKeyExist(ConstructStringLiteral, key, ": key %016llX", CastHandle(moduleHandle));
+    DLD value = LookupByKeyOrMiss(ConstructStringLiteral, key, ": key %016llX", CastHandle(moduleHandle));
 
-    DLD value = ConstructStringLiteral->Get(key);
     DEBUG_REP(dmpConstructStringLiteral(key, value));
 
     *ppValue = (void*)value.A;
@@ -2706,8 +2655,7 @@ bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolv
     key.A = CastHandle(pResolvedToken->tokenScope);
     key.B = (DWORD)pResolvedToken->token;
 
-    AssertKeyExistsNoMessage(ConvertPInvokeCalliToCall, key);
-    DWORDLONG value = ConvertPInvokeCalliToCall->Get(key);
+    DWORDLONG value = LookupByKeyOrMissNoMessage(ConvertPInvokeCalliToCall, key);
     DEBUG_REP(dmpConvertPInvokeCalliToCall(key, value));
 
     pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value;
@@ -2730,11 +2678,10 @@ void MethodContext::dmpEmptyStringLiteral(DWORD key, DLD value)
 }
 InfoAccessType MethodContext::repEmptyStringLiteral(void** ppValue)
 {
-    AssertMapAndKeyExistNoMessage(EmptyStringLiteral, 0);
-
     // TODO-Cleanup: sketchy if someone calls this twice
     DLD temp2;
-    temp2    = EmptyStringLiteral->Get(0);
+    temp2 = LookupByKeyOrMissNoMessage(EmptyStringLiteral, 0);
+
     *ppValue = (void*)temp2.A;
     return (InfoAccessType)temp2.B;
 }
@@ -2805,9 +2752,8 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     key.sigInst_classInst_Index = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap);
     key.sigInst_methInst_Index  = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap);
 
-    AssertKeyExists(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
+    Agnostic_GetArgType_Value value = LookupByKeyOrMiss(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
 
-    Agnostic_GetArgType_Value value = GetArgType->Get(key);
     DEBUG_REP(dmpGetArgType(key, value));
 
     *vcTypeRet              = (CORINFO_CLASS_HANDLE)value.vcTypeRet;
@@ -2845,9 +2791,8 @@ int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExac
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
-    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+    DLD value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
 
-    DLD value = GetExactClasses->Get(key);
     *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
     return value.B;
 }
@@ -2869,8 +2814,7 @@ void MethodContext::dmpGetArgNext(DWORDLONG key, DWORDLONG value)
 CORINFO_ARG_LIST_HANDLE MethodContext::repGetArgNext(CORINFO_ARG_LIST_HANDLE args)
 {
     DWORDLONG key = CastHandle(args);
-    AssertMapAndKeyExist(GetArgNext, key, ": key %016llX", key);
-    DWORDLONG value = GetArgNext->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetArgNext, key, ": key %016llX", key);
     DEBUG_REP(dmpGetArgNext(key, value));
     CORINFO_ARG_LIST_HANDLE result = (CORINFO_ARG_LIST_HANDLE)value;
     return result;
@@ -2902,9 +2846,8 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
     key.A = CastHandle(ftn);
     key.B = CastHandle(memberParent);
 
-    AssertMapAndKeyExist(GetMethodSig, key, ": key ftn-%016llX prt-%016llX", key.A, key.B);
+    Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(GetMethodSig, key, ": key ftn-%016llX prt-%016llX", key.A, key.B);
 
-    Agnostic_CORINFO_SIG_INFO value = GetMethodSig->Get(key);
     DEBUG_REP(dmpGetMethodSig(key, value));
 
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap);
@@ -2960,9 +2903,8 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
     key.sigInst_classInst_Index = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap);
     key.sigInst_methInst_Index  = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap);
 
-    AssertMapAndKeyExist(GetArgClass, key, ": key %016llX %016llX", key.scope, key.args);
+    Agnostic_GetArgClass_Value value = LookupByKeyOrMiss(GetArgClass, key, ": key %016llX %016llX", key.scope, key.args);
 
-    Agnostic_GetArgClass_Value value = GetArgClass->Get(key);
     DEBUG_REP(dmpGetArgClass(key, value));
 
     *exceptionCode = value.exceptionCode;
@@ -2986,8 +2928,7 @@ void MethodContext::dmpGetHFAType(DWORDLONG key, DWORD value)
 CorInfoHFAElemType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
 {
     DWORDLONG key = CastHandle(clsHnd);
-    AssertMapAndKeyExist(GetHFAType, key, ": key %016llX", key);
-    DWORD value = GetHFAType->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetHFAType, key, ": key %016llX", key);
     DEBUG_REP(dmpGetHFAType(key, value));
     return (CorInfoHFAElemType)value;
 }
@@ -3044,9 +2985,8 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
 bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(GetMethodInfo, key, ": key %016llX", key);
+    Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016llX", key);
 
-    Agnostic_GetMethodInfo value = GetMethodInfo->Get(key);
     DEBUG_REP(dmpGetMethodInfo(key, value));
 
     if (value.result)
@@ -3101,9 +3041,8 @@ CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolved
     key.hClass       = CastHandle(pResolvedToken->hClass);
     key.callerHandle = CastHandle(callerHandle);
 
-    AssertMapAndKeyExist(GetNewHelper, key, ": key %016llX %016llX", key.hClass, key.callerHandle);
+    DD value = LookupByKeyOrMiss(GetNewHelper, key, ": key %016llX %016llX", key.hClass, key.callerHandle);
 
-    DD value = GetNewHelper->Get(key);
     DEBUG_REP(dmpGetNewHelper(key, value));
 
     if (pHasSideEffects != nullptr)
@@ -3155,9 +3094,8 @@ void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
     key.ResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, EmbedGenericHandle);
     key.fEmbedParent  = (DWORD)fEmbedParent;
 
-    AssertKeyExistsNoMessage(EmbedGenericHandle, key);
+    Agnostic_CORINFO_GENERICHANDLE_RESULT value = LookupByKeyOrMissNoMessage(EmbedGenericHandle, key);
 
-    Agnostic_CORINFO_GENERICHANDLE_RESULT value = EmbedGenericHandle->Get(key);
     DEBUG_REP(dmpEmbedGenericHandle(key, value));
 
     pResult->lookup            = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.lookup);
@@ -3200,9 +3138,8 @@ void MethodContext::repGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, C
     key.A = CastHandle(ftn);
     key.B = (DWORD)EHnumber;
 
-    AssertKeyExists(GetEHinfo, key, ": key %016llX", CastHandle(ftn));
+    Agnostic_CORINFO_EH_CLAUSE value = LookupByKeyOrMiss(GetEHinfo, key, ": key %016llX", CastHandle(ftn));
 
-    Agnostic_CORINFO_EH_CLAUSE value = GetEHinfo->Get(key);
     DEBUG_REP(dmpGetEHinfo(key, value));
 
     clause->Flags         = (CORINFO_EH_CLAUSE_FLAGS)value.Flags;
@@ -3240,9 +3177,8 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              bool*                 isRelative)
 {
     DWORDLONG key = CastHandle(method);
-    AssertMapAndKeyExist(GetMethodVTableOffset, key, ": key %016llX", key);
+    DDD value = LookupByKeyOrMiss(GetMethodVTableOffset, key, ": key %016llX", key);
 
-    DDD value = GetMethodVTableOffset->Get(key);
     DEBUG_REP(dmpGetMethodVTableOffset(key, value));
 
     *offsetOfIndirection    = (unsigned)value.A;
@@ -3319,9 +3255,8 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     if (key.pResolvedTokenVirtualMethodNonNull)
         key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
-    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
+    Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
-    Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
@@ -3369,9 +3304,8 @@ CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ft
 {
     DWORDLONG key = CastHandle(ftn);
 
-    AssertMapAndKeyExist(GetUnboxedEntry, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(GetUnboxedEntry, key, ": key %016llX", key);
 
-    DLD value = GetUnboxedEntry->Get(key);
     DEBUG_REP(dmpGetUnboxedEntry(key, value));
 
     if (requiresInstMethodTableArg != nullptr)
@@ -3398,8 +3332,7 @@ void MethodContext::dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value)
 CORINFO_CLASS_HANDLE MethodContext::repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetDefaultComparerClass, key, ": key %016llX", key);
-    DWORDLONG value = GetDefaultComparerClass->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetDefaultComparerClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetDefaultComparerClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -3422,8 +3355,7 @@ void MethodContext::dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG 
 CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetDefaultEqualityComparerClass, key, ": key %016llX", key);
-    DWORDLONG value = GetDefaultEqualityComparerClass->Get(key);
+    DWORDLONG value = LookupByKeyOrMiss(GetDefaultEqualityComparerClass, key, ": key %016llX", key);
     DEBUG_REP(dmpGetDefaultEqualityComparerClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -3454,9 +3386,8 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOK
     key.hMethod = CastHandle(pResolvedToken->hMethod);
     key.hField  = CastHandle(pResolvedToken->hField);
 
-    AssertMapAndKeyExistNoMessage(GetTokenTypeAsHandle, key);
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetTokenTypeAsHandle, key);
 
-    DWORDLONG value = GetTokenTypeAsHandle->Get(key);
     DEBUG_REP(dmpGetTokenTypeAsHandle(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
@@ -3546,11 +3477,13 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     DWORD origFlag = key.flags;
 
-    if (GetFieldInfo->GetIndex(key) == -1)
+    int keyIndex = GetFieldInfo->GetIndex(key);
+    if (keyIndex == -1)
     {
 #ifdef sparseMC
         key.flags = origFlag ^ ((DWORD)CORINFO_ACCESS_THIS);
-        if (GetFieldInfo->GetIndex(key) != -1)
+        keyIndex = GetFieldInfo->GetIndex(key);
+        if (keyIndex != -1)
         {
             LogDebug(
                 "Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_THIS");
@@ -3558,7 +3491,8 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         else
         {
             key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_INLINECHECK;
-            if (GetFieldInfo->GetIndex(key) != -1)
+            keyIndex = GetFieldInfo->GetIndex(key);
+            if (keyIndex != -1)
             {
                 LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
             }
@@ -3572,7 +3506,7 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 #endif
     }
 
-    Agnostic_CORINFO_FIELD_INFO value = GetFieldInfo->Get(key);
+    Agnostic_CORINFO_FIELD_INFO value = GetFieldInfo->GetItem(keyIndex);
     DEBUG_REP(dmpGetFieldInfo(key, value));
 
     pResult->fieldAccessor                 = (CORINFO_FIELD_ACCESSOR)value.fieldAccessor;
@@ -3618,9 +3552,8 @@ void MethodContext::dmpEmbedMethodHandle(DWORDLONG key, DLDL value)
 CORINFO_METHOD_HANDLE MethodContext::repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(handle);
-    AssertMapAndKeyExist(EmbedMethodHandle, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(EmbedMethodHandle, key, ": key %016llX", key);
 
-    DLDL value = EmbedMethodHandle->Get(key);
     DEBUG_REP(dmpEmbedMethodHandle(key, value));
 
     if (ppIndirection != nullptr)
@@ -3651,9 +3584,8 @@ void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAdd
 void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetFieldAddress, key, ": key %016llX", key);
+    Agnostic_GetFieldAddress value = LookupByKeyOrMiss(GetFieldAddress, key, ": key %016llX", key);
 
-    Agnostic_GetFieldAddress value = GetFieldAddress->Get(key);
     DEBUG_REP(dmpGetFieldAddress(key, value));
 
     if (ppIndirection != nullptr)
@@ -3698,9 +3630,8 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)ignoreMovableObjects;
 
-    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
+    DD value = LookupByKeyOrMiss(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
 
-    DD value = GetReadonlyStaticFieldValue->Get(key);
     DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
     if (buffer != nullptr && (bool)value.A)
     {
@@ -3735,9 +3666,8 @@ void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetStaticFieldCurrentClass, key, ": key %016llX", key);
+    Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key %016llX", key);
 
-    Agnostic_GetStaticFieldCurrentClass value = GetStaticFieldCurrentClass->Get(key);
     DEBUG_REP(dmpGetStaticFieldCurrentClass(key, value));
 
     if (pIsSpeculative != nullptr)
@@ -3783,9 +3713,8 @@ void MethodContext::dmpGetClassGClayout(DWORDLONG key, const Agnostic_GetClassGC
 unsigned MethodContext::repGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassGClayout, key, ": key %016llX", key);
+    Agnostic_GetClassGClayout value = LookupByKeyOrMiss(GetClassGClayout, key, ": key %016llX", key);
 
-    Agnostic_GetClassGClayout value = GetClassGClayout->Get(key);
     DEBUG_REP(dmpGetClassGClayout(key, value));
 
     unsigned int len   = (unsigned int)value.len;
@@ -3825,9 +3754,8 @@ unsigned MethodContext::repGetClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
     key.A = CastHandle(cls);
     key.B = (DWORD)fDoubleAlignHint;
 
-    AssertMapAndKeyExist(GetClassAlignmentRequirement, key, ": key %016llX", key.A);
+    DWORD value = LookupByKeyOrMiss(GetClassAlignmentRequirement, key, ": key %016llX", key.A);
 
-    DWORD value = GetClassAlignmentRequirement->Get(key);
     DEBUG_REP(dmpGetClassAlignmentRequirement(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -3881,9 +3809,8 @@ CorInfoIsAccessAllowedResult MethodContext::repCanAccessClass(CORINFO_RESOLVED_T
     key.ResolvedToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, CanAccessClass);
     key.callerHandle  = CastHandle(callerHandle);
 
-    AssertKeyExists(CanAccessClass, key, ": key %016llX", CastHandle(pResolvedToken->hClass));
+    Agnostic_CanAccessClassOut value = LookupByKeyOrMiss(CanAccessClass, key, ": key %016llX", CastHandle(pResolvedToken->hClass));
 
-    Agnostic_CanAccessClassOut value = CanAccessClass->Get(key);
     DEBUG_REP(dmpCanAccessClass(key, value));
 
     pAccessHelper->helperNum = (CorInfoHelpFunc)value.AccessHelper.helperNum;
@@ -3922,9 +3849,8 @@ CorInfoHelpFunc MethodContext::repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pReso
     key.hClass    = CastHandle(pResolvedToken->hClass);
     key.fThrowing = (DWORD)fThrowing;
 
-    AssertMapAndKeyExist(GetCastingHelper, key, ": key %016llX", key.hClass);
+    DWORD value = LookupByKeyOrMiss(GetCastingHelper, key, ": key %016llX", key.hClass);
 
-    DWORD value = GetCastingHelper->Get(key);
     DEBUG_REP(dmpGetCastingHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
@@ -3955,9 +3881,8 @@ void MethodContext::dmpEmbedModuleHandle(DWORDLONG key, DLDL value)
 CORINFO_MODULE_HANDLE MethodContext::repEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(handle);
-    AssertMapAndKeyExist(EmbedModuleHandle, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(EmbedModuleHandle, key, ": key %016llX", key);
 
-    DLDL value = EmbedModuleHandle->Get(key);
     DEBUG_REP(dmpEmbedModuleHandle(key, value));
 
     if (ppIndirection != nullptr)
@@ -3988,9 +3913,8 @@ void MethodContext::dmpEmbedClassHandle(DWORDLONG key, DLDL value)
 CORINFO_CLASS_HANDLE MethodContext::repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(handle);
-    AssertMapAndKeyExist(EmbedClassHandle, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(EmbedClassHandle, key, ": key %016llX", key);
 
-    DLDL value = EmbedClassHandle->Get(key);
     DEBUG_REP(dmpEmbedClassHandle(key, value));
 
     if (ppIndirection != nullptr)
@@ -4036,9 +3960,8 @@ bool MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     key.cbSig      = (DWORD)callSiteSig->cbSig;
     key.scope      = CastHandle(callSiteSig->scope);
 
-    AssertKeyExistsNoMessage(PInvokeMarshalingRequired, key);
+    DWORD value = LookupByKeyOrMissNoMessage(PInvokeMarshalingRequired, key);
 
-    DWORD value = PInvokeMarshalingRequired->Get(key);
     DEBUG_REP(dmpPInvokeMarshalingRequired(key, value));
     return value != 0;
 }
@@ -4111,9 +4034,8 @@ CorInfoCallConvExtension MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_H
         key.scope = 0;
     }
 
-    AssertKeyExistsNoMessage(GetUnmanagedCallConv, key);
+    DD value = LookupByKeyOrMissNoMessage(GetUnmanagedCallConv, key);
 
-    DD value = GetUnmanagedCallConv->Get(key);
     DEBUG_REP(dmpGetUnmanagedCallConv(key, value));
 
     *pSuppressGCTransition = value.B != 0;
@@ -4156,9 +4078,8 @@ void MethodContext::repFindSig(CORINFO_MODULE_HANDLE  moduleHandle,
     key.sigTOK  = (DWORD)sigTOK;
     key.context = CastHandle(context);
 
-    AssertMapAndKeyExistNoMessage(FindSig, key);
+    Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMissNoMessage(FindSig, key);
 
-    Agnostic_CORINFO_SIG_INFO value = FindSig->Get(key);
     DEBUG_REP(dmpFindSig(key, value));
 
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap);
@@ -4308,9 +4229,8 @@ void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
         return;
     }
 
-    AssertMapAndKeyExistNoMessage(GetGSCookie, 0);
+    DLDL value = LookupByKeyOrMissNoMessage(GetGSCookie, 0);
 
-    DLDL value = GetGSCookie->Get(0);
     DEBUG_REP(dmpGetGSCookie(0, value));
 
     if (pCookieVal != nullptr)
@@ -4348,9 +4268,8 @@ PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
 {
     DWORD key = 0;
 
-    AssertMapAndKeyExistNoMessage(GetOSRInfo, key);
+    Agnostic_GetOSRInfo value = LookupByKeyOrMissNoMessage(GetOSRInfo, key);
 
-    Agnostic_GetOSRInfo value = GetOSRInfo->Get(key);
     DEBUG_REP(dmpGetOSRInfo(key, value));
 
     *ilOffset = value.ilOffset;
@@ -4391,9 +4310,8 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
                                                     void**                 ppIndirection)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassModuleIdForStatics, key, ": key %016llX", key);
+    Agnostic_GetClassModuleIdForStatics value = LookupByKeyOrMiss(GetClassModuleIdForStatics, key, ": key %016llX", key);
 
-    Agnostic_GetClassModuleIdForStatics value = GetClassModuleIdForStatics->Get(key);
 	DEBUG_REP(dmpGetClassModuleIdForStatics(key, value));
 
     if (pModule != nullptr)
@@ -4424,9 +4342,8 @@ void MethodContext::dmpGetThreadTLSIndex(DWORD key, DLD value)
 }
 DWORD MethodContext::repGetThreadTLSIndex(void** ppIndirection)
 {
-    AssertMapAndKeyExistNoMessage(GetThreadTLSIndex, 0);
+    DLD value = LookupByKeyOrMissNoMessage(GetThreadTLSIndex, 0);
 
-    DLD value = GetThreadTLSIndex->Get(0);
 	DEBUG_REP(dmpGetThreadTLSIndex(0, value));
 
     if (ppIndirection != nullptr)
@@ -4455,9 +4372,8 @@ void MethodContext::dmpGetInlinedCallFrameVptr(DWORD key, DLDL value)
 }
 const void* MethodContext::repGetInlinedCallFrameVptr(void** ppIndirection)
 {
-    AssertMapAndKeyExistNoMessage(GetInlinedCallFrameVptr, 0);
+    DLDL value = LookupByKeyOrMissNoMessage(GetInlinedCallFrameVptr, 0);
 
-    DLDL value = GetInlinedCallFrameVptr->Get(0);
 	DEBUG_REP(dmpGetInlinedCallFrameVptr(0, value));
 
     if (ppIndirection != nullptr)
@@ -4531,9 +4447,8 @@ void MethodContext::dmpGetClassDomainID(DWORDLONG key, DLD value)
 unsigned MethodContext::repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetClassDomainID, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(GetClassDomainID, key, ": key %016llX", key);
 
-    DLD value = GetClassDomainID->Get(key);
     DEBUG_REP(dmpGetClassDomainID(key, value));
 
     if (ppIndirection != nullptr)
@@ -4560,8 +4475,7 @@ void MethodContext::dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORIN
 void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     DWORDLONG key = CastHandle(context);
-    AssertMapAndKeyExist(GetLocationOfThisType, key, ": key %016llX", key);
-    Agnostic_CORINFO_LOOKUP_KIND value = GetLocationOfThisType->Get(key);
+    Agnostic_CORINFO_LOOKUP_KIND value = LookupByKeyOrMiss(GetLocationOfThisType, key, ": key %016llX", key);
 	DEBUG_REP(dmpGetLocationOfThisType(key, value));
     *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
@@ -4609,9 +4523,8 @@ CORINFO_METHOD_HANDLE MethodContext::repGetDelegateCtor(CORINFO_METHOD_HANDLE me
     key.clsHnd          = CastHandle(clsHnd);
     key.targetMethodHnd = CastHandle(targetMethodHnd);
 
-    AssertMapAndKeyExist(GetDelegateCtor, key, ": key %016llX", key.methHnd);
+    Agnostic_GetDelegateCtorOut value = LookupByKeyOrMiss(GetDelegateCtor, key, ": key %016llX", key.methHnd);
 
-    Agnostic_GetDelegateCtorOut value = GetDelegateCtor->Get(key);
     DEBUG_REP(dmpGetDelegateCtor(key, value));
 
     pCtorData->pMethod = (void*)value.CtorData.pMethod;
@@ -4642,8 +4555,7 @@ void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, boo
     // The isUnsafeFunctionPointer has no impact on the resulting value.
     // It helps produce side-effects in the runtime only.
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
-    Agnostic_CORINFO_CONST_LOOKUP value = GetFunctionFixedEntryPoint->Get(key);
+    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMiss(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
     DEBUG_REP(dmpGetFunctionFixedEntryPoint(key, value));
     *pResult = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value);
 }
@@ -4673,9 +4585,8 @@ CORINFO_FIELD_HANDLE MethodContext::repGetFieldInClass(CORINFO_CLASS_HANDLE clsH
     key.A = CastHandle(clsHnd);
     key.B = (DWORD)num;
 
-    AssertMapAndKeyExist(GetFieldInClass, key, ": key %016llX", key.A);
+    DWORDLONG value = LookupByKeyOrMiss(GetFieldInClass, key, ": key %016llX", key.A);
 
-    DWORDLONG value = GetFieldInClass->Get(key);
     DEBUG_REP(dmpGetFieldInClass(key, value));
     CORINFO_FIELD_HANDLE result = (CORINFO_FIELD_HANDLE)value;
     return result;
@@ -4732,9 +4643,8 @@ CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
     key.A = CastHandle(field);
     key.B = CastHandle(memberParent);
 
-    AssertMapAndKeyExist(GetFieldType, key, ": key %016llX", key.A);
+    DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key %016llX", key.A);
 
-    DLD value = GetFieldType->Get(key);
     DEBUG_REP(dmpGetFieldType(key, value));
 
     if (structType != nullptr)
@@ -4816,9 +4726,8 @@ CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE
     key.A = CastHandle(cls);
     key.B = (DWORD)source;
 
-    AssertMapAndKeyExist(CanInlineTypeCheck, key, ": key %016llX", key.A);
+    DWORD value = LookupByKeyOrMiss(CanInlineTypeCheck, key, ": key %016llX", key.A);
 
-    DWORD value = CanInlineTypeCheck->Get(key);
     DEBUG_REP(dmpCanInlineTypeCheck(key, value));
     CorInfoInlineTypeCheck result = (CorInfoInlineTypeCheck)value;
     return result;
@@ -4851,9 +4760,8 @@ bool MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     key.A = CastHandle(parent);
     key.B = CastHandle(method);
 
-    AssertMapAndKeyExistNoMessage(SatisfiesMethodConstraints, key);
+    DWORD value = LookupByKeyOrMissNoMessage(SatisfiesMethodConstraints, key);
 
-    DWORD value = SatisfiesMethodConstraints->Get(key);
     DEBUG_REP(dmpSatisfiesMethodConstraints(key, value));
     return value != 0;
 }
@@ -4883,9 +4791,8 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
 
-    AssertMapAndKeyExistNoMessage(IsValidStringRef, key);
+    DWORD value = LookupByKeyOrMissNoMessage(IsValidStringRef, key);
 
-    DWORD value = IsValidStringRef->Get(key);
     DEBUG_REP(dmpIsValidStringRef(key, value));
     return value != 0;
 }
@@ -4932,9 +4839,8 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     key.C = (DWORD)bufferSize;
     key.D = (DWORD)startIndex;
 
-    AssertMapAndKeyExist(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d startIndex-%d", key.A, key.B, key.C, key.D);
+    DD value = LookupByKeyOrMiss(GetStringLiteral, key, ": key handle-%016llX token-%X bufferSize-%d startIndex-%d", key.A, key.B, key.C, key.D);
 
-    DD value = GetStringLiteral->Get(key);
     DEBUG_REP(dmpGetStringLiteral(key, value));
     int srcBufferLength = (int)value.A;
     if (buffer != nullptr && srcBufferLength > 0)
@@ -4981,9 +4887,8 @@ size_t MethodContext::repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, ch
     key.A = CastHandle(handle);
     key.B = (DWORDLONG)bufferSize;
 
-    AssertMapAndKeyExist(PrintObjectDescription, key, ": key handle-%016llX bufferSize-%016llX", key.A, key.B);
+    Agnostic_PrintObjectDescriptionResult value = LookupByKeyOrMiss(PrintObjectDescription, key, ": key handle-%016llX bufferSize-%016llX", key.A, key.B);
 
-    Agnostic_PrintObjectDescriptionResult value = PrintObjectDescription->Get(key);
     DEBUG_REP(dmpPrintObjectDescription(key, value));
     if (pRequiredBufferSize != nullptr)
     {
@@ -5068,9 +4973,8 @@ bool MethodContext::repCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE 
     key.A = CastHandle(child);
     key.B = CastHandle(parent);
 
-    AssertMapAndKeyExist(CanCast, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(CanCast, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORD value = CanCast->Get(key);
     DEBUG_REP(dmpCanCast(key, value));
     return value != 0;
 }
@@ -5096,9 +5000,8 @@ void MethodContext::dmpGetChildType(DWORDLONG key, DLD value)
 CorInfoType MethodContext::repGetChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet)
 {
     DWORDLONG key = CastHandle(clsHnd);
-    AssertMapAndKeyExist(GetChildType, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(GetChildType, key, ": key %016llX", key);
 
-    DLD value = GetChildType->Get(key);
     DEBUG_REP(dmpGetChildType(key, value));
 
     *clsRet = (CORINFO_CLASS_HANDLE)value.A;
@@ -5130,9 +5033,8 @@ void* MethodContext::repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, D
     key.A = CastHandle(field);
     key.B = (DWORD)size;
 
-    AssertMapAndKeyExistNoMessage(GetArrayInitializationData, key);
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetArrayInitializationData, key);
 
-    DWORDLONG value = GetArrayInitializationData->Get(key);
     DEBUG_REP(dmpGetArrayInitializationData(key, value));
     void* result = (void*)value;
     return result;
@@ -5188,9 +5090,8 @@ void MethodContext::dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value)
 void MethodContext::repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)
 {
     DWORDLONG key = CastHandle(method);
-    AssertMapAndKeyExist(GetAddressOfPInvokeTarget, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(GetAddressOfPInvokeTarget, key, ": key %016llX", key);
 
-    DLD value = GetAddressOfPInvokeTarget->Get(key);
     DEBUG_REP(dmpGetAddressOfPInvokeTarget(key, value));
 
     pLookup->addr       = (void*)value.A;
@@ -5214,8 +5115,7 @@ void MethodContext::dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value)
 bool MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(SatisfiesClassConstraints, key, ": key %016llX", key);
-    DWORD value = SatisfiesClassConstraints->Get(key);
+    DWORD value = LookupByKeyOrMiss(SatisfiesClassConstraints, key, ": key %016llX", key);
     DEBUG_REP(dmpSatisfiesClassConstraints(key, value));
     return value != 0;
 }
@@ -5282,9 +5182,8 @@ bool MethodContext::repCanTailCall(CORINFO_METHOD_HANDLE callerHnd,
     key.exactCalleeHnd    = CastHandle(exactCalleeHnd);
     key.fIsTailPrefix     = (DWORD)fIsTailPrefix;
 
-    AssertMapAndKeyExist(CanTailCall, key, ": key %016llX", key.callerHnd);
+    DWORD value = LookupByKeyOrMiss(CanTailCall, key, ": key %016llX", key.callerHnd);
 
-    DWORD value = CanTailCall->Get(key);
     DEBUG_REP(dmpCanTailCall(key, value));
     return value != 0;
 }
@@ -5332,9 +5231,8 @@ bool MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
     key.method          = CastHandle(method);
     key.delegateCls     = CastHandle(delegateCls);
 
-    AssertMapAndKeyExistNoMessage(IsCompatibleDelegate, key);
+    DD value = LookupByKeyOrMissNoMessage(IsCompatibleDelegate, key);
 
-    DD value = IsCompatibleDelegate->Get(key);
     DEBUG_REP(dmpIsCompatibleDelegate(key, value));
 
     *pfIsOpenDelegate = value.A != 0;
@@ -5368,9 +5266,8 @@ bool MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHn
     key.A = CastHandle(delegateHnd);
     key.B = CastHandle(calleeHnd);
 
-    AssertMapAndKeyExistNoMessage(IsDelegateCreationAllowed, key);
+    DWORD value = LookupByKeyOrMissNoMessage(IsDelegateCreationAllowed, key);
 
-    DWORD value = IsDelegateCreationAllowed->Get(key);
     DEBUG_REP(dmpIsDelegateCreationAllowed(key, value));
     return value != 0;
 }
@@ -5411,9 +5308,8 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     key.methTok = (DWORD)methTOK;
     key.context = CastHandle(context);
 
-    AssertMapAndKeyExist(FindCallSiteSig, key, ": key %08X", key.methTok);
+    Agnostic_CORINFO_SIG_INFO value = LookupByKeyOrMiss(FindCallSiteSig, key, ": key %08X", key.methTok);
 
-    Agnostic_CORINFO_SIG_INFO value = FindCallSiteSig->Get(key);
     DEBUG_REP(dmpFindCallSiteSig(key, value));
 
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap);
@@ -5441,9 +5337,8 @@ void MethodContext::dmpGetMethodSync(DWORDLONG key, DLDL value)
 void* MethodContext::repGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(GetMethodSync, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(GetMethodSync, key, ": key %016llX", key);
 
-    DLDL value = GetMethodSync->Get(key);
     DEBUG_REP(dmpGetMethodSync(key, value));
 
     if (ppIndirection != nullptr)
@@ -5489,9 +5384,8 @@ CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig
     key.scope      = CastHandle(pSig->scope);
     key.token      = (DWORD)pSig->token;
 
-    AssertMapAndKeyExistNoMessage(GetVarArgsHandle, key);
+    DLDL value = LookupByKeyOrMissNoMessage(GetVarArgsHandle, key);
 
-    DLDL value = GetVarArgsHandle->Get(key);
     DEBUG_REP(dmpGetVarArgsHandle(key, value));
 
     if (ppIndirection != nullptr)
@@ -5524,9 +5418,8 @@ bool MethodContext::repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
     key.scope = CastHandle(pSig->scope);
     key.token = (DWORD)pSig->token;
 
-    AssertMapAndKeyExist(CanGetVarArgsHandle, key, ": key %016llX %08X", key.scope, key.token);
+    DWORD value = LookupByKeyOrMiss(CanGetVarArgsHandle, key, ": key %016llX %08X", key.scope, key.token);
 
-    DWORD value = CanGetVarArgsHandle->Get(key);
     DEBUG_REP(dmpCanGetVarArgsHandle(key, value));
     return value != 0;
 }
@@ -5556,9 +5449,8 @@ void MethodContext::dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value)
 DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetFieldThreadLocalStoreID, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(GetFieldThreadLocalStoreID, key, ": key %016llX", key);
 
-    DLD value = GetFieldThreadLocalStoreID->Get(key);
     DEBUG_REP(dmpGetFieldThreadLocalStoreID(key, value));
 
     if (ppIndirection != nullptr)
@@ -5634,9 +5526,8 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     BYTE** pInstrumentationData)
 {
     DWORDLONG key = CastHandle(ftnHnd);
-    AssertMapAndKeyExist(AllocPgoInstrumentationBySchema, key, ": key %016llX", key);
+    Agnostic_AllocPgoInstrumentationBySchema value = LookupByKeyOrMiss(AllocPgoInstrumentationBySchema, key, ": key %016llX", key);
 
-    Agnostic_AllocPgoInstrumentationBySchema value = AllocPgoInstrumentationBySchema->Get(key);
     DEBUG_REP(dmpAllocPgoInstrumentationBySchema(key, value));
 
     if (value.countSchemaItems != countSchemaItems)
@@ -5820,9 +5711,8 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
                                                        ICorJitInfo::PgoSource* pPgoSource)
 {
     DWORDLONG key = CastHandle(ftnHnd);
-    AssertMapAndKeyExist(GetPgoInstrumentationResults, key, ": key %016llX", key);
+    Agnostic_GetPgoInstrumentationResults tempValue = LookupByKeyOrMiss(GetPgoInstrumentationResults, key, ": key %016llX", key);
 
-    Agnostic_GetPgoInstrumentationResults tempValue = GetPgoInstrumentationResults->Get(key);
     DEBUG_REP(dmpGetPgoInstrumentationResults(key, tempValue));
 
     *pCountSchemaItems    = (UINT32)tempValue.countSchemaItems;
@@ -5872,9 +5762,8 @@ CORINFO_CLASS_HANDLE MethodContext::repMergeClasses(CORINFO_CLASS_HANDLE cls1, C
     key.A = CastHandle(cls1);
     key.B = CastHandle(cls2);
 
-    AssertMapAndKeyExist(MergeClasses, key, ": key %016llX %016llX", key.A, key.B);
+    DWORDLONG value = LookupByKeyOrMiss(MergeClasses, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORDLONG value = MergeClasses->Get(key);
     DEBUG_REP(dmpMergeClasses(key, value));
     return (CORINFO_CLASS_HANDLE)value;
 }
@@ -5904,9 +5793,8 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     key.A = CastHandle(cls1);
     key.B = CastHandle(cls2);
 
-    AssertMapAndKeyExist(IsMoreSpecificType, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(IsMoreSpecificType, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORD value = IsMoreSpecificType->Get(key);
     DEBUG_REP(dmpIsMoreSpecificType(key, value));
     return value != 0;
 }
@@ -5937,9 +5825,8 @@ TypeCompareState MethodContext::repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLAS
 {
     DWORDLONG key = CastHandle(cls);
 
-    AssertMapAndKeyExist(IsEnum, key, ": key %016llX", key);
+    DLD value = LookupByKeyOrMiss(IsEnum, key, ": key %016llX", key);
 
-    DLD value = IsEnum->Get(key);
     DEBUG_REP(dmpIsEnum(key, value));
     if (underlyingType != nullptr)
         *underlyingType = (CORINFO_CLASS_HANDLE)value.A;
@@ -5981,9 +5868,8 @@ LPVOID MethodContext::repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig
     key.scope      = CastHandle(szMetaSig->scope);
     key.token      = (DWORD)szMetaSig->token;
 
-    AssertMapAndKeyExistNoMessage(GetCookieForPInvokeCalliSig, key);
+    DLDL value = LookupByKeyOrMissNoMessage(GetCookieForPInvokeCalliSig, key);
 
-    DLDL value = GetCookieForPInvokeCalliSig->Get(key);
     DEBUG_REP(dmpGetCookieForPInvokeCalliSig(key, value));
 
     if (ppIndirection != nullptr)
@@ -6017,9 +5903,8 @@ bool MethodContext::repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSi
     key.scope = CastHandle(szMetaSig->scope);
     key.token = (DWORD)szMetaSig->token;
 
-    AssertMapAndKeyExistNoMessage(CanGetCookieForPInvokeCalliSig, key);
+    DWORD value = LookupByKeyOrMissNoMessage(CanGetCookieForPInvokeCalliSig, key);
 
-    DWORD value = CanGetCookieForPInvokeCalliSig->Get(key);
     DEBUG_REP(dmpCanGetCookieForPInvokeCalliSig(key, value));
     return value != 0;
 }
@@ -6049,9 +5934,8 @@ bool MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CL
     key.A = CastHandle(hCaller);
     key.B = CastHandle(hInstanceType);
 
-    AssertMapAndKeyExistNoMessage(CanAccessFamily, key);
+    DWORD value = LookupByKeyOrMissNoMessage(CanAccessFamily, key);
 
-    DWORD value = CanAccessFamily->Get(key);
     DEBUG_REP(dmpCanAccessFamily(key, value));
     return value != 0;
 }
@@ -6093,9 +5977,8 @@ void MethodContext::dmpGetProfilingHandle(DWORD key, const Agnostic_GetProfiling
 }
 void MethodContext::repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles)
 {
-    AssertMapAndKeyExistNoMessage(GetProfilingHandle, 0);
+    Agnostic_GetProfilingHandle value = LookupByKeyOrMissNoMessage(GetProfilingHandle, 0);
 
-    Agnostic_GetProfilingHandle value = GetProfilingHandle->Get(0);
     DEBUG_REP(dmpGetProfilingHandle(0, value));
 
     *pbHookFunction      = value.bHookFunction != 0;
@@ -6126,9 +6009,8 @@ void MethodContext::dmpEmbedFieldHandle(DWORDLONG key, DLDL value)
 CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(handle);
-    AssertMapAndKeyExist(EmbedFieldHandle, key, ": key %016llX", key);
+    DLDL value = LookupByKeyOrMiss(EmbedFieldHandle, key, ": key %016llX", key);
 
-    DLDL value = EmbedFieldHandle->Get(key);
     DEBUG_REP(dmpEmbedFieldHandle(key, value));
 
     if (ppIndirection != nullptr)
@@ -6161,9 +6043,8 @@ bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     key.A = CastHandle(cls1);
     key.B = CastHandle(cls2);
 
-    AssertMapAndKeyExist(AreTypesEquivalent, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(AreTypesEquivalent, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORD value = AreTypesEquivalent->Get(key);
     DEBUG_REP(dmpAreTypesEquivalent(key, value));
     return value != 0;
 }
@@ -6195,9 +6076,8 @@ TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE from
     key.A = CastHandle(fromClass);
     key.B = CastHandle(toClass);
 
-    AssertMapAndKeyExist(CompareTypesForCast, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(CompareTypesForCast, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORD value = CompareTypesForCast->Get(key);
     DEBUG_REP(dmpCompareTypesForCast(key, value));
     TypeCompareState result = (TypeCompareState)value;
     return result;
@@ -6230,9 +6110,8 @@ TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE 
     key.A = CastHandle(cls1);
     key.B = CastHandle(cls2);
 
-    AssertMapAndKeyExist(CompareTypesForEquality, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(CompareTypesForEquality, key, ": key %016llX %016llX", key.A, key.B);
 
-    DWORD value = CompareTypesForEquality->Get(key);
     DEBUG_REP(dmpCompareTypesForEquality(key, value));
     TypeCompareState result = (TypeCompareState)value;
     return result;
@@ -6276,9 +6155,8 @@ size_t MethodContext::repFindNameOfToken(CORINFO_MODULE_HANDLE module,
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
 
-    AssertMapAndKeyExist(FindNameOfToken, key, ": key %016llX", key.A);
+    DLD value = LookupByKeyOrMiss(FindNameOfToken, key, ": key %016llX", key.A);
 
-    DLD value = FindNameOfToken->Get(key);
     DEBUG_REP(dmpFindNameOfToken(key, value));
 
     unsigned char* temp = nullptr;
@@ -6335,10 +6213,9 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
 {
     DWORDLONG key = CastHandle(structHnd);
 
-    AssertMapAndKeyExist(GetSystemVAmd64PassStructInRegisterDescriptor, key, ": key %016llX", key);
-
     Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor value;
-    value = GetSystemVAmd64PassStructInRegisterDescriptor->Get(key);
+    value = LookupByKeyOrMiss(GetSystemVAmd64PassStructInRegisterDescriptor, key, ": key %016llX", key);
+
     DEBUG_REP(dmpGetSystemVAmd64PassStructInRegisterDescriptor(key, value));
 
     structPassInRegDescPtr->passedInRegisters = value.passedInRegisters ? true : false;
@@ -6374,7 +6251,7 @@ DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HA
 {
     DWORDLONG key = CastHandle(structHnd);
 
-    DWORD value = GetLoongArch64PassStructInRegisterFlags->Get(key);
+    DWORD value = LookupByKeyOrMissNoMessage(GetLoongArch64PassStructInRegisterFlags, key);
     DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
     return value;
 }
@@ -6464,9 +6341,8 @@ DWORD MethodContext::repGetExpectedTargetArchitecture()
 {
     DWORD key = 0;
 
-    AssertMapAndKeyExist(GetExpectedTargetArchitecture, key, ": key %08X", key);
+    DWORD value = LookupByKeyOrMiss(GetExpectedTargetArchitecture, key, ": key %08X", key);
 
-    DWORD value = GetExpectedTargetArchitecture->Get(key);
     DEBUG_REP(dmpGetExpectedTargetArchitecture(key, value));
     return value;
 }
@@ -6498,11 +6374,10 @@ bool MethodContext::repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_
     key.A = CastHandle(fld);
     key.B = CastHandle(cls);
 
-    AssertMapAndKeyExist(DoesFieldBelongToClass, key, ": key %016llX %016llX", key.A, key.B);
+    DWORD value = LookupByKeyOrMiss(DoesFieldBelongToClass, key, ": key %016llX %016llX", key.A, key.B);
 
-    bool value = (bool)DoesFieldBelongToClass->Get(key);
     DEBUG_REP(dmpDoesFieldBelongToClass(key, value));
-    return value;
+    return value != 0;
 }
 
 void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
@@ -6530,9 +6405,8 @@ bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaT
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
 
-    AssertMapAndKeyExist(IsValidToken, key, ": key %016llX", key.A);
+    DWORD value = LookupByKeyOrMiss(IsValidToken, key, ": key %016llX", key.A);
 
-    DWORD value = IsValidToken->Get(key);
     DEBUG_REP(dmpIsValidToken(key, value));
     return value != 0;
 }
@@ -6663,24 +6537,14 @@ void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
-    CORINFO_CLASS_HANDLE result = nullptr;
-
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(cls);
     key.B = index;
 
-    int itemIndex = -1;
-    if (GetTypeInstantiationArgument != nullptr)
-        itemIndex = GetTypeInstantiationArgument->GetIndex(key);
-    if (itemIndex >= 0)
-    {
-        DWORDLONG value = GetTypeInstantiationArgument->Get(key);
-        DEBUG_REP(dmpGetTypeInstantiationArgument(key, value));
-        result = (CORINFO_CLASS_HANDLE)value;
-    }
-
-    return result;
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetTypeInstantiationArgument, key);
+    DEBUG_REP(dmpGetTypeInstantiationArgument(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
 }
 
 void MethodContext::recAppendClassName(
@@ -6854,9 +6718,8 @@ bool MethodContext::repGetTailCallHelpers(
     key.sig       = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers, SigInstHandleMap);
     key.flags     = (DWORD)flags;
 
-    AssertKeyExistsNoMessage(GetTailCallHelpers, key);
+    Agnostic_CORINFO_TAILCALL_HELPERS value = LookupByKeyOrMissNoMessage(GetTailCallHelpers, key);
 
-    Agnostic_CORINFO_TAILCALL_HELPERS value = GetTailCallHelpers->Get(key);
     DEBUG_REP(dmpGetTailCallHelpers(key, value));
 
     if (!value.result)
@@ -6896,9 +6759,8 @@ void MethodContext::repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPo
     AssertMapExistsNoMessage(UpdateEntryPointForTailCall);
 
     Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(entryPoint);
-    AssertKeyExistsNoMessage(UpdateEntryPointForTailCall, key);
+    Agnostic_CORINFO_CONST_LOOKUP value = LookupByKeyOrMissNoMessage(UpdateEntryPointForTailCall, key);
 
-    Agnostic_CORINFO_CONST_LOOKUP value = UpdateEntryPointForTailCall->Get(key);
     DEBUG_REP(dmpUpdateEntryPointForTailCall(key, value));
 
     *entryPoint = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value);
@@ -6976,9 +6838,8 @@ bool MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     key.fOptional = (DWORD)fOptional;
 
-    AssertMapAndKeyExistNoMessage(CheckMethodModifier, key);
+    DWORD value = LookupByKeyOrMissNoMessage(CheckMethodModifier, key);
 
-    DWORD value = CheckMethodModifier->Get(key);
     DEBUG_REP(dmpCheckMethodModifier(key, value));
     return value != 0;
 }
@@ -7000,8 +6861,7 @@ void MethodContext::dmpGetArrayRank(DWORDLONG key, DWORD value)
 unsigned MethodContext::repGetArrayRank(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetArrayRank, key, ": key %016llX", key);
-    DWORD value = GetArrayRank->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetArrayRank, key, ": key %016llX", key);
     DEBUG_REP(dmpGetArrayRank(key, value));
     unsigned result = (unsigned)value;
     return result;
@@ -7024,8 +6884,7 @@ void MethodContext::dmpGetArrayIntrinsicID(DWORDLONG key, DWORD value)
 CorInfoArrayIntrinsic MethodContext::repGetArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod)
 {
     DWORDLONG key = CastHandle(hMethod);
-    AssertMapAndKeyExist(GetArrayIntrinsicID, key, ": key %016llX", key);
-    DWORD value = GetArrayIntrinsicID->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetArrayIntrinsicID, key, ": key %016llX", key);
     DEBUG_REP(dmpGetArrayIntrinsicID(key, value));
     CorInfoArrayIntrinsic result = (CorInfoArrayIntrinsic)value;
     return result;
@@ -7048,8 +6907,7 @@ void MethodContext::dmpIsFieldStatic(DWORDLONG key, DWORD value)
 bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
 {
     DWORDLONG key = CastHandle(fhld);
-    AssertMapAndKeyExist(IsFieldStatic, key, ": key %016llX", key);
-    DWORD value = IsFieldStatic->Get(key);
+    DWORD value = LookupByKeyOrMiss(IsFieldStatic, key, ": key %016llX", key);
     DEBUG_REP(dmpIsFieldStatic(key, value));
     return value != 0;
 }
@@ -7071,8 +6929,7 @@ void MethodContext::dmpGetArrayOrStringLength(DWORDLONG key, DWORD value)
 int MethodContext::repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHandle)
 {
     DWORDLONG key = CastHandle(objHandle);
-    AssertMapAndKeyExist(GetArrayOrStringLength, key, ": key %016llX", key);
-    DWORD value = GetArrayOrStringLength->Get(key);
+    DWORD value = LookupByKeyOrMiss(GetArrayOrStringLength, key, ": key %016llX", key);
     DEBUG_REP(dmpGetArrayOrStringLength(key, value));
     return value != 0;
 }
@@ -7125,9 +6982,8 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     key.nameIndex    = (DWORD)nameIndex;
     key.defaultValue = defaultValue;
 
-    AssertKeyExistsNoMessage(GetIntConfigValue, key);
+    DWORD value = LookupByKeyOrMissNoMessage(GetIntConfigValue, key);
 
-    DWORD value = GetIntConfigValue->Get(key);
     DEBUG_REP(dmpGetIntConfigValue(key, value));
     return (int)value;
 }
@@ -7174,10 +7030,9 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     if (nameIndex == -1) // config name not in map
         return nullptr;
 
-    AssertKeyExistsNoMessage(GetStringConfigValue, nameIndex);
+    int resultIndex = LookupByKeyOrMissNoMessage(GetStringConfigValue, nameIndex);
 
-    int          resultIndex = GetStringConfigValue->Get(nameIndex);
-    const WCHAR* value       = (const WCHAR*)GetStringConfigValue->GetBuffer(resultIndex);
+    const WCHAR* value = (const WCHAR*)GetStringConfigValue->GetBuffer(resultIndex);
 
     DEBUG_REP(dmpGetStringConfigValue(nameIndex, (DWORD)resultIndex));
     return value;
