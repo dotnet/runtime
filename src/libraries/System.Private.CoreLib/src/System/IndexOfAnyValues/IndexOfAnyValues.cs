@@ -18,43 +18,6 @@ namespace System.Buffers
     /// </remarks>
     public static class IndexOfAnyValues
     {
-#if DEBUG
-        static IndexOfAnyValues()
-        {
-            CheckAsciiSet<AsciiLetter>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-            CheckAsciiSet<AsciiLetterOrDigit>("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-            CheckAsciiSet<AsciiHexDigit>("0123456789ABCDEFabcdef");
-            CheckAsciiSet<AsciiHexDigitLower>("0123456789abcdef");
-            CheckAsciiSet<AsciiHexDigitUpper>("0123456789ABCDEF");
-        }
-
-        private static void CheckAsciiSet<TAsciiSet>(string set)
-            where TAsciiSet : IAsciiSet
-        {
-            byte[] byteSet = System.Text.Encoding.ASCII.GetBytes(set);
-
-            IndexOfAnyAsciiSearcher.ComputeBitmap<char>(set, out Vector128<byte> bitmap, out BitVector256 lookup);
-            Debug.Assert(bitmap == TAsciiSet.Bitmap);
-            Debug.Assert(lookup.GetCharValues().AsSpan().SequenceEqual(set));
-            Debug.Assert(lookup.GetByteValues().AsSpan().SequenceEqual(byteSet));
-
-            IndexOfAnyAsciiSearcher.ComputeBitmap<byte>(byteSet, out bitmap, out lookup);
-            Debug.Assert(bitmap == TAsciiSet.Bitmap);
-            Debug.Assert(lookup.GetCharValues().AsSpan().SequenceEqual(set));
-            Debug.Assert(lookup.GetByteValues().AsSpan().SequenceEqual(byteSet));
-
-            for (int i = 0; i < 256; i++)
-            {
-                Debug.Assert(TAsciiSet.Contains((char)i) == lookup.Contains256((char)i), $"{i}");
-            }
-
-            for (int i = 256; i <= char.MaxValue; i++)
-            {
-                Debug.Assert(!TAsciiSet.Contains((char)i), $"{i}");
-            }
-        }
-#endif
-
         /// <summary>
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
@@ -92,12 +55,6 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
-
-                if (bitmap == AsciiLetter.Bitmap) return IndexOfAnyByteInAsciiSet<AsciiLetter>.Instance;
-                if (bitmap == AsciiLetterOrDigit.Bitmap) return IndexOfAnyByteInAsciiSet<AsciiLetterOrDigit>.Instance;
-                if (bitmap == AsciiHexDigit.Bitmap) return IndexOfAnyByteInAsciiSet<AsciiHexDigit>.Instance;
-                if (bitmap == AsciiHexDigitLower.Bitmap) return IndexOfAnyByteInAsciiSet<AsciiHexDigitLower>.Instance;
-                if (bitmap == AsciiHexDigitUpper.Bitmap) return IndexOfAnyByteInAsciiSet<AsciiHexDigitUpper>.Instance;
 
                 return Sse3.IsSupported && lookup.Contains(0)
                     ? new IndexOfAnyAsciiByteValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
@@ -148,12 +105,6 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
-
-                if (bitmap == AsciiLetter.Bitmap) return IndexOfAnyCharInAsciiSet<AsciiLetter>.Instance;
-                if (bitmap == AsciiLetterOrDigit.Bitmap) return IndexOfAnyCharInAsciiSet<AsciiLetterOrDigit>.Instance;
-                if (bitmap == AsciiHexDigit.Bitmap) return IndexOfAnyCharInAsciiSet<AsciiHexDigit>.Instance;
-                if (bitmap == AsciiHexDigitLower.Bitmap) return IndexOfAnyCharInAsciiSet<AsciiHexDigitLower>.Instance;
-                if (bitmap == AsciiHexDigitUpper.Bitmap) return IndexOfAnyCharInAsciiSet<AsciiHexDigitUpper>.Instance;
 
                 return Sse3.IsSupported && lookup.Contains(0)
                     ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
@@ -217,47 +168,6 @@ namespace System.Buffers
             }
 
             return (IndexOfAnyValues<T>)(object)new IndexOfAnyValuesInRange<T>(min, max);
-        }
-
-        internal interface IAsciiSet
-        {
-            public static abstract Vector128<byte> Bitmap { get; }
-            public static abstract bool Contains(char c);
-        }
-
-        private readonly struct AsciiLetter : IAsciiSet
-        {
-            // IndexOfAnyAsciiSearcher.ComputeBitmap for "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-            public static Vector128<byte> Bitmap => Vector128.Create(160, 240, 240, 240, 240, 240, 240, 240, 240, 240, 240, 80, 80, 80, 80, 80);
-            public static bool Contains(char c) => char.IsAsciiLetter(c);
-        }
-
-        private readonly struct AsciiLetterOrDigit : IAsciiSet
-        {
-            // IndexOfAnyAsciiSearcher.ComputeBitmap for "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-            public static Vector128<byte> Bitmap => Vector128.Create(168, 248, 248, 248, 248, 248, 248, 248, 248, 248, 240, 80, 80, 80, 80, 80);
-            public static bool Contains(char c) => char.IsAsciiLetterOrDigit(c);
-        }
-
-        private readonly struct AsciiHexDigit : IAsciiSet
-        {
-            // IndexOfAnyAsciiSearcher.ComputeBitmap for "0123456789ABCDEFabcdef"
-            public static Vector128<byte> Bitmap => Vector128.Create(8, 88, 88, 88, 88, 88, 88, 8, 8, 8, 0, 0, 0, 0, 0, 0).AsByte();
-            public static bool Contains(char c) => char.IsAsciiHexDigit(c);
-        }
-
-        private readonly struct AsciiHexDigitLower : IAsciiSet
-        {
-            // IndexOfAnyAsciiSearcher.ComputeBitmap for "0123456789abcdef"
-            public static Vector128<byte> Bitmap => Vector128.Create(8, 72, 72, 72, 72, 72, 72, 8, 8, 8, 0, 0, 0, 0, 0, 0).AsByte();
-            public static bool Contains(char c) => char.IsAsciiHexDigitLower(c);
-        }
-
-        private readonly struct AsciiHexDigitUpper : IAsciiSet
-        {
-            // IndexOfAnyAsciiSearcher.ComputeBitmap for "0123456789ABCDEF"
-            public static Vector128<byte> Bitmap => Vector128.Create(8, 24, 24, 24, 24, 24, 24, 8, 8, 8, 0, 0, 0, 0, 0, 0).AsByte();
-            public static bool Contains(char c) => char.IsAsciiHexDigitUpper(c);
         }
 
         internal interface IStringContains
