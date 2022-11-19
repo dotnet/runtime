@@ -1478,7 +1478,6 @@ namespace System
             private string? m_namespace;
             private readonly bool m_isGlobal;
             private bool m_bIsDomainInitialized;
-            private bool m_isNullableOfT;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1499,7 +1498,6 @@ namespace System
                 m_typeCode = TypeCode.Empty;
                 m_runtimeType = runtimeType;
                 m_isGlobal = RuntimeTypeHandle.GetModule(runtimeType).RuntimeType == runtimeType;
-                m_isNullableOfT = CheckIfIsNullableOfT(runtimeType);
             }
             #endregion
 
@@ -1527,18 +1525,6 @@ namespace System
                 }
 
                 return existingCache;
-            }
-
-            private static unsafe bool CheckIfIsNullableOfT(RuntimeType runtimeType)
-            {
-                TypeHandle typeHandle = runtimeType.GetNativeTypeHandle();
-                if (typeHandle.IsTypeDesc)
-                {
-                    return false;
-                }
-
-                MethodTable* pMt = typeHandle.AsMethodTable();
-                return pMt->IsNullable && !pMt->ContainsGenericVariables;
             }
             #endregion
 
@@ -1624,8 +1610,6 @@ namespace System
             internal RuntimeType GetRuntimeType() => m_runtimeType;
 
             internal bool IsGlobal => m_isGlobal;
-
-            internal bool IsNullableOfT => m_isNullableOfT;
 
             internal void InvalidateCachedNestedType() => m_nestedClassesCache = null;
 
@@ -3563,7 +3547,17 @@ namespace System
         #endregion
 
         #region Misc
-        internal bool IsNullableOfT => Cache.IsNullableOfT;
+        internal unsafe bool IsNullableOfT
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isNullable = !th.IsTypeDesc && th.AsMethodTable()->IsNullable;
+                GC.KeepAlive(this);
+                return isNullable;
+            }
+        }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
