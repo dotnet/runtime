@@ -1211,6 +1211,7 @@ without including the above copyright and permission notices.
 License for MurmurHash3
 --------------------------------------
 
+https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+
 MurmurHash3 was written by Austin Appleby, and is placed in the public
-domain. The author hereby disclaims copyright to this source code: 
-https://github.com/aappleby/smhasher/blob/61a0530f28277f2e850bfc39600ce61d02b518de/src/MurmurHash3.cpp
+domain. The author hereby disclaims copyright to this source
