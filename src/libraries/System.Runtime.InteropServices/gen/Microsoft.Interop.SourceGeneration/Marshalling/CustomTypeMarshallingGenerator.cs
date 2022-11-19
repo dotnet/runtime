@@ -45,7 +45,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
             // Although custom native type marshalling doesn't support [In] or [Out] by value marshalling,
             // other marshallers that wrap this one might, so we handle the correct cases here.
             switch (context.CurrentStage)

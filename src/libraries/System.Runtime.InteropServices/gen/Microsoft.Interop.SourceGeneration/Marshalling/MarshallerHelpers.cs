@@ -341,7 +341,7 @@ namespace Microsoft.Interop
         /// <param name="info">The info for an element.</param>
         /// <param name="context">The context for the stub.</param>
         /// <returns>The direction the element is marshalled.</returns>
-        public static MarshalDirection GetElementMarshalDirection(TypePositionInfo info, StubCodeContext context)
+        public static MarshalDirection GetMarshalDirection(TypePositionInfo info, StubCodeContext context)
         {
             if (context.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
             {

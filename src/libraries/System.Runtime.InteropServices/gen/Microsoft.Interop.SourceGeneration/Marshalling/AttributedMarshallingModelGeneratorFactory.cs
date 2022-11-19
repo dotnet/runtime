@@ -202,7 +202,7 @@ namespace Microsoft.Interop
 
         private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info, StubCodeContext context)
         {
-            MarshalDirection elementDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
+            MarshalDirection elementDirection = MarshallerHelpers.GetMarshalDirection(info, context);
 
             return elementDirection switch
             {
@@ -372,7 +372,7 @@ namespace Microsoft.Interop
 
         private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
-            MarshalDirection elementDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
+            MarshalDirection elementDirection = MarshallerHelpers.GetMarshalDirection(info, context);
             // Marshalling out or return parameter, but no out marshaller is specified
             if (elementDirection == MarshalDirection.UnmanagedToManaged
                 && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.UnmanagedToManagedMode))

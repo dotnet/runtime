@@ -66,7 +66,7 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            MarshalDirection elementMarshalling = MarshallerHelpers.GetElementMarshalDirection(info, context);
+            MarshalDirection elementMarshalling = MarshallerHelpers.GetMarshalDirection(info, context);
 
             switch (context.CurrentStage)
             {
