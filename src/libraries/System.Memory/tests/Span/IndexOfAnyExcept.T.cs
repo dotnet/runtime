@@ -57,7 +57,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestIndexOfAnyExcept_RandomInputs_Byte()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
@@ -80,7 +80,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAnyExcept_RandomInputs_Byte()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
@@ -103,7 +103,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestIndexOfAnyExcept_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
@@ -126,7 +126,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAnyExcept_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(

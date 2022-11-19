@@ -953,7 +953,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAny_RandomInputs_Byte()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
@@ -976,7 +976,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        //[OuterLoop("Takes about a second to execute")]
+        [OuterLoop("Takes about a second to execute")]
         public static void TestLastIndexOfAny_RandomInputs_Char()
         {
             IndexOfAnyCharTestHelper.TestRandomInputs(
