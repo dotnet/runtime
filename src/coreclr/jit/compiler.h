@@ -4827,6 +4827,8 @@ public:
     void fgValueNumberFieldStore(
         GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
+    bool fgValueNumberConstStringElemLoad(GenTreeIndir* tree);
+
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
 
@@ -4874,7 +4876,7 @@ public:
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
     // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
     // assignment.)
-    void fgValueNumberTree(GenTree* tree);
+    void fgValueNumberTree(GenTree* tree, Statement* stmt);
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 

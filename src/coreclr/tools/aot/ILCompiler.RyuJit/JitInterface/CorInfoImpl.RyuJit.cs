@@ -2296,6 +2296,16 @@ namespace Internal.JitInterface
             };
         }
 
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            if (HandleToObject(strObj) is FrozenStringNode frozenStr && frozenStr.Data.Length > index)
+            {
+                *value = frozenStr.Data[index];
+                return true;
+            }
+            return false;
+        }
+
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             object obj = HandleToObject(objHnd);

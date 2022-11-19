@@ -809,6 +809,14 @@ bool interceptor_ICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE typeObj)
     return temp;
 }
 
+bool interceptor_ICJI::getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value)
+{
+    mc->cr->AddCall("getStringChar");
+    bool temp = original_ICorJitInfo->getStringChar(strObj, index, value);
+    mc->recGetStringChar(strObj, index, value, temp);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeObj)
 {
     mc->cr->AddCall("getObjectType");

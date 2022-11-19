@@ -7884,7 +7884,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
-            fgValueNumberTree(tree);
+            fgValueNumberTree(tree, stmt);
             compCurTree = nullptr;
         }
 
@@ -8492,7 +8492,75 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     }
 }
 
-void Compiler::fgValueNumberTree(GenTree* tree)
+//------------------------------------------------------------------------
+// fgValueNumberConstStringElemLoad: Try to match "cns_str"[cns_index] tree
+//    and apply a constant VN representing given char at cns_index in that string.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+// Return Value:
+//    true if the pattern was recognized and a new VN is assigned
+//
+bool Compiler::fgValueNumberConstStringElemLoad(GenTreeIndir* tree)
+{
+    ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+    VNFuncApp funcApp;
+    if (!tree->TypeIs(TYP_SHORT, TYP_USHORT) || !vnStore->GetVNFunc(addrVN, &funcApp) ||
+        ((genTreeOps)funcApp.m_func != GT_ADD) || !vnStore->IsVNConstant(funcApp.m_args[0]))
+    {
+        return false;
+    }
+
+    // Is given VN representing a frozen object handle
+    auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
+        if (vnStore->IsVNHandle(vn) && (vnStore->GetHandleFlags(vn) == GTF_ICON_OBJ_HDL))
+        {
+            const size_t obj = vnStore->CoercedConstantValue<size_t>(vn);
+            *handle          = reinterpret_cast<CORINFO_OBJECT_HANDLE>(obj);
+            return true;
+        }
+        return false;
+    };
+
+    // We try to match two patterns:
+    //
+    //  1) (objHandle + firstCharOffset)
+    //  2) ((objHandle + firstCharOffset) + byteIndex)
+    //
+    size_t                dataOffset = 0;
+    CORINFO_OBJECT_HANDLE objHandle  = nullptr;
+    if (vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+    {
+        dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+    }
+    else
+    {
+        assert(vnStore->IsVNConstant(funcApp.m_args[0]));
+        const size_t byteDataIndex = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
+        if (vnStore->GetVNFunc(funcApp.m_args[1], &funcApp) && ((genTreeOps)funcApp.m_func == GT_ADD) &&
+            vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
+        {
+            dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]) + byteDataIndex;
+        }
+    }
+
+    if ((dataOffset >= OFFSETOF__CORINFO_String__chars) && ((dataOffset % 2) == 0))
+    {
+        assert(objHandle != nullptr);
+        const int charIndex = (int)(dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
+        USHORT    charValue;
+        if (info.compCompHnd->getStringChar(objHandle, charIndex, &charValue))
+        {
+            JITDUMP("Folding \"cns_str\"[%d] into %u\n", charIndex, (unsigned)charValue);
+            tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
+            return true;
+        }
+    }
+    return false;
+}
+
+void Compiler::fgValueNumberTree(GenTree* tree, Statement* stmt)
 {
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
@@ -8751,6 +8819,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     assert(fldSeq != nullptr);
                     fgValueNumberFieldLoad(tree, baseAddr, fldSeq, offset);
+                }
+                else if (tree->OperIs(GT_IND) && fgValueNumberConstStringElemLoad(tree->AsIndir()))
+                {
+                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                    // Update side-effect flags of parent trees if needed
+                    gtUpdateStmtSideEffects(stmt);
                 }
                 else // We don't know where the address points, so it is an ByrefExposed load.
                 {

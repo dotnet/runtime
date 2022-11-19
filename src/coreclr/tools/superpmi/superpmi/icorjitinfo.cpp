@@ -687,6 +687,13 @@ bool MyICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     return result;
 }
 
+bool MyICJI::getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value)
+{
+    jitInstance->mc->cr->AddCall("getStringChar");
+    bool result = jitInstance->mc->repGetStringChar(strObj, index, value);
+    return result;
+}
+
 CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     jitInstance->mc->cr->AddCall("getObjectType");

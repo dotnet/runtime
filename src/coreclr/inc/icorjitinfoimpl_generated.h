@@ -293,6 +293,11 @@ CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
 bool isObjectImmutable(
           CORINFO_OBJECT_HANDLE objPtr) override;
 
+bool getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value) override;
+
 CORINFO_CLASS_HANDLE getObjectType(
           CORINFO_OBJECT_HANDLE objPtr) override;
 

@@ -491,6 +491,14 @@ bool interceptor_ICJI::isObjectImmutable(
     return original_ICorJitInfo->isObjectImmutable(objPtr);
 }
 
+bool interceptor_ICJI::getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value)
+{
+    return original_ICorJitInfo->getStringChar(strObj, index, value);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {

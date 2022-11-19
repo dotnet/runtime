@@ -683,6 +683,17 @@ bool WrapICorJitInfo::isObjectImmutable(
     return temp;
 }
 
+bool WrapICorJitInfo::getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value)
+{
+    API_ENTER(getStringChar);
+    bool temp = wrapHnd->getStringChar(strObj, index, value);
+    API_LEAVE(getStringChar);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {

@@ -3012,6 +3012,11 @@ namespace Internal.JitInterface
         {
             throw new NotSupportedException();
         }
+
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            return false;
+        }
         
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
