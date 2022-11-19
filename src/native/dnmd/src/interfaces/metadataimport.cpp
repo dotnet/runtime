@@ -381,7 +381,72 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        // If name is null, defer to the EnumMembers() API.
+        if (szName == nullptr)
+            return EnumMembers(phEnum, cl, rMembers, cMax, pcTokens);
+
+        if (TypeFromToken(cl) != mdtTypeDef)
+            return E_INVALIDARG;
+
+        mdcursor_t cursor;
+        if (!md_token_to_cursor(_md_ptr.get(), cl, &cursor))
+            return CLDB_E_INDEX_NOTFOUND;
+
+        mdcursor_t methodList;
+        uint32_t methodListCount;
+        mdcursor_t fieldList;
+        uint32_t fieldListCount;
+        if (!md_get_column_value_as_range(cursor, mdtTypeDef_FieldList, &fieldList, &fieldListCount)
+            || !md_get_column_value_as_range(cursor, mdtTypeDef_MethodList, &methodList, &methodListCount))
+        {
+            return CLDB_E_FILE_CORRUPT;
+        }
+
+        assert(szName != nullptr);
+        pal::StringConvert<WCHAR, char> cvt{ szName };
+        if (!cvt.Success())
+            return E_INVALIDARG;
+
+        char const* toMatch;
+        mdToken matchedTk;
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+
+        // Iterate the Type's methods
+        for (uint32_t i = 0; i < methodListCount; ++i)
+        {
+            if (1 != md_get_column_value_as_utf8(methodList, mdtMethodDef_Name, 1, &toMatch))
+                return CLDB_E_FILE_CORRUPT;
+
+            if (0 == ::strcmp(toMatch, cvt))
+            {
+                (void)md_cursor_to_token(methodList, &matchedTk);
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, matchedTk));
+            }
+            (void)md_cursor_next(&methodList);
+        }
+
+        // Iterate the Type's fields
+        for (uint32_t i = 0; i < fieldListCount; ++i)
+        {
+            if (1 != md_get_column_value_as_utf8(fieldList, mdtField_Name, 1, &toMatch))
+                return CLDB_E_FILE_CORRUPT;
+
+            if (0 == ::strcmp(toMatch, cvt))
+            {
+                (void)md_cursor_to_token(fieldList, &matchedTk);
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, matchedTk));
+            }
+            (void)md_cursor_next(&fieldList);
+        }
+
+        *phEnum = enumImpl;
+    }
+
+    return enumImpl->ReadTokens(rMembers, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethods(

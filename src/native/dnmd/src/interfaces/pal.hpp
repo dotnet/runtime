@@ -21,7 +21,7 @@ namespace pal
         WCHAR* buffer,
         _Inout_ uint32_t* bufferLength);
 
-    // Template class for conversion UTF-16 <=> UTF-8
+    // Template class for conversion UTF-8 <=> UTF-16
     template<typename A, typename B>
     class StringConvert
     {
