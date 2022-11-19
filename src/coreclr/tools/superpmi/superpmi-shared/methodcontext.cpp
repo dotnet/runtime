@@ -5647,10 +5647,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
 
 
 // The following are from <pgo_formatprocessing.h> which we can't include, with
-// a few SPMI alterations (related to "target pointers"). This is ok since
-// these are only used when the requested schema does not match the recorded
-// one, in which case layout can be different from the recorded EE.
-
+// a few SPMI alterations (related to "target pointers").
 static ICorJitInfo::PgoInstrumentationKind operator&(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
 {
     return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
