@@ -7,9 +7,9 @@
 #include <external/cor.h>
 #include <external/corhdr.h>
 
-#include "dnmd.hpp"
+#include <dnmd.hpp>
 
-class MetadataImportRO final : IMetaDataImport2
+class MetadataImportRO final : public IMetaDataImport2
 {
     std::atomic_uint32_t _refCount;
     mdhandle_ptr _md_ptr;
@@ -501,7 +501,7 @@ public: // IMetaDataImport2
 public: // IUnknown
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject) override
     {
         if (ppvObject == nullptr)
             return E_POINTER;
@@ -524,12 +524,12 @@ public: // IUnknown
         return S_OK;
     }
 
-    virtual ULONG STDMETHODCALLTYPE AddRef(void)
+    virtual ULONG STDMETHODCALLTYPE AddRef(void) override
     {
         return ++_refCount;
     }
 
-    virtual ULONG STDMETHODCALLTYPE Release(void)
+    virtual ULONG STDMETHODCALLTYPE Release(void) override
     {
         uint32_t c = --_refCount;
         if (c == 0)

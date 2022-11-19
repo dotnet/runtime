@@ -1,5 +1,6 @@
 #include <cassert>
 
+#include "pal.hpp"
 #include "impl.hpp"
 
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
@@ -97,7 +98,7 @@ namespace
         return enumImpl->ReadTokens(rTokens, cMax, pcTokens);
     }
 
-    HRESULT CopyIntoStringBuffer(
+    HRESULT CopyToStringOutput(
         LPCWSTR str,
         uint32_t strCharCount,
         _Out_writes_to_opt_(cchBuffer, *pchBuffer)
@@ -119,6 +120,35 @@ namespace
                 return CLDB_S_TRUNCATION;
             }
         }
+
+        return S_OK;
+    }
+
+    HRESULT ConstructTypeName(
+        char const* nspace,
+        char const* name,
+        malloc_ptr& mem)
+    {
+        char* buffer;
+        size_t nspaceLen = nspace == nullptr ? 0 : ::strlen(nspace);
+        size_t nameLen = name == nullptr ? 0 : ::strlen(name);
+        size_t bufferLength = nspaceLen + nameLen + 1 + 1; // +1 for type delim and +1 for null.
+
+        mem.reset(::malloc(bufferLength * sizeof(*buffer)));
+        if (mem == nullptr)
+            return E_OUTOFMEMORY;
+
+        buffer = (char*)mem.get();
+        buffer[0] = '\0';
+
+        if (nspaceLen > 0)
+        {
+            ::strcat_s(buffer, bufferLength, nspace);
+            ::strcat_s(buffer, bufferLength, ".");
+        }
+
+        if (nameLen > 0)
+            ::strcat_s(buffer, bufferLength, name);
 
         return S_OK;
     }
@@ -228,7 +258,44 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeDefProps(
     DWORD* pdwTypeDefFlags,
     mdToken* ptkExtends)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(td) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), td, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (1 != md_get_column_value_as_constant(cursor, mdtTypeDef_Flags, 1, (uint32_t*)pdwTypeDefFlags)
+        || 1 != md_get_column_value_as_token(cursor, mdtTypeDef_Extends, 1, ptkExtends))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (*ptkExtends == mdTypeDefNil)
+        *ptkExtends = mdTypeRefNil;
+
+    char const* name;
+    char const* nspace;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeName, 1, &name)
+        || 1 != md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeNamespace, 1, &nspace))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    HRESULT hr;
+    malloc_ptr mem;
+    RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
+
+    pal::StringConvert<char, WCHAR> cvt{ (char const*)mem.get() };
+    if (!cvt.Success()
+        || !cvt.CopyTo(szTypeDef, cchTypeDef, (uint32_t*)pchTypeDef))
+    {
+        return E_INVALIDARG;
+    }
+
+    return (*pchTypeDef < cvt.Length())
+        ? CLDB_S_TRUNCATION
+        : S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetInterfaceImplProps(
@@ -265,6 +332,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeRefProps(
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
 {
+    // Requires VM knowledge
     return E_NOTIMPL;
 }
 
@@ -900,7 +968,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
 
     // Compute the string size in characters
     uint32_t retCharLen = (string.str_bytes - 1) / sizeof(WCHAR);
-    return CopyIntoStringBuffer(string.str, retCharLen, szString, cchString, pchString);
+    return CopyToStringOutput(string.str, retCharLen, szString, cchString, pchString);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(

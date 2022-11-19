@@ -2,11 +2,13 @@ set(SOURCES
   dispenser.cpp
   metadataimport.cpp
   hcorenum.cpp
+  pal.cpp
 )
 
 set(HEADERS
   ../inc/dnmd_interfaces.hpp
   ./impl.hpp
+  ./pal.hpp
 )
 
 add_library(dnmd_interfaces_static

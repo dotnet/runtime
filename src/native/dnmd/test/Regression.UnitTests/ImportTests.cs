@@ -131,6 +131,7 @@ namespace Regression.UnitTests
                     Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                 }
+                Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
                 Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
 
@@ -471,6 +472,37 @@ namespace Regression.UnitTests
             }
 
             return pbGlobal;
+        }
+
+        private static List<uint> GetTypeDefProps(IMetaDataImport import, uint typedef)
+        {
+            List<uint> values = new();
+
+            var typeName = new char[128];
+            int hr = import.GetTypeDefProps(typedef,
+                typeName,
+                typeName.Length,
+                out int pchTypeDef,
+                out uint pdwTypeDefFlags,
+                out uint ptkExtends);
+            if (hr != 0)
+            {
+                values.Add((uint)hr);
+            }
+            else
+            {
+                uint hash = 0;
+                for (int i = 0; i < Math.Min(pchTypeDef, typeName.Length); ++i)
+                {
+                    hash ^= typeName[i];
+                }
+
+                values.Add(hash);
+                values.Add((uint)pchTypeDef);
+                values.Add(pdwTypeDefFlags);
+                values.Add(ptkExtends);
+            }
+            return values;
         }
 
         private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)

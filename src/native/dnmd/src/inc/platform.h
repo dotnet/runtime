@@ -13,6 +13,7 @@
 
 #define BUILD_WINDOWS
 
+#define NOMINMAX
 #include <Windows.h>
 
 #else
