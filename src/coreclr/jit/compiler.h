@@ -4827,7 +4827,7 @@ public:
     void fgValueNumberFieldStore(
         GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
-    bool fgValueNumberConstStringElemLoad(GenTreeIndir* tree);
+    bool fgValueNumberConstLoad(GenTreeIndir* tree);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
