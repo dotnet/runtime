@@ -82,23 +82,30 @@ namespace Microsoft.Interop
                 yield break;
             }
 
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if ((info.IsByRef && info.RefKind != RefKind.Out) || !context.SingleFrameSpansNativeContext)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(nativeIdentifier),
-                                IdentifierName(managedIdentifier)));
+                        // There's an implicit conversion from char to ushort,
+                        // so we simplify the generated code to just pass the char value directly
+                        if (info.IsByRef)
+                        {
+                            yield return ExpressionStatement(
+                                AssignmentExpression(
+                                    SyntaxKind.SimpleAssignmentExpression,
+                                    IdentifierName(nativeIdentifier),
+                                    IdentifierName(managedIdentifier)));
+                        }
                     }
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(

@@ -66,12 +66,14 @@ namespace Microsoft.Interop
                 yield break;
             }
 
+            MarshalDirection elementMarshalling = MarshallerHelpers.GetMarshalDirection(info, context);
+
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind == RefKind.Ref)
+                    if (elementMarshalling is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional && info.IsByRef)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
@@ -82,11 +84,14 @@ namespace Microsoft.Interop
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    yield return ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(managedIdentifier),
-                            IdentifierName(nativeIdentifier)));
+                    if (elementMarshalling is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional && info.IsByRef)
+                    {
+                        yield return ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(managedIdentifier),
+                                IdentifierName(nativeIdentifier)));
+                    }
                     break;
                 default:
                     break;
