@@ -29,7 +29,7 @@ namespace Common
         int FindTypeDefByName([MarshalAs(UnmanagedType.LPWStr)]string szTypeDef, uint tkEnclosingClass, out uint ptd);
 
         [PreserveSig]
-        int GetScopeProps([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]char[] szName, uint cchName, out uint pchName, ref Guid pmvid);
+        int GetScopeProps([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]char[] szName, int cchName, out int pchName, out Guid pmvid);
 
         [PreserveSig]
         int GetModuleFromScope(out uint pmd);

@@ -3,6 +3,7 @@
 #include "pal.hpp"
 #include "impl.hpp"
 
+#define MD_MODULE_TOKEN TokenFromRid(1, mdtModule)
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
 
 #define ToHCORENUMImpl(hcorenum) (reinterpret_cast<HCORENUMImpl*>(hcorenum))
@@ -269,7 +270,29 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
     ULONG* pchName,
     GUID* pmvid)
 {
-    return E_NOTIMPL;
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), MD_MODULE_TOKEN, &cursor))
+        return CLDB_E_INDEX_NOTFOUND;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtModule_Name, 1, &name)
+        || 1 != md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, pmvid))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    uint32_t written;
+    pal::StringConvert<char, WCHAR> cvt{ name };
+    if (!cvt.Success()
+        || !cvt.CopyTo(szName, cchName, &written))
+    {
+        return E_INVALIDARG;
+    }
+
+    *pchName = cvt.Length();
+    return (written < cvt.Length())
+        ? CLDB_S_TRUNCATION
+        : S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleFromScope(
@@ -319,14 +342,16 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeDefProps(
     malloc_ptr mem;
     RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
 
+    uint32_t written;
     pal::StringConvert<char, WCHAR> cvt{ (char const*)mem.get() };
     if (!cvt.Success()
-        || !cvt.CopyTo(szTypeDef, cchTypeDef, (uint32_t*)pchTypeDef))
+        || !cvt.CopyTo(szTypeDef, cchTypeDef, &written))
     {
         return E_INVALIDARG;
     }
 
-    return (*pchTypeDef < cvt.Length())
+    *pchTypeDef = cvt.Length();
+    return (written < cvt.Length())
         ? CLDB_S_TRUNCATION
         : S_OK;
 }
@@ -740,14 +765,16 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
     if (1 != md_get_column_value_as_utf8(cursor, mdtMethodDef_Name, 1, &name))
         return CLDB_E_FILE_CORRUPT;
 
+    uint32_t written;
     pal::StringConvert<char, WCHAR> cvt{ name };
     if (!cvt.Success()
-        || !cvt.CopyTo(szMethod, cchMethod, (uint32_t*)pchMethod))
+        || !cvt.CopyTo(szMethod, cchMethod, &written))
     {
         return E_INVALIDARG;
     }
 
-    return (*pchMethod < cvt.Length())
+    *pchMethod = written;
+    return (written < cvt.Length())
         ? CLDB_S_TRUNCATION
         : S_OK;
 }

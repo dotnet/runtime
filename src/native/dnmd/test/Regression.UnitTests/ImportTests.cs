@@ -93,6 +93,7 @@ namespace Regression.UnitTests
             IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
 
             // Verify APIs
+            Assert.Equal(GetScopeProps(baselineImport), GetScopeProps(currentImport));
             Assert.Equal(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             Assert.Equal(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
@@ -174,6 +175,36 @@ namespace Regression.UnitTests
             var import = (IMetaDataImport)Marshal.GetObjectForIUnknown((nint)pUnk);
             Marshal.Release((nint)pUnk);
             return import;
+        }
+
+        private static List<uint> GetScopeProps(IMetaDataImport import)
+        {
+            List<uint> values = new();
+
+            var name = new char[128];
+            int hr = import.GetScopeProps(
+                name,
+                name.Length,
+                out int pchName,
+                out Guid mvid);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                uint hash = 0;
+                for (int i = 0; i < Math.Min(pchName, name.Length); ++i)
+                {
+                    hash ^= name[i];
+                }
+
+                values.Add(hash);
+                values.Add((uint)pchName);
+                foreach (uint i in new ReadOnlySpan<uint>(&mvid, sizeof(Guid) / sizeof(uint)))
+                {
+                    values.Add(i);
+                }
+            }
+            return values;
         }
 
         private static List<uint> EnumTypeDefs(IMetaDataImport import)
@@ -574,11 +605,9 @@ namespace Regression.UnitTests
                 out int pchTypeDef,
                 out uint pdwTypeDefFlags,
                 out uint ptkExtends);
-            if (hr != 0)
-            {
-                values.Add((uint)hr);
-            }
-            else
+
+            values.Add((uint)hr);
+            if (hr >= 0)
             {
                 uint hash = 0;
                 for (int i = 0; i < Math.Min(pchTypeDef, name.Length); ++i)
@@ -609,11 +638,9 @@ namespace Regression.UnitTests
                 out uint pcbSigBlob,
                 out uint pulCodeRVA,
                 out uint pdwImplFlags);
-            if (hr != 0)
-            {
-                values.Add((uint)hr);
-            }
-            else
+
+            values.Add((uint)hr);
+            if (hr >= 0)
             {
                 uint hash = 0;
                 for (int i = 0; i < Math.Min(pchMethod, name.Length); ++i)
@@ -642,11 +669,9 @@ namespace Regression.UnitTests
                 offsets.Length,
                 out int fieldOffsetCount,
                 out uint pulClassSize);
-            if (hr != 0)
-            {
-                values.Add((uint)hr);
-            }
-            else
+
+            values.Add((uint)hr);
+            if (hr >= 0)
             {
                 values.Add(pdwPackSize);
                 values.Add(pulClassSize);
