@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -301,7 +303,7 @@ namespace System.Collections.Tests
             catch (OutOfMemoryException)
             {
                 // just skip when ctor throws OOM
-                return;
+                throw new SkipTestException("Unable to allocate 2GB of memory");
             }
 
             // once the internal index is moved (via enqueue/dequeue operations), enumerating
