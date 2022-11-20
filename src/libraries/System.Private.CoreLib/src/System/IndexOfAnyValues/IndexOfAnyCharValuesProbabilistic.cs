@@ -6,19 +6,15 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyCharValuesProbabilistic<TContains> : IndexOfAnyValues<char>
-        where TContains : struct, IndexOfAnyValues.IStringContains
+    internal sealed class IndexOfAnyCharValuesProbabilistic : IndexOfAnyValues<char>
     {
-        private readonly ProbabilisticMap _map;
+        private ProbabilisticMap _map;
         private readonly string _values;
 
         public unsafe IndexOfAnyCharValuesProbabilistic(ReadOnlySpan<char> values)
         {
             _values = new string(values);
-
-            ProbabilisticMap map = default;
-            ProbabilisticMap.Initialize((uint*)&map, _values);
-            _map = map;
+            _map = new ProbabilisticMap(_values);
         }
 
         internal override char[] GetValues() => _values.ToCharArray();
@@ -39,44 +35,14 @@ namespace System.Buffers
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
             LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            string values = _values;
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator =>
+            ProbabilisticMap.IndexOfAny<TNegator>(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref searchSpace, searchSpaceLength, _values);
 
-            for (int i = 0; i < searchSpaceLength; i++)
-            {
-                int ch = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(
-                        _map.IsCharBitSet((byte)ch) &&
-                        _map.IsCharBitSet((byte)(ch >> 8)) &&
-                        TContains.Contains(values, (char)ch)))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            string values = _values;
-
-            for (int i = searchSpaceLength - 1; i >= 0; i--)
-            {
-                int ch = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(
-                        _map.IsCharBitSet((byte)ch) &&
-                        _map.IsCharBitSet((byte)(ch >> 8)) &&
-                        TContains.Contains(values, (char)ch)))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator =>
+            ProbabilisticMap.LastIndexOfAny<TNegator>(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref searchSpace, searchSpaceLength, _values);
     }
 }

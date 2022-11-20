@@ -127,9 +127,7 @@ namespace System.Buffers
                 return new IndexOfAnyLatin1CharValues(values);
             }
 
-            return values.Length < Vector128<short>.Count
-                ? new IndexOfAnyCharValuesProbabilistic<ShortLoopContains>(values)
-                : new IndexOfAnyCharValuesProbabilistic<StringContains>(values);
+            return new IndexOfAnyCharValuesProbabilistic(values);
         }
 
         private static IndexOfAnyValues<T>? TryGetSingleRange<T>(ReadOnlySpan<T> values, out T maxInclusive)
@@ -168,33 +166,6 @@ namespace System.Buffers
             }
 
             return (IndexOfAnyValues<T>)(object)new IndexOfAnyValuesInRange<T>(min, max);
-        }
-
-        internal interface IStringContains
-        {
-            public static abstract bool Contains(string s, char value);
-        }
-
-        private readonly struct StringContains : IStringContains
-        {
-            public static bool Contains(string s, char value) => s.Contains(value);
-        }
-
-        private readonly struct ShortLoopContains : IStringContains
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Contains(string s, char value)
-            {
-                foreach (char c in s)
-                {
-                    if (value == c)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
     }
 }

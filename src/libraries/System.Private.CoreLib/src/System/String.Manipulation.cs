@@ -1640,16 +1640,13 @@ namespace System
             {
                 unsafe
                 {
-                    ProbabilisticMap map = default;
-                    uint* charMap = (uint*)&map;
-                    ProbabilisticMap.Initialize(charMap, separators);
+                    var map = new ProbabilisticMap(separators);
+                    ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
-                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                            separators.Contains(c))
+                        if (ProbabilisticMap.Contains(ref charMap, separators, c))
                         {
                             sepListBuilder.Append(i);
                         }

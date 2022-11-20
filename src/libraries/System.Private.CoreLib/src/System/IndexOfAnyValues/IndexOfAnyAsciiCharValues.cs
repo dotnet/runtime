@@ -58,12 +58,18 @@ namespace System.Buffers
         private int IndexOfAnyScalar<TNegator>(ref char searchSpace, int searchSpaceLength)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            for (int i = 0; i < searchSpaceLength; i++)
+            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref char cur = ref searchSpace;
+
+            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
-                if (TNegator.NegateIfNeeded(_lookup.Contains128(Unsafe.Add(ref searchSpace, i))))
+                char c = cur;
+                if (TNegator.NegateIfNeeded(_lookup.Contains128(c)))
                 {
-                    return i;
+                    return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                 }
+
+                cur = ref Unsafe.Add(ref cur, 1);
             }
 
             return -1;
@@ -74,7 +80,8 @@ namespace System.Buffers
         {
             for (int i = searchSpaceLength - 1; i >= 0; i--)
             {
-                if (TNegator.NegateIfNeeded(_lookup.Contains128(Unsafe.Add(ref searchSpace, i))))
+                char c = Unsafe.Add(ref searchSpace, i);
+                if (TNegator.NegateIfNeeded(_lookup.Contains128(c)))
                 {
                     return i;
                 }

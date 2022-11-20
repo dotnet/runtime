@@ -431,8 +431,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesDebugView.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfEmptyValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesInRange.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfEmptyValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\ProbabilisticMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
