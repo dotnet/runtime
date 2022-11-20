@@ -8492,9 +8492,9 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     }
 }
 
-//------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
-//    and apply a constant VN representing given char at cns_index in that string.
+//    and apply a constant VN representing given element at cns_index in that array.
 //
 // Arguments:
 //    tree - the GT_IND node
@@ -8537,48 +8537,69 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         {
             index = (int)vnStore->CoercedConstantValue<size_t>(inxVN);
         }
-    }
-    else if ((funcApp.m_func == VNFunc(GT_ADD)) && vnStore->IsVNConstant(funcApp.m_args[0]))
-    {
-        // Here we try to match these two patterns:
-        //
-        //  1) (objHandle + firstCharOffset)
-        //  2) ((objHandle + firstCharOffset) + byteIndex)
-        //
-        size_t dataOffset = 0;
-        if (vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
-        {
-            dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
-        }
         else
         {
-            assert(vnStore->IsVNConstant(funcApp.m_args[0]));
-            const size_t byteDataIndex = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
-            if (vnStore->GetVNFunc(funcApp.m_args[1], &funcApp) && (funcApp.m_func == VNFunc(GT_ADD)) &&
-                vnStore->IsVNConstant(funcApp.m_args[1]) && isCnsObjHandle(vnStore, funcApp.m_args[0], &objHandle))
-            {
-                dataOffset = vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]) + byteDataIndex;
-            }
+            return false;
         }
+    }
+    else if (funcApp.m_func == (VNFunc)GT_ADD)
+    {
+        ssize_t  dataOffset = 0;
+        ValueNum baseVN     = ValueNumStore::NoVN;
 
-        // Convert dataOffset (that also includes offset to firstChar field) into char index
-        if ((dataOffset >= OFFSETOF__CORINFO_String__chars) && ((dataOffset % 2) == 0) && (dataOffset <= INT_MAX))
+        // Loop to accumulate total dataOffset, e.g.:
+        // ADD(C1, ADD(ObjHandle, C2)) -> C1 + C2
+        do
+        {
+            ValueNum op1VN = funcApp.m_args[0];
+            ValueNum op2VN = funcApp.m_args[1];
+
+            if (vnStore->IsVNConstant(op1VN) && varTypeIsIntegral(vnStore->TypeOfVN(op1VN)) &&
+                !isCnsObjHandle(vnStore, op1VN, &objHandle))
+            {
+                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op1VN);
+                baseVN = op2VN;
+            }
+            else if (vnStore->IsVNConstant(op2VN) && varTypeIsIntegral(vnStore->TypeOfVN(op2VN)) &&
+                     !isCnsObjHandle(vnStore, op2VN, &objHandle))
+            {
+                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op2VN);
+                baseVN = op1VN;
+            }
+            else
+            {
+                // one of the args is expected to be an integer constant
+                return false;
+            }
+        } while (vnStore->GetVNFunc(baseVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD));
+
+        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= OFFSETOF__CORINFO_String__chars) &&
+            ((dataOffset % 2) == 0) && (dataOffset <= INT_MAX))
         {
             static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
             index = (int)(dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
         }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
     }
 
-    if ((objHandle != NO_OBJECT_HANDLE) && (index >= 0))
+    assert(objHandle != NO_OBJECT_HANDLE);
+    assert(index >= 0);
+
+    USHORT charValue;
+    if (info.compCompHnd->getStringChar(objHandle, index, &charValue))
     {
-        USHORT charValue;
-        if (info.compCompHnd->getStringChar(objHandle, index, &charValue))
-        {
-            JITDUMP("Folding \"cns_str\"[%d] into %u\n", index, (unsigned)charValue);
-            // NOTE: we need to sign-extend it here in case if it's a negative Int16
-            tree->gtVNPair.SetBoth(vnStore->VNForIntCon((SHORT)charValue));
-            return true;
-        }
+        JITDUMP("Folding \"cns_str\"[%d] into %u", index, (unsigned)charValue);
+
+        // NOTE: we need to sign-extend it here in case if it's a negative Int16
+        tree->gtVNPair.SetBoth(vnStore->VNForIntCon((SHORT)charValue));
+        return true;
     }
     return false;
 }
