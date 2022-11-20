@@ -236,16 +236,14 @@ namespace System.Security.Cryptography
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (char* pChoices = choices)
-            {
-                return string.Create(length,
-                    (ChoicesPointer: (IntPtr)pChoices, ChoicesLength: choices.Length),
-                    static (destination, state) =>
-                    {
-                        ReadOnlySpan<char> choices = new ReadOnlySpan<char>(state.ChoicesPointer.ToPointer(), state.ChoicesLength);
-                        GetItemsCore(choices, destination);
-                    });
-            }
+#pragma warning disable 8500
+            return string.Create(length,
+                (IntPtr)(&choices),
+                static (destination, state) =>
+                {
+                    GetItemsCore(*(ReadOnlySpan<char>*)state, destination);
+                });
+#pragma warning restore 8500
         }
 
         /// <summary>
