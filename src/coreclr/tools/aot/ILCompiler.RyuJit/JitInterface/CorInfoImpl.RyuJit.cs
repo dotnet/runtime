@@ -2298,7 +2298,7 @@ namespace Internal.JitInterface
 
         private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
         {
-            if (HandleToObject(strObj) is FrozenStringNode frozenStr && frozenStr.Data.Length > index)
+            if (HandleToObject(strObj) is FrozenStringNode frozenStr && (uint)frozenStr.Data.Length > (uint)index)
             {
                 *value = frozenStr.Data[index];
                 return true;

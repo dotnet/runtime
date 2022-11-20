@@ -8523,7 +8523,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     };
 
     CORINFO_OBJECT_HANDLE objHandle = NO_OBJECT_HANDLE;
-    int                   index     = -1;
+    size_t                index     = -1;
 
     // First, let see if we have PtrToArrElem
     ValueNum addr = funcApp.m_args[0];
@@ -8535,11 +8535,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
         if (isCnsObjHandle(vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
         {
-            index = (int)vnStore->CoercedConstantValue<size_t>(inxVN);
-        }
-        else
-        {
-            return false;
+            index = vnStore->CoercedConstantValue<size_t>(inxVN);
         }
     }
     else if (funcApp.m_func == (VNFunc)GT_ADD)
@@ -8573,29 +8569,19 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         } while (vnStore->GetVNFunc(baseVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD));
 
-        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= OFFSETOF__CORINFO_String__chars) &&
-            ((dataOffset % 2) == 0) && (dataOffset <= INT_MAX))
+        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
+            ((dataOffset % 2) == 0))
         {
             static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
-            index = (int)(dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
-        }
-        else
-        {
-            return false;
+            index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
         }
     }
-    else
-    {
-        return false;
-    }
-
-    assert(objHandle != NO_OBJECT_HANDLE);
-    assert(index >= 0);
 
     USHORT charValue;
-    if (info.compCompHnd->getStringChar(objHandle, index, &charValue))
+    if (((size_t)index < INT_MAX) && (objHandle != NO_OBJECT_HANDLE) &&
+        info.compCompHnd->getStringChar(objHandle, (int)index, &charValue))
     {
-        JITDUMP("Folding \"cns_str\"[%d] into %u", index, (unsigned)charValue);
+        JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
 
         // NOTE: we need to sign-extend it here in case if it's a negative Int16
         tree->gtVNPair.SetBoth(vnStore->VNForIntCon((SHORT)charValue));
