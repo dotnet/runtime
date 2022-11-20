@@ -7,11 +7,12 @@ using System.Runtime.CompilerServices;
 namespace System.Buffers
 {
     /// <summary>
-    /// Creates an optimized representation of values used for efficient searching.
+    /// Provides an immutable, read-only set of values optimized for efficient searching.
+    /// Instances are created by <see cref="IndexOfAnyValues.Create(ReadOnlySpan{byte})"/> or <see cref="IndexOfAnyValues.Create(ReadOnlySpan{char})"/>.
     /// </summary>
     /// <typeparam name="T">The type of the values to search for.</typeparam>
     /// <remarks>
-    /// IndexOfAnyValues are optimized for situations where the same set of values is frequently used for searching at runtime.
+    /// <see cref="IndexOfAnyValues{T}"/> are optimized for situations where the same set of values is frequently used for searching at runtime.
     /// </remarks>
     [DebuggerTypeProxy(typeof(IndexOfAnyValuesDebugView<>))]
     public class IndexOfAnyValues<T> where T : IEquatable<T>?
