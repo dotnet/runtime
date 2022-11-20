@@ -8508,7 +8508,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 {
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
-    if (!tree->TypeIs(TYP_USHORT) || !vnStore->GetVNFunc(addrVN, &funcApp) || !tree->gtVNPair.BothEqual())
+    if (!tree->TypeIs(TYP_USHORT) || !tree->gtVNPair.BothEqual() || !vnStore->GetVNFunc(addrVN, &funcApp))
     {
         return false;
     }
