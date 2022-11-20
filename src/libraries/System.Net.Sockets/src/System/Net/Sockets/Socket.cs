@@ -1373,7 +1373,7 @@ namespace System.Net.Sockets
             {   // We expect that the socket will have LocalEndPoint if not bound already.
                 // Addresses are mutable so we need to create new instance.
                 // It would be nice to simply set _localEndPoint here but the logic is complicated.
-                _rightEndPoint ??= new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? 4 : 16)), 0);
+                _rightEndPoint ??= new IPEndPoint(new IPAddress(ZeroBytes.Slice(0, AddressFamily == AddressFamily.InterNetwork ? SockAddr.IPv4AddressSize : SockAddr.IPv6AddressSize)), 0);
             }
 
             return bytesTransferred;
@@ -3025,7 +3025,7 @@ namespace System.Net.Sockets
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
-            _rightEndPoint ??=  new IPEndPoint(new IPAddress(new ReadOnlySpan<byte>(s_zero, 0, AddressFamily == AddressFamily.InterNetwork ? SockAddr.IPv4AddressSize : SockAddr.IPv6AddressSize)), 0);
+            _rightEndPoint ??=  new IPEndPoint(new IPAddress(ZeroBytes.Slice(0, AddressFamily == AddressFamily.InterNetwork ? SockAddr.IPv4AddressSize : SockAddr.IPv6AddressSize)), 0);
             SocketError socketError;
             try
             {
