@@ -108,6 +108,7 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, typedef), EnumPermissionSetsAndGetProps(currentImport, typedef));
                 Assert.Equal(EnumMembers(baselineImport, typedef), EnumMembers(currentImport, typedef));
                 Assert.Equal(EnumMembersWithName(baselineImport, typedef), EnumMembersWithName(currentImport, typedef));
+                Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
@@ -126,6 +127,7 @@ namespace Regression.UnitTests
                 {
                     Assert.Equal(IsGlobal(baselineImport, propdef), IsGlobal(currentImport, propdef));
                 }
+                Assert.Equal(EnumFieldsWithName(baselineImport, typedef), EnumFieldsWithName(currentImport, typedef));
                 var fields = AssertAndReturn(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
                 foreach (var fielddef in fields)
                 {
@@ -325,6 +327,31 @@ namespace Regression.UnitTests
             return tokens;
         }
 
+        private static List<uint> EnumMethodsWithName(IMetaDataImport import, uint typedef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumMethodsWithName(ref hcorenum, typedef, ".ctor", tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
         private static List<uint> EnumParams(IMetaDataImport import, uint methoddef)
         {
             List<uint> tokens = new();
@@ -383,6 +410,31 @@ namespace Regression.UnitTests
             try
             {
                 while (0 == import.EnumFields(ref hcorenum, typedef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumFieldsWithName(IMetaDataImport import, uint typedef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumFieldsWithName(ref hcorenum, typedef, "_name", tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)
@@ -592,7 +644,7 @@ namespace Regression.UnitTests
             nint hcorenum = 0;
             try
             {
-                while (0 == import.EnumMembersWithName(ref hcorenum, typedef, nameof(ToString), tokensBuffer, tokensBuffer.Length, out uint returned)
+                while (0 == import.EnumMembersWithName(ref hcorenum, typedef, ".ctor", tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)

@@ -43,59 +43,85 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::ResetEnum(HCORENUM hEnum, ULONG ulPo
 
 namespace
 {
-    HRESULT EnumTokens(
+    HRESULT CreateEnumTokens(
         mdhandle_t mdhandle,
         mdtable_id_t mdtid,
-        HCORENUM* phEnum,
-        mdToken rTokens[],
-        ULONG cMax,
-        ULONG* pcTokens)
+        HCORENUMImpl** pEnumImpl)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
-        if (enumImpl == nullptr)
-        {
-            mdcursor_t cursor;
-            uint32_t rows;
-            if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
-                return E_INVALIDARG;
+        mdcursor_t cursor;
+        uint32_t rows;
+        if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
+            return E_INVALIDARG;
 
-            RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
-            HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
-            *phEnum = enumImpl;
-        }
-
-        return enumImpl->ReadTokens(rTokens, cMax, pcTokens);
+        HCORENUMImpl* enumImpl;
+        RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
+        HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
+        *pEnumImpl = enumImpl;
+        return S_OK;
     }
 
-    HRESULT EnumTokenRange(
+    struct TokenRangeFilter
+    {
+        col_index_t FilterColumn;
+        LPCWSTR Value;
+    };
+
+    HRESULT CreateEnumTokenRange(
         mdhandle_t mdhandle,
         mdToken token,
         col_index_t column,
-        HCORENUM* phEnum,
-        mdToken rTokens[],
-        ULONG cMax,
-        ULONG* pcTokens)
+        _In_opt_ TokenRangeFilter const* filter,
+        HCORENUMImpl** pEnumImpl)
     {
         HRESULT hr;
-        HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
-        if (enumImpl == nullptr)
+        mdcursor_t cursor;
+        if (!md_token_to_cursor(mdhandle, token, &cursor))
+            return CLDB_E_INDEX_NOTFOUND;
+
+        mdcursor_t begin;
+        uint32_t count;
+        if (!md_get_column_value_as_range(cursor, column, &begin, &count))
+            return CLDB_E_FILE_CORRUPT;
+
+        HCORENUMImpl* enumImpl;
+        if (filter == nullptr || filter->Value == nullptr)
         {
-            mdcursor_t cursor;
-            if (!md_token_to_cursor(mdhandle, token, &cursor))
-                return CLDB_E_INDEX_NOTFOUND;
-
-            mdcursor_t begin;
-            uint32_t count;
-            if (!md_get_column_value_as_range(cursor, column, &begin, &count))
-                return CLDB_E_FILE_CORRUPT;
-
             RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
             HCORENUMImpl::InitTableEnum(*enumImpl, begin, count);
-            *phEnum = enumImpl;
+        }
+        else
+        {
+            assert(filter != nullptr && filter->Value != nullptr);
+            pal::StringConvert<WCHAR, char> cvt{ filter->Value };
+            if (!cvt.Success())
+                return E_INVALIDARG;
+
+            char const* toMatch;
+            mdToken matchedTk;
+            RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+
+            HCORENUMImpl_ptr cleanup{ enumImpl };
+
+            mdcursor_t curr = begin;
+            for (uint32_t i = 0; i < count; ++i)
+            {
+                if (1 != md_get_column_value_as_utf8(curr, filter->FilterColumn, 1, &toMatch))
+                    return CLDB_E_FILE_CORRUPT;
+
+                if (0 == ::strcmp(toMatch, cvt))
+                {
+                    (void)md_cursor_to_token(curr, &matchedTk);
+                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, matchedTk));
+                }
+                (void)md_cursor_next(&curr);
+            }
+
+            enumImpl = cleanup.release();
         }
 
-        return enumImpl->ReadTokens(rTokens, cMax, pcTokens);
+        *pEnumImpl = enumImpl;
+        return S_OK;
     }
 
     HRESULT CopyToStringOutput(
@@ -218,7 +244,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeRefs(
     ULONG cMax,
     ULONG* pcTypeRefs)
 {
-    return EnumTokens(_md_ptr.get(), mdtid_TypeRef, phEnum, rTypeRefs, cMax, pcTypeRefs);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_TypeRef, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rTypeRefs, cMax, pcTypeRefs);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeDefByName(
@@ -458,10 +491,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethods(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    if (TypeFromToken(cl) != mdtTypeDef)
-        return E_INVALIDARG;
-
-    return EnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_MethodList, phEnum, rMethods, cMax, pcTokens);
+    return EnumMethodsWithName(phEnum, cl, nullptr, rMethods, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodsWithName(
@@ -472,7 +502,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodsWithName(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        if (TypeFromToken(cl) != mdtTypeDef)
+            return E_INVALIDARG;
+        
+        TokenRangeFilter filter{ mdtMethodDef_Name, szName };
+        RETURN_IF_FAILED(CreateEnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_MethodList, &filter, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rMethods, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFields(
@@ -482,10 +523,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFields(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    if (TypeFromToken(cl) != mdtTypeDef)
-        return E_INVALIDARG;
-
-    return EnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_FieldList, phEnum, rFields, cMax, pcTokens);
+    return EnumFieldsWithName(phEnum, cl, nullptr, rFields, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFieldsWithName(
@@ -496,7 +534,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFieldsWithName(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        if (TypeFromToken(cl) != mdtTypeDef)
+            return E_INVALIDARG;
+
+        TokenRangeFilter filter{ mdtField_Name, szName };
+        RETURN_IF_FAILED(CreateEnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_FieldList, &filter, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rFields, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumParams(
@@ -506,10 +555,17 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumParams(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    if (TypeFromToken(mb) != mdtMethodDef)
-        return E_INVALIDARG;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        if (TypeFromToken(mb) != mdtMethodDef)
+            return E_INVALIDARG;
 
-    return EnumTokenRange(_md_ptr.get(), mb, mdtMethodDef_ParamList, phEnum, rParams, cMax, pcTokens);
+        RETURN_IF_FAILED(CreateEnumTokenRange(_md_ptr.get(), mb, mdtMethodDef_ParamList, nullptr, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rParams, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMemberRefs(
@@ -978,7 +1034,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumModuleRefs(
     ULONG       cMax,
     ULONG* pcModuleRefs)
 {
-    return EnumTokens(_md_ptr.get(), mdtid_ModuleRef, phEnum, rModuleRefs, cMax, pcModuleRefs);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_ModuleRef, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rModuleRefs, cMax, pcModuleRefs);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeSpecFromToken(
@@ -1059,7 +1122,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumSignatures(
     ULONG       cMax,
     ULONG* pcSignatures)
 {
-    return EnumTokens(_md_ptr.get(), mdtid_StandAloneSig, phEnum, rSignatures, cMax, pcSignatures);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_StandAloneSig, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rSignatures, cMax, pcSignatures);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
@@ -1068,7 +1138,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
     ULONG       cMax,
     ULONG* pcTypeSpecs)
 {
-    return EnumTokens(_md_ptr.get(), mdtid_TypeSpec, phEnum, rTypeSpecs, cMax, pcTypeSpecs);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_TypeSpec, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rTypeSpecs, cMax, pcTypeSpecs);
 }
 
 namespace
