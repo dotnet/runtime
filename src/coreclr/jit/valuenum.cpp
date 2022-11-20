@@ -8585,8 +8585,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
 
-        // NOTE: we need to sign-extend it here in case if it's a negative Int16
-        tree->gtVNPair.SetBoth(vnStore->VNForIntCon((SHORT)charValue));
+        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
         return true;
     }
     return false;
