@@ -1279,6 +1279,10 @@ namespace System
         // Returns true for actual enum types only.
         internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
+        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
+        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
+        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
+
         public override GenericParameterAttributes GenericParameterAttributes
         {
             get

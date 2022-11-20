@@ -490,6 +490,11 @@ namespace System.Runtime.CompilerServices
         public MethodTable** InterfaceMap;
 
         // WFLAGS_LOW_ENUM
+        private const uint enum_flag_GenericsMask = 0x00000030;
+        private const uint enum_flag_GenericsMask_NonGeneric = 0x00000000; // no instantiation
+        private const uint enum_flag_GenericsMask_GenericInst = 0x00000010; // regular instantiation, e.g. List<String>
+        private const uint enum_flag_GenericsMask_SharedInst = 0x00000020; // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        private const uint enum_flag_GenericsMask_TypicalInst = 0x00000030; // the type instantiated at its formal parameters, e.g. List<T>
         private const uint enum_flag_HasDefaultCtor = 0x00000200;
 
         // WFLAGS_HIGH_ENUM
@@ -533,45 +538,15 @@ namespace System.Runtime.CompilerServices
         private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
 #endif
 
-        public bool HasComponentSize
-        {
-            get
-            {
-                return (Flags & enum_flag_HasComponentSize) != 0;
-            }
-        }
+        public bool HasComponentSize => (Flags & enum_flag_HasComponentSize) != 0;
 
-        public bool ContainsGCPointers
-        {
-            get
-            {
-                return (Flags & enum_flag_ContainsPointers) != 0;
-            }
-        }
+        public bool ContainsGCPointers => (Flags & enum_flag_ContainsPointers) != 0;
 
-        public bool NonTrivialInterfaceCast
-        {
-            get
-            {
-                return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
-            }
-        }
+        public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
-        public bool HasTypeEquivalence
-        {
-            get
-            {
-                return (Flags & enum_flag_HasTypeEquivalence) != 0;
-            }
-        }
+        public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 
-        public bool HasDefaultConstructor
-        {
-            get
-            {
-                return ((HasComponentSize ? 0 : Flags) & enum_flag_HasDefaultCtor) != 0;
-            }
-        }
+        public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
         public bool IsMultiDimensionalArray
         {
@@ -599,6 +574,13 @@ namespace System.Runtime.CompilerServices
         public bool IsValueType => (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 
         public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+
+        public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
+
+        public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
+
+        public bool IsConstructedGenericType => (Flags & enum_flag_HasComponentSize) == 0 &&
+            ((Flags & enum_flag_GenericsMask) == enum_flag_GenericsMask_GenericInst || (Flags & enum_flag_GenericsMask) == enum_flag_GenericsMask_SharedInst);
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.

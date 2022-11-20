@@ -913,7 +913,7 @@ namespace System
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
 
-                    bool needsStaticFieldForGeneric = RuntimeTypeHandle.HasInstantiation(declaringType) && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
+                    bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
 
                     for (int i = 0; i < count; i++)
@@ -3411,6 +3411,42 @@ namespace System
             bool isDelegate = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<MulticastDelegate>().AsMethodTable();
             GC.KeepAlive(this);
             return isDelegate;
+        }
+
+        public override unsafe bool IsConstructedGenericType
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isConstructedGenericType = !th.IsTypeDesc && th.AsMethodTable()->IsConstructedGenericType;
+                GC.KeepAlive(this);
+                return isConstructedGenericType;
+            }
+        }
+
+        public override unsafe bool IsGenericType
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isGenericType = !th.IsTypeDesc && th.AsMethodTable()->HasInstantiation;
+                GC.KeepAlive(this);
+                return isGenericType;
+            }
+        }
+
+        public override unsafe bool IsGenericTypeDefinition
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isGenericTypeDefinition = !th.IsTypeDesc && th.AsMethodTable()->IsGenericTypeDefinition;
+                GC.KeepAlive(this);
+                return isGenericTypeDefinition;
+            }
         }
 
         public override GenericParameterAttributes GenericParameterAttributes

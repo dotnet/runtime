@@ -124,7 +124,7 @@ namespace System
                     corElemType == CorElementType.ELEMENT_TYPE_OBJECT))
                 return false;
 
-            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+            if (type.IsConstructedGenericType)
                 return false;
 
             return true;
@@ -681,17 +681,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
         internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInstantiation(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
         {
-            Debug.Assert(HasInstantiation(type));
+            Debug.Assert(type.IsGenericType);
 
-            return IsGenericTypeDefinition(type) ? type :
+            return type.IsGenericTypeDefinition ? type :
                 type.GenericCache is RuntimeType genericDefinition ? genericDefinition : CacheGenericDefinition(type);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -703,9 +700,6 @@ namespace System
                 return genericDefinition;
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericTypeDefinition(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);
