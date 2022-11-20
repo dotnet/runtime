@@ -743,7 +743,7 @@ namespace System.Collections.Generic
                     }
 
                     // Now perform element check.
-                    return ContainsAllElements(otherAsSet);
+                    return otherAsSet.IsSubsetOfHashSetWithSameComparer(this);
                 }
             }
 
@@ -811,8 +811,8 @@ namespace System.Collections.Generic
                 }
 
                 // Already confirmed that the sets have the same number of distinct elements, so if
-                // one is a superset of the other then they must be equal.
-                return ContainsAllElements(otherAsSet);
+                // one is a subset of the other then they must be equal.
+                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
             }
             else
             {
