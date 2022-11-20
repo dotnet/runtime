@@ -4876,7 +4876,7 @@ public:
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
     // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
     // assignment.)
-    void fgValueNumberTree(GenTree* tree, Statement* stmt);
+    void fgValueNumberTree(GenTree* tree);
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 
