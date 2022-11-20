@@ -289,7 +289,8 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public void Queue_Generic_IterateLastIndexOfMaxSizedQueue_DoesNotOverflow()
         {
             Queue<byte> queue;
