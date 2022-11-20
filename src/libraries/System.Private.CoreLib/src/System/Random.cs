@@ -257,6 +257,10 @@ namespace System
         /// <param name="values">The array to shuffle.</param>
         /// <typeparam name="T">The type of array.</typeparam>
         /// <exception cref="ArgumentNullException"><paramref name="values" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
+        ///   This method is an O(n) operation.
+        /// </remarks>
         public void Shuffle<T>(T[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
@@ -268,6 +272,10 @@ namespace System
         /// </summary>
         /// <param name="values">The span to shuffle.</param>
         /// <typeparam name="T">The type of span.</typeparam>
+        /// <remarks>
+        ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
+        ///   This method is an O(n) operation.
+        /// </remarks>
         public void Shuffle<T>(Span<T> values)
         {
             int n = values.Length;
