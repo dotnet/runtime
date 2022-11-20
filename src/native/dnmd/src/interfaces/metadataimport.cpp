@@ -508,7 +508,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodsWithName(
     {
         if (TypeFromToken(cl) != mdtTypeDef)
             return E_INVALIDARG;
-        
+
         TokenRangeFilter filter{ mdtMethodDef_Name, szName };
         RETURN_IF_FAILED(CreateEnumTokenRange(_md_ptr.get(), cl, mdtTypeDef_MethodList, &filter, &enumImpl));
         *phEnum = enumImpl;
@@ -707,7 +707,49 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
     ULONG* pulCodeRVA,
     DWORD* pdwImplFlags)
 {
-    return E_NOTIMPL;
+    mdcursor_t cursor;
+    if (TypeFromToken(mb) != mdtMethodDef)
+        return E_INVALIDARG;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mb, &cursor))
+        return CLDB_E_INDEX_NOTFOUND;
+
+    uint32_t attrs;
+    uint32_t rva;
+    uint32_t implFlags;
+    if (1 != md_get_column_value_as_constant(cursor, mdtMethodDef_Flags, 1, &attrs)
+        || 1 != md_get_column_value_as_constant(cursor, mdtMethodDef_Rva, 1, &rva)
+        || 1 != md_get_column_value_as_constant(cursor, mdtMethodDef_ImplFlags, 1, &implFlags))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    *pdwAttr = attrs;
+    *pulCodeRVA = rva;
+    *pdwImplFlags = implFlags;
+
+    uint8_t const* sig;
+    uint32_t sigLen;
+    if (1 != md_get_column_value_as_blob(cursor, mdtMethodDef_Signature, 1, &sig, &sigLen))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ppvSigBlob = sig;
+    *pcbSigBlob = sigLen;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtMethodDef_Name, 1, &name))
+        return CLDB_E_FILE_CORRUPT;
+
+    pal::StringConvert<char, WCHAR> cvt{ name };
+    if (!cvt.Success()
+        || !cvt.CopyTo(szMethod, cchMethod, (uint32_t*)pchMethod))
+    {
+        return E_INVALIDARG;
+    }
+
+    return (*pchMethod < cvt.Length())
+        ? CLDB_S_TRUNCATION
+        : S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberRefProps(
@@ -780,7 +822,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
         mdcursor_t eventMap;
         uint32_t eventMapCount;
         if (!md_create_cursor(_md_ptr.get(), mdtid_EventMap, &eventMap, &eventMapCount))
-            return E_INVALIDARG;
+            return CLDB_E_FILE_CORRUPT;
 
         // Find the entry in the EventMap table and then
         // resolve the column to the range in the Event table.
@@ -826,7 +868,49 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSemantics(
     ULONG       cMax,
     ULONG* pcEventProp)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        if (TypeFromToken(mb) != mdtMethodDef)
+            return E_INVALIDARG;
+
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSemantics, &cursor, &count))
+            return CLDB_E_FILE_CORRUPT;
+
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
+        // Read in for matching in bulk
+        mdToken toMatch[64];
+        mdToken matchedTk;
+        uint32_t i = 0;
+        while (i < count)
+        {
+            int32_t read = md_get_column_value_as_token(cursor, mdtMethodSemantics_Method, ARRAYSIZE(toMatch), toMatch);
+            if (read == 0)
+                break;
+
+            assert(read >= 0);
+            for (int32_t j = 0; j < read; ++j)
+            {
+                if (toMatch[j] == mb)
+                {
+                    if (1 != md_get_column_value_as_token(cursor, mdtMethodSemantics_Association, 1, &matchedTk))
+                        return CLDB_E_FILE_CORRUPT;
+                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, matchedTk));
+                }
+                (void)md_cursor_next(&cursor);
+            }
+            i += read;
+        }
+        *phEnum = cleanup.release();
+    }
+
+    return enumImpl->ReadTokens(rEventProp, cMax, pcEventProp);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSemantics(

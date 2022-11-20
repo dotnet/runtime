@@ -157,6 +157,7 @@ typedef struct _query_cxt_t
     uint8_t const* data;
     uint8_t const* end;
     size_t data_len;
+    uint32_t data_len_col;
     uint32_t next_row_stride;
 } query_cxt_t;
 
@@ -205,16 +206,19 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     // Compute the offset into the first row.
     qcxt->data = table->data.ptr + (row * table->row_size_bytes) + offset;
 
-    // Compute the beginning of the row after the last row.
-    qcxt->end = table->data.ptr + ((row + row_count) * table->row_size_bytes);
+    // Compute the beginning of the row after the last valid row.
+    uint32_t last_row = row + row_count;
+    if (last_row > table->row_count)
+        last_row = table->row_count;
+    qcxt->end = table->data.ptr + (last_row * table->row_size_bytes);
 
     // Limit the data read to the width of the column
-    uint32_t const data_len = (cd & mdtc_b2) ? 2 : 4;
-    qcxt->data_len = data_len;
+    qcxt->data_len_col = (cd & mdtc_b2) ? 2 : 4;
+    qcxt->data_len = qcxt->data_len_col;
 
     // Compute the next row stride. Take the total length and substract
     // the data length for the column to get at the next row's column.
-    qcxt->next_row_stride = table->row_size_bytes - data_len;
+    qcxt->next_row_stride = table->row_size_bytes - qcxt->data_len_col;
     return true;
 }
 
@@ -231,7 +235,13 @@ static bool next_row(query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
     qcxt->data += qcxt->next_row_stride;
-    return qcxt->data < qcxt->end;
+    if (qcxt->data < qcxt->end)
+    {
+        // Restore the data length of the column data.
+        qcxt->data_len = qcxt->data_len_col;
+        return true;
+    }
+    return false;
 }
 
 static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_idx, uint32_t out_length, mdToken* tk, mdcursor_t* cursor)

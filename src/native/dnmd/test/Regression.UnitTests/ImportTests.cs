@@ -109,14 +109,25 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumMembers(baselineImport, typedef), EnumMembers(currentImport, typedef));
                 Assert.Equal(EnumMembersWithName(baselineImport, typedef), EnumMembersWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
+
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
+                int count = 0;
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
+                    Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
+
+                    // Method semantics are expensive to compute so only do the first few.
+                    if (count < 2)
+                    {
+                        Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
+                    }
+                    count++;
                 }
+
                 var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
                 foreach (var eventdef in events)
                 {
@@ -377,6 +388,31 @@ namespace Regression.UnitTests
             return tokens;
         }
 
+        private static List<uint> EnumMethodSemantics(IMetaDataImport import, uint methoddef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumMethodSemantics(ref hcorenum, methoddef, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
         private static List<uint> EnumProperties(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
@@ -531,10 +567,10 @@ namespace Regression.UnitTests
         {
             List<uint> values = new();
 
-            var typeName = new char[128];
+            var name = new char[128];
             int hr = import.GetTypeDefProps(typedef,
-                typeName,
-                typeName.Length,
+                name,
+                name.Length,
                 out int pchTypeDef,
                 out uint pdwTypeDefFlags,
                 out uint ptkExtends);
@@ -545,15 +581,53 @@ namespace Regression.UnitTests
             else
             {
                 uint hash = 0;
-                for (int i = 0; i < Math.Min(pchTypeDef, typeName.Length); ++i)
+                for (int i = 0; i < Math.Min(pchTypeDef, name.Length); ++i)
                 {
-                    hash ^= typeName[i];
+                    hash ^= name[i];
                 }
 
                 values.Add(hash);
                 values.Add((uint)pchTypeDef);
                 values.Add(pdwTypeDefFlags);
                 values.Add(ptkExtends);
+            }
+            return values;
+        }
+
+        private static List<nuint> GetMethodProps(IMetaDataImport import, uint methoddef)
+        {
+            List<nuint> values = new();
+
+            var name = new char[128];
+            int hr = import.GetMethodProps(methoddef,
+                out uint typeDef,
+                name,
+                name.Length,
+                out int pchMethod,
+                out uint pdwAttr,
+                out nint ppvSigBlob,
+                out uint pcbSigBlob,
+                out uint pulCodeRVA,
+                out uint pdwImplFlags);
+            if (hr != 0)
+            {
+                values.Add((uint)hr);
+            }
+            else
+            {
+                uint hash = 0;
+                for (int i = 0; i < Math.Min(pchMethod, name.Length); ++i)
+                {
+                    hash ^= name[i];
+                }
+
+                values.Add(hash);
+                values.Add(pdwAttr);
+                values.Add((nuint)ppvSigBlob);
+                values.Add(pcbSigBlob);
+                values.Add(pulCodeRVA);
+                values.Add(pdwImplFlags);
+
             }
             return values;
         }
