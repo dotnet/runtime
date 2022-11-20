@@ -7884,7 +7884,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
-            fgValueNumberTree(tree, stmt);
+            fgValueNumberTree(tree);
             compCurTree = nullptr;
         }
 
@@ -8506,7 +8506,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 {
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
-    if (!varTypeIsShort(tree) || !vnStore->GetVNFunc(addrVN, &funcApp) || !tree->gtVNPair.BothEqual())
+    if (!tree->TypeIs(TYP_USHORT) || !vnStore->GetVNFunc(addrVN, &funcApp) || !tree->gtVNPair.BothEqual())
     {
         return false;
     }
@@ -8590,7 +8590,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     return false;
 }
 
-void Compiler::fgValueNumberTree(GenTree* tree, Statement* stmt)
+void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
@@ -8843,10 +8843,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, Statement* stmt)
                 }
                 else if (tree->OperIs(GT_IND) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
-                    // Update side-effect flags of parent trees if needed
-                    gtUpdateStmtSideEffects(stmt);
+                    // VN is assigned inside fgValueNumberConstLoad
                 }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
@@ -10604,6 +10601,12 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 {
     // We should have tree that a unary indirection or a tree node with an implicit indirection
     assert(tree->OperIsUnary() || tree->OperIsImplicitIndir());
+
+    // if this indirection can be folded into a constant it means it can't trigger NullRef
+    if (tree->gtVNPair.BothEqual() && vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
+    {
+        return;
+    }
 
     // We evaluate the baseAddr ValueNumber further in order
     // to obtain a better value to use for the null check exception.
