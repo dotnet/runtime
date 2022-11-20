@@ -682,24 +682,7 @@ namespace System
         internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
-
-        internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
-        {
-            Debug.Assert(type.IsGenericType);
-
-            return type.IsGenericTypeDefinition ? type :
-                type.GenericCache is RuntimeType genericDefinition ? genericDefinition : CacheGenericDefinition(type);
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static RuntimeType CacheGenericDefinition(RuntimeType type)
-            {
-                RuntimeType genericDefinition = null!;
-                GetGenericTypeDefinition(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref genericDefinition));
-                type.GenericCache = genericDefinition;
-                return genericDefinition;
-            }
-        }
+        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);

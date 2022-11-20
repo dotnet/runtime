@@ -1492,9 +1492,9 @@ namespace System
             // - Enum names and values (EnumInfo)
             // - Activator.CreateInstance (ActivatorCache)
             // - Array.Initialize (ArrayInitializeCache)
-            // - RuntimeType.GetGenericTypeDefinition (RuntimeType)
             private object? m_genericCache;
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
+            private RuntimeType? _genericTypeDefinition;
             #endregion
 
             #region Constructor
@@ -1648,6 +1648,29 @@ namespace System
             }
 
             internal object[] GetEmptyArray() => _emptyArray ??= (object[])Array.CreateInstance(m_runtimeType, 0);
+
+            internal RuntimeType GetGenericTypeDefinition()
+            {
+                Debug.Assert(m_runtimeType.IsGenericType);
+
+                return _genericTypeDefinition ?? CacheGenericDefinition();
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                RuntimeType CacheGenericDefinition()
+                {
+                    RuntimeType genericDefinition = null!;
+                    if (m_runtimeType.IsGenericTypeDefinition)
+                    {
+                        genericDefinition = m_runtimeType;
+                    }
+                    else
+                    {
+                        RuntimeType type = m_runtimeType;
+                        RuntimeTypeHandle.GetGenericTypeDefinition(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref genericDefinition));
+                    }
+                    return _genericTypeDefinition = genericDefinition;
+                }
+            }
             #endregion
 
             #region Caches Accessors
@@ -3452,6 +3475,14 @@ namespace System
                 GC.KeepAlive(this);
                 return isGenericTypeDefinition;
             }
+        }
+
+        public override Type GetGenericTypeDefinition()
+        {
+            if (!IsGenericType)
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+
+            return Cache.GetGenericTypeDefinition();
         }
 
         public override GenericParameterAttributes GenericParameterAttributes

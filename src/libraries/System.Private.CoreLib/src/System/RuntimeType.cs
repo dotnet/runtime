@@ -245,14 +245,6 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public override Type GetGenericTypeDefinition()
-        {
-            if (!IsGenericType)
-                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
-
-            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
-        }
-
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
 
         internal RuntimeModule GetRuntimeModule() => RuntimeTypeHandle.GetModule(this);
