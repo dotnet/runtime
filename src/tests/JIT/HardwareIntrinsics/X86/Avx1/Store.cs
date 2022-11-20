@@ -7,15 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.Avx1
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Store()
         {
             int testResult = Pass;
 
@@ -60,7 +59,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<long>>(intTable.inArrayPtr);
                     Avx.Store((long*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((long x, long y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on long:");
                         foreach (var item in intTable.outArray)
@@ -77,7 +76,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<ulong>>(intTable.inArrayPtr);
                     Avx.Store((ulong*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((ulong x, ulong y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on ulong:");
                         foreach (var item in intTable.outArray)
@@ -94,7 +93,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<int>>(intTable.inArrayPtr);
                     Avx.Store((int*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((int x, int y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on int:");
                         foreach (var item in intTable.outArray)
@@ -111,7 +110,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<uint>>(intTable.inArrayPtr);
                     Avx.Store((uint*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((uint x, uint y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on uint:");
                         foreach (var item in intTable.outArray)
@@ -128,7 +127,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<short>>(intTable.inArrayPtr);
                     Avx.Store((short*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((short x, short y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on short:");
                         foreach (var item in intTable.outArray)
@@ -145,7 +144,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<ushort>>(intTable.inArrayPtr);
                     Avx.Store((ushort*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((ushort x, ushort y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on ushort:");
                         foreach (var item in intTable.outArray)
@@ -162,7 +161,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<sbyte>>(intTable.inArrayPtr);
                     Avx.Store((sbyte*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((sbyte x, sbyte y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on sbyte:");
                         foreach (var item in intTable.outArray)
@@ -179,7 +178,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf = Unsafe.Read<Vector256<byte>>(intTable.inArrayPtr);
                     Avx.Store((byte*)(intTable.outArrayPtr), vf);
 
-                    if (!intTable.CheckResult((x, y) => x == y))
+                    if (!intTable.CheckResult((byte x, byte y) => x == y))
                     {
                         Console.WriteLine("Avx Store failed on byte:");
                         foreach (var item in intTable.outArray)
@@ -193,45 +192,7 @@ namespace IntelHardwareIntrinsicTest
 
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
-
-        public unsafe struct TestTable<T> : IDisposable where T : struct
-        {
-            public T[] inArray;
-            public T[] outArray;
-
-            public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
-            public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
-
-            GCHandle inHandle;
-            GCHandle outHandle;
-            public TestTable(T[] a, T[] b)
-            {
-                this.inArray = a;
-                this.outArray = b;
-
-                inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
-                outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
-            }
-            public bool CheckResult(Func<T, T, bool> check)
-            {
-                for (int i = 0; i < inArray.Length; i++)
-                {
-                    if (!check(inArray[i], outArray[i]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            public void Dispose()
-            {
-                inHandle.Free();
-                outHandle.Free();
-            }
-        }
-
     }
 }

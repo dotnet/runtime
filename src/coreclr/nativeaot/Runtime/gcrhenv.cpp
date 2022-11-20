@@ -575,34 +575,18 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
-{
-    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
-    if (cbSrc != cbDest)
-        return;
-
-    ASSERT(pobjDest->get_EEType()->HasReferenceFields() == pobjSrc->get_EEType()->HasReferenceFields());
-
-    if (pobjDest->get_EEType()->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pobjDest, pobjSrc, cbDest);
-    }
-    else
-    {
-        memcpy(pobjDest, pobjSrc, cbDest);
-    }
-}
-
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
     ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
+    ASSERT(pObj1->get_EEType()->IsValueType());
+
     MethodTable * pEEType = pObj1->get_EEType();
     size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
 
+    // memcmp is ok in a COOP method as we are comparing structs which are typically small.
     FC_RETURN_BOOL(memcmp(pbFields1, pbFields2, cbFields) == 0);
 }
 
@@ -1028,10 +1012,6 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     UNREFERENCED_PARAMETER(gcContext);
 #endif // FEATURE_EVENT_TRACE
 }
-
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
-#endif
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {

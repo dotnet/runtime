@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector128
 {
     public static partial class Program
     {
-        private static void CreateScalarDouble()
+        [Fact]
+        public static void CreateScalarDouble()
         {
             var test = new VectorCreate__CreateScalarDouble();
 

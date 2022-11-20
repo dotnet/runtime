@@ -1,0 +1,158 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+    - release/*
+    - mono-*
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*
+    - mono-*
+    - feature/*
+
+variables:
+- name: officialBuild
+  value: ${{ and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}
+- name: _BuildConfig
+  value: Release
+- name: _BuildArgs
+  value:
+- name: _DotNetArtifactsCategory
+  value: .NETCore
+- ${{ if eq(variables.officialBuild, 'true') }}:
+  - name: _BuildArgs
+    value: ${{ format('{0} /p:OfficialBuildId=$(Build.BuildNumber) /p:Test=false /p:IntegrationTest=false', variables['_BuildArgs']) }}
+  # Provide HelixApiAccessToken for telemetry
+  - group: DotNet-HelixApi-Access
+  - name: Codeql.Enabled
+    value: True
+  - name: Codeql.TSAEnabled
+    value: True
+
+stages:
+- stage: build
+  displayName: Build
+  jobs:
+  - template: /eng/common/templates/jobs/jobs.yml
+    parameters:
+
+      enableTelemetry: true # send helix telemetry
+      helixRepo: dotnet/linker
+      enablePublishUsingPipelines: true
+      enablePublishBuildArtifacts: true # publish build logs to pipeline storage
+      ${{ if eq(variables.officialBuild, 'false') }}:
+        enablePublishTestResults: true
+        testResultsFormat: vstest
+      enablePublishBuildAssets: true # generate build manifests and publish to BAR in internal builds
+      enableMicrobuild: true # only affects internal builds
+      # See https://github.com/dotnet/source-build/issues/2049
+      # enableSourceBuild: true
+
+      jobs:
+
+      - job: Windows_NT
+        pool:
+          ${{ if eq(variables.officialBuild, 'false') }}:
+            vmImage: windows-latest
+          ${{ if eq(variables.officialBuild, 'true') }}:
+            name: NetCore1ESPool-Internal
+            demands: ImageOverride -equals 1es-windows-2019
+        variables:
+          - ${{ if eq(variables.officialBuild, 'false') }}:
+            - _SignType: test
+            - _PublishArgs: ''
+          - ${{ if eq(variables.officialBuild, 'true') }}:
+            - group: DotNet-Blob-Feed
+            - _TeamName: .NET # required by microbuild install step
+            - _SignType: real # used in the arcade templates that install microbuild.
+            - _DotNetPublishToBlobFeed: true # used by arcade templates that gather build asset manifests
+            - _PublishArgs: /p:DotNetPublishToBlobFeed=$(_DotNetPublishToBlobFeed)
+                            /p:DotNetPublishBlobFeedUrl=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+                            /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+                            /p:DotNetArtifactsCategory=$(_DotNetArtifactsCategory)
+                            /p:DotNetPublishUsingPipelines=true
+          - DotNetSignType: ${{ format('{0}', variables._SignType) }} # DotNetSignType defaults to real if not specified
+        steps:
+        - checkout: self
+          submodules: true
+        - script: eng\common\cibuild.cmd -projects $(Build.SourcesDirectory)\illink.sln
+                  -configuration $(_BuildConfig) $(_BuildArgs) $(_PublishArgs)
+                  -integrationTest
+                  -nodeReuse "$false" # https://github.com/Microsoft/vstest/issues/1503
+          env:
+            # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
+            MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+          ${{ if eq(variables.officialBuild, 'false') }}:
+            displayName: Build illink.sln $(_BuildConfig)
+          ${{ if eq(variables.officialBuild, 'true') }}:
+            displayName: Build and publish illink.sln $(_BuildConfig)
+
+      - job: SourceBuild_Managed
+        displayName: Source-Build (Managed)
+        pool:
+          ${{ if eq(variables.officialBuild, 'false' )}}:
+            vmImage: ubuntu-latest
+          ${{ if eq(variables.officialBuild, 'true' )}}:
+            name: NetCore1ESPool-Internal
+            demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
+        container: 'mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7'
+        workspace:
+          clean: all
+        steps:
+        - checkout: self
+          submodules: true
+        - template: /eng/common/templates/steps/source-build.yml
+          parameters:
+            enablePublishTestResults: true
+
+      - ${{ if eq(variables.officialBuild, 'false') }}:
+        - job: Linux
+          condition: eq(variables.officialBuild, 'false')
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+          - checkout: self
+            submodules: true
+          - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                    --configuration $(_BuildConfig) $(_BuildArgs)
+                    --integrationTest
+                    --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
+            env:
+              # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
+              MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+            displayName: Build illink.sln $(_BuildConfig)
+
+      - ${{ if eq(variables.officialBuild, 'false') }}:
+        - job: macOS
+          pool:
+              vmImage: macOS-latest
+          steps:
+          - checkout: self
+            submodules: true
+          - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                    --configuration $(_BuildConfig) $(_BuildArgs)
+                    --integrationTest
+                    --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
+            env:
+              # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
+              MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+            displayName: Build illink.sln $(_BuildConfig)
+
+  - ${{ if eq(variables.officialBuild, 'false') }}:
+    - job: Lint
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - checkout: self
+        submodules: true
+      - script: ./lint.sh --verify-no-changes --verbosity diagnostic
+
+# Post-Build Arcade logic
+- ${{ if eq(variables.officialBuild, 'true') }}:
+  - template: /eng/common/templates/post-build/post-build.yml
+    parameters:
+      publishingInfraVersion: 3

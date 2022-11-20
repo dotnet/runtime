@@ -351,7 +351,7 @@ namespace System.Net.WebSockets
             return morePayloadBuffered;
         }
 
-        internal ArraySegment<byte> ConvertNativeBuffer(WebSocketProtocolComponent.Action action,
+        internal ArraySegment<byte> ConvertNativeBuffer(
             Interop.WebSocket.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType)
         {
@@ -380,7 +380,7 @@ namespace System.Net.WebSockets
             throw new AccessViolationException();
         }
 
-        internal void ConvertCloseBuffer(WebSocketProtocolComponent.Action action,
+        internal void ConvertCloseBuffer(
             Interop.WebSocket.Buffer buffer,
             out WebSocketCloseStatus closeStatus,
             out string? reason)

@@ -70,7 +70,7 @@ internal partial class VectorTest
             return 100;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             int returnVal = Pass;
             

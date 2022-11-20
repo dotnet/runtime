@@ -8,7 +8,7 @@ namespace defaultNamespace
 
     public class jitbug
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             if ("15.0%Double.PositiveInfinity = " + 15.0 % Double.PositiveInfinity == "15.0%Double.PositiveInfinity = 15")
             {

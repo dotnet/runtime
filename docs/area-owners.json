@@ -58,6 +58,7 @@
         "clamp03",
         "gbalykov",
         "hjleee",
+        "JongHeonChoi",
         "wscho77"
       ],
       "label": "os-tizen"
@@ -615,12 +616,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-codedom"
       ],
@@ -689,12 +689,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-configuration"
       ],
@@ -843,12 +842,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-directoryservices"
       ],
@@ -1118,12 +1116,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-reflection"
       ],
@@ -1138,12 +1135,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-reflection-emit"
       ],
@@ -1151,12 +1147,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-reflection-metadata"
       ],
@@ -1164,12 +1159,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "tarekgh",
         "dotnet/area-system-resources"
@@ -1199,12 +1193,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-runtime-compilerservices"
       ],
@@ -1329,12 +1322,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "steveharter",
         "dotnet/area-system-text-regularexpressions"
       ],
@@ -1349,12 +1341,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "stephentoub",
         "steveharter",
         "dotnet/area-system-threading-channels"
@@ -1371,12 +1362,11 @@
     },
     {
       "lead": "ericstj",
-      "pod": "buyaa-jose-steve",
+      "pod": "buyaa-steve",
       "owners": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "joperezr",
         "stephentoub",
         "steveharter",
         "dotnet/area-system-threading-tasks"

@@ -185,7 +185,7 @@ namespace GitHub_23199
         }
 
 
-        static int Main(string[] args)
+        static int Main()
         {
             TestCrossgenedReturnWith2PointersStruct();
             TestTwoPointers();

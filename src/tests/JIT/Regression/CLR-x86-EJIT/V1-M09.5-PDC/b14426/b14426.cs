@@ -53,7 +53,7 @@ namespace SetIPTest
         }
 
 
-        public static int Main(String[] argv)
+        public static int Main()
         {
             Console.WriteLine("Entering Main of SetIP");
 

@@ -113,6 +113,8 @@ namespace ILCompiler
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
+        public Option<bool> Dehydrate { get; } =
+            new(new[] { "--dehydrate" }, "Dehydrate runtime data structures");
         public Option<bool> PreinitStatics { get; } =
             new(new[] { "--preinitstatics" }, "Interpret static constructors at compile time if possible (implied by -O)");
         public Option<bool> NoPreinitStatics { get; } =
@@ -138,9 +140,9 @@ namespace ILCompiler
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
-            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens, true), true, "Fully generate given assembly if it's used");
+            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens), true, "Fully generate given assembly if it's used");
         public Option<IEnumerable<string>> TrimmedAssemblies { get; } =
-            new(new[] { "--trim" }, result => ILLinkify(result.Tokens, true), true, "Trim the specified assembly");
+            new(new[] { "--trim" }, result => ILLinkify(result.Tokens), true, "Trim the specified assembly");
         public Option<bool> RootDefaultAssemblies { get; } =
             new(new[] { "--defaultrooting" }, "Root assemblies that are not marked [IsTrimmable]");
         public Option<TargetArchitecture> TargetArchitecture { get; } =
@@ -205,6 +207,7 @@ namespace ILCompiler
             AddOption(Parallelism);
             AddOption(InstructionSet);
             AddOption(Guard);
+            AddOption(Dehydrate);
             AddOption(PreinitStatics);
             AddOption(NoPreinitStatics);
             AddOption(SuppressedWarnings);
@@ -345,7 +348,7 @@ namespace ILCompiler
             };
         }
 
-        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens, bool setDefaultToEmpty)
+        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens)
         {
             if (tokens.Count == 0)
             {

@@ -502,7 +502,6 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
-       palrt
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES

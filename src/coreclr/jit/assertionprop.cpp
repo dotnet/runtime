@@ -1307,6 +1307,17 @@ Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
     return assertion;
 }
 
+ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+{
+    if (optLocalAssertionProp)
+    {
+        return ValueNumStore::NoVN;
+    }
+
+    assert(vnStore != nullptr);
+    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
+}
+
 //------------------------------------------------------------------------
 // optCastConstantSmall: Cast a constant to a small type.
 //
@@ -4224,7 +4235,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             }
             else if (op1->TypeGet() == TYP_LONG)
             {
-                printf("%I64d\n", vnStore->ConstantValue<INT64>(vnCns));
+                printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
             }
             else if (op1->TypeGet() == TYP_DOUBLE)
             {

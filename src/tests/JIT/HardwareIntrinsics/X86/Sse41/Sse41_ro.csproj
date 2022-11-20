@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse41_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -24,10 +25,38 @@
     <Compile Include="CeilingScalar.Single.cs" />
     <Compile Include="CompareEqual.Int64.cs" />
     <Compile Include="CompareEqual.UInt64.cs" />
+    <Compile Include="Extract.Byte.1.cs" />
+    <Compile Include="Extract.Int32.1.cs" />
+    <Compile Include="Extract.UInt32.1.cs" />
+    <Compile Include="Extract.Single.1.cs" />
+    <Compile Include="Extract.Byte.129.cs" />
+    <Compile Include="Extract.Int32.129.cs" />
+    <Compile Include="Extract.UInt32.129.cs" />
+    <Compile Include="Extract.Single.129.cs" />
     <Compile Include="Floor.Double.cs" />
     <Compile Include="Floor.Single.cs" />
     <Compile Include="FloorScalar.Double.cs" />
     <Compile Include="FloorScalar.Single.cs" />
+    <Compile Include="Insert.Single.0.cs" />
+    <Compile Include="Insert.Byte.1.cs" />
+    <Compile Include="Insert.SByte.1.cs" />
+    <Compile Include="Insert.Int32.1.cs" />
+    <Compile Include="Insert.UInt32.1.cs" />
+    <Compile Include="Insert.Single.1.cs" />
+    <Compile Include="Insert.Single.2.cs" />
+    <Compile Include="Insert.Single.4.cs" />
+    <Compile Include="Insert.Single.8.cs" />
+    <Compile Include="Insert.Single.16.cs" />
+    <Compile Include="Insert.Single.32.cs" />
+    <Compile Include="Insert.Single.48.cs" />
+    <Compile Include="Insert.Single.64.cs" />
+    <Compile Include="Insert.Single.128.cs" />
+    <Compile Include="Insert.Byte.129.cs" />
+    <Compile Include="Insert.SByte.129.cs" />
+    <Compile Include="Insert.Int32.129.cs" />
+    <Compile Include="Insert.UInt32.129.cs" />
+    <Compile Include="Insert.Single.129.cs" />
+    <Compile Include="Insert.Single.192.cs" />
     <Compile Include="Max.Int32.cs" />
     <Compile Include="Max.SByte.cs" />
     <Compile Include="Max.UInt16.cs" />
@@ -83,37 +112,9 @@
     <Compile Include="TestZ.UInt16.cs" />
     <Compile Include="TestZ.UInt32.cs" />
     <Compile Include="TestZ.UInt64.cs" />
-    <Compile Include="Extract.Byte.1.cs" />
-    <Compile Include="Extract.Int32.1.cs" />
-    <Compile Include="Extract.UInt32.1.cs" />
-    <Compile Include="Extract.Single.1.cs" />
-    <Compile Include="Extract.Byte.129.cs" />
-    <Compile Include="Extract.Int32.129.cs" />
-    <Compile Include="Extract.UInt32.129.cs" />
-    <Compile Include="Extract.Single.129.cs" />
-    <Compile Include="Insert.Single.0.cs" />
-    <Compile Include="Insert.Byte.1.cs" />
-    <Compile Include="Insert.SByte.1.cs" />
-    <Compile Include="Insert.Int32.1.cs" />
-    <Compile Include="Insert.UInt32.1.cs" />
-    <Compile Include="Insert.Single.1.cs" />
-    <Compile Include="Insert.Single.2.cs" />
-    <Compile Include="Insert.Single.4.cs" />
-    <Compile Include="Insert.Single.8.cs" />
-    <Compile Include="Insert.Single.16.cs" />
-    <Compile Include="Insert.Single.32.cs" />
-    <Compile Include="Insert.Single.48.cs" />
-    <Compile Include="Insert.Single.64.cs" />
-    <Compile Include="Insert.Single.128.cs" />
-    <Compile Include="Insert.Byte.129.cs" />
-    <Compile Include="Insert.SByte.129.cs" />
-    <Compile Include="Insert.Int32.129.cs" />
-    <Compile Include="Insert.UInt32.129.cs" />
-    <Compile Include="Insert.Single.129.cs" />
-    <Compile Include="Insert.Single.192.cs" />
-    <Compile Include="Program.Sse41.cs" />
-    <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="Program.Sse41.cs" />
+    <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

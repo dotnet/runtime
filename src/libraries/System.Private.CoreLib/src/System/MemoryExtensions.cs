@@ -716,6 +716,15 @@ namespace System
                     return IndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>() && Unsafe.SizeOf<T>() == sizeof(char))
+                    {
+                        return ProbabilisticMap.IndexOfAnyExcept(
+                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                            span.Length,
+                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values)),
+                            values.Length);
+                    }
+
                     for (int i = 0; i < span.Length; i++)
                     {
                         if (!values.Contains(span[i]))
@@ -960,6 +969,15 @@ namespace System
                     return LastIndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>() && Unsafe.SizeOf<T>() == sizeof(char))
+                    {
+                        return ProbabilisticMap.LastIndexOfAnyExcept(
+                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                            span.Length,
+                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values)),
+                            values.Length);
+                    }
+
                     for (int i = span.Length - 1; i >= 0; i--)
                     {
                         if (!values.Contains(span[i]))
@@ -1681,42 +1699,12 @@ namespace System
                                 span.Length);
 
                         default:
-                            return IndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
+                            return ProbabilisticMap.IndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
                     }
                 }
             }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
-        }
-
-        /// <summary>Searches for the first index of any of the specified values using a <see cref="ProbabilisticMap"/>.</summary>
-        private static unsafe int IndexOfAnyProbabilistic(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-        {
-            Debug.Assert(searchSpaceLength >= 0);
-            Debug.Assert(valuesLength >= 0);
-
-            ReadOnlySpan<char> valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
-            ProbabilisticMap map = default;
-
-            uint* charMap = (uint*)&map;
-            ProbabilisticMap.Initialize(charMap, valuesSpan);
-
-            ref char cur = ref searchSpace;
-            while (searchSpaceLength != 0)
-            {
-                int ch = cur;
-                if (ProbabilisticMap.IsCharBitSet(charMap, (byte)ch) &&
-                    ProbabilisticMap.IsCharBitSet(charMap, (byte)(ch >> 8)) &&
-                    ProbabilisticMap.SpanContains(valuesSpan, (char)ch))
-                {
-                    return (int)((nint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
-                }
-
-                searchSpaceLength--;
-                cur = ref Unsafe.Add(ref cur, 1);
-            }
-
-            return -1;
         }
 
         /// <summary>
@@ -1791,8 +1779,9 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
-        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>?
-            => LastIndexOfAny((ReadOnlySpan<T>)span, values);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
+            LastIndexOfAny((ReadOnlySpan<T>)span, values);
 
         /// <summary>
         /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
@@ -1950,42 +1939,12 @@ namespace System
 #endif
 
                         default:
-                            return LastIndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
+                            return ProbabilisticMap.LastIndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
                     }
                 }
             }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
-        }
-
-        /// <summary>Searches for the last index of any of the specified values using a <see cref="ProbabilisticMap"/>.</summary>
-        private static unsafe int LastIndexOfAnyProbabilistic(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-        {
-            Debug.Assert(searchSpaceLength >= 0);
-            Debug.Assert(valuesLength >= 0);
-
-            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
-            ProbabilisticMap map = default;
-
-            uint* charMap = (uint*)&map;
-            ProbabilisticMap.Initialize(charMap, valuesSpan);
-
-            ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength - 1);
-            while (searchSpaceLength != 0)
-            {
-                int ch = cur;
-                if (ProbabilisticMap.IsCharBitSet(charMap, (byte)ch) &&
-                    ProbabilisticMap.IsCharBitSet(charMap, (byte)(ch >> 8)) &&
-                    ProbabilisticMap.SpanContains(valuesSpan, (char)ch))
-                {
-                    return (int)((nint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
-                }
-
-                searchSpaceLength--;
-                cur = ref Unsafe.Add(ref cur, -1);
-            }
-
-            return -1;
         }
 
         /// <summary>
@@ -2962,6 +2921,68 @@ namespace System
             {
                 ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, new ComparisonComparer<TKey>(comparison));
             }
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of <paramref name="oldValue"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
+        /// <param name="span">The span in which the elements should be replaced.</param>
+        /// <param name="oldValue">The value to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
+        {
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            {
+                nuint length = (uint)span.Length;
+
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    ref byte src = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span));
+                    SpanHelpers.ReplaceValueType(
+                        ref src,
+                        ref src,
+                        Unsafe.As<T, byte>(ref oldValue),
+                        Unsafe.As<T, byte>(ref newValue),
+                        length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(ushort))
+                {
+                    // Use ushort rather than short, as this avoids a sign-extending move.
+                    ref ushort src = ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span));
+                    SpanHelpers.ReplaceValueType(
+                        ref src,
+                        ref src,
+                        Unsafe.As<T, ushort>(ref oldValue),
+                        Unsafe.As<T, ushort>(ref newValue),
+                        length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    ref int src = ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span));
+                    SpanHelpers.ReplaceValueType(
+                        ref src,
+                        ref src,
+                        Unsafe.As<T, int>(ref oldValue),
+                        Unsafe.As<T, int>(ref newValue),
+                        length);
+                }
+                else
+                {
+                    Debug.Assert(Unsafe.SizeOf<T>() == sizeof(long));
+
+                    ref long src = ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span));
+                    SpanHelpers.ReplaceValueType(
+                        ref src,
+                        ref src,
+                        Unsafe.As<T, long>(ref oldValue),
+                        Unsafe.As<T, long>(ref newValue),
+                        length);
+                }
+            }
+
+            SpanHelpers.Replace(span, oldValue, newValue);
         }
 
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>

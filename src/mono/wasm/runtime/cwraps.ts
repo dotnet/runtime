@@ -48,6 +48,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_get_obj_type", "number", ["number"]],
     [true, "mono_wasm_array_length", "number", ["number"]],
+    [true, "mono_wasm_array_length_ref", "number", ["number"]],
     [true, "mono_wasm_array_get", "number", ["number", "number"]],
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
     [false, "mono_wasm_obj_array_new", "number", ["number"]],
@@ -84,7 +85,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
-    [false, "mono_profiler_init_aot", "void", ["number"]],
+    // These two need to be lazy because they may be missing
+    [true, "mono_wasm_profiler_init_aot", "void", ["number"]],
+    [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
@@ -93,6 +96,25 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_u52_to_f64", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_i52", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
+    [true, "mono_wasm_method_get_name", "number", ["number"]],
+    [true, "mono_wasm_method_get_full_name", "number", ["number"]],
+
+    // jiterpreter
+    [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
+    [true, "mono_jiterp_value_copy", "void", ["number", "number", "number"]],
+    [true, "mono_jiterp_get_offset_of_vtable_initialized_flag", "number", []],
+    [true, "mono_jiterp_get_offset_of_array_data", "number", []],
+    [false, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
+    [false, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
+    [true, "mono_jiterp_type_is_byref", "number", ["number"]],
+    [true, "mono_jiterp_get_size_of_stackval", "number", []],
+    [true, "mono_jiterp_parse_option", "number", ["string"]],
+    [true, "mono_jiterp_get_options_as_json", "number", []],
+    [true, "mono_jiterp_get_options_version", "number", []],
+    [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
+    [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
+    [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
+    [true, "mono_jiterp_update_jit_call_dispatcher", "void", ["number"]],
 ];
 
 export interface t_Cwraps {
@@ -136,6 +158,7 @@ export interface t_Cwraps {
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
     mono_wasm_array_length(array: MonoArray): number;
 
+    mono_wasm_array_length_ref(array: MonoObjectRef): number;
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
@@ -193,7 +216,8 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_enable_on_demand_gc(enable: number): void;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
-    mono_profiler_init_aot(desc: string): void;
+    mono_wasm_profiler_init_aot(desc: string): void;
+    mono_wasm_profiler_init_browser(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
     mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments): MonoString;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
@@ -203,6 +227,27 @@ export interface t_Cwraps {
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
+    mono_wasm_method_get_name(method: MonoMethod): CharPtr;
+    mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
+
+    mono_jiterp_get_trace_bailout_count(reason: number): number;
+    mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
+    mono_jiterp_get_offset_of_vtable_initialized_flag(): number;
+    mono_jiterp_get_offset_of_array_data(): number;
+    // Returns bytes written (or 0 if writing failed)
+    mono_jiterp_encode_leb52 (destination: VoidPtr, value: number, valueIsSigned: number): number;
+    // Returns bytes written (or 0 if writing failed)
+    // Source is the address of a 64-bit int or uint
+    mono_jiterp_encode_leb64_ref (destination: VoidPtr, source: VoidPtr, valueIsSigned: number): number;
+    mono_jiterp_type_is_byref (type: MonoType): number;
+    mono_jiterp_get_size_of_stackval (): number;
+    mono_jiterp_type_get_raw_value_size (type: MonoType): number;
+    mono_jiterp_parse_option (name: string): number;
+    mono_jiterp_get_options_as_json (): number;
+    mono_jiterp_get_options_version (): number;
+    mono_jiterp_adjust_abort_count (opcode: number, delta: number): number;
+    mono_jiterp_register_jit_call_thunk (cinfo: number, func: number): void;
+    mono_jiterp_update_jit_call_dispatcher (fn: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
@@ -226,11 +271,17 @@ export function init_c_exports(): void {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
                 const fce = Module.cwrap(name, returnType, argTypes, opts);
+                if (typeof (fce) !== "function")
+                    throw new Error(`cwrap ${name} not found or not a function`);
                 wf[name] = fce;
                 return fce(...args);
             };
         } else {
             const fce = Module.cwrap(name, returnType, argTypes, opts);
+            // throw would be preferable, but it causes really hard to debug startup errors and
+            //  unhandled promise rejections so this is more useful
+            if (typeof (fce) !== "function")
+                console.error(`cwrap ${name} not found or not a function`);
             wf[name] = fce;
         }
     }

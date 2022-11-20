@@ -235,7 +235,7 @@ class Test
                                  null,
                                };
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Test string as [In,Out] parameter
         for (int i = 0; i < utf8Strings.Length; i++)

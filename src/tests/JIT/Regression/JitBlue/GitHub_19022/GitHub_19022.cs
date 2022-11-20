@@ -10,7 +10,7 @@ namespace JitCrashPOC
     {
         static public int s_res;
 
-        static int Main(string[] args)
+        static int Main()
         {
             var map = new ItemRunner();
 

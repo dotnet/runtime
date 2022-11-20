@@ -339,31 +339,41 @@ namespace System.Text.RegularExpressions
             Debug.Assert(runstack is not null);
             Debug.Assert(runcrawl is not null);
 
-            // Configure the additional value to "bump" the position along each time we loop around
-            // to call TryFindNextStartingPosition again, as well as the stopping position for the loop.  We generally
-            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
-            // by -1 and stop at textbeg.
-            int bump = 1, stoppos = text.Length;
             if (runregex.RightToLeft)
             {
-                bump = -1;
-                stoppos = 0;
-            }
-
-            while (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextstart))
-            {
-                CheckTimeout();
-
-                if (TryMatchAtCurrentPosition(text) || runtextpos == stoppos)
+                while (_code.FindOptimizations.TryFindNextStartingPositionRightToLeft(text, ref runtextpos, runtextstart))
                 {
-                    return;
-                }
+                    CheckTimeout();
 
-                // Reset state for another iteration.
-                runtrackpos = runtrack.Length;
-                runstackpos = runstack.Length;
-                runcrawlpos = runcrawl.Length;
-                runtextpos += bump;
+                    if (TryMatchAtCurrentPosition(text) || runtextpos == 0)
+                    {
+                        return;
+                    }
+
+                    // Reset state for another iteration.
+                    runtrackpos = runtrack.Length;
+                    runstackpos = runstack.Length;
+                    runcrawlpos = runcrawl.Length;
+                    runtextpos--;
+                }
+            }
+            else
+            {
+                while (_code.FindOptimizations.TryFindNextStartingPositionLeftToRight(text, ref runtextpos, runtextstart))
+                {
+                    CheckTimeout();
+
+                    if (TryMatchAtCurrentPosition(text) || runtextpos == text.Length)
+                    {
+                        return;
+                    }
+
+                    // Reset state for another iteration.
+                    runtrackpos = runtrack.Length;
+                    runstackpos = runstack.Length;
+                    runcrawlpos = runcrawl.Length;
+                    runtextpos++;
+                }
             }
         }
 

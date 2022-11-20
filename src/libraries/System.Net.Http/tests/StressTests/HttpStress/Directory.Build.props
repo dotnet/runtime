@@ -1,7 +1,7 @@
 <Project>
     <PropertyGroup>
-        <PackageRid>linux-x64</PackageRid>
-        <PackageRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</PackageRid>
+        <OutputRid>linux-x64</OutputRid>
+        <OutputRid Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</OutputRid>
 
         <!-- Stress projects have their own global.json, the directory above that also has it is the repository root. -->
         <RepositoryRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
@@ -12,6 +12,6 @@
         <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
         <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
         <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(PackageRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(OutputRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 </Project>

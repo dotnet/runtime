@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -128,7 +129,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source, long seed = 0)
         {
             byte[] result = new byte[HashLengthInBytes];
-            BinaryPrimitives.WriteInt64BigEndian(result, HashToInt64(source, seed));
+            ulong hash = HashToUInt64(source, seed);
+            BinaryPrimitives.WriteUInt64BigEndian(result, hash);
             return result;
         }
 
@@ -158,7 +160,7 @@ namespace System.IO.Hashing
         {
             if (destination.Length >= sizeof(long))
             {
-                long hash = HashToInt64(source, seed);
+                ulong hash = HashToUInt64(source, seed);
 
                 if (BitConverter.IsLittleEndian)
                 {
@@ -174,28 +176,32 @@ namespace System.IO.Hashing
             return false;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/76279: Make this public.
-        private static long HashToInt64(ReadOnlySpan<byte> source, long seed = 0)
+        /// <summary>Computes the XXH3 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="seed">The seed value for this hash computation.</param>
+        /// <returns>The computed XXH3 hash.</returns>
+        [CLSCompliant(false)]
+        public static ulong HashToUInt64(ReadOnlySpan<byte> source, long seed = 0)
         {
             uint length = (uint)source.Length;
             fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
             {
                 if (length <= 16)
                 {
-                    return (long)HashLength0To16(sourcePtr, length, (ulong)seed);
+                    return HashLength0To16(sourcePtr, length, (ulong)seed);
                 }
 
                 if (length <= 128)
                 {
-                    return (long)HashLength17To128(sourcePtr, length, (ulong)seed);
+                    return HashLength17To128(sourcePtr, length, (ulong)seed);
                 }
 
                 if (length <= MidSizeMaxBytes)
                 {
-                    return (long)HashLength129To240(sourcePtr, length, (ulong)seed);
+                    return HashLength129To240(sourcePtr, length, (ulong)seed);
                 }
 
-                return (long)HashLengthOver240(sourcePtr, length, (ulong)seed);
+                return HashLengthOver240(sourcePtr, length, (ulong)seed);
             }
         }
 
@@ -310,6 +316,15 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
+            ulong hash = GetCurrentHashAsUInt64();
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+        }
+
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public ulong GetCurrentHashAsUInt64()
+        {
             ulong current;
 
             if (_state.TotalLength > MidSizeMaxBytes)
@@ -351,11 +366,11 @@ namespace System.IO.Hashing
             {
                 fixed (byte* buffer = _state.Buffer)
                 {
-                    current = (ulong)HashToInt64(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
+                    current = HashToUInt64(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
                 }
             }
 
-            BinaryPrimitives.WriteUInt64BigEndian(destination, current);
+            return current;
 
             void DigestLong(ulong* accumulators, byte* secret)
             {
@@ -572,13 +587,8 @@ namespace System.IO.Hashing
                 const int BlockLen = StripeLengthBytes * StripesPerBlock;
                 int blocksNum = (int)((length - 1) / BlockLen);
 
-                uint offset = 0;
-                for (int i = 0; i < blocksNum; i++)
-                {
-                    Accumulate(accumulators, source + offset, secret, StripesPerBlock);
-                    ScrambleAccumulators(accumulators, secret + (SecretLengthBytes - StripeLengthBytes));
-                    offset += BlockLen;
-                }
+                Accumulate(accumulators, source, secret, StripesPerBlock, true, blocksNum);
+                int offset = BlockLen * blocksNum;
 
                 int stripesNumber = (int)((length - 1 - offset) / StripeLengthBytes);
                 Accumulate(accumulators, source + offset, secret, stripesNumber);
@@ -717,20 +727,113 @@ namespace System.IO.Hashing
                 {
                     for (int i = 0; i < SecretLengthBytes; i += sizeof(ulong) * 2)
                     {
-                        Unsafe.WriteUnaligned(destinationSecret + i, Unsafe.ReadUnaligned<ulong>(defaultSecret + i) + seed);
-                        Unsafe.WriteUnaligned(destinationSecret + i + 8, Unsafe.ReadUnaligned<ulong>(defaultSecret + i + 8) - seed);
+                        WriteUInt64LE(destinationSecret + i, ReadUInt64LE(defaultSecret + i) + seed);
+                        WriteUInt64LE(destinationSecret + i + 8, ReadUInt64LE(defaultSecret + i + 8) - seed);
                     }
                 }
             }
         }
 
-        /// <summary>Loops over <see cref="Accumulate512"/>.</summary>
+        /// <summary>Optimized version of looping over <see cref="Accumulate512"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess)
+        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess, bool scramble = false, int blockCount = 1)
         {
-            for (int i = 0; i < stripesToProcess; i++)
+            byte* secretForAccumulate = secret;
+            byte* secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
+
+#if NET7_0_OR_GREATER
+            if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
-                Accumulate512Inlined(accumulators, source + (i * StripeLengthBytes), secret + (i * SecretConsumeRateBytes));
+                Vector256<ulong> acc1 = Vector256.Load(accumulators);
+                Vector256<ulong> acc2 = Vector256.Load(accumulators + Vector256<ulong>.Count);
+
+                for (int j = 0; j < blockCount; j++)
+                {
+                    secret = secretForAccumulate;
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Vector256<uint> secretVal = Vector256.Load((uint*)secret);
+                        acc1 = Accumulate256(acc1, source, secretVal);
+                        source += Vector256<byte>.Count;
+
+                        secretVal = Vector256.Load((uint*)secret + Vector256<uint>.Count);
+                        acc2 = Accumulate256(acc2, source, secretVal);
+                        source += Vector256<byte>.Count;
+
+                        secret += SecretConsumeRateBytes;
+                    }
+
+                    if (scramble)
+                    {
+                        acc1 = ScrambleAccumulator256(acc1, Vector256.Load((ulong*)secretForScramble));
+                        acc2 = ScrambleAccumulator256(acc2, Vector256.Load((ulong*)secretForScramble + Vector256<ulong>.Count));
+                    }
+                }
+
+                Vector256.Store(acc1, accumulators);
+                Vector256.Store(acc2, accumulators + Vector256<ulong>.Count);
+            }
+            else if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                Vector128<ulong> acc1 = Vector128.Load(accumulators);
+                Vector128<ulong> acc2 = Vector128.Load(accumulators + Vector128<ulong>.Count);
+                Vector128<ulong> acc3 = Vector128.Load(accumulators + Vector128<ulong>.Count * 2);
+                Vector128<ulong> acc4 = Vector128.Load(accumulators + Vector128<ulong>.Count * 3);
+
+                for (int j = 0; j < blockCount; j++)
+                {
+                    secret = secretForAccumulate;
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Vector128<uint> secretVal = Vector128.Load((uint*)secret);
+                        acc1 = Accumulate128(acc1, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count);
+                        acc2 = Accumulate128(acc2, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 2);
+                        acc3 = Accumulate128(acc3, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 3);
+                        acc4 = Accumulate128(acc4, source, secretVal);
+                        source += Vector128<byte>.Count;
+
+                        secret += SecretConsumeRateBytes;
+                    }
+
+                    if (scramble)
+                    {
+                        acc1 = ScrambleAccumulator128(acc1, Vector128.Load((ulong*)secretForScramble));
+                        acc2 = ScrambleAccumulator128(acc2, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count));
+                        acc3 = ScrambleAccumulator128(acc3, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count * 2));
+                        acc4 = ScrambleAccumulator128(acc4, Vector128.Load((ulong*)secretForScramble + Vector128<ulong>.Count * 3));
+                    }
+                }
+
+                Vector128.Store(acc1, accumulators);
+                Vector128.Store(acc2, accumulators + Vector128<ulong>.Count);
+                Vector128.Store(acc3, accumulators + Vector128<ulong>.Count * 2);
+                Vector128.Store(acc4, accumulators + Vector128<ulong>.Count * 3);
+            }
+            else
+#endif
+            {
+                for (int j = 0; j < blockCount; j++)
+                {
+                    for (int i = 0; i < stripesToProcess; i++)
+                    {
+                        Accumulate512Inlined(accumulators, source, secret + (i * SecretConsumeRateBytes));
+                        source += StripeLengthBytes;
+                    }
+
+                    if (scramble)
+                    {
+                        ScrambleAccumulators(accumulators, secretForScramble);
+                    }
+                }
             }
         }
 
@@ -748,19 +851,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
                 {
-                    Vector256<ulong> accVec = Vector256.Load(accumulators);
-                    Vector256<uint> sourceVec = Vector256.Load((uint*)source);
-                    Vector256<uint> sourceKey = sourceVec ^ Vector256.Load((uint*)secret);
-
-                    // TODO: Figure out how to unwind this shuffle and just use Vector256.Multiply
-                    Vector256<uint> sourceKeyLow = Vector256.Shuffle(sourceKey, Vector256.Create(1u, 0, 3, 0, 5, 0, 7, 0));
-                    Vector256<uint> sourceSwap = Vector256.Shuffle(sourceVec, Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5));
-                    Vector256<ulong> sum = accVec + sourceSwap.AsUInt64();
-                    Vector256<ulong> product = Avx2.IsSupported ?
-                        Avx2.Multiply(sourceKey, sourceKeyLow) :
-                        (sourceKey & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64();
-
-                    Vector256.Store(product + sum, accumulators);
+                    Vector256<ulong> accVec = Accumulate256(Vector256.Load(accumulators), source, Vector256.Load((uint*)secret));
+                    Vector256.Store(accVec, accumulators);
 
                     accumulators += Vector256<ulong>.Count;
                     secret += Vector256<byte>.Count;
@@ -771,19 +863,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector128<ulong>.Count; i++)
                 {
-                    Vector128<ulong> accVec = Vector128.Load(accumulators);
-                    Vector128<uint> sourceVec = Vector128.Load((uint*)source);
-                    Vector128<uint> sourceKey = sourceVec ^ Vector128.Load((uint*)secret);
-
-                    // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
-                    Vector128<uint> sourceKeyLow = Vector128.Shuffle(sourceKey, Vector128.Create(1u, 0, 3, 0));
-                    Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
-                    Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
-                    Vector128<ulong> product = Sse2.IsSupported ?
-                        Sse2.Multiply(sourceKey, sourceKeyLow) :
-                        (sourceKey & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
-
-                    Vector128.Store(product + sum, accumulators);
+                    Vector128<ulong> accVec = Accumulate128(Vector128.Load(accumulators), source, Vector128.Load((uint*)secret));
+                    Vector128.Store(accVec, accumulators);
 
                     accumulators += Vector128<ulong>.Count;
                     secret += Vector128<byte>.Count;
@@ -804,6 +885,59 @@ namespace System.IO.Hashing
             }
         }
 
+#if NET7_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<ulong> Accumulate256(Vector256<ulong> accVec, byte* source, Vector256<uint> secret)
+        {
+            Vector256<uint> sourceVec = Vector256.Load((uint*)source);
+            Vector256<uint> sourceKey = sourceVec ^ secret;
+
+            // TODO: Figure out how to unwind this shuffle and just use Vector256.Multiply
+            Vector256<uint> sourceKeyLow = Vector256.Shuffle(sourceKey, Vector256.Create(1u, 0, 3, 0, 5, 0, 7, 0));
+            Vector256<uint> sourceSwap = Vector256.Shuffle(sourceVec, Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5));
+            Vector256<ulong> sum = accVec + sourceSwap.AsUInt64();
+            Vector256<ulong> product = Avx2.IsSupported ?
+                Avx2.Multiply(sourceKey, sourceKeyLow) :
+                (sourceKey & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64();
+
+            accVec = product + sum;
+            return accVec;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> Accumulate128(Vector128<ulong> accVec, byte* source, Vector128<uint> secret)
+        {
+            Vector128<uint> sourceVec = Vector128.Load((uint*)source);
+            Vector128<uint> sourceKey = sourceVec ^ secret;
+
+            // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
+            Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
+            Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
+
+            Vector128<ulong> product = MultiplyWideningLower(sourceKey);
+            accVec = product + sum;
+            return accVec;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> MultiplyWideningLower(Vector128<uint> source)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(0u, 2, 0, 0)).GetLower();
+                Vector64<uint> sourceHigh = Vector128.Shuffle(source, Vector128.Create(1u, 3, 0, 0)).GetLower();
+                return AdvSimd.MultiplyWideningLower(sourceLow, sourceHigh);
+            }
+            else
+            {
+                Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
+                return Sse2.IsSupported ?
+                    Sse2.Multiply(source, sourceLow) :
+                    (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+            }
+        }
+#endif
+
         private static void ScrambleAccumulators(ulong* accumulators, byte* secret)
         {
 #if NET7_0_OR_GREATER
@@ -811,10 +945,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
                 {
-                    Vector256<ulong> accVec = Vector256.Load(accumulators);
-                    Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
-                    Vector256<ulong> xorWithKey = xorShift ^ Vector256.Load((ulong*)secret);
-                    Vector256.Store(xorWithKey * Vector256.Create((ulong)XxHash32.Prime32_1), accumulators);
+                    Vector256<ulong> accVec = ScrambleAccumulator256(Vector256.Load(accumulators), Vector256.Load((ulong*)secret));
+                    Vector256.Store(accVec, accumulators);
 
                     accumulators += Vector256<ulong>.Count;
                     secret += Vector256<byte>.Count;
@@ -824,10 +956,8 @@ namespace System.IO.Hashing
             {
                 for (int i = 0; i < AccumulatorCount / Vector128<ulong>.Count; i++)
                 {
-                    Vector128<ulong> accVec = Vector128.Load(accumulators);
-                    Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
-                    Vector128<ulong> xorWithKey = xorShift ^ Vector128.Load((ulong*)secret);
-                    Vector128.Store(xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1), accumulators);
+                    Vector128<ulong> accVec = ScrambleAccumulator128(Vector128.Load(accumulators), Vector128.Load((ulong*)secret));
+                    Vector128.Store(accVec, accumulators);
 
                     accumulators += Vector128<ulong>.Count;
                     secret += Vector128<byte>.Count;
@@ -848,6 +978,26 @@ namespace System.IO.Hashing
             }
         }
 
+#if NET7_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<ulong> ScrambleAccumulator256(Vector256<ulong> accVec, Vector256<ulong> secret)
+        {
+            Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
+            Vector256<ulong> xorWithKey = xorShift ^ secret;
+            accVec = xorWithKey * Vector256.Create((ulong)XxHash32.Prime32_1);
+            return accVec;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> ScrambleAccumulator128(Vector128<ulong> accVec, Vector128<ulong> secret)
+        {
+            Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
+            Vector128<ulong> xorWithKey = xorShift ^ secret;
+            accVec = xorWithKey * Vector128.Create((ulong)XxHash32.Prime32_1);
+            return accVec;
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong XorShift(ulong value, int shift)
         {
@@ -866,6 +1016,16 @@ namespace System.IO.Hashing
             BitConverter.IsLittleEndian ?
                 Unsafe.ReadUnaligned<ulong>(data) :
                 BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<ulong>(data));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteUInt64LE(byte* data, ulong value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            Unsafe.WriteUnaligned(data, value);
+        }
 
         [StructLayout(LayoutKind.Auto)]
         private struct State

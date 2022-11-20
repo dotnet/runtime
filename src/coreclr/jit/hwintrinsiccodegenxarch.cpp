@@ -596,6 +596,13 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
     regNumber op1Reg = op1->GetRegNum();
 
+    if ((ins == INS_insertps) && (op1Reg == REG_NA))
+    {
+        // insertps is special and can contain op1 when it is zero
+        assert(op1->isContained() && op1->IsVectorZero());
+        op1Reg = targetReg;
+    }
+
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
 

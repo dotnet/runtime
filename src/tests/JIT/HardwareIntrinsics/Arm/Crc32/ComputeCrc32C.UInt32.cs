@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Crc32
 {
     public static partial class Program
     {
-        private static void ComputeCrc32C_UInt32()
+        [Fact]
+        public static void ComputeCrc32C_UInt32()
         {
             var test = new ScalarBinaryOpTest__ComputeCrc32C_UInt32();
 

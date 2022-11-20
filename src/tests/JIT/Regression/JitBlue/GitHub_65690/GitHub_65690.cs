@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // Note: In below test case, there are two backedges to a loop that is marked for align.
@@ -112,7 +112,7 @@ public class TestClass_65690
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new TestClass_65690().Method0();
         return 100;

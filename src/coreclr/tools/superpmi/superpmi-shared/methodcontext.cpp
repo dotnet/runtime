@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-// static variable initialization
-Hash MethodContext::m_hash;
-
 MethodContext::MethodContext()
 {
     methodSize = 0;
@@ -1256,7 +1253,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
-    memcpy(jitFlags, resultFlags, value.B);
+    memcpy((void*)jitFlags, (void*)resultFlags, value.B);
     return value.B;
 }
 
@@ -5911,6 +5908,41 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value != 0;
 }
 
+void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType, TypeCompareState result)
+{
+    if (IsEnum == nullptr)
+        IsEnum = new LightWeightMap<DWORDLONG, DLD>();
+
+    DWORDLONG key = CastHandle(cls);
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    if (underlyingType != nullptr)
+        value.A = CastHandle(*underlyingType);
+    else
+        value.A = 0;
+    value.B = (DWORD)result;
+
+    IsEnum->Add(key, value);
+    DEBUG_REC(dmpIsEnum(key, value));
+}
+void MethodContext::dmpIsEnum(DWORDLONG key, DLD value)
+{
+    printf("IsEnum key cls-%016llX, value underlyingType-%016llX result-%u", key, value.A, value.B);
+}
+TypeCompareState MethodContext::repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    DWORDLONG key = CastHandle(cls);
+
+    AssertMapAndKeyExist(IsEnum, key, ": key %016llX", key);
+
+    DLD value = IsEnum->Get(key);
+    DEBUG_REP(dmpIsEnum(key, value));
+    if (underlyingType != nullptr)
+        *underlyingType = (CORINFO_CLASS_HANDLE)value.A;
+    return (TypeCompareState)value.B;
+}
+
 void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
 {
     if (GetCookieForPInvokeCalliSig == nullptr)
@@ -7210,8 +7242,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     }
 
     // Hash the IL Code for this method and append it to the ID info
-    char ilHash[MD5_HASH_BUFFER_SIZE];
-    dumpMD5HashToBuffer(pInfo->ILCode, pInfo->ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
+    char ilHash[MM3_HASH_BUFFER_SIZE];
+    dumpHashToBuffer(pInfo->ILCode, pInfo->ILCodeSize, ilHash, MM3_HASH_BUFFER_SIZE);
     t = sprintf_s(buff, len, " ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
@@ -7270,9 +7302,9 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
             //
             if (minOffset < maxOffset)
             {
-                char pgoHash[MD5_HASH_BUFFER_SIZE];
-                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset - minOffset), pgoHash,
-                                    MD5_HASH_BUFFER_SIZE);
+                char pgoHash[MM3_HASH_BUFFER_SIZE];
+                dumpHashToBuffer(schemaData + minOffset, (int)(maxOffset - minOffset), pgoHash,
+                                    MM3_HASH_BUFFER_SIZE);
 
                 t = sprintf_s(buff, len, " Pgo Counters %u, Count %llu, Hash: %s", schemaCount, totalCount, pgoHash);
                 buff += t;
@@ -7284,7 +7316,7 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     return (int)(buff - obuff);
 }
 
-int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
+int MethodContext::dumpMethodHashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
 {
     char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
 
@@ -7293,24 +7325,14 @@ int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMet
     if (cbLen < 0)
         return cbLen;
 
-    cbLen = dumpMD5HashToBuffer((BYTE*)bufferIdentityInfo, cbLen, buff, len);
+    cbLen = dumpHashToBuffer((BYTE*)bufferIdentityInfo, cbLen, buff, len);
 
     return cbLen;
 }
 
-int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, int hashLen)
+int MethodContext::dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* hash, int hashLen)
 {
-    // Lazy initialize the MD5 hasher.
-    if (!m_hash.IsInitialized())
-    {
-        if (!m_hash.Initialize())
-        {
-            AssertMsg(false, "Failed to initialize the MD5 hasher");
-            return -1;
-        }
-    }
-
-    return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
+    return Hash::HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
 bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource)

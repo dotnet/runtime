@@ -4762,6 +4762,12 @@ bool Compiler::optIfConvert(BasicBlock* block)
                         return false;
                     }
 
+                    // Ensure the source isn't a phi.
+                    if (op2->OperIs(GT_PHI))
+                    {
+                        return false;
+                    }
+
                     asgNode  = tree;
                     asgStmt  = stmt;
                     asgBlock = middleBlock;
@@ -4847,7 +4853,8 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 
     // Invert the condition.
-    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+    GenTree* revCond = gtReverseCond(cond);
+    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
 
     // Create a select node.
     GenTreeConditional* select =
@@ -10683,6 +10690,104 @@ void Compiler::optRemoveRedundantZeroInits()
     }
 }
 
+//------------------------------------------------------------------------
+// optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
+//
+// The phase iterates over partial stores referenced by the SSA
+// descriptors and deletes those which do not change the local's value.
+//
+// Return Value:
+//    A suitable phase status.
+//
+PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
+{
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableVNBasedDeadStoreRemovalRange;
+    JitEnableVNBasedDeadStoreRemovalRange.EnsureInit(JitConfig.JitEnableVNBasedDeadStoreRemovalRange());
+
+    if (!JitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
+    {
+        JITDUMP("VN-based dead store removal disabled by JitEnableVNBasedDeadStoreRemovalRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    bool madeChanges = false;
+
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+        unsigned   defCount = varDsc->lvPerSsaData.GetCount();
+        if (defCount <= 2)
+        {
+            continue;
+        }
+
+        for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
+        {
+            LclSsaVarDsc* defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
+            GenTreeOp*    store  = defDsc->GetAssignment();
+
+            if (store != nullptr)
+            {
+                assert(store->OperIs(GT_ASG) && defDsc->m_vnPair.BothDefined());
+
+                JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
+
+                GenTree* lhs = store->gtGetOp1();
+                if (!lhs->OperIs(GT_LCL_FLD) || ((lhs->gtFlags & GTF_VAR_USEASG) == 0) ||
+                    (lhs->AsLclFld()->GetLclNum() != lclNum))
+                {
+                    continue;
+                }
+
+                ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                ValueNum oldStoreValue =
+                    vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                       lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+
+                GenTree* rhs = store->gtGetOp2();
+                ValueNum storeValue;
+                if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
+                {
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclFld()->GetLayout());
+                }
+                else
+                {
+                    storeValue = rhs->GetVN(VNK_Conservative);
+                }
+
+                if (oldStoreValue == storeValue)
+                {
+                    JITDUMP("Removed dead store:\n");
+                    DISPTREE(store);
+
+                    lhs->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
+
+                    store->ChangeOper(GT_COMMA);
+                    if (store->IsReverseOp())
+                    {
+                        std::swap(store->gtOp1, store->gtOp2);
+                        store->ClearReverseOp();
+                    }
+                    store->gtType = store->gtGetOp2()->TypeGet();
+                    store->SetAllEffectsFlags(store->gtOp1, store->gtOp2);
+                    gtUpdateTreeAncestorsSideEffects(store);
+
+                    madeChanges = true;
+                }
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -10923,15 +11028,4 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
-}
-
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
-{
-    if (optLocalAssertionProp)
-    {
-        return ValueNumStore::NoVN;
-    }
-
-    assert(vnStore != nullptr);
-    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
 }

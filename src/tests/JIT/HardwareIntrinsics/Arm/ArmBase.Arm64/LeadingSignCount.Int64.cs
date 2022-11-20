@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._ArmBase.Arm64
 {
     public static partial class Program
     {
-        private static void LeadingSignCount_Int64()
+        [Fact]
+        public static void LeadingSignCount_Int64()
         {
             var test = new ScalarUnaryOpTest__LeadingSignCount_Int64();
 
