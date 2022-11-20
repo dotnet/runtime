@@ -1977,7 +1977,7 @@ namespace System.Net.Sockets
             operation.SocketAddressLen = socketAddress.Length;
             operation.BytesTransferred = bytesSent;
 
-            if (socketAddress.Length > 0 )
+            if (socketAddress.Length > 0)
             {
                 operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
                 socketAddress.CopyTo(operation.SocketAddress);
@@ -2035,7 +2035,7 @@ namespace System.Net.Sockets
                 BytesTransferred = bytesSent
             };
 
-            if (socketAddress.Length > 0 )
+            if (socketAddress.Length > 0)
             {
                 operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
                 socketAddress.CopyTo(operation.SocketAddress);
@@ -2076,7 +2076,7 @@ namespace System.Net.Sockets
             operation.BytesTransferred = bytesSent;
             socketAddress.CopyTo(operation.SocketAddress);
 
-            if (socketAddress.Length > 0 )
+            if (socketAddress.Length > 0)
             {
                 operation.SocketAddress = ArrayPool<byte>.Shared.Rent(socketAddress.Length);
                 socketAddress.CopyTo(operation.SocketAddress);

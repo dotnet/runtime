@@ -24,7 +24,7 @@ namespace System.Net.Sockets
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
         private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
-        private static readonly byte[] s_zero = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        private static ReadOnlySpan<byte> ZeroBytes => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
@@ -1290,7 +1290,7 @@ namespace System.Net.Sockets
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
             ValidateBufferArguments(buffer, offset, size);
-            return SendTo(new ReadOnlySpan<byte>(buffer, offset, size), socketFlags, remoteEP);
+            return SendTo(buffer.AsSpan(offset, size), socketFlags, remoteEP);
         }
 
         // Sends data to a specific end point, starting at the indicated location in the data.
