@@ -579,8 +579,14 @@ namespace System.Runtime.CompilerServices
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
 
-        public bool IsConstructedGenericType => (Flags & enum_flag_HasComponentSize) == 0 &&
-            ((Flags & enum_flag_GenericsMask) == enum_flag_GenericsMask_GenericInst || (Flags & enum_flag_GenericsMask) == enum_flag_GenericsMask_SharedInst);
+        public bool IsConstructedGenericType
+        {
+            get
+            {
+                uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
+                return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
+            }
+        }
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
