@@ -2302,8 +2302,8 @@ namespace Internal.JitInterface
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
-                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
+                FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
+                _ => -1
             };
         }
     }

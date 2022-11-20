@@ -1742,10 +1742,6 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     {
         arrLen = ((STRINGREF)obj)->GetStringLength();
     }
-    else
-    {
-        UNREACHABLE();
-    }
 
     EE_TO_JIT_TRANSITION();
     return arrLen;
