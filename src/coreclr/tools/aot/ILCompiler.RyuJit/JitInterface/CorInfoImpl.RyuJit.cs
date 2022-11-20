@@ -2302,8 +2302,8 @@ namespace Internal.JitInterface
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
-                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => -1;
+                FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
+                _ => -1
             };
         }
     }
