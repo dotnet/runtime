@@ -689,20 +689,19 @@ namespace System
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
         {
-            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
-            {
-                if (type.GenericCache is not RuntimeType genericDefinition)
-                {
-                    RuntimeTypeHandle nativeHandle = type.TypeHandle;
-                    genericDefinition = null!;
-                    GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref genericDefinition));
-                    type.GenericCache = genericDefinition;
-                }
+            Debug.Assert(HasInstantiation(type));
 
+            return IsGenericTypeDefinition(type) ? type :
+                type.GenericCache is RuntimeType genericDefinition ? genericDefinition : CacheGenericDefinition(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeType CacheGenericDefinition(RuntimeType type)
+            {
+                RuntimeType genericDefinition = null!;
+                GetGenericTypeDefinition(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref genericDefinition));
+                type.GenericCache = genericDefinition;
                 return genericDefinition;
             }
-
-            return type;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
