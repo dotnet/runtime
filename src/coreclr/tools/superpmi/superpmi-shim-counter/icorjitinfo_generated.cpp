@@ -332,13 +332,6 @@ CorInfoType interceptor_ICJI::asCorInfoType(
     return original_ICorJitInfo->asCorInfoType(cls);
 }
 
-const char* interceptor_ICJI::getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("getClassName");
-    return original_ICorJitInfo->getClassName(cls);
-}
-
 const char* interceptor_ICJI::getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName)
@@ -355,16 +348,14 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
 }
 
-int interceptor_ICJI::appendClassName(
-          char16_t** ppBuf,
-          int* pnBufLen,
+size_t interceptor_ICJI::printClassName(
           CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    mcs->AddCall("appendClassName");
-    return original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    mcs->AddCall("printClassName");
+    return original_ICorJitInfo->printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
 }
 
 bool interceptor_ICJI::isValueClass(
@@ -596,13 +587,6 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
     original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
-const char* interceptor_ICJI::getHelperName(
-          CorInfoHelpFunc helpFunc)
-{
-    mcs->AddCall("getHelperName");
-    return original_ICorJitInfo->getHelperName(helpFunc);
-}
-
 CorInfoInitClassResult interceptor_ICJI::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,
@@ -756,12 +740,14 @@ CorInfoIsAccessAllowedResult interceptor_ICJI::canAccessClass(
     return original_ICorJitInfo->canAccessClass(pResolvedToken, callerHandle, pAccessHelper);
 }
 
-const char* interceptor_ICJI::getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName)
+size_t interceptor_ICJI::printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    mcs->AddCall("getFieldName");
-    return original_ICorJitInfo->getFieldName(ftn, moduleName);
+    mcs->AddCall("printFieldName");
+    return original_ICorJitInfo->printFieldName(field, buffer, bufferSize, pRequiredBufferSize);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(
@@ -985,12 +971,14 @@ mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
     return original_ICorJitInfo->getMethodDefFromMethod(hMethod);
 }
 
-const char* interceptor_ICJI::getMethodName(
+size_t interceptor_ICJI::printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    mcs->AddCall("getMethodName");
-    return original_ICorJitInfo->getMethodName(ftn, moduleName);
+    mcs->AddCall("printMethodName");
+    return original_ICorJitInfo->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
 }
 
 const char* interceptor_ICJI::getMethodNameFromMetadata(

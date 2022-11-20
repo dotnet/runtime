@@ -83,7 +83,7 @@ private:
     bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
     bool Initialize(int mcIndex, HANDLE hFile);
 
-    int dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
+    int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
     static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
@@ -110,7 +110,7 @@ public:
     int methodSize;
 
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
-    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
+    int dumpMethodHashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
     bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
@@ -174,10 +174,6 @@ public:
     CorInfoInitClassResult repInitClass(CORINFO_FIELD_HANDLE   field,
                                         CORINFO_METHOD_HANDLE  method,
                                         CORINFO_CONTEXT_HANDLE context);
-
-    void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
-    void dmpGetMethodName(DLD key, DD value);
-    const char* repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char** moduleName);
 
     void recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                       char*                 methodname,
@@ -620,10 +616,6 @@ public:
                                 CORINFO_CLASS_HANDLE* structType,
                                 CORINFO_CLASS_HANDLE  memberParent);
 
-    void recGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName, const char* result);
-    void dmpGetFieldName(DWORDLONG key, DD value);
-    const char* repGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName);
-
     void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
                                CorInfoInlineTypeCheckSource source,
                                CorInfoInlineTypeCheck       result);
@@ -641,14 +633,6 @@ public:
     void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex, int length);
     void dmpGetStringLiteral(DLDDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
-
-    void recPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
-    void dmpPrintObjectDescription(DLDL key, Agnostic_PrintObjectDescriptionResult value);
-    size_t repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
-
-    void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
-    void dmpGetHelperName(DWORD key, DWORD value);
-    const char* repGetHelperName(CorInfoHelpFunc funcNum);
 
     void recCanCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent, bool result);
     void dmpCanCast(DLDL key, DWORD value);
@@ -748,7 +732,7 @@ public:
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
     bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
-    void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType, TypeCompareState result);
+    void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
 
@@ -821,10 +805,6 @@ public:
     void dmpIsValidToken(DLD key, DWORD value);
     bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetClassName(CORINFO_CLASS_HANDLE cls, const char* result);
-    void dmpGetClassName(DWORDLONG key, DWORD value);
-    const char* repGetClassName(CORINFO_CLASS_HANDLE cls);
-
     void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName);
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -833,20 +813,42 @@ public:
     void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
-    void recAppendClassName(int                  nBufLenIn,
-                            CORINFO_CLASS_HANDLE cls,
-                            bool                 fNamespace,
-                            bool                 fFullInst,
-                            bool                 fAssembly,
-                            int                  nLenOut,
-                            const char16_t*      result);
-    void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
-    int repAppendClassName(char16_t**           ppBuf,
-                           int*                 pnBufLen,
-                           CORINFO_CLASS_HANDLE cls,
-                           bool                 fNamespace,
-                           bool                 fFullInst,
-                           bool                 fAssembly);
+    void recPrint(
+        const char* name,
+        LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
+        DWORDLONG handle,
+        char* buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize,
+        size_t bytesWritten);
+    void dmpPrint(
+        const char* name,
+        LightWeightMapBuffer* buffer,
+        DWORDLONG key,
+        const Agnostic_PrintResult& value);
+    size_t repPrint(
+        const char* name,
+        LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
+        DWORDLONG handle,
+        char* buffer,
+        size_t bufferSize,
+        size_t* pRequiredBufferSize);
+
+    void recPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintObjectDescription(DWORDLONG key, const Agnostic_PrintResult& value);
+    size_t repPrintObjectDescription(CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
+
+    void recPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintClassName(DWORDLONG cls, const Agnostic_PrintResult& value);
+    size_t repPrintClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize = nullptr);
+
+    void recPrintFieldName(CORINFO_FIELD_HANDLE fld, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintFieldName(DWORDLONG fld, const Agnostic_PrintResult& value);
+    size_t repPrintFieldName(CORINFO_FIELD_HANDLE fld, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize = nullptr);
+
+    void recPrintMethodName(CORINFO_METHOD_HANDLE meth, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize, size_t bytesWritten);
+    void dmpPrintMethodName(DWORDLONG meth, const Agnostic_PrintResult& value);
+    size_t repPrintMethodName(CORINFO_METHOD_HANDLE meth, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize = nullptr);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
@@ -967,10 +969,11 @@ enum mcPackets
     Packet_CanAccessClass = 3,
     Packet_CanAccessFamily = 4,
     Packet_CanCast = 5,
+    Packet_PrintMethodName = 6,
     Packet_CanGetCookieForPInvokeCalliSig = 7,
     Packet_CanGetVarArgsHandle = 8,
     Packet_CanInline = 9,
-    //Packet_CanInlineTypeCheckWithObjectVTable = 10,
+    Packet_PrintFieldName = 10,
     //Packet_CanSkipMethodVerification = 11,
     Packet_CanTailCall = 12,
     //Retired4 = 13,
@@ -1016,7 +1019,6 @@ enum mcPackets
     Packet_GetFieldClass = 53,
     Packet_GetFieldInClass = 54,
     Packet_GetFieldInfo = 55,
-    Packet_GetFieldName = 56,
     Packet_GetFieldOffset = 57,
     Packet_GetFieldThreadLocalStoreID = 58,
     Packet_GetFieldType = 59,
@@ -1024,7 +1026,6 @@ enum mcPackets
     Packet_GetFunctionFixedEntryPoint = 61,
     Packet_GetGSCookie = 62,
     Packet_GetHelperFtn = 63,
-    Packet_GetHelperName = 64,
     Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
     Packet_GetJitTimeLogFilename = 67,
@@ -1035,7 +1036,6 @@ enum mcPackets
     Packet_GetMethodDefFromMethod = 72,
     Packet_GetMethodHash = 73,
     Packet_GetMethodInfo = 74,
-    Packet_GetMethodName = 75,
     Packet_GetMethodSig = 76,
     Packet_GetMethodSync = 77,
     Packet_GetMethodVTableOffset = 78,
@@ -1108,7 +1108,7 @@ enum mcPackets
     //PacketCR_RecordCallSite = 146,
     Packet_GetLazyStringLiteralHelper = 147,
     Packet_IsIntrinsicType = 148,
-    Packet_AppendClassName = 149,
+    Packet_PrintClassName = 149,
     Packet_GetReadyToRunHelper = 150,
     Packet_GetIntConfigValue = 151,
     Packet_GetStringConfigValue = 152,
