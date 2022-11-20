@@ -290,6 +290,53 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void Queue_Generic_IterateLastIndexOfMaxSizedQueue_DoesNotOverflow()
+        {
+            Queue<byte> queue;
+            try
+            {
+                queue = new Queue<byte>(Array.MaxLength);
+            }
+            catch (OutOfMemoryException)
+            {
+                // just skip when ctor throws OOM
+                return;
+            }
+
+            // once the internal index is moved (via enqueue/dequeue operations), enumerating
+            // the queue of size up to this value is safe from hitting the corner case.
+            int safeValue = int.MaxValue - Array.MaxLength + 1; // 56 + 1
+
+            // corner case value is any number higher than the safe value.
+            int expectedValue = safeValue + 1; // 58
+
+            // enqueue and dequeue to advance internal head and index
+            // to reach the sweet spot; one less than the max length.
+            for (int i = 0; i < Array.MaxLength - 1; i++)
+            {
+                queue.Enqueue(0);
+                queue.Dequeue();
+            }
+
+            // fill queue up to expected (unsafe) range
+            for (byte i = 0; i <= expectedValue; i++)
+            {
+                queue.Enqueue(i);
+            }
+
+            int lastValue = 0;
+
+            // enumerate queue: MoveNext() wraps around the internal index
+            // which was overflowing in the corner case.
+            foreach (byte i in queue)
+            {
+                lastValue = i;
+            }
+
+            Assert.Equal(expectedValue, lastValue);
+        }
+
+        [Fact]
         public void Queue_Generic_TryDequeue_EmptyQueue_ReturnsFalse()
         {
             T result;
