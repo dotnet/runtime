@@ -1,11 +1,12 @@
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
 using Xunit;
 using Xunit.Abstractions;
 
 using Common;
-using System.Runtime.Versioning;
 
 namespace Regression.UnitTests
 {
@@ -69,6 +70,28 @@ namespace Regression.UnitTests
             }
         }
 
+        public static IEnumerable<object[]> AllCoreLibs()
+        {
+            List<string> corelibs = new() { typeof(object).Assembly.Location };
+
+            if (OperatingSystem.IsWindows())
+            {
+                corelibs.Add(Path.Combine(Dispensers.NetFx20Dir, "mscorlib.dll"));
+                corelibs.Add(Path.Combine(Dispensers.NetFx40Dir, "mscorlib.dll"));
+            }
+
+            foreach (var corelibMaybe in corelibs)
+            {
+                if (!File.Exists(corelibMaybe))
+                {
+                    continue;
+                }
+
+                PEReader pe = new(File.OpenRead(corelibMaybe));
+                yield return new object[] { Path.GetFileName(corelibMaybe), pe };
+            }
+        }
+
         [Theory]
         [MemberData(nameof(CoreFrameworkLibraries))]
         public void ImportAPIs_Core(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
@@ -83,8 +106,7 @@ namespace Regression.UnitTests
 
         private void ImportAPIs(string filename, PEReader managedLibrary)
         {
-            Debug.WriteLine($"Loading {filename}...");
-
+            Debug.WriteLine($"{nameof(ImportAPIs)} - {filename}");
             using var _ = managedLibrary;
             PEMemoryBlock block = managedLibrary.GetMetadata();
 
@@ -112,7 +134,6 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
 
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
-                int count = 0;
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
@@ -120,13 +141,6 @@ namespace Regression.UnitTests
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
-
-                    // Method semantics are expensive to compute so only do the first few.
-                    if (count < 2)
-                    {
-                        Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
-                    }
-                    count++;
                 }
 
                 var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
@@ -155,6 +169,50 @@ namespace Regression.UnitTests
             Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
             Assert.Equal(EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
             Assert.Equal(GetUserString(baselineImport), GetUserString(currentImport));
+        }
+
+        /// <summary>
+        /// These APIs are very expensive to run on all managed libraries. This library only runs
+        /// them on the system corelibs and only on a reduced selection of the tokens.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(AllCoreLibs))]
+        public void LongRunningAPIs(string filename, PEReader managedLibrary)
+        {
+            Debug.WriteLine($"{nameof(LongRunningAPIs)} - {filename}");
+            using var _ = managedLibrary;
+            PEMemoryBlock block = managedLibrary.GetMetadata();
+
+            // Load metadata
+            IMetaDataImport baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
+            IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
+
+            int stride;
+            int count;
+
+            var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
+            count = 0;
+            stride = Math.Max(typedefs.Count() / 128, 16);
+            foreach (var typedef in typedefs)
+            {
+                if (count++ % stride != 0)
+                {
+                    continue;
+                }
+
+                Assert.Equal(EnumMemberRefs(baselineImport, typedef), EnumMemberRefs(currentImport, typedef));
+
+                var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
+                foreach (var methoddef in methods)
+                {
+                    var memberrefs = AssertAndReturn(EnumMemberRefs(baselineImport, methoddef), EnumMemberRefs(currentImport, methoddef));
+                    foreach (var memberref in memberrefs)
+                    {
+                        Assert.Equal(GetMemberRefProps(baselineImport, memberref), GetMemberRefProps(currentImport, memberref));
+                    }
+                    Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
+                }
+            }
         }
 
         private static IEnumerable<T> AssertAndReturn<T>(IEnumerable<T> baseline, IEnumerable<T> current)
@@ -191,12 +249,7 @@ namespace Regression.UnitTests
             values.Add((uint)hr);
             if (hr >= 0)
             {
-                uint hash = 0;
-                for (int i = 0; i < Math.Min(pchName, name.Length); ++i)
-                {
-                    hash ^= name[i];
-                }
-
+                uint hash = HashCharArray(name, pchName);
                 values.Add(hash);
                 values.Add((uint)pchName);
                 foreach (uint i in new ReadOnlySpan<uint>(&mvid, sizeof(Guid) / sizeof(uint)))
@@ -444,6 +497,32 @@ namespace Regression.UnitTests
             return tokens;
         }
 
+        private static List<uint> EnumMemberRefs(IMetaDataImport import, uint tk)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumMemberRefs(ref hcorenum, tk, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+
         private static List<uint> EnumProperties(IMetaDataImport import, uint typedef)
         {
             List<uint> tokens = new();
@@ -609,12 +688,7 @@ namespace Regression.UnitTests
             values.Add((uint)hr);
             if (hr >= 0)
             {
-                uint hash = 0;
-                for (int i = 0; i < Math.Min(pchTypeDef, name.Length); ++i)
-                {
-                    hash ^= name[i];
-                }
-
+                uint hash = HashCharArray(name, pchTypeDef);
                 values.Add(hash);
                 values.Add((uint)pchTypeDef);
                 values.Add(pdwTypeDefFlags);
@@ -642,18 +716,39 @@ namespace Regression.UnitTests
             values.Add((uint)hr);
             if (hr >= 0)
             {
-                uint hash = 0;
-                for (int i = 0; i < Math.Min(pchMethod, name.Length); ++i)
-                {
-                    hash ^= name[i];
-                }
-
+                uint hash = HashCharArray(name, pchMethod);
                 values.Add(hash);
                 values.Add(pdwAttr);
                 values.Add((nuint)ppvSigBlob);
                 values.Add(pcbSigBlob);
                 values.Add(pulCodeRVA);
                 values.Add(pdwImplFlags);
+
+            }
+            return values;
+        }
+
+        private static List<nuint> GetMemberRefProps(IMetaDataImport import, uint tk)
+        {
+            List<nuint> values = new();
+
+            var name = new char[128];
+            int hr = import.GetMemberRefProps(tk,
+                out uint parent,
+                name,
+                name.Length,
+                out int pchMethod,
+                out nint ppvSigBlob,
+                out uint pcbSigBlob);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(parent);
+                uint hash = HashCharArray(name, pchMethod);
+                values.Add(hash);
+                values.Add((nuint)ppvSigBlob);
+                values.Add(pcbSigBlob);
 
             }
             return values;
@@ -883,6 +978,16 @@ namespace Regression.UnitTests
                 strings.Add(new string(buffer, 0, Math.Min(written, buffer.Length)));
             }
             return strings;
+        }
+
+        private static uint HashCharArray(char[] arr, int written)
+        {
+            uint hash = 0;
+            for (int i = 0; i < Math.Min(written, arr.Length); ++i)
+            {
+                hash ^= arr[i];
+            }
+            return hash;
         }
     }
 }

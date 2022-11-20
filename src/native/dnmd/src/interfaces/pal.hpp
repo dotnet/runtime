@@ -37,28 +37,25 @@ namespace pal
             , _charLength{}
             , _converted{}
         {
-            bool allocd = false;
             uint32_t neededLength = 0;
-            // Compute needed size
+            // Compute needed size for conversion
             HRESULT hr = ConvertWorker(c, nullptr, neededLength);
             if (hr == S_OK)
             {
                 if (bufferLength < neededLength)
                 {
                     buffer = (B*)::malloc(sizeof(*buffer) * neededLength);
+                    _owner.reset(buffer);
                     bufferLength = neededLength;
-                    allocd = true;
                 }
 
-                // Do real conversion
+                // Do conversion
                 hr = ConvertWorker(c, buffer, bufferLength);
                 _converted = SUCCEEDED(hr);
                 if (_converted)
                 {
                     _ptr = buffer;
                     _charLength = bufferLength;
-                    if (allocd)
-                        _owner.reset(buffer);
                 }
             }
         }
@@ -68,7 +65,13 @@ namespace pal
             : StringConvert(c, buffer, N)
         { }
 
-        ~StringConvert() = default;
+        StringConvert(StringConvert const&) = delete;
+        StringConvert(StringConvert&&) = delete;
+
+        ~StringConvert() noexcept = default;
+
+        StringConvert& operator=(StringConvert const&) = delete;
+        StringConvert& operator=(StringConvert&&) = delete;
 
         bool Success() const noexcept
         {
