@@ -45,7 +45,7 @@ typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
     HMODULE hmodTargetCLR,
     IUnknown **ppCordb);
 
-HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
+static HRESULT RunAndroidCmd(char* c_android_adb_path, char const* c_command_to_execute)
 {
     PROCESS_INFORMATION processInfo;
     STARTUPINFOW startupInfo;
@@ -57,11 +57,11 @@ HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
     startupInfo.cb = sizeof(startupInfo);
 
     LPWSTR w_android_run_adb_command = (LPWSTR)malloc(2048 * sizeof(WCHAR));
-    LPWSTR w_android_adb_path = (LPWSTR)malloc(2048 * sizeof(WCHAR));
+    char* c_android_run_adb_command = (char*)malloc(2048 * sizeof(char));
 
-    MultiByteToWideChar(CP_UTF8, 0, c_android_adb_path, -1, w_android_adb_path, 2048);
+    sprintf_s(c_android_run_adb_command, 2048, "%s %s", c_android_adb_path, c_command_to_execute);
 
-    swprintf_s(w_android_run_adb_command, 2048, W("%ws %ws"), w_android_adb_path, w_command_to_execute);
+    MultiByteToWideChar(CP_UTF8, 0, c_android_run_adb_command, -1, w_android_run_adb_command, 2048);
     BOOL result = CreateProcessW(
         NULL,
         w_android_run_adb_command,
@@ -75,11 +75,11 @@ HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
         &processInfo);
 
     if (!result) {
+        free(c_android_run_adb_command);
         free(w_android_run_adb_command);
-        free(w_android_adb_path);
         return HRESULT_FROM_WIN32(GetLastError());
     }
-    free(w_android_adb_path);
+    free(c_android_run_adb_command);
     free(w_android_run_adb_command);
     return S_OK;
 }
@@ -111,7 +111,7 @@ CreateProcessForLaunch(
     char* c_android_adb_path = getenv("ANDROID_ADB_PATH");
 
     if (strlen(c_android_adb_path) > 0) {
-        HRESULT ret = RunAndroidCmd(c_android_adb_path, W("shell setprop debug.mono.extra \"debug=10.0.2.2:56000,loglevel=10,timeout=100000000000000\""));
+        HRESULT ret = RunAndroidCmd(c_android_adb_path, "shell setprop debug.mono.extra \"debug=10.0.2.2:56000,loglevel=10,timeout=100000000000000\"");
         if (ret != S_OK) {
             *pProcessId = 0;
             *pResumeHandle = NULL;

@@ -4050,7 +4050,7 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 
 #endif /* DISABLE_JIT */
 
-gint64 mono_time_track_start ()
+gint64 mono_time_track_start (void)
 {
 	return mono_100ns_ticks ();
 }
@@ -4452,6 +4452,10 @@ mini_get_cpu_features (MonoCompile* cfg)
 	features |= MONO_CPU_ARM64_NEON;
 #endif
 
+#if defined(TARGET_WASM)
+	// All wasm VMs have this set
+	features |= MONO_CPU_WASM_BASE;
+#endif
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }

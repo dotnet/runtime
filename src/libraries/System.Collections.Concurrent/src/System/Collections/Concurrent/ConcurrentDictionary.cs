@@ -54,45 +54,6 @@ namespace System.Collections.Concurrent
         /// </remarks>
         private const int MaxLockNumber = 1024;
 
-        /// <summary>Whether TValue is a type that can be written atomically (i.e., with no danger of torn reads).</summary>
-        private static readonly bool s_isValueWriteAtomic = IsValueWriteAtomic();
-
-        /// <summary>Determines whether type TValue can be written atomically.</summary>
-        private static bool IsValueWriteAtomic()
-        {
-            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
-            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-
-            if (!typeof(TValue).IsValueType ||
-                typeof(TValue) == typeof(IntPtr) ||
-                typeof(TValue) == typeof(UIntPtr))
-            {
-                return true;
-            }
-
-            switch (Type.GetTypeCode(typeof(TValue)))
-            {
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Single:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                    return true;
-
-                case TypeCode.Double:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return IntPtr.Size == 8;
-
-                default:
-                    return false;
-            }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentDictionary{TKey,TValue}"/>
         /// class that is empty, has the default concurrency level, has the default initial capacity, and
@@ -594,7 +555,11 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (s_isValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = newValue;
                                 }
@@ -933,7 +898,11 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (s_isValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = value;
                                 }
@@ -2097,15 +2066,22 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var keys = new List<TKey>(count);
+                if (count == 0)
+                {
+                    return ReadOnlyCollection<TKey>.Empty;
+                }
+
+                var keys = new TKey[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        keys.Add(current._key);
+                        keys[n++] = current._key;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TKey>(keys);
             }
@@ -2131,15 +2107,22 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var values = new List<TValue>(count);
+                if (count == 0)
+                {
+                    return ReadOnlyCollection<TValue>.Empty;
+                }
+
+                var values = new TValue[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        values.Add(current._value);
+                        values[n++] = current._value;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TValue>(values);
             }
@@ -2250,6 +2233,47 @@ namespace System.Collections.Concurrent
             public bool MoveNext() => _enumerator.MoveNext();
 
             public void Reset() => _enumerator.Reset();
+        }
+    }
+
+    internal static class ConcurrentDictionaryTypeProps<T>
+    {
+        /// <summary>Whether T's type can be written atomically (i.e., with no danger of torn reads).</summary>
+        internal static readonly bool IsWriteAtomic = IsWriteAtomicPrivate();
+
+        private static bool IsWriteAtomicPrivate()
+        {
+            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
+            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
+
+            if (!typeof(T).IsValueType ||
+                typeof(T) == typeof(IntPtr) ||
+                typeof(T) == typeof(UIntPtr))
+            {
+                return true;
+            }
+
+            switch (Type.GetTypeCode(typeof(T)))
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.SByte:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                    return true;
+
+                case TypeCode.Double:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    return IntPtr.Size == 8;
+
+                default:
+                    return false;
+            }
         }
     }
 

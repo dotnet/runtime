@@ -4,8 +4,12 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Transactions.Configuration;
+#if WINDOWS
+using System.Transactions.DtcProxyShim;
+#endif
 using System.Transactions.Oletx;
 
 namespace System.Transactions
@@ -29,6 +33,10 @@ namespace System.Transactions
         private static TransactionTable? s_transactionTable;
 
         private static TransactionStartedEventHandler? s_distributedTransactionStartedDelegate;
+
+        internal const string DistributedTransactionTrimmingWarning =
+            "Distributed transactions support may not be compatible with trimming. If your program creates a distributed transaction via System.Transactions, the correctness of the application cannot be guaranteed after trimming.";
+
         public static event TransactionStartedEventHandler? DistributedTransactionStarted
         {
             add
@@ -390,6 +398,60 @@ namespace System.Transactions
                 }
             }
         }
+
+        /// <summary>
+        /// Controls whether usage of System.Transactions APIs that require escalation to a distributed transaction will do so;
+        /// if your application requires distributed transaction, opt into using them by setting this to <see langword="true" />.
+        /// If set to <see langword="false" /> (the default), escalation to a distributed transaction will throw a <see cref="NotSupportedException" />.
+        /// </summary>
+#if WINDOWS
+        public static bool ImplicitDistributedTransactions
+        {
+            get => DtcProxyShimFactory.s_transactionConnector is not null;
+
+            [SupportedOSPlatform("windows")]
+            [RequiresUnreferencedCode(DistributedTransactionTrimmingWarning)]
+            set
+            {
+                lock (s_implicitDistributedTransactionsLock)
+                {
+                    // Make sure this flag can only be set once, and that once distributed transactions have been initialized,
+                    // it's frozen.
+                    if (s_implicitDistributedTransactions is null)
+                    {
+                        s_implicitDistributedTransactions = value;
+
+                        if (value)
+                        {
+                            DtcProxyShimFactory.s_transactionConnector ??= new DtcProxyShimFactory.DtcTransactionConnector();
+                        }
+                    }
+                    else if (value != s_implicitDistributedTransactions)
+                    {
+                        throw new InvalidOperationException(SR.ImplicitDistributedTransactionsCannotBeChanged);
+                    }
+                }
+            }
+        }
+
+        internal static bool? s_implicitDistributedTransactions;
+        internal static object s_implicitDistributedTransactionsLock = new();
+#else
+        public static bool ImplicitDistributedTransactions
+        {
+            get => false;
+
+            [SupportedOSPlatform("windows")]
+            [RequiresUnreferencedCode(DistributedTransactionTrimmingWarning)]
+            set
+            {
+                if (value)
+                {
+                    throw new PlatformNotSupportedException(SR.DistributedNotSupported);
+                }
+            }
+        }
+#endif
 
         // This routine writes the "header" for the recovery information, based on the
         // type of the calling object and its provided parameter collection.  This information

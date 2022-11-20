@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse41
 {
     public static partial class Program
     {
-        private static void InsertUInt32129()
+        [Fact]
+        public static void InsertUInt32129()
         {
             var test = new InsertScalarTest__InsertUInt32129();
 

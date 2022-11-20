@@ -117,15 +117,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc Type => _type;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
@@ -1056,7 +1053,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!relocsOnly && MightHaveInterfaceDispatchMap(factory))
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(Type).IndexFromBeginningOfArray));
+                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
             }
 
             ComputeRareFlags(factory, relocsOnly);

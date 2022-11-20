@@ -869,7 +869,7 @@ namespace System.Xml.Schema
                     else
                     {
                         CompileSimpleType(simpleRestriction.BaseType);
-                        if (!XmlSchemaType.IsDerivedFromDatatype(simpleRestriction.BaseType.Datatype!, baseType.Datatype!, XmlSchemaDerivationMethod.None))
+                        if (!XmlSchemaType.IsDerivedFromDatatype(simpleRestriction.BaseType.Datatype!, baseType.Datatype!))
                         {
                             SendValidationEvent(SR.Sch_DerivedNotFromBase, simpleRestriction);
                         }
@@ -1080,7 +1080,7 @@ namespace System.Xml.Schema
             }
             else if (particle is XmlSchemaGroupRef)
             {
-                return CanonicalizeGroupRef((XmlSchemaGroupRef)particle, root, substitution);
+                return CanonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
             }
             else if (particle is XmlSchemaAll)
             {
@@ -1123,7 +1123,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CanonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root, bool substitution)
+        private XmlSchemaParticle CanonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root)
         {
             XmlSchemaGroup? group;
             if (groupRef.Redefined != null)

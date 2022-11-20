@@ -21,9 +21,13 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
+#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
+// Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+#endif
 public static partial class XmlSerializerTests
 {
-#if ReflectionOnly|| XMLSERIALIZERGENERATORTESTS
+#if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
     private static readonly string SerializationModeSetterName = "set_Mode";
 
     static XmlSerializerTests()
@@ -38,8 +42,6 @@ public static partial class XmlSerializerTests
 #endif
     }
 #endif
-
-    private static bool IsTimeSpanSerializationAvailable => true;
 
     [Fact]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
@@ -64,14 +66,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             Value = new DateTime(549269870000L, DateTimeKind.Utc)
         };
 
-        if (IsTimeSpanSerializationAvailable)
-        {
-            TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
-    @"<?xml version=""1.0"" encoding=""utf-8""?>
+        TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>");
 
-            Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
-        }
+        Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
     }
 
     [Fact]
@@ -812,7 +811,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
@@ -824,7 +823,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };

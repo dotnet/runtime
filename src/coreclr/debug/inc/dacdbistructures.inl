@@ -640,8 +640,6 @@ void FieldData::ClearFields()
     m_pFldStaticAddress = NULL;
 }
 
-typedef ULONG_PTR SIZE_T;
-
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {

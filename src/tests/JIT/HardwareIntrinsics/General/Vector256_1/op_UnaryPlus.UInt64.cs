@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256_1
 {
     public static partial class Program
     {
-        private static void op_UnaryPlusUInt64()
+        [Fact]
+        public static void op_UnaryPlusUInt64()
         {
             var test = new VectorUnaryOpTest__op_UnaryPlusUInt64();
 

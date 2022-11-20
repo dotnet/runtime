@@ -362,7 +362,7 @@ internal sealed class OletxResourceManager
         Guid rmGuid = new(rmGuidArray);
         if (rmGuid != ResourceManagerIdentifier)
         {
-            throw TransactionException.Create(TraceSourceType.TraceSourceOleTx, SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
+            throw TransactionException.Create(SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
         }
 
         // Ask the proxy resource manager to reenlist.

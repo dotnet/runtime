@@ -1059,7 +1059,7 @@ public static partial class XmlSerializerTests
         });
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TimeSpanAsRoot()
     {
         Assert.StrictEqual(new TimeSpan(1, 2, 3), SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3),
@@ -3013,7 +3013,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value, actual);
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void VerifyRestrictionElementForTimeSpanTest()
     {
         var schemas = new XmlSchemas();

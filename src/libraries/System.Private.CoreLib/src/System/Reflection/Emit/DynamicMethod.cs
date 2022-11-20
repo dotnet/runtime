@@ -179,25 +179,6 @@ namespace System.Reflection.Emit
                 false);
         }
 
-        // helpers for initialization
-
-        private static void CheckConsistency(MethodAttributes attributes, CallingConventions callingConvention)
-        {
-            // only public static for method attributes
-            if ((attributes & ~MethodAttributes.MemberAccessMask) != MethodAttributes.Static)
-                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
-            if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
-                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
-
-            // only standard or varargs supported
-            if (callingConvention != CallingConventions.Standard && callingConvention != CallingConventions.VarArgs)
-                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
-
-            // vararg is not supported at the moment
-            if (callingConvention == CallingConventions.VarArgs)
-                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
-        }
-
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
         // non-public fields (or any fields at all), it is a safe anonymous assembly to host DynamicMethods
         private static Module GetDynamicMethodsModule()
@@ -242,7 +223,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            CheckConsistency(attributes, callingConvention);
+            if (attributes != (MethodAttributes.Static | MethodAttributes.Public) || callingConvention != CallingConventions.Standard)
+                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
 
             // check and store the signature
             if (signature != null)

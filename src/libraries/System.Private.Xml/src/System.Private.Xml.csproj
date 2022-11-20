@@ -19,7 +19,6 @@
     <Compile Include="System\Xml\BinHexDecoder.cs" />
     <Compile Include="System\Xml\BinHexEncoder.cs" />
     <Compile Include="System\Xml\BinHexEncoderAsync.cs" />
-    <Compile Include="System\Xml\Bits.cs" />
     <Compile Include="System\Xml\BitStack.cs" />
     <Compile Include="System\Xml\ByteStack.cs" />
     <Compile Include="System\Xml\Core\HtmlEncodedRawTextWriter.cs">

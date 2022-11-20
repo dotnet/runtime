@@ -8,14 +8,13 @@
 #include <alloca.h>
 #endif
 
-#include "metadata/method-builder-ilgen.h"
-#include "metadata/method-builder-ilgen-internals.h"
+#include "mono/metadata/method-builder-ilgen.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/tabledefs.h"
@@ -24,6 +23,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
@@ -997,6 +997,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -2596,6 +2597,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by get_marshal_cb ()->emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -3136,8 +3138,5 @@ mono_marshal_lightweight_init (void)
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
 	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
-#ifdef DISABLE_NONBLITTABLE
-	mono_marshal_noilgen_init_blittable (&cb);
-#endif
 	mono_install_marshal_callbacks (&cb);
 }

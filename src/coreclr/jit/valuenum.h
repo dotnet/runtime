@@ -777,7 +777,7 @@ public:
     ValueNumPair VNPairForStore(
         ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
 
-    bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
+    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }

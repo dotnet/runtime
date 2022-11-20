@@ -1,0 +1,47 @@
+# This contains only iOS/tvOS-simulator-specific jobs
+# These are run as part of runtime-extra-platforms by default.
+# But can also be triggered manually via `runtime-ioslikesimulator` name
+#   /azp run runtime-ioslikesimulator
+
+parameters:
+  isExtraPlatformsBuild: false
+  isiOSLikeSimulatorOnlyBuild: false
+  isRollingBuild: false
+
+jobs:
+
+#
+# iOS/tvOS interp - requires AOT Compilation and Interp flags
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
+    platforms:
+    - iOSSimulator_x64
+    - tvOSSimulator_x64
+    # don't run tests on arm64 PRs until we can get significantly more devices
+    - ${{ if eq(variables['isRollingBuild'], true) }}:
+      - iOSSimulator_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        interpreter: true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)

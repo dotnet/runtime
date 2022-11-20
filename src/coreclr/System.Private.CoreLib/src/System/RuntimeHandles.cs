@@ -878,7 +878,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1230,7 +1230,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)

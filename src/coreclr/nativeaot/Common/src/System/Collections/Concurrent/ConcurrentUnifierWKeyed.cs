@@ -161,7 +161,7 @@ namespace System.Collections.Concurrent
                     return heyIWasHereFirst;
                 if (!_container.HasCapacity)
                     _container.Resize(); // This overwrites the _container field.
-                _container.Add(key, hashCode, value);
+                _container.Add(hashCode, value);
                 return value;
             }
         }
@@ -218,7 +218,7 @@ namespace System.Collections.Concurrent
                 return false;
             }
 
-            public void Add(K key, int hashCode, V value)
+            public void Add(int hashCode, V value)
             {
                 Debug.Assert(_owner._lock.IsAcquired);
 

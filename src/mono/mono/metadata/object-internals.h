@@ -176,6 +176,7 @@ struct _MonoArray {
 	} name;
 
 MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfVoid, void)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
@@ -650,6 +651,11 @@ typedef struct {
 	MonoObject object;
 	guint32 intType;
 } MonoClassInterfaceAttribute;
+
+typedef struct {
+	MonoObject object;
+	gsize taggedHandle;
+} MonoWeakReference;
 
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);

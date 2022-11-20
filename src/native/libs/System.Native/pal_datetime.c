@@ -23,7 +23,7 @@ static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 // SystemNative_GetSystemTimeAsTicks return the system time as ticks (100 nanoseconds) 
 // since 00:00 01 January 1970 UTC (Unix epoch) 
 //
-int64_t SystemNative_GetSystemTimeAsTicks()
+int64_t SystemNative_GetSystemTimeAsTicks(void)
 {
 #if HAVE_CLOCK_REALTIME
     struct timespec time;
@@ -43,7 +43,7 @@ int64_t SystemNative_GetSystemTimeAsTicks()
 }
 
 #if defined(TARGET_ANDROID)
-char* SystemNative_GetDefaultTimeZone()
+char* SystemNative_GetDefaultTimeZone(void)
 {
     char defaulttimezone[PROP_VALUE_MAX];
     if (__system_property_get("persist.sys.timezone", defaulttimezone))

@@ -911,7 +911,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     {
         // Set default values for profile (to avoid NoteFailed in CALLEE_IL_CODE_SIZE's handler)
         // these will be overridden later.
-        compInlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+        compInlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, true);
         compInlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
         // Observe force inline state and code size.
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
@@ -1163,6 +1163,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
 
                             // These are foldable if the first argument is a constant
+                            case NI_System_Type_get_IsEnum:
+                            case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
@@ -4902,7 +4904,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     // When adding a new jmpBlk we will set the bbWeight and bbFlags
                     //
-                    if (fgHaveValidEdgeWeights && fgHaveProfileData())
+                    if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
                         noway_assert(fgComputePredsDone);
 

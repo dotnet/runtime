@@ -133,65 +133,142 @@ private:
 };
 
 
+// Indx256 implements a trie (or prefix tree) on null-terminated sequences of BYTEs.
+//
+// It is very memory intensive because it allocates dense arrays for every node
+// once the node has any child nodes, though it does allocate tables separately for
+// BYTEs in [1,127] and [128,255].  The functions are implemented by choosing the
+// table, adjusting the index (making the [128,255] indices zero-based for the
+// "high" table) and calling a helper that operates on one table.  The Indx256 type
+// serves as the overall trie as well as the nodes.  I.e., the root node is the
+// overall trie.
+//
+// Much more space could be saved here.  Perhap even a hashtable or search tree
+// would be sufficient; it's unclear if there was a historical performance-critical
+// aspect to this choice.  Note also that since this is used for labels and a
+// stress test of this is the output of ildasm since it labels every instruction,
+// the pattern "IL_<hex>" could be special-cased.
+//
+// Example (with the input strings reduced to 0..3 rather than 0..255
+//          and only one table per node):
+//
+// Contents: { 1 -> "A", 11 -> "B", 22 -> "C" }
+//
+// Trie:
+//
+//   NULL, [ NULL, ptr_1, ptr_2, NULL ]   // no empty key, keys start with 1 and 2
+//                   |      |
+//                   |      \--> NULL, [ NULL, NULL, ptr_2, NULL ]     // no 2 key, keys start with 22
+//                   |                                 |
+//                   |                                 \--> "C", NULL  // 22 is "C", no keys extend 22
+//                   |
+//                   \--> "A", [ NULL, ptr_1, NULL, NULL ]             // 1 is "A", keys start with 11
+//                                       |
+//                                       \--> "B", NULL                // 11 is "B", no keys extend 11
+
+// There are two tables per node, so the value here is 256 / 2.
+#define INDX256_TABLE_SIZE 128
+
 template <class T> struct Indx256
 {
-    void* table[256];
-    Indx256() { memset(table,0,sizeof(table)); };
+    T* item; // The value corresponding to the sequence ending at this node
+    Indx256* tableLow;  // Child nodes: either NULL or points to 128 elements for [1,127].
+                        // Element 0 is not used because 0 is the terminator.  This makes indexing simpler.
+    Indx256* tableHigh; // Child nodes: either NULL or points to 128 elements for [128,255].
+    Indx256() { item=nullptr; tableLow=nullptr; tableHigh=nullptr; };
     ~Indx256()
     {
         ClearAll(true);
-        for(int i = 1; i < 256; i++) delete ((Indx256*)(table[i]));
     };
+
     T** IndexString(BYTE* psz, T* pObj)
     {
         if(*psz == 0)
         {
-            table[0] = (void*)pObj;
-            return (T**)table;
+            // Found NULL terminator.  Install value and return pointer to it.
+            item = pObj;
+            return &item;
+        }
+
+        if(*psz >= INDX256_TABLE_SIZE)
+        {
+            return IndexStringOneTable(tableHigh, *psz - INDX256_TABLE_SIZE, psz + 1, pObj);
         }
         else
         {
-            Indx256* pInd = (Indx256*)(table[*psz]);
-            if(pInd == NULL)
-            {
-                pInd = new Indx256;
-                if(pInd)
-                    table[*psz] = pInd;
-                else
-                {
-                    _ASSERTE(!"Out of memory in Indx256::IndexString!");
-                    fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
-                    return NULL;
-                }
-            }
-            return pInd->IndexString(psz+1,pObj);
+            return IndexStringOneTable(tableLow, *psz, psz + 1, pObj);
         }
     };
-    T*  FindString(BYTE* psz)
+
+    T* FindString(BYTE* psz)
     {
-        if(*psz > 0)
+        if(*psz == 0)
         {
-            Indx256* pInd = (Indx256*)(table[*psz]);
-            return (pInd == NULL) ? NULL : pInd->FindString(psz+1);
+            // Found NULL terminator.  Return value.
+            return item;
         }
-        return (T*)(table[0]); // if i==0
+
+        if(*psz >= INDX256_TABLE_SIZE)
+        {
+            return FindStringOneTable(tableHigh, *psz - INDX256_TABLE_SIZE, psz + 1);
+        }
+        else
+        {
+            return FindStringOneTable(tableLow, *psz, psz + 1);
+        }
     };
 
     void ClearAll(bool DeleteObj)
     {
-        if(DeleteObj) delete (T*)(table[0]);
-        table[0] = NULL;
-        for(unsigned i = 1; i < 256; i++)
+        if(DeleteObj) delete item;
+        item = NULL;
+        ClearOneTable(tableLow, DeleteObj);
+        ClearOneTable(tableHigh, DeleteObj);
+    };
+
+private:
+    T** IndexStringOneTable(Indx256*& table, BYTE value, BYTE* next, T* pObj)
+    {
+        // Ensure that child table exists.
+        if(table == NULL)
         {
-            if(table[i])
+            table = new Indx256[INDX256_TABLE_SIZE] {};
+            if(table == NULL)
             {
-                Indx256* pInd = (Indx256*)(table[i]);
-                pInd->ClearAll(DeleteObj);
-                //delete pInd;
-                //table[i] = NULL;
+                _ASSERTE(!"Out of memory in Indx256::IndexString!");
+                fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
+                return NULL;
             }
         }
-    };
+
+        // Find the child node for the current BYTE at continue at the next BYTE.
+        return table[value].IndexString(next,pObj);
+    }
+
+    T* FindStringOneTable(Indx256* table, BYTE value, BYTE* next)
+    {
+        if(table == NULL)
+        {
+            // If there are no child nodes, then there is nowhere to
+            // look for this key.
+            return NULL;
+        }
+
+        return table[value].FindString(next);
+    }
+
+    void ClearOneTable(Indx256*& table, bool DeleteObj)
+    {
+        if(table)
+        {
+            for(unsigned i = 0; i < INDX256_TABLE_SIZE; i++)
+            {
+                table[i].ClearAll(DeleteObj);
+            }
+            delete[] table;
+            table = NULL;
+        }
+    }
 };
 
 //

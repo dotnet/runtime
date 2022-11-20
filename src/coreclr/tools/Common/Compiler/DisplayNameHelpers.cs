@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -40,24 +41,31 @@ namespace ILCompiler
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
                 sb.Append(property.Name);
                 sb.Append('.');
-                sb.Append(property.GetMethod == method ? "get" : "set");
+                sb.Append(property.GetMethod == typicalMethod ? "get" : "set");
                 return sb.ToString();
             }
             else if (method.GetEventForAccessor() is EventPseudoDesc @event)
             {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
                 sb.Append(@event.Name);
                 sb.Append('.');
                 string accessor;
-                if (method.Name == @event.AddMethod.Name)
+                if (typicalMethod == @event.AddMethod)
+                {
                     accessor = "add";
-                else if (method.Name == @event.RemoveMethod.Name)
+                }
+                else if (typicalMethod == @event.RemoveMethod)
+                {
                     accessor = "remove";
-                else if (method.Name == @event.RaiseMethod.Name)
-                    accessor = "raise";
+                }
                 else
-                    throw new NotSupportedException();
+                {
+                    Debug.Assert(typicalMethod == @event.RaiseMethod);
+                    accessor = "raise";
+                }
                 sb.Append(accessor);
             }
 #endif

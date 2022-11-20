@@ -173,12 +173,14 @@ int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
           char16_t* buffer,
-          int bufferSize) override;
+          int bufferSize,
+          int startIndex) override;
 
-int objectToString(
-          void* handle,
+size_t printObjectDescription(
+          CORINFO_OBJECT_HANDLE handle,
           char* buffer,
-          int bufferSize) override;
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
@@ -285,8 +287,14 @@ CorInfoHelpFunc getBoxHelper(
 CorInfoHelpFunc getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
-void* getRuntimeTypePointer(
+CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls) override;
+
+bool isObjectImmutable(
+          CORINFO_OBJECT_HANDLE objPtr) override;
+
+CORINFO_CLASS_HANDLE getObjectType(
+          CORINFO_OBJECT_HANDLE objPtr) override;
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -344,6 +352,10 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
+TypeCompareState isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType) override;
+
 CORINFO_CLASS_HANDLE getParentType(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -395,6 +407,9 @@ void getFieldInfo(
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
+
+int getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd) override;
 
 void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
@@ -604,6 +619,12 @@ unsigned getClassDomainID(
 void* getFieldAddress(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
+
+bool getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint8_t* buffer,
+          int bufferSize,
+          bool ignoreMovableObjects) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
