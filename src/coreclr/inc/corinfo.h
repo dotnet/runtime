@@ -2740,6 +2740,8 @@ public:
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
+    // Returns Length of an Array or of a String object, otherwise -1.
+    // objHnd must be not null
     virtual int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) = 0;
 
     /*********************************************************************************/

@@ -2303,7 +2303,7 @@ namespace Internal.JitInterface
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
                 FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
+                _ => -1;
             };
         }
     }
