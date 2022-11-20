@@ -31,7 +31,7 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new IndexOfAny1Value<byte, byte>(values);
+                return new IndexOfAny1Value<byte>(values);
             }
 
             // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
@@ -45,8 +45,8 @@ namespace System.Buffers
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
                 return values.Length switch
                 {
-                    2 => new IndexOfAny2Values<byte, byte>(values),
-                    3 => new IndexOfAny3Values<byte, byte>(values),
+                    2 => new IndexOfAny2Values<byte>(values),
+                    3 => new IndexOfAny3Values<byte>(values),
                     4 => new IndexOfAny4Values<byte, byte>(values),
                     _ => new IndexOfAny5Values<byte, byte>(values),
                 };
@@ -70,11 +70,6 @@ namespace System.Buffers
         /// <param name="values">The set of values.</param>
         public static IndexOfAnyValues<char> Create(ReadOnlySpan<char> values)
         {
-            // Vector128<char> isn't valid. Treat the values as shorts instead.
-            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
-                values.Length);
-
             if (values.IsEmpty)
             {
                 return new IndexOfEmptyValues<char>();
@@ -82,7 +77,7 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new IndexOfAny1Value<char, short>(shortValues);
+                return new IndexOfAny1Value<char>(values);
             }
 
             // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
@@ -93,12 +88,12 @@ namespace System.Buffers
 
             if (values.Length == 2)
             {
-                return new IndexOfAny2Values<char, short>(shortValues);
+                return new IndexOfAny2Values<char>(values);
             }
 
             if (values.Length == 3)
             {
-                return new IndexOfAny3Values<char, short>(shortValues);
+                return new IndexOfAny3Values<char>(values);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than IndexOfAny3Values, but faster than IndexOfAny4Values
@@ -110,6 +105,11 @@ namespace System.Buffers
                     ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
                     : new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
             }
+
+            // Vector128<char> isn't valid. Treat the values as shorts instead.
+            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
+                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
+                values.Length);
 
             if (values.Length == 4)
             {
