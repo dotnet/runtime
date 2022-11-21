@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Xml.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
-    <Compile Include="System.Security.Cryptography.Xml.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == 'NETFramework'" />
+    <Compile Include="System.Security.Cryptography.Xml.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
