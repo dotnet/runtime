@@ -6,6 +6,13 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <!-- only use for files that are not configuration dependent -->
+    <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PythonCmd Condition="'$(HostOS)' != 'windows'">python3</PythonCmd>
+    <PythonCmd Condition="'$(HostOS)' == 'windows'">python</PythonCmd>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -406,10 +413,16 @@
 		      Overwrite="true" />
   </Target>
 
+  <Target Name="GenerateMintopsTS"
+          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def"
+          Outputs="$(NativeGeneratedFilesDir)\mintops.ts">
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)/mintops.ts" />
+  </Target>
+
   <Target Name="BuildWithRollup"
           Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
           Outputs="$(NativeBinDir).rollup-stamp"
-	  DependsOnTargets="WriteRollupEnvToFile"
+	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>

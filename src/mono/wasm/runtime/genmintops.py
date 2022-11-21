@@ -46,14 +46,15 @@ export const OpcodeInfo : OpcodeInfoTable = {{
 }};
 """
 
-dest = open(output_ts_path, 'r')
-if (dest.read() == generated):
-    print("mintops.ts up to date, exiting")
-    exit(0)
-
-dest.close()
-dest = open(output_ts_path, 'w')
-dest.write(generated)
+os.makedirs(os.path.dirname(output_ts_path), exist_ok=True)
+try:
+    with open(output_ts_path, 'r') as dest:
+        if (dest.read() == generated):
+            print("mintops.ts up to date, exiting")
+            exit(0)
+except FileNotFoundError:
+    pass
+with open(output_ts_path, 'w') as dest:
+    dest.write(generated)
 print("mintops.ts generated")
-dest.close()
 exit(0)

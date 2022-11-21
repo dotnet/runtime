@@ -36,13 +36,6 @@ set_target_properties(dotnet PROPERTIES
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
 
-add_custom_target(GENERATE_MINTOPS_TYPESCRIPT ALL
-    ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py "${CMAKE_CURRENT_SOURCE_DIR}/../../mono/mini/interp/mintops.def" "${CMAKE_CURRENT_SOURCE_DIR}/mintops.ts"
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmintops.py ${CMAKE_CURRENT_SOURCE_DIR}/../../mono/mini/interp/mintops.def
-    BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/mintops.ts
-    VERBATIM
-)
-
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet
                         POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --enable-exception-handling ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm
