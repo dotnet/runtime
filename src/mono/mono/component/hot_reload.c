@@ -34,8 +34,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#define ALLOW_INSTANCE_FIELD_ADD
-
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
 
@@ -2235,15 +2233,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 				uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
 				uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
-
-#ifndef ALLOW_INSTANCE_FIELD_ADD
-				if ((field_flags & FIELD_ATTRIBUTE_STATIC) == 0) {
-					/* TODO: implement instance (and literal?) fields */
-					mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-					mono_error_set_not_implemented (error, "Adding non-static fields isn't implemented yet (token 0x%08x, class %s.%s)", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-					return FALSE;
-				}
-#endif
 
 				add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
 

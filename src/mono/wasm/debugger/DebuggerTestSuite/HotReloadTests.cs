@@ -577,7 +577,6 @@ namespace DebuggerTests
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
                                            await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
-#if true
                                            var c = await GetObjectOnLocals(locals, "c");
                                            await CheckProps (c, new {
                                                            Field1 = TNumber(123),
@@ -589,14 +588,11 @@ namespace DebuggerTests
                                            await CheckProps (c, new {
                                                            Field1 = TNumber("456.5", isDecimal: true),
                                                    }, "c", num_fields: 1);
-#endif
                                        });
             await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
                                        locals_fn: async (locals) => {
-                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", locals);
                                            await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
                                            var c = await GetObjectOnLocals(locals, "c");
-                                           _testOutput.WriteLine ("aleksey cprops1 ---- {0}", c);
                                            await CheckProps (c, new {
                                                            Field1 = TNumber(123),
                                                            Field2 = TString("spqr"),
