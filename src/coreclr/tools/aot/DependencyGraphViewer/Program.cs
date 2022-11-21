@@ -452,10 +452,13 @@ namespace DependencyLogViewer
         {
             string? argPath = args.Length > 0 ? args[0] : null;
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(true);
+
+            ApplicationConfiguration.Initialize();
 
             GraphCollection.DependencyGraphsUI = new DependencyGraphs(argPath);
+
 
             Application.Run(GraphCollection.DependencyGraphsUI);
 
