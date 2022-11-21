@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void OrNot_Vector64_Single()
+        [Fact]
+        public static void OrNot_Vector64_Single()
         {
             var test = new SimpleBinaryOpTest__OrNot_Vector64_Single();
 

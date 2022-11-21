@@ -40,7 +40,7 @@ namespace Repro
 	        }
 	        public static implicit operator S(float[] numbers) => new S(numbers);
 	    }
-	    static int Main(string[] args)
+	    static int Main()
 	    {
 	        S s = new float[] { 1.0f, 2.0f };
 	        Console.WriteLine(s.Vector);

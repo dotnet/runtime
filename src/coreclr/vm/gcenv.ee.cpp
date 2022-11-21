@@ -1094,8 +1094,8 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     MethodTable* pMT = obj->GetGCSafeMethodTable();
-    if (pMT == pWeakReferenceMT ||
-        pMT->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT)
+    if (pMT == g_pWeakReferenceClass ||
+        pMT->HasSameTypeDefAs(g_pWeakReferenceOfTClass))
     {
         FinalizeWeakReference(obj);
         return true;

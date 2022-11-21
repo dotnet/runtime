@@ -96,7 +96,7 @@ static long pageSize;
  *
  */
 static void 
-initialize()
+initialize(void)
 {
 	s_cgroup_version = findCGroupVersion ();
 	s_memory_cgroup_path = findCGroupPath (s_cgroup_version == 1 ? &isCGroup1MemorySubsystem : NULL);
@@ -202,7 +202,7 @@ getPhysicalMemoryUsage(size_t *val)
  *
  */
 static int 
-findCGroupVersion()
+findCGroupVersion(void)
 {
 	// It is possible to have both cgroup v1 and v2 enabled on a system.
 	// Most non-bleeding-edge Linux distributions fall in this group. We
@@ -606,7 +606,7 @@ getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFile
  * Zero represents no limit.
  */
 size_t 
-mono_get_restricted_memory_limit()
+mono_get_restricted_memory_limit(void)
 {
 	size_t physical_memory_limit = 0;
 
@@ -718,7 +718,7 @@ mono_get_memory_used(size_t *val)
  *
  */
 size_t
-mono_get_memory_avail()
+mono_get_memory_avail(void)
 {
 	size_t max, used, avail, sysAvail;
 #ifdef _SC_AVPHYS_PAGES		// If this isn't defined then we don't get called

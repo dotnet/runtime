@@ -212,7 +212,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("d", () => new SortedList(null, new CustomComparer())); // Dictionary is null
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_Empty()
         {
             Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
@@ -266,7 +266,7 @@ namespace System.Collections.Tests
             const int MinCapacity = InitialCapacity * 2 + 1;
             var sortedList = new SortedList(InitialCapacity);
 
-            MethodInfo ensureCapacity = sortedList.GetType().GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo ensureCapacity = typeof(SortedList).GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
             ensureCapacity.Invoke(sortedList, new object[] { MinCapacity });
 
             Assert.Equal(MinCapacity, sortedList.Capacity);

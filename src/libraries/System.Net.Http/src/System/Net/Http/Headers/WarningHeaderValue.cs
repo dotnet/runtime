@@ -280,19 +280,12 @@ namespace System.Net.Http.Headers
 
                 // Find the closing '"'
                 int dateStartIndex = current;
-                while (current < input.Length)
+                int quote = input.AsSpan(current).IndexOf('"');
+                if (quote <= 0) // no quote was found or it was the first character (meaning an empty quoted string)
                 {
-                    if (input[current] == '"')
-                    {
-                        break;
-                    }
-                    current++;
+                    return false;
                 }
-
-                if ((current == input.Length) || (current == dateStartIndex))
-                {
-                    return false; // we couldn't find the closing '"' or we have an empty quoted string.
-                }
+                current += quote;
 
                 DateTimeOffset temp;
                 if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))

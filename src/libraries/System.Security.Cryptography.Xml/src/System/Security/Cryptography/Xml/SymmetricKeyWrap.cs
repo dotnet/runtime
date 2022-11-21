@@ -36,9 +36,9 @@ namespace System.Security.Cryptography.Xml
 
             // rgbWKCS = rgbWrappedKeyData | (first 8 bytes of the hash)
             byte[] rgbWKCKS = new byte[rgbWrappedKeyData.Length + 8];
-            TripleDES tripleDES = null;
-            ICryptoTransform enc1 = null;
-            ICryptoTransform enc2 = null;
+            TripleDES? tripleDES = null;
+            ICryptoTransform? enc1 = null;
+            ICryptoTransform? enc2 = null;
 
             try
             {
@@ -75,9 +75,9 @@ namespace System.Security.Cryptography.Xml
                 && rgbEncryptedWrappedKeyData.Length != 48)
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
-            TripleDES tripleDES = null;
-            ICryptoTransform dec1 = null;
-            ICryptoTransform dec2 = null;
+            TripleDES? tripleDES = null;
+            ICryptoTransform? dec1 = null;
+            ICryptoTransform? dec2 = null;
 
             try
             {
@@ -125,8 +125,8 @@ namespace System.Security.Cryptography.Xml
             if ((rgbWrappedKeyData.Length % 8 != 0) || N <= 0)
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
-            Aes aes = null;
-            ICryptoTransform enc = null;
+            Aes? aes = null;
+            ICryptoTransform? enc = null;
 
             try
             {
@@ -188,8 +188,8 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
             byte[] rgbOutput = new byte[N << 3];
-            Aes aes = null;
-            ICryptoTransform dec = null;
+            Aes? aes = null;
+            ICryptoTransform? dec = null;
 
             try
             {

@@ -3,21 +3,27 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <!-- TODO: Enable when package shipped with NET 7. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
     <PackageDescription>Exposes Threading APIs for WebAssembly projects</PackageDescription>
-    <!-- XXX FIXME: NU5128 suppresses a really scary message about missing net7.0 dependencies -->
+    <!-- 
+      NU5128 suppresses missing net7.0 dependencies.
+      PKV004 suppresses APICompat rule for missing runtime asset.
+     -->
     <NoWarn>$(NoWarn);NU5128;NU5131;PKV004</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference
-	Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
-		 $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj;
-		 $(LibrariesProjectRoot)System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj"
-	Pack="true" PrivateAssets="all" Private="true" IncludeReferenceAssemblyInPackage="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
+                               $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj;
+                               $(LibrariesProjectRoot)System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj"
+                      Pack="true"
+                      PrivateAssets="all"
+                      Private="true"
+                      IncludeReferenceAssemblyInPackage="true" />
   </ItemGroup>
 
 </Project>

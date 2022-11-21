@@ -189,8 +189,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"

@@ -75,13 +75,24 @@ namespace Internal.IL.Stubs
                         result = true;
                         break;
                     default:
-                        var mdType = elementType as MetadataType;
-                        if (mdType != null && mdType.Name == "Rune" && mdType.Namespace == "System.Text")
-                            result = true;
-                        else if (mdType != null && mdType.Name == "Char8" && mdType.Namespace == "System")
-                            result = true;
-                        else
-                            result = false;
+                        result = false;
+                        if (elementType is MetadataType mdType)
+                        {
+                            if (mdType.Module == mdType.Context.SystemModule &&
+                                mdType.Namespace == "System.Text" &&
+                                mdType.Name == "Rune")
+                            {
+                                result = true;
+                            }
+                            else if (mdType.IsValueType && !ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition()))
+                            {
+                                // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
+                                MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                                result =
+                                    mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
+                                    ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
+                            }
+                        }
                         break;
                 }
             }

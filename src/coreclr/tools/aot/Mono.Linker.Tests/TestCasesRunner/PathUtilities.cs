@@ -13,10 +13,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public const string TFMDirectoryName = "net7.0";
 #elif NET6_0
 		public const string TFMDirectoryName = "net6.0";
-#elif NET5_0
-		public const string TFMDirectoryName = "net5.0";
-#elif NETCOREAPP3_0
-		public const string TFMDirectoryName = "netcoreapp3.0";
 #else
 #error "Unknown TFM"
 #endif

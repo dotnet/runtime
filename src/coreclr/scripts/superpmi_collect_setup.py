@@ -24,13 +24,13 @@
 # 4.  For benchmarks collections, a specialized script is called to set up the benchmarks collection.
 # 5.  Lastly, it sets the pipeline variables.
 #
-# Below are the helix queues it sets depending on the OS/architecture:
+# Below are the helix queues and images it sets depending on the OS/architecture (accepted format by Helix is either "QueueName" or "(DisplayName)QueueName@Image")
 # | Arch  | windows                 | Linux                                                                                                                                | macOS          |
 # |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
 # | x86   | Windows.10.Amd64.X86.Rt | -                                                                                                                                    | -              |
 # | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
-# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 | -              |
-# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 | OSX.1100.ARM64 |
+# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7                        | -              |
+# | arm64 | Windows.11.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8                        | OSX.1100.ARM64 |
 #
 ################################################################################
 ################################################################################
@@ -61,6 +61,10 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 is_windows = platform.system() == "Windows"
 
 legal_collection_types = [ "crossgen2", "pmi", "run" ]
+
+directories_to_ignore = [
+    "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
+]
 
 native_binaries_to_ignore = [
     "api-ms-win-core-console-l1-1-0.dll",
@@ -106,6 +110,12 @@ native_binaries_to_ignore = [
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
+    "clrjit_universal_arm_arm.dll",
+    "clrjit_universal_arm_arm64.dll",
+    "clrjit_universal_arm_x64.dll",
+    "clrjit_universal_arm_x86.dll",
+    "clrjit_universal_arm64_arm64.dll",
+    "clrjit_universal_arm64_x64.dll",
     "clrjit_unix_arm_arm.dll",
     "clrjit_unix_arm_arm64.dll",
     "clrjit_unix_arm_x64.dll",
@@ -132,12 +142,6 @@ native_binaries_to_ignore = [
     "clrjit_win_x86_arm64.dll",
     "clrjit_win_x86_x64.dll",
     "clrjit_win_x86_x86.dll",
-    "clrjit_universal_arm_arm.dll",
-    "clrjit_universal_arm_arm64.dll",
-    "clrjit_universal_arm_x64.dll",
-    "clrjit_universal_arm_x86.dll",
-    "clrjit_universal_arm64_arm64.dll",
-    "clrjit_universal_arm64_x64.dll",
     "coreclr.dll",
     "CoreConsole.exe",
     "coredistools.dll",
@@ -147,6 +151,8 @@ native_binaries_to_ignore = [
     "crossgen.exe",
     "crossgen2.exe",
     "dbgshim.dll",
+    "e_sqlite3.dll",
+    "FileCheck.exe",
     "ilasm.exe",
     "ildasm.exe",
     "jitinterface_arm.dll",
@@ -155,6 +161,7 @@ native_binaries_to_ignore = [
     "jitinterface_x86.dll",
     "KernelTraceControl.dll",
     "KernelTraceControl.Win61.dll",
+    "llvm-mca.exe",
     "mcs.exe",
     "Microsoft.DiaSymReader.Native.amd64.dll",
     "Microsoft.DiaSymReader.Native.x86.dll",
@@ -164,17 +171,21 @@ native_binaries_to_ignore = [
     "msdia140.dll",
     "msquic.dll",
     "msvcp140.dll",
-    "vcruntime140.dll",
-    "vcruntime140_1.dll",
+    "NativeLibrary.dll",
     "R2RDump.exe",
     "R2RTest.exe",
-    "superpmi.exe",
+    "sni.dll",
+    "SuperFileCheck.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "superpmi.exe",
     "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
+    "UnloadableAssembly.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
     "xunit.console.exe",
 ]
 
@@ -394,7 +405,7 @@ def setup_microbenchmark(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "8.0.100-alpha.1.22558.2", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
@@ -445,12 +456,12 @@ def main(main_args):
 
     # Determine the Helix queue name to use when running jobs.
     if platform_name == "windows":
-        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
+        helix_queue = "Windows.11.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
     elif platform_name == "linux":
         if arch == "arm":
-            helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
+            helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
     elif platform_name == "osx":
@@ -556,8 +567,12 @@ def main(main_args):
         #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
         input_artifacts = os.path.join(workitem_payload_directory, "collectAssembliesDirectory", coreclr_args.collection_name)
-        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "coreclr_tests" else []
-        exclude_files = native_binaries_to_ignore
+
+        exclude_directories = list(directories_to_ignore)
+        if coreclr_args.collection_name == "coreclr_tests":
+            exclude_directories += ['Core_Root']
+
+        exclude_files = list(native_binaries_to_ignore)
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
@@ -569,7 +584,7 @@ def main(main_args):
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
 
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
 
     # Set variables

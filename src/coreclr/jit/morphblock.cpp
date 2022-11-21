@@ -32,6 +32,7 @@ protected:
 
 private:
     void TryInitFieldByField();
+    void TryPrimitiveInit();
 
 protected:
     Compiler* m_comp;
@@ -56,8 +57,8 @@ protected:
         FieldByField,
         OneAsgBlock,
         StructBlock,
-        SkipCallSrc,
-        SkipMultiRegIntrinsicSrc,
+        SkipMultiRegSrc,
+        SkipSingleRegCallSrc,
         Nop
     };
 
@@ -134,7 +135,7 @@ GenTree* MorphInitBlockHelper::Morph()
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
         GenTree* oneAsgTree = nullptr;
-        if (m_dst != m_dstLclNode)
+        if (!m_initBlock && (m_dst != m_dstLclNode))
         {
             oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
         }
@@ -351,22 +352,13 @@ void MorphInitBlockHelper::MorphStructCases()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        // For an InitBlock we always require a block operand.
-        m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, true /*isBlkReqd*/);
-        m_transformationDecision = BlockTransformation::StructBlock;
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_result                = m_asg;
-        m_result->AsOp()->gtOp1 = m_dst;
-        m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
+        TryPrimitiveInit();
+    }
 
-#if FEATURE_SIMD
-        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
-        {
-            assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
-            m_result->AsOp()->gtOp2 = m_src;
-        }
-#endif // FEATURE_SIMD
+    if (m_transformationDecision == BlockTransformation::Undefined)
+    {
+        m_result                 = m_asg;
+        m_transformationDecision = BlockTransformation::StructBlock;
 
         if (m_dstVarDsc != nullptr)
         {
@@ -404,29 +396,20 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
     JITDUMP("MorphBlock for %s tree, before:\n", (isDest ? "dst" : "src"));
     DISPTREE(tree);
 
-    // Src can be a primitive type.
-    assert(!isDest || varTypeIsStruct(tree));
-
-    GenTree* handleTree = nullptr;
-    GenTree* addr       = nullptr;
+    assert(varTypeIsStruct(tree));
 
     if (tree->OperIs(GT_COMMA))
     {
         // TODO-Cleanup: this block is not needed for not struct nodes, but
         // fgMorphOneAsgBlockOp works wrong without this transformation.
         tree = MorphCommaBlock(comp, tree->AsOp());
+        if (isDest)
+        {
+            tree->SetDoNotCSE();
+        }
     }
 
-    if (!tree->OperIsBlk())
-    {
-        JITDUMP("MorphBlock after:\n");
-        DISPTREE(tree);
-        return tree;
-    }
-
-    GenTree* blkAddr = tree->AsBlk()->Addr();
-    assert(blkAddr != nullptr);
-    assert(blkAddr->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    assert(!tree->OperIsIndir() || varTypeIsI(genActualType(tree->AsIndir()->Addr())));
 
     JITDUMP("MorphBlock after:\n");
     DISPTREE(tree);
@@ -655,18 +638,15 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 break;
             case TYP_REF:
             case TYP_BYREF:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType, CORINFO_TYPE_FLOAT);
-                break;
 #endif // FEATURE_SIMD
+                assert(initPattern == 0);
+                src = m_comp->gtNewZeroConNode(fieldType);
+                break;
             default:
                 unreached();
         }
@@ -690,6 +670,46 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
     m_result                 = tree;
     m_transformationDecision = BlockTransformation::FieldByField;
+}
+
+//------------------------------------------------------------------------
+// TryPrimitiveInit: Replace block zero-initialization with a primitive store.
+//
+// Transforms patterns like "ASG(BLK(ADDR(LCL_VAR int)), 0)" into simple
+// assignments: "ASG(LCL_VAR int, 0)".
+//
+// If successful, will set "m_transformationDecision" to "OneAsgBlock".
+//
+void MorphInitBlockHelper::TryPrimitiveInit()
+{
+    if (m_blockSize == 0)
+    {
+        return;
+    }
+
+    if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
+    {
+        var_types lclVarType = m_dstVarDsc->TypeGet();
+        if (varTypeIsSIMD(lclVarType))
+        {
+            m_src = m_comp->gtNewZeroConNode(lclVarType);
+        }
+        else
+        {
+            m_src->BashToZeroConst(lclVarType);
+        }
+
+        m_dst->ChangeType(m_dstVarDsc->lvNormalizeOnLoad() ? lclVarType : genActualType(lclVarType));
+        m_dst->ChangeOper(GT_LCL_VAR);
+        m_dst->AsLclVar()->SetLclNum(m_dstLclNum);
+        m_dst->gtFlags |= GTF_VAR_DEF;
+
+        m_asg->ChangeType(m_dst->TypeGet());
+        m_asg->gtOp1             = m_dst;
+        m_asg->gtOp2             = m_src;
+        m_result                 = m_asg;
+        m_transformationDecision = BlockTransformation::OneAsgBlock;
+    }
 }
 
 class MorphCopyBlockHelper : public MorphInitBlockHelper
@@ -798,49 +818,51 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcLclNum = m_srcLclNode->GetLclNum();
         m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
     }
+
+    // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
+    assert(m_dst->TypeGet() == m_src->TypeGet());
+    if (m_dst->TypeIs(TYP_STRUCT))
+    {
+        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
+        if (m_src->OperIs(GT_IND))
+        {
+            m_src->SetOper(m_blockLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
+            m_src->AsBlk()->SetLayout(m_blockLayout);
+            m_src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+            m_src->AsBlk()->gtBlkOpGcUnsafe = false;
+#endif // !JIT32_GCENCODER
+        }
+
+        assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+    }
+    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
+    else if (m_src->OperIsBlk())
+    {
+        m_src->SetOper(GT_IND);
+    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
 //    The current special cases include assignments with calls in RHS.
 //
-// Notes:
-//    It could change multiReg flags or change m_dst node.
-//
 void MorphCopyBlockHelper::TrySpecialCases()
 {
-#ifdef FEATURE_HW_INTRINSICS
-    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (m_src->IsMultiRegNode())
     {
-        assert(m_src->IsMultiRegNode());
-        JITDUMP("Not morphing a multireg intrinsic\n");
-        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        assert(m_dst->OperIs(GT_LCL_VAR));
+
+        m_dstVarDsc->lvIsMultiRegRet = true;
+
+        JITDUMP("Not morphing a multireg node return\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
         m_result                 = m_asg;
     }
-#endif // FEATURE_HW_INTRINSICS
-
-#if FEATURE_MULTIREG_RET
-    // If this is a multi-reg return, we will not do any morphing of this node.
-    if (m_src->IsMultiRegCall())
+    else if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
     {
-        assert(m_dst->OperGet() == GT_LCL_VAR);
-        JITDUMP("Not morphing a multireg call return\n");
-        m_transformationDecision = BlockTransformation::SkipCallSrc;
+        JITDUMP("Not morphing a single reg call return\n");
+        m_transformationDecision = BlockTransformation::SkipSingleRegCallSrc;
         m_result                 = m_asg;
-    }
-    else if (m_dst->IsMultiRegLclVar() && !m_src->IsMultiRegNode())
-    {
-        m_dst->AsLclVar()->ClearMultiReg();
-    }
-#endif // FEATURE_MULTIREG_RET
-
-    if (m_transformationDecision == BlockTransformation::Undefined)
-    {
-        if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
-        {
-            JITDUMP("Not morphing a single reg call return\n");
-            m_transformationDecision = BlockTransformation::SkipCallSrc;
-            m_result                 = m_asg;
-        }
     }
 }
 
@@ -955,7 +977,7 @@ void MorphCopyBlockHelper::MorphStructCases()
     // promotion.
     if ((m_srcVarDsc == nullptr) && !m_src->OperIsIndir())
     {
-        JITDUMP(" src is a not an L-value");
+        JITDUMP(" src is not an L-value");
         requiresCopyBlock = true;
     }
 
@@ -1096,18 +1118,6 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (requiresCopyBlock)
     {
-        const var_types asgType   = m_dst->TypeGet();
-        bool            isBlkReqd = (asgType == TYP_STRUCT);
-        m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockLayout, isBlkReqd);
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_asg->gtOp1 = m_dst;
-
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockLayout, isBlkReqd);
-        m_asg->gtOp2 = m_src;
-
-        m_asg->SetAllEffectsFlags(m_dst, m_src);
-        m_asg->gtFlags |= GTF_ASG;
-
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::StructBlock;
     }
@@ -1130,12 +1140,6 @@ void MorphCopyBlockHelper::MorphStructCases()
         {
             // Mark it as DoNotEnregister.
             m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-        else if (m_dst->IsMultiRegLclVar())
-        {
-            // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
-            // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
-            m_dstVarDsc->lvIsMultiRegRet = true;
         }
     }
 

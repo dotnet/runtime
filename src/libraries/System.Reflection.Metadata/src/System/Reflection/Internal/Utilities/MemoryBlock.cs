@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -126,11 +127,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(uint));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (uint)(ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24));
-            }
+            uint result = Unsafe.ReadUnaligned<uint>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         /// <summary>
@@ -187,11 +185,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(ushort));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (ushort)(ptr[0] | (ptr[1] << 8));
-            }
+            ushort result = Unsafe.ReadUnaligned<ushort>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         // When reference has tag bits.
@@ -250,7 +245,7 @@ namespace System.Reflection.Internal
             byte* ptr = Pointer + offset;
             if (BitConverter.IsLittleEndian)
             {
-                return *(Guid*)ptr;
+                return Unsafe.ReadUnaligned<Guid>(ptr);
             }
             else
             {
@@ -512,7 +507,7 @@ namespace System.Reflection.Internal
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-            return BlobUtilities.ReadBytes(Pointer + offset, byteCount);
+            return new ReadOnlySpan<byte>(Pointer + offset, byteCount).ToArray();
         }
 
         internal int IndexOf(byte b, int start)

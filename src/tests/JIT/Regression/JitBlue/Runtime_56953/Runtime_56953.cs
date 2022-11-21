@@ -60,7 +60,7 @@ public class TestClass13
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

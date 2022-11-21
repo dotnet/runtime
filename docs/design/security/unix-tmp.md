@@ -7,12 +7,12 @@ are used to Windows may inadvertently create security risk if they use the same 
 Most notably, the Windows model for temporary files is that the operating system provides each user with a *unique*, *user-owned* temporary directory.
 Moreover, all Windows users, including the service and system users, have designated user folders, including temporary folders.
 
-The Unix model is very different. The temp directory, assuming there is one, is often a global folder (except on MacOS).
+The Unix model is very different. The temp directory, assuming there is one, is often a global folder (except on macOS).
 If possible, prefer a library function like `GetTempPath()` to find the folder. Otherwise,
 the `TMPDIR` environment variable is used to store the location of this folder. This variable is
 widely used and supported, but it is not mandatory for all Unix implementations. It should be the preferred
 mechanism for finding the Unix temporary folder if a library method is not available. It will commonly
-point to either the `/tmp` or `/var/tmp` folder. These folders are not used for MacOS, so it is not recommended
+point to either the `/tmp` or `/var/tmp` folder. These folders are not used for macOS, so it is not recommended
 to use them directly.
 
 Because the temporary directory is often global, any use of the temp directory should be carefully

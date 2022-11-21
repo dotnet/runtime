@@ -315,6 +315,33 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
+        protected StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(info, context,
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(MarshallerHelpers.GetNativeSpanIdentifier(info, context)),
+                        IdentifierName("Length")),
+                        StubCodeContext.Stage.Cleanup);
+
+            if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
+            {
+                return EmptyStatement();
+            }
+
+            return Block(
+                LocalDeclarationStatement(VariableDeclaration(
+                GenericName(
+                    Identifier(TypeNames.System_Span),
+                    TypeArgumentList(SingletonSeparatedList(_unmanagedElementType))),
+                SingletonSeparatedList(
+                    VariableDeclarator(
+                        Identifier(nativeSpanIdentifier))
+                    .WithInitializer(EqualsValueClause(
+                        GetUnmanagedValuesDestination(info, context)))))),
+                contentsCleanupStatements);
+        }
+
         protected StatementSyntax GenerateContentsMarshallingStatement(
             TypePositionInfo info,
             StubCodeContext context,
@@ -350,7 +377,7 @@ namespace Microsoft.Interop
                     List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
                         .Concat(elementStatements)));
 
-                if (_elementMarshaller.AsNativeType(_elementInfo) is PointerTypeSyntax elementNativeType)
+                if (_elementMarshaller.AsNativeType(_elementInfo).Syntax is PointerTypeSyntax elementNativeType)
                 {
                     PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);

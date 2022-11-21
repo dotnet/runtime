@@ -36,7 +36,7 @@ to do most editing.
 Notice that the CoreCLR and corehost solutions are under the `artifacts` directory.  This is because they are created as part of the build.
 Thus you can only launch these solutions after you have built at least once with the `-msbuild` flag or run the `./build.cmd -vs CoreCLR.sln` or `./build.cmd -vs corehost.sln` command line with the specified architecture and configuration.
 
-* See [Debugging CoreCLR](debugging/coreclr/debugging.md)
+* See [Debugging CoreCLR](debugging/coreclr/debugging-runtime.md)
 
 # See Also
 

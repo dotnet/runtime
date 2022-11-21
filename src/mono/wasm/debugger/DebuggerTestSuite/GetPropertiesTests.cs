@@ -26,6 +26,7 @@ namespace DebuggerTests
             var type_name = "DerivedClass2";
             var all_props = new Dictionary<string, (JObject, bool)>()
             {
+                // ------------------instance members--------------------------
                 // own:
                 // public:
                 {"BaseBase_PropertyForHidingWithField",             (TNumber(210), true)},
@@ -80,6 +81,45 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  (TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty"), false)},
                 {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         (TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO")), false)},
                 {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     (TString("BaseBase#BaseBase_AutoPropertyForVHO"), false)},
+
+                // ------------------static members--------------------------
+                // own:
+                // public:
+                {"S_BaseBase_PropertyForHidingWithField",             (TNumber(210), true)},
+
+                // protected / internal:
+                {"S_BaseBase_AutoPropertyForHidingWithProperty",      (TGetter("S_BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty")), true)},
+
+                // private:
+                {"S_BaseBase_FieldForHidingWithAutoProperty",         (TString(null), true)},
+
+                // inherited from Base:
+                // public:
+                {"S_BaseBase_AutoPropertyForHidingWithField",                 (TNumber(115), false)},
+                {"S_BaseBase_PropertyForHidingWithProperty",                  (TGetter("S_BaseBase_PropertyForHidingWithProperty", TString("Base#BaseBase_PropertyForHidingWithProperty")), false)},
+                {"S_BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    (TString(null), false)},
+
+                // protected / internal:
+                {"S_BaseBase_PropertyForHidingWithField (BaseClass2)",        (TNumber(110), false)},
+                {"S_BaseBase_FieldForHidingWithProperty",                     (TGetter("S_BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty")), false)},
+                {"S_BaseBase_AutoPropertyForHidingWithAutoProperty",          (TString(null), false)},
+
+                // private:
+                {"S_BaseBase_FieldForHidingWithField",                         (TNumber(105), false)},
+                {"S_BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",  (TGetter("S_BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty")), false)},
+                {"S_BaseBase_PropertyForHidingWithAutoProperty",               (TString(null), false)},
+
+                // inherited from BaseBase:
+                // public:
+                {"S_BaseBase_FieldForHidingWithField (BaseBaseClass2)",                (TNumber(5), false)},
+                {"S_BaseBase_PropertyForHidingWithField (BaseBaseClass2)",             (TGetter("S_BaseBase_PropertyForHidingWithField (BaseBaseClass2)", TNumber(10)), false)},
+                {"S_BaseBase_AutoPropertyForHidingWithField (BaseBaseClass2)",         (TNumber(0), false)},
+                {"S_BaseBase_FieldForHidingWithProperty (BaseBaseClass2)",             (TString("BaseBase#BaseBase_FieldForHidingWithProperty"), false)},
+                {"S_BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",          (TGetter("S_BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithProperty")), false)},
+                {"S_BaseBase_AutoPropertyForHidingWithProperty (BaseBaseClass2)",      (TString(null), false)},
+                {"S_BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",         (TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty"), false)},
+                {"S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      (TGetter("S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty")), false)},
+                {"S_BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  (TString(null), false)},
             };
 
             // default, all properties
@@ -109,6 +149,7 @@ namespace DebuggerTests
                 "BaseBase_PropertyForVHO",
                 "BaseBase_PropertyForVOH",
                 // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
+                "S_BaseBase_AutoPropertyForHidingWithProperty",
 
                 "BaseBase_PropertyForHidingWithProperty",
                 "FirstName",
@@ -116,12 +157,18 @@ namespace DebuggerTests
                 "BaseBase_FieldForHidingWithProperty",
                 "BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",
                 "BaseBase_PropertyForVOH (BaseClass2)",
+                "S_BaseBase_PropertyForHidingWithProperty",
+                "S_BaseBase_FieldForHidingWithProperty",
+                "S_BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",
 
                 "BaseBase_PropertyForHidingWithField (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",
                 "Base_VirtualPropertyNotOverriddenOrHidden",
-                "BaseBase_PropertyForVHO (BaseBaseClass2)"
+                "BaseBase_PropertyForVHO (BaseBaseClass2)",
+                "S_BaseBase_PropertyForHidingWithField (BaseBaseClass2)",
+                "S_BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",
+                "S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)"
             };
 
             var only_own_accessors = new[]
@@ -132,6 +179,7 @@ namespace DebuggerTests
                 "BaseBase_PropertyForVHO",
                 "BaseBase_PropertyForVOH",
                 // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
+                "S_BaseBase_AutoPropertyForHidingWithProperty",
             };
 
             // all own, only accessors
@@ -465,6 +513,7 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForVHO",                     TString("Derived#BaseBase_AutoPropertyForVHO")},
                 {"BaseBase_AutoPropertyForVOH",                     TString("Derived#BaseBase_AutoPropertyForVOH")},
                 // {"BaseBase_AutoPropertyForVOO",                     TString("Derived#BaseBase_AutoPropertyForVOO")}, //FixMe: Issue #69788
+                {"S_BaseBase_PropertyForHidingWithField",           TNumber(210)},
 
                 // inherited from Base:
                 {"BaseBase_AutoPropertyForHidingWithField",                 TNumber(115)},
@@ -475,6 +524,9 @@ namespace DebuggerTests
                 {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2124, 5, 7, 1, 9, 2)))},
                 {"BaseBase_PropertyForVOH (BaseClass2)",                    TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH"))},
                 {"BaseBase_AutoPropertyForVOH (BaseClass2)",                TString("Base#BaseBase_AutoPropertyForVOH")},
+                {"S_BaseBase_AutoPropertyForHidingWithField",               TNumber(115)},
+                {"S_BaseBase_PropertyForHidingWithProperty",                TGetter("S_BaseBase_PropertyForHidingWithProperty", TString("Base#BaseBase_PropertyForHidingWithProperty"))},
+                {"S_BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",  TString(null)},
 
                 // inherited from BaseBase:
                 {"BaseBase_FieldForHidingWithField (BaseBaseClass2)",                TNumber(5)},
@@ -488,6 +540,15 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty")},
                 {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO"))},
                 {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     TString("BaseBase#BaseBase_AutoPropertyForVHO")},
+                {"S_BaseBase_FieldForHidingWithField (BaseBaseClass2)",              TNumber(5)},
+                {"S_BaseBase_PropertyForHidingWithField (BaseBaseClass2)",           TGetter("S_BaseBase_PropertyForHidingWithField (BaseBaseClass2)", TNumber(10))},
+                {"S_BaseBase_AutoPropertyForHidingWithField (BaseBaseClass2)",       TNumber(0)},
+                {"S_BaseBase_FieldForHidingWithProperty (BaseBaseClass2)",           TString("BaseBase#BaseBase_FieldForHidingWithProperty")},
+                {"S_BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",        TGetter("S_BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithProperty"))},
+                {"S_BaseBase_AutoPropertyForHidingWithProperty (BaseBaseClass2)",    TString(null)},
+                {"S_BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",       TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty")},
+                {"S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",    TGetter("S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty"))},
+                {"S_BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",TString(null)},
 
                 // ---- internal / protected ----:
                 // own:
@@ -495,19 +556,27 @@ namespace DebuggerTests
                 {"Base_PropertyForOverridingWithAutoProperty",          TDateTime(new DateTime(2022, 7, 6, 5, 4, 3))},
                 {"Base_AutoPropertyForOverridingWithAutoProperty",      TDateTime(new DateTime(2023, 7, 6, 5, 4, 3))},
                 {"Base_AutoPropertyForOverridingWithProperty",          TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2021, 7, 6, 5, 4, 3)))},
+                {"S_BaseBase_AutoPropertyForHidingWithProperty",        TGetter("S_BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty"))},
                 // inherited from Base:
                 {"BaseBase_PropertyForHidingWithField (BaseClass2)",    TNumber(110)},
                 {"BaseBase_FieldForHidingWithProperty",                 TGetter("BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty"))},
-                {"BaseBase_AutoPropertyForHidingWithAutoProperty",      TString("Base#BaseBase_AutoPropertyForHidingWithAutoProperty")}
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty",      TString("Base#BaseBase_AutoPropertyForHidingWithAutoProperty")},
+                {"S_BaseBase_PropertyForHidingWithField (BaseClass2)",  TNumber(110)},
+                {"S_BaseBase_FieldForHidingWithProperty",               TGetter("S_BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty"))},
+                {"S_BaseBase_AutoPropertyForHidingWithAutoProperty",    TString(null)},
             };
 
             var private_props = new Dictionary<string, JObject>(){
                  // own
-                {"BaseBase_FieldForHidingWithAutoProperty",                 TString("Derived#BaseBase_FieldForHidingWithAutoProperty")},
+                {"BaseBase_FieldForHidingWithAutoProperty",                  TString("Derived#BaseBase_FieldForHidingWithAutoProperty")},
+                {"S_BaseBase_FieldForHidingWithAutoProperty",                TString(null)},
                 // from Base:
-                {"BaseBase_FieldForHidingWithField",                        TNumber(105)},
-                {"BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TGetter("BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty"))},
-                {"BaseBase_PropertyForHidingWithAutoProperty",              TString("Base#BaseBase_PropertyForHidingWithAutoProperty")},
+                {"BaseBase_FieldForHidingWithField",                         TNumber(105)},
+                {"BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",  TGetter("BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty"))},
+                {"BaseBase_PropertyForHidingWithAutoProperty",               TString("Base#BaseBase_PropertyForHidingWithAutoProperty")},
+                {"S_BaseBase_FieldForHidingWithField",                       TNumber(105)},
+                {"S_BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",TGetter("S_BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty"))},
+                {"S_BaseBase_PropertyForHidingWithAutoProperty",             TString(null)},
             };
             data.Add(public_props, private_props, "DerivedClass2");
 

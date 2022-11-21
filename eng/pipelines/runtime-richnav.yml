@@ -22,30 +22,33 @@ pr: none
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-      - windows_x64
-    jobParameters:
-      enableRichCodeNavigation: true
-      richCodeNavigationEnvironment: "production"
-      richCodeNavigationLanguage: "csharp"
-      timeoutInMinutes: 240
-      buildArgs: -s libs.sfx+libs.oob -allConfigurations
+    jobs:
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-      - windows_x64
-    jobParameters:
-      enableRichCodeNavigation: true
-      nameSuffix: Mono
-      richCodeNavigationEnvironment: "production"
-      richCodeNavigationLanguage: "csharp,cpp"
-      buildArgs: -s mono -c debug
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: debug
+        platforms:
+          - windows_x64
+        jobParameters:
+          enableRichCodeNavigation: true
+          richCodeNavigationEnvironment: "production"
+          richCodeNavigationLanguage: "csharp"
+          timeoutInMinutes: 240
+          buildArgs: -s libs.sfx+libs.oob -allConfigurations
+
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: debug
+        platforms:
+          - windows_x64
+        jobParameters:
+          enableRichCodeNavigation: true
+          nameSuffix: Mono
+          richCodeNavigationEnvironment: "production"
+          richCodeNavigationLanguage: "csharp,cpp"
+          buildArgs: -s mono -c debug

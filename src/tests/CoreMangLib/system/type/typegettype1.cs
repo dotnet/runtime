@@ -29,7 +29,7 @@ class MyTypeClass
 
 public class TypeGetType1
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         TypeGetType1 getType1 = new TypeGetType1();
         TestLibrary.TestFramework.BeginScenario("Testing System.Type.GetType()...");

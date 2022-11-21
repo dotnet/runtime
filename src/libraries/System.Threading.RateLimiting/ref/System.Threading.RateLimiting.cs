@@ -29,8 +29,8 @@ namespace System.Threading.RateLimiting
         public override System.TimeSpan? IdleDuration { get { throw null; } }
         public override bool IsAutoReplenishing { get { throw null; } }
         public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int permitCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
@@ -150,8 +150,8 @@ namespace System.Threading.RateLimiting
         public override System.TimeSpan? IdleDuration { get { throw null; } }
         public override bool IsAutoReplenishing { get { throw null; } }
         public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int requestCount) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> AcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.RateLimiting.RateLimitLease AttemptAcquireCore(int permitCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override System.Threading.RateLimiting.RateLimiterStatistics? GetStatistics() { throw null; }
