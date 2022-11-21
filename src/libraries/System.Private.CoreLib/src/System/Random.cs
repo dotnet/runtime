@@ -283,9 +283,13 @@ namespace System
             for (int i = 0; i < n - 1; i++)
             {
                 int j = Next(i, n);
-                T temp = values[i];
-                values[i] = values[j];
-                values[j] = temp;
+
+                if (j != i)
+                {
+                    T temp = values[i];
+                    values[i] = values[j];
+                    values[j] = temp;
+                }
             }
         }
 

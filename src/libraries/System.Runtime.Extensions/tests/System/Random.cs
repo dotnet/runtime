@@ -720,7 +720,7 @@ namespace System.Tests
             if (emptyShuffle)
             {
                 // Empty shuffle should have no observable effect.
-                random.Shuffle(Array.Empty<int>());
+                random.Shuffle(Span<int>.Empty);
             }
 
             random.Shuffle(items);

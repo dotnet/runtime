@@ -852,31 +852,29 @@ namespace System.Security.Cryptography.Tests
 
         public static IEnumerable<object[]> GetHexStringLengths()
         {
-            // These lengths exercise various aspects of the the hex generator. There are basically three steps
-            // to the hex generator.
-            // 1. Fill whole blocks (WB) 128 characters at a time.
-            // 2. Fill the remaining partial block (PB) that is a multiple of two.
-            // 3. Fill the single character tail (T) if the requested string had an odd length.
+            // These lengths exercise various aspects of the the hex generator.
+            // Fill an individual character (I) if the length is odd.
+            // Fill the remaining in block (B) sizes of 64 bytes, or 128 hex characters.
 
             return new object[][]
             {
-                new object[] { 1 }, // WB: none, PB: none, T: yes
-                new object[] { 12 }, // WB: none, PB: yes, T: no
-                new object[] { 13 }, // WB: none, PB: yes, T: yes
-                new object[] { 127 }, // WB: none, PB: yes, T: yes. Note: boundary 1 less than WB.
-                new object[] { 128 }, // WB: 1, PB: none, T: no. Note: exactly one WB.
-                new object[] { 129 }, // WB: 1, PB: none, T: yes. Note: boundary 1 more than WB.
-                new object[] { 140 }, // WB: 1, PB: yes, T: no
-                new object[] { 141 }, // WB: 1, PB: yes, T: yes
-                new object[] { 255 }, // WB: 1, PB: yes, T: yes. Note: boundary 1 less than WB. Exercises largest possible PB (126) as 128 + 126 + 1.
-                new object[] { 256 }, // WB: 2, PB: no, T: no. Note: exactly 2 WB.
-                new object[] { 257 }, // WB: 2, PB: no, T: yes. Note: boundary 1 more than WB.
-                new object[] { 280 }, // WB: 2, PB: yes, T: no
-                new object[] { 281 }, // WB: 2, PB: yes, T: yes
-                new object[] { 1024 }, // WB: 8, PB: no, T: no
-                new object[] { 1025 }, // WB: 8, PB: no, T: yes
-                new object[] { 1026 }, // WB: 8, PB: yes, T: no. Note: exercises smallest possible PB (2)
-                new object[] { 1027 }, // WB: 8, PB: yes, T: yes
+                new object[] { 1 }, // I: yes; B: 0
+                new object[] { 12 }, // I: no; B: 1
+                new object[] { 13 }, // I: yes; B: 1
+                new object[] { 127 }, // I: yes; B: 1. Note: smallest possible "partial" block.
+                new object[] { 128 }, // I: no; B: 1. Note: exactly 1 block.
+                new object[] { 129 }, // I: yes; B: 1. Note: exactly 1 block.
+                new object[] { 140 }, // I: no; B: 2. Note: 1 complete block another partial block of 12.
+                new object[] { 141 }, // I: yes; B: 2. Note: 1 complete block another partial block of 12, plus an I.
+                new object[] { 255 }, // I: yes; B: 2. Note: 1 complete block another partial block of 126, plus an I.
+                new object[] { 256 }, // I: no; B: 2. Note: exactly two blocks.
+                new object[] { 257 }, // I: yes; B: 2. Note: exactly two blocks plus an I.
+                new object[] { 280 }, // I: no; B: 3. Note: two whole blocks and a partial block of 24.
+                new object[] { 281 }, // I: yes; B: 3. Note: two whole blocks and a partial block of 24, plus an I.
+                new object[] { 1024 }, // I: no; B 8. Note: exactly 8 blocks.
+                new object[] { 1025 }, // I: yes; B 8. Note: exactly 8 blocks, plus an I.
+                new object[] { 1026 }, // I: no; B: 9. Note: 8 blocks plus another partial block of 2.
+                new object[] { 1027 }, // I: yes; B: 9. Note: 8 blocks plus another partial block of 2, and an I.
             };
         }
 
@@ -929,7 +927,7 @@ namespace System.Security.Cryptography.Tests
                 double expected = distribution[value];
                 double percentage = occurrences / (double)values.Length;
                 double actual = Math.Abs(expected - percentage);
-                Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
+                Assert.True(actual < tolerance, $"'{value}' occurred number of times within threshold. Actual: {actual}");
             }
         }
 

@@ -301,9 +301,13 @@ namespace System.Security.Cryptography
             for (int i = 0; i < n - 1; i++)
             {
                 int j = GetInt32(i, n);
-                T temp = values[i];
-                values[i] = values[j];
-                values[j] = temp;
+
+                if (i != j)
+                {
+                    T temp = values[i];
+                    values[i] = values[j];
+                    values[j] = temp;
+                }
             }
         }
 
@@ -311,41 +315,40 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(!destination.IsEmpty);
 
-            Span<char> remaining = destination;
             const int RandomBufferSize = 64; // If this changes, the tests need to be updated since they try to exercise boundary conditions.
-            const int ChunkSize = RandomBufferSize * 2;
             Span<byte> randomBuffer = stackalloc byte[RandomBufferSize];
             HexConverter.Casing casing = lowercase ? HexConverter.Casing.Lower : HexConverter.Casing.Upper;
-            int blocks = destination.Length / ChunkSize;
 
-            // Fill in the whole blocks.
-            for (int i = 0; i < blocks; i++)
+            // Don't overfill the buffer if the destination is smaller than the buffer size. We need to round up when
+            // when dividing by two to account for an odd-length destination.
+            int needed = (destination.Length + 1) / 2;
+            Span<byte> remainingRandom = randomBuffer.Slice(0, Math.Min(RandomBufferSize, needed));
+            RandomNumberGenerator.Fill(remainingRandom);
+
+            // HexConverter can only write in multiples of two. If the length is odd, get back to an even length.
+            if (destination.Length % 2 != 0)
             {
-                RandomNumberGeneratorImplementation.FillSpan(randomBuffer);
-                HexConverter.EncodeToUtf16(randomBuffer, remaining, casing);
-                remaining = remaining.Slice(ChunkSize);
+                destination[0] = lowercase ?
+                    HexConverter.ToCharLower(remainingRandom[0]) :
+                    HexConverter.ToCharUpper(remainingRandom[0]);
+
+                destination = destination.Slice(1);
+                remainingRandom = remainingRandom.Slice(1);
             }
 
-            // There might be an odd amount remaining, so round up when dividing by two.
-            RandomNumberGeneratorImplementation.FillSpan(randomBuffer.Slice(0, (remaining.Length + 1) / 2));
-
-            // The HexConverter can only write in multiples of two, so if we are odd then we the last character needs to
-            // be handled separately.
-            int evenRemaining = remaining.Length & ~1;
-            Span<char> chunk = remaining.Slice(0, evenRemaining);
-            Span<char> tail = remaining.Slice(evenRemaining);
-            int randomRequiredForChunk = chunk.Length / 2;
-
-            HexConverter.EncodeToUtf16(randomBuffer.Slice(0, randomRequiredForChunk), chunk, casing);
-            Debug.Assert(tail.Length is 0 or 1);
-
-            if (!tail.IsEmpty)
+            while (!destination.IsEmpty)
             {
-                // The numeric value of the HexConverter.Casing enumeration lets us use it as a mask to convert it from
-                // Upper to Lower. The Upper value is 0, so nothing nothing gets ORed. The Lower value is 0x2020. Since
-                // we are only dealing with one character, mask off the lower bits needed and OR it to change our upper
-                // to lower.
-                tail[0] = (char)(HexConverter.ToCharUpper(randomBuffer[randomRequiredForChunk]) | (0xFFU & (uint)casing));
+                needed = destination.Length / 2;
+
+                if (remainingRandom.IsEmpty)
+                {
+                    remainingRandom = randomBuffer.Slice(0, Math.Min(RandomBufferSize, needed));
+                    RandomNumberGenerator.Fill(remainingRandom);
+                }
+
+                HexConverter.EncodeToUtf16(remainingRandom, destination, casing);
+                destination = destination.Slice(remainingRandom.Length * 2);
+                remainingRandom = default;
             }
         }
 
