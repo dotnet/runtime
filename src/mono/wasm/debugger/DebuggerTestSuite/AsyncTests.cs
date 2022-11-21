@@ -81,5 +81,30 @@ namespace DebuggerTests
                      ncs_dt0 = TDateTime(new DateTime(3412, 4, 6, 8, 0, 2))
                  }, "locals");
               });
+
+        [Fact]
+        public async Task InspectVariablesWithSameNameInDifferentScopes()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-async-test.cs", 249, 16,
+                "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunFirstScope",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("testFirstScope", TObject("System.Collections.Generic.List<string>", description: "Count = 2"))
+                    );
+                }
+            );
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-async-test.cs", 273, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunSecondScope",
+                locals_fn: async (locals) =>
+                {
+                    await CheckObject(locals, "testSecondScope", "System.Collections.Generic.List<string>", description: "Count = 2");
+                }
+            );
+        }
     }
 }

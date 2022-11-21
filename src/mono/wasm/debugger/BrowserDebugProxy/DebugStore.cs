@@ -320,6 +320,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static bool operator !=(SourceId a, SourceId b) => !a.Equals(b);
     }
 
+    internal sealed record Scope (int Id, int StartOffset, int EndOffset);
+
     internal sealed class MethodInfo
     {
         private MethodDefinition methodDef;
@@ -350,6 +352,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
+        internal List<Scope> AsyncScopes { get; }
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -447,7 +450,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             if (pdbMetadataReader != null)
+            {
                 localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+                var scopeDebugInformation =
+                        (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandle)
+                        let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
+                        where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.StateMachineHoistedLocalScopes
+                        select pdbMetadataReader.GetBlobBytes(cdi.Value)).SingleOrDefault();
+
+                if (scopeDebugInformation != null)
+                {
+                    AsyncScopes = new List<Scope>();
+                    for (int i = 0; i < scopeDebugInformation.Length; i += 8) {
+                        var offset = BitConverter.ToInt32 (scopeDebugInformation, i);
+                        var len = BitConverter.ToInt32 (scopeDebugInformation, i + 4);
+                        AsyncScopes.Add(new Scope((i / 8) + 1, offset, offset + len));
+                    }
+                }
+            }
         }
 
         public ParameterInfo[] GetParametersInfo()

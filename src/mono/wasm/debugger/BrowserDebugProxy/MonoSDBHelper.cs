@@ -804,7 +804,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
 
         internal readonly ILogger logger;
-        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>([^)]*)([_][_])([0-9]*)", RegexOptions.Singleline);
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
         private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
@@ -1961,7 +1961,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         fieldName.StartsWith ("<>8__", StringComparison.Ordinal);
         }
 
-        public async Task<JArray> GetHoistedLocalVariables(int objectId, IEnumerable<JToken> asyncLocals, CancellationToken token)
+        public async Task<JArray> GetHoistedLocalVariables(MethodInfoWithDebugInformation method, int objectId, IEnumerable<JToken> asyncLocals, int offset, CancellationToken token)
         {
             JArray asyncLocalsFull = new JArray();
             List<int> objectsAlreadyRead = new();
@@ -1982,7 +1982,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             var asyncProxyMembersFromObject = await MemberObjectsExplorer.GetObjectMemberValues(
                                 this, dotnetObjectId.Value, GetObjectCommandOptions.WithProperties, token);
-                            var hoistedLocalVariable = await GetHoistedLocalVariables(dotnetObjectId.Value, asyncProxyMembersFromObject.Flatten(), token);
+                            var hoistedLocalVariable = await GetHoistedLocalVariables(method, dotnetObjectId.Value, asyncProxyMembersFromObject.Flatten(), offset, token);
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
                     }
@@ -1995,7 +1995,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     var match = regexForAsyncLocals.Match(fieldName);
                     if (match.Success)
+                    {
+                        if (!method.Info.AsyncScopes.Where(s => s.Id == Convert.ToInt32(match.Groups[4].Value) && offset >= s.StartOffset && offset <= s.EndOffset).Any())
+                            continue;
                         asyncLocal["name"] = match.Groups[1].Value;
+                    }
                     asyncLocalsFull.Add(asyncLocal);
                 }
                 else
@@ -2006,7 +2010,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return asyncLocalsFull;
         }
 
-        public async Task<JArray> StackFrameGetValues(MethodInfoWithDebugInformation method, int thread_id, int frame_id, VarInfo[] varIds, CancellationToken token)
+        public async Task<JArray> StackFrameGetValues(MethodInfoWithDebugInformation method, int thread_id, int frame_id, VarInfo[] varIds, int offset, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(thread_id);
@@ -2023,7 +2027,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
                 GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token, includeStatic: true);
-                var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
+                var asyncLocals = await GetHoistedLocalVariables(method, objectId, asyncProxyMembers.Flatten(), offset, token);
                 return asyncLocals;
             }
 

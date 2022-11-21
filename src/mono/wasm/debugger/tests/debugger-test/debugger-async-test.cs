@@ -230,4 +230,51 @@ namespace DebuggerTests.AsyncTests
         }
     }
 
+    public class VariablesWithSameNameDifferentScopes
+    {
+        public static async System.Threading.Tasks.Task Run()
+        {
+            await RunFirstScope();
+            await RunSecondScope();
+        }
+
+        public static async System.Threading.Tasks.Task<System.Collections.Generic.List<string>> RunFirstScope()
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            int number = 10;
+            if (number < 999)
+            {
+                System.Collections.Generic.List<string> testFirstScope = new System.Collections.Generic.List<string>();
+                testFirstScope.Add("hello");
+                testFirstScope.Add("hi");
+                System.Diagnostics.Debugger.Break();
+                return testFirstScope;
+            }
+            else
+            {
+                System.Collections.Generic.List<string> testFirstScope = new System.Collections.Generic.List<string>();
+                return testFirstScope;
+            }
+        }
+
+        public static async System.Threading.Tasks.Task<System.Collections.Generic.List<string>> RunSecondScope()
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            int number = 10;
+            if (number < 5)
+            {
+                System.Collections.Generic.List<string> testSecondScope = new System.Collections.Generic.List<string>();
+                return testSecondScope;
+            }
+            else
+            {
+                System.Collections.Generic.List<string> testSecondScope = new System.Collections.Generic.List<string>();
+                testSecondScope.Add("hello");
+                testSecondScope.Add("hi");
+                System.Diagnostics.Debugger.Break();
+                return testSecondScope;
+            }
+        }
+    }
+
 }
