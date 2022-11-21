@@ -227,7 +227,7 @@ bool initialize_tables(mdcxt_t* cxt)
             if (!initialize_table_details(row_counts, cxt->heap_sizes, (mdtable_id_t)i, (bool)(sorted_tables & 1), table))
                 return false;
 
-            // Consume the date based on the table details
+            // Consume the data based on the table details
             if (!consume_table_rows(table, &curr, &curr_len))
                 return false;
 

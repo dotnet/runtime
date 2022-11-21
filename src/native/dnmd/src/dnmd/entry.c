@@ -199,7 +199,7 @@ static bool dump_table_rows(mdtable_t* table)
     for (uint32_t i = 0; i < table->row_count; ++i)
     {
         printf("|");
-        for (uint16_t j = 0; j < table->column_count; ++j)
+        for (uint8_t j = 0; j < table->column_count; ++j)
         {
             if (table->column_details[j] & mdtc_hstring)
             {

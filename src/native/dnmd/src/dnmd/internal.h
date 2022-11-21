@@ -26,8 +26,9 @@ typedef struct _mdcdata_t
     size_t size;
 } mdcdata_t;
 
-// II.24.2.6
-#define MDTABLE_MAX_COUNT 64
+// II.24.2.6 - 64 is the maximum value
+#define MDTABLE_MAX_COUNT ((size_t)mdtid_Last)
+static_assert(MDTABLE_MAX_COUNT <= 64, "Specification sets max table count to 64");
 
 #define MDTABLE_MAX_COLUMN_COUNT 9
 
@@ -88,8 +89,8 @@ typedef struct _mdtable_t
 {
     mdcdata_t data;
     uint32_t row_count;
-    uint32_t row_size_bytes;
-    uint32_t column_count;
+    uint8_t row_size_bytes;
+    uint8_t column_count;
     bool is_sorted;
     uint8_t table_id;
     struct _mdcxt_t* cxt; // Non-null is indication of complete initialization
@@ -168,9 +169,6 @@ bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb);
 //
 // Tables
 //
-
-// Validate the public table enumeration
-static_assert(mdtid_Last <= MDTABLE_MAX_COUNT, "Last ID cannot exceed max count");
 
 // Coded index collections - II.24.2.6
 typedef enum

@@ -161,7 +161,7 @@ typedef struct _query_cxt_t
     uint32_t next_row_stride;
 } query_cxt_t;
 
-static uint32_t col_to_index(col_index_t col_idx, mdtable_t* table)
+static uint8_t col_to_index(col_index_t col_idx, mdtable_t* table)
 {
     assert(table != NULL);
     uint32_t idx = (uint32_t)col_idx;
@@ -176,7 +176,7 @@ static uint32_t col_to_index(col_index_t col_idx, mdtable_t* table)
 #else
     (void)table;
 #endif
-    return idx;
+    return (uint8_t)idx;
 }
 
 static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, query_cxt_t* qcxt)
@@ -186,7 +186,7 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     if (table == NULL)
         return false;
 
-    uint32_t idx = col_to_index(col_idx, table);
+    uint8_t idx = col_to_index(col_idx, table);
     assert(idx < MDTABLE_MAX_COLUMN_COUNT);
     if (idx >= table->column_count)
         return false;
@@ -525,7 +525,8 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
 typedef int32_t(*md_bcompare_t)(void const* key, void const* row, void*);
 
 // Since MSVC doesn't have a C11 compatible bsearch_s, defining one below.
-// Ideally we would use the one in the standard.
+// Ideally we would use the one in the standard so the signature is designed
+// to match what should eventually exist.
 static void const* md_bsearch(
     void const* key,
     void const* base,
@@ -592,7 +593,7 @@ static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_
 {
     assert(table != NULL && fcxt != NULL);
 
-    uint32_t idx = col_to_index(col_idx, table);
+    uint8_t idx = col_to_index(col_idx, table);
     assert(idx < MDTABLE_MAX_COLUMN_COUNT);
     if (idx >= table->column_count)
         return false;

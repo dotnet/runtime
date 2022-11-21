@@ -128,7 +128,7 @@ int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor
 // The MDTABLE_COLUMN macro constructs a table/column ID enumeration.
 //
 // An example (release build):
-//  MDTABLE_COLUMN(Assembly, HashAlgId     , 0) => mdtAssembly_HashAlgId = 0
+//  MDTABLE_COLUMN(Assembly, HashAlgId, 0) => mdtAssembly_HashAlgId = 0
 //
 #if defined(DEBUG_TABLE_COLUMN_LOOKUP) && !defined(MDTABLES_BUILD)
 #define MDTABLE_COLUMN(table, col, value) mdt ## table ## _ ## col = ((mdtid_ ## table << 8) | (value))
@@ -332,7 +332,7 @@ int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_
 // The run continues to the smaller of:
 //   * the last row of the target table
 //   * the next run in the target table, found by inspecting the column value of the next row in the current table.
-// See md_find_token_of_range_element() for mapping elements back.
+// See md_find_token_of_range_element() for mapping elements in the other direction.
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count);
 int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
@@ -341,8 +341,8 @@ int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
 int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
 
 // Find a row or range of rows where the supplied column has the expected value.
-// These APIs assume the actual value, typically row ID (RID) for tokens, that is embedded
-// in the table. An exception is made for coded indices, which are cumbersome to compute.
+// These APIs assume the value to look for is the value in the table, typically record IDs (RID)
+// for tokens. An exception is made for coded indices, which are cumbersome to compute.
 // If the queried column contains a coded index value, the value will be validated and
 // transformed to its coded form for comparison.
 bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
@@ -353,7 +353,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 //  - mdtid_MethodDef
 //  - mdtid_Event
 //  - mdtid_Property
-// See md_get_column_value_as_range() for getting complete range.
+// See md_get_column_value_as_range() for getting the complete range.
 bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk);
 
 #ifdef __cplusplus
