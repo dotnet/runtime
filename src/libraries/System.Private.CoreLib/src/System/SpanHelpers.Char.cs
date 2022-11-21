@@ -733,25 +733,23 @@ namespace System
 
         public static void Reverse(ref char buf, nuint length)
         {
-            Debug.Assert(length > 1);
-
-            nint remainder = (nint)length;
-            nint offset = 0;
-
-            if (Avx2.IsSupported && remainder >= Vector256<ushort>.Count)
+            if (Avx2.IsSupported && (nuint)Vector256<short>.Count * 2 <= length)
             {
+                ref byte bufByte = ref Unsafe.As<char, byte>(ref buf);
+                nuint byteLength = length * sizeof(char);
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
                     14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1); // second 128-bit lane
-
-                nint lastOffset = remainder - Vector256<ushort>.Count;
-                do
+                nuint numElements = (nuint)Vector256<byte>.Count;
+                nuint numIters = (byteLength / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    ref byte first = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, offset));
-                    ref byte last = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, lastOffset));
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = byteLength - ((1 + i) * numElements);
 
-                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref first);
-                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref last);
+                    // Load in values from beginning and end of the array.
+                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref bufByte, firstOffset);
+                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref bufByte, lastOffset);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -772,25 +770,27 @@ namespace System
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref first);
-                    tempFirst.StoreUnsafe(ref last);
-
-                    offset += Vector256<ushort>.Count;
-                    lastOffset -= Vector256<ushort>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = (lastOffset + Vector256<ushort>.Count - offset);
+                    tempLast.StoreUnsafe(ref bufByte, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufByte, lastOffset);
+                }
+                bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
+                length -= numIters * (nuint)Vector256<short>.Count * 2;
+                // Store any remaining values one-by-one
+                buf = ref Unsafe.As<byte, char>(ref bufByte);
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<ushort>.Count)
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<short>.Count * 2 <= length)
             {
-                nint lastOffset = remainder - Vector128<ushort>.Count;
-                do
+                ref short bufShort = ref Unsafe.As<char, short>(ref buf);
+                nuint numElements = (nuint)Vector128<short>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
-                    ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
 
-                    Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref first);
-                    Vector128<ushort> tempLast = Vector128.LoadUnsafe(ref last);
+                    // Load in values from beginning and end of the array.
+                    Vector128<short> tempFirst = Vector128.LoadUnsafe(ref bufShort, firstOffset);
+                    Vector128<short> tempLast = Vector128.LoadUnsafe(ref bufShort, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +-------------------------------+
@@ -800,25 +800,19 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref first);
-                    tempFirst.StoreUnsafe(ref last);
-
-                    offset += Vector128<ushort>.Count;
-                    lastOffset -= Vector128<ushort>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = (lastOffset + Vector128<ushort>.Count - offset);
+                    tempLast.StoreUnsafe(ref bufShort, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufShort, lastOffset);
+                }
+                bufShort = ref Unsafe.Add(ref bufShort, numIters * numElements);
+                length -= numIters * (nuint)Vector128<short>.Count * 2;
+                // Store any remaining values one-by-one
+                buf = ref Unsafe.As<short, char>(ref bufShort);
             }
-
-            // Store any remaining values one-by-one
-            if (remainder > 1)
-            {
-                ReverseInner(ref Unsafe.Add(ref buf, offset), (nuint)remainder);
-            }
+            ReverseInner(ref buf, length);
         }
     }
 }

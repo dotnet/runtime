@@ -5,11 +5,11 @@ using System.Text;
 
 using Internal.TypeSystem;
 
-namespace Internal.JitInterface
+namespace ILCompiler.PEWriter
 {
-    // This is a very rough equivalent of typestring.cpp in the CLR.
-    // There's way more rules to capture. Hopefully, we'll only ever need this in the code to recognize SIMD intrisics
-    // and we won't need to replicate all the details around escaping and such.
+    // This is a very rough equivalent of typestring.cpp in the CLR with only
+    // basic formatting options. Only used to format type names for map
+    // files/symbol files.
     internal sealed class TypeString : TypeNameFormatter
     {
         public static TypeString Instance { get; } = new TypeString();
