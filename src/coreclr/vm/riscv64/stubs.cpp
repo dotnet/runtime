@@ -90,9 +90,67 @@ class BranchInstructionFormat : public InstructionFormat
 
         virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
-            _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-        }
+            LIMITED_METHOD_CONTRACT;
 
+            if (IsIndirect(variationCode))
+            {
+                _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
+
+                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+
+                if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
+                    COMPlusThrow(kNotSupportedException);
+
+                UINT32 imm12 = (UINT32)(0xFFF & dataOffset);
+                //auipc  t1, dataOffset[31:12]
+                //ld  t1, t1, dataOffset[11:0]
+                //ld  t1, t1, 0
+                //jalr  x0/1, t1,0
+
+                *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12);// auipc t1, dataOffset[31:12]
+                *(DWORD*)(pOutBufferRW + 4) = 0x00033303 | (imm12 << 20); // ld  t1, t1, dataOffset[11:0]
+                *(DWORD*)(pOutBufferRW + 8) = 0x00033303; // ld  t1, t1, 0
+                if (IsCall(variationCode))
+                {
+                    *(DWORD*)(pOutBufferRW + 12) = 0x000300e7; // jalr  ra, t1, 0
+                }
+                else
+                {
+                    *(DWORD*)(pOutBufferRW + 12) = 0x00030067 ;// jalr  x0, t1,0
+                }
+
+                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+            }
+            else
+            {
+                _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
+
+                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+
+                if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
+                    COMPlusThrow(kNotSupportedException);
+
+                UINT16 imm12 = (UINT16)(0xFFF & dataOffset);
+                //auipc  t1, dataOffset[31:12]
+                //ld  t1, t1, dataOffset[11:0]
+                //jalr  x0/1, t1,0
+
+                *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12);// auipc t1, dataOffset[31:12]
+                *(DWORD*)(pOutBufferRW + 4) = 0x00033303 | (imm12 << 20); // ld  t1, t1, dataOffset[11:0]
+                if (IsCall(variationCode))
+                {
+                    *(DWORD*)(pOutBufferRW + 8) = 0x000300e7; // jalr  ra, t1, 0
+                }
+                else
+                {
+                    *(DWORD*)(pOutBufferRW + 8) = 0x00030067 ;// jalr  x0, t1,0
+                }
+
+                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                    COMPlusThrowArithmetic();
+                *((__int64*)pDataBuffer) = fixedUpReference;
+            }
+        }
 };
 
 static BYTE gBranchIF[sizeof(BranchInstructionFormat)];
@@ -356,7 +414,49 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    if (0 == ((constant + 0x800) >> 32)) {
+        if (((constant + 0x800) >> 12) != 0)
+        {
+            Emit32((DWORD)(0x00000037 | (((constant + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
+            if ((constant & 0xFFF) != 0)
+            {
+                Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, constant
+            }
+        }
+        else
+        {
+            Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, constant
+        }
+    }
+    else
+    {
+        UINT32 upper = constant >> 32;
+        if (((upper + 0x800) >> 12) != 0)
+        {
+            Emit32((DWORD)(0x00000037 | (((upper + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
+        }
+        if ((upper & 0xFFF) != 0)
+        {
+            Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7))); // addi target, constant
+        }
+        UINT32 lower = (constant << 32) >> 32;
+        UINT32 shift = 0;
+        for (int i = 32; i >= 0; i -= 11)
+        {
+            shift += i > 11 ? 11 : i;
+            UINT32 current = lower >> (i < 11 ? 0 : i - 11);
+            if (current != 0)
+            {
+                Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
+                Emit32((DWORD)(0x00000013 | (current & 0x7FF) << 20 | (target << 7))); // addi target, current
+                shift = 0;
+            }
+        }
+        if (shift)
+        {
+            Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
+        }
+    }
 }
 
 void StubLinkerCPU::EmitCmpImm(IntReg reg, int imm)
@@ -379,49 +479,180 @@ void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
     _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
 }
 
-void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRegArgs, unsigned short cCalleeSavedRegs, unsigned short cbStackSpace)
+void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFloatRegArgs, unsigned short cCalleeSavedRegs, unsigned short cbStackSpace)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE(!m_fProlog);
+
+    unsigned short numberOfEntriesOnStack  = 2 + cIntRegArgs + cFloatRegArgs + cCalleeSavedRegs; // 2 for fp, ra
+
+    // Stack needs to be 16 byte (2 qword) aligned. Compute the required padding before saving it
+    unsigned short totalPaddedFrameSize = static_cast<unsigned short>(ALIGN_UP(cbStackSpace + numberOfEntriesOnStack *sizeof(void*), 2 * sizeof(void*)));
+    // The padding is going to be applied to the local stack
+    cbStackSpace =  totalPaddedFrameSize - numberOfEntriesOnStack * sizeof(void*);
+
+    // Record the parameters of this prolog so that we can generate a matching epilog and unwind info.
+    DescribeProlog(cIntRegArgs, cFloatRegArgs, cCalleeSavedRegs, cbStackSpace);
+
+
+    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emitting right prolog that's
+    // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
+    // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
+    // prolog and epilog generation as well as unwindinfo generation.
+    _ASSERTE((totalPaddedFrameSize <= 504) && "NYI:RISCV64 Implement StubLinker prologs with larger than 504 bytes of frame size");
+    if (totalPaddedFrameSize > 504)
+        COMPlusThrow(kNotSupportedException);
+
+    // Regarding the order of operations in the prolog and epilog;
+    // If the prolog and the epilog matches each other we can simplify emitting the unwind codes and save a few
+    // bytes of unwind codes by making prolog and epilog share the same unwind codes.
+    // In order to do that we need to make the epilog be the reverse of the prolog.
+    // But we wouldn't want to add restoring of the argument registers as that's completely unnecessary.
+    // Besides, saving argument registers cannot be expressed by the unwind code encodings.
+    // So, we'll push saving the argument registers to the very last in the prolog, skip restoring it in epilog,
+    // and also skip reporting it to the OS.
+    //
+    // Another bit that we can save is resetting the frame pointer.
+    // This is not necessary when the SP doesn't get modified beyond prolog and epilog. (i.e no alloca/localloc)
+    // And in that case we don't need to report setting up the FP either.
+
+
+    // 1. Relocate SP
+    EmitSubImm(RegSp, RegSp, totalPaddedFrameSize);
+
+    unsigned cbOffset = 2 * sizeof(void*) + cbStackSpace; // 2 is for fp, ra
+
+    // 2. Store callee-saved registers
+#if 0
+    _ASSERTE(cCalleeSavedRegs <= 13);
+    if (cCalleeSavedRegs != 0)
+    {
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(3), IntReg(4), RegSp, cbOffset);
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(9), IntReg(18), RegSp, cbOffset + 2 * sizeof(void*));
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(19), IntReg(20), RegSp, cbOffset + 4 * sizeof(void*));
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(21), IntReg(22), RegSp, cbOffset + 6 * sizeof(void*));
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(23), IntReg(24), RegSp, cbOffset + 8 * sizeof(void*));
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(25), IntReg(26), RegSp, cbOffset + 10 * sizeof(void*));
+        EmitLoadStoreRegImm(eSTORE, IntReg(27), RegSp, cbOffset + 12 * sizeof(void*));
+    }
+#endif
+
+    // 3. Store FP/RA
+    EmitLoadStoreRegPairImm(eSTORE, RegFp, RegRa, RegSp, cbStackSpace);
+
+    // 4. Set the frame pointer
+    EmitMovReg(RegFp, RegSp);
+
+    // 5. Store floating point argument registers
+    cbOffset += cCalleeSavedRegs * sizeof(void*);
+    _ASSERTE(cFloatRegArgs <= 8);
+    for (unsigned short i = 0; i < (cFloatRegArgs / 2) * 2; i += 2)
+        EmitLoadStoreRegPairImm(eSTORE, FloatReg(i + 10), FloatReg(i + 11), RegSp, cbOffset + i * sizeof(void*));
+    if ((cFloatRegArgs % 2) == 1)
+        EmitLoadStoreRegImm(eSTORE, FloatReg(cFloatRegArgs - 1 + 10), RegSp, cbOffset + (cFloatRegArgs - 1) * sizeof(void*));
+
+    // 6. Store int argument registers
+    cbOffset += cFloatRegArgs * sizeof(void*);
+    _ASSERTE(cIntRegArgs <= 8);
+    for (unsigned short i = 0 ; i < (cIntRegArgs / 2) * 2; i += 2)
+        EmitLoadStoreRegPairImm(eSTORE, IntReg(i + 10), IntReg(i + 11), RegSp, cbOffset + i * sizeof(void*));
+    if ((cIntRegArgs % 2) == 1)
+        EmitLoadStoreRegImm(eSTORE,IntReg(cIntRegArgs-1 + 10), RegSp, cbOffset + (cIntRegArgs - 1) * sizeof(void*));
 }
 
 void StubLinkerCPU::EmitEpilog()
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE(m_fProlog);
+
+    // 6. Restore int argument registers
+    //    nop: We don't need to. They are scratch registers
+
+    // 5. Restore floating point argument registers
+    //    nop: We don't need to. They are scratch registers
+
+    // 4. Restore the SP from FP
+    //    N.B. We're assuming that the stublinker stubs doesn't do alloca, hence nop
+
+    // 3. Restore FP/RA
+    EmitLoadStoreRegPairImm(eLOAD, RegFp, RegRa, RegSp, m_cbStackSpace);
+
+    // 2. restore the calleeSavedRegisters
+    unsigned cbOffset = 2*sizeof(void*) + m_cbStackSpace; // 2 is for fp,lr
+    if ((m_cCalleeSavedRegs % 2) ==1)
+        EmitLoadStoreRegImm(eLOAD, IntReg(m_cCalleeSavedRegs - 1), RegSp, cbOffset + (m_cCalleeSavedRegs - 1) * sizeof(void*));
+    for (int i = (m_cCalleeSavedRegs / 2) * 2 - 2; i >= 0; i -= 2)
+        EmitLoadStoreRegPairImm(eLOAD, IntReg(19 + i), IntReg(19 + i + 1), RegSp, cbOffset + i * sizeof(void*));
+
+    // 1. Restore SP
+    EmitAddImm(RegSp, RegSp, GetStackFrameSize());
+    EmitRet(RegRa);
+;
 }
 
 void StubLinkerCPU::EmitRet(IntReg Xn)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    Emit32((DWORD)(0x00000067 | (Xn << 15))); // jalr X0, 0(Xn)
 }
 
 void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE((-1024 <= offset) && (offset <= 1015));
+    _ASSERTE((offset & 7) == 0);
+
+    BOOL isLoad = flags & 1;
+    if (isLoad) {
+        // ld Xt1, offset(Xn));
+        Emit32((DWORD)(0x00003003 | (Xt1 << 7) | (Xn << 15) | (offset << 20)));
+        // ld Xt2, (offset+8)(Xn));
+        Emit32((DWORD)(0x00003003 | (Xt2 << 7) | (Xn << 15) | ((offset + 8) << 20)));
+    } else {
+        // sd Xt1, offset(Xn)
+        Emit32((DWORD)(0x00003023 | (Xt1 << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
+        // sd Xt1, (offset + 8)(Xn)
+        Emit32((DWORD)(0x00003023 | (Xt2 << 20) | (Xn << 15) | ((offset + 8) & 0xF) << 7 | ((((offset + 8) >> 4) & 0xFF) << 25)));
+    }
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset)
+void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE((-1024 <= offset) && (offset <= 1015));
+    _ASSERTE((offset & 7) == 0);
+
+    BOOL isLoad = flags & 1;
+    if (isLoad) {
+        // fld Ft, Xn, offset
+        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft1 << 7) | (offset << 20)));
+        // fld Ft, Xn, offset + 8
+        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft2 << 7) | ((offset + 8) << 20)));
+    } else {
+        // fsd Ft, offset(Xn)
+        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft1 << 20) | (offset & 0xF) << 7 | ((offset >> 4) & 0xFF)));
+        // fsd Ft, (offset + 8)(Xn)
+        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft2 << 20) | ((offset + 8) & 0xF) << 7 | (((offset + 8) >> 4) & 0xFF)));
+    }
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    BOOL isLoad    = flags & 1;
+    if (isLoad) {
+        // ld regNum, offset(Xn);
+        Emit32((DWORD)(0x00003003 | (Xt << 7) | (Xn << 15) | (offset << 20)));
+    } else {
+        // sd regNum, offset(Xn)
+        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
+    }
 }
 
-
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset, int log2Size)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    BOOL isLoad    = flags & 1;
+    if (isLoad) {
+        // fld Ft, Xn, offset
+        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft << 7) | (offset << 20)));
+    } else {
+        // fsd Ft, offset(Xn)
+        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft << 20) | (offset & 0xF) << 7 | ((offset >> 4) & 0xFF)));
+    }
 }
 
 // Load Register (Register Offset)
@@ -432,17 +663,19 @@ void StubLinkerCPU::EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    Emit32(0x00000013 | (Xm << 15) | (Xd << 7));
 }
 
 void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE((0 <= value) && (value <= 0x7FF));
+    Emit32((DWORD)(0x00000013 | (((~value + 0x1) & 0xFFF) << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, (~value + 0x1) & 0xFFF
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE((0 <= value) && (value <= 0x7FF));
+    Emit32((DWORD)(0x00000013 | (value << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, value
 }
 
 void StubLinkerCPU::EmitCallRegister(IntReg reg)
@@ -469,7 +702,13 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    BranchInstructionFormat::VariationCodes variationCode = BranchInstructionFormat::VariationCodes::BIF_VAR_JUMP;
+    if (!fTailCall)
+        variationCode = static_cast<BranchInstructionFormat::VariationCodes>(variationCode | BranchInstructionFormat::VariationCodes::BIF_VAR_CALL);
+    if (fIndirect)
+        variationCode = static_cast<BranchInstructionFormat::VariationCodes>(variationCode | BranchInstructionFormat::VariationCodes::BIF_VAR_INDIRECT);
+
+    EmitLabelRef(target, reinterpret_cast<BranchInstructionFormat&>(gBranchIF), (UINT)variationCode);
 }
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)

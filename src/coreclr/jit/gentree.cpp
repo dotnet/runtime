@@ -4764,6 +4764,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 goto COMMON_CNS;
 #elif defined(TARGET_RISCV64)
             case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 4;
+                goto COMMON_CNS;
+
             case GT_CNS_LNG:
             case GT_CNS_INT:
                 costEx = 1;

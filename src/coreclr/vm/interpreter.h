@@ -996,6 +996,8 @@ private:
 #endif
 #elif defined(HOST_LOONGARCH64)
         static const int MaxNumFPRegArgSlots = 8;
+#elif defined(HOST_RISCV64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()

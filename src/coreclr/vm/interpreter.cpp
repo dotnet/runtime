@@ -540,7 +540,6 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
 #elif defined(HOST_RISCV64)
         callerArgStackSlots += numSlots;
         ClrSafeInt<short> offset(-callerArgStackSlots);
-        assert(!"Unimplemented on RISCV64 yet");
 #endif
         offset *= static_cast<short>(sizeof(void*));
         _ASSERTE(!offset.IsOverflow());
@@ -705,7 +704,16 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
     }
     numFPRegArgSlots += numSlots;
 #elif defined(HOST_RISCV64)
-    assert(!"Unimplemented on RISCV64 yet");
+    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    assert(!twoSlotAlign);
+    argIsReg[canonIndex] = ARS_FloatReg;
+
+    argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
+    }
+    numFPRegArgSlots += numSlots;
 #else
 #error "Unsupported architecture"
 #endif
@@ -1156,7 +1164,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 2, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64) // TODO RISCV64
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1200,7 +1208,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_LOONGARCH64)
                         argState.AddArg(k, static_cast<short>(szSlots));
 #elif defined(HOST_RISCV64)
-                        assert(!"Unimplemented on RISCV64 yet");
+                        argState.AddArg(k, static_cast<short>(szSlots));
 #else
 #error unknown platform
 #endif
@@ -1311,7 +1319,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_LOONGARCH64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
 #elif defined(HOST_RISCV64)
-                    assert(!"Unimplemented on RISCV64 yet");
+                    argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
 #endif
@@ -1627,7 +1635,46 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_LOONGARCH64)
         assert(!"unimplemented on LOONGARCH yet");
 #elif defined(HOST_RISCV64)
-        assert(!"Unimplemented on RISCV64 yet");
+        UINT stackFrameSize = argState.numFPRegArgSlots;
+
+        sl.EmitProlog(argState.numRegArgs, argState.numFPRegArgSlots, 0 /*cCalleeSavedRegs*/, 0);
+
+#if INTERP_ILSTUBS
+        if (pMD->IsILStub())
+        {
+            // Third argument(x12) is stubcontext, in x7 (METHODDESC_REGISTER)
+            sl.EmitMovReg(IntReg(12), IntReg(7));
+        }
+        else
+#endif
+        {
+            // For a non-ILStub method, push NULL as the third stubContext argument
+            sl.EmitMovConstant(IntReg(12), 0);
+        }
+
+        // Second arg is pointer to the basei of the ILArgs -- i.e., the current stack value
+        // sl.EmitAddImm(IntReg(1), RegSp, sl.GetSavedRegArgsOffset());
+
+        // First arg is the pointer to the interpMethodInfo structure
+#if INTERP_ILSTUBS
+        if (!pMD->IsILStub())
+#endif
+        {
+            // interpMethodInfo is already in x8, so copy it from x8
+            sl.EmitMovReg(IntReg(10), IntReg(8)); // TODO what is x8???
+        }
+#if INTERP_ILSTUBS
+        else
+        {
+            // We didn't do the short-circuiting, therefore interpMethInfo is
+            // not stored in a register (x8) before. so do it now.
+            sl.EmitMovConstant(IntReg(10), reinterpret_cast<UINT64>(interpMethInfo));
+        }
+#endif
+
+        sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)interpretMethodFunc), FALSE, FALSE);
+
+        sl.EmitEpilog();
 #else
 #error unsupported platform
 #endif

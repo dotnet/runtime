@@ -301,17 +301,18 @@ struct IntReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct VecReg
+struct FloatReg
 {
     int reg;
-    VecReg(int reg):reg(reg)
+    FloatReg(int reg):reg(reg)
     {
         _ASSERTE(0 <= reg && reg < 32);
     }
 
-    operator int() { return reg; }
-    int operator == (VecReg other) { return reg == other.reg; }
-    int operator != (VecReg other) { return reg != other.reg; }
+    operator int () { return reg; }
+    operator int () const { return reg; }
+    int operator == (FloatReg other) { return reg == other.reg; }
+    int operator != (FloatReg other) { return reg != other.reg; }
     WORD Mask() const { return 1 << reg; }
 };
 
@@ -334,32 +335,13 @@ const IntReg RegRa  = IntReg(1);
 class StubLinkerCPU : public StubLinker
 {
 
-private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec);
-    void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
-#if 0
     // BitFlags for EmitLoadStoreReg(Pair)Imm methods
     enum {
         eSTORE      =   0x0,
         eLOAD       =   0x1,
-        eWRITEBACK  =   0x2,
-        ePOSTINDEX  =   0x4,
-        eFLAGMASK   =   0x7
     };
-
-    // BitFlags for Register offsetted loads/stores
-    // Bits(1-3) indicate the <extend> encoding, while the bits(0) indicate the shift
-    enum {
-        eSHIFT      =   0x1, // 0y0001
-        eUXTW       =   0x4, // 0y0100
-        eSXTW       =   0xC, // 0y1100
-        eLSL        =   0x7, // 0y0111
-        eSXTX       =   0xD, // 0y1110
-    };
-#endif
-
 
     static void Init();
 
@@ -387,16 +369,16 @@ public:
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
 
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
+    void EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset=0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
-    void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
+    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
+    void EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
 
     void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
 
     void EmitCallRegister(IntReg reg);
     void EmitProlog(unsigned short cIntRegArgs,
-                    unsigned short cVecRegArgs,
+                    unsigned short cFloatRegArgs,
                     unsigned short cCalleeSavedRegs,
                     unsigned short cbStackSpace = 0);
 
