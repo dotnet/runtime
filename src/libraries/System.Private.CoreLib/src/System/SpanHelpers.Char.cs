@@ -738,7 +738,8 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<ushort>.Count * 2)
+            // overlapping has a positive performance benefit around 24 elements
+            if (Avx2.IsSupported && remainder >= Vector256<ushort>.Count * 1.5)
             {
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
