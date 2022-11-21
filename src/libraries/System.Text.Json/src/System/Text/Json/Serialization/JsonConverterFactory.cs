@@ -106,17 +106,6 @@ namespace System.Text.Json.Serialization
 
         internal sealed override Type TypeToConvert => null!;
 
-        internal sealed override bool WriteCoreAsObject(
-            Utf8JsonWriter writer,
-            object? value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
-
         internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
