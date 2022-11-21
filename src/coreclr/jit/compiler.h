@@ -7094,7 +7094,7 @@ public:
         struct AssertionDscOp2
         {
             optOp2Kind kind;             // a const or copy assignment
-            uint16_t   encodedIconFlags; // encoded icon gtFlags
+            uint16_t   encodedIconFlags; // encoded icon gtFlags, don't use directly
             ValueNum   vn;
             struct IntVal
             {
@@ -7111,27 +7111,27 @@ public:
                 double        dconVal;
                 IntegralRange u2;
             };
+
+            bool HasIconFlag()
+            {
+                assert(encodedIconFlags <= 0xFF);
+                return encodedIconFlags != 0;
+            }
+            GenTreeFlags GetIconFlag()
+            {
+                GenTreeFlags flags = (GenTreeFlags)(encodedIconFlags << 24);
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> 24) == 0xFF);
+                return flags;
+            }
+            void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
+            {
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                encodedIconFlags = flags >> 24;
+                u1.fieldSeq      = fieldSeq;
+            }
         } op2;
 
-        void SetOp2IconFlags(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
-        {
-            assert((flags & ~GTF_ICON_HDL_MASK) == 0);
-            static_assert_no_msg((GTF_ICON_HDL_MASK >> 24) == 0xFF);
-            op2.encodedIconFlags = flags >> 24;
-            op2.u1.fieldSeq      = fieldSeq;
-        }
-        GenTreeFlags GetOp2IconFlags()
-        {
-            GenTreeFlags flags = (GenTreeFlags)(op2.encodedIconFlags << 24);
-            assert((flags & ~GTF_ICON_HDL_MASK) == 0);
-            static_assert_no_msg((GTF_ICON_HDL_MASK >> 24) == 0xFF);
-            return flags;
-        }
-        bool Op2HasIconFlags()
-        {
-            assert(op2.encodedIconFlags <= 0xFF);
-            return op2.encodedIconFlags != 0;
-        }
         bool IsCheckedBoundArithBound()
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
@@ -7238,8 +7238,7 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) &&
-                            (op2.encodedIconFlags == that->op2.encodedIconFlags));
+                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
 
                 case O2K_CONST_LONG:
                     return (op2.lconVal == that->op2.lconVal);
