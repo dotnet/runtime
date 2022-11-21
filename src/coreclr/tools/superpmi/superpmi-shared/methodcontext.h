@@ -318,6 +318,10 @@ public:
     void dmpIsObjectImmutable(DWORDLONG key, DWORD value);
     bool repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr);
 
+    void recGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* charValue, bool result);
+    void dmpGetStringChar(DLD key, DD value);
+    bool repGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* charValue);
+
     void recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result);
     void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetObjectType(CORINFO_OBJECT_HANDLE objPtr);
@@ -1159,6 +1163,7 @@ enum mcPackets
     Packet_ExpandRawHandleIntrinsic = 201,
     Packet_GetArrayOrStringLength = 202,
     Packet_IsEnum = 203,
+    Packet_GetStringChar = 204,
 };
 
 void SetDebugDumpVariables();

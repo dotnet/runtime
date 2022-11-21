@@ -2207,6 +2207,43 @@ bool MethodContext::repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     return (bool)value;
 }
 
+void MethodContext::recGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* charValue, bool result)
+{
+    if (GetStringChar == nullptr)
+        GetStringChar = new LightWeightMap<DLD, DD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(strObj);
+    key.B = (DWORD)index;
+
+    DD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = (DWORD)result;
+    value.B = (DWORD)*charValue;
+
+    GetStringChar->Add(key, value);
+    DEBUG_REC(dmpGetStringChar(key, value));
+}
+void MethodContext::dmpGetStringChar(DLD key, DD value)
+{
+    printf("IsObjectImmutable key obj-%016llX, index-%u, value res-%u, val-%u", key.A, key.B, value.A, value.B);
+}
+bool MethodContext::repGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* charValue)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(strObj);
+    key.B = (DWORD)index;
+
+    AssertMapAndKeyExist(GetStringChar, key, ": key %016llX", key.A);
+
+    DD value = GetStringChar->Get(key);
+    DEBUG_REP(dmpGetStringChar(key, value));
+    *charValue = (uint16_t)value.B;
+    return (bool)value.A;
+}
+
 void MethodContext::recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result)
 {
     if (GetObjectType == nullptr)

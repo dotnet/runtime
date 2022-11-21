@@ -2497,6 +2497,23 @@ public:
             ) = 0;
 
     //------------------------------------------------------------------------------
+    // getStringChar: returns char at the given index if the given object handle
+    //    represents String and index is not out of bounds.
+    //
+    // Arguments:
+    //    strObj - object handle
+    //    index  - index of the char to return
+    //    value  - output char
+    //
+    // Return Value:
+    //    Returns true if value was successfully obtained
+    //
+    virtual bool getStringChar(
+            CORINFO_OBJECT_HANDLE strObj,
+            int                   index,
+            uint16_t*             value) = 0;
+
+    //------------------------------------------------------------------------------
     // getObjectType: obtains type handle for given object
     //
     // Arguments:

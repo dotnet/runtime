@@ -6179,6 +6179,39 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 }
 
 /***********************************************************************/
+bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* value)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(obj != NULL);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    OBJECTREF objRef = getObjectFromJitHandle(obj);
+    MethodTable* type = objRef->GetMethodTable();
+    if (type->IsString())
+    {
+        STRINGREF strRef = (STRINGREF)objRef;
+        if (strRef->GetStringLength() > (DWORD)index)
+        {
+            *value = strRef->GetBuffer()[index];
+            result = true;
+        }
+    }
+    
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/***********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 {
     CONTRACTL{
