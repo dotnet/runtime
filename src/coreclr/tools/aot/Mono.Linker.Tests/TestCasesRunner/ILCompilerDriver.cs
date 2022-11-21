@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		private const string DefaultSystemModule = "System.Private.CoreLib";
 
-		public void Trim (ILCompilerOptions options, ILogWriter logWriter)
+		public ILScanResults Trim (ILCompilerOptions options, ILogWriter logWriter)
 		{
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
@@ -87,7 +87,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
 				.ToILScanner ();
 
-			_ = scanner.Scan ();
+			return scanner.Scan ();
 		}
 
 		public static void ComputeDefaultOptions (out TargetOS os, out TargetArchitecture arch)

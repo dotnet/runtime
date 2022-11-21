@@ -128,23 +128,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInner
 		{
 		}
 
-		[Kept]
-		[KeptMember (".ctor()")]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGeneric<T>
 		{
-			[Kept]
+			[Kept (KeptBy = ProducedBy.Trimmer)]
 			public T GetValue () { return default (T); }
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerInner
 		{
-			[Kept]
+			[Kept (KeptBy = ProducedBy.Trimmer)]
 			public void Method ()
 			{
 			}
@@ -152,15 +155,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), KeptBy = ProducedBy.Trimmer)]
 		T>
 		{
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerTwo
 		{
 			void UnusedMethod ()
@@ -168,19 +173,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWitGenericInnerMultiDimArray
 		{
 		}
 
-		[Kept]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithMultiDimArray
 		{
 			public void UnusedMethod () { }
 		}
 
-		[Kept]
-		[KeptMember (".ctor()")]
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericTwoParameters<T, S>
 		{
 		}
