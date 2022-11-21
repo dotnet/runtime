@@ -136,6 +136,7 @@ LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
 LWM(IsObjectImmutable, DWORDLONG, DWORD)
+LWM(GetStringChar, DLD, DD)
 LWM(GetObjectType, DWORDLONG, DWORDLONG)
 LWM(GetVarArgsHandle, GetVarArgsHandleValue, DLDL)
 LWM(GetVars, DWORDLONG, Agnostic_GetVars)
