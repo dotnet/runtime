@@ -570,22 +570,9 @@ namespace System
             return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
         }
 
-        private const char BidiControlCharacterMin = '\u200E';
-        private const char BidiControlCharacterMax = '\u202E';
-
         // Is this a Bidirectional control char.. These get stripped
-        internal static bool IsBidiControlCharacter(char ch)
-        {
-            return char.IsBetween(ch, BidiControlCharacterMin, BidiControlCharacterMax)
-                && IsBidiControlCharacterSlow(ch);
-
-            static bool IsBidiControlCharacterSlow(char ch)
-            {
-                return (ch == '\u200E' /*LRM*/ || ch == '\u200F' /*RLM*/ || ch == '\u202A' /*LRE*/ ||
-                        ch == '\u202B' /*RLE*/ || ch == '\u202C' /*PDF*/ || ch == '\u202D' /*LRO*/ ||
-                        ch == '\u202E' /*RLO*/);
-            }
-        }
+        internal static bool IsBidiControlCharacter(char ch) =>
+            char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
         internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
@@ -594,7 +581,7 @@ namespace System
 
             int charsToRemove = 0;
 
-            int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange(BidiControlCharacterMin, BidiControlCharacterMax);
+            int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange('\u200E', '\u202E');
             if (indexOfPossibleCharToRemove >= 0)
             {
                 // Slow path: Contains chars that fall in the [u200E, u202E] range (so likely Bidi)
