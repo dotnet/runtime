@@ -413,7 +413,7 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<int>.Count)
+            if (Avx2.IsSupported && remainder >= Vector256<int>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<int>.Count;
                 do
@@ -443,7 +443,7 @@ namespace System
 
                 remainder = lastOffset + Vector256<int>.Count - offset;
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<int>.Count)
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<int>.Count * 2)
             {
                 nint lastOffset = remainder - Vector128<int>.Count;
                 do
@@ -488,7 +488,7 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<long>.Count)
+            if (Avx2.IsSupported && remainder >= Vector256<long>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<long>.Count;
                 do
@@ -518,7 +518,7 @@ namespace System
 
                 remainder = lastOffset + Vector256<long>.Count - offset;
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<long>.Count)
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<long>.Count * 2)
             {
                 nint lastOffset = remainder - Vector128<long>.Count;
                 do

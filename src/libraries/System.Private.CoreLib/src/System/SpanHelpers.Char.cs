@@ -738,7 +738,7 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<ushort>.Count)
+            if (Avx2.IsSupported && remainder >= Vector256<ushort>.Count * 2)
             {
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
@@ -781,7 +781,7 @@ namespace System
 
                 remainder = (lastOffset + Vector256<ushort>.Count - offset);
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<ushort>.Count)
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<ushort>.Count * 2)
             {
                 nint lastOffset = remainder - Vector128<ushort>.Count;
                 do
