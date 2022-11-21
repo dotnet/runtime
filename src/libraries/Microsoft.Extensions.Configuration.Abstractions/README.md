@@ -36,7 +36,7 @@ var config = new ConfigurationBuilder()
     .AddInMemoryCollection(dic)
     .Build();
 
-var options = config.Get<ComplexOptions>();
+var options = config.Get<MyClass>();
 Console.WriteLine(options.NamedProperty); // returns "value for named property"
 ```
 
