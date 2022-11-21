@@ -1179,6 +1179,7 @@ namespace System.Xml.XmlWriterApiTests
         [XmlWriterInlineData(32)]
         [XmlWriterInlineData(33)]
         [XmlWriterInlineData(34)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/78358", TestPlatforms.Browser)]
         public void var_21(XmlWriterUtils utils, int param)
         {
             bool result = false;
