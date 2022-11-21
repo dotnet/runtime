@@ -12,41 +12,43 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-    public sealed class InvokerMemorySendReceiveLocalTest : InvokerMemorySendReceiveTest
+    // Memory array segment----------------
+
+    // Invoker--------
+
+    // Local----
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerMemorySendReceiveLocalTest : InvokerMemorySendReceiveTest
     {
         public InvokerMemorySendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
-        
-        protected override (Uri, Task) GetServer(string version, bool useSsl)
-        {
-            if (version == "2.0")
-            {
-                return WebSocketHelper.GetEchoHttp2LoopbackServer(new Http2Options() { WebSocketEndpoint = true, UseSsl = useSsl });
-            }
-            else
-            {
-                // TODO: GetEchoHttp11LoopbackServer
-                return base.GetServer(version, useSsl);
-            }
-        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerMemorySendReceiveLocalSslTest : InvokerMemorySendReceiveTest
+    {
+        public InvokerMemorySendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    // External server -- HTTP/1.1 only----
+    // TODO: add HTTP/2 when https://corefx-net-http2.azurewebsites.net will support extended connect
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public sealed class InvokerMemorySendReceiveOuterSslTest : InvokerMemorySendReceiveOuterTest
+    {
+        public InvokerMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    public sealed class InvokerMemorySendReceiveOuterTest : InvokerMemorySendReceiveTest
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerMemorySendReceiveOuterTest : InvokerMemorySendReceiveTest
     {
         public InvokerMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
 
-        protected override (Uri, Task) GetServer(string version, bool useSsl)
-        {
-            if (useSsl)
-            {
-                return (Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, Task.CompletedTask);
-            }
-            else
-            {
-                return (Test.Common.Configuration.WebSockets.RemoteEchoServer, Task.CompletedTask);
-            }
-        }
+        protected override bool UseRemoteServer => true;
     }
 
     public abstract class InvokerMemorySendReceiveTest : MemorySendReceiveTest
@@ -56,28 +58,84 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseCustomInvoker => true;
     }
 
-    public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
+    //HttpClient--------
+
+    // Local----
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientMemorySendReceiveLocalTest : HttpClientMemorySendReceiveTest
+    {
+        public HttpClientMemorySendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientMemorySendReceiveLocalSslTest : HttpClientMemorySendReceiveTest
+    {
+        public HttpClientMemorySendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    // External server -- HTTP/1.1 only----
+    // TODO: add HTTP/2 when https://corefx-net-http2.azurewebsites.net will support extended connect
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public sealed class HttpClientMemorySendReceiveOuterSslTest : HttpClientMemorySendReceiveOuterTest
+    {
+        public HttpClientMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientMemorySendReceiveOuterTest : HttpClientMemorySendReceiveTest
+    {
+        public HttpClientMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseRemoteServer => true;
+    }
+
+    public abstract class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
     {
         public HttpClientMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseHttpClient => true;
     }
 
-    public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
-    {
-        public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+    // No invoker -- HTTP/1.1 only --------
 
-        protected override bool UseCustomInvoker => true;
+    // Local
+
+    public class NoInvokerMemorySendReceiveLocalTest : MemorySendReceiveTest
+    {
+        public NoInvokerMemorySendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public class NoInvokerMemorySendReceiveLocalSslTest : MemorySendReceiveTest
     {
-        public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
+        public NoInvokerMemorySendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
     }
 
-    public class MemorySendReceiveTest : SendReceiveTest
+    // External server----
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class NoInvokerMemorySendReceiveOuterSslTest : NoInvokerMemorySendReceiveOuterTest
+    {
+        public NoInvokerMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    public class NoInvokerMemorySendReceiveOuterTest : MemorySendReceiveTest
+    {
+        public NoInvokerMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseRemoteServer => true;
+    }
+
+    public abstract class MemorySendReceiveTest : SendReceiveTest
     {
         public MemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -97,7 +155,130 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public class ArraySegmentSendReceiveTest : SendReceiveTest
+    // Array segment----------------
+
+    // Invoker--------
+
+    // Local----
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerArraySegmentSendReceiveLocalTest : InvokerArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerArraySegmentSendReceiveLocalSslTest : InvokerArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    // External server -- HTTP/1.1 only----
+    // TODO: add HTTP/2 when https://corefx-net-http2.azurewebsites.net will support extended connect
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public sealed class InvokerArraySegmentSendReceiveOuterSslTest : InvokerArraySegmentSendReceiveOuterTest
+    {
+        public InvokerArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class InvokerArraySegmentSendReceiveOuterTest : InvokerArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseRemoteServer => true;
+    }
+
+    public abstract class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseCustomInvoker => true;
+    }
+
+    //HttpClient--------
+
+    // Local----
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientArraySegmentSendReceiveLocalTest : HttpClientArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientArraySegmentSendReceiveLocalSslTest : HttpClientArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    // External server -- HTTP/1.1 only----
+    // TODO: add HTTP/2 when https://corefx-net-http2.azurewebsites.net will support extended connect
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public sealed class HttpClientArraySegmentSendReceiveOuterSslTest : HttpClientArraySegmentSendReceiveOuterTest
+    {
+        public HttpClientArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
+    public class HttpClientArraySegmentSendReceiveOuterTest : HttpClientArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseRemoteServer => true;
+    }
+
+    public abstract class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseHttpClient => true;
+    }
+
+    // No invoker -- HTTP/1.1 only --------
+
+    // Local
+    public class NoInvokerArraySegmentSendReceiveLocalTest : ArraySegmentSendReceiveTest
+    {
+        public NoInvokerArraySegmentSendReceiveLocalTest(ITestOutputHelper output) : base(output) { }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public class NoInvokerArraySegmentSendReceiveLocalSslTest : ArraySegmentSendReceiveTest
+    {
+        public NoInvokerArraySegmentSendReceiveLocalSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    // External server----
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class NoInvokerArraySegmentSendReceiveOuterSslTest : NoInvokerArraySegmentSendReceiveOuterTest
+    {
+        public NoInvokerArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSsl => true;
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    public class NoInvokerArraySegmentSendReceiveOuterTest : ArraySegmentSendReceiveTest
+    {
+        public NoInvokerArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseRemoteServer => true;
+    }
+
+    public abstract class ArraySegmentSendReceiveTest : SendReceiveTest
     {
         public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -165,7 +346,7 @@ namespace System.Net.WebSockets.Client.Tests
             var ub = new UriBuilder(server);
             ub.Query = "replyWithPartialMessages";
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(ub.Uri, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(ub.Uri, TimeOutMilliseconds, _output, UseVersion))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -390,7 +571,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output, UseVersion))
             {
                 var rand = new Random();
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
@@ -455,22 +636,17 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [InlineData("2.0", false)]
-        [InlineData("2.0", true)]
-        [InlineData("1.0", false)]
-        [InlineData("1.0", true)]
-        [ConditionalTheory(nameof(WebSocketsSupported))]
-        public async Task SendReceive_Concurrent_Success_Base(string version, bool useSsl)
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public async Task SendReceive_Concurrent_Success_Base()
         {
             Uri uri;
             Task serverTask;
 
-            (uri, serverTask) = GetServer(version, useSsl);
+            (uri, serverTask) = GetServer();
 
-
-            Task clientTask = Task.Run( async () =>
+            await CreateEchoServerAsync(Task.Run( async () =>
             {
-                using (ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output, version))
+                using (ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output))
                 {
                     CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -493,9 +669,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Array.Reverse(receiveBuffer);
                     Assert.Equal<byte>(sendBuffer, receiveBuffer);
                 }
-            });
-
-            await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2).ConfigureAwait(false);
+            }), serverTask);
         }
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]

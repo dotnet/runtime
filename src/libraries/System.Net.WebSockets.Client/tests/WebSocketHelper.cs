@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -13,6 +14,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public static class WebSocketHelper
     {
         private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
@@ -23,6 +25,7 @@ namespace System.Net.WebSockets.Client.Tests
             WebSocketMessageType type,
             int timeOutMilliseconds,
             ITestOutputHelper output,
+            Version version,
             HttpMessageInvoker? invoker = null)
         {
             var cts = new CancellationTokenSource(timeOutMilliseconds);
@@ -31,7 +34,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, invoker: invoker))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, version, invoker: invoker))
             {
                 output.WriteLine("TestEcho: SendAsync starting.");
                 await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
@@ -69,10 +72,10 @@ namespace System.Net.WebSockets.Client.Tests
             Uri server,
             int timeOutMilliseconds,
             ITestOutputHelper output,
+            Version version,
             TimeSpan keepAliveInterval = default,
             IWebProxy proxy = null,
-            HttpMessageInvoker? invoker = null,
-            string version = null) =>
+            HttpMessageInvoker? invoker = null) =>
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
@@ -86,11 +89,14 @@ namespace System.Net.WebSockets.Client.Tests
                     cws.Options.KeepAliveInterval = keepAliveInterval;
                 }
 
-                if (version != null)
+                if (invoker == null)
                 {
-                    cws.Options.HttpVersion = new Version(version);
-                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                    cws.Options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate());
+                    cws.Options.RemoteCertificateValidationCallback = delegate { return true; };
                 }
+
+                cws.Options.HttpVersion = version;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                 using (var cts = new CancellationTokenSource(timeOutMilliseconds))
                 {
@@ -139,7 +145,6 @@ namespace System.Net.WebSockets.Client.Tests
             return GetEchoHttp2LoopbackServer(new Http2Options());
         }
 
-        //[SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public static (Uri, Task) GetEchoHttp2LoopbackServer(Http2Options options)
         {
             Http2LoopbackServer server = Http2LoopbackServer.CreateServer(options);
@@ -151,7 +156,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 // send status 200 OK to establish websocket
-                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false); // AcceptWebSocket?
+                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
 
                 var webSocketStream = new Http2Stream(connection, streamId);
                 using WebSocket websocket = WebSocket.CreateFromStream(webSocketStream, true, null, TimeSpan.FromSeconds(30));
@@ -177,16 +182,51 @@ namespace System.Net.WebSockets.Client.Tests
                         continue;
                     }
 
-                    //Assert.Equal(clientMessage, buffer);
                     int offset = result.Count;
                     await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, true, CancellationToken.None);
-
-                    // send reply
-                    //byte binaryMessageType = 2;
-                    //var prefix = new byte[] { binaryMessageType, (byte)serverMessage.Length };
-                    //byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
-                    //await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
                 }
+                await connection.DisposeAsync();
+            });
+
+            return (server.Address, serverTask);
+        }
+
+        public static (Uri, Task) GetEchoLoopbackServer(LoopbackServer.Options options = null)
+        {
+            LoopbackServer server = new LoopbackServer(options);
+            Task.WaitAll(server.ListenAsync());
+
+            Task serverTask = server.AcceptConnectionAsync(async connection =>
+            {
+                var buffer = new byte[128 * 1024];
+                Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection);
+                using WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, true, null, TimeSpan.FromSeconds(30));
+                while (websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent)
+                {
+                    var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        if (result.CloseStatus == WebSocketCloseStatus.Empty)
+                        {
+                            await websocket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
+                        }
+                        else
+                        {
+                            WebSocketCloseStatus closeStatus = result.CloseStatus.GetValueOrDefault();
+                            await websocket.CloseAsync(
+                                closeStatus,
+                                result.CloseStatusDescription,
+                                CancellationToken.None);
+                        }
+
+                        continue;
+                    }
+
+                    int offset = result.Count;
+                    await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, true, CancellationToken.None);
+                }
+
+                await connection.DisposeAsync();
             });
 
             return (server.Address, serverTask);

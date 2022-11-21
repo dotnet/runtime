@@ -12,108 +12,67 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class HttpClientSendReceiveTest_Http2 : SendReceiveTest_Http2
-    {
-        public HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
+    // Memory segment
 
-        protected override bool UseHttpClient => true;
+    // Invoker
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+    public sealed class InvokerMemorySendReceiveLocalTest_Http2 : InvokerMemorySendReceiveLocalTest
+    {
+        public InvokerMemorySendReceiveLocalTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    public sealed class InvokerSendReceiveTest_Http2 : SendReceiveTest_Http2
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class InvokerMemorySendReceiveLocalSslTest_Http2 : InvokerMemorySendReceiveLocalSslTest
     {
-        public InvokerSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
+        public InvokerMemorySendReceiveLocalSslTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    public abstract class SendReceiveTest_Http2 : ClientWebSocketTestBase
+    //HttpClient
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+    public sealed class HttpClientMemorySendReceiveLocalTest_Http2 : HttpClientMemorySendReceiveLocalTest
     {
-        public SendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
+        public HttpClientMemorySendReceiveLocalTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        public async Task ReceiveNoThrowAfterSend_NoSsl()
-        {
-            var clientMessage = new byte[] { 2, 3, 4 };
-            var serverMessage = new byte[] { 4, 5, 6 };
-            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var cws = new ClientWebSocket())
-                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-                {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
-                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class HttpClientMemorySendReceiveLocalSslTest_Http2 : HttpClientMemorySendReceiveLocalSslTest
+    {
+        public HttpClientMemorySendReceiveLocalSslTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
 
-                    await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
+    // Array segment
 
-                    await cws.SendAsync(clientMessage, WebSocketMessageType.Binary, true, cts.Token);
+    //Invoker
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+    public sealed class InvokerArraySegmentSendReceiveLocalTest_Http2 : InvokerArraySegmentSendReceiveLocalTest
+    {
+        public InvokerArraySegmentSendReceiveLocalTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
 
-                    var readBuffer = new byte[serverMessage.Length];
-                    await cws.ReceiveAsync(readBuffer, cts.Token);
-                    Assert.Equal(serverMessage, readBuffer);
-                }
-            },
-            async server =>
-            {
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
-                // send status 200 OK to establish websocket
-                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class InvokerArraySegmentSendReceiveLocalSslTest_Http2 : InvokerArraySegmentSendReceiveLocalSslTest
+    {
+        public InvokerArraySegmentSendReceiveLocalSslTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
 
-                var webSocketStream = new Http2Stream(connection, streamId);
-                using WebSocket websocket = WebSocket.CreateFromStream(webSocketStream, true, null, TimeSpan.FromSeconds(30));
+    //HttpClient
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+    public sealed class HttpClientArraySegmentSendReceiveLocalTest_Http2 : HttpClientArraySegmentSendReceiveLocalTest
+    {
+        public HttpClientArraySegmentSendReceiveLocalTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
 
-                Assert.Equal(WebSocketState.Open, websocket.State);
-
-                Memory<byte> buffer = new byte[3];
-                ValueWebSocketReceiveResult result = await websocket.ReceiveAsync(buffer, default);
-                Assert.Equal(clientMessage, buffer);
-
-                // send reply
-                byte binaryMessageType = 2;
-                var prefix = new byte[] { binaryMessageType, (byte)serverMessage.Length };
-                byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
-                await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
-
-            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false });
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
-        public async Task ReceiveNoThrowAfterSend_WithSsl()
-        {
-            var serverMessage = new byte[] { 4, 5, 6 };
-            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var cws = new ClientWebSocket())
-                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-                {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
-                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                    await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
-
-                    await cws.SendAsync(new byte[] { 2, 3, 4 }, WebSocketMessageType.Binary, true, cts.Token);
-
-                    var readBuffer = new byte[serverMessage.Length];
-                    await cws.ReceiveAsync(readBuffer, cts.Token);
-                    Assert.Equal(serverMessage, readBuffer);
-                }
-            },
-            async server =>
-            {
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
-                // send status 200 OK to establish websocket
-                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
-
-                // send reply
-                byte binaryMessageType = 2;
-                var prefix = new byte[] { binaryMessageType, (byte)serverMessage.Length };
-                byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
-                await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
-
-            }, new Http2Options() { WebSocketEndpoint = true });
-        }
+    [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+    public sealed class HttpClientArraySegmentSendReceiveLocalSslTest_Http2 : HttpClientArraySegmentSendReceiveLocalSslTest
+    {
+        public HttpClientArraySegmentSendReceiveLocalSslTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 }

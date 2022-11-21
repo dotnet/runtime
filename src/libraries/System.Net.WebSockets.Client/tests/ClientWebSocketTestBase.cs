@@ -10,6 +10,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;
 using System.Diagnostics;
+using System.Net.Test.Common;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -65,7 +66,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public async Task TestCancellation(Func<ClientWebSocket, Task> action, Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output, UseVersion))
             {
                 try
                 {
@@ -111,6 +112,9 @@ namespace System.Net.WebSockets.Client.Tests
         protected virtual bool UseCustomInvoker => false;
 
         protected virtual bool UseHttpClient => false;
+        protected virtual Version UseVersion => HttpVersion.Version11;
+        protected virtual bool UseRemoteServer => false;
+        protected virtual bool UseSsl => false;
 
         protected bool UseSharedHandler => !UseCustomInvoker && !UseHttpClient;
 
@@ -141,16 +145,50 @@ namespace System.Net.WebSockets.Client.Tests
             return null;
         }
 
-        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output, string version = "1.1") =>
-            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker(), version: version);
+        protected Task CreateEchoServerAsync(Task clientTask, Task serverTask)
+        {
+            return new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2) ;
+        }
+
+        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker(), version: UseVersion);
 
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
 
         protected Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
+            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, UseVersion, GetInvoker());
 
-        protected virtual (Uri, Task) GetServer(string version, bool useeSsl) => (null, null);
+        protected virtual (Uri, Task) GetServer()
+        {
+            if (UseRemoteServer)
+            {
+                if (UseVersion.Major == 2)
+                {
+                    return (null, null);
+                }
+
+                if (UseSsl)
+                {
+                    return (Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, Task.CompletedTask);
+                }
+                else
+                {
+                    return (Test.Common.Configuration.WebSockets.RemoteEchoServer, Task.CompletedTask);
+                }
+            }
+            else
+            {
+                if (UseVersion.Major == 2)
+                {
+                    return WebSocketHelper.GetEchoHttp2LoopbackServer(new Http2Options() { WebSocketEndpoint = true, UseSsl = UseSsl });
+                }
+                else
+                {
+                    return WebSocketHelper.GetEchoLoopbackServer(new LoopbackServer.Options() { WebSocketEndpoint = true, UseSsl = UseSsl }); ;
+                }
+            }
+        }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
     }

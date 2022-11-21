@@ -83,6 +83,7 @@ namespace System.Net.WebSockets.Client.Tests
                 server,
                 TimeOutMilliseconds,
                 _output,
+                UseVersion,
                 default(TimeSpan),
                 proxy))
             {
