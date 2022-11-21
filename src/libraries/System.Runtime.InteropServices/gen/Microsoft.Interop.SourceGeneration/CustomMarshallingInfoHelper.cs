@@ -117,7 +117,7 @@ namespace Microsoft.Interop
         /// <param name="attrData">The attribute data for attribute that provided the marshalling info (used for reporting diagnostics).</param>
         /// <param name="compilation">The compilation in which the marshalling info is being generated.</param>
         /// <param name="diagnostics">The diagnostics sink to report diagnostics to.</param>
-        /// <returns>The marshalling info for the given managed type and marshaller entrypoint type</returns>
+        /// <returns>The marshalling info for the given managed type and marshaller entrypoint type, or <see cref="NoMarshallingInfo.Instance" /> if the marshaller requires use-site information.</returns>
         /// <remarks>
         /// This method cannot generate marshalling info for any marshallers that require use-site information like count information or marshalling
         /// information for an element-indirection-level greater than 0.
