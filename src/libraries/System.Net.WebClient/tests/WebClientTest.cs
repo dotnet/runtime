@@ -661,7 +661,7 @@ namespace System.Net.Tests
         }
 
         private static string GetRandomText(int length) =>
-            new string(Random.Shared.GetItems<char>("abcdefghijklmnopqrstuvwxyz".AsSpan(), 512 * 1024));
+            new string(Random.Shared.GetItems<char>("abcdefghijklmnopqrstuvwxyz", 512 * 1024));
 
         [OuterLoop("Uses external servers")]
         [Theory]

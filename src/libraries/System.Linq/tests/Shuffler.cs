@@ -11,9 +11,8 @@ namespace System.Linq.Tests
         public static T[] Shuffle<T>(T[] array)
         {
             var r = new Random(42);
-            T[] copy = array.AsSpan().ToArray();
-            r.Shuffle(copy);
-            return copy;
+            r.Shuffle(array);
+            return array;
         }
 
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source, int seed)

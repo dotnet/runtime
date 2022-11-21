@@ -178,9 +178,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static T[] Shuffle<T>(Random random, T[] array)
             {
-                T[] copy = array.AsSpan().ToArray();
-                random.Shuffle(copy);
-                return copy;
+                random.Shuffle(array);
+                return array;
             }
         }
     }

@@ -183,7 +183,7 @@ namespace System
         public virtual void NextBytes(Span<byte> buffer) => _impl.NextBytes(buffer);
 
         /// <summary>
-        ///   Fills the elements of a specified span with items chosen at random from choices.
+        ///   Fills the elements of a specified span with items chosen at random from the provided set of choices.
         /// </summary>
         /// <param name="choices">The items to use to populate the span.</param>
         /// <param name="destination">The span to be filled with items.</param>
@@ -205,7 +205,7 @@ namespace System
         }
 
         /// <summary>
-        ///   Creates an array populated with items chosen at random from choices.
+        ///   Creates an array populated with items chosen at random from the provided set of choices.
         /// </summary>
         /// <param name="choices">The items to use to populate the array.</param>
         /// <param name="length">The length of array to return.</param>
@@ -227,7 +227,7 @@ namespace System
         }
 
         /// <summary>
-        ///   Creates an array populated with items chosen at random from choices.
+        ///   Creates an array populated with items chosen at random from the provided set of choices.
         /// </summary>
         /// <param name="choices">The items to use to populate the array.</param>
         /// <param name="length">The length of array to return.</param>
