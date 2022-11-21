@@ -44,6 +44,15 @@ namespace
         }
         return hr;
     }
+
+    HRESULT GetScopeProps(IMetaDataImport* import)
+    {
+        assert(import != nullptr);
+        WCHAR name[512];
+        ULONG nameLen;
+        GUID mvid;
+        return import->GetScopeProps(name, ARRAYSIZE(name), &nameLen, &mvid);
+    }
 }
 
 EXPORT
@@ -121,6 +130,30 @@ HRESULT CurrentEnumTypeDefs(int iter)
     for (int i = 0; i < iter; ++i)
     {
         if (FAILED(hr = EnumTypeDefs(g_currentImport)))
+            return hr;
+    }
+    return S_OK;
+}
+
+EXPORT
+HRESULT BaselineGetScopeProps(int iter)
+{
+    HRESULT hr;
+    for (int i = 0; i < iter; ++i)
+    {
+        if (FAILED(hr = GetScopeProps(g_baselineImport)))
+            return hr;
+    }
+    return S_OK;
+}
+
+EXPORT
+HRESULT CurrentGetScopeProps(int iter)
+{
+    HRESULT hr;
+    for (int i = 0; i < iter; ++i)
+    {
+        if (FAILED(hr = GetScopeProps(g_currentImport)))
             return hr;
     }
     return S_OK;

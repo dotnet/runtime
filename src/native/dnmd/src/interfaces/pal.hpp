@@ -10,16 +10,16 @@ namespace pal
     // Convert the UTF-16 string into UTF-8
     HRESULT ConvertUtf16ToUtf8(
         WCHAR const* str,
-        int32_t strLength,
         char* buffer,
-        _Inout_ uint32_t* bufferLength);
+        uint32_t bufferLength,
+        _Out_opt_ uint32_t* writtenOrNeeded);
 
     // Convert the UTF-8 string into UTF-16
     HRESULT ConvertUtf8ToUtf16(
         char const* str,
-        int32_t strLength,
         WCHAR* buffer,
-        _Inout_ uint32_t* bufferLength);
+        uint32_t bufferLength,
+        _Out_opt_ uint32_t* writtenOrNeeded);
 
     // Template class for conversion UTF-8 <=> UTF-16
     template<typename A, typename B>
@@ -37,9 +37,9 @@ namespace pal
             , _charLength{}
             , _converted{}
         {
-            uint32_t neededLength = 0;
-            // Compute needed size for conversion
-            HRESULT hr = ConvertWorker(c, nullptr, neededLength);
+            uint32_t neededLength = bufferLength;
+            // Compute needed size for conversion and/or rely on the user supplied buffer.
+            HRESULT hr = ConvertWorker(c, buffer, neededLength);
             if (hr == S_OK)
             {
                 if (bufferLength < neededLength)
@@ -57,6 +57,12 @@ namespace pal
                     _ptr = buffer;
                     _charLength = bufferLength;
                 }
+            }
+            else if (neededLength != bufferLength)
+            {
+                // Failed to convert. If the needed length was updated
+                // then set that so the caller can possibly use it.
+                _charLength = neededLength;
             }
         }
 
@@ -86,26 +92,6 @@ namespace pal
         operator B const*() const noexcept
         {
             return _ptr;
-        }
-
-        bool CopyTo(B* buffer, uint32_t bufferLength, uint32_t* writtenLength) noexcept
-        {
-            if (!Success())
-                return false;
-
-            // Copy the converted string to the buffer.
-            if (bufferLength < _charLength)
-            {
-                *writtenLength = bufferLength;
-                ::memcpy(buffer, _ptr, bufferLength * sizeof(*buffer));
-                ::memset(&buffer[bufferLength - 1], 0, sizeof(*buffer));
-            }
-            else
-            {
-                *writtenLength = _charLength;
-                ::memcpy(buffer, _ptr, _charLength * sizeof(*buffer));
-            }
-            return true;
         }
     };
 }

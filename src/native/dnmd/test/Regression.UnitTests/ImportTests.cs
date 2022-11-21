@@ -116,12 +116,14 @@ namespace Regression.UnitTests
 
             // Verify APIs
             Assert.Equal(GetScopeProps(baselineImport), GetScopeProps(currentImport));
-            Assert.Equal(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             Assert.Equal(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
 
-            Assert.Equal(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
-            Assert.Equal(GetTypeSpecFromToken(baselineImport), GetTypeSpecFromToken(currentImport));
+            var typespecs = AssertAndReturn(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
+            foreach (var typespec in typespecs)
+            {
+                Assert.Equal(GetTypeSpecFromToken(baselineImport, typespec), GetTypeSpecFromToken(currentImport, typespec));
+            }
 
             var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
             foreach (var typedef in typedefs)
@@ -335,16 +337,19 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<(nint Ptr, uint Len)> GetTypeSpecFromToken(IMetaDataImport import)
+        private static List<nuint> GetTypeSpecFromToken(IMetaDataImport import, uint typespec)
         {
-            List<(nint Ptr, uint Len)> specs = new();
-            var tokens = EnumTypeSpecs(import);
-            foreach (uint tk in tokens)
+            List<nuint> values = new();
+
+            int hr = import.GetTypeSpecFromToken(typespec, out nint sig, out uint len);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
             {
-                Assert.Equal(0, import.GetTypeSpecFromToken(tk, out nint sig, out uint len));
-                specs.Add((sig, len));
+                values.Add((nuint)sig);
+                values.Add(len);
             }
-            return specs;
+            return values;
         }
 
         private static List<uint> EnumModuleRefs(IMetaDataImport import)

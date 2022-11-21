@@ -13,10 +13,14 @@ namespace Regression.Performance
 
         delegate* unmanaged<void*, int, nint, int> _Initialize;
 
-        delegate* unmanaged<int, int> _BaselineCreateImport;
-        delegate* unmanaged<int, int> _CurrentCreateImport;
-        delegate* unmanaged<int, int> _BaselineEnumTypeDefs;
-        delegate* unmanaged<int, int> _CurrentEnumTypeDefs;
+        private readonly struct Scenario
+        {
+            public string Name { get; init; }
+            public delegate* unmanaged<int, int> Baseline { get; init; }
+            public delegate* unmanaged<int, int> Current { get; init; }
+        }
+
+        List<Scenario> _scenarios = new();
 
         public Compare(string currentPath)
         {
@@ -28,10 +32,24 @@ namespace Regression.Performance
             // Acquire native functions
             nint mod = NativeLibrary.Load(currentPath);
             _Initialize = (delegate* unmanaged<void*, int, nint, int>)NativeLibrary.GetExport(mod, "Initialize");
-            _BaselineCreateImport = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, "BaselineCreateImport");
-            _CurrentCreateImport = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, "CurrentCreateImport");
-            _BaselineEnumTypeDefs = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, "BaselineEnumTypeDefs");
-            _CurrentEnumTypeDefs = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, "CurrentEnumTypeDefs");
+
+            string[] scenarioNames = new[]
+            {
+                "CreateImport",
+                "EnumTypeDefs",
+                "GetScopeProps",
+            };
+
+            // Look up each scenario test export.
+            foreach (var name in scenarioNames)
+            {
+                _scenarios.Add(new Scenario()
+                {
+                    Name = name,
+                    Baseline = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"Baseline{name}"),
+                    Current = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"Current{name}"),
+                });
+            }
 
             int hr = _Initialize(_metadataBlock.Pointer, _metadataBlock.Length, Dispensers.BaselineRaw);
             if (hr < 0)
@@ -44,28 +62,20 @@ namespace Regression.Performance
         {
             int hr;
             const int width = 12;
-            const string msg = "Falure";
             var sw = new Stopwatch();
 
-            Console.WriteLine("CreateImport");
-            sw.Restart();
-            hr = _BaselineCreateImport(iter);
-            Console.WriteLine($"  Baseline: {sw.ElapsedMilliseconds,width}");
-            if (hr < 0) throw new Exception(msg);
-            sw.Restart();
-            hr = _CurrentCreateImport(iter);
-            Console.WriteLine($"  Current:  {sw.ElapsedMilliseconds,width}");
-            if (hr < 0) throw new Exception(msg);
-
-            Console.WriteLine("EnumTypeDefs");
-            sw.Restart();
-            hr = _BaselineEnumTypeDefs(iter);
-            Console.WriteLine($"  Baseline: {sw.ElapsedMilliseconds,width}");
-            if (hr < 0) throw new Exception(msg);
-            sw.Restart();
-            hr = _CurrentEnumTypeDefs(iter);
-            Console.WriteLine($"  Current:  {sw.ElapsedMilliseconds,width}");
-            if (hr < 0) throw new Exception(msg);
+            foreach (var scenario in _scenarios)
+            {
+                Console.WriteLine(scenario.Name);
+                sw.Restart();
+                hr = scenario.Baseline(iter);
+                Console.WriteLine($"  Baseline: {sw.ElapsedMilliseconds,width}");
+                if (hr < 0) throw new Exception($"Failure 0x{hr:x}");
+                sw.Restart();
+                hr = scenario.Current(iter);
+                Console.WriteLine($"  Current:  {sw.ElapsedMilliseconds,width}");
+                if (hr < 0) throw new Exception($"Failure 0x{hr:x}");
+            }
         }
     }
 

@@ -83,15 +83,14 @@ bool md_cursor_next(mdcursor_t* c)
 
 bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
 {
-    if (c == NULL)
-        return false;
+    assert(c != NULL);
 
     mdcxt_t* cxt = extract_mdcxt(handle);
     if (cxt == NULL)
         return false;
 
     mdtable_id_t table_id = ExtractTokenType(tk);
-    if (0 > table_id || table_id >= MDTABLE_MAX_COUNT)
+    if (table_id >= MDTABLE_MAX_COUNT)
         return false;
 
     mdtable_t* table = type_to_table(cxt, table_id);
@@ -107,8 +106,7 @@ bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c)
 
 bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
 {
-    if (tk == NULL)
-        return false;
+    assert(tk != NULL);
 
     mdtable_t* table = CursorTable(&c);
     if (table == NULL)
@@ -186,24 +184,20 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     if (table == NULL)
         return false;
 
-    uint8_t idx = col_to_index(col_idx, table);
-    assert(idx < MDTABLE_MAX_COLUMN_COUNT);
-    if (idx >= table->column_count)
-        return false;
-
-    mdtcol_t cd = table->column_details[idx];
-
-    uint32_t offset = ExtractOffset(cd);
     uint32_t row = CursorRow(cursor);
     if (row == 0 || row > table->row_count)
         return false;
 
+    uint8_t idx = col_to_index(col_idx, table);
+    assert(idx < table->column_count);
+
     // Metadata row indexing is 1-based.
     row--;
     qcxt->table = table;
-    qcxt->col_details = cd;
+    qcxt->col_details = table->column_details[idx];
 
     // Compute the offset into the first row.
+    uint32_t offset = ExtractOffset(qcxt->col_details);
     qcxt->data = table->data.ptr + (row * table->row_size_bytes) + offset;
 
     // Compute the beginning of the row after the last valid row.
@@ -213,7 +207,7 @@ static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32
     qcxt->end = table->data.ptr + (last_row * table->row_size_bytes);
 
     // Limit the data read to the width of the column
-    qcxt->data_len_col = (cd & mdtc_b2) ? 2 : 4;
+    qcxt->data_len_col = (qcxt->col_details & mdtc_b2) ? 2 : 4;
     qcxt->data_len = qcxt->data_len_col;
 
     // Compute the next row stride. Take the total length and substract
@@ -235,13 +229,10 @@ static bool next_row(query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
     qcxt->data += qcxt->next_row_stride;
-    if (qcxt->data < qcxt->end)
-    {
-        // Restore the data length of the column data.
-        qcxt->data_len = qcxt->data_len_col;
-        return true;
-    }
-    return false;
+
+    // Restore the data length of the column data.
+    qcxt->data_len = qcxt->data_len_col;
+    return qcxt->data < qcxt->end;
 }
 
 static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_idx, uint32_t out_length, mdToken* tk, mdcursor_t* cursor)

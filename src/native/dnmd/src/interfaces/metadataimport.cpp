@@ -151,6 +151,28 @@ namespace
         return S_OK;
     }
 
+    HRESULT ConvertAndReturnStringOutput(
+        _In_z_ char const* str,
+        _Out_writes_to_opt_(cchBuffer, *pchBuffer)
+        WCHAR* szBuffer,
+        ULONG cchBuffer,
+        ULONG* pchBuffer)
+    {
+        HRESULT hr = pal::ConvertUtf8ToUtf16(str, szBuffer, cchBuffer, (uint32_t*)pchBuffer);
+        if (FAILED(hr))
+        {
+            if (hr == E_NOT_SUFFICIENT_BUFFER
+                && szBuffer != nullptr
+                && cchBuffer > 0)
+            {
+                ::memset(&szBuffer[cchBuffer - 1], 0, sizeof(*szBuffer));
+                return CLDB_S_TRUNCATION;
+            }
+            return E_INVALIDARG;
+        }
+        return S_OK;
+    }
+
     HRESULT ConstructTypeName(
         char const* nspace,
         char const* name,
@@ -284,18 +306,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
 
     *pmvid = mvid;
 
-    uint32_t written;
-    pal::StringConvert<char, WCHAR> cvt{ name };
-    if (!cvt.Success()
-        || !cvt.CopyTo(szName, cchName, &written))
-    {
-        return E_INVALIDARG;
-    }
-
-    *pchName = cvt.Length();
-    return (written < cvt.Length())
-        ? CLDB_S_TRUNCATION
-        : S_OK;
+    return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleFromScope(
@@ -350,18 +361,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeDefProps(
     malloc_ptr mem;
     RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
 
-    uint32_t written;
-    pal::StringConvert<char, WCHAR> cvt{ (char const*)mem.get() };
-    if (!cvt.Success()
-        || !cvt.CopyTo(szTypeDef, cchTypeDef, &written))
-    {
-        return E_INVALIDARG;
-    }
-
-    *pchTypeDef = cvt.Length();
-    return (written < cvt.Length())
-        ? CLDB_S_TRUNCATION
-        : S_OK;
+    return ConvertAndReturnStringOutput((char const*)mem.get(), szTypeDef, cchTypeDef, pchTypeDef);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetInterfaceImplProps(
@@ -816,18 +816,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
     if (1 != md_get_column_value_as_utf8(cursor, mdtMethodDef_Name, 1, &name))
         return CLDB_E_FILE_CORRUPT;
 
-    uint32_t written;
-    pal::StringConvert<char, WCHAR> cvt{ name };
-    if (!cvt.Success()
-        || !cvt.CopyTo(szMethod, cchMethod, &written))
-    {
-        return E_INVALIDARG;
-    }
-
-    *pchMethod = written;
-    return (written < cvt.Length())
-        ? CLDB_S_TRUNCATION
-        : S_OK;
+    return ConvertAndReturnStringOutput(name, szMethod, cchMethod, pchMethod);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberRefProps(
@@ -865,18 +854,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberRefProps(
     if (1 != md_get_column_value_as_utf8(cursor, mdtMemberRef_Name, 1, &name))
         return CLDB_E_FILE_CORRUPT;
 
-    uint32_t written;
-    pal::StringConvert<char, WCHAR> cvt{ name };
-    if (!cvt.Success()
-        || !cvt.CopyTo(szMember, cchMember, &written))
-    {
-        return E_INVALIDARG;
-    }
-
-    *pchMember = written;
-    return (written < cvt.Length())
-        ? CLDB_S_TRUNCATION
-        : S_OK;
+    return ConvertAndReturnStringOutput(name, szMember, cchMember, pchMember);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
