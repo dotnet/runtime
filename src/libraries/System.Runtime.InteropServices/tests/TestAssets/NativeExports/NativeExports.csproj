@@ -7,6 +7,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
+    <UseLiveAppHost>true</UseLiveAppHost>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
