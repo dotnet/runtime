@@ -222,9 +222,6 @@ jobs:
       platforms:
       - Linux_x64
       jobParameters:
-        steps:
-          - script: msbuild $(Build.SourcesDirectory)\eng\testing\performance\add_properties_to_pipeline.proj
-            displayName: Add Properties To Pipeline Env
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -242,9 +239,6 @@ jobs:
       platforms:
       - Linux_x64
       jobParameters:
-        steps:
-          - script: msbuild $(Build.SourcesDirectory)\eng\testing\performance\add_properties_to_pipeline.proj
-            displayName: Add Properties To Pipeline Env
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono

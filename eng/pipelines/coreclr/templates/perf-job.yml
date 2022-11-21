@@ -133,6 +133,8 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
+    - script: msbuild $(Build.SourcesDirectory)\eng\testing\performance\add_properties_to_pipeline.proj
+      displayName: Add Properties To Pipeline Env
 
     # Optionally download live-built libraries
     - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
