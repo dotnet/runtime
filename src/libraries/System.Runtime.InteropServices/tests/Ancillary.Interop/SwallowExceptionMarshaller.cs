@@ -19,9 +19,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public static void ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
-            // and calls SetErrorInfo if the platform suppots it.
-            // TODO: Should we use the built-in COM interop support for this, or should we use the generator to implement
-            // this experience?
+            // and calls SetErrorInfo if the platform supports it.
             _ = Marshal.GetHRForException(e);
         }
     }

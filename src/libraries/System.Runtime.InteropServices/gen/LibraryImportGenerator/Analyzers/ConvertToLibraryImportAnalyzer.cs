@@ -120,7 +120,10 @@ namespace Microsoft.Interop.Analyzers
                     mayRequireAdditionalWork = true;
                     return forwarder;
                 }
-            }, (info, details) => mayRequireAdditionalWork = true);
+            },
+                // If any extendend variants are violated, then we may require additional work.
+                // Treat this the same as unsupported marshalling.
+                (info, details) => mayRequireAdditionalWork = true);
 
             if (anyExplicitlyUnsupportedInfo)
             {

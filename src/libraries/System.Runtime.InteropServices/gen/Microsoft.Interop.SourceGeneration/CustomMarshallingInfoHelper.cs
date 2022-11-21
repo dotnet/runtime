@@ -108,6 +108,27 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
+        /// <summary>
+        /// Creates a <see cref="MarshallingInfo"/> for the given managed type and marshaller type in the given compilation.
+        /// This marshalling info is independent of any specific marshalling context or signature element.
+        /// </summary>
+        /// <param name="type">The managed type of the element for which to generate marshalling info.</param>
+        /// <param name="entryPointType">The type of the marshaller entry point.</param>
+        /// <param name="attrData">The attribute data for attribute that provided the marshalling info (used for reporting diagnostics).</param>
+        /// <param name="compilation">The compilation in which the marshalling info is being generated.</param>
+        /// <param name="diagnostics">The diagnostics sink to report diagnostics to.</param>
+        /// <returns>The marshalling info for the given managed type and marshaller entrypoint type</returns>
+        /// <remarks>
+        /// This method cannot generate marshalling info for any marshallers that require use-site information like count information or marshalling
+        /// information for an element-indirection-level greater than 0.
+        /// </remarks>
+        /// <example>
+        /// This method can be used to generate marshalling info for exceptions. Exception marshalling does not have any use-site information and
+        /// is not in the signature. As a result, this method can be used to generate the marshalling info for an exception marshaller.
+        /// <code>
+        /// var exceptionMarshallingInfo = CustomMarshallingInfoForNonSignatureElement.Create(compilation.GetTypeByMetadataName(TypeNames.System_Exception), compilation.GetTypeByMetadataName(TypeNames.DefaultExceptionMarshaller), triggeringAttribute, compilation, diagnostics);
+        /// </code>
+        /// </example>
         public static MarshallingInfo CreateNativeMarshallingInfoForNonSignatureElement(
             ITypeSymbol type,
             INamedTypeSymbol entryPointType,

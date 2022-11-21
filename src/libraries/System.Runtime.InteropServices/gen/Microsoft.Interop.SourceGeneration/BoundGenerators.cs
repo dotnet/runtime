@@ -133,7 +133,7 @@ namespace Microsoft.Interop
                 static m => GetInfoDependencies(m.TypeInfo))
                 .ToImmutableArray();
 
-            static IEnumerable<(bool, int)> GetInfoDependencies(TypePositionInfo info)
+            static IEnumerable<(bool IsManagedIndex, int Index)> GetInfoDependencies(TypePositionInfo info)
             {
                 // A parameter without a managed index cannot have any dependencies.
                 if (info.ManagedIndex == TypePositionInfo.UnsetIndex)

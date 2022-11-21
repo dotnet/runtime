@@ -21,9 +21,12 @@ namespace System.Runtime.InteropServices.Marshalling
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
-            // and calls SetErrorInfo if the platform suppots it.
-            // TODO: Should we use the built-in COM interop support for this, or should we use the generator to implement
-            // this experience?
+            // and calls SetErrorInfo if the platform supports it.
+
+            // We use CreateTruncating here to convert from the int return type of Marshal.GetHRForException
+            // to whatever the T is. A "truncating" conversion in this case is the same as an unchecked conversion like
+            // (uint)Marshal.GetHRForException(e) would be if we were writing a non-generic marshaller.
+            // Since we're using the INumber<T> interface, this is the correct mechanism to represent that conversion.
             return T.CreateTruncating(Marshal.GetHRForException(e));
         }
     }

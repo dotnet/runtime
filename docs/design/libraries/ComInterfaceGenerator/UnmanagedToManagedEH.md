@@ -1,6 +1,6 @@
 # Unmanaged to Managed Exception Handling
 
-As part of building out the "vtable method stub" generator as the first steps on our path to the COM source generator, we need to determine how to handle exceptions at the managed code boundary in the unmanaged-calling-managed direction. When implementing a Com Callable Wrapper (or equivalent concept), the source generator will need to generate an `[UnmanagedCallersOnly]` wrapper of a method. We do not support propogating exceptions across an `[UnmanagedCallersOnly]` method on all platforms, so we need to determine how to handle exceptions.
+As part of building out the "vtable method stub" generator as the first steps on our path to the COM source generator, we need to determine how to handle exceptions at the managed code boundary in the unmanaged-calling-managed direction. When implementing a COM Callable Wrapper (or equivalent concept), the source generator will need to generate an `[UnmanagedCallersOnly]` wrapper of a method. We do not support propagating exceptions across an `[UnmanagedCallersOnly]` method on all platforms, so we need to determine how to handle exceptions.
 
 We determined that there were three options:
 

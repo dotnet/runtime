@@ -80,8 +80,7 @@ namespace Microsoft.Interop
                 string param = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
                 identifierName = generator.GetValueBoundaryBehavior(info, context) switch
                 {
-                    ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => managed,
-                    ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => param,
+                    ValueBoundaryBehavior.ManagedIdentifier => info.IsByRef ? param : managed,
                     ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier => native,
                     ValueBoundaryBehavior.AddressOfNativeIdentifier => param,
                     _ => throw new UnreachableException()

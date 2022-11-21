@@ -82,7 +82,7 @@ namespace Microsoft.Interop
             setupStatements.AddRange(declarations.Variables);
             setupStatements.AddRange(statements.Setup);
 
-            var tryStatements = new List<StatementSyntax>();
+            List<StatementSyntax> tryStatements = new();
             tryStatements.AddRange(statements.Unmarshal);
 
             tryStatements.Add(statements.InvokeStatement);
@@ -99,7 +99,7 @@ namespace Microsoft.Interop
             tryStatements.AddRange(statements.Marshal);
 
             List<StatementSyntax> allStatements = setupStatements;
-            List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
+            List<StatementSyntax> finallyStatements = new();
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
                 finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
