@@ -277,7 +277,7 @@ public:
     };
 
 private:
-    static const uintptr_t FIELD_KIND_MASK = 0b111;
+    static const uintptr_t FIELD_KIND_MASK = 0b11;
 
     static_assert_no_msg(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
 
