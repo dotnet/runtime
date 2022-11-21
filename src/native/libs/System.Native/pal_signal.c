@@ -726,13 +726,11 @@ void UninstallTTOUHandlerForConsole(void)
     }
     pthread_mutex_unlock(&lock);
 }
-#endif /* TARGET_WASI */
 
 #ifndef HAS_CONSOLE_SIGNALS
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
-#if !defined(TARGET_WASI)
     static int32_t initialized = 0;
 
     // The Process, Console and PosixSignalRegistration classes call this method for initialization.
@@ -746,9 +744,7 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
     }
 
     return initialized;
-#else /* TARGET_WASI */
-    return false;
-#endif /* TARGET_WASI */
 }
 
-#endif
+#endif /* !HAS_CONSOLE_SIGNALS  */
+#endif /* !TARGET_WASI */

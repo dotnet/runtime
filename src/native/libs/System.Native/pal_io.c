@@ -744,7 +744,11 @@ int32_t SystemNative_FSync(intptr_t fd)
 int32_t SystemNative_FLock(intptr_t fd, int32_t operation)
 {
     int32_t result;
+#if !defined(TARGET_WASI)
     while ((result = flock(ToFileDescriptor(fd), operation)) < 0 && errno == EINTR);
+#else /* TARGET_WASI */
+    result = EINTR;
+#endif /* TARGET_WASI */
     return result;
 }
 
@@ -1018,7 +1022,7 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#ifdef MADV_DONTFORK
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASI)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
@@ -1047,7 +1051,11 @@ int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
         return -1;
     }
 
+#if !defined(TARGET_WASI)
     return msync(address, (size_t)length, flags);
+#else
+    return -1;
+#endif
 }
 
 int64_t SystemNative_SysConf(int32_t name)
