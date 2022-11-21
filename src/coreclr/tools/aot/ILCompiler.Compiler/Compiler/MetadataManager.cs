@@ -36,6 +36,8 @@ namespace ILCompiler
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
+        protected readonly MetadataManagerOptions _options;
+
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
@@ -60,15 +62,45 @@ namespace ILCompiler
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
 
+        private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
+
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
-            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
+            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
+            MetadataManagerOptions options)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
             _resourceBlockingPolicy = resourceBlockingPolicy;
             _dynamicInvokeThunkGenerationPolicy = dynamicInvokeThunkGenerationPolicy;
+            _options = options;
+        }
+
+        public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
+
+        internal ObjectNode.ObjectData PrepareForDehydration(DehydratableObjectNode node, ObjectNode.ObjectData hydratedData)
+        {
+            _dehydratableData.Add((node, hydratedData));
+
+            return new ObjectNode.ObjectData(new byte[hydratedData.Data.Length],
+                Array.Empty<Relocation>(),
+                hydratedData.Alignment,
+                hydratedData.DefinedSymbols);
+        }
+
+        public IEnumerable<ObjectNode.ObjectData> GetDehydratableData()
+        {
+#if DEBUG
+            // We're making an assumption that PrepareForDehydration was called in the emission order.
+            // Double check that here.
+            var comparer = new CompilerComparer();
+            for (int i = 1; i < _dehydratableData.Count; i++)
+                Debug.Assert(comparer.Compare(_dehydratableData[i - 1].Node, _dehydratableData[i].Node) < 0);
+#endif
+
+            foreach (var entry in _dehydratableData)
+                yield return entry.Data;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -155,6 +187,12 @@ namespace ILCompiler
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
+
+            if (IsDataDehydrated)
+            {
+                var dehydratedDataNode = new DehydratedDataNode();
+                header.Add(ReadyToRunSectionType.DehydratedData, dehydratedDataNode, dehydratedDataNode, dehydratedDataNode.EndSymbol);
+            }
         }
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -837,5 +875,11 @@ namespace ILCompiler
         None = 0x00,
         Description = 0x01,
         RuntimeMapping = 0x02,
+    }
+
+    [Flags]
+    public enum MetadataManagerOptions
+    {
+        DehydrateData = 0x01,
     }
 }

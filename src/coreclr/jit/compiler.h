@@ -2545,7 +2545,13 @@ public:
                                  bool        isSimdAsHWIntrinsic);
 
     GenTree* gtNewSimdCreateBroadcastNode(
-        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarUnsafeNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
 
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
@@ -4827,6 +4833,8 @@ public:
     void fgValueNumberFieldStore(
         GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
+    bool fgValueNumberConstLoad(GenTreeIndir* tree);
+
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
 
@@ -4878,10 +4886,6 @@ public:
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 
-    // Does value-numbering for a block assignment.
-    void fgValueNumberBlockAssignment(GenTree* tree);
-
-    // Does value-numbering for a variable definition that has SSA.
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
@@ -5784,7 +5788,6 @@ private:
     GenTree* fgMorphLeaf(GenTree* tree);
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
-    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
@@ -6061,10 +6064,6 @@ protected:
 
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
-
-    // During global assertion prop, returns the conservative normal VN for a tree;
-    // otherwise returns NoVN
-    ValueNum optConservativeNormalVN(GenTree* tree);
 
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
@@ -6840,6 +6839,8 @@ public:
         }
     };
 
+    PhaseStatus optVNBasedDeadStoreRemoval();
+
 // clang-format off
 
 #define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
@@ -7341,6 +7342,10 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
+
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree*         op1,
                                       GenTree*         op2,
@@ -7348,7 +7353,6 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
-    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
@@ -7589,36 +7593,50 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
+    template <typename TPrint>
+    void eeAppendPrint(class StringPrinter* printer, TPrint print);
+    // Conventions: the "base" primitive printing functions take StringPrinter*
+    // and do not do any SPMI handling. There are then convenience printing
+    // functions exposed on top that have SPMI handling and additional buffer
+    // handling. Note that the strings returned are never truncated here.
     void eePrintJitType(class StringPrinter* printer, var_types jitType);
-    void eePrintType(class StringPrinter* printer,
-                     CORINFO_CLASS_HANDLE clsHnd,
-                     bool                 includeNamespaces,
-                     bool                 includeInstantiation);
-    void eePrintTypeOrJitAlias(class StringPrinter* printer,
-                               CORINFO_CLASS_HANDLE clsHnd,
-                               bool                 includeNamespaces,
-                               bool                 includeInstantiation);
+    void eePrintType(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
                        CORINFO_SIG_INFO*     sig,
-                       bool                  includeNamespaces,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
                        bool                  includeReturnType,
                        bool                  includeThisSpecifier);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
-    const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
+    void eePrintField(class StringPrinter* printer, CORINFO_FIELD_HANDLE fldHnd, bool includeType);
+
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
                                     bool                  includeReturnType    = true,
-                                    bool                  includeThisSpecifier = true);
-    unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
+                                    bool                  includeThisSpecifier = true,
+                                    char*                 buffer               = nullptr,
+                                    size_t                bufferSize           = 0);
 
-    bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
-    CORINFO_METHOD_HANDLE eeGetMethodHandleForNative(CORINFO_METHOD_HANDLE method);
+    const char* eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer = nullptr, size_t bufferSize = 0);
+
+    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fldHnd,
+                               bool                 includeType,
+                               char*                buffer     = nullptr,
+                               size_t               bufferSize = 0);
+
+    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer = nullptr, size_t bufferSize = 0);
+
+    void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
+    const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+#if defined(DEBUG)
+    unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
 #endif
+
+    unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
@@ -7640,10 +7658,6 @@ public:
                           CORINFO_SIG_INFO*      retSig);
 
     void eeGetMethodSig(CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* retSig, CORINFO_CLASS_HANDLE owner = nullptr);
-
-    // Method entry-points, instrs
-
-    CORINFO_METHOD_HANDLE eeMarkNativeTarget(CORINFO_METHOD_HANDLE method);
 
     CORINFO_EE_INFO eeInfo;
     bool            eeInfoInitialized;
@@ -7848,16 +7862,6 @@ public:
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
     // Utility functions
-
-    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
-
-#if defined(DEBUG)
-    void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
-    unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
-    const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
-#endif
-
-    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);

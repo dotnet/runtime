@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
+    <IsPackable>true</IsPackable>
+    <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
+         used for packages.config which we do not support. -->
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <RootNamespace>Mono.Linker</RootNamespace>
+    <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
+    <EnableXlfLocalization>false</EnableXlfLocalization>
+    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="BannedSymbols.txt" />
+    <Compile Remove="ref\**\*.cs" />
+    <Compile Include="..\..\external\corert\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="$(MicrosoftCodeAnalysisBannedApiAnalyzersVersion)" Condition="'$(DotNetBuildFromSource)' != 'true'">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- When publishing illink as a dependency of ILLink.Tasks, we want
+       to include files needed to run it as an application in the
+       publish output. See https://github.com/dotnet/sdk/issues/1675. -->
+  <Target Name="AddRuntimeDependenciesToContent" BeforeTargets="GetCopyToOutputDirectoryItems" DependsOnTargets="GenerateBuildDependencyFile;GenerateBuildRuntimeConfigurationFiles" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ItemGroup>
+      <ContentWithTargetPath Include="$(ProjectDepsFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectDepsFileName)" />
+      <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectRuntimeConfigFileName)" />
+    </ItemGroup>
+  </Target>
+  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
+
+</Project>

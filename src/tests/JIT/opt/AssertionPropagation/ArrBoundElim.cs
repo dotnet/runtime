@@ -8,7 +8,7 @@ class Program
 {
     private static int returnCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         RunTestThrows(Tests.MulOutsideRange);
         RunTestThrows(Tests.MulOverflow);

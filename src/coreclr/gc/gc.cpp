@@ -3933,9 +3933,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
     return alloc;
 }
 
-// ETW TODO: need to fire create seg events for these methods.
-// FIRE_EVENT(GCCreateSegment_V1
-bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn)
+bool region_allocator::allocate_region (int gen_num, size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn)
 {
     size_t alignment = region_alignment;
     size_t alloc_size = align_region_up (size);
@@ -3950,17 +3948,36 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
     *end = alloc + alloc_size;
     ret = (alloc != NULL);
 
+    gc_etw_segment_type segment_type;
+
+    if (gen_num == loh_generation)
+    {
+        segment_type = gc_etw_segment_large_object_heap;
+    }
+    else if (gen_num == poh_generation)
+    {
+        segment_type = gc_etw_segment_pinned_object_heap;
+    }
+    else
+    {
+        segment_type = gc_etw_segment_small_object_heap;
+    }
+
+    FIRE_EVENT(GCCreateSegment_V1, (alloc + sizeof (aligned_plug_and_gap)),
+                                  size - sizeof (aligned_plug_and_gap),
+                                  segment_type);
+
     return ret;
 }
 
-bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn)
+bool region_allocator::allocate_basic_region (int gen_num, uint8_t** start, uint8_t** end, region_allocator_callback_fn fn)
 {
-    return allocate_region (region_alignment, start, end, allocate_forward, fn);
+    return allocate_region (gen_num, region_alignment, start, end, allocate_forward, fn);
 }
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn)
+bool region_allocator::allocate_large_region (int gen_num, uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn)
 {
     if (size == 0)
         size = large_region_alignment;
@@ -3971,7 +3988,7 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, al
         assert (round_up_power2(large_region_alignment) == large_region_alignment);
         size = (size + (large_region_alignment - 1)) & ~(large_region_alignment - 1);
     }
-    return allocate_region (size, start, end, direction, fn);
+    return allocate_region (gen_num, size, start, end, direction, fn);
 }
 
 void region_allocator::delete_region (uint8_t* region_start)
@@ -5903,7 +5920,6 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
         assert ((res->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == flags);
 #else //USE_REGIONS
         res->flags |= flags;
-#endif //USE_REGIONS
 
         FIRE_EVENT(GCCreateSegment_V1,
             heap_segment_mem(res),
@@ -5912,13 +5928,12 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
                 gc_etw_segment_pinned_object_heap :
                 gc_etw_segment_large_object_heap);
 
-#ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
         hp->thread_uoh_segment (gen_number, res);
 #else
         thread_uoh_segment (gen_number, res);
 #endif //MULTIPLE_HEAPS
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
         GCToEEInterface::DiagAddNewRegion(
                             gen_number,
                             heap_segment_mem (res),
@@ -11774,7 +11789,7 @@ void gc_heap::clear_gen1_cards()
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = use_large_pages_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;
@@ -11799,8 +11814,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     heap_segment_mem (new_segment) = start;
     heap_segment_used (new_segment) = start;
     heap_segment_reserved (new_segment) = new_pages + size;
-    heap_segment_committed (new_segment) = (use_large_pages_p ?
-        heap_segment_reserved(new_segment) : (new_pages + initial_commit));
+    heap_segment_committed (new_segment) = new_pages + initial_commit;
 
     init_heap_segment (new_segment, hp
 #ifdef USE_REGIONS
@@ -13519,23 +13533,26 @@ bool allocate_initial_regions(int number_of_heaps)
     for (int i = 0; i < number_of_heaps; i++)
     {
         bool succeed = global_region_allocator.allocate_large_region(
+            poh_generation,
             &initial_regions[i][poh_generation][0],
             &initial_regions[i][poh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
-        for (int gen = max_generation; gen >= 0; gen--)
+        for (int gen_num = max_generation; gen_num >= 0; gen_num--)
         {
             bool succeed = global_region_allocator.allocate_basic_region(
-                &initial_regions[i][gen][0],
-                &initial_regions[i][gen][1], nullptr);
+                gen_num,
+                &initial_regions[i][gen_num][0],
+                &initial_regions[i][gen_num][1], nullptr);
             assert(succeed);
         }
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
         bool succeed = global_region_allocator.allocate_large_region(
+            loh_generation,
             &initial_regions[i][loh_generation][0],
             &initial_regions[i][loh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
@@ -31656,8 +31673,8 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 
     // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ?
-        global_region_allocator.allocate_large_region (&start, &end, allocate_forward, size, on_used_changed) :
-        global_region_allocator.allocate_basic_region (&start, &end, on_used_changed));
+        global_region_allocator.allocate_large_region (gen_num, &start, &end, allocate_forward, size, on_used_changed) :
+        global_region_allocator.allocate_basic_region (gen_num, &start, &end, on_used_changed));
 
     if (!allocated_p)
     {

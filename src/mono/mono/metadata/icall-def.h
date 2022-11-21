@@ -357,7 +357,7 @@ HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection
 
 ICALL_TYPE(MCMETH, "System.Reflection.RuntimeConstructorInfo", MCMETH_1)
 HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo_GetGenericMethodDefinition, MonoReflectionMethod, 1, (MonoReflectionMethod))
-HANDLES(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke, MonoObject, 4, (MonoReflectionMethod, MonoObject, MonoSpanOfObjects_ref, MonoExceptionOut))
+HANDLES(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke, MonoObject, 4, (MonoReflectionMethod, MonoObject, gpointer_ref, MonoExceptionOut))
 HANDLES(MCMETH_5, "InvokeClassConstructor", ves_icall_InvokeClassConstructor, void, 1, (MonoQCallTypeHandle))
 HANDLES_REUSE_WRAPPER(MCMETH_4, "get_metadata_token", ves_icall_reflection_get_token)
 
@@ -474,8 +474,11 @@ HANDLES_REUSE_WRAPPER(RFH_2, "SetValueInternal", ves_icall_RuntimeFieldInfo_SetV
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 HANDLES(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer, gpointer, 1, (MonoMethod_ptr))
+HANDLES(MAHN_3, "ReboxFromNullable", ves_icall_RuntimeMethodHandle_ReboxFromNullable, void, 2, (MonoObject, MonoObjectHandleOnStack))
+HANDLES(MAHN_2, "ReboxToNullable", ves_icall_RuntimeMethodHandle_ReboxToNullable, void, 3, (MonoObject, MonoQCallTypeHandle, MonoObjectHandleOnStack))
 
-ICALL_TYPE(RT, "System.RuntimeType", RT_1)
+ICALL_TYPE(RT, "System.RuntimeType", RT_31)
+HANDLES(RT_31, "AllocateValueType", ves_icall_System_RuntimeType_AllocateValueType, void, 3, (MonoQCallTypeHandle, MonoObject, MonoObjectHandleOnStack))
 HANDLES(RT_1, "CreateInstanceInternal", ves_icall_System_RuntimeType_CreateInstanceInternal, MonoObject, 1, (MonoQCallTypeHandle))
 HANDLES(RT_2, "GetConstructors_native", ves_icall_RuntimeType_GetConstructors_native, GPtrArray_ptr, 2, (MonoQCallTypeHandle, guint32))
 HANDLES(RT_30, "GetCorrespondingInflatedMethod", ves_icall_RuntimeType_GetCorrespondingInflatedMethod, MonoReflectionMethod, 2, (MonoQCallTypeHandle, MonoReflectionMethod))

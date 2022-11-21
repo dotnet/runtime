@@ -1541,11 +1541,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   var tmp1 = Vector64.CreateScalarUnsafe(op1);
     //   ...
 
-    NamedIntrinsic createScalar =
-        (simdType == TYP_SIMD8) ? NI_Vector64_CreateScalarUnsafe : NI_Vector128_CreateScalarUnsafe;
-
-    GenTree* tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), createScalar, simdBaseJitType, simdSize);
-    BlockRange().InsertAfter(node->Op(1), tmp1);
+    GenTree* tmp1 = InsertNewSimdCreateScalarUnsafeNode(simdType, node->Op(1), simdBaseJitType, simdSize);
     LowerNode(tmp1);
 
     // We will be constructing the following parts:
@@ -2462,6 +2458,15 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
             startOfChain->AsOp()->gtGetOp2()->ClearContained();
             ContainCheckCompare(startOfChain->AsOp());
         }
+    }
+
+    if (node->gtOp1->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp1);
+    }
+    if (node->gtOp2->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtOp2);
     }
 }
 

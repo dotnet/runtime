@@ -31,7 +31,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetElementMarshalDirection(info, context);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             switch (context.CurrentStage)
             {

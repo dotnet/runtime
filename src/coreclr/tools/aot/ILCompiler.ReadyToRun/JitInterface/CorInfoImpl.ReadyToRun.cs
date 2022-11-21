@@ -452,6 +452,7 @@ namespace Internal.JitInterface
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
+        private HashSet<MethodDesc> _synthesizedPgoDependencies;
 
         public bool HasColdCode { get; private set; }
 
@@ -3010,6 +3011,11 @@ namespace Internal.JitInterface
         private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();
+        }
+
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            return false;
         }
         
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)

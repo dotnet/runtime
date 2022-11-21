@@ -11,7 +11,7 @@ namespace GitHub_24114
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             Test();
             return 100;

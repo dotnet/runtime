@@ -47,17 +47,14 @@ namespace Microsoft.Interop
                 new AttributedMarshallingModelOptions(
                     runtimeMarshallingDisabled,
                     direction == MarshalDirection.ManagedToUnmanaged
-                    ? MarshalMode.ManagedToUnmanagedIn
-                    : MarshalMode.UnmanagedToManagedOut,
+                        ? MarshalMode.ManagedToUnmanagedIn
+                        : MarshalMode.UnmanagedToManagedOut,
                     direction == MarshalDirection.ManagedToUnmanaged
-                    ? MarshalMode.ManagedToUnmanagedRef
-                    : MarshalMode.UnmanagedToManagedRef,
+                        ? MarshalMode.ManagedToUnmanagedRef
+                        : MarshalMode.UnmanagedToManagedRef,
                     direction == MarshalDirection.ManagedToUnmanaged
-                    ? MarshalMode.ManagedToUnmanagedOut
-                    : MarshalMode.UnmanagedToManagedIn));
-
-            // Include the native-to-managed this generator factory here as well as we use this function for all COM-related functionality
-            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
+                        ? MarshalMode.ManagedToUnmanagedOut
+                        : MarshalMode.UnmanagedToManagedIn));
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 

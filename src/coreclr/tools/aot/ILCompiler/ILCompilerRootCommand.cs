@@ -113,6 +113,8 @@ namespace ILCompiler
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
+        public Option<bool> Dehydrate { get; } =
+            new(new[] { "--dehydrate" }, "Dehydrate runtime data structures");
         public Option<bool> PreinitStatics { get; } =
             new(new[] { "--preinitstatics" }, "Interpret static constructors at compile time if possible (implied by -O)");
         public Option<bool> NoPreinitStatics { get; } =
@@ -205,6 +207,7 @@ namespace ILCompiler
             AddOption(Parallelism);
             AddOption(InstructionSet);
             AddOption(Guard);
+            AddOption(Dehydrate);
             AddOption(PreinitStatics);
             AddOption(NoPreinitStatics);
             AddOption(SuppressedWarnings);
