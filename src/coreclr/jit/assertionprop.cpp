@@ -3382,13 +3382,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             if (curAssertion->op2.HasIconFlag())
             {
                 // Here we have to allocate a new 'large' node to replace the old one
-                newTree       = gtNewIconHandleNode(curAssertion->op2.u1.iconVal, curAssertion->op2.GetIconFlag());
-                FieldSeq* seq = curAssertion->op2.u1.fieldSeq;
-                if ((seq != nullptr) && (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL) &&
-                    (seq->GetOffset() == curAssertion->op2.u1.iconVal))
-                {
-                    newTree->AsIntCon()->gtFieldSeq = seq;
-                }
+                newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal, curAssertion->op2.GetIconFlag(),
+                                              curAssertion->op2.u1.fieldSeq);
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL

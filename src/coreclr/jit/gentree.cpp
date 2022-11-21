@@ -17622,6 +17622,15 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
             baseAddr = AsOp()->gtOp1;
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             offset   = AsOp()->gtOp2->AsIntCon()->IconValue();
+
+            if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            {
+                if (!baseAddr->IsIntegralConst(0))
+                {
+                    // Bail-out, base has to be zero if fldSeq represents a known address (not a small offset)
+                    return false;
+                }
+            }
         }
         else
         {
@@ -17633,6 +17642,15 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
         baseAddr = this;
         fldSeq   = AsIntCon()->gtFieldSeq;
         offset   = AsIntCon()->IconValue();
+
+        if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+        {
+            if (!baseAddr->IsIntegralConst(0))
+            {
+                // Bail-out, base has to be zero if fldSeq represents a known address (not a small offset)
+                return false;
+            }
+        }
     }
     else
     {

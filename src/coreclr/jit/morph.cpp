@@ -5408,7 +5408,7 @@ GenTree* Compiler::fgMorphExpandStaticField(GenTree* tree)
     {
         // Only simple statics get importred as GT_FIELDs.
         fieldSeq = GetFieldSeqStore()->Create(fieldHandle, reinterpret_cast<size_t>(fldAddr),
-                                              FieldSeq::FieldKind::SimpleStatic);
+                                              FieldSeq::FieldKind::SimpleStaticKnownAddress);
     }
 
     // TODO-CQ: enable this optimization for 32 bit targets.
