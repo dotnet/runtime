@@ -3303,9 +3303,31 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
-		cfg->deopt = TRUE;
-		/* Can't reconstruct inlined state */
-		cfg->disable_inline = TRUE;
+		gboolean can_deopt = TRUE;
+		/*
+		 * Can't handle catch clauses inside finally clauses right now.
+		 * When the ENDFINALLY opcode of the outer clause is encountered
+		 * while executing the inner catch clause from run_with_il_state (),
+		 * it will assert since it doesn't know where to continue execution.
+		 */
+		for (guint i = 0; i < cfg->header->num_clauses; ++i) {
+			for (guint j = 0; j < cfg->header->num_clauses; ++j) {
+				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
+
+				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+						can_deopt = FALSE;
+						break;
+					}
+				}
+			}
+		}
+		if (can_deopt) {
+			cfg->deopt = TRUE;
+			/* Can't reconstruct inlined state */
+			cfg->disable_inline = TRUE;
+		}
 	}
 
 #ifdef ENABLE_LLVM
