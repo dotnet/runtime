@@ -7056,7 +7056,7 @@ public:
         O1K_COUNT
     };
 
-    enum optOp2Kind
+    enum optOp2Kind : uint16_t
     {
         O2K_INVALID,
         O2K_LCLVAR_COPY,
@@ -7093,7 +7093,8 @@ public:
         } op1;
         struct AssertionDscOp2
         {
-            optOp2Kind kind; // a const or copy assignment
+            optOp2Kind kind;             // a const or copy assignment
+            uint16_t   encodedIconFlags; // encoded icon gtFlags
             ValueNum   vn;
             struct IntVal
             {
@@ -7101,7 +7102,7 @@ public:
 #if !defined(HOST_64BIT)
                 unsigned padding; // unused; ensures iconFlags does not overlap lconVal
 #endif
-                GenTreeFlags iconFlags; // gtFlags
+                FieldSeq* fieldSeq;
             };
             union {
                 SsaVar        lcl;
@@ -7112,6 +7113,25 @@ public:
             };
         } op2;
 
+        void SetOp2IconFlags(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
+        {
+            assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+            static_assert_no_msg((GTF_ICON_HDL_MASK >> 24) == 0xFF);
+            op2.encodedIconFlags = flags >> 24;
+            op2.u1.fieldSeq      = fieldSeq;
+        }
+        GenTreeFlags GetOp2IconFlags()
+        {
+            GenTreeFlags flags = (GenTreeFlags)(op2.encodedIconFlags << 24);
+            assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+            static_assert_no_msg((GTF_ICON_HDL_MASK >> 24) == 0xFF);
+            return flags;
+        }
+        bool Op2HasIconFlags()
+        {
+            assert(op2.encodedIconFlags <= 0xFF);
+            return op2.encodedIconFlags != 0;
+        }
         bool IsCheckedBoundArithBound()
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
@@ -7218,7 +7238,8 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.u1.iconFlags == that->op2.u1.iconFlags));
+                    return ((op2.u1.iconVal == that->op2.u1.iconVal) &&
+                            (op2.encodedIconFlags == that->op2.encodedIconFlags));
 
                 case O2K_CONST_LONG:
                     return (op2.lconVal == that->op2.lconVal);
