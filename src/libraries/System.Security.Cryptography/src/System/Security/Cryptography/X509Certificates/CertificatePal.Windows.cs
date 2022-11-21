@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static certContext =>
+                    return InvokeWithCertContext(static certContext =>
                     {
                         return Marshal.PtrToStringAnsi(certContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
                     });
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(pCertContext =>
+                    return InvokeWithCertContext(pCertContext =>
                     {
                         string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
 
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext =>
+                    return InvokeWithCertContext(static pCertContext =>
                     {
                         return pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.ToByteArray();
                     });
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext =>
+                    return InvokeWithCertContext(static pCertContext =>
                     {
                         byte[] serialNumber = pCertContext->pCertInfo->SerialNumber.ToByteArray();
                         Array.Reverse(serialNumber);
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext =>
+                    return InvokeWithCertContext(static pCertContext =>
                     {
                         return Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId)!;
                     });
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext => pCertContext->pCertInfo->NotAfter.ToDateTime());
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotAfter.ToDateTime());
                 }
             }
         }
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext => pCertContext->pCertInfo->NotBefore.ToDateTime());
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotBefore.ToDateTime());
                 }
             }
         }
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext =>
+                    return InvokeWithCertContext(static pCertContext =>
                     {
                         return new Span<byte>(pCertContext->pbCertEncoded, pCertContext->cbCertEncoded).ToArray();
                     });
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static pCertContext => pCertContext->pCertInfo->dwVersion + 1);
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->dwVersion + 1);
                 }
             }
         }
@@ -325,7 +325,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static certContext =>
+                    return InvokeWithCertContext(static certContext =>
                     {
                         ReadOnlySpan<byte> encodedSubjectName = certContext->pCertInfo->Subject.DangerousAsSpan();
                         X500DistinguishedName subjectName = new X500DistinguishedName(encodedSubjectName);
@@ -341,7 +341,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static certContext =>
+                    return InvokeWithCertContext(static certContext =>
                     {
                         ReadOnlySpan<byte> encodedIssuerName = certContext->pCertInfo->Issuer.DangerousAsSpan();
                         X500DistinguishedName issuerName = new X500DistinguishedName(encodedIssuerName);
@@ -362,7 +362,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    return AcquireCertContext(static certContext =>
+                    return InvokeWithCertContext(static certContext =>
                     {
                         Interop.Crypt32.CERT_INFO* pCertInfo = certContext->pCertInfo;
                         int numExtensions = pCertInfo->cExtension;
@@ -473,19 +473,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal SafeCertContextHandle GetCertContext()
         {
-            bool added = false;
-            _certContext.DangerousAddRef(ref added);
-
-            try
+            unsafe
             {
-                return Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
-            }
-            finally
-            {
-                if (added)
+                return InvokeWithCertContext(static certContext =>
                 {
-                    _certContext.DangerousRelease();
-                }
+                    return Interop.Crypt32.CertDuplicateCertificateContext((IntPtr)certContext);
+                });
             }
         }
 
@@ -552,7 +545,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private unsafe T AcquireCertContext<T>(CertContextCallback<T> callback)
+        private unsafe T InvokeWithCertContext<T>(CertContextCallback<T> callback)
         {
             bool added = false;
             _certContext.DangerousAddRef(ref added);
