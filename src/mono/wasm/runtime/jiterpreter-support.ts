@@ -6,7 +6,8 @@ import { Module } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
-export const maxFailures = 4;
+export const maxFailures = 2,
+    maxMemsetSize = 64;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -657,31 +658,31 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
         return true;
     }
 
-    if (count >= 64)
+    if (count >= maxMemsetSize)
         return false;
 
     if (destOnStack)
         builder.local("math_lhs32", WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
-    // initlocals sizes are always 8 byte aligned, so for large sets we work in 8 bytes at a time
+    // Do blocks of 8-byte sets first for smaller/faster code
     while (count >= 8) {
         builder.local(destOnStack ? "math_lhs32" : "pLocals");
         builder.i52_const(0);
         builder.appendU8(WasmOpcode.i64_store);
-        // since sizes are 8 byte aligned it should be safe to do natural alignment stores too
-        builder.appendMemarg(offset, 2);
+        builder.appendMemarg(offset, 0);
         offset += 8;
         count -= 8;
     }
 
-    // initlocals sizes are always 8 byte aligned, so for large sets we work in 8 bytes at a time
+    // Then set the remaining 0-7 bytes
     while (count >= 1) {
         builder.local(destOnStack ? "math_lhs32" : "pLocals");
         builder.i32_const(0);
         let localCount = count % 4;
         switch (localCount) {
             case 0:
+                // since we did %, 4 bytes turned into 0. gotta fix that up to avoid infinite loop
                 localCount = 4;
                 builder.appendU8(WasmOpcode.i32_store);
                 break;
@@ -692,8 +693,7 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
                 builder.appendU8(WasmOpcode.i32_store16);
                 break;
         }
-        // since sizes are 8 byte aligned it should be safe to do natural alignment stores too
-        builder.appendMemarg(offset, 2);
+        builder.appendMemarg(offset, 0);
         offset += localCount;
         count -= localCount;
     }
@@ -715,6 +715,8 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
 
 // expects dest then source to have been pushed onto wasm stack
 export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
+    // FIXME: Unroll this like memset, since we now know that the memory ops generate expensive
+    //  function calls
     switch (count) {
         case 1:
             builder.appendU8(WasmOpcode.i32_load8_u);
