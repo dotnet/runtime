@@ -15,7 +15,7 @@ namespace System.Buffers
         {
             Debug.Assert(c < 256);
             uint offset = (uint)(c >> 5);
-            uint significantBit = 1u << (c & 31);
+            uint significantBit = 1u << c;
             _values[offset] |= significantBit;
         }
 
@@ -36,7 +36,7 @@ namespace System.Buffers
         {
             Debug.Assert(b < 256);
             uint offset = (uint)(b >> 5);
-            uint significantBit = 1u << (b & 31);
+            uint significantBit = 1u << b;
             return (_values[offset] & significantBit) != 0;
         }
 
