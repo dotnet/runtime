@@ -170,14 +170,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 FileType = PgoFileType.jittrace;
                 ProcessJitEvents = true;
                 ValidateOutputFile = false;
-                ProcessR2REvents = context.ParseResult.GetValueForOption(_includeReadyToRun);
+                ProcessR2REvents = context.ParseResult.GetValue(_includeReadyToRun);
 
-                if (context.ParseResult.GetValueForOption(_isSorted))
+                if (context.ParseResult.GetValue(_isSorted))
                 {
                     JitTraceOptions |= JitTraceOptions.sorted;
                 }
 
-                if (context.ParseResult.GetValueForOption(_showTimestamp))
+                if (context.ParseResult.GetValue(_showTimestamp))
                 {
                     JitTraceOptions |= JitTraceOptions.showtimestamp;
                 }
