@@ -47,7 +47,7 @@ jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamPro
 
         if ((*env)->IsInstanceOf(env, loc[trustManager], g_X509TrustManager))
         {
-            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, sslStreamProxyHandle);
+            loc[dotnetProxyTrustManager] = (*env)->NewObject(env, g_DotnetProxyTrustManager, g_DotnetProxyTrustManagerCtor, (jlong)sslStreamProxyHandle);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
             (*env)->SetObjectArrayElement(env, trustManagers, (jsize)i, loc[dotnetProxyTrustManager]);
@@ -68,8 +68,8 @@ cleanup:
 }
 
 jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, intptr_t sslStreamProxyHandle)
+    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle)
 {
     abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");
-    return verifyRemoteCertificate(sslStreamProxyHandle);
+    return verifyRemoteCertificate((intptr_t)sslStreamProxyHandle);
 }

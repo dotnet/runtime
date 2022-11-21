@@ -10,20 +10,22 @@ import javax.net.ssl.X509TrustManager;
  * class during TLS handshakes to perform the validation of the remote
  * peer's certificate.
  */
-public class DotnetProxyTrustManager implements X509TrustManager {
-    private long sslStreamProxyHandle;
+public final class DotnetProxyTrustManager implements X509TrustManager {
+    private final long sslStreamProxyHandle;
 
     public DotnetProxyTrustManager(long sslStreamProxyHandle) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
     }
 
-    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+    public void checkClientTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
         if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
             throw new CertificateException();
         }
     }
 
-    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+    public void checkServerTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
         if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
             throw new CertificateException();
         }
