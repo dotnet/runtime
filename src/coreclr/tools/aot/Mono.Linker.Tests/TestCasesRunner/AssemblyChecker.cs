@@ -106,19 +106,40 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach (MethodDesc? compiledMethod in testResult.TrimmingResults.CompiledMethodBodies) {
-				if (!AddMember (compiledMethod))
+				AddMethod (compiledMethod);
+			}
+
+			void AddMethod (MethodDesc method)
+			{
+				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
+
+				if (methodDef.IsCanonicalMethod (CanonicalFormKind.Any))
 					return;
 
-				if (compiledMethod.OwningType is { } owningType)
+				if (methodDef.OwningType is MetadataType { Namespace: "Internal.CompilerGenerated" })
+					return;
+
+				if (!AddMember (methodDef))
+					return;
+
+				if (methodDef.OwningType is { } owningType)
 					AddType (owningType);
 			}
 
 			void AddType (TypeDesc type)
 			{
-				if (!AddMember (type))
+				TypeDesc typeDef = type.GetTypeDefinition ();
+
+				if (typeDef.IsCanonicalSubtype (CanonicalFormKind.Any))
 					return;
 
-				if (type is MetadataType { ContainingType: { } containingType }) {
+				if (typeDef is MetadataType { Namespace: "Internal.CompilerGenerated" })
+					return;
+
+				if (!AddMember (typeDef))
+					return;
+
+				if (typeDef is MetadataType { ContainingType: { } containingType }) {
 					AddType (containingType);
 				}
 			}

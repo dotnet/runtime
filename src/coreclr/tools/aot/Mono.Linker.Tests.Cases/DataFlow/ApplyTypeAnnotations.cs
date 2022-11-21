@@ -128,12 +128,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInner
 		{
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
@@ -143,6 +145,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public T GetValue () { return default (T); }
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerInner
@@ -155,6 +158,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerOne<
@@ -164,6 +168,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerTwo
@@ -173,19 +178,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWitGenericInnerMultiDimArray
 		{
 		}
 
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
+		[Kept]
+		[KeptMember (".ctor()", KeptBy = ProducedBy.NativeAot)]
 		class FromStringConstantWithMultiDimArray
 		{
+			// https://github.com/dotnet/runtime/issues/72833
+			// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
+			[Kept (KeptBy = ProducedBy.NativeAot)]
 			public void UnusedMethod () { }
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
@@ -202,11 +214,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithMultiDimArray[,]");
 		}
 
-		[Kept]
-		[KeptMember (".ctor()")]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericAndAssemblyQualified<T>
 		{
-			[Kept]
+			[Kept (KeptBy = ProducedBy.Trimmer)]
 			public T GetValue () { return default (T); }
 		}
 
