@@ -9,10 +9,10 @@ Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/sy
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Runtime.Intrinsics+label%3A%22help+wanted%22+) issues.
 
 ## Source
-* `Vector64/128/256/512`: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics)
-* `Arm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm)
-* `Wasm` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm)
-* `x86` intrinsics: [../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86](../../coreclr/System.Private.CoreLib/src/System/Runtime/Intrinsics/x86)
+* `Vector64/128/256/512`: [../System.Private.CoreLib/src/System/Runtime/Intrinsics](../System.Private.CoreLib/src/System/Runtime/Intrinsics)
+* `Arm` intrinsics: [../System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm](../System.Private.CoreLib/src/System/Runtime/Intrinsics/Arm)
+* `Wasm` intrinsics: [../System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm](../System.Private.CoreLib/src/System/Runtime/Intrinsics/Wasm)
+* `x86` intrinsics: [../System.Private.CoreLib/src/System/Runtime/Intrinsics/x86](../System.Private.CoreLib/src/System/Runtime/Intrinsics/x86)
 
 ## Tests
 * `Vector64/128/256/512`: [./tests/Vectors](./tests/Vectors)

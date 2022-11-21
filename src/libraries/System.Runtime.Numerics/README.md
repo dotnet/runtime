@@ -17,7 +17,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Source
 * `BigInteger` and `Complex`: [./src/System/Numerics](./src/System/Numerics).
-* Everything else: [../../coreclr/System.Private.CoreLib/src/System/Numerics](../../coreclr/System.Private.CoreLib/src/System/Numerics)
+* Everything else: [../System.Private.CoreLib/src/System/Numerics](../System.Private.CoreLib/src/System/Numerics)
 
 ## Tests
 * `System.Numerics.Vectors`: [../System.Numerics.Vectors/tests](../System.Numerics.Vectors/tests)

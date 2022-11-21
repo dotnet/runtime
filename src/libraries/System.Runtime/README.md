@@ -9,7 +9,7 @@ Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/sy
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Runtime+label%3A%22help+wanted%22+) issues.
 
 ## Source
-* [../../coreclr/System.Private.CoreLib/src/System](../../coreclr/System.Private.CoreLib/src/System)
+* [../System.Private.CoreLib/src/System](../System.Private.CoreLib/src/System)
 * Tests for this library live in [./tests](./tests) and [../System.Runtime.Extensions/tests](../System.Runtime.Extensions/tests)
 
 ## Deployment
