@@ -13,7 +13,7 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.c
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Aarea-System.IO.Compression+label%3A%22help+wanted%22) issues.
 
 ## Deployment
-`System.IO.Compression` is included in the shared framework and also provided as a [NuGet package](https://www.nuget.org/packages/System.IO.Compression).
+`System.IO.Compression` is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
 
 ## See also
  - [`System.IO.Compression.Brotli`](../System.IO.Compression.Brotli#readme)

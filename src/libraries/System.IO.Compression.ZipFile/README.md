@@ -10,7 +10,7 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.c
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Aarea-System.IO.Compression+label%3A%22help+wanted%22) issues. We don't have a specific label for ZipFile issues so you will need to read through the list and see if something is available.
 
 ## Deployment
-`System.IO.Compression.ZipFile` is included in the shared framework and also provided as a [NuGet package](https://www.nuget.org/packages/System.IO.Compression.ZipFile).
+`System.IO.Compression.ZipFile` is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
 
 ## See also
  - [`System.IO.Compression`](../System.IO.Compression#readme)
