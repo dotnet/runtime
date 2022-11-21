@@ -768,23 +768,12 @@ namespace System.Xml
         public bool IsWhitespaceKey(int key)
         {
             string s = GetDictionaryString(key).Value;
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!XmlConverter.IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(s);
         }
 
         public bool IsWhitespaceUTF8(int offset, int length)
         {
-            byte[] buffer = _buffer;
-            for (int i = 0; i < length; i++)
-            {
-                if (!XmlConverter.IsWhitespace((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(_buffer.AsSpan(offset, length));
         }
 
         public bool IsWhitespaceUnicode(int offset, int length)

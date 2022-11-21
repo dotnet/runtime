@@ -14,7 +14,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using System.Buffers;
 
 namespace System.Xml
 {
@@ -29,6 +29,10 @@ namespace System.Xml
         public const int MaxDecimalChars = 40;
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
+
+        // Matches IsWhitespace below
+        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(" \t\r\n");
+        private static readonly IndexOfAnyValues<byte> s_whitespaceBytes = IndexOfAnyValues.Create(" \t\r\n"u8);
 
         public static bool ToBoolean(string value)
         {
@@ -1082,45 +1086,63 @@ namespace System.Xml
             return offset - offsetMin;
         }
 
-        public static bool IsWhitespace(string s)
-        {
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
-        }
+        public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
+            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
 
-        public static bool IsWhitespace(char ch)
+        public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
+            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+
+        public static bool IsWhitespace(char ch) =>
+            ch is <= ' ' and (' ' or '\t' or '\r' or '\n');
+
+        public static int StripWhitespace(Span<char> chars)
         {
-            return (ch <= ' ' && (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'));
+            int count = chars.IndexOfAny(s_whitespaceChars);
+            if (count < 0)
+            {
+                return chars.Length;
+            }
+
+            for (int i = count; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                if (!IsWhitespace(c))
+                {
+                    chars[count++] = c;
+                }
+            }
+
+            return count;
         }
 
         public static string StripWhitespace(string s)
         {
+            int indexOfWhitespace = s.AsSpan().IndexOfAny(s_whitespaceChars);
+            if (indexOfWhitespace < 0)
+            {
+                return s;
+            }
+
             int count = s.Length;
-            for (int i = 0; i < s.Length; i++)
+            for (int i = indexOfWhitespace; i < s.Length; i++)
             {
                 if (IsWhitespace(s[i]))
                 {
                     count--;
                 }
             }
-            if (count == s.Length)
-                return s;
 
-            return string.Create(count, s, (chars, s) =>
+            return string.Create(count, s, static (chars, s) =>
             {
                 int count = 0;
-                for (int i = 0; i < s.Length; i++)
+                foreach (char c in s)
                 {
-                    char ch = s[i];
-                    if (!IsWhitespace(ch))
+                    if (!IsWhitespace(c))
                     {
-                        chars[count++] = ch;
+                        chars[count++] = c;
                     }
                 }
+                Debug.Assert(count == chars.Length);
             });
         }
     }
