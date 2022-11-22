@@ -784,7 +784,6 @@ namespace Microsoft.Win32
         /// <returns>All subkey names.</returns>
         public string[] GetSubKeyNames()
         {
-            EnsureNotDisposed();
             int subkeys = SubKeyCount;
 
             if (subkeys <= 0)
@@ -858,8 +857,6 @@ namespace Microsoft.Win32
         /// <returns>All value names.</returns>
         public unsafe string[] GetValueNames()
         {
-            EnsureNotDisposed();
-
             int values = ValueCount;
 
             if (values <= 0)
