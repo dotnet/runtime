@@ -147,7 +147,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
             public void EnsureInitialized(object o)
             {
-                // RuntimeImports.RhHandleAlloc
                 if (_longWeakHandle != IntPtr.Zero)
                 {
                     return;
