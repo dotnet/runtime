@@ -1,10 +1,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
-#include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
 #include <sys/wait.h>
+#endif
 
 int run_timed_process(const long, const int, const char *[]);
 
@@ -25,9 +30,31 @@ int main(const int argc, const char *argv[])
 
 int run_timed_process(const long timeout, const int exe_argc, const char *exe_path_and_argv[])
 {
+    // We somehow need to convert the whole command-line to a single string for Windows :|
+#ifdef _WIN32
+    STARTUPINFO startupInfo;
+    PROCESS_INFORMATION procInfo;
+
+    ZeroMemory(&startupInfo, sizeof(startupInfo));
+    startupInfo.cb = sizeof(startupInfo);
+    ZeroMemory(&procInfo, sizeof(procInfo));
+
+    if (!CreateProcess(NULL, "cmdline", NULL, NULL, FALSE, 0, NULL, NULL,
+                       &startupInfo, &procInfo))
+    {
+        int error_code = GetLastError();
+        printf("Process creation failed... Code %d.\n", error_code);
+        return error_code;
+    }
+
+    WaitForSingleObject(procInfo.hProcess, timeout);
+    CloseHandle(procInfo.hProcess);
+    CloseHandle(procInfo.hThread);
+
+#else
     const int check_interval = 1000;
     int check_count = 0;
-    char *args[exe_argc];
+    char **args = new char *[exe_argc];
 
     pid_t child_pid;
     int child_status;
@@ -83,6 +110,7 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
 
     printf("Child process took too long and timed out... Exiting it...\n");
     kill(child_pid, SIGKILL);
+#endif
     return ETIMEDOUT;
 }
 
