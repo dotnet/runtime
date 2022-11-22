@@ -17642,15 +17642,6 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
         baseAddr = this;
         fldSeq   = AsIntCon()->gtFieldSeq;
         offset   = AsIntCon()->IconValue();
-
-        if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
-        {
-            if (!baseAddr->IsIntegralConst(0))
-            {
-                // Bail-out, base has to be zero if fldSeq represents a known address (not a small offset)
-                return false;
-            }
-        }
     }
     else
     {
