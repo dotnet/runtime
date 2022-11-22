@@ -1,3 +1,5 @@
+@echo off
+
 rem Usage: build_test_windows.cmd <Architecture> <Configuration>
 rem
 rem   Architecture is one of x86 or x64 - x64 is the default if not specified
@@ -19,5 +21,5 @@ goto :run_build_and_test
 set configuration=Release
 
 :run_build_and_test
-../../.yamato/scripts/build_windows.cmd %architecture% %configuration%
-../../.yamato/scripts/test_windows.cmd %architecture% %configuration%
+.yamato/scripts/build_windows.cmd %architecture% %configuration%
+.yamato/scripts/test_windows.cmd %architecture% %configuration%
