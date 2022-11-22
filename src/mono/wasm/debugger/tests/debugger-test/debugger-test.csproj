@@ -27,6 +27,7 @@
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
     <ProjectReference Include="..\debugger-test-without-debug-symbols-to-load\debugger-test-without-debug-symbols-to-load.csproj" Private="true" />
     <ProjectReference Include="..\debugger-test-with-non-user-code-class\debugger-test-with-non-user-code-class.csproj" Private="true" />
+    <ProjectReference Include="..\debugger-test-vb\debugger-test-vb.vbproj" Private="true" />
     <!-- loaded by *tests*, and not the test app -->
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" ReferenceOutputAssembly="false" Private="true" />
 
@@ -61,6 +62,7 @@
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols-to-load.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-vb.dll" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
       <!-- Assemblies only dynamically loaded -->

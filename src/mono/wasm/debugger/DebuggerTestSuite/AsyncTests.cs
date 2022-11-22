@@ -82,27 +82,44 @@ namespace DebuggerTests
                  }, "locals");
               });
 
-        [Fact]
-        public async Task InspectVariablesWithSameNameInDifferentScopes()
+        [Theory]
+        [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:Run", "dotnet://debugger-test.dll/debugger-async-test.cs", 246, 16, 252, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunCSharpScope", "testCSharpScope")]
+        [InlineData("[debugger-test-vb] DebuggerTestVB.TestVbScope:Run", "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 12, 12, 18, 12, "DebuggerTestVB.TestVbScope.RunVBScope", "testVbScope")]
+        public async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(string method_to_run, string source_to_pause, int line1, int col1, int line2, int col2, string func_to_pause, string variable_to_inspect)
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:Run'); }}";
+            var expression = $"{{ invoke_static_method('{method_to_run}'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-async-test.cs", 249, 16,
-                "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunFirstScope",
-                wait_for_event_fn: async (pause_location) =>
-                {
-                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                    await EvaluateOnCallFrameAndCheck(id,
-                        ("testFirstScope", TObject("System.Collections.Generic.List<string>", description: "Count = 2"))
-                    );
-                }
-            );
-            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-async-test.cs", 273, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunSecondScope",
+                source_to_pause, line1, col1,
+                func_to_pause,
                 locals_fn: async (locals) =>
                 {
-                    await CheckObject(locals, "testSecondScope", "System.Collections.Generic.List<string>", description: "Count = 2");
+                    await CheckString(locals, variable_to_inspect, "hello");
+                }
+            );
+            await StepAndCheck(StepKind.Resume, source_to_pause, line2, col2, func_to_pause,
+                locals_fn: async (locals) =>
+                {
+                    await CheckString(locals, variable_to_inspect, "hi");
+                }
+            );
+        }
+
+        [Fact]
+        public async Task InspectLocalsInAsyncVBMethod()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test-vb] DebuggerTestVB.TestVbScope:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 12, 12,
+                "DebuggerTestVB.TestVbScope.RunVBScope",
+                locals_fn: async (locals) =>
+                {
+                    await CheckString(locals, "testVbScope", "hello");
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "data", 10);
                 }
             );
         }

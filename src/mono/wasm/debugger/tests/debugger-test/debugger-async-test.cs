@@ -234,45 +234,24 @@ namespace DebuggerTests.AsyncTests
     {
         public static async System.Threading.Tasks.Task Run()
         {
-            await RunFirstScope();
-            await RunSecondScope();
+            await RunCSharpScope(10);
+            await RunCSharpScope(1000);
         }
 
-        public static async System.Threading.Tasks.Task<System.Collections.Generic.List<string>> RunFirstScope()
+        public static async System.Threading.Tasks.Task<string> RunCSharpScope(int number)
         {
             await System.Threading.Tasks.Task.Delay(1);
-            int number = 10;
             if (number < 999)
             {
-                System.Collections.Generic.List<string> testFirstScope = new System.Collections.Generic.List<string>();
-                testFirstScope.Add("hello");
-                testFirstScope.Add("hi");
+                var testCSharpScope = new String("hello");
                 System.Diagnostics.Debugger.Break();
-                return testFirstScope;
+                return testCSharpScope;
             }
             else
             {
-                System.Collections.Generic.List<string> testFirstScope = new System.Collections.Generic.List<string>();
-                return testFirstScope;
-            }
-        }
-
-        public static async System.Threading.Tasks.Task<System.Collections.Generic.List<string>> RunSecondScope()
-        {
-            await System.Threading.Tasks.Task.Delay(1);
-            int number = 10;
-            if (number < 5)
-            {
-                System.Collections.Generic.List<string> testSecondScope = new System.Collections.Generic.List<string>();
-                return testSecondScope;
-            }
-            else
-            {
-                System.Collections.Generic.List<string> testSecondScope = new System.Collections.Generic.List<string>();
-                testSecondScope.Add("hello");
-                testSecondScope.Add("hi");
+                var testCSharpScope = new String("hi");
                 System.Diagnostics.Debugger.Break();
-                return testSecondScope;
+                return testCSharpScope;
             }
         }
     }

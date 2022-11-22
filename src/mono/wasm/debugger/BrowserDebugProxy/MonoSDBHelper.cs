@@ -805,6 +805,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal readonly ILogger logger;
         private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>([^)]*)([_][_])([0-9]*)", RegexOptions.Singleline);
+        private static readonly Regex regexForVBAsyncLocals = new (@"\$VB\$ResumableLocal_([^)]*)\$([0-9]*)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
+        private static readonly Regex regexForVBAsyncMethodName = new(@"VB\$StateMachine_([0-9]*)_([^)]*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
         private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
@@ -1280,6 +1282,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (anonymousMethodId.LastIndexOf('_') >= 0)
                                 anonymousMethodId = klassName.Substring(klassName.LastIndexOf('_') + 1);
+                        }
+                        else if (klassName.StartsWith("VB$"))
+                        {
+                            var match = regexForVBAsyncMethodName.Match(klassName);
+                            ret = ret.Insert(0, match.Groups[2].Value);
                         }
                         else
                         {
@@ -2001,6 +2008,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                         asyncLocal["name"] = match.Groups[1].Value;
                     }
                     asyncLocalsFull.Add(asyncLocal);
+                }
+                //VB language
+                else if (fieldName.StartsWith("$VB$Local_"))
+                {
+                    asyncLocal["name"] = fieldName.Remove(0, 10);
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else if (fieldName.StartsWith("$VB$ResumableLocal_"))
+                {
+                    var match = regexForVBAsyncLocals.Match(fieldName);
+                    if (match.Success)
+                    {
+                        if (!method.Info.AsyncScopes.Where(s => s.Id == (Convert.ToInt32(match.Groups[2].Value) + 1) && offset >= s.StartOffset && offset <= s.EndOffset).Any())
+                            continue;
+                        asyncLocal["name"] = match.Groups[1].Value;
+                    }
+                    asyncLocalsFull.Add(asyncLocal);
+                }
+                else if (fieldName.StartsWith("$"))
+                {
+                    continue;
                 }
                 else
                 {
