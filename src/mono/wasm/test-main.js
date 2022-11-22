@@ -23,18 +23,6 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
-if (typeof globalThis.crypto === 'undefined') {
-    // **NOTE** this is a simple insecure polyfill for testing purposes only
-    // /dev/random doesn't work on js shells, so define our own
-    // See library_fs.js:createDefaultDevices ()
-    globalThis.crypto = {
-        getRandomValues: function (buffer) {
-            for (let i = 0; i < buffer.length; i++)
-                buffer[i] = (Math.random() * 256) | 0;
-        }
-    }
-}
-
 let v8args;
 if (typeof arguments !== "undefined") {
     // this must be captured in top level scope in V8
