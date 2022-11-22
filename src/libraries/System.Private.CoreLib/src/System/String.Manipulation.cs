@@ -19,6 +19,13 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
+        // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+        // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+        // also specifically excludes VT from the list of newline functions, so we do not include
+        // it in the needle list.
+        private static readonly IndexOfAnyValues<char> s_newLineChars =
+            IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+
         private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
@@ -1233,16 +1240,9 @@ namespace System
             // the haystack; or O(n) if no needle is found. This ensures that in the common case
             // of this method being called within a loop, the worst-case runtime is O(n) rather than
             // O(n^2), where n is the length of the input text.
-            //
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-
-            const string needles = "\r\n\f\u0085\u2028\u2029";
 
             stride = default;
-            int idx = text.IndexOfAny(needles);
+            int idx = text.IndexOfAny(s_newLineChars);
             if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
