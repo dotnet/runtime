@@ -553,6 +553,51 @@ namespace System.SpanTests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void AsciiNeedle_ProperlyHandlesEdgeCases_Byte(bool needleContainsZero)
+        {
+            // There is some special handling we have to do for ASCII needles to properly filter out non-ASCII results
+            ReadOnlySpan<byte> needleValues = needleContainsZero ? "AEIOU\0"u8 : "AEIOU!"u8;
+            IndexOfAnyValues<byte> needle = IndexOfAnyValues.Create(needleValues);
+            Assert.Contains("Ascii", needle.GetType().Name);
+
+            ReadOnlySpan<byte> repeatingHaystack = "AaAaAaAaAaAa"u8;
+            Assert.Equal(0, repeatingHaystack.IndexOfAny(needle));
+            Assert.Equal(1, repeatingHaystack.IndexOfAnyExcept(needle));
+            Assert.Equal(10, repeatingHaystack.LastIndexOfAny(needle));
+            Assert.Equal(11, repeatingHaystack.LastIndexOfAnyExcept(needle));
+
+            ReadOnlySpan<byte> haystackWithZeroes = "Aa\0Aa\0Aa\0"u8;
+            Assert.Equal(0, haystackWithZeroes.IndexOfAny(needle));
+            Assert.Equal(1, haystackWithZeroes.IndexOfAnyExcept(needle));
+            Assert.Equal(needleContainsZero ? 8 : 6, haystackWithZeroes.LastIndexOfAny(needle));
+            Assert.Equal(needleContainsZero ? 7 : 8, haystackWithZeroes.LastIndexOfAnyExcept(needle));
+
+            Span<byte> haystackWithOffsetNeedle = new byte[100];
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i++)
+            {
+                haystackWithOffsetNeedle[i] = (byte)(128 + needleValues[i % needleValues.Length]);
+            }
+
+            Assert.Equal(-1, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(-1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+
+            // Mix matching characters back in
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i += 3)
+            {
+                haystackWithOffsetNeedle[i] = needleValues[i % needleValues.Length];
+            }
+
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(1, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 2, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+        }
+
         private static int IndexOf(Span<byte> span, byte value)
         {
             int index = span.IndexOf(value);

@@ -799,6 +799,73 @@ namespace System.SpanTests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void AsciiNeedle_ProperlyHandlesEdgeCases_Char(bool needleContainsZero)
+        {
+            // There is some special handling we have to do for ASCII needles to properly filter out non-ASCII results
+            ReadOnlySpan<char> needleValues = needleContainsZero ? "AEIOU\0" : "AEIOU!";
+            IndexOfAnyValues<char> needle = IndexOfAnyValues.Create(needleValues);
+            Assert.Contains("Ascii", needle.GetType().Name);
+
+            ReadOnlySpan<char> repeatingHaystack = "AaAaAaAaAaAa";
+            Assert.Equal(0, repeatingHaystack.IndexOfAny(needle));
+            Assert.Equal(1, repeatingHaystack.IndexOfAnyExcept(needle));
+            Assert.Equal(10, repeatingHaystack.LastIndexOfAny(needle));
+            Assert.Equal(11, repeatingHaystack.LastIndexOfAnyExcept(needle));
+
+            ReadOnlySpan<char> haystackWithZeroes = "Aa\0Aa\0Aa\0";
+            Assert.Equal(0, haystackWithZeroes.IndexOfAny(needle));
+            Assert.Equal(1, haystackWithZeroes.IndexOfAnyExcept(needle));
+            Assert.Equal(needleContainsZero ? 8 : 6, haystackWithZeroes.LastIndexOfAny(needle));
+            Assert.Equal(needleContainsZero ? 7 : 8, haystackWithZeroes.LastIndexOfAnyExcept(needle));
+
+            Span<char> haystackWithOffsetNeedle = new char[100];
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i++)
+            {
+                haystackWithOffsetNeedle[i] = (char)(128 + needleValues[i % needleValues.Length]);
+            }
+
+            Assert.Equal(-1, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(-1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+
+            // Mix matching characters back in
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i += 3)
+            {
+                haystackWithOffsetNeedle[i] = needleValues[i % needleValues.Length];
+            }
+
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(1, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 2, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+
+            // With chars, the lower byte could be matching, but we have to check that the higher byte is also 0
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i++)
+            {
+                haystackWithOffsetNeedle[i] = (char)(((i + 1) * 256) + needleValues[i % needleValues.Length]);
+            }
+
+            Assert.Equal(-1, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(-1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+
+            // Mix matching characters back in
+            for (int i = 0; i < haystackWithOffsetNeedle.Length; i += 3)
+            {
+                haystackWithOffsetNeedle[i] = needleValues[i % needleValues.Length];
+            }
+
+            Assert.Equal(0, haystackWithOffsetNeedle.IndexOfAny(needle));
+            Assert.Equal(1, haystackWithOffsetNeedle.IndexOfAnyExcept(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 1, haystackWithOffsetNeedle.LastIndexOfAny(needle));
+            Assert.Equal(haystackWithOffsetNeedle.Length - 2, haystackWithOffsetNeedle.LastIndexOfAnyExcept(needle));
+        }
+
         private static int IndexOf(Span<char> span, char value)
         {
             int index = span.IndexOf(value);
