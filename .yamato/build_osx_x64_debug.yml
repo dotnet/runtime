@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Build OSX x64
+name: Build OSX x64 Debug
 
 agent:
   type: Unity::VM::osx
@@ -11,8 +11,8 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-x64.7z
 
 commands:
-  - ./.yamato/scripts/build_osx_x64.sh
-  
+  - ./.yamato/scripts/build_osx.sh x64 Debug
+
 artifacts:
   7z-archives:
     paths:

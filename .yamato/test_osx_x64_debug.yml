@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Test OSX x64
+name: Test OSX x64 Debug
 
 agent:
   type: Unity::VM::osx
@@ -8,14 +8,8 @@ agent:
   flavor: m1.mac
 
 dependencies:
-  - path: .yamato/build_osx_x64.yml
+  - path: .yamato/build_osx_x64_debug.yml
 
 commands:
 # build/run tests
-  - ./.yamato/scripts/test_osx_x64.sh
-  
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
+  - ./.yamato/scripts/test_osx.sh x64 Debug

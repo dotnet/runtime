@@ -1,0 +1,15 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Test OSX ARM64 Release
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:v0.1.8-972754
+  flavor: m1.mac
+
+dependencies:
+  - path: .yamato/build_osx_arm64_release.yml
+
+commands:
+# build/run tests
+  - ./.yamato/scripts/test_osx.sh arm64 Release
