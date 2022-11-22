@@ -844,7 +844,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, true, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            var methods = DebugStore.EnC(asm, meta_buf, pdb_buf);
+            var methods = DebugStore.EnC(context.SdbAgent, asm, meta_buf, pdb_buf);
             foreach (var method in methods)
             {
                 await ResetBreakpoint(sessionId, store, method, token);

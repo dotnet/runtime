@@ -209,12 +209,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
         // These should be in corelib.h, and available through a JIT/EE interface call.
-        const char* modName;
+        const char* namespaceName;
         const char* className;
-        const char* methodName;
-        if ((className = eeGetClassName(clsHnd)) != nullptr &&
-            strcmp(className, "System.Runtime.CompilerServices.JitTestLabel") == 0 &&
-            (methodName = eeGetMethodName(methHnd, &modName)) != nullptr && strcmp(methodName, "Mark") == 0)
+        const char* methodName =
+            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+        if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr) &&
+            (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
+            (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
         {
             return impImportJitTestLabelMark(sig->numArgs);
         }
@@ -3053,12 +3054,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
-                    GenTree* op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
-                    GenTree* op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
-                    GenTree* op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
+                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
                     GenTree* res =
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
@@ -3077,24 +3075,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector64.Create{ScalarUnsafe}(x)
                     //    ).ToScalar();
 
-                    NamedIntrinsic createVector64 =
-                        (callType == TYP_DOUBLE) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
-
-                    constexpr unsigned int simdSize = 8;
-
-                    GenTree* op3 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
-                    GenTree* op2 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
-                    GenTree* op1 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
+                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
+                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
 
                     // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
                     // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
-                                                       callJitType, simdSize);
+                                                       callJitType, 8);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callJitType, simdSize);
+                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callJitType, 8);
                     break;
                 }
 #endif
@@ -3281,7 +3271,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
 
                 op1 = vecCon;
-                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+                op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, ni, callJitType, 16);
                 retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
@@ -5018,9 +5008,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
     }
 
+#ifdef DEBUG
+    char buffer[256];
     JITDUMP("%s call would invoke method %s\n",
             isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
-            eeGetMethodName(likelyMethod, nullptr));
+            eeGetMethodFullName(likelyMethod, true, true, buffer, sizeof(buffer)));
+#endif
 
     // Add this as a potential candidate.
     //
@@ -5777,7 +5770,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
         objClassName   = eeGetClassName(objClass);
         baseClassName  = eeGetClassName(baseClass);
-        baseMethodName = eeGetMethodName(baseMethod, nullptr);
+        baseMethodName = eeGetMethodName(baseMethod);
 
         if (verbose)
         {
@@ -5883,7 +5876,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (verbose || doPrint)
         {
-            derivedMethodName = eeGetMethodName(derivedMethod, nullptr);
+            derivedMethodName = eeGetMethodName(derivedMethod);
             derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {
