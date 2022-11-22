@@ -455,8 +455,6 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
 endif()
 
-find_package(Python3 COMPONENTS Interpreter)
-
 if(HOST_BROWSER)
   # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
   # This is the only source file which contains a c++ throw or catch
@@ -468,6 +466,8 @@ if(HOST_BROWSER)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
+
+find_package(Python3 COMPONENTS Interpreter)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
