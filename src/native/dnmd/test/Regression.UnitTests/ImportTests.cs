@@ -141,6 +141,7 @@ namespace Regression.UnitTests
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
                     Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
+                    Assert.Equal(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
                     Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
                 }
@@ -160,6 +161,7 @@ namespace Regression.UnitTests
                 foreach (var fielddef in fields)
                 {
                     Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
+                    Assert.Equal(GetPinvokeMap(baselineImport, fielddef), GetPinvokeMap(currentImport, fielddef));
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                 }
                 Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
@@ -667,6 +669,30 @@ namespace Regression.UnitTests
             return values;
         }
 
+        private static List<uint> GetPinvokeMap(IMetaDataImport import, uint tk)
+        {
+            List<uint> values = new();
+
+            var name = new char[8];
+            int hr = import.GetPinvokeMap(tk,
+                out uint pdwMappingFlags,
+                name,
+                name.Length,
+                out int pchImportName,
+                out uint pmrImportDLL);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pdwMappingFlags);
+                uint hash = HashCharArray(name, pchImportName);
+                values.Add(hash);
+                values.Add((uint)pchImportName);
+                values.Add(pmrImportDLL);
+            }
+            return values;
+        }
+
         private static uint IsGlobal(IMetaDataImport import, uint tk)
         {
             int hr = import.IsGlobal(tk, out uint pbGlobal);
@@ -987,12 +1013,7 @@ namespace Regression.UnitTests
 
         private static uint HashCharArray(char[] arr, int written)
         {
-            uint hash = 0;
-            for (int i = 0; i < Math.Min(written, arr.Length); ++i)
-            {
-                hash ^= arr[i];
-            }
-            return hash;
+            return (uint)new string(arr, 0, Math.Min(written, arr.Length)).GetHashCode();
         }
     }
 }

@@ -53,7 +53,7 @@ namespace
         mdcursor_t cursor;
         uint32_t rows;
         if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         HCORENUMImpl* enumImpl;
         RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));
@@ -125,32 +125,6 @@ namespace
         return S_OK;
     }
 
-    HRESULT CopyToStringOutput(
-        LPCWSTR str,
-        uint32_t strCharCount,
-        _Out_writes_to_opt_(cchBuffer, *pchBuffer)
-        LPWSTR  szBuffer,
-        ULONG   cchBuffer,
-        ULONG* pchBuffer) noexcept
-    {
-        assert(str != nullptr && pchBuffer != nullptr);
-
-        *pchBuffer = strCharCount;
-        if (cchBuffer > 0 && strCharCount > 0)
-        {
-            uint32_t toCopyWChar = cchBuffer < strCharCount ? cchBuffer : strCharCount;
-            assert(szBuffer != nullptr);
-            ::memcpy(szBuffer, str, toCopyWChar * sizeof(WCHAR));
-            if (cchBuffer < strCharCount)
-            {
-                ::memset(&szBuffer[cchBuffer - 1], 0, sizeof(WCHAR)); // Ensure null terminator
-                return CLDB_S_TRUNCATION;
-            }
-        }
-
-        return S_OK;
-    }
-
     HRESULT ConvertAndReturnStringOutput(
         _In_z_ char const* str,
         _Out_writes_to_opt_(cchBuffer, *pchBuffer)
@@ -216,7 +190,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
         mdcursor_t cursor;
         uint32_t rows;
         if (!md_create_cursor(_md_ptr.get(), mdtid_TypeDef, &cursor, &rows))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         // From ECMA-335, section II.22.37:
         //  "The first row of the TypeDef table represents the pseudo class that acts as parent for functions
@@ -247,7 +221,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
         mdcursor_t cursor;
         uint32_t rows;
         if (!md_create_cursor(_md_ptr.get(), mdtid_InterfaceImpl, &cursor, &rows))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         uint32_t id = RidFromToken(td);
         if (!md_find_range_from_cursor(cursor, mdtInterfaceImpl_Class, id, &cursor, &rows))
@@ -620,7 +594,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMemberRefs(
         mdcursor_t cursor;
         uint32_t count;
         if (!md_create_cursor(_md_ptr.get(), mdtid_MemberRef, &cursor, &count))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
 
@@ -689,7 +663,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
         mdcursor_t cursor;
         uint32_t count;
         if (!md_create_cursor(_md_ptr.get(), mdtid_DeclSecurity, &cursor, &count))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         if (!IsNilToken(tk))
         {
@@ -875,7 +849,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
         mdcursor_t propertyMap;
         uint32_t propertyMapCount;
         if (!md_create_cursor(_md_ptr.get(), mdtid_PropertyMap, &propertyMap, &propertyMapCount))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         // Find the entry in the PropertyMap table and then
         // resolve the column to the range in the Property table.
@@ -914,7 +888,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
         mdcursor_t eventMap;
         uint32_t eventMapCount;
         if (!md_create_cursor(_md_ptr.get(), mdtid_EventMap, &eventMap, &eventMapCount))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         // Find the entry in the EventMap table and then
         // resolve the column to the range in the Event table.
@@ -970,7 +944,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSemantics(
         mdcursor_t cursor;
         uint32_t count;
         if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSemantics, &cursor, &count))
-            return CLDB_E_FILE_CORRUPT;
+            return CLDB_E_RECORD_NOTFOUND;
 
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
 
@@ -1283,7 +1257,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
 
     // Compute the string size in characters
     uint32_t retCharLen = (string.str_bytes - 1) / sizeof(WCHAR);
-    return CopyToStringOutput(string.str, retCharLen, szString, cchString, pchString);
+    *pchString = retCharLen;
+    if (cchString > 0 && szString != nullptr)
+    {
+        uint32_t const safeBufferLen = cchString - 1; // Ensure room for null terminator
+        uint32_t toCopyWChar = safeBufferLen < retCharLen ? safeBufferLen : retCharLen;
+        ::memcpy(szString, string.str, toCopyWChar * sizeof(WCHAR));
+        ::memset(&szString[toCopyWChar], 0, sizeof(WCHAR)); // Ensure null terminator
+        if (safeBufferLen < retCharLen)
+            return CLDB_S_TRUNCATION;
+    }
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
@@ -1295,7 +1280,34 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
     ULONG* pchImportName,
     mdModuleRef* pmrImportDLL)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(tk) != mdtMethodDef && TypeFromToken(tk) != mdtFieldDef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ImplMap, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdcursor_t implRow;
+    if (!md_find_row_from_cursor(cursor, mdtImplMap_MemberForwarded, tk, &implRow))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    uint32_t flags;
+    mdModuleRef token;
+    if (1 != md_get_column_value_as_constant(implRow, mdtImplMap_MappingFlags, 1, &flags)
+        || 1 != md_get_column_value_as_token(implRow, mdtImplMap_ImportScope, 1, &token))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    *pdwMappingFlags = flags;
+    *pmrImportDLL = token;
+
+    char const* importName;
+    if (1 != md_get_column_value_as_utf8(implRow, mdtImplMap_ImportName, 1, &importName))
+        return CLDB_E_FILE_CORRUPT;
+
+    return ConvertAndReturnStringOutput(importName, szImportName, cchImportName, pchImportName);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumSignatures(
