@@ -5194,6 +5194,8 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
         GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
 
+        nullchk->gtFlags |= GTF_ORDER_SIDEEFF;
+
         if (asg != nullptr)
         {
             // Create the "comma" node.
