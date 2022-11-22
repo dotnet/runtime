@@ -179,6 +179,7 @@
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
       <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
       <WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-macos.tar.gz</WasiSdkUrl>
+      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-mingw.tar.gz</WasiSdkUrl>
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
@@ -187,7 +188,10 @@
           WorkingDirectory="$(WasiLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Error Text="TODOWASI ProvisionWasiSdk on windows is not implemented " Condition="'$(HostOS)' == 'windows'" />
+    <Exec Command="powershell -NonInteractive -command &quot;&amp; .\provision.ps1 -WasiSdkUrl $(WasiSdkUrl) -WasiSdkVersion $(WasiSdkVersion) ; Exit $LastExitCode &quot;"
+          Condition="'$(HostOS)' == 'windows'"
+          WorkingDirectory="$(WasiLocalPath)"
+          IgnoreStandardErrorWarningFormat="true" />
 
   </Target>
 
