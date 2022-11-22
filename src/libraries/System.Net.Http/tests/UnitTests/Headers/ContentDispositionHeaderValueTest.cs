@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,196 +23,14 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void FileNameStar_NeedsEncoding_EncodedAndDecodedCorrectly()
+        public void IndexOfAnyExceptTest()
         {
-            const string Input = "File\u00C3Name.bat";
+            ReadOnlySpan<byte> bytes = new byte[] { 70, 105, 108, 101, 195, 131, 78, 97, 109, 101, 46, 98, 97, 116 };
 
-            string encoded = Encode5987(Input);
-            string decoded = Decode5987(encoded);
+            int offset = bytes.IndexOfAnyExcept(s_rfc5987AttrBytes);
+            _output.WriteLine($"s_rfc5987AttrBytes is {s_rfc5987AttrBytes.GetType().FullName}");
 
-            Assert.Equal(Input, decoded);
-        }
-
-        private static string EncodeString(ReadOnlySpan<char> chars) =>
-            $"'{string.Join(", ", chars.ToArray().Select(c => $"{(int)c}"))}'";
-
-        private static string EncodeBytes(ReadOnlySpan<byte> bytes) =>
-            $"'{string.Join(", ", bytes.ToArray().Select(b => $"{(int)b}"))}'";
-
-        private string Encode5987(string input)
-        {
-            var builder = new ValueStringBuilder(stackalloc char[256]);
-            byte[] utf8bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(input.Length));
-            int utf8length = Encoding.UTF8.GetBytes(input, 0, input.Length, utf8bytes, 0);
-
-            builder.Append("utf-8\'\'");
-
-            _output.WriteLine($"builder before loop Length={builder.Length} Content={EncodeString(builder.AsSpan())}");
-
-            ReadOnlySpan<byte> utf8 = utf8bytes.AsSpan(0, utf8length);
-
-            do
-            {
-                _output.WriteLine($"utf8Length={utf8.Length} utf8={EncodeBytes(utf8)}");
-
-                int length = utf8.IndexOfAnyExcept(s_rfc5987AttrBytes);
-                _output.WriteLine($"s_rfc5987AttrBytes is {s_rfc5987AttrBytes.GetType().FullName}");
-                _output.WriteLine($"IndexOfAnyExcept length={length}");
-
-                if (length < 0)
-                {
-                    length = utf8.Length;
-                }
-
-                Encoding.ASCII.GetChars(utf8.Slice(0, length), builder.AppendSpan(length));
-                _output.WriteLine($"builder after GetChars Length={builder.Length} Content={EncodeString(builder.AsSpan())}");
-
-                utf8 = utf8.Slice(length);
-                _output.WriteLine($"utf8Length={utf8.Length} utf8={EncodeBytes(utf8)}");
-
-                if (utf8.IsEmpty)
-                {
-                    _output.WriteLine("Mid-loop utf8 empty");
-                    break;
-                }
-
-                length = utf8.IndexOfAny(s_rfc5987AttrBytes);
-                _output.WriteLine($"IndexOfAny length={length}");
-                if (length < 0)
-                {
-                    length = utf8.Length;
-                }
-
-                foreach (byte b in utf8.Slice(0, length))
-                {
-                    AddHexEscaped(b, ref builder);
-                }
-
-                _output.WriteLine($"builder after AddHexEscaped Length={builder.Length} Content={EncodeString(builder.AsSpan())}");
-
-                utf8 = utf8.Slice(length);
-            }
-            while (!utf8.IsEmpty);
-
-            ArrayPool<byte>.Shared.Return(utf8bytes);
-
-            _output.WriteLine($"builder before ToString Length={builder.Length} Content={EncodeString(builder.AsSpan())}");
-
-            string ret = builder.ToString();
-
-            _output.WriteLine($"Returned value Length={ret.Length} Content={EncodeString(ret)}");
-
-            return ret;
-        }
-
-        private string Decode5987(string input)
-        {
-            Assert.True(TryDecode5987(input, out string? output));
-            _output.WriteLine($"Decode5987 output={EncodeString(output)}");
-            return output;
-        }
-
-        private bool TryDecode5987(string input, out string? output)
-        {
-            output = null;
-
-            int quoteIndex = input.IndexOf('\'');
-            _output.WriteLine($"quoteIndex={quoteIndex}");
-            if (quoteIndex == -1)
-            {
-                return false;
-            }
-
-            int lastQuoteIndex = input.LastIndexOf('\'');
-            _output.WriteLine($"lastQuoteIndex={lastQuoteIndex}");
-            if (quoteIndex == lastQuoteIndex || input.IndexOf('\'', quoteIndex + 1) != lastQuoteIndex)
-            {
-                return false;
-            }
-
-            string encodingString = input.Substring(0, quoteIndex);
-            string dataString = input.Substring(lastQuoteIndex + 1);
-
-            _output.WriteLine($"encodingString len={encodingString.Length} Content={EncodeString(encodingString)}");
-            _output.WriteLine($"dataString len={dataString.Length} Content={EncodeString(dataString)}");
-
-            StringBuilder decoded = new StringBuilder();
-            try
-            {
-                Encoding encoding = Encoding.GetEncoding(encodingString);
-
-                _output.WriteLine($"encoding={encoding.EncodingName} {encoding.GetType().FullName}");
-
-                byte[] unescapedBytes = new byte[dataString.Length];
-                int unescapedBytesCount = 0;
-
-                _output.WriteLine($"dataString.Length={dataString.Length}");
-
-                for (int index = 0; index < dataString.Length; index++)
-                {
-                    _output.WriteLine($"index at start of loop={index} '{dataString[index]}'");
-
-                    bool isHexEncoding = Uri.IsHexEncoding(dataString, index);
-                    _output.WriteLine($"isHexEncoding={isHexEncoding}");
-                    _output.WriteLine($"unescapedBytesCount={unescapedBytesCount}");
-
-                    if (isHexEncoding) // %FF
-                    {
-                        byte unescaped = (byte)Uri.HexUnescape(dataString, ref index);
-                        _output.WriteLine($"unescaped={unescaped}");
-
-                        // Unescape and cache bytes, multi-byte characters must be decoded all at once.
-                        unescapedBytes[unescapedBytesCount++] = unescaped;
-                        index--; // HexUnescape did +=3; Offset the for loop's ++
-                    }
-                    else
-                    {
-                        if (unescapedBytesCount > 0)
-                        {
-                            // Decode any previously cached bytes.
-                            _output.WriteLine("Decode any previously cached bytes");
-
-                            string newString = encoding.GetString(unescapedBytes, 0, unescapedBytesCount);
-
-                            _output.WriteLine($"newString={EncodeString(newString)}");
-
-                            decoded.Append(newString);
-                            unescapedBytesCount = 0;
-                        }
-
-                        _output.WriteLine($"Normal safe character={dataString[index]}");
-                        decoded.Append(dataString[index]); // Normal safe character.
-                    }
-
-                    _output.WriteLine($"unescapedBytesCount={unescapedBytesCount}");
-                    _output.WriteLine($"unescapedBytes={EncodeBytes(unescapedBytes.AsSpan(0, unescapedBytesCount))}");
-
-                    _output.WriteLine($"index at end of loop={index} '{dataString[index]}'");
-                }
-
-                if (unescapedBytesCount > 0)
-                {
-                    // Decode any previously cached bytes.
-                    _output.WriteLine("Decode any previously cached bytes final");
-                    string newString = encoding.GetString(unescapedBytes, 0, unescapedBytesCount);
-                    _output.WriteLine($"newString={EncodeString(newString)}");
-                    decoded.Append(newString);
-                }
-            }
-            catch (ArgumentException)
-            {
-                return false; // Unknown encoding or bad characters.
-            }
-
-            output = decoded.ToString();
-            return true;
-        }
-
-        private static void AddHexEscaped(byte c, ref ValueStringBuilder destination)
-        {
-            destination.Append('%');
-            destination.Append(HexConverter.ToCharUpper(c >> 4));
-            destination.Append(HexConverter.ToCharUpper(c));
+            Assert.Equal(4, offset);
         }
     }
 
