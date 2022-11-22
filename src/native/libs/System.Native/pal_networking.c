@@ -1399,7 +1399,12 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
     ssize_t res;
+    printf("%s:%d: recvmsg name %p %d socksize=%zd\n", __func__, __LINE__, header.msg_name, header.msg_namelen, sizeof(struct sockaddr_in6));
     while ((res = recvmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
+
+    printf("%s:%d: recvmsg finished with %zd name %p %d\n", __func__, __LINE__, res, header.msg_name, header.msg_namelen);
+    printf("%s:%d: poer=%du addr (%s)\n", __func__, __LINE__, ((struct sockaddr_in*)header.msg_name)->sin_port, inet_ntoa(((struct sockaddr_in*)header.msg_name)->sin_addr));
+
 
     assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
     assert(header.msg_control == messageHeader->ControlBuffer);
