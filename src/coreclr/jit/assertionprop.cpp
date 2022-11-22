@@ -6054,7 +6054,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    Performs constant prop on the current statement's tree nodes.
 //
 // Assumption:
-//    This function is called as part of a post-order tree walk.
+//    This function is called as part of a pre-order tree walk.
 //
 // Arguments:
 //    tree  - The currently visited tree node.
@@ -6128,7 +6128,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
             // Don't transform long multiplies.
             if (tree->gtFlags & GTF_MUL_64RSLT)
             {
-                return WALK_CONTINUE;
+                return WALK_SKIP_SUBTREES;
             }
             break;
 
@@ -6166,15 +6166,16 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         return WALK_CONTINUE;
     }
 
-    // TODO https://github.com/dotnet/runtime/issues/10450:
-    // at that moment stmt could be already removed from the stmt list.
+    // Successful propagation, mark as assertion propagated and skip
+    // sub-tree (with side-effects) visits.
+    // TODO #18291: at that moment stmt could be already removed from the stmt list.
 
     optAssertionProp_Update(newTree, tree, stmt);
 
     JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
-    return WALK_CONTINUE;
+    return WALK_SKIP_SUBTREES;
 }
 
 //------------------------------------------------------------------------------
@@ -6221,7 +6222,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 //    Unified Value Numbering based assertion propagation visitor.
 //
 // Assumption:
-//    This function is called as part of a post-order tree walk.
+//    This function is called as part of a pre-order tree walk.
 //
 // Return Value:
 //    WALK_RESULTs.
@@ -6268,7 +6269,7 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     optAssertionPropagatedCurrentStmt = false;
 
     VNAssertionPropVisitorInfo data(this, block, stmt);
-    fgWalkTreePost(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
+    fgWalkTreePre(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
 
     if (optAssertionPropagatedCurrentStmt)
     {
