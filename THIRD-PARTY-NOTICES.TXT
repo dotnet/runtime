@@ -1206,3 +1206,12 @@ As an exception, if, as a result of your compiling your source code, portions
 of this Software are embedded into a machine-executable object form of such
 source code, you may redistribute such embedded portions in such object form
 without including the above copyright and permission notices.
+
+
+License for MurmurHash3
+--------------------------------------
+
+https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+
+MurmurHash3 was written by Austin Appleby, and is placed in the public
+domain. The author hereby disclaims copyright to this source

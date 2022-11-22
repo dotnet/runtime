@@ -7528,9 +7528,12 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
-        const char* className;
-        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
-        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        auto append = [&]() {
+            char        buffer[256];
+            const char* methodName = compiler->eeGetMethodName(context->GetCallee(), buffer, sizeof(buffer));
+            fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        };
+        append();
         fprintf(file, "\"Inlinees\":[");
         if (context->GetChild() != nullptr)
         {

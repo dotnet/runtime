@@ -250,16 +250,16 @@ namespace ILCompiler
             this.SetHandler(context =>
             {
                 Result = context.ParseResult;
-                CompositeOrInputBubble = context.ParseResult.GetValueForOption(Composite) | context.ParseResult.GetValueForOption(InputBubble);
-                if (context.ParseResult.GetValueForOption(OptimizeSpace))
+                CompositeOrInputBubble = context.ParseResult.GetValue(Composite) | context.ParseResult.GetValue(InputBubble);
+                if (context.ParseResult.GetValue(OptimizeSpace))
                 {
                     OptimizationMode = OptimizationMode.PreferSize;
                 }
-                else if (context.ParseResult.GetValueForOption(OptimizeTime))
+                else if (context.ParseResult.GetValue(OptimizeTime))
                 {
                     OptimizationMode = OptimizationMode.PreferSpeed;
                 }
-                else if (context.ParseResult.GetValueForOption(Optimize))
+                else if (context.ParseResult.GetValue(Optimize))
                 {
                     OptimizationMode = OptimizationMode.Blended;
                 }
@@ -270,7 +270,7 @@ namespace ILCompiler
 
                 try
                 {
-                    int alignment = context.ParseResult.GetValueForOption(CustomPESectionAlignment);
+                    int alignment = context.ParseResult.GetValue(CustomPESectionAlignment);
                     if (alignment != 0)
                     {
                         // Must be a power of two and >= 4096
@@ -278,7 +278,7 @@ namespace ILCompiler
                             throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
                     }
 
-                    string makeReproPath = context.ParseResult.GetValueForOption(MakeReproPath);
+                    string makeReproPath = context.ParseResult.GetValue(MakeReproPath);
                     if (makeReproPath != null)
                     {
                         // Create a repro package in the specified path
@@ -286,7 +286,7 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
-                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValueForOption(OutputFilePath), args,
+                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args,
                             context.ParseResult, new[] { "r", "reference", "u", "unrooted-input-file-paths", "m", "mibc", "inputbubbleref" });
                     }
 
@@ -314,9 +314,9 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<HelpSectionDelegate> GetExtendedHelp(HelpContext _)
+        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext _)
         {
-            foreach (HelpSectionDelegate sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             yield return _ =>

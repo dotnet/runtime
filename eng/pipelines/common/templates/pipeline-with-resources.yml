@@ -61,7 +61,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly
 
     - container: FreeBSD_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20221026180137-3fc5553
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
       env:
         ROOTFS_DIR: /crossrootfs/x64
 

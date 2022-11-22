@@ -102,10 +102,6 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>80b6be47e1425ea90c5febffac119250043a0c92</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="8.0.0-beta.22554.2">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>80b6be47e1425ea90c5febffac119250043a0c92</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="8.0.0-beta.22554.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>80b6be47e1425ea90c5febffac119250043a0c92</Sha>

@@ -22,8 +22,8 @@ namespace Microsoft.Interop
             return generator.GetNativeSignatureBehavior(info) switch
             {
                 SignatureBehavior.ManagedTypeAndAttributes => info.ManagedType.Syntax,
-                SignatureBehavior.NativeType => generator.AsNativeType(info),
-                SignatureBehavior.PointerToNativeType => PointerType(generator.AsNativeType(info)),
+                SignatureBehavior.NativeType => generator.AsNativeType(info).Syntax,
+                SignatureBehavior.PointerToNativeType => PointerType(generator.AsNativeType(info).Syntax),
                 _ => throw new InvalidOperationException()
             };
         }
@@ -62,8 +62,8 @@ namespace Microsoft.Interop
             return Parameter(Identifier(info.InstanceIdentifier))
                 .WithType(behavior switch
                 {
-                    SignatureBehavior.NativeType => generator.AsNativeType(info),
-                    SignatureBehavior.PointerToNativeType => PointerType(generator.AsNativeType(info)),
+                    SignatureBehavior.NativeType => generator.AsNativeType(info).Syntax,
+                    SignatureBehavior.PointerToNativeType => PointerType(generator.AsNativeType(info).Syntax),
                     _ => throw new InvalidOperationException()
                 });
         }

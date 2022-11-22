@@ -6,6 +6,7 @@
 
 #include "methodcontext.h"
 #include "compileresult.h"
+#include "spmiutil.h"
 
 class ASMDumper
 {
