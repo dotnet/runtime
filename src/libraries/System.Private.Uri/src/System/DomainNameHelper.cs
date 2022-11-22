@@ -53,7 +53,7 @@ namespace System
         // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsAscii(ReadOnlySpan<char> chars) =>
-            chars.IndexOfAnyExcept((char)0, (char)127) < 0;
+            chars.IndexOfAnyExceptInRange((char)0, (char)127) < 0;
 
         internal static string ParseCanonicalName(string str, int start, int end, ref bool loopback)
         {
@@ -148,10 +148,23 @@ namespace System
 
                 int labelLength = dotIndex < 0 ? hostname.Length : dotIndex;
 
-                if (iri && !IsAscii(hostname.Slice(0, labelLength)))
+                if (iri)
                 {
-                    // Account for the ACE prefix ("xn--")
-                    labelLength += 4;
+                    ReadOnlySpan<char> label = hostname.Slice(0, labelLength);
+                    if (!IsAscii(label))
+                    {
+                        // Account for the ACE prefix ("xn--")
+                        labelLength += 4;
+
+                        foreach (char c in label)
+                        {
+                            if (c > 0xFF)
+                            {
+                                // counts for two octets
+                                labelLength++;
+                            }
+                        }
+                    }
                 }
 
                 if (!IriHelper.IsInInclusiveRange((uint)labelLength, 1, 63))
