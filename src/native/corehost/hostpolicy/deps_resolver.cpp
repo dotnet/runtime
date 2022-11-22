@@ -83,10 +83,9 @@ namespace
 
         return path.substr(name_pos + 1);
     }
-      // -----------------------------------------------------------------------------
-      // A uniqifying append helper that doesn't let two entries with the same
-      // "asset_name" be part of the "items" paths.
-      //
+
+    // A uniqifying append helper that doesn't let two entries with the same
+    // "asset_name" be part of the "items" paths.
     void add_tpa_asset(
         const deps_asset_t& asset,
         const pal::string_t& resolved_path,
