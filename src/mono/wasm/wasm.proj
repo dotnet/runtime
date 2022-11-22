@@ -420,7 +420,7 @@
   </Target>
 
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile);$(NativeGeneratedFilesDir)mintops.ts"
           Outputs="$(NativeBinDir).rollup-stamp"
 	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
           >
