@@ -61,7 +61,7 @@ namespace System
             int index = str.AsSpan(start, end - start).LastIndexOfAny(s_asciiLetterUpperOrColonChars);
             if (index >= 0)
             {
-                Debug.Assert(!str.AsSpan(start, index - start).Contains(':'),
+                Debug.Assert(!str.AsSpan(start, index).Contains(':'),
                     "A colon should appear at most once, and must never be followed by letters.");
 
                 if (str[start + index] == ':')
