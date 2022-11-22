@@ -3,15 +3,15 @@
 
 #ifdef HOST_BROWSER
 
-#if FEATURE_WASM_THREADS
-#define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
-#else
+#if DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
 // enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
 // works even if the jiterpreter is otherwise disabled.
 #define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
-#endif // FEATURE_WASM_THREADS
+#else
+#define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
+#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
+#endif // DISABLE_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
 //  have a function pointer for a specific entry point.

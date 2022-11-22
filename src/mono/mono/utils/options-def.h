@@ -65,21 +65,21 @@ DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assem
 
 // the jiterpreter is not yet thread safe due to the need to synchronize function pointers
 //  and wasm modules between threads. before these can be enabled we need to implement all that
-#if FEATURE_WASM_THREADS
-// traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
-// interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
-DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
-// jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
-DEFINE_BOOL_READONLY(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
-#else
+#if DISABLE_THREADS
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
 DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
 DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
-#endif // FEATURE_WASM_THREADS
+#else
+// traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
+DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
+// interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
+DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
+// jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
+DEFINE_BOOL_READONLY(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
+#endif // DISABLE_THREADS
 
 // enables using WASM try/catch_all instructions where appropriate (currently only do_jit_call),
 //  will be automatically turned off if the instructions are not available.
