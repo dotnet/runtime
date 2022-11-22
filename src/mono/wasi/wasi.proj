@@ -16,6 +16,7 @@
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <EscapedQuoteW Condition="'$(HostOS)' == 'windows'">\&quot;</EscapedQuoteW>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -97,7 +98,6 @@
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include'))$(EscapedQuoteW)"/>
-      <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>

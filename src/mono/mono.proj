@@ -406,6 +406,8 @@
       <_MonoCXXFLAGS Include="-fexceptions"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
     </ItemGroup>
@@ -421,7 +423,6 @@
       -->
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
@@ -600,7 +601,6 @@
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="'$(TargetsWasi)' == 'true' and '$(HostOS)' == 'windows'">echo TODOWASI building with cmake is not implemented on windows</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />

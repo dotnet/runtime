@@ -48,12 +48,12 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "Browser" (
         if "%EMSDK_PATH%" == "" (
-            if not exist "%__repoRoot%src\mono\wasm\emsdk" (
+            if not exist "%__repoRoot%\src\mono\wasm\emsdk" (
                 echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
                 exit /B 1
             )
 
-            set EMSDK_PATH=%__repoRoot%src\mono\wasm\emsdk
+            set EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk
             set EMSDK_PATH=!EMSDK_PATH:\=/!
         )
 
@@ -61,8 +61,17 @@ if /i "%__Arch%" == "wasm" (
         set __UseEmcmake=1
     )
     if /i "%__Os%" == "wasi" (
-        echo Error: WASI build not implemented on Windows yet
-        exit /B 1
+        if "%WASI_SDK_PATH%" == "" (
+            if not exist "%__repoRoot%\src\mono\wasi\wasi-sdk" (
+                echo Error: Should set WASI_SDK_PATH environment variable pointing to emsdk root.
+                exit /B 1
+            )
+
+            set WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk
+            set WASI_SDK_PATH=!WASI_SDK_PATH:\=/!
+        )
+        set __CmakeGenerator=Ninja
+        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=WASI -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
