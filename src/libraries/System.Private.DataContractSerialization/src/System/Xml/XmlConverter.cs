@@ -1103,7 +1103,7 @@ namespace System.Xml
                 return chars.Length;
             }
 
-            for (int i = count; i < chars.Length; i++)
+            for (int i = count + 1; i < chars.Length; i++)
             {
                 char c = chars[i];
                 if (!IsWhitespace(c))
@@ -1123,8 +1123,8 @@ namespace System.Xml
                 return s;
             }
 
-            int count = s.Length;
-            for (int i = indexOfWhitespace; i < s.Length; i++)
+            int count = s.Length - 1;
+            for (int i = indexOfWhitespace + 1; i < s.Length; i++)
             {
                 if (IsWhitespace(s[i]))
                 {
