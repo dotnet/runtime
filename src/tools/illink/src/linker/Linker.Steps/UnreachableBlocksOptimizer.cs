@@ -617,7 +617,7 @@ namespace Mono.Linker.Steps
 
 				case Code.Switch:
 					var targets = (Instruction[]) instr.Operand;
-					if (operand <= targets.Length) {
+					if (operand < targets.Length) {
 						// It does not need to be conditional but existing logic in BodySweeper would
 						// need to be updated to deal with 1->2 instruction replacement
 						RewriteConditionTo (index, Instruction.Create (operand == 0 ? OpCodes.Brfalse : OpCodes.Brtrue, targets[operand]));

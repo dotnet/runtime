@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -17,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestSwitch.TestOffset ();
 			TestSwitch2.TestFallThrough ();
 			TestSwitchZero.Test ();
+			TestSwitch3.TestFallThrough (true);
 		}
 
 		[Kept]
@@ -121,6 +123,54 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 					throw new ApplicationException ();
 				}
 			}
+
+			static void Unreached () { }
+		}
+
+		[Kept]
+		class TestSwitch3
+		{
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				"ldc.i4.4",
+				"stloc.0",
+				"ldloc.0",
+				"pop",
+				"br.s il_6",
+				"newobj System.Void System.NotSupportedException::.ctor()",
+				"throw",
+			})]
+			public static object TestFallThrough (bool createReader)
+			{
+				object instance;
+
+				switch (ProcessArchitecture, createReader) {
+				case (Architecture.X86, true):
+					Unreached ();
+					break;
+				case (Architecture.X86, false):
+					Unreached ();
+					break;
+				case (Architecture.X64, true):
+					Unreached ();
+					break;
+				case (Architecture.X64, false):
+					Unreached ();
+					break;
+				case (Architecture.Arm64, true):
+					Unreached ();
+					break;
+				case (Architecture.Arm64, false):
+					Unreached ();
+					break;
+				default:
+					throw new NotSupportedException ();
+				}
+
+				return null;
+			}
+
+			static Architecture ProcessArchitecture => Architecture.Wasm;
 
 			static void Unreached () { }
 		}
