@@ -11,8 +11,8 @@ variables:
 dependencies:
   - .yamato/build_linux_x64.yml
   - .yamato/build_osx_x64arm64.yml
-  - .yamato/build_windows_x86.yml
-  - .yamato/build_windows_x64.yml
+  - .yamato/build_windows_x86_release.yml
+  - .yamato/build_windows_x64_release.yml
 
 commands:
   - curl -sSo StevedoreUpload "$STEVEDORE_UPLOAD_TOOL_LINUX_X64_URL"
