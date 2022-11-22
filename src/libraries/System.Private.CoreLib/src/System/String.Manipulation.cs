@@ -17,6 +17,7 @@ namespace System
 {
     public partial class String
     {
+        // Hi
         private const int StackallocIntBufferSizeLimit = 128;
 
         private static void FillStringChecked(string dest, int destPos, string src)
