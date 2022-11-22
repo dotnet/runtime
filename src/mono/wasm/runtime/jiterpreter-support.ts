@@ -689,7 +689,10 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
             case 1:
                 builder.appendU8(WasmOpcode.i32_store8);
                 break;
+            case 3:
             case 2:
+                // For 3 bytes we just want to do a 2 write then a 1
+                localCount = 2;
                 builder.appendU8(WasmOpcode.i32_store16);
                 break;
         }
