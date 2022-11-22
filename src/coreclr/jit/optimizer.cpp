@@ -4694,7 +4694,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Evaluating op1/op2 unconditionally effectively has the same effect as
     // reordering them with the condition (for example, the condition could be
     // an explicit bounds check and the operands could read an array element).
-    if ((cond->gtFlags & GTF_ORDER_SIDEEFF) == 0)
+    if ((cond->gtFlags & GTF_ORDER_SIDEEFF) != 0)
     {
         return false;
     }
