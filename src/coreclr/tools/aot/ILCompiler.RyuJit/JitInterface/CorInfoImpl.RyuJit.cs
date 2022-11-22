@@ -2296,14 +2296,24 @@ namespace Internal.JitInterface
             };
         }
 
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            if (HandleToObject(strObj) is FrozenStringNode frozenStr && (uint)frozenStr.Data.Length > (uint)index)
+            {
+                *value = frozenStr.Data[index];
+                return true;
+            }
+            return false;
+        }
+
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             object obj = HandleToObject(objHnd);
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
-                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
+                FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
+                _ => -1
             };
         }
     }

@@ -76,12 +76,13 @@ namespace ILCompiler
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
             FlowAnnotations flowAnnotations,
             UsageBasedMetadataGenerationOptions generationOptions,
+            MetadataManagerOptions options,
             Logger logger,
             IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
@@ -965,7 +966,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts, _options);
         }
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)

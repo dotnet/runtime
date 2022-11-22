@@ -180,6 +180,9 @@
     <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs">
       <Link>TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\DehydratedData.cs">
+      <Link>Common\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
@@ -332,6 +335,8 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />

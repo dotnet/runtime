@@ -84,7 +84,7 @@ namespace ILCompiler
             ConfigureImageBase(targetDetails);
 
             bool versionBubbleIncludesCoreLib = false;
-            Dictionary<string, string> inputFilePathsArg = _command.Result.GetValueForArgument(_command.InputFilePaths);
+            Dictionary<string, string> inputFilePathsArg = _command.Result.GetValue(_command.InputFilePaths);
             Dictionary<string, string> unrootedInputFilePathsArg = Get(_command.UnrootedInputFilePaths);
 
             if (_inputBubble)
@@ -886,7 +886,7 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new Crossgen2RootCommand(args))

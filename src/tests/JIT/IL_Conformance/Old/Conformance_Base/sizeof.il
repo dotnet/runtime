@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 .class public _sizeof {
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		20
 	sizeof int8

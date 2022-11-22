@@ -5458,7 +5458,7 @@ GenTree* Compiler::fgMorphExpandStaticField(GenTree* tree)
     }
     else if (isStaticReadOnlyInited)
     {
-        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle));
+        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle, false));
 
         // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
         tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
@@ -12703,8 +12703,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
 
         // Move constant vectors from op1 to op2 for commutative and compare operations
-        // For now we only do it for zero vector
-        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorZero() &&
+        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorConst() &&
             HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
         {
             std::swap(hw->Op(1), hw->Op(2));

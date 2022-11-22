@@ -800,6 +800,8 @@ OPDEF(MINT_INTRINS_64ORDINAL_IGNORE_CASE_ASCII, "intrins_64ordinal_ignore_case_a
 OPDEF(MINT_INTRINS_U32_TO_DECSTR, "intrins_u32_to_decstr", 5, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_INTRINS_WIDEN_ASCII_TO_UTF16, "intrins_widen_ascii_to_utf16", 5, 1, 3, MintOpNoArgs)
 
+OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoShorts)
+
 // TODO: Make this wasm only
 OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
 OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
