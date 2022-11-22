@@ -108,7 +108,7 @@ namespace System
             {
                 char c = hostname[invalidCharOrDelimiterIndex];
 
-                if (c == '/' || c == '\\' || (notImplicitFile && (c == ':' || c == '?' || c == '#')))
+                if (c is '/' or '\\' || (notImplicitFile && (c is ':' or '?' or '#')))
                 {
                     hostname = hostname.Slice(0, invalidCharOrDelimiterIndex);
                 }
@@ -121,7 +121,7 @@ namespace System
 
             length = hostname.Length;
 
-            if (hostname.IsEmpty)
+            if (length == 0)
             {
                 return false;
             }
@@ -133,7 +133,7 @@ namespace System
             //
             //      <label> -> <alphanum> [<alphanum> | <hyphen> | <underscore>] * 62
 
-            // We already verified the content, now verify the lenghts of individual labels
+            // We already verified the content, now verify the lengths of individual labels
             while (true)
             {
                 char firstChar = hostname[0];
@@ -154,7 +154,7 @@ namespace System
                     if (!IsAscii(label))
                     {
                         // s_iriInvalidAsciiChars confirmed everything in [0, 7F] range.
-                        // Chars in [80, A0) range are also invalid, check for them now.
+                        // Chars in [80, 9F] range are also invalid, check for them now.
                         if (hostname.IndexOfAnyInRange('\u0080', '\u009F') >= 0)
                         {
                             return false;
