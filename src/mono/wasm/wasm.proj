@@ -415,8 +415,8 @@
 
   <Target Name="GenerateMintopsTS"
           Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def"
-          Outputs="$(NativeGeneratedFilesDir)\mintops.ts">
-      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)/mintops.ts" />
+          Outputs="$(NativeGeneratedFilesDir)mintops.ts">
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)mintops.ts" />
   </Target>
 
   <Target Name="BuildWithRollup"
