@@ -726,7 +726,6 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:

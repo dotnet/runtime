@@ -311,7 +311,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     return false;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:

@@ -3242,9 +3242,6 @@ namespace Internal.JitInterface
             ReadyToRunHelperId res;
             switch (helper)
             {
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CCTOR_TRIGGER:
-                    res = ReadyToRunHelperId.CctorTrigger;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                     res = ReadyToRunHelperId.GetGCStaticBase;
                     break;
