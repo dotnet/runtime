@@ -8842,10 +8842,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
                 }
-                else if (tree->OperIs(GT_IND) && fgValueNumberConstLoad(tree->AsIndir()))
-                {
-                    // VN is assigned inside fgValueNumberConstLoad
-                }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
                     fgValueNumberArrayElemLoad(tree, &funcApp);
@@ -10602,12 +10598,6 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 {
     // We should have tree that a unary indirection or a tree node with an implicit indirection
     assert(tree->OperIsUnary() || tree->OperIsImplicitIndir());
-
-    // if this indirection can be folded into a constant it means it can't trigger NullRef
-    if (tree->gtVNPair.BothEqual() && vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
-    {
-        return;
-    }
 
     // We evaluate the baseAddr ValueNumber further in order
     // to obtain a better value to use for the null check exception.
