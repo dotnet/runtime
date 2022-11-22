@@ -9692,6 +9692,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
+                        helperNode->gtFlags |= GTF_ORDER_SIDEEFF;
                         op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), helperNode, op1);
                     }
                 }
@@ -9967,6 +9968,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
+                        helperNode->gtFlags |= GTF_ORDER_SIDEEFF;
                         op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), helperNode, op1);
                     }
                 }
@@ -10458,6 +10460,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
                                 GenTree* nullcheck = gtNewNullCheck(op1, block);
+                                nullcheck->gtFlags |= GTF_ORDER_SIDEEFF;
                                 GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;

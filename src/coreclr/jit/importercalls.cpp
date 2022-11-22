@@ -2728,6 +2728,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
                 assert(resultType == result->TypeGet());
+                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
