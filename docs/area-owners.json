@@ -920,6 +920,19 @@
       "label": "area-System.Formats.Cbor"
     },
     {
+      "lead": "jeffhandley",
+      "pod": "akhil-carlos-viktor",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer",
+        "dotnet/area-system-formats-tar"
+      ],
+      "label": "area-System.Formats.Tar"
+    },
+    {
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
