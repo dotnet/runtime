@@ -16,6 +16,8 @@ using System.Runtime.InteropServices;
 // to work well for them because the right behavior is often unclear, and it is hard to test and
 // very low value because such enums cannot be expressed in C# and are very rarely encountered.
 
+#pragma warning disable 8500 // Allow taking address of managed types
+
 namespace System
 {
     /// <summary>Provides the base class for enumerations.</summary>
@@ -34,25 +36,25 @@ namespace System
         /// or <see langword="null"/> if no such constant is found.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
+        public static unsafe string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(int)) return GetNameInlined(GetEnumInfo<int>(rt), Unsafe.As<TEnum, int>(ref value));
-            if (underlyingType == typeof(uint)) return GetNameInlined(GetEnumInfo<uint>(rt), Unsafe.As<TEnum, uint>(ref value));
-            if (underlyingType == typeof(long)) return GetNameInlined(GetEnumInfo<long>(rt), Unsafe.As<TEnum, long>(ref value));
-            if (underlyingType == typeof(ulong)) return GetNameInlined(GetEnumInfo<ulong>(rt), Unsafe.As<TEnum, ulong>(ref value));
-            if (underlyingType == typeof(byte)) return GetNameInlined(GetEnumInfo<byte>(rt), Unsafe.As<TEnum, byte>(ref value));
-            if (underlyingType == typeof(sbyte)) return GetNameInlined(GetEnumInfo<sbyte>(rt), Unsafe.As<TEnum, sbyte>(ref value));
-            if (underlyingType == typeof(short)) return GetNameInlined(GetEnumInfo<short>(rt), Unsafe.As<TEnum, short>(ref value));
-            if (underlyingType == typeof(ushort)) return GetNameInlined(GetEnumInfo<ushort>(rt), Unsafe.As<TEnum, ushort>(ref value));
-            if (underlyingType == typeof(nint)) return GetNameInlined(GetEnumInfo<nint>(rt), Unsafe.As<TEnum, nint>(ref value));
-            if (underlyingType == typeof(nuint)) return GetNameInlined(GetEnumInfo<nuint>(rt), Unsafe.As<TEnum, nuint>(ref value));
-            if (underlyingType == typeof(char)) return GetNameInlined(GetEnumInfo<char>(rt), Unsafe.As<TEnum, char>(ref value));
-            if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), Unsafe.As<TEnum, float>(ref value));
-            if (underlyingType == typeof(double)) return GetNameInlined(GetEnumInfo<double>(rt), Unsafe.As<TEnum, double>(ref value));
-            if (underlyingType == typeof(bool)) return GetNameInlined(GetEnumInfo<byte>(rt), Unsafe.As<TEnum, bool>(ref value) ? (byte)1 : (byte)0);
+            if (underlyingType == typeof(int)) return GetNameInlined(GetEnumInfo<int>(rt), *(int*)&value);
+            if (underlyingType == typeof(uint)) return GetNameInlined(GetEnumInfo<uint>(rt), *(uint*)&value);
+            if (underlyingType == typeof(long)) return GetNameInlined(GetEnumInfo<long>(rt), *(long*)&value);
+            if (underlyingType == typeof(ulong)) return GetNameInlined(GetEnumInfo<ulong>(rt), *(ulong*)&value);
+            if (underlyingType == typeof(byte)) return GetNameInlined(GetEnumInfo<byte>(rt), *(byte*)&value);
+            if (underlyingType == typeof(sbyte)) return GetNameInlined(GetEnumInfo<sbyte>(rt), *(sbyte*)&value);
+            if (underlyingType == typeof(short)) return GetNameInlined(GetEnumInfo<short>(rt), *(short*)&value);
+            if (underlyingType == typeof(ushort)) return GetNameInlined(GetEnumInfo<ushort>(rt), *(ushort*)&value);
+            if (underlyingType == typeof(nint)) return GetNameInlined(GetEnumInfo<nint>(rt), *(nint*)&value);
+            if (underlyingType == typeof(nuint)) return GetNameInlined(GetEnumInfo<nuint>(rt), *(nuint*)&value);
+            if (underlyingType == typeof(char)) return GetNameInlined(GetEnumInfo<char>(rt), *(char*)&value);
+            if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), *(float*)&value);
+            if (underlyingType == typeof(double)) return GetNameInlined(GetEnumInfo<double>(rt), *(double*)&value);
+            if (underlyingType == typeof(bool)) return GetNameInlined(GetEnumInfo<byte>(rt), *(bool*)&value ? (byte)1 : (byte)0);
 
             throw CreateUnknownEnumTypeException();
         }
@@ -506,25 +508,25 @@ namespace System
         /// <param name="value">The value or name of a constant in <typeparamref name="TEnum"/>.</param>
         /// <returns><see langword="true"/> if a given integral value exists in a specified enumeration; <see langword="false"/>, otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
+        public static unsafe bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(int)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, int>(ref value));
-            if (underlyingType == typeof(uint)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, uint>(ref value));
-            if (underlyingType == typeof(long)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, long>(ref value));
-            if (underlyingType == typeof(ulong)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, ulong>(ref value));
-            if (underlyingType == typeof(byte)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, byte>(ref value));
-            if (underlyingType == typeof(sbyte)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, sbyte>(ref value));
-            if (underlyingType == typeof(short)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, short>(ref value));
-            if (underlyingType == typeof(ushort)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, ushort>(ref value));
-            if (underlyingType == typeof(nint)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, nint>(ref value));
-            if (underlyingType == typeof(nuint)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, nuint>(ref value));
-            if (underlyingType == typeof(char)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, char>(ref value));
-            if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, float>(ref value));
-            if (underlyingType == typeof(double)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, double>(ref value));
-            if (underlyingType == typeof(bool)) return IsDefinedPrimitive(rt, Unsafe.As<TEnum, bool>(ref value) ? (byte)1 : (byte)0);
+            if (underlyingType == typeof(int)) return IsDefinedPrimitive(rt, *(int*)&value);
+            if (underlyingType == typeof(uint)) return IsDefinedPrimitive(rt, *(uint*)&value);
+            if (underlyingType == typeof(long)) return IsDefinedPrimitive(rt, *(long*)&value);
+            if (underlyingType == typeof(ulong)) return IsDefinedPrimitive(rt, *(ulong*)&value);
+            if (underlyingType == typeof(byte)) return IsDefinedPrimitive(rt, *(byte*)&value);
+            if (underlyingType == typeof(sbyte)) return IsDefinedPrimitive(rt, *(sbyte*)&value);
+            if (underlyingType == typeof(short)) return IsDefinedPrimitive(rt, *(short*)&value);
+            if (underlyingType == typeof(ushort)) return IsDefinedPrimitive(rt, *(ushort*)&value);
+            if (underlyingType == typeof(nint)) return IsDefinedPrimitive(rt, *(nint*)&value);
+            if (underlyingType == typeof(nuint)) return IsDefinedPrimitive(rt, *(nuint*)&value);
+            if (underlyingType == typeof(char)) return IsDefinedPrimitive(rt, *(char*)&value);
+            if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, *(float*)&value);
+            if (underlyingType == typeof(double)) return IsDefinedPrimitive(rt, *(double*)&value);
+            if (underlyingType == typeof(bool)) return IsDefinedPrimitive(rt, *(bool*)&value ? (byte)1 : (byte)0);
 
             throw CreateUnknownEnumTypeException();
         }
@@ -1877,7 +1879,7 @@ namespace System
         /// those constraints. It's a manual copy/paste right now to avoid pressure on the JIT's inlining mechanisms.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // format is most frequently a constant, and we want it exposed to the implementation; this should be inlined automatically, anyway
-        internal static bool TryFormatUnconstrained<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default)
+        internal static unsafe bool TryFormatUnconstrained<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default)
         {
             Debug.Assert(typeof(TEnum).IsEnum);
             Debug.Assert(value is not null);
@@ -1891,37 +1893,37 @@ namespace System
             // be necessary for semantics inside of TryFormatPrimitiveNonDefault, so we can just do it here instead.
             if (format.IsEmpty)
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, int>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, uint>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, long>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, ulong>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, byte>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, sbyte>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, short>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, ushort>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, nint>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, nuint>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, char>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, float>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, Unsafe.As<TEnum, double>(ref value), destination, out charsWritten);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, Unsafe.As<TEnum, bool>(ref value), destination, out charsWritten, format: default);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, *(int*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, *(uint*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, *(long*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, *(ulong*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, *(byte*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, *(sbyte*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, *(short*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, *(ushort*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, *(nint*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, *(nuint*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, *(char*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, *(double*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format: default);
             }
             else
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, int>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, uint>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, long>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, ulong>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, byte>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, sbyte>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, short>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, ushort>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, nint>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, nuint>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, char>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, float>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, Unsafe.As<TEnum, double>(ref value), destination, out charsWritten, format);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, Unsafe.As<TEnum, bool>(ref value), destination, out charsWritten, format);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, *(int*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, *(uint*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, *(long*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, *(ulong*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, *(byte*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, *(sbyte*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, *(short*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, *(ushort*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, *(nint*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, *(nuint*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, *(char*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, *(double*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format);
             }
 
             throw CreateUnknownEnumTypeException();
