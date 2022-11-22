@@ -7,7 +7,7 @@ namespace N
 {
     public static class C
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Regression test for an issue with assertion prop leading
             // to the wrong exception being thrown from Vector<T>.CopyTo

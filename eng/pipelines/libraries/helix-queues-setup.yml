@@ -189,15 +189,15 @@ jobs:
       # TODO: Uncomment once there is HW deployed to service Win11 ARM64 queue
       # - Windows.11.Arm64.Open
 
-    # WebAssembly
+    # Browser WebAssembly
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
-    # WebAssembly Firefox
+    # Browser WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'Browser_wasm_firefox') }}:
       - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
 
-    # WebAssembly windows
+    # Browser WebAssembly windows
     - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
       - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly
 

@@ -66,8 +66,8 @@ bool RemoveDup::unique(MethodContext* mc)
 
     // Assume that there are lots of duplicates, so don't allocate a new buffer for the MD5 hash data
     // until we know we're going to add it to the map.
-    char md5Buff[MD5_HASH_BUFFER_SIZE];
-    mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE, /* ignoreMethodName */ true, &newInfo, newFlags);
+    char md5Buff[MM3_HASH_BUFFER_SIZE];
+    mc->dumpMethodHashToBuffer(md5Buff, MM3_HASH_BUFFER_SIZE, /* ignoreMethodName */ true, &newInfo, newFlags);
 
     if (m_inFile->GetIndex(newInfo.ILCodeSize) == -1)
         m_inFile->Add(newInfo.ILCodeSize, new DenseLightWeightMap<char*>());
@@ -77,14 +77,14 @@ bool RemoveDup::unique(MethodContext* mc)
     for (unsigned i = 0; i < ourRank->GetCount(); i++)
     {
         char* md5Buff2 = ourRank->Get(i);
-        if (strncmp(md5Buff, md5Buff2, MD5_HASH_BUFFER_SIZE) == 0)
+        if (strncmp(md5Buff, md5Buff2, MM3_HASH_BUFFER_SIZE) == 0)
         {
             return false;
         }
     }
 
-    char* newmd5Buff = new char[MD5_HASH_BUFFER_SIZE];
-    memcpy(newmd5Buff, md5Buff, MD5_HASH_BUFFER_SIZE);
+    char* newmd5Buff = new char[MM3_HASH_BUFFER_SIZE];
+    memcpy(newmd5Buff, md5Buff, MM3_HASH_BUFFER_SIZE);
     ourRank->Append(newmd5Buff);
     return true;
 }

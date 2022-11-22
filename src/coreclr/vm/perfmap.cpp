@@ -244,10 +244,10 @@ void PerfMap::LogImage(PEAssembly * pPEAssembly)
 
     EX_TRY
     {
-        WCHAR wszSignature[39];
-        GetNativeImageSignature(pPEAssembly, wszSignature, ARRAY_SIZE(wszSignature));
+        CHAR szSignature[GUID_STR_BUFFER_LEN];
+        GetNativeImageSignature(pPEAssembly, szSignature, ARRAY_SIZE(szSignature));
 
-        m_PerfInfo->LogImage(pPEAssembly, wszSignature);
+        m_PerfInfo->LogImage(pPEAssembly, szSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -356,21 +356,21 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize)
+void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize)
 {
     CONTRACTL{
         PRECONDITION(pPEAssembly != nullptr);
-        PRECONDITION(pwszSig != nullptr);
-        PRECONDITION(nSigSize >= 39);
+        PRECONDITION(pszSig != nullptr);
+        PRECONDITION(nSigSize >= GUID_STR_BUFFER_LEN);
     } CONTRACTL_END;
 
     // We use the MVID as the signature, since ready to run images
     // don't have a native image signature.
     GUID mvid;
     pPEAssembly->GetMVID(&mvid);
-    if(!GuidToLPWSTR(mvid, pwszSig, nSigSize))
+    if(!GuidToLPSTR(mvid, pszSig, nSigSize))
     {
-        pwszSig[0] = '\0';
+        pszSig[0] = '\0';
     }
 }
 
@@ -387,13 +387,13 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
 
     // Get the native image signature (GUID).
     // Used to ensure that we match symbols to the correct NGEN image.
-    WCHAR wszSignature[39];
-    GetNativeImageSignature(pAssembly->GetPEAssembly(), wszSignature, ARRAY_SIZE(wszSignature));
+    CHAR szSignature[GUID_STR_BUFFER_LEN];
+    GetNativeImageSignature(pAssembly->GetPEAssembly(), szSignature, ARRAY_SIZE(szSignature));
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
     SString sDestPerfMapPath;
-    sDestPerfMapPath.Printf("%S%s.ni.%S.map", pDestPath, lpcSimpleName, wszSignature);
+    sDestPerfMapPath.Printf("%S%s.ni.%s.map", pDestPath, lpcSimpleName, szSignature);
 
     // Open the perf map file.
     OpenFile(sDestPerfMapPath);

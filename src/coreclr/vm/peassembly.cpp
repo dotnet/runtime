@@ -19,8 +19,6 @@
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
-
-#include "assemblybinderutil.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
@@ -1114,10 +1112,10 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 
     PTR_AssemblyBinder pBinder = NULL;
 
-    BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+    PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        pBinder = pHostAssembly->GetBinder();
     }
     else
     {

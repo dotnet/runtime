@@ -14,10 +14,10 @@ namespace System.Collections.Frozen
         internal EmptyFrozenDictionary() : base(EqualityComparer<TKey>.Default) { }
 
         /// <inheritdoc />
-        private protected override ImmutableArray<TKey> KeysCore => ImmutableArray<TKey>.Empty;
+        private protected override TKey[] KeysCore => Array.Empty<TKey>();
 
         /// <inheritdoc />
-        private protected override ImmutableArray<TValue> ValuesCore => ImmutableArray<TValue>.Empty;
+        private protected override TValue[] ValuesCore => Array.Empty<TValue>();
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(Array.Empty<TKey>(), Array.Empty<TValue>());
