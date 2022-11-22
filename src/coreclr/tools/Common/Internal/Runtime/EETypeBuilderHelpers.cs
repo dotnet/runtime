@@ -4,7 +4,6 @@
 using System.Diagnostics;
 
 using Internal.TypeSystem;
-using Internal.Runtime;
 
 namespace Internal.Runtime
 {
@@ -114,7 +113,7 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
-            if (TargetFeatures.TargetSupportsObjectiveCMarshal(type.Context.Target) && IsTrackedReferenceWithFinalizer(type))
+            if (type.Context.Target.IsOSX && IsTrackedReferenceWithFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
             }

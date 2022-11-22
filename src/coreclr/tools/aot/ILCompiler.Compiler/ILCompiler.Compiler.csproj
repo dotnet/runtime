@@ -204,9 +204,6 @@
     <Compile Include="..\..\Common\Internal\Runtime\RuntimeConstants.cs">
       <Link>Common\RuntimeConstants.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\TargetFeatures.cs">
-      <Link>Common\TargetFeatures.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\UniversalGenericParameterLayout.cs">
       <Link>Common\UniversalGenericParameterLayout.cs</Link>
     </Compile>
