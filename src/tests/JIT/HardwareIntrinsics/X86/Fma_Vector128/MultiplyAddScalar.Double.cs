@@ -598,7 +598,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
         {
             bool succeeded = true;
 
-            if (BitConverter.DoubleToInt64Bits(Math.Round((firstOp[0] * secondOp[0]) + thirdOp[0], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[0], 9)))
+            if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(firstOp[0], secondOp[0], thirdOp[0]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[0], 9)))
             {
                 succeeded = false;
             }

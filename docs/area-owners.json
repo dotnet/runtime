@@ -753,6 +753,20 @@
       "label": "area-System.Data.SqlClient"
     },
     {
+      "lead": "ericstj",
+      "pod": "eirik-krzysztof-layomi-tarek",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "jeffhandley",
+        "krwq",
+        "layomia",
+        "tarekgh",
+        "dotnet/area-system-datetime"
+      ],
+      "label": "area-System.DateTime"
+    },
+    {
       "lead": "tommcdon",
       "owners": [
         "tommcdon"
@@ -920,6 +934,19 @@
       "label": "area-System.Formats.Cbor"
     },
     {
+      "lead": "jeffhandley",
+      "pod": "akhil-carlos-viktor",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer",
+        "dotnet/area-system-formats-tar"
+      ],
+      "label": "area-System.Formats.Tar"
+    },
+    {
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
@@ -958,6 +985,19 @@
         "dotnet/area-system-io-compression"
       ],
       "label": "area-System.IO.Compression"
+    },
+    {
+      "lead": "jeffhandley",
+      "pod": "adam-david-jeremy",
+      "owners": [
+        "adamsitnik",
+        "bartonjs",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee",
+        "dotnet/area-system-io-hashing"
+      ],
+      "label": "area-System.IO.Hashing"
     },
     {
       "lead": "adityamandaleeka",

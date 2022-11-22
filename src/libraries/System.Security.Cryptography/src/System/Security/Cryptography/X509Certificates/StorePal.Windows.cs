@@ -61,7 +61,9 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeCertContextHandle existingCertContext = ((CertificatePal)certificate).GetCertContext())
             {
                 SafeCertContextHandle? enumCertContext = null;
-                Interop.Crypt32.CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
+                // We can use DangerousCertContext safely here because GetCertContext returns a duplicated context
+                // that we own and doesn't escape.
+                Interop.Crypt32.CERT_CONTEXT* pCertContext = existingCertContext.DangerousCertContext;
                 if (!Interop.crypt32.CertFindCertificateInStore(_certStore, Interop.Crypt32.CertFindType.CERT_FIND_EXISTING, pCertContext, ref enumCertContext))
                     return; // The certificate is not present in the store, simply return.
 
