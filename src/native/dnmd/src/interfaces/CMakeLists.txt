@@ -30,7 +30,9 @@ target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED)
 target_link_libraries(dnmd_interfaces dnmd)
 
 set_target_properties(dnmd_interfaces_static PROPERTIES PUBLIC_HEADER ../inc/dnmd_interfaces.hpp)
-set_target_properties(dnmd_interfaces PROPERTIES PUBLIC_HEADER ../inc/dnmd_interfaces.hpp)
+set_target_properties(dnmd_interfaces PROPERTIES
+  PUBLIC_HEADER ../inc/dnmd_interfaces.hpp
+  INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 install(TARGETS dnmd_interfaces_static)
 install(TARGETS dnmd_interfaces)

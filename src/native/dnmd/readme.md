@@ -2,7 +2,7 @@
 
 ## Requirements (minimum)
 
-- [CMake](https://cmake.org/download/) 3.6.2
+- [CMake](https://cmake.org/download/) 3.10
 
 - C11 and C++14 compliant compilers
 
