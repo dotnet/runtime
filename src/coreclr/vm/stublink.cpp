@@ -2465,15 +2465,15 @@ VOID ArgBasedStubCache::Dump()
     CONTRACTL_END;
 
     printf("--------------------------------------------------------------\n");
-    printf("ArgBasedStubCache dump (%lu fixed entries):\n", m_numFixedSlots);
+    printf("ArgBasedStubCache dump (%u fixed entries):\n", m_numFixedSlots);
     for (UINT32 i = 0; i < m_numFixedSlots; i++) {
 
-        printf("  Fixed slot %lu: ", (ULONG)i);
+        printf("  Fixed slot %u: ", (ULONG)i);
         Stub *pStub = m_aStub[i];
         if (!pStub) {
             printf("empty\n");
         } else {
-            printf("%zxh   - refcount is %lu\n",
+            printf("%zxh   - refcount is %u\n",
                    (size_t)(pStub->GetEntryPoint()),
                    (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
         }
@@ -2483,9 +2483,9 @@ VOID ArgBasedStubCache::Dump()
          pSlotEntry != NULL;
          pSlotEntry = pSlotEntry->m_pNext) {
 
-        printf("  Dyna. slot %lu: ", (ULONG)(pSlotEntry->m_key));
+        printf("  Dyna. slot %u: ", (ULONG)(pSlotEntry->m_key));
         Stub *pStub = pSlotEntry->m_pStub;
-        printf("%zxh   - refcount is %lu\n",
+        printf("%zxh   - refcount is %u\n",
                (size_t)(pStub->GetEntryPoint()),
                (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
 

@@ -19,7 +19,6 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
 {
     public static partial class Program
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/78079", TestPlatforms.OSX)]
         [Fact]
         public static void MultiplyAddSingle()
         {
@@ -599,7 +598,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
         {
             bool succeeded = true;
 
-            if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[0] * secondOp[0]) + thirdOp[0], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
+            if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[0], secondOp[0], thirdOp[0]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
             {
                 succeeded = false;
             }
@@ -607,7 +606,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[i] * secondOp[i]) + thirdOp[i], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
+                    if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i], secondOp[i], thirdOp[i]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
                     {
                         succeeded = false;
                         break;

@@ -723,12 +723,6 @@ namespace System.Formats.Tar
             }
             line = line.Slice(spacePos + 1).TrimStart((byte)' ');
 
-            // If there are any more spaces, it's malformed.
-            if (line.IndexOf((byte)' ') >= 0)
-            {
-                return false;
-            }
-
             // Find the equal separator.
             int equalPos = line.IndexOf((byte)'=');
             if (equalPos < 0)

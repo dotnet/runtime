@@ -332,5 +332,63 @@ namespace Microsoft.Interop
                             Token(SyntaxKind.DefaultKeyword))));
             }
         }
+
+        /// <summary>
+        /// Get the marshalling direction for a given <see cref="TypePositionInfo"/> in a given <see cref="StubCodeContext"/>.
+        /// For example, an out parameter is marshalled in the <see cref="MarshalDirection.UnmanagedToManaged"/> direction in a <see cref="MarshalDirection.ManagedToUnmanaged"/> stub,
+        /// but from <see cref="MarshalDirection.ManagedToUnmanaged"/> in a <see cref="MarshalDirection.UnmanagedToManaged"/> stub.
+        /// </summary>
+        /// <param name="info">The info for an element.</param>
+        /// <param name="context">The context for the stub.</param>
+        /// <returns>The direction the element is marshalled.</returns>
+        public static MarshalDirection GetMarshalDirection(TypePositionInfo info, StubCodeContext context)
+        {
+            if (context.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
+            {
+                throw new ArgumentException("Stub context direction must not be bidirectional.");
+            }
+
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                if (info.IsManagedReturnPosition)
+                {
+                    return MarshalDirection.UnmanagedToManaged;
+                }
+                if (!info.IsByRef)
+                {
+                    return MarshalDirection.ManagedToUnmanaged;
+                }
+                switch (info.RefKind)
+                {
+                    case RefKind.In:
+                        return MarshalDirection.ManagedToUnmanaged;
+                    case RefKind.Ref:
+                        return MarshalDirection.Bidirectional;
+                    case RefKind.Out:
+                        return MarshalDirection.UnmanagedToManaged;
+                }
+                throw new UnreachableException("An element is either a return value or passed by value or by ref.");
+            }
+
+
+            if (info.IsNativeReturnPosition)
+            {
+                return MarshalDirection.ManagedToUnmanaged;
+            }
+            if (!info.IsByRef)
+            {
+                return MarshalDirection.UnmanagedToManaged;
+            }
+            switch (info.RefKind)
+            {
+                case RefKind.In:
+                    return MarshalDirection.UnmanagedToManaged;
+                case RefKind.Ref:
+                    return MarshalDirection.Bidirectional;
+                case RefKind.Out:
+                    return MarshalDirection.ManagedToUnmanaged;
+            }
+            throw new UnreachableException("An element is either a return value or passed by value or by ref.");
+        }
     }
 }

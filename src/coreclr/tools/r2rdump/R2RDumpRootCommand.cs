@@ -76,6 +76,8 @@ namespace R2RDump
             new(new[] { "--signatureBinary", "--sb" }, "Append signature binary to its textual representation");
         public Option<bool> InlineSignatureBinary { get; } =
             new(new[] { "--inlineSignatureBinary", "--isb" }, "Embed binary signature into its textual representation");
+        public Option<bool> ValidateDebugInfo { get; } =
+            new(new[] { "--validateDebugInfo", "--val" }, "Validate functions reported debug info.");
 
         public ParseResult Result;
 
@@ -118,6 +120,7 @@ namespace R2RDump
 
             AddOption(SignatureBinary);
             AddOption(InlineSignatureBinary);
+            AddOption(ValidateDebugInfo);
 
             this.SetHandler(context =>
             {

@@ -60,7 +60,28 @@ extends:
       - template: /eng/pipelines/common/evaluate-default-paths.yml
 
     #
-    # Build Release config vertical for Windows, Linux, Linux musl and OSX
+    # Build and Test ILLink in Release config vertical for Windows, Linux and OSX
+    #
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        platforms:
+        - windows_x64
+        - OSX_x64
+        - Linux_x64
+        jobParameters:
+          testGroup: innerloop
+          timeoutInMinutes: 120
+          nameSuffix: ILLink_Runtime_Testing
+          condition:
+            or(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+          buildArgs: -s tools.illinktests -test -c $(_BuildConfig)
+
+    #
+    # Build Release config vertical for Windows, Linux, and OSX
     #
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:

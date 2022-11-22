@@ -138,6 +138,7 @@ namespace ComWrappersTests
             var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
             var wr = new WeakReference<WeakReferenceableWrapper>(obj);
             ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+            GC.KeepAlive(obj);
             return (wr, objRaw);
         }
 
@@ -147,6 +148,7 @@ namespace ComWrappersTests
             var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
             wr.SetTarget(obj);
             ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+            GC.KeepAlive(obj);
             return objRaw;
         }
 
@@ -270,7 +272,7 @@ namespace ComWrappersTests
             }
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

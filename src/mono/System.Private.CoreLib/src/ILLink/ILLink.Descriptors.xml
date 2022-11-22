@@ -632,11 +632,6 @@
 		<!-- aot-compiler.c -->
 		<type fullname="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"/>
 
-		<type fullname="Mono.NullByRefReturnException">
-			<!-- marshal-ilgen.c:emit_invoke_call -->
-			<method signature="System.Void .ctor()" />
-		</type>
-
 		<type fullname="System.ValueType">
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />
