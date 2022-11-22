@@ -3,7 +3,7 @@
 
 #ifdef HOST_BROWSER
 
-#if DISABLE_THREADS
+#ifdef DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
 // enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
 // works even if the jiterpreter is otherwise disabled.

@@ -65,7 +65,7 @@ DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assem
 
 // the jiterpreter is not yet thread safe due to the need to synchronize function pointers
 //  and wasm modules between threads. before these can be enabled we need to implement all that
-#if DISABLE_THREADS
+#ifdef DISABLE_THREADS
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
 DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
