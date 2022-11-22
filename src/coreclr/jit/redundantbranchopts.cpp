@@ -1961,13 +1961,23 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // If the lcl defined here is live out, forward sub is problematic.
-        // We'll either create a redundant tree (as the original won't be dead)
-        // or lose the def (if we actually move the RHS tree).
+        // If the lcl defined here is live out we'll create a redundant tree
+        // (as the original won't be dead).
         //
         if (VarSetOps::IsMember(this, block->bbLiveOut, prevTreeLclDsc->lvVarIndex))
         {
             JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLcl);
+            continue;
+        }
+
+        // The local may have uses between the def and the JTRUE. Since we are
+        // using liberal VNs here we could introduce races by allowing
+        // duplicating the RHS of the assignment.
+        //
+        LclSsaVarDsc* ssaDefDsc = prevTreeLclDsc->GetPerSsaData(prevTreeLHS->AsLclVarCommon()->GetSsaNum());
+        if (ssaDefDsc->GetNumUses() >= 2)
+        {
+            JITDUMP(" -- prev tree lcl V%02u has up to %d uses\n", prevTreeLcl, ssaDefDsc->GetNumUses());
             continue;
         }
 
