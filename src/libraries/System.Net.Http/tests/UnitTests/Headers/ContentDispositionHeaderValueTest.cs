@@ -57,6 +57,7 @@ namespace System.Net.Http.Tests
                 _output.WriteLine($"utf8Length={utf8.Length} utf8={EncodeBytes(utf8)}");
 
                 int length = utf8.IndexOfAnyExcept(s_rfc5987AttrBytes);
+                _output.WriteLine($"s_rfc5987AttrBytes is {s_rfc5987AttrBytes.GetType().FullName}");
                 _output.WriteLine($"IndexOfAnyExcept length={length}");
 
                 if (length < 0)
