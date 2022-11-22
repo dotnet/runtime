@@ -84,6 +84,9 @@ namespace DebuggerTests
 
         [Theory]
         [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:Run", "dotnet://debugger-test.dll/debugger-async-test.cs", 246, 16, 252, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunCSharpScope", "testCSharpScope")]
+        [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunContinueWith", "dotnet://debugger-test.dll/debugger-async-test.cs", 277, 20, 283, 20, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunContinueWithSameVariableName", "testCSharpScope")]
+        [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunNestedContinueWith", "dotnet://debugger-test.dll/debugger-async-test.cs", 309, 24, 315, 24, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunNestedContinueWithSameVariableName.AnonymousMethod__1", "testCSharpScope")]
+        [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunNonAsyncMethod", "dotnet://debugger-test.dll/debugger-async-test.cs", 334, 16, 340, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunNonAsyncMethodSameVariableName", "testCSharpScope")]
         [InlineData("[debugger-test-vb] DebuggerTestVB.TestVbScope:Run", "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 12, 12, 18, 12, "DebuggerTestVB.TestVbScope.RunVBScope", "testVbScope")]
         public async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(string method_to_run, string source_to_pause, int line1, int col1, int line2, int col2, string func_to_pause, string variable_to_inspect)
         {
