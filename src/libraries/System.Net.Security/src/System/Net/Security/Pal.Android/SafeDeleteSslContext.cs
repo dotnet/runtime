@@ -30,14 +30,13 @@ namespace System.Net
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
-        private readonly SslStream.JavaProxy? _sslStreamProxy;
+        private readonly SslStream.JavaProxy _sslStreamProxy;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
-        public Exception? ValidationException => _sslStreamProxy?.ValidationException;
-        public SslStream.JavaProxy.RemoteCertificateValidationResult? ValidationResult => _sslStreamProxy?.ValidationResult;
+        public SslStream.JavaProxy SslStreamProxy => _sslStreamProxy;
 
         public SafeDeleteSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)

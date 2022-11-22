@@ -320,11 +320,6 @@ namespace System.Net.Security
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), message.GetException());
                         }
 
-#if TARGET_ANDROID
-                        if (_securityContext?.ValidationException is Exception validationException)
-                            throw new AuthenticationException(SR.net_auth_SSPI, validationException);
-#endif
-
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
                     else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -509,11 +504,14 @@ namespace System.Net.Security
             }
 
 #if TARGET_ANDROID
-            // If the remote certificate verification has already been invoked from Java TrustManager's callback
-            // we shouldn't run it repeatedly and honor the existing validation result.
-            // It's possible that the validation result isn't set (for example the client didn't send a certificate)
-            // in which case we still need to run the verification.
-            if (_securityContext?.ValidationResult is JavaProxy.RemoteCertificateValidationResult result)
+            // On Android, the remote certificate verification can be invoked from Java TrustManager's callback
+            // during the handshake process. If that has occurred, we shouldn't run the validation again and
+            // return the existing validation result.
+            //
+            // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
+            // the peer didn't provide any certificate (for example when the peer is the client) and the validation
+            // result hasn't been set. In that case we still need to run the verification at this point.
+            if (_securityContext?.SslStreamProxy.ValidationResult is JavaProxy.RemoteCertificateValidationResult result)
             {
                 sslPolicyErrors = result.SslPolicyErrors;
                 chainStatus = result.ChainStatus;

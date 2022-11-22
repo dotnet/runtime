@@ -124,7 +124,10 @@ namespace System.Net.Security
 
                 PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer, out int read);
                 if (ret == PAL_SSLStreamStatus.Error)
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+                {
+                    Exception? validationException = securityContext.SslStreamProxy.ValidationException;
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, validationException);
+                }
 
                 count = read;
 
