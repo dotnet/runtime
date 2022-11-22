@@ -606,7 +606,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
                     break;
                 }
 
-                if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], thirdOp[i + 1]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i + 1], 9)))
+                if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], -thirdOp[i + 1]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i + 1], 9)))
                 {
                     succeeded = false;
                     break;

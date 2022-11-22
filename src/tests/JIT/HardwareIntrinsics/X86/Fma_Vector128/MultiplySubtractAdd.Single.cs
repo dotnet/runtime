@@ -606,7 +606,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
                     break;
                 }
 
-                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], thirdOp[i + 1]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
+                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], -thirdOp[i + 1]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
                 {
                     succeeded = false;
                     break;
