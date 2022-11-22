@@ -1,0 +1,15 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Test Linux x64 Release
+
+agent:
+  type: Unity::VM
+  image: platform-foundation/linux-ubuntu-18.04-mono-bokken:0.1.7-978398
+  flavor: b1.large
+
+dependencies:
+  - path: .yamato/build_linux_x64_release.yml
+
+commands:
+  - ./.yamato/scripts/test_linux.sh Release
+
