@@ -24,6 +24,15 @@
 // we only need domain reload for Editor
 // #define UNITY_SUPPORT_DOMAIN_UNLOAD 1
 
+static vprintf_func our_vprintf = vprintf;
+
+void unity_log(const char *format, ...)
+{
+    va_list args;
+    va_start (args, format);
+    our_vprintf (format, args);
+    va_end (args);
+}
 
 #ifdef WIN32
 #define EXPORT_API __declspec(dllexport)
@@ -668,7 +677,8 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_method_from_name(Mono
 
     MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
 
-    // TODO: Check if there is an API to perform this more efficiently
+    // Even though MemberLoader::FindMethodByName exists it does not do the param count check which was unique to mono
+    // TODO: There is a MemberLoader::FindMethod that takes a signature parameter, need to see if we can transition to that.
     while (klass_clr)
     {
         auto iterator = MethodTable::MethodIterator(klass_clr);
@@ -859,9 +869,7 @@ extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_property_from_name(
     // CoreCLR does not have easy support for iterating on properties on a MethodTable.
     // So instead, we look for the property's "get" method. This will not work for set-only
     // properties, but is sufficient for our needs for now.
-    SString propertyName(SString::Utf8, "get_");
-    propertyName += SString(SString::Utf8, name);
-    return (MonoProperty*)mono_class_get_method_from_name(klass, propertyName.GetUTF8(), 0);
+    return (MonoProperty*)MemberLoader::FindPropertyMethod((MonoClass_clr*)klass, name, PropertyGet);
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_class_get_rank(MonoClass *klass)
@@ -2389,6 +2397,7 @@ extern "C" EXPORT_API MonoReflectionMethod* EXPORT_CC mono_method_get_object(Mon
     _ASSERTE(clrMethod->IsRuntimeMethodHandle());
     MonoObject* stubMethodInfo = (MonoObject*)OBJECTREFToObject(refRet);
     MonoClass* runtimeType = (MonoClass*)ClassLoader::LoadTypeByNameThrowing(CoreLibBinder::GetModule()->GetAssembly(), "System", "RuntimeType").AsMethodTable();
+    // TODO: Switch over to generating a signature and using MemberLoader::FindMethod instead of this.
     MonoMethod* getmethodbase = mono_class_get_method_from_name(runtimeType, "GetMethodBase", 1);
     void* params[1] = { stubMethodInfo };
     MonoObject* returnValue = mono_runtime_invoke(getmethodbase, nullptr, params, nullptr);
@@ -2432,10 +2441,18 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_object_get_virtual_method(MonoO
         return method;
 
     MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-    MonoMethodSignature* sig = mono_method_signature(method);
-    MonoMethod *m2 = mono_class_get_method_from_name(klass, mono_method_get_name(method), mono_signature_get_param_count(sig));
+    
+    MonoMethod_clr* m2 = MemberLoader::FindMethodByName(klass_clr, mono_method_get_name(method));
 
-    return m2;
+    if (!m2)
+    {
+        // Explicit interface implementations have the namespace as well so we try again.
+        SString str;
+        TypeString::AppendMethodInternal(str, reinterpret_cast<MonoMethod_clr*>(method), TypeString::FormatNamespace|TypeString::FormatFullInst);
+        m2 = MemberLoader::FindMethodByName(klass_clr, str.GetUTF8());
+    }
+
+    return (MonoMethod*)m2;
 }
 
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_object_isinst(MonoObject *obj, MonoClass* klass)
@@ -3547,10 +3564,9 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_set_embeddinghostname(const char
     // NOP
 }
 
-typedef void(*vprintf_func)(const char* msg, va_list args);
 extern "C" EXPORT_API void EXPORT_CC mono_unity_set_vprintf_func(vprintf_func func)
 {
-    ASSERT_NOT_IMPLEMENTED;
+    our_vprintf = func;
 }
 
 extern "C" EXPORT_API void EXPORT_CC mono_unity_start_gc_world()

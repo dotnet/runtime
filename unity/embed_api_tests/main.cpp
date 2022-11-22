@@ -1176,7 +1176,6 @@ TEST(can_call_method_on_member_struct)
     CHECK_EQUAL(579, int_result);
 }
 
-#if FAILING_TEST
 
 TEST(can_call_interface_method_on_member_struct)
 {
@@ -1201,7 +1200,6 @@ TEST(can_call_interface_method_on_member_struct)
     int int_result = *(int*)mono_object_unbox(returnValue);
     CHECK_EQUAL(42, int_result);
 }
-#endif
 
 TEST(mono_object_get_virtual_method_can_call_interface_method_on_struct)
 {
@@ -1218,7 +1216,6 @@ TEST(mono_object_get_virtual_method_can_call_interface_method_on_struct)
     CHECK_EQUAL(42, int_result);
 }
 
-#if FAILING_TEST
 
 // the call to mono_object_get_virtual_method cannot properly lookup explicit interface imlpementations
 
@@ -1237,7 +1234,6 @@ TEST(mono_object_get_virtual_method_can_call_explicit_interface_method_on_struct
     CHECK_EQUAL(42, int_result);
 }
 
-#endif
 
 TEST(mono_type_is_byref_works)
 {
