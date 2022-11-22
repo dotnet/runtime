@@ -1970,9 +1970,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // The local may have uses between the def and the JTRUE. Since we are
-        // using liberal VNs here we could introduce races by allowing
-        // duplicating the RHS of the assignment.
+        // The local may have uses between the def and the JTRUE. Duplicating
+        // reads is not allowed and in any case duplicating it in this case is
+        // probably not be worth it from a profitability perspective.
         //
         LclSsaVarDsc* ssaDefDsc = prevTreeLclDsc->GetPerSsaData(prevTreeLHS->AsLclVarCommon()->GetSsaNum());
         if (ssaDefDsc->GetNumUses() >= 2)
