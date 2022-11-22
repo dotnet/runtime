@@ -1,6 +1,6 @@
 # System.Security.Claims
 
-This assembly provides support for claims-based identities for the [System.Security.Principal.IIdentity](https://learn.microsoft.com/en-us/dotnet/api/system.security.principal.iidentity) and [System.Security.Principal.IPrincipal](https://learn.microsoft.com/en-us/dotnet/api/system.security.principal.iprincipal) interfaces.
+This assembly provides support for claims-based identities for the [System.Security.Principal.IIdentity](https://learn.microsoft.com/dotnet/api/system.security.principal.iidentity) and [System.Security.Principal.IPrincipal](https://learn.microsoft.com/dotnet/api/system.security.principal.iprincipal) interfaces.
 
 ## Contribution Bar
 

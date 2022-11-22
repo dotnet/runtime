@@ -5,10 +5,10 @@ This assembly provides support for CBOR Object Signing and Encryption (COSE), in
 The primary types in this assembly are
 
 * Signing
-  * Single Signer (`COSE_Sign1`): [CoseSign1Message](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.cose.cosesign1message)
-  * Multi-Signer (`COSE_Sign`): [CoseMultiSignMessage](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.cose.cosemultisignmessage)
+  * Single Signer (`COSE_Sign1`): [CoseSign1Message](https://learn.microsoft.com/dotnet/api/system.security.cryptography.cose.cosesign1message)
+  * Multi-Signer (`COSE_Sign`): [CoseMultiSignMessage](https://learn.microsoft.com/dotnet/api/system.security.cryptography.cose.cosemultisignmessage)
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.cose
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.security.cryptography.cose
 
 ## Contribution Bar
 
@@ -25,4 +25,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is:issue+is:ope
 
 ## Deployment
 
-The library is shipped as a [NuGet package](https://www.nuget.org/packages/System.Security.Cryptography.Cose). Daily builds of the NuGet package can be obtained following [these instructions](../../../docs/project/dogfooding.md#obtaining-daily-builds-of-nuget-packages).
+The library is shipped as a [NuGet package](https://www.nuget.org/packages/System.Security.Cryptography.Cose).

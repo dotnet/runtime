@@ -1,14 +1,14 @@
 # System.Security.Cryptography
 
 This assembly provides the core cryptographic support for .NET, including
-hashing (e.g. [SHA256](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha256)),
-symmetric-key message authentication (e.g. [HMACSHA256](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.hmacsha256)),
-symmetric-key encryption (e.g. [Aes](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aes)),
-symmetric-key authenticated encryption (e.g. [AesGcm](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aesgcm)),
-asymmetric (public/private key) cryptography (e.g. [RSA](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rsa), [ECDsa](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.ecdsa), or [ECDiffieHellman](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.ecdiffiehellman)),
-and X.509 public-key certificates ([X509Certificate2](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2)).
+hashing (e.g. [SHA256](https://learn.microsoft.com/dotnet/api/system.security.cryptography.sha256)),
+symmetric-key message authentication (e.g. [HMACSHA256](https://learn.microsoft.com/dotnet/api/system.security.cryptography.hmacsha256)),
+symmetric-key encryption (e.g. [Aes](https://learn.microsoft.com/dotnet/api/system.security.cryptography.aes)),
+symmetric-key authenticated encryption (e.g. [AesGcm](https://learn.microsoft.com/dotnet/api/system.security.cryptography.aesgcm)),
+asymmetric (public/private key) cryptography (e.g. [RSA](https://learn.microsoft.com/dotnet/api/system.security.cryptography.rsa), [ECDsa](https://learn.microsoft.com/dotnet/api/system.security.cryptography.ecdsa), or [ECDiffieHellman](https://learn.microsoft.com/dotnet/api/system.security.cryptography.ecdiffiehellman)),
+and X.509 public-key certificates ([X509Certificate2](https://learn.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.x509certificate2)).
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography and https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.security.cryptography and https://learn.microsoft.com/dotnet/api/system.security.cryptography.x509certificates
 
 ## Contribution Bar
 

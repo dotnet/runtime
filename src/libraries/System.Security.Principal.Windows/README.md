@@ -1,6 +1,6 @@
 # System.Security.Principal.Windows
 
-This assembly provides support for [System.Security.Principal.IIdentity](https://learn.microsoft.com/en-us/dotnet/api/system.security.principal.iidentity) and [System.Security.Principal.IPrincipal](https://learn.microsoft.com/en-us/dotnet/api/system.security.principal.iprincipal) instances based on Microsoft Windows accounts.
+This assembly provides support for [System.Security.Principal.IIdentity](https://learn.microsoft.com/dotnet/api/system.security.principal.iidentity) and [System.Security.Principal.IPrincipal](https://learn.microsoft.com/dotnet/api/system.security.principal.iprincipal) instances based on Microsoft Windows accounts.
 
 ## Contribution Bar
 
@@ -8,7 +8,7 @@ This assembly provides support for [System.Security.Principal.IIdentity](https:/
 
 ## Source
 
-* `WindowsIdentity`, `WindowsPrincipal`, `NTAccount` and similar aren the [src](src/) subdirectory.
+* `WindowsIdentity`, `WindowsPrincipal`, `NTAccount` and similar are in the [src](src/) subdirectory.
 * `Claim`, `ClaimsIdentity`, and `ClaimsPrincipal` are part of the [System.Security.Claims](../System.Security.Claims) library.
 
 ## Deployment

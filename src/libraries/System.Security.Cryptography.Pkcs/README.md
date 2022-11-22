@@ -3,15 +3,15 @@
 This assembly provides support for non-primitive cryptographic operations based on ASN.1 BER/CER/DER encoded values.
 The "Pkcs" assembly and namespace names come from the ["Public Key Cryptography Standards"](https://en.wikipedia.org/wiki/PKCS) specification set, though not all types in this assembly correspond to a PKCS document.
 
-* Cryptographic Message Syntax (CMS, the successor to PKCS#7): [SignedCms](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.signedcms), [EnvelopedCms](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.envelopedcms)
-* Private Key Information Syntax (PKCS#8): [Pkcs8PrivateKeyInfo](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.pkcs8privatekeyinfo)
-* Various object attributes (PKCS#9): [Pkcs9AttributeObject](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.pkcs9attributeobject)-derived types
-* "Personal inFormation eXchange" (PFX, PKCS#12): [Pkcs12Info](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.pkcs12info), [Pkcs12Builder](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.pkcs12builder)
-* IETF RFC 3161 Timestamp Tokens (not a PKCS document): [Rfc3161TimestampToken](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.pkcs.rfc3161timestamptoken)
+* Cryptographic Message Syntax (CMS, the successor to PKCS#7): [SignedCms](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.signedcms), [EnvelopedCms](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.envelopedcms)
+* Private Key Information Syntax (PKCS#8): [Pkcs8PrivateKeyInfo](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.pkcs8privatekeyinfo)
+* Various object attributes (PKCS#9): [Pkcs9AttributeObject](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.pkcs9attributeobject)-derived types
+* "Personal inFormation eXchange" (PFX, PKCS#12): [Pkcs12Info](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.pkcs12info), [Pkcs12Builder](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.pkcs12builder)
+* IETF RFC 3161 Timestamp Tokens (not a PKCS document): [Rfc3161TimestampToken](https://learn.microsoft.com/dotnet/api/system.security.cryptography.pkcs.rfc3161timestamptoken)
 
 Some other elements from the PKCS series exist in [System.Security.Cryptography](../System.Security.Cryptography/):
-* PKCS#1 is [RSA](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rsa)
-* PKCS#10 is the export/import format for [CertificateRequest](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.certificaterequest)
+* PKCS#1 is [RSA](https://learn.microsoft.com/dotnet/api/system.security.cryptography.rsa)
+* PKCS#10 is the export/import format for [CertificateRequest](https://learn.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.certificaterequest)
 
 ## Contribution Bar
 
@@ -28,4 +28,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is:issue+is:ope
 
 ## Deployment
 
-The library is shipped as a [NuGet package](https://www.nuget.org/packages/System.Security.Cryptography.Pkcs). Daily builds of the NuGet package can be obtained following [these instructions](../../../docs/project/dogfooding.md#obtaining-daily-builds-of-nuget-packages).
+The library is shipped as a [NuGet package](https://www.nuget.org/packages/System.Security.Cryptography.Pkcs).

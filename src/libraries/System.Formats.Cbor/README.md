@@ -2,9 +2,9 @@
 
 This assembly provides support for reading and writing values in Concise Binary Object Representation (CBOR), as originally defined in [IETF RFC 7049](https://www.ietf.org/rfc/rfc7049.html).
 
-The primary types in this assembly are [CborReader](https://learn.microsoft.com/en-us/dotnet/api/system.formats.cbor.cborreader) and [CborWriter](https://learn.microsoft.com/en-us/dotnet/api/system.formats.cbor.cborwriter).
+The primary types in this assembly are [CborReader](https://learn.microsoft.com/dotnet/api/system.formats.cbor.cborreader) and [CborWriter](https://learn.microsoft.com/dotnet/api/system.formats.cbor.cborwriter).
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.formats.cbor
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.formats.cbor
 
 ## Contribution Bar
 
@@ -13,4 +13,4 @@ Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/syste
 
 ## Deployment
 
-The System.Formats.Cbor assembly is shipped as a [NuGet package](https://www.nuget.org/packages/System.Formats.Cbor/). Daily builds of the NuGet package can be obtained following [these instructions](../../../docs/project/dogfooding.md#obtaining-daily-builds-of-nuget-packages).
+The System.Formats.Cbor assembly is shipped as a [NuGet package](https://www.nuget.org/packages/System.Formats.Cbor/).
