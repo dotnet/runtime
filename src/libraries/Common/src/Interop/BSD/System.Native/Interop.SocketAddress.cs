@@ -15,6 +15,7 @@ internal static partial class Interop
             public byte sin_family;
             public ushort sin_port;
             public fixed byte sin_addr[4];
+            private fixed byte sin_zero[8];
 
             public void SetAddressFamily(int family)
             {

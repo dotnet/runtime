@@ -1344,8 +1344,11 @@ namespace System.Net.Sockets
 
             if (remoteEP is IPEndPoint)
             {
-                var address = new SockAddr((IPEndPoint)remoteEP);
-                socketBuffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref address, 1));
+                SockAddr address =  (IsDualMode && ((IPEndPoint)remoteEP).Address.AddressFamily == AddressFamily.InterNetwork) ?
+                                        new SockAddr((IPEndPoint)remoteEP, AddressFamily.InterNetworkV6) :
+                                        new SockAddr((IPEndPoint)remoteEP);
+
+                socketBuffer = address.AsBytes();
             }
             else
             {
@@ -3013,8 +3016,10 @@ namespace System.Net.Sockets
             ReadOnlySpan<byte> socketBuffer;
             if (remoteEP is IPEndPoint)
             {
-                var address = new SockAddr((IPEndPoint)remoteEP);
-                socketBuffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref address, 1));
+                SockAddr address =  (IsDualMode && ((IPEndPoint)remoteEP).Address.AddressFamily == AddressFamily.InterNetwork) ?
+                                        new SockAddr((IPEndPoint)remoteEP, AddressFamily.InterNetworkV6) :
+                                        new SockAddr((IPEndPoint)remoteEP);
+                socketBuffer = address.AsBytes();
             }
             else
             {

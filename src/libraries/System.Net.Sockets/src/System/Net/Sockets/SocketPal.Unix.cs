@@ -1193,7 +1193,7 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, ReadOnlySpan<byte>  socketAddress, out int bytesTransferred)
+        public static SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, ReadOnlySpan<byte> socketAddress, out int bytesTransferred)
         {
             if (!handle.IsNonBlocking)
             {
