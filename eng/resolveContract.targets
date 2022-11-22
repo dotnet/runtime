@@ -20,6 +20,17 @@
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
     <!-- Disable API compat if the project doesn't have reference assembly -->
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
+    <!-- Don't build against reference assemblies when projects are packable and the tfm is not the latest .NETCoreApp as
+         such reference assemblies don't ship to customers and only exist for tooling scenarios. -->
+    <AnnotateTargetPathWithContract Condition="'$(AnnotateTargetPathWithContract)' == '' and
+                                               '$(HasMatchingContract)' == 'true' and
+                                               (
+                                                '$(IsPackable)' != 'true' or
+                                                (
+                                                 '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                                 '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'
+                                                )
+                                               )">true</AnnotateTargetPathWithContract>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
@@ -36,7 +47,7 @@
 
   <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"
-          Condition="'$(HasMatchingContract)' == 'true'"
+          Condition="'$(AnnotateTargetPathWithContract)' == 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="GetTargetPathWithTargetPlatformMoniker">
     <ItemGroup>
