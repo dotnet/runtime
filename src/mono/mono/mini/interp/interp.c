@@ -2147,7 +2147,7 @@ typedef struct {
 	gpointer *many_args;
 } InterpEntryData;
 
-static gboolean
+static MONO_ALWAYS_INLINE gboolean
 is_method_multicastdelegate_invoke (MonoMethod *method)
 {
 	return m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke");
