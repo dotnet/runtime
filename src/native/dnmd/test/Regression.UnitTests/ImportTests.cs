@@ -13,6 +13,7 @@ namespace Regression.UnitTests
     public unsafe class ImportTests
     {
         private const int EnumBuffer = 32;
+        private const int CharBuffer = 64;
 
         public ImportTests(ITestOutputHelper outputHelper)
         {
@@ -116,8 +117,12 @@ namespace Regression.UnitTests
 
             // Verify APIs
             Assert.Equal(GetScopeProps(baselineImport), GetScopeProps(currentImport));
-            Assert.Equal(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+            var typerefs = AssertAndReturn(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
+            foreach (var typeref in typerefs)
+            {
+                Assert.Equal(GetTypeRefProps(baselineImport, typeref), GetTypeRefProps(currentImport, typeref));
+            }
 
             var typespecs = AssertAndReturn(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
             foreach (var typespec in typespecs)
@@ -171,8 +176,11 @@ namespace Regression.UnitTests
             Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
             Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
             Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
-            Assert.Equal(EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
-            Assert.Equal(GetUserString(baselineImport), GetUserString(currentImport));
+            var userStrings = AssertAndReturn(EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
+            foreach (var us in userStrings)
+            {
+                Assert.Equal(GetUserString(baselineImport, us), GetUserString(currentImport, us));
+            }
         }
 
         /// <summary>
@@ -243,7 +251,7 @@ namespace Regression.UnitTests
         {
             List<uint> values = new();
 
-            var name = new char[128];
+            var name = new char[CharBuffer];
             int hr = import.GetScopeProps(
                 name,
                 name.Length,
@@ -673,7 +681,7 @@ namespace Regression.UnitTests
         {
             List<uint> values = new();
 
-            var name = new char[8];
+            var name = new char[CharBuffer];
             int hr = import.GetPinvokeMap(tk,
                 out uint pdwMappingFlags,
                 name,
@@ -708,7 +716,7 @@ namespace Regression.UnitTests
         {
             List<uint> values = new();
 
-            var name = new char[128];
+            var name = new char[CharBuffer];
             int hr = import.GetTypeDefProps(typedef,
                 name,
                 name.Length,
@@ -728,11 +736,33 @@ namespace Regression.UnitTests
             return values;
         }
 
+        private static List<uint> GetTypeRefProps(IMetaDataImport import, uint typeref)
+        {
+            List<uint> values = new();
+
+            var name = new char[CharBuffer];
+            int hr = import.GetTypeRefProps(typeref,
+                out uint ptkResolutionScope,
+                name,
+                name.Length,
+                out int pchTypeRef);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(ptkResolutionScope);
+                uint hash = HashCharArray(name, pchTypeRef);
+                values.Add(hash);
+                values.Add((uint)pchTypeRef);
+            }
+            return values;
+        }
+
         private static List<nuint> GetMethodProps(IMetaDataImport import, uint methoddef)
         {
             List<nuint> values = new();
 
-            var name = new char[128];
+            var name = new char[CharBuffer];
             int hr = import.GetMethodProps(methoddef,
                 out uint typeDef,
                 name,
@@ -763,7 +793,7 @@ namespace Regression.UnitTests
         {
             List<nuint> values = new();
 
-            var name = new char[128];
+            var name = new char[CharBuffer];
             int hr = import.GetMemberRefProps(tk,
                 out uint parent,
                 name,
@@ -998,17 +1028,11 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<string> GetUserString(IMetaDataImport import)
+        private static string GetUserString(IMetaDataImport import, uint tk)
         {
-            List<string> strings = new();
-            var tokens = EnumUserStrings(import);
-            var buffer = new char[1024];
-            foreach (uint tk in tokens)
-            {
-                Assert.True(0 <= import.GetUserString(tk, buffer, buffer.Length, out int written));
-                strings.Add(new string(buffer, 0, Math.Min(written, buffer.Length)));
-            }
-            return strings;
+            var buffer = new char[CharBuffer];
+            Assert.True(0 <= import.GetUserString(tk, buffer, buffer.Length, out int written));
+            return new string(buffer, 0, Math.Min(written, buffer.Length));
         }
 
         private static uint HashCharArray(char[] arr, int written)

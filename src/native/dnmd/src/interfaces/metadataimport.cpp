@@ -334,7 +334,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeDefProps(
     HRESULT hr;
     malloc_ptr mem;
     RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
-
     return ConvertAndReturnStringOutput((char const*)mem.get(), szTypeDef, cchTypeDef, pchTypeDef);
 }
 
@@ -372,7 +371,31 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeRefProps(
     ULONG       cchName,
     ULONG* pchName)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(tr) != mdtTypeRef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), tr, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdToken resScope;
+    if (1 != md_get_column_value_as_token(cursor, mdtTypeRef_ResolutionScope, 1, &resScope))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ptkResolutionScope = resScope;
+
+    char const* name;
+    char const* nspace;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeName, 1, &name)
+        || 1 != md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeNamespace, 1, &nspace))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    HRESULT hr;
+    malloc_ptr mem;
+    RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
+    return ConvertAndReturnStringOutput((char const*)mem.get(), szName, cchName, pchName);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
@@ -1260,12 +1283,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetUserString(
     *pchString = retCharLen;
     if (cchString > 0 && szString != nullptr)
     {
-        uint32_t const safeBufferLen = cchString - 1; // Ensure room for null terminator
-        uint32_t toCopyWChar = safeBufferLen < retCharLen ? safeBufferLen : retCharLen;
+        uint32_t toCopyWChar = cchString < retCharLen ? cchString : retCharLen;
         ::memcpy(szString, string.str, toCopyWChar * sizeof(WCHAR));
-        ::memset(&szString[toCopyWChar], 0, sizeof(WCHAR)); // Ensure null terminator
-        if (safeBufferLen < retCharLen)
+        if (cchString < retCharLen)
+        {
+            ::memset(&szString[toCopyWChar - 1], 0, sizeof(WCHAR)); // Ensure null terminator
             return CLDB_S_TRUNCATION;
+        }
     }
 
     return S_OK;

@@ -41,7 +41,7 @@ namespace Common
         int GetInterfaceImplProps(uint iiImpl, out uint pClass, out uint ptkIface);
 
         [PreserveSig]
-        int GetTypeRefProps(uint tr, out uint ptkResolutionScope, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)]char[] szName, uint cchName, out uint pchName);
+        int GetTypeRefProps(uint tr, out uint ptkResolutionScope, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)]char[] szName, int cchName, out int pchName);
 
         [PreserveSig]
         int ResolveTypeRef(uint tr, ref Guid riid, [MarshalAs(UnmanagedType.Interface)]out object ppIScope, out uint ptd);
