@@ -317,7 +317,7 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
-    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
+    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
