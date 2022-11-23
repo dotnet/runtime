@@ -7124,7 +7124,7 @@ public:
             GenTreeFlags GetIconFlag()
             {
                 // number of trailing zeros in GTF_ICON_HDL_MASK
-                const int iconMaskTzc = 24;
+                const uint16_t iconMaskTzc = 24;
                 static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
 
                 GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
@@ -7133,7 +7133,7 @@ public:
             }
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
-                const int iconMaskTzc = 24;
+                const uint16_t iconMaskTzc = 24;
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
                 u1.fieldSeq        = fieldSeq;
