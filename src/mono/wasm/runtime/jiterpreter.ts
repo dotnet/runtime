@@ -8,13 +8,14 @@ import {
     getU16, getI16,
     getU32, getI32, getF32, getF64,
 } from "./memory";
-import { MintOpcode, OpcodeInfo, WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode } from "./jiterpreter-opcodes";
+import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure
+    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -40,8 +41,6 @@ const
     // Wraps traces in a JS function that will trap errors and log the trace responsible.
     // Very expensive!!!!
     trapTraceErrors = false,
-    // Dumps all compiled traces
-    dumpTraces = false,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -83,25 +82,15 @@ let nextInstrumentedTraceId = 1;
 const abortCounts : { [key: string] : number } = {};
 const traceInfo : { [key: string] : TraceInfo } = {};
 
-// It is critical to only jit traces that contain a significant
-//  number of opcodes, because the indirect call into a trace
-//  is pretty expensive. We have both MINT opcode and WASM byte
-//  thresholds, and as long as a trace is above one of these two
-//  thresholds, we will keep it.
-const minimumHitCount = 10000,
-    minTraceLengthMintOpcodes = 8,
-    minTraceLengthWasmBytes = 360;
-
 const // offsetOfStack = 12,
     offsetOfImethod = 4,
     offsetOfDataItems = 20,
-    sizeOfJiterpreterOpcode = 6, // opcode + 4 bytes for thunk id/fn ptr
     sizeOfDataItem = 4,
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
     // WASM implementations only allow compiling 4KB of code at once :-)
-    maxModuleSize = 4000 - 20 - 100;
+    maxModuleSize = 4000 - 160;
 
 /*
 struct MonoVTable {
@@ -558,8 +547,7 @@ function generate_wasm (
             frame, traceName, ip, endOfBody, builder,
             instrumentedTraceId
         );
-        const keep = (opcodes_processed >= minTraceLengthMintOpcodes) ||
-            (builder.current.size >= minTraceLengthWasmBytes);
+        const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
 
         if (!keep) {
             const ti = traceInfo[<any>ip];
@@ -643,8 +631,8 @@ function generate_wasm (
             elapsedTimes.generation += finished - started;
         }
 
-        if (threw || (!rejected && ((trace >= 2) || dumpTraces)) || instrument) {
-            if (threw || (trace >= 3) || dumpTraces || instrument) {
+        if (threw || (!rejected && ((trace >= 2) || mostRecentOptions!.dumpTraces)) || instrument) {
+            if (threw || (trace >= 3) || mostRecentOptions!.dumpTraces || instrument) {
                 for (let i = 0; i < builder.traceBuf.length; i++)
                     console.log(builder.traceBuf[i]);
             }
@@ -742,7 +730,8 @@ function generate_wasm_body (
     let result = 0;
     const traceIp = ip;
 
-    ip += <any>sizeOfJiterpreterOpcode;
+    // Skip over the enter opcode
+    ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
     let rip = ip;
 
     // Initialize eip, so that we will never return a 0 displacement
@@ -1288,7 +1277,7 @@ function generate_wasm_body (
         }
 
         if (ip) {
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || dumpTraces || instrumentedTraceId)
+            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId)
                 builder.traceBuf.push(`${(<any>ip).toString(16)} ${opname}`);
 
             if (!is_dead_opcode)
@@ -1351,6 +1340,10 @@ function append_ldloca (builder: WasmBuilder, localOffset: number) {
 }
 
 function append_memset_local (builder: WasmBuilder, localOffset: number, value: number, count: number) {
+    // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
+    if (try_append_memset_fast(builder, localOffset, value, count, false))
+        return;
+
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
     append_ldloca(builder, localOffset);
     append_memset_dest(builder, value, count);
@@ -2916,9 +2909,9 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    if (info.hitCount < minimumHitCount)
+    if (info.hitCount < mostRecentOptions.minimumTraceHitCount)
         return JITERPRETER_TRAINING;
-    else if (info.hitCount === minimumHitCount) {
+    else if (info.hitCount === mostRecentOptions.minimumTraceHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
         if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {
