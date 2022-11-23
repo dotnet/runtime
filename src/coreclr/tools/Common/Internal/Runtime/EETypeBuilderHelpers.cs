@@ -148,7 +148,7 @@ namespace Internal.Runtime
                 if (!type.HasFinalizer)
                     return false;
 
-                if (type is MetadataType mdType && mdType.HasCustomAttribute("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCTrackedTypeAttribute"))
+                if ((MetadataType)type).HasCustomAttribute("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCTrackedTypeAttribute"))
                     return true;
 
                 type = type.BaseType;
