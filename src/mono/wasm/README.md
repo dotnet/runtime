@@ -71,7 +71,7 @@ Add `~/.jsvu` to your `PATH`:
 
 * Install node/npm from https://nodejs.org/en/ and add its npm and nodejs directories to the `PATH` environment variable
 
-* * Install jsvu with npm:
+* Install jsvu with npm:
 
 `npm install jsvu -g`
 
@@ -135,7 +135,7 @@ Exceptions thrown after the runtime starts get symbolicating from js itself. Exc
 
 If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
 
-```
+```console
 src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
 ```
 
@@ -155,7 +155,7 @@ To run a test with `FooBar` in the name:
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
-- Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
+Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
 
 ## Run samples
 
@@ -189,13 +189,15 @@ To test changes in the templates, use `dotnet new install --force src/mono/wasm/
 
 Example use of the `wasmconsole` template:
 
-    > dotnet new wasmconsole
-    > dotnet publish
-    > cd bin/Debug/net7.0/browser-wasm/AppBundle
-    > node main.mjs
-    mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
-    Hello World!
-    Args:
+```console
+> dotnet new wasmconsole
+> dotnet publish
+> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> node main.mjs
+mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
+Hello World!
+Args:
+```
 
 ## Upgrading Emscripten
 
@@ -228,6 +230,7 @@ Two things to keep in mind:
 The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
 
 In folder `src\mono\wasm\runtime\`
+
 ```sh
 rm -rf node_modules
 rm package-lock.json
@@ -244,6 +247,7 @@ Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/conn
 Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
 
 In folder `src/mono/wasm/runtime/`
+
 ```sh
 rm -rf node_modules
 rm package-lock.json
@@ -253,10 +257,10 @@ npm update --lockfile-version=1
 ```
 
 ## Code style
+
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
-
 
 ## Builds on CI
 
@@ -281,7 +285,6 @@ npm update --lockfile-version=1
 | Wasm.Build.Tests  | linux+windows:        only-pc |
 | Debugger tests    | linux+windows:        only-pc |
 | Runtime tests     | linux+windows:        only-pc |
-
 
 ### Run manually with `/azp run ..`
 
