@@ -4381,12 +4381,16 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
     else
     {
-        bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
+        bool hasKnownAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
                             (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
 
         ssize_t offset;
-        if (hasConstAddr)
+        if (hasKnownAddr)
         {
+            // Change SimpleStatic to SimpleStaticKnownAddress
+            assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+            fieldKind = FieldSeq::FieldKind::SimpleStaticKnownAddress;
+
             offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
             assert(offset != 0);
         }

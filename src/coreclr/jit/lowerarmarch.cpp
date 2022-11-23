@@ -658,7 +658,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //    blkNode - the block store node
 //    size - the block size
 //    addr - the address node to try to contain
-//    addrParent - the parent of addr, in case this is checking containment the source address.
+//    addrParent - the parent of addr, in case this is checking containment of the source address.
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
 {
