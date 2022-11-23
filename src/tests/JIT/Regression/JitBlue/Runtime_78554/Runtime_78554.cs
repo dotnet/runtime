@@ -8,7 +8,6 @@ public class Runtime_78554
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Consume(uint op)
     {
-        return;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
