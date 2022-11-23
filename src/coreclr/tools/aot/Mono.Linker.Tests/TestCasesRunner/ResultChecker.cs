@@ -93,7 +93,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
 		{
-			return new AssemblyChecker (original, testResult);
+			return new AssemblyChecker (_originalsResolver, _originalReaderParameters, original, testResult);
 		}
 
 		private void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
