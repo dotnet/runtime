@@ -1,4 +1,4 @@
-windows:
+all:
   name: All Windows Tests
   dependencies:
   - path: .yamato/test_windows_x64_release.yml
