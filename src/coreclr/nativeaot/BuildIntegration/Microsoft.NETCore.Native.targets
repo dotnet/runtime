@@ -83,7 +83,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <IlcExportUnmanagedEntrypoints Condition="$(NativeLib) == 'Shared'">true</IlcExportUnmanagedEntrypoints>
-    <ExportsFile Condition="(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
+    <ExportsFile Condition="$(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
 
