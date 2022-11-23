@@ -210,15 +210,46 @@ Bumping Emscripten version involves these steps:
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages
+
+Two things to keep in mind:
+
+1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+   updating `package.json`, you will need to be logged in (see instructions for Windows and
+   mac/Linux, below) in order for the registry to populate with the correct package versions.
+   Otherwise, CI builds will fail.
+
+2. Currently the Emscripten SDK uses NPM version 6 which creates `package-lock.json` files in the
+  "v1" format.  When updating NPM packages, it is important to use this older version of NPM (for
+  example by using the `emsdk_env.sh` script to set the right environment variables) or by using the
+  `--lockfile-format=1` option with more recent versions of NPM.
+
+### Windows
+
+The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
+
 In folder `src\mono\wasm\runtime\`
 ```sh
 rm -rf node_modules
 rm package-lock.json
-npm install -g vsts-npm-aut`
+npm install -g vsts-npm-auth`
 vsts-npm-auth -config .npmrc
-npm npm cache clean --force
+npm cache clean --force
 npm outdated
-npm update
+npm update --lockfile-version=1
+```
+
+### mac/Linux
+
+Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
+Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
+
+In folder `src/mono/wasm/runtime/`
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm cache clean --force
+npm outdated
+npm update --lockfile-version=1
 ```
 
 ## Code style
