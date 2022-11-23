@@ -54,7 +54,7 @@ echo "****************************"
 echo "Unity: Running runtime tests"
 echo "****************************"
 echo
-./src/tests/build.sh $architecture $configuration ci -tree:baseservices -tree:interop -tree:reflection
+./src/tests/build.sh $architecture $configuration ci /p:LibrariesConfiguration=$configuration -tree:baseservices -tree:interop -tree:reflection
 ./src/tests/run.sh $architecture $configuration
 
 echo
