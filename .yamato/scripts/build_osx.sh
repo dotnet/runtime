@@ -51,7 +51,7 @@ echo
 cd unity/unitygc
 mkdir -p $configuration
 cd $configuration
-cmake -DCMAKE_BUILD_TYPE=$configuration ..
+cmake -DCMAKE_OSX_ARCHITECTURES=$architecture -DCMAKE_BUILD_TYPE=$configuration ..
 cmake --build .
 cd ../../../
 
@@ -60,7 +60,12 @@ echo "*******************************"
 echo "Unity: Building CoreCLR runtime"
 echo "*******************************"
 echo
-LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a $architecture -c $configuration -ci -ninja
+if [ "$architecture" = "arm64" ]; then
+    cross_build=true
+else
+    cross_build=false
+fi
+LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a $architecture -c $configuration -ci -ninja /p:CrossBuild=$cross_build
 
 echo
 echo "*******************************"
