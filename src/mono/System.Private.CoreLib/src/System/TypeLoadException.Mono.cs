@@ -24,7 +24,7 @@ namespace System
                 return;
             }
 
-            _message = string.Format(SR.ClassLoad_General, _className, _assemblyName ?? SR.IO_UnknownFileName);
+            _message = SR.Format(SR.ClassLoad_General, _className, _assemblyName ?? SR.IO_UnknownFileName);
         }
     }
 }
