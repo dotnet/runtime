@@ -511,12 +511,10 @@ namespace System.Net.Security
             // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
             // the peer didn't provide any certificate (for example when the peer is the client) and the validation
             // result hasn't been set. In that case we still need to run the verification at this point.
-            if (_securityContext?.SslStreamProxy.ValidationResult is JavaProxy.RemoteCertificateValidationResult result)
+            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, out alertToken, out bool isValid))
             {
-                sslPolicyErrors = result.SslPolicyErrors;
-                chainStatus = result.ChainStatus;
-                _handshakeCompleted = result.IsValid;
-                return result.IsValid;
+                _handshakeCompleted = isValid;
+                return isValid;
             }
 #endif
 

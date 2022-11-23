@@ -809,12 +809,17 @@ namespace System.Net.Security
                         }
                     }
 
+#if TARGET_ANDROID
+                    if (_securityContext is null)
+                    {
+                        _securityContext = CreateAndroidSecurityContextStub();
+                        Debug.Assert(_securityContext.IsInvalid);
+                    }
+#endif
+
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
-#if TARGET_ANDROID
-                                      sslStreamProxy: new JavaProxy(this),
-#endif
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -824,9 +829,6 @@ namespace System.Net.Security
                     else
                     {
                         status = SslStreamPal.InitializeSecurityContext(
-#if TARGET_ANDROID
-                                       sslStreamProxy: new JavaProxy(this),
-#endif
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,

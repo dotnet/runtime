@@ -12,6 +12,9 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private SafeDeleteSslContext CreateAndroidSecurityContextStub()
+            => SafeDeleteSslContext.CreateContextStub(sslStreamProxy: new JavaProxy(this));
+
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
         {
             ProtocolToken? alertToken = null;
@@ -27,7 +30,18 @@ namespace System.Net.Security
                 IsValid = isValid,
                 SslPolicyErrors = sslPolicyErrors,
                 ChainStatus = chainStatus,
+                AlertToken = alertToken,
             };
+        }
+
+        private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, out ProtocolToken? alertToken, out bool isValid)
+        {
+            JavaProxy.RemoteCertificateValidationResult? validationResult = _securityContext?.SslStreamProxy.ValidationResult;
+            sslPolicyErrors = validationResult?.SslPolicyErrors ?? default;
+            chainStatus = validationResult?.ChainStatus ?? default;
+            isValid = validationResult?.IsValid ?? default;
+            alertToken = validationResult?.AlertToken;
+            return validationResult is not null;
         }
 
         internal sealed class JavaProxy : IDisposable
@@ -37,14 +51,6 @@ namespace System.Net.Security
             private readonly SslStream _sslStream;
             private GCHandle? _handle;
 
-            public JavaProxy(SslStream sslStream)
-            {
-                RegisterRemoteCertificateValidationCallback();
-
-                _sslStream = sslStream;
-                _handle = GCHandle.Alloc(this);
-            }
-
             public IntPtr Handle
                 => _handle is GCHandle handle
                     ? GCHandle.ToIntPtr(handle)
@@ -53,6 +59,19 @@ namespace System.Net.Security
             public Exception? ValidationException { get; private set; }
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
 
+            public JavaProxy(SslStream sslStream)
+            {
+                RegisterRemoteCertificateValidationCallback();
+
+                _sslStream = sslStream;
+                _handle = GCHandle.Alloc(this);
+            }
+
+            public void Dispose()
+            {
+                _handle?.Free();
+                _handle = null;
+            }
             private static unsafe void RegisterRemoteCertificateValidationCallback()
             {
                 if (!s_initialized)
@@ -60,12 +79,6 @@ namespace System.Net.Security
                     Interop.AndroidCrypto.RegisterRemoteCertificateValidationCallback(&VerifyRemoteCertificate);
                     s_initialized = true;
                 }
-            }
-
-            public void Dispose()
-            {
-                _handle?.Free();
-                _handle = null;
             }
 
             [UnmanagedCallersOnly]
@@ -92,6 +105,7 @@ namespace System.Net.Security
                 public bool IsValid { get; init; }
                 public SslPolicyErrors SslPolicyErrors { get; init; }
                 public X509ChainStatusFlags ChainStatus { get; init; }
+                public ProtocolToken? AlertToken { get; init; }
             }
         }
     }

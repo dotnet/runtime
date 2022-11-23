@@ -29,22 +29,31 @@ namespace System.Net
         };
         private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
-        private readonly SafeSslHandle _sslContext;
-        private readonly SslStream.JavaProxy _sslStreamProxy;
+        private readonly SafeSslHandle? _sslContext;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
-        public SafeSslHandle SslContext => _sslContext;
-        public SslStream.JavaProxy SslStreamProxy => _sslStreamProxy;
+        public SslStream.JavaProxy SslStreamProxy { get; }
+
+        public SafeSslHandle SslContext
+        {
+            get
+            {
+                if (_sslContext is null)
+                    throw new InvalidOperationException($"{nameof(SafeDeleteSslContext)} is not initialized");
+
+                return _sslContext;
+            }
+        }
 
         public SafeDeleteSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            _sslStreamProxy = sslStreamProxy;
+            SslStreamProxy = sslStreamProxy;
             try
             {
-                _sslContext = CreateSslContext(_sslStreamProxy, authOptions);
+                _sslContext = CreateSslContext(SslStreamProxy, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -55,21 +64,35 @@ namespace System.Net
             }
         }
 
+        public static SafeDeleteSslContext CreateContextStub(SslStream.JavaProxy sslStreamProxy)
+        {
+            // This is a stub context that is used to pass the reference to the SslStream
+            // without changing the existing PAL API (SslStreamPal.AcceptSecurityContext and
+            // SslStreamPal.InitializeSecurityContext). The stub context cannot be used for any
+            //other purpose and accessing the SslContext property of the stub will throw if used.
+            return new SafeDeleteSslContext(sslStreamProxy);
+        }
+
+        private SafeDeleteSslContext(SslStream.JavaProxy sslStreamProxy) : base(IntPtr.Zero)
+        {
+            SslStreamProxy = sslStreamProxy;
+            _sslContext = null;
+        }
+
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                SafeSslHandle sslContext = _sslContext;
-                if (sslContext != null)
+                if (_sslContext is SafeSslHandle sslContext)
                 {
                     _inputBuffer.Dispose();
                     _outputBuffer.Dispose();
                     sslContext.Dispose();
                 }
 
-                _sslStreamProxy?.Dispose();
+                SslStreamProxy?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -80,6 +103,7 @@ namespace System.Net
         {
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             Debug.Assert(context != null);
+            Debug.Assert(context._sslContext != null);
 
             var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
 
@@ -93,6 +117,7 @@ namespace System.Net
         {
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             Debug.Assert(context != null);
+            Debug.Assert(context._sslContext != null);
 
             int toRead = *dataLength;
             if (toRead == 0)
@@ -115,6 +140,8 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
+            Debug.Assert(_sslContext != null);
+
             _inputBuffer.EnsureAvailableSpace(buf.Length);
             buf.CopyTo(_inputBuffer.AvailableSpan);
             _inputBuffer.Commit(buf.Length);
@@ -124,6 +151,8 @@ namespace System.Net
 
         internal byte[]? ReadPendingWrites()
         {
+            Debug.Assert(_sslContext != null);
+
             if (_outputBuffer.ActiveLength == 0)
             {
                 return null;
@@ -137,6 +166,7 @@ namespace System.Net
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
         {
+            Debug.Assert(_sslContext != null);
             Debug.Assert(buf != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);
