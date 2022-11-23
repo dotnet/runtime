@@ -15,7 +15,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast
+    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast,
+    try_append_memmove_fast
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -1350,6 +1351,9 @@ function append_memset_local (builder: WasmBuilder, localOffset: number, value: 
 }
 
 function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+    if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
+        return true;
+
     // spec: pop n, pop s, pop d, copy n bytes from s to d
     append_ldloca(builder, destLocalOffset);
     append_ldloca(builder, sourceLocalOffset);
