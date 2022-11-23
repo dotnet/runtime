@@ -4609,8 +4609,11 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     if (boundsCheck != nullptr)
     {
         // This is changing a value dependency (INDEX_ADDR node) into a flow
-        // dependency, so make sure this dependency remains visible.
+        // dependency, so make sure this dependency remains visible. Also, the
+        // JIT is not allowed to create arbitrary byrefs, so we must make sure
+        // the address is not reordered with the bounds check.
         boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
+        addr->gtFlags |= GTF_ORDER_SIDEEFF;
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
         fgSetRngChkTarget(boundsCheck);
@@ -5207,6 +5210,10 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
+
+        // Ensure the creation of the byref does not get reordered with the
+        // null check, as that could otherwise create an illegal byref.
+        addr->gtFlags |= GTF_ORDER_SIDEEFF;
     }
     else
     {
