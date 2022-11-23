@@ -2213,7 +2213,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
@@ -2222,8 +2222,10 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
-            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            if (!field.IsThreadStatic && !filed.HasRva && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
+                Debug.Assert(valueOffset == 0); // is only used for RVA (not supported currently)
+
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
                 {

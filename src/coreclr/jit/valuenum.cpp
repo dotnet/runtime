@@ -2113,7 +2113,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         {
                             uint8_t buffer[TARGET_POINTER_SIZE] = {0};
                             if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
-                                                                                       TARGET_POINTER_SIZE, false))
+                                                                                       TARGET_POINTER_SIZE, 0, false))
                             {
                                 // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
                                 // value holding 32bit handle with upper half zeroed (hence, "= NULL").
@@ -8506,9 +8506,105 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //
 bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 {
-    ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+    if (!tree->gtVNPair.BothEqual())
+    {
+        return false;
+    }
+
+    ValueNum addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+
+    // First, let's see if we have IND<primitive>(INT_CNS) field (RVA specifically)
+    FieldSeq* fieldSeq = nullptr;
+    if (vnStore->IsVNHandle(addrVN) && (vnStore->GetHandleFlags(addrVN) == GTF_ICON_FIELD_SEQ))
+    {
+        fieldSeq = vnStore->FieldSeqVNToFieldSeq(addrVN);
+    }
+    else if (tree->gtGetOp1()->IsCnsIntOrI())
+    {
+        fieldSeq = tree->gtGetOp1()->AsIntCon()->gtFieldSeq;
+    }
+
+    if (fieldSeq != nullptr)
+    {
+        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
+        assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+
+        ssize_t byteOffset = tree->gtGetOp1()->AsIntCon()->IconValue() - fieldSeq->GetOffset();
+        int     size       = (int)genTypeSize(tree->TypeGet());
+        if ((size > 0) && (size <= sizeof(int64_t) && (byteOffset >= 0) && (byteOffset < INT_MAX)))
+        {
+            uint8_t buffer[sizeof(int64_t)] = {0};
+            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
+            {
+                switch (tree->TypeGet())
+                {
+#define READ_VALUE(typ)                                                                                                \
+    typ val = 0;                                                                                                       \
+    memcpy(&val, buffer, sizeof(typ));
+
+                    case TYP_BOOL:
+                    case TYP_UBYTE:
+                    {
+                        READ_VALUE(uint8_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_BYTE:
+                    {
+                        READ_VALUE(int8_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_SHORT:
+                    {
+                        READ_VALUE(int16_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_USHORT:
+                    {
+                        READ_VALUE(uint16_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_INT:
+                    {
+                        READ_VALUE(int32_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_UINT:
+                    {
+                        READ_VALUE(uint32_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
+                        return true;
+                    }
+                    case TYP_LONG:
+                    {
+                        READ_VALUE(int64_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
+                        return true;
+                    }
+                    case TYP_ULONG:
+                    {
+                        READ_VALUE(uint64_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
+                        return true;
+                    }
+                        // We can add support for fp, structs and SIMD if needed
+                }
+            }
+        }
+    }
+
+    // Throughput check, the logic below is only for USHORT (char)
+    if (!tree->TypeIs(TYP_USHORT))
+    {
+        return false;
+    }
+
     VNFuncApp funcApp;
-    if (!tree->TypeIs(TYP_USHORT) || !tree->gtVNPair.BothEqual() || !vnStore->GetVNFunc(addrVN, &funcApp))
+    if (!vnStore->GetVNFunc(addrVN, &funcApp))
     {
         return false;
     }
