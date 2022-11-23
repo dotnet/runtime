@@ -2672,7 +2672,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			goto epilogue;
 		} else {
 			int count = cinfo->hit_count;
-			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
+			if (count == (mono_opt_interp_tier_instantly ? 1 : mono_opt_jiterpreter_jit_call_trampoline_hit_count)) {
 				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
 					rmethod, cinfo, fn, rmethod->hasthis, rmethod->param_count,
@@ -7250,7 +7250,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_TIER_ENTER_METHOD) {
 			frame->imethod->entry_count++;
-			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
+			if (frame->imethod->entry_count > (mono_opt_interp_tier_instantly ? INTERP_TIER_ENTRY_LIMIT_LOW : INTERP_TIER_ENTRY_LIMIT) && !clause_args)
 				ip = mono_interp_tier_up_frame_enter (frame, context);
 			else
 				ip++;
@@ -7258,7 +7258,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
 			frame->imethod->entry_count++;
-			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
+			if (frame->imethod->entry_count > (mono_opt_interp_tier_instantly ? INTERP_TIER_ENTRY_LIMIT_LOW : INTERP_TIER_ENTRY_LIMIT) && !clause_args)
 				ip = mono_interp_tier_up_frame_patchpoint (frame, context, ip [1]);
 			else
 				ip += 2;

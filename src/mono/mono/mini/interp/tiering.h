@@ -3,6 +3,7 @@
 
 #include "interp-internals.h"
 
+#define INTERP_TIER_ENTRY_LIMIT_LOW 2
 #define INTERP_TIER_ENTRY_LIMIT 1000
 
 void

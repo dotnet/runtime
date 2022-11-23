@@ -2913,9 +2913,11 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    if (info.hitCount < mostRecentOptions.minimumTraceHitCount)
+    const minHitCount = mostRecentOptions.tierInstantly ? 2 : mostRecentOptions.minimumTraceHitCount;
+
+    if (info.hitCount < minHitCount)
         return JITERPRETER_TRAINING;
-    else if (info.hitCount === mostRecentOptions.minimumTraceHitCount) {
+    else if (info.hitCount === minHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
         if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {
