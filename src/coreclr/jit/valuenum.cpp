@@ -8591,7 +8591,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
                         return true;
                     }
-                        // We can add support for fp, structs and SIMD if needed
+                    // We can add support for fp, structs and SIMD if needed
+                    default:
+                        break;
                 }
             }
         }
