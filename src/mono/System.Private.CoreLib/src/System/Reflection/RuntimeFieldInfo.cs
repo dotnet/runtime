@@ -214,7 +214,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return SR.Format("{0} {1}", FieldType, name);
+            return string.Format("{0} {1}", FieldType, name);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

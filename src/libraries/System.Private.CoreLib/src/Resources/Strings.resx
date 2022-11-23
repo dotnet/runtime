@@ -2988,6 +2988,9 @@
   <data name="MissingMethod_Name" xml:space="preserve">
     <value>Method '{0}.{1}' not found.</value>
   </data>
+  <data name="MissingMethod_Body" xml:space="preserve">
+    <value>Method '{0}.{1}' does not have a method body.</value>
+  </data>
   <data name="MissingMethod_CannotCreateAbstractClass" xml:space="preserve">
     <value>Cannot create an abstract class '{0}'.</value>
   </data>
@@ -4176,6 +4179,9 @@
   <data name="ClassLoad_General" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}'.</value>
   </data>
+  <data name="ClassLoad_General_Hex" xml:space="preserve">
+    <value>Could not load type '0x{0:x}' from assembly '0x{1:x}'.</value>
+  </data>
   <data name="ClassLoad_RankTooLarge" xml:space="preserve">
     <value>'{0}' from assembly '{1}' has too many dimensions.</value>
   </data>
@@ -4274,6 +4280,9 @@
   </data>
   <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
     <value>The type '{0}' cannot be found in assembly '{1}'.</value>
+  </data>
+  <data name="TypeLoad_MethodOverrideNotVirtual" xml:space="preserve">
+    <value>Method '{0}' override '{1}' but it is not virtual.</value>
   </data>
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>

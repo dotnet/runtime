@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
 
         public override string ToString()
         {
-            return SR.Format("{0} {1}", PropertyType, Name);
+            return string.Format("{0} {1}", PropertyType, Name);
         }
 
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
