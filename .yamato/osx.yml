@@ -3,8 +3,8 @@ all:
   dependencies:
   - path: .yamato/test_osx_x64_release.yml
   - path: .yamato/test_osx_x64_debug.yml
-  - path: .yamato/test_osx_arm64_release.yml
-  - path: .yamato/test_osx_arm64_debug.yml
+  - path: .yamato/build_osx_arm64_release.yml # We don't run macOS ARM64 tests yet, just build it.
+  - path: .yamato/build_osx_arm64_debug.yml
   - path: .yamato/build_osx_x64arm64.yml
   triggers:
     pull_requests:
