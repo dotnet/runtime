@@ -149,7 +149,11 @@ namespace Regression.UnitTests
                 foreach (var methoddef in methods)
                 {
                     Assert.Equal(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
-                    Assert.Equal(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+                    var paramz = AssertAndReturn(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+                    foreach (var param in paramz)
+                    {
+                        Assert.Equal(GetFieldMarshal(baselineImport, param), GetFieldMarshal(currentImport, param));
+                    }
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
                     Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
@@ -172,6 +176,7 @@ namespace Regression.UnitTests
                 {
                     Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, fielddef), GetPinvokeMap(currentImport, fielddef));
+                    Assert.Equal(GetFieldMarshal(baselineImport, fielddef), GetFieldMarshal(currentImport, fielddef));
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                 }
                 Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
@@ -702,6 +707,23 @@ namespace Regression.UnitTests
                 values.Add(hash);
                 values.Add((uint)pchImportName);
                 values.Add(pmrImportDLL);
+            }
+            return values;
+        }
+
+        private static List<nint> GetFieldMarshal(IMetaDataImport import, uint tk)
+        {
+            List<nint> values = new();
+
+            int hr = import.GetFieldMarshal(tk,
+                out nint ppvNativeType,
+                out uint pcbNativeType);
+
+            values.Add(hr);
+            if (hr >= 0)
+            {
+                values.Add(ppvNativeType);
+                values.Add((int)pcbNativeType);
             }
             return values;
         }

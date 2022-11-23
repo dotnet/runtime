@@ -1113,7 +1113,26 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFieldMarshal(
     PCCOR_SIGNATURE* ppvNativeType,
     ULONG* pcbNativeType)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(tk) != mdtParamDef && TypeFromToken(tk) != mdtFieldDef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    mdcursor_t fieldMarshalRow;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_FieldMarshal, &cursor, &count)
+        || !md_find_row_from_cursor(cursor, mdtFieldMarshal_Parent, tk, &fieldMarshalRow))
+    {
+        return CLDB_E_RECORD_NOTFOUND;
+    }
+
+    uint8_t const* sig;
+    uint32_t sigLen;
+    if (1 != md_get_column_value_as_blob(fieldMarshalRow, mdtFieldMarshal_NativeType, 1, &sig, &sigLen))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ppvNativeType = (PCCOR_SIGNATURE)sig;
+    *pcbNativeType = sigLen;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetRVA(
@@ -1330,12 +1349,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPinvokeMap(
 
     mdcursor_t cursor;
     uint32_t count;
-    if (!md_create_cursor(_md_ptr.get(), mdtid_ImplMap, &cursor, &count))
-        return CLDB_E_RECORD_NOTFOUND;
-
     mdcursor_t implRow;
-    if (!md_find_row_from_cursor(cursor, mdtImplMap_MemberForwarded, tk, &implRow))
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ImplMap, &cursor, &count)
+        || !md_find_row_from_cursor(cursor, mdtImplMap_MemberForwarded, tk, &implRow))
+    {
         return CLDB_E_RECORD_NOTFOUND;
+    }
 
     uint32_t flags;
     mdModuleRef token;
