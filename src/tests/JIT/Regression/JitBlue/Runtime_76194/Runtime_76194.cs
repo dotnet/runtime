@@ -82,12 +82,6 @@ public unsafe class Runtime_76194
         }
         return 100;
     }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static T Read<T>(byte* location) => Unsafe.ReadUnaligned<T>(location);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Write<T>(byte* location, T t) => Unsafe.WriteUnaligned(location, t);
 }
 
 // Cross-platform implementation of VirtualAlloc that is focused on reproducing problems
@@ -127,6 +121,7 @@ public unsafe class CrossVirtualAlloc : IDisposable
             if (_ptr != null && mprotect(_ptr + PageSize, PageSize, PROT_NONE) != 0)
             {
                 munmap(_ptr, 2 * PageSize);
+                _ptr = null;
             }
         }
     }
@@ -140,6 +135,11 @@ public unsafe class CrossVirtualAlloc : IDisposable
 
     public void Dispose()
     {
+        if (IsFailedToCommit)
+        {
+            return;
+        }
+
         if (OperatingSystem.IsWindows())
         {
             const int MEM_RELEASE = 0x8000;
@@ -147,7 +147,7 @@ public unsafe class CrossVirtualAlloc : IDisposable
         }
         else
         {
-            munmap(_ptr, (nuint)Environment.SystemPageSize * 2);
+            munmap(_ptr, PageSize * 2);
         }
     }
 
