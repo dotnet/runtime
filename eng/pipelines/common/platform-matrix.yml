@@ -387,7 +387,7 @@ jobs:
       targetRid: wasi-wasm
       platform: wasi_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_x64
+      container: Browser_wasm
       jobParameters:
         hostedOs: Linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
