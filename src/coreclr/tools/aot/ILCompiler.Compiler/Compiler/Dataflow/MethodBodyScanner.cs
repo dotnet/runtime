@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -478,8 +478,8 @@ namespace ILCompiler.Dataflow
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
-                                HandleCall(methodBody, methodOperand, opcode, offset, new ValueNodeList() { MultiValueLattice.Top }, out MultiValue _);
                             }
+
                             PushUnknown(currentStack);
                         }
                         break;

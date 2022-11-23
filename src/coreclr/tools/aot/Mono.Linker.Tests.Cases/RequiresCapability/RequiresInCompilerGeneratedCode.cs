@@ -80,9 +80,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 #if !RELEASE
-			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 #else
 			// In release mode, the compiler optimizes away the unused Action (and reference to MethodWithRequires)
 #endif
@@ -97,9 +96,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static IEnumerable<int> TestLazyDelegate ()
@@ -164,9 +164,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static IEnumerable<int> TestLazyDelegate ()
@@ -264,9 +265,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 #if !RELEASE
-			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 #endif
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -277,9 +277,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var action = new Action (MethodWithRequires);
 			}
 
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async void TestLazyDelegate ()
@@ -341,9 +342,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async void TestLazyDelegate ()
@@ -443,9 +445,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 #if !RELEASE
-			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer, CompilerGeneratedCode = true)]
 #endif
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -457,9 +458,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var action = new Action (MethodWithRequires);
 			}
 
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async IAsyncEnumerable<int> TestLazyDelegate ()
@@ -527,9 +529,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async IAsyncEnumerable<int> TestLazyDelegate ()
@@ -675,9 +678,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 #if !RELEASE
-				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot)]
+				// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 #endif
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -688,9 +690,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -791,9 +794,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1139,9 +1143,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--LambdaWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 			static void TestLambdaWithRequires ()
 			{
 				Action lambda =
@@ -1162,9 +1167,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				() => MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--LambdaWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 			static void TestLambdaWithRequiresUnused ()
 			{
 				Action _ =
@@ -1220,9 +1226,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				Action _ =
 #if !RELEASE
-				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.NativeAot)]
+				// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 #endif
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
@@ -1232,9 +1237,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1335,9 +1341,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot, CompilerGeneratedCode = true)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = ProducedBy.Analyzer)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1392,9 +1399,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer)]
 			static void TestSuppressionOnLambda ()
 			{
 				var lambda =
@@ -1406,9 +1414,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				lambda (); // This will produce a warning since the lambda has Requires on it
 			}
 
-			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer)]
 			static void TestSuppressionOnLambdaWithNestedLambda ()
 			{
 				var lambda =
@@ -2039,9 +2048,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class LambdasReferencedViaReflection
 		{
-			[ExpectedWarning ("IL2026", "--TestLambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--TestLambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--TestLambdaWithRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "--TestLambdaWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 			static void TestLambdaWithRequires ()
 			{
 				var lambda =
@@ -2053,9 +2063,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2026", "Lambda")]
-			[ExpectedWarning ("IL3002", "Lambda", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "Lambda", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
+			[ExpectedWarning ("IL2026", "Lambda", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "Lambda", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "Lambda", ProducedBy = ProducedBy.Analyzer)]
 			static void TestLambdaWithClosureWithRequires (int p = 0)
 			{
 				var lambda =
