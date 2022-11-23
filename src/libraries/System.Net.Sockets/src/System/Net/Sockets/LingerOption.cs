@@ -47,6 +47,6 @@ namespace System.Net.Sockets
             return comparand is LingerOption option && option.Enabled == _enabled && option.LingerTime == _lingerTime;
         }
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(_enabled, _lingerTime);
     }
 }
