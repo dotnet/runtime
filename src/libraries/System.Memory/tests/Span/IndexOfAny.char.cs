@@ -807,7 +807,6 @@ namespace System.SpanTests
             // There is some special handling we have to do for ASCII needles to properly filter out non-ASCII results
             ReadOnlySpan<char> needleValues = needleContainsZero ? "AEIOU\0" : "AEIOU!";
             IndexOfAnyValues<char> needle = IndexOfAnyValues.Create(needleValues);
-            Assert.Contains("Ascii", needle.GetType().Name);
 
             ReadOnlySpan<char> repeatingHaystack = "AaAaAaAaAaAa";
             Assert.Equal(0, repeatingHaystack.IndexOfAny(needle));
