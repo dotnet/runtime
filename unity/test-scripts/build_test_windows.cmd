@@ -21,5 +21,5 @@ goto :run_build_and_test
 set configuration=Release
 
 :run_build_and_test
-.yamato/scripts/build_windows.cmd %architecture% %configuration%
-.yamato/scripts/test_windows.cmd %architecture% %configuration%
+call .yamato/scripts/build_windows.cmd %architecture% %configuration%
+call .yamato/scripts/test_windows.cmd %architecture% %configuration%
