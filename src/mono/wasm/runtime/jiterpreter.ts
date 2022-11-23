@@ -1915,27 +1915,6 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
 
-    /*
-    [MintOpcode.MINT_CEQ_R4]:    [WasmOpcode.f32_eq,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R4]:    [WasmOpcode.f32_ne,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R4]:    [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME: What are these, semantically?
-    [MintOpcode.MINT_CLT_UN_R4]: [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R4]:    [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME
-    [MintOpcode.MINT_CGT_UN_R4]: [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R4]:    [WasmOpcode.f32_le,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R4]:    [WasmOpcode.f32_ge,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-
-    [MintOpcode.MINT_CEQ_R8]:    [WasmOpcode.f64_eq,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R8]:    [WasmOpcode.f64_ne,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R8]:    [WasmOpcode.f64_lt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R8]:    [WasmOpcode.f64_gt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R8]:    [WasmOpcode.f64_le,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R8]:    [WasmOpcode.f64_ge,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    */
-
-    // FIXME: unordered float comparisons
 };
 
 const relopbranchTable : { [opcode: number]: [comparisonOpcode: MintOpcode, immediateOpcode: WasmOpcode | false, isSafepoint: boolean] | MintOpcode | undefined } = {
