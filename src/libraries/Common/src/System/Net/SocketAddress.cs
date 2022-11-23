@@ -164,10 +164,7 @@ namespace System.Net.Internals
             }
         }
 
-        internal int GetPort()
-        {
-            return (int)SocketAddressPal.GetPort(Buffer);
-        }
+        internal int GetPort() => (int)SocketAddressPal.GetPort(Buffer);
 
         internal IPEndPoint GetIPEndPoint()
         {
