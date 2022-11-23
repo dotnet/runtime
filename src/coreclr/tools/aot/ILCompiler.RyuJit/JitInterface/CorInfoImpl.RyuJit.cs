@@ -2222,7 +2222,7 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
-            if (!field.IsThreadStatic && !filed.HasRva && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            if (!field.IsThreadStatic && !field.HasRva && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
                 Debug.Assert(valueOffset == 0); // is only used for RVA (not supported currently)
 

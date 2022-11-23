@@ -11993,7 +11993,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
     _ASSERTE(field->IsStatic());
-    _ASSERTE((unsigned)bufferSize == field->GetSize() || field->IsRVA());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
     _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
@@ -12007,20 +12006,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
         GCX_COOP();
-        if (field->IsRVA())
+        if (field->IsObjRef())
         {
-            _ASSERT(!field->IsObjRef());
-            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
-            size_t size = field->GetSize();
-            if (valueOffset >= 0 && valueOffset <= size - bufferSize)
-            {
-                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                result = true;
-            }
-        }
-        else if (field->IsObjRef())
-        {
-            _ASSERT(valueOffset == 0); // is only used for RVA currently
+            _ASSERT(!field->IsRVA());
+            _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)
             {
@@ -12051,11 +12040,16 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         }
         else
         {
-            _ASSERT(valueOffset == 0); // is only used for RVA currently
-            void* fldAddr = field->GetCurrentStaticAddress();
-            _ASSERTE(fldAddr != nullptr);
-            memcpy(buffer, fldAddr, bufferSize);
-            result = true;
+            // Either RVA, primitve or struct (or even part of that struct)
+            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+            size_t size = field->GetSize();
+            _ASSERTE(baseAddr > 0);
+            _ASSERTE(size > 0);
+            if (valueOffset >= 0 && valueOffset <= size - bufferSize)
+            {
+                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                result = true;
+            }
         }
     }
 
