@@ -76,7 +76,7 @@ namespace
                        ->GetTypeManagerPtr()
                        ->AsTypeManager()
                        ->GetClasslibFunction(ClasslibFunctionId::ObjectiveCMarshalTryGetTaggedMemory);
-                       
+
         ASSERT(fn != nullptr);
 
         auto pTryGetTaggedMemoryCallback = reinterpret_cast<ObjCMarshalNative::TryGetTaggedMemoryCallback>(fn);
@@ -128,7 +128,7 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
 
     if (!object->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
         return false;
-    
+
     auto pIsReferencedCallbackCallback = GetCallbackViaClasslibCallback<ObjCMarshalNative::IsReferencedCallback>(
         object, ClasslibFunctionId::ObjectiveCMarshalGetIsTrackedReferenceCallback);
 
@@ -140,7 +140,7 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
         ASSERT(false);
         return false;
     }
-    
+
     int result = pIsReferencedCallbackCallback(taggedMemory);
 
     *isReferenced = (result != 0);

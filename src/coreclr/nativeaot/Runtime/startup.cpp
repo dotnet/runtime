@@ -26,7 +26,6 @@
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
-#include "interoplibinterface.h"
 
 #ifndef DACCESS_COMPILE
 
