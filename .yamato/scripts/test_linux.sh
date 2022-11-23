@@ -27,15 +27,14 @@ echo
 
 echo
 echo "***********************************"
-echo "Unity: Running embedding API tests"
+echo "Unity: Skipping embedding API tests"
 echo "***********************************"
 echo
-cd unity/embed_api_tests
-cmake -DCMAKE_BUILD_TYPE=$configuration .
-cmake --build .
-./mono_test_app
-cd ../../
-cd ../../
+# cd unity/embed_api_tests
+# cmake -DCMAKE_BUILD_TYPE=$configuration .
+# cmake --build .
+# ./mono_test_app
+# cd ../../
 
 echo
 echo "**********************************"
