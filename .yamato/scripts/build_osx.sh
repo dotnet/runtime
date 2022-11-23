@@ -51,7 +51,12 @@ echo
 cd unity/unitygc
 mkdir -p $configuration
 cd $configuration
-cmake -DCMAKE_OSX_ARCHITECTURES=$architecture -DCMAKE_BUILD_TYPE=$configuration ..
+if [ "$architecture" = "arm64" ]; then
+    extra_architecture_define=-DCMAKE_OSX_ARCHITECTURES=$architecture
+else
+    extra_architecture_define=
+fi
+cmake $extra_architecture_define -DCMAKE_BUILD_TYPE=$configuration ..
 cmake --build .
 cd ../../../
 
