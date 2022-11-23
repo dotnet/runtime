@@ -17645,8 +17645,6 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
         return false;
     }
 
-    assert(baseAddr != nullptr);
-
     if (fldSeq == nullptr)
     {
         return false;
