@@ -441,7 +441,7 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 #define JITERP_RELOP(opcode, type, op, noorder) \
 	case opcode: \
 		{ \
-			if (mono_isunordered (lhs, rhs)) \
+			if (is_unordered) \
 				return noorder; \
 			else \
 				return ((type)lhs op (type)rhs); \
@@ -449,6 +449,7 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
+	gboolean is_unordered = mono_isunordered (lhs, rhs);
 	switch (opcode) {
 		JITERP_RELOP(MINT_CEQ_R4, float, ==, 0);
 		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
