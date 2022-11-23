@@ -70,12 +70,15 @@
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
-    <Compile Include="SendReceiveTest.Http2.cs" />
+    <Compile Include="SendReceiveTest.Http2.cs" Condition="'$(TargetsBrowser)' == 'false'" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />
   </ItemGroup>
 </Project>
