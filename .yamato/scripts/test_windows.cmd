@@ -36,6 +36,7 @@ echo ******************************
 echo.
 call dotnet build unity\managed.sln -c %configuration% || goto :error
 
+if "%architecture%"=="x86" goto :skip_embedding_tests_x86
 echo.
 echo *****************************************************
 echo Unity: Running embedding API tests
@@ -47,7 +48,16 @@ cmake . -A %cmake_architecture% || goto :error
 cmake --build . --config %configuration% || goto :error
 %configuration%\mono_test_app.exe || goto :error
 cd ../../ || goto :error
+goto :run_class_library_tests
 
+:skip_embedding_tests_x86
+echo.
+echo *****************************************************
+echo Unity: Skipping embedding API tests on x86
+echo *****************************************************
+echo.
+
+:run_class_library_tests
 echo.
 echo **********************************
 echo Unity: Running class library tests
