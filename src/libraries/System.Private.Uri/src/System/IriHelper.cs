@@ -66,7 +66,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInInclusiveRange(uint value, uint min, uint max)
+        public static bool IsInInclusiveRange(uint value, uint min, uint max)
             => (value - min) <= (max - min);
 
         //

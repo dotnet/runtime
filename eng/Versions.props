@@ -85,7 +85,7 @@
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.22554.2</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.22554.2</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>8.0.0-beta.22554.2</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.22554.2</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.22572.2</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.22554.2</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.22554.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.22554.2</MicrosoftDotNetBuildTasksArchivesVersion>
