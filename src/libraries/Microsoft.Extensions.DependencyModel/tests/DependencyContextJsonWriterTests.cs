@@ -138,11 +138,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             rids.Should().HaveProperty("win7-x64")
                 .Subject.Should().BeOfType<JArray>()
-                .Which.Values<string>().ShouldBeEquivalentTo(new[] { "win6", "win5" });
+                .Which.Values<string>().Should().BeEquivalentTo(new[] { "win6", "win5" });
 
             rids.Should().HaveProperty("win8-x64")
                 .Subject.Should().BeOfType<JArray>()
-                .Which.Values<string>().ShouldBeEquivalentTo(new[] { "win7-x64" });
+                .Which.Values<string>().Should().BeEquivalentTo(new[] { "win7-x64" });
         }
 
         [Fact]

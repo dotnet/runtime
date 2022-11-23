@@ -5,8 +5,8 @@ using System;
 public class TestClass13
 {
     // With below flags, we were using uninitialized compCurBB during insertGCPolls()
-    // COMPlus_JitDoAssertionProp=0
-    // COMPlus_JitNoCSE=1
+    // DOTNET_JitDoAssertionProp=0
+    // DOTNET_JitNoCSE=1
     public void Method0()
     {
         Console.WriteLine();

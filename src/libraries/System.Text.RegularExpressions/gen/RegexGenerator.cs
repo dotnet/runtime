@@ -318,20 +318,5 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
         }
-
-        /// <summary>Computes a hash of the string.</summary>
-        /// <remarks>
-        /// Currently an FNV-1a hash function. The actual algorithm used doesn't matter; just something
-        /// simple to create a deterministic, pseudo-random value that's based on input text.
-        /// </remarks>
-        private static uint ComputeStringHash(string s)
-        {
-            uint hashCode = 2166136261;
-            foreach (char c in s)
-            {
-                hashCode = (c ^ hashCode) * 16777619;
-            }
-            return hashCode;
-        }
     }
 }

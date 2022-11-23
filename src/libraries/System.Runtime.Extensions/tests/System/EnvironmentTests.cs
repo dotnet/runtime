@@ -186,9 +186,13 @@ namespace System.Tests
         {
             Version version = Environment.OSVersion.Version;
 
-            // verify that the Environment.OSVersion.Version matches the current RID
-            // As of 12.0, only major version numbers are included in the RID
-            Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
+            // NativeAOT hard-codes the runtime identifier at build time
+            if (!PlatformDetection.IsNativeAot)
+            {
+                // verify that the Environment.OSVersion.Version matches the current RID
+                // As of 12.0, only major version numbers are included in the RID
+                Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
+            }
 
             Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");

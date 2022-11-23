@@ -102,7 +102,15 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
             assert(fgFirstColdBlock != nullptr); // There better be a cold section!
 
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstColdBlock));
-            *ppEndLoc   = nullptr; // nullptr end location means the end of the code
+
+            if (fgFirstFuncletBB != nullptr)
+            {
+                *ppEndLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstFuncletBB));
+            }
+            else
+            {
+                *ppEndLoc = nullptr; // nullptr end location means the end of the code
+            }
         }
     }
     else

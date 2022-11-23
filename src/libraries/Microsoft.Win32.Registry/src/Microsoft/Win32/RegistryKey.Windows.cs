@@ -197,7 +197,7 @@ namespace Microsoft.Win32
         /// <returns>The RegistryKey requested.</returns>
         private static RegistryKey OpenBaseKeyCore(RegistryHive hKeyHive, RegistryView view)
         {
-            IntPtr hKey = (IntPtr)((int)hKeyHive);
+            nint hKey = (int)hKeyHive;
 
             int index = ((int)hKey) & 0x0FFFFFFF;
             Debug.Assert(index >= 0 && index < s_hkeyNames.Length, "index is out of range!");

@@ -64,11 +64,11 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[39];
+    WCHAR strClsid[GUID_STR_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
-    StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+    GuidToLPWSTR(m_rclsid, strClsid);
 
     SString strHRHex;
     strHRHex.Printf("%.8x", hr);
@@ -504,11 +504,11 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[39];
+        WCHAR strClsid[GUID_STR_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
-        StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+        GuidToLPWSTR(m_rclsid, strClsid);
 
         SString strHRHex;
         strHRHex.Printf("%.8x", hr);
@@ -2635,8 +2635,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[39];
-        StringFromGUID2(iid, strIID, sizeof(strIID) / sizeof(WCHAR));
+        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
         SString strHRDescription;
@@ -2653,8 +2653,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[39];
-            StringFromGUID2(SrcItfIID, strSrcItfIID, sizeof(strSrcItfIID) / sizeof(WCHAR));
+            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
@@ -2667,8 +2667,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
         {
             // Convert the source interface IID to a string.
-            WCHAR strNativeItfIID[39];
-            StringFromGUID2(*pNativeIID, strNativeItfIID, sizeof(strNativeItfIID) / sizeof(WCHAR));
+            WCHAR strNativeItfIID[GUID_STR_BUFFER_LEN];
+            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
 
             // Query for the interface to determine the failure HRESULT.
             HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);

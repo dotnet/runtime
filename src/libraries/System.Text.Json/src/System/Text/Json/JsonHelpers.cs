@@ -15,7 +15,7 @@ namespace System.Text.Json
         /// Returns the span for the given reader.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> GetSpan(this ref Utf8JsonReader reader)
+        public static ReadOnlySpan<byte> GetSpan(this scoped ref Utf8JsonReader reader)
         {
             return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
         }

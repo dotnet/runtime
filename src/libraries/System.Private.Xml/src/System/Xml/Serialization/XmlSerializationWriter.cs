@@ -42,7 +42,7 @@ namespace System.Xml.Serialization
         private readonly char[] _primitivesBuffer = new char[128];
 
         // this method must be called before any generated serialization methods are called
-        internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase, TempAssembly? tempAssembly)
+        internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase)
         {
             _w = w;
             _namespaces = namespaces;
@@ -2404,7 +2404,7 @@ namespace System.Xml.Serialization
             Writer.Write(")");
         }
 
-        private void WritePrimitiveValue(TypeDesc typeDesc, string source, bool isElement)
+        private void WritePrimitiveValue(TypeDesc typeDesc, string source)
         {
             if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
             {
@@ -2497,7 +2497,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WritePrimitiveValue(typeDesc, source, isElement);
+                WritePrimitiveValue(typeDesc, source);
             }
 
             if (writeXsiType)
@@ -3396,7 +3396,7 @@ namespace System.Xml.Serialization
                     if (attribute.Mapping is EnumMapping)
                         WriteEnumValue((EnumMapping)attribute.Mapping, "ai");
                     else
-                        WritePrimitiveValue(arrayElementTypeDesc, "ai", true);
+                        WritePrimitiveValue(arrayElementTypeDesc, "ai");
                     Writer.WriteLine(");");
                 }
                 else
@@ -3878,7 +3878,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    WritePrimitiveValue(primitive.TypeDesc!, source, false);
+                    WritePrimitiveValue(primitive.TypeDesc!, source);
                 }
                 Writer.WriteLine(");");
             }

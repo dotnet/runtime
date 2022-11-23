@@ -563,6 +563,39 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(3),
+                TokensPerPeriod = 3,
+                AutoReplenishment = false
+            });
+
+            var lease = limiter.AttemptAcquire(3);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.AcquireAsync(2, cts.Token);
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            var wait2 = limiter.AcquireAsync(1);
+            Replenish(limiter, 1L);
+
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.Equal(0, limiter.GetStatistics().CurrentQueuedCount);
+        }
+
+        [Fact]
         public override async Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions

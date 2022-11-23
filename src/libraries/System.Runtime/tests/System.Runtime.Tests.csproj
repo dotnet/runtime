@@ -16,12 +16,6 @@
     <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <!-- Workaround for https://github.com/dotnet/runtime/issues/74302 -->
-    <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
-    <WasmXHarnessMonoArgs>--setenv=XUNIT_RANDOM_ORDER_SEED=1</WasmXHarnessMonoArgs>
-  </PropertyGroup>
-
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>

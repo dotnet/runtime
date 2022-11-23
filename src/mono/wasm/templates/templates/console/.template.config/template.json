@@ -5,7 +5,6 @@
   "groupIdentity": "WebAssembly.Console",
   "precedence": 8000,
   "identity": "WebAssembly.Console.8.0",
-  "description": "WebAssembly Console App",
   "name": "WebAssembly Console App",
   "description": "A project template for creating a .NET app that runs on WebAssembly on Node JS or V8",
   "shortName": "wasmconsole",

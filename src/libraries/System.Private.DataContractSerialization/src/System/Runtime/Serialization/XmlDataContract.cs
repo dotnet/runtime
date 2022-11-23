@@ -290,7 +290,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
             if (type.IsValueType)
             {
-                System.Reflection.Emit.LocalBuilder local = ilg.DeclareLocal(type, type.Name + "Value");
+                System.Reflection.Emit.LocalBuilder local = ilg.DeclareLocal(type);
                 ilg.Ldloca(local);
                 ilg.InitObj(type);
                 ilg.Ldloc(local);

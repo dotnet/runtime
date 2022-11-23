@@ -37,6 +37,7 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+use_local_commit_time=false
 only_sanity=false
 dotnet_versions=""
 
@@ -165,6 +166,10 @@ while (($# > 0)); do
       maui_version=$2
       shift 2
       ;;
+    --uselocalcommittime)
+      use_local_commit_time=true
+      shift 1
+      ;;
     --perffork)
       perf_fork=$2
       shift 2
@@ -206,6 +211,7 @@ while (($# > 0)); do
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
+      echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo ""
       exit 1
       ;;
@@ -318,6 +324,11 @@ setup_arguments="--repository https://github.com/$repository --branch $branch --
 
 if [[ "$internal" != true ]]; then
     setup_arguments="$setup_arguments --not-in-lab"
+fi
+
+if [[ "$use_local_commit_time" == true ]]; then
+    local_commit_time=$(git show -s --format=%ci $commit_sha)
+    setup_arguments="$setup_arguments --commit-time \"$local_commit_time\""
 fi
 
 if [[ "$run_from_perf_repo" == true ]]; then

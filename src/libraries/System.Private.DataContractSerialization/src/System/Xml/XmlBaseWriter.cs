@@ -36,7 +36,6 @@ namespace System.Xml
         private bool _inList;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
-        private static BinHexEncoding? _binhexEncoding;
         private static readonly string[] s_prefixes = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
 
         protected XmlBaseWriter()
@@ -120,8 +119,6 @@ namespace System.Xml
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlWriterClosed));
         }
-
-        private static BinHexEncoding BinHexEncoding => _binhexEncoding ??= new BinHexEncoding();
 
         public override string? XmlLang
         {
@@ -533,7 +530,7 @@ namespace System.Xml
             element.LocalName = localName;
         }
 
-        private void PreStartElementAsyncCheck(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
+        private void PreStartElementAsyncCheck(string localName)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -593,7 +590,7 @@ namespace System.Xml
 
         public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
-            PreStartElementAsyncCheck(prefix, localName, namespaceUri, null);
+            PreStartElementAsyncCheck(localName);
             return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
         }
 
@@ -1472,7 +1469,7 @@ namespace System.Xml
 
             EnsureBufferBounds(buffer, offset, count);
 
-            WriteRaw(BinHexEncoding.GetString(buffer, offset, count));
+            WriteRaw(DataContractSerializer.BinHexEncoding.GetString(buffer, offset, count));
         }
 
         public override void WriteBase64(byte[] buffer, int offset, int count)
@@ -1502,8 +1499,8 @@ namespace System.Xml
                 {
                     if (_attributeValue != null)
                     {
-                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
-                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
+                        WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+                        WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
                     }
 
                     if (!_isXmlnsAttribute)
@@ -1561,8 +1558,8 @@ namespace System.Xml
                 {
                     if (_attributeValue != null)
                     {
-                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
-                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
+                        WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+                        WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
                     }
                     if (!_isXmlnsAttribute)
                     {
@@ -1765,7 +1762,7 @@ namespace System.Xml
             Debug.Assert(_trailBytes != null);
 
             if (_attributeValue != null)
-                WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+                WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
 
             if (!_isXmlnsAttribute)
             {
@@ -1781,7 +1778,7 @@ namespace System.Xml
             Debug.Assert(_trailBytes != null);
 
             if (_attributeValue != null)
-                WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+                WriteAttributeText(DataContractSerializer.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
 
             if (!_isXmlnsAttribute)
             {
