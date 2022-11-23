@@ -34,6 +34,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [SuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         internal override void LateAddProperties()
         {
             Debug.Assert(!IsConfigured);
@@ -58,8 +60,12 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(T).HasRequiredMemberAttribute()
                 && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
-            // Walk through the inheritance hierarchy, starting from the most derived type upward.
-            for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
+            // Walk through the subtype hierarchy, starting from the most derived type upward.
+            Type[] orderedTypeHierarchy = Type.IsInterface
+                ? Type.GetSortedInterfaceHierarchy()
+                : Type.GetSortedClassHierarchy();
+
+            foreach (Type currentType in orderedTypeHierarchy)
             {
                 PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
 

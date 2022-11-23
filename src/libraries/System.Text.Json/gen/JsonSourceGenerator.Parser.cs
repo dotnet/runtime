@@ -1026,7 +1026,11 @@ namespace System.Text.Json.SourceGeneration
 
                         bool propertyOrderSpecified = false;
 
-                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
+                        Type[] sortedTypeHierarchy = type.IsInterface
+                            ? type.GetSortedInterfaceHierarchy()
+                            : type.GetSortedClassHierarchy();
+
+                        foreach (Type currentType in sortedTypeHierarchy)
                         {
                             PropertyGenerationSpec spec;
 
@@ -1260,6 +1264,7 @@ namespace System.Text.Json.SourceGeneration
                     IsExtensionData = isExtensionData,
                     TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
                     DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
+                    DeclaringType = memberInfo.DeclaringType,
                     ConverterInstantiationLogic = converterInstantiationLogic,
                     HasFactoryConverter = hasFactoryConverter
                 };

@@ -4,9 +4,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Collections.Generic;
-#if !BUILDING_SOURCE_GENERATOR
 using System.Diagnostics.CodeAnalysis;
-#endif
 
 namespace System.Text.Json.Reflection
 {
@@ -323,6 +321,103 @@ namespace System.Text.Json.Reflection
             }
 
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Returns a list containing the class hierarchy for the given type,
+        /// starting from the current type up to the least derived base type.
+        /// </summary>
+        public static Type[] GetSortedClassHierarchy(this Type type)
+        {
+            var results = new List<Type>();
+
+            for (Type? current = type; current != null && current != typeof(object); current = current.BaseType)
+            {
+                results.Add(current);
+            }
+
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// Returns a list containing the interface hierarchy for the given type,
+        /// starting from the most derived types down to the least derived ones using topological sorting.
+        /// </summary>
+        public static Type[] GetSortedInterfaceHierarchy(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
+        {
+            // Topologically sorts the interface hierarchy of the given type, from most derived type to base interfaces.
+            // Because interface hierarchies support multiple inheritance, we need to sort using topological sorting.
+            // Uses a standard implementation of Kahn's algorithm to do this.
+
+            Type[] interfaces = type.GetInterfaces();
+            if (type.IsInterface)
+            {
+                // include the current type if an interface
+                Type[] newArray = new Type[interfaces.Length + 1];
+                newArray[0] = type;
+                interfaces.CopyTo(newArray, 1);
+                interfaces = newArray;
+            }
+
+            if (interfaces.Length < 2)
+            {
+                return interfaces;
+            }
+
+            var graph = new Dictionary<Type, HashSet<Type>>();
+            var next = new Queue<Type>();
+
+            for (int i = 0; i < interfaces.Length; i++)
+            {
+                Type current = interfaces[i];
+                HashSet<Type>? dependencies = null;
+
+                for (int j = 0; j < interfaces.Length; j++)
+                {
+                    if (i != j && current.IsAssignableFrom(interfaces[j]))
+                    {
+                        (dependencies ??= new()).Add(interfaces[j]);
+                    }
+                }
+
+                if (dependencies is null)
+                {
+                    next.Enqueue(current);
+                }
+                else
+                {
+                    graph.Add(current, dependencies);
+                }
+            }
+
+            Debug.Assert(next.Count > 0, "Input graph must be a DAG.");
+            int index = 0;
+
+            do
+            {
+                Type nextTopLevelDependency = next.Dequeue();
+
+                foreach (KeyValuePair<Type, HashSet<Type>> kvp in graph)
+                {
+                    HashSet<Type> dependencies = kvp.Value;
+                    if (dependencies.Count > 0)
+                    {
+                        dependencies.Remove(nextTopLevelDependency);
+
+                        if (dependencies.Count == 0)
+                        {
+                            next.Enqueue(kvp.Key);
+                        }
+                    }
+                }
+
+                interfaces[index++] = nextTopLevelDependency;
+            }
+            while (next.Count > 0);
+
+            Debug.Assert(index == interfaces.Length);
+            return interfaces;
         }
     }
 }
