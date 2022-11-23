@@ -73,7 +73,15 @@ try {
     gitHash = "unknown";
 }
 
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript()];
+// set tsconfig.json options note exclude comes from tsconfig.json
+// (which gets it from tsconfig.shared.json) to exclude node_modules,
+// for example
+const typescriptConfigOptions = {
+    rootDirs: [".", "../../../../artifacts/bin/native/generated"],
+    include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
+};
+
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript(typescriptConfigOptions)];
 
 const externalDependencies = [
 ];
