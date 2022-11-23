@@ -108,25 +108,25 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void ThrowGreater(string? paramName, object other)
+        private static void ThrowGreater<T>(string? paramName, T other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowGreaterEqual(string? paramName, object other)
+        private static void ThrowGreaterEqual<T>(string? paramName, T other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLess(string? paramName, object other)
+        private static void ThrowLess<T>(string? paramName, T other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLessEqual(string? paramName, object other)
+        private static void ThrowLessEqual<T>(string? paramName, T other)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
         }
