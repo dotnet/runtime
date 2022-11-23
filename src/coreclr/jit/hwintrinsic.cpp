@@ -560,8 +560,6 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
-
-        assert(genActualType(arg->gtType) == genActualType(argType));
     }
 
     return arg;

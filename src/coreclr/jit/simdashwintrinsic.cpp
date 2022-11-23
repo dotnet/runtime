@@ -213,6 +213,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     if (retType == TYP_STRUCT)
     {
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
+        if ((simdBaseJitType == CORINFO_TYPE_UNDEF) || !varTypeIsArithmetic(JitType2PreciseVarType(simdBaseJitType)) ||
+            (simdSize == 0))
+        {
+            // Unsupported type
+            return nullptr;
+        }
         retType         = getSIMDTypeForSize(simdSize);
     }
     else if (numArgs != 0)
