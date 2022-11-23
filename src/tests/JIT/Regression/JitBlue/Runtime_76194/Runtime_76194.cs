@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -118,8 +119,14 @@ public unsafe class CrossVirtualAlloc : IDisposable
             const int MAP_ANONYMOUS = 0x20;
 
             _ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            if (_ptr != null && mprotect(_ptr + PageSize, PageSize, PROT_NONE) != 0)
+            if (_ptr == (void*)-1)
             {
+                throw new InvalidOperationException($"mmap failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}");
+                _ptr = null;
+            }
+            else if (mprotect(_ptr + PageSize, PageSize, PROT_NONE) != 0)
+            {
+                throw new InvalidOperationException($"mprotect failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}, _ptr={(nuint)_ptr}");
                 munmap(_ptr, 2 * PageSize);
                 _ptr = null;
             }
@@ -157,12 +164,12 @@ public unsafe class CrossVirtualAlloc : IDisposable
     [DllImport("kernel32")]
     static extern int VirtualFree(byte* lpAddress, nuint dwSize, uint dwFreeType);
 
-    [DllImport("libc")]
+    [DllImport("libc", SetLastError = true)]
     static extern byte* mmap(byte* addr, nuint length, int prot, int flags, int fd, nuint offset);
 
-    [DllImport("libc")]
+    [DllImport("libc", SetLastError = true)]
     static extern int mprotect(byte* addr, nuint len, int prot);
 
-    [DllImport("libc")]
+    [DllImport("libc", SetLastError = true)]
     static extern int munmap(byte* addr, nuint length);
 }
