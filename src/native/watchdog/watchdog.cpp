@@ -6,6 +6,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <string>
 #else
 #include <unistd.h>
 #include <sys/wait.h>
@@ -30,26 +31,37 @@ int main(const int argc, const char *argv[])
 
 int run_timed_process(const long timeout, const int exe_argc, const char *exe_path_and_argv[])
 {
-    // We somehow need to convert the whole command-line to a single string for Windows :|
 #ifdef _WIN32
-    STARTUPINFO startupInfo;
-    PROCESS_INFORMATION procInfo;
+    std::string cmdline(exe_path_and_argv[0]);
 
-    ZeroMemory(&startupInfo, sizeof(startupInfo));
-    startupInfo.cb = sizeof(startupInfo);
-    ZeroMemory(&procInfo, sizeof(procInfo));
+    for (int i = 1; i < exe_argc; i++)
+    {
+        cmdline.append(" ");
+        cmdline.append(exe_path_and_argv[i]);
+    }
 
-    if (!CreateProcess(NULL, "cmdline", NULL, NULL, FALSE, 0, NULL, NULL,
-                       &startupInfo, &procInfo))
+    STARTUPINFO startup_info;
+    PROCESS_INFORMATION proc_info;
+    int exit_code;
+
+    ZeroMemory(&startup_info, sizeof(startup_info));
+    startup_info.cb = sizeof(startup_info);
+    ZeroMemory(&proc_info, sizeof(proc_info));
+
+    if (!CreateProcess(NULL, &cmdline[0], NULL, NULL, FALSE, 0, NULL, NULL,
+                       &startup_info, &proc_info))
     {
         int error_code = GetLastError();
         printf("Process creation failed... Code %d.\n", error_code);
         return error_code;
     }
 
-    WaitForSingleObject(procInfo.hProcess, timeout);
-    CloseHandle(procInfo.hProcess);
-    CloseHandle(procInfo.hThread);
+    WaitForSingleObject(proc_info.hProcess, timeout);
+    GetExitCodeProcess(proc_info.hProcess, &exit_code);
+
+    CloseHandle(proc_info.hProcess);
+    CloseHandle(proc_info.hThread);
+    return exit_code;
 
 #else
     const int check_interval = 1000;
