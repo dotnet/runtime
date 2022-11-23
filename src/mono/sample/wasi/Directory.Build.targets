@@ -47,6 +47,7 @@
       <WasmtimeVersion>%(_VersionLines.Identity)</WasmtimeVersion>
       <WasmtimeURL>https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-linux.tar.xz</WasmtimeURL>
       <WasmtimeURL Condition="'$(HostOS)' == 'osx'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-macos.tar.xz</WasmtimeURL>
+      <WasmtimeURL Condition="'$(HostOS)' == 'windows'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-windows.zip</WasmtimeURL>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="$(WasmtimeURL)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
@@ -54,7 +55,8 @@
     </DownloadFile>
 
     <MakeDir Directories="$(WasmtimeDir)" />
-    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" />
+    <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
+    <Exec Command="tar -Jx - -strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
     <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir).stamp-wasmtime-version.txt" SkipUnchangedFiles="true" />
   </Target>
 
