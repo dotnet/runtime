@@ -1221,9 +1221,14 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetSigFromToken(
     if (!md_token_to_cursor(_md_ptr.get(), mdSig, &cursor))
         return CLDB_E_INDEX_NOTFOUND;
 
-    return (1 == md_get_column_value_as_blob(cursor, mdtStandAloneSig_Signature, 1, ppvSig, (uint32_t*)pcbSig))
-        ? S_OK
-        : COR_E_BADIMAGEFORMAT;
+    uint8_t const* sig;
+    uint32_t sigLen;
+    if (1 != md_get_column_value_as_blob(cursor, mdtStandAloneSig_Signature, 1, &sig, &sigLen))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ppvSig = (PCCOR_SIGNATURE)sig;
+    *pcbSig = sigLen;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleRefProps(
@@ -1591,7 +1596,24 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNestedClassProps(
     mdTypeDef   tdNestedClass,
     mdTypeDef* ptdEnclosingClass)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(tdNestedClass) != mdtTypeDef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t unused;
+    mdcursor_t nestedClassRow;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_NestedClass, &cursor, &unused)
+        || !md_find_row_from_cursor(cursor, mdtNestedClass_NestedClass, RidFromToken(tdNestedClass), &nestedClassRow))
+    {
+        return CLDB_E_RECORD_NOTFOUND;
+    }
+
+    mdTypeDef enclosed;
+    if (1 != md_get_column_value_as_token(nestedClassRow, mdtNestedClass_EnclosingClass, 1, &enclosed))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ptdEnclosingClass = enclosed;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNativeCallConvFromSig(

@@ -116,6 +116,8 @@ namespace Regression.UnitTests
             IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
 
             // Verify APIs
+            Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
+
             Assert.Equal(GetScopeProps(baselineImport), GetScopeProps(currentImport));
             var modulerefs = AssertAndReturn(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
             foreach (var moduleref in modulerefs)
@@ -180,12 +182,16 @@ namespace Regression.UnitTests
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
                 }
                 Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
-                Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
+                Assert.Equal(GetNestedClassProps(baselineImport, typedef), GetNestedClassProps(currentImport, typedef));
+                Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef)); 
             }
 
-            Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
-            Assert.Equal(EnumSignatures(baselineImport), EnumSignatures(currentImport));
-            Assert.Equal(GetSigFromToken(baselineImport), GetSigFromToken(currentImport));
+            var sigs = AssertAndReturn(EnumSignatures(baselineImport), EnumSignatures(currentImport));
+            foreach (var sig in sigs)
+            {
+                Assert.Equal(GetSigFromToken(baselineImport, sig), GetSigFromToken(currentImport, sig));
+            }
+
             var userStrings = AssertAndReturn(EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
             foreach (var us in userStrings)
             {
@@ -862,6 +868,21 @@ namespace Regression.UnitTests
             return values;
         }
 
+        private static List<uint> GetNestedClassProps(IMetaDataImport import, uint typedef)
+        {
+            List<uint> values = new();
+
+            int hr = import.GetNestedClassProps(typedef,
+                out uint ptkEnclosingClass);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(ptkEnclosingClass);
+            }
+            return values;
+        }
+
         private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)
         {
             List<uint> values = new();
@@ -1038,16 +1059,19 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<(nint Ptr, uint Len)> GetSigFromToken(IMetaDataImport import)
+        private static List<nint> GetSigFromToken(IMetaDataImport import, uint tk)
         {
-            List<(nint Ptr, uint Len)> sigs = new();
-            var tokens = EnumSignatures(import);
-            foreach (uint tk in tokens)
+            List<nint> values = new();
+
+            int hr = import.GetSigFromToken(tk, out nint sig, out uint len);
+
+            values.Add(hr);
+            if (hr >= 0)
             {
-                Assert.Equal(0, import.GetSigFromToken(tk, out nint sig, out uint len));
-                sigs.Add((sig, len));
+                values.Add(sig);
+                values.Add((int)len);
             }
-            return sigs;
+            return values;
         }
 
         private static List<uint> EnumUserStrings(IMetaDataImport import)
