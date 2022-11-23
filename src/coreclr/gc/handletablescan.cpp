@@ -796,10 +796,21 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
     // compute the first handle in the first clump of this block
     _UNCHECKED_OBJECTREF *pValue = pSegment->rgValue + (uClump * HANDLE_HANDLES_PER_CLUMP);
 
+    uint32_t uBlock = uClump / HANDLE_CLUMPS_PER_BLOCK;
+    uint8_t uType = pSegment->rgBlockType[uBlock];
+
+    _UNCHECKED_OBJECTREF* pUserDataBlock = NULL;
+    if (uType == HNDTYPE_DEPENDENT)
+    {
+        uint8_t uData = pSegment->rgUserData[uBlock];
+        _ASSERTE(uData != BLOCK_INVALID);
+        pUserDataBlock = pSegment->rgValue + (uData * HANDLE_HANDLES_PER_BLOCK);
+    }
+
     // loop over the clumps, scanning those that are identified by the mask
     do
     {
-                // compute the last handle in this clump
+        // compute the last handle in this clump
         _UNCHECKED_OBJECTREF *pLast = pValue + HANDLE_HANDLES_PER_CLUMP;
 
         // if this clump should be scanned then scan it
@@ -827,6 +838,17 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                             }
                         });
 #endif
+                    if (uType == HNDTYPE_DEPENDENT)
+                    {
+                        size_t handleIndexInBlock = ((size_t)pValue / HANDLE_SIZE) & (HANDLE_HANDLES_PER_BLOCK - 1);
+                        _UNCHECKED_OBJECTREF pSecondary = pUserDataBlock[handleIndexInBlock];
+                        if (pSecondary)
+                        {
+                            int secondaryAge = g_theGCHeap->WhichGeneration(pSecondary);
+                            if (minAge > secondaryAge)
+                                minAge = secondaryAge;
+                        }
+                    }
                }
             }
             _ASSERTE(FitsInU1(minAge));
