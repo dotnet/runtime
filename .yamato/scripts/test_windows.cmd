@@ -70,7 +70,7 @@ echo ****************************
 echo Unity: Running runtime tests
 echo ****************************
 echo.
-call src\tests\build.cmd %architecture% %configuration% ci tree baseservices tree interop tree reflection || goto :error
+call src\tests\build.cmd %architecture% %configuration% ci tree baseservices tree interop tree reflection -- /p:LibrariesConfiguration=%configuration% || goto :error
 call src\tests\run.cmd %architecture% %configuration% || goto :error
 
 rem Every thing succeeded - jump to the end of the file and return a 0 exit code
