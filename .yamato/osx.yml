@@ -1,4 +1,4 @@
-osx:
+all:
   name: All OSX Tests
   dependencies:
   - path: .yamato/test_osx_x64_release.yml
