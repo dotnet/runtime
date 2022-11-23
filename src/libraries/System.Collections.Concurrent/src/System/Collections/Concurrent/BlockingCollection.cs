@@ -480,14 +480,18 @@ namespace System.Collections.Concurrent
                     cancellationToken.ThrowIfCancellationRequested();
                     addingSucceeded = _collection.TryAdd(item);
 
-                    if(!addingSucceeded)
+                    if (!addingSucceeded)
                         throw new InvalidOperationException(SR.BlockingCollection_Add_Failed);
                 }
                 finally
                 {
                     if (addingSucceeded)
+                        //After adding an element to the underlying storage, signal to the consumers
+                        //waiting on _occupiedNodes that there is a new item added ready to be consumed.
                         _occupiedNodes.Release();
                     else
+                        //TryAdd did not result in increasing the size of the underlying store and hence we need
+                        //to increment back the count of the _freeNodes semaphore.
                         _freeNodes?.Release();
 
                     // decrement the adders count
