@@ -9,6 +9,8 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -174,7 +176,7 @@ namespace System.Threading
             }
         }
 
-        public const int IdNone = 0;
+        public const int IdNone = -1;
 
         // The main thread takes the first available id, which is 1. This id will not be recycled until the process exit.
         // We use this id to detect the main thread and report it as a foreground one.
@@ -186,8 +188,6 @@ namespace System.Threading
         // because that object may have longer lifetime than the OS thread.
         [ThreadStatic]
         private static ManagedThreadId t_currentThreadId;
-        [ThreadStatic]
-        private static int t_currentManagedThreadId;
 
         // We have to avoid the static constructors on the ManagedThreadId class, otherwise we can run into stack overflow as first time Current property get called,
         // the runtime will ensure running the static constructor and this process will call the Current property again (when taking any lock)
@@ -248,9 +248,10 @@ namespace System.Threading
 
         public static int Current
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                int currentManagedThreadId = t_currentManagedThreadId;
+                int currentManagedThreadId = RuntimeImports.RhGetCurrentManagedThreadId();
                 if (currentManagedThreadId == IdNone)
                     return MakeForCurrentThread();
                 else
@@ -260,12 +261,13 @@ namespace System.Threading
 
         public static ManagedThreadId GetCurrentThreadId()
         {
-            if (t_currentManagedThreadId == IdNone)
+            if (RuntimeImports.RhGetCurrentManagedThreadId() == IdNone)
                 MakeForCurrentThread();
 
             return t_currentThreadId;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static int MakeForCurrentThread()
         {
             return SetForCurrentThread(new ManagedThreadId());
@@ -274,7 +276,7 @@ namespace System.Threading
         public static int SetForCurrentThread(ManagedThreadId threadId)
         {
             t_currentThreadId = threadId;
-            t_currentManagedThreadId = threadId.Id;
+            RuntimeImports.RhSetCurrentManagedThreadId(threadId.Id);
             return threadId.Id;
         }
 

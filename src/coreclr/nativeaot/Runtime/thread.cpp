@@ -260,7 +260,6 @@ void Thread::Construct()
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
     // static initialization will need to be made.
 
-    m_uPalThreadIdForLogging = PalGetCurrentThreadIdForLogging();
     m_threadId.SetToCurrentThread();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
@@ -281,6 +280,8 @@ void Thread::Construct()
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
+
+    m_managedThreadId = (uint32_t) -1;
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
@@ -328,7 +329,17 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return m_uPalThreadIdForLogging;
+    return *(uint64_t*)&m_threadId;
+}
+
+int32_t Thread::GetManagedThreadId()
+{
+    return m_managedThreadId;
+}
+
+void Thread::SetManagedThreadId(int32_t id)
+{
+    m_managedThreadId = id;
 }
 
 bool Thread::IsCurrentThread()
@@ -1344,6 +1355,16 @@ COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
 COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
 {
     return PalGetCurrentThreadIdForLogging();
+}
+
+COOP_PINVOKE_HELPER(int32_t, RhGetCurrentManagedThreadId, ())
+{
+    return ThreadStore::RawGetCurrentThread()->GetManagedThreadId();
+}
+
+COOP_PINVOKE_HELPER(void, RhSetCurrentManagedThreadId, (int32_t id))
+{
+    return ThreadStore::RawGetCurrentThread()->SetManagedThreadId(id);
 }
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread

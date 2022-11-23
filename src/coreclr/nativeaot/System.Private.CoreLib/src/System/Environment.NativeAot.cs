@@ -15,6 +15,8 @@ namespace System
     {
         public static int CurrentManagedThreadId => ManagedThreadId.Current;
 
+        internal static int CurrentManagedThreadIdUnchecked => RuntimeImports.RhGetCurrentManagedThreadId();
+
         private static int s_latchedExitCode;
 
         public static int ExitCode
