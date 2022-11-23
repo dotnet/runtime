@@ -25972,6 +25972,7 @@ BOOL gc_heap::process_mark_overflow(int condemned_gen_number)
 
     BOOL  overflow_p = FALSE;
 recheck:
+    drain_mark_queue();
     if ((! (max_overflow_address == 0) ||
          ! (min_overflow_address == MAX_PTR)))
     {
