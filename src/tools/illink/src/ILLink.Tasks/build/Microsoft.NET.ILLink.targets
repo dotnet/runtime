@@ -64,7 +64,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->
-  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true'">
+  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
