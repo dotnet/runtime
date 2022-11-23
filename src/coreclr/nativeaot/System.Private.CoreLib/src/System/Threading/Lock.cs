@@ -64,12 +64,11 @@ namespace System.Threading
             _lazyEvent?.Dispose();
         }
 
-        private static IntPtr CurrentNativeThreadId => (IntPtr)RuntimeImports.RhCurrentNativeThreadId();
+        private static IntPtr CurrentNativeThreadId => Environment.CurrentManagedThreadId;
 
-        // On platforms where CurrentNativeThreadId redirects to ManagedThreadId.Current the inlined
-        // version of Lock.Acquire has the ManagedThreadId.Current call not inlined, while the non-inlined
-        // version has it inlined.  So it saves code to keep this function not inlined while having
-        // the same runtime cost.
+        // the inlined version of Lock.Acquire would not inline ManagedThreadId.Current,
+        // while the non-inlined version has it inlined.
+        // So it saves code to keep this function not inlined while having the same runtime cost.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Acquire()
         {

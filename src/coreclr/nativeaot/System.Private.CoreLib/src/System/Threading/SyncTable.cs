@@ -62,7 +62,7 @@ namespace System.Threading
         private const int DoublingSizeThreshold = 1 << 20;
 
         /// <summary>
-        /// Protects all mutable operations on s_entrie, s_freeEntryList, s_unusedEntryIndex. Also protects growing the table.
+        /// Protects all mutable operations on s_entries, s_freeEntryList, s_unusedEntryIndex. Also protects growing the table.
         /// </summary>
         internal static Lock s_lock = new Lock();
 
@@ -281,7 +281,7 @@ namespace System.Threading
                     return;
 
                 Lock? lockToDispose = default;
-                DependentHandle dependentHadleToDispose = default;
+                DependentHandle dependentHandleToDispose = default;
 
                 using (LockHolder.Hold(s_lock))
                 {
@@ -294,7 +294,7 @@ namespace System.Threading
                         return;
                     }
 
-                    dependentHadleToDispose = entry.Owner;
+                    dependentHandleToDispose = entry.Owner;
                     entry.Owner = default;
 
                     lockToDispose = entry.Lock;
@@ -305,7 +305,7 @@ namespace System.Threading
                 }
 
                 // Dispose outside the lock
-                dependentHadleToDispose.Dispose();
+                dependentHandleToDispose.Dispose();
                 lockToDispose?.Dispose();
             }
         }
