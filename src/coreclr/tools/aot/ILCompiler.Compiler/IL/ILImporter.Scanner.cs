@@ -9,6 +9,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using System.Diagnostics;
 
 #pragma warning disable IDE0060
 

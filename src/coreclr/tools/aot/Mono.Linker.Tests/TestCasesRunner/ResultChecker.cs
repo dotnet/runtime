@@ -341,8 +341,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								break;
 							}
 
+							if (!expectedWarningFound)
+								Debugger.Break ();
+
 							var expectedOriginString = fileName == null
-								? NameUtils.GetExpectedOriginDisplayName (attrProvider) + ": "
+								? NameUtils.ConvertSignatureToIlcFormat (NameUtils.GetExpectedOriginDisplayName (attrProvider)) + ": "
 								: "";
 
 							Assert.True (expectedWarningFound,

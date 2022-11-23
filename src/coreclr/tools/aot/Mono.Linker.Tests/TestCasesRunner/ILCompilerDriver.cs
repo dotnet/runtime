@@ -35,6 +35,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				inputModules.Add (module);
 			}
 
+			foreach (var trimAssembly in options.TrimAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleFromPath (trimAssembly);
+				inputModules.Add (module);
+			}
+
 			CompilationModuleGroup compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
 
 			List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider> ();
@@ -74,7 +79,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				logger,
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),
-				Array.Empty<string> (),
+				options.AdditionalRootAssemblies.ToArray (),
 				options.TrimAssemblies.ToArray ());
 
 			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)

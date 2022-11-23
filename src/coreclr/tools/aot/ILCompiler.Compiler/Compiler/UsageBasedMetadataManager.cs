@@ -311,7 +311,7 @@ namespace ILCompiler
                 // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
                 // TODO: We should technically reflection-root Main() here but hopefully the above issue
                 // will be fixed before it comes to that being necessary.
-                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
+                bool isEntrypointAssembly = false; // module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
 
                 if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
                 {

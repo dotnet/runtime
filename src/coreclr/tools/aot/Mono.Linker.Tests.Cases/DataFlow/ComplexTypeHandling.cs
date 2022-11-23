@@ -23,10 +23,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayGetTypeFromField ();
 			TestArrayTypeGetType ();
 			TestArrayCreateInstanceByName ();
+			typeof (ComplexTypeHandling).GetMethod ("TestArrayInAttributeParameter", System.Reflection.BindingFlags.NonPublic).Invoke (null, new object[] { } );
 			TestArrayInAttributeParameter ();
 		}
 
-		[Kept]
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayElementType
 		{
 			public ArrayElementType () { }
@@ -54,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (T[]));
 		}
 
-		[Kept]
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayElementInGenericType
 		{
 			public ArrayElementInGenericType () { }
@@ -91,7 +92,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_ = new RequirePublicMethodsGeneric<T[]> ();
 		}
 
-		[Kept]
+		[Kept(KeptBy = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromMethodParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -110,7 +111,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayGetTypeFromMethodParamHelper (null);
 		}
 
-		[Kept]
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromFieldElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -126,9 +127,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (_arrayGetTypeFromField.GetType ());
 		}
 
+
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet - it ignores the [] and thus sees this as a direct type reference
 		[Kept]
 		sealed class ArrayTypeGetTypeElement
 		{
+			// https://github.com/dotnet/runtime/issues/72833
+			// NativeAOT doesn't implement full type name parser yet - it ignores the [] and thus sees this as a direct type reference
+			[Kept (KeptBy = ProducedBy.NativeAot)]
 			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
@@ -143,7 +150,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// doesn't work on arrays, but the currently implementation will preserve it anyway due to how it processes
 		// string -> Type resolution. This will only impact code which would have failed at runtime, so very unlikely to
 		// actually occur in real apps (and even if it does happen, it just increases size, doesn't break behavior).
-		[Kept]
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayCreateInstanceByNameElement
 		{
 			public ArrayCreateInstanceByNameElement ()
@@ -157,7 +164,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
 		}
 
-		[Kept]
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayInAttributeParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked

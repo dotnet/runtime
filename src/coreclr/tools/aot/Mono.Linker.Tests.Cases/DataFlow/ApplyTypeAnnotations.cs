@@ -135,13 +135,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept]
 		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGeneric<T>
 		{
-			[Kept (KeptBy = ProducedBy.Trimmer)]
+			[Kept]
 			public T GetValue () { return default (T); }
 		}
 
@@ -158,8 +156,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -197,10 +193,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void UnusedMethod () { }
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
-		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
+		[Kept]
+		[KeptMember (".ctor()")]
 		class FromStringConstantWithGenericTwoParameters<T, S>
 		{
 		}
@@ -214,13 +208,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithMultiDimArray[,]");
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
-		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
+		[Kept]
+		[KeptMember (".ctor()")]
 		class FromStringConstantWithGenericAndAssemblyQualified<T>
 		{
-			[Kept (KeptBy = ProducedBy.Trimmer)]
+			[Kept]
 			public T GetValue () { return default (T); }
 		}
 

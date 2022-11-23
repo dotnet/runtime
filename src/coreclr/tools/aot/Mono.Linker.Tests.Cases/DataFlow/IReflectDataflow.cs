@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -117,8 +118,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[KeptBaseType (typeof (MyReflect))]
+		// TODO: NativeAOT investigation - it doesn't keep this type
+		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[KeptBaseType (typeof (MyReflect), KeptBy = ProducedBy.Trimmer)]
 		class MyReflectDerived : MyReflect
 		{
 		}
@@ -167,7 +169,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
-				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);
+				var i = new MyReflectOverType (typeof (TestType));
+				i.GetFields (BindingFlags.Instance | BindingFlags.Public);
+
+#if NATIVE_AOT
+				// In Native AOT the test infra doesn't setup the compiler in a way where it will force preserve
+				// all external types. Like here, it will actually track usage of methods on IReflect
+				// and remove any which are not used. We don't want that for this test.
+				typeof (IReflect).RequiresAll ();
+#endif
 			}
 		}
 	}

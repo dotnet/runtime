@@ -113,10 +113,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
-				if (methodDef.IsCanonicalMethod (CanonicalFormKind.Any))
-					return;
-
-				if (methodDef.OwningType is MetadataType { Namespace: "Internal.CompilerGenerated" })
+				if (!ShouldIncludeType(methodDef.OwningType))
 					return;
 
 				if (!AddMember (methodDef))
@@ -130,10 +127,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				TypeDesc typeDef = type.GetTypeDefinition ();
 
-				if (typeDef.IsCanonicalSubtype (CanonicalFormKind.Any))
-					return;
-
-				if (typeDef is MetadataType { Namespace: "Internal.CompilerGenerated" })
+				if (!ShouldIncludeType(typeDef))
 					return;
 
 				if (!AddMember (typeDef))
@@ -151,6 +145,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						return false;
 
 					linkedMembers.Add (fullName, entity);
+					return true;
+				}
+
+				return false;
+			}
+
+			bool ShouldIncludeType (TypeDesc type)
+			{
+				if (type is MetadataType metadataType) {
+					if (metadataType.ContainingType is { } containingType) {
+						if (!ShouldIncludeType (containingType))
+							return false;
+					}
+
+					if (metadataType.Namespace.StartsWith ("Internal"))
+						return false;
+
+					// Simple way to filter out system assemblies - the best way would be to get a list
+					// of input/reference assemblies and filter on that, but it's tricky and this should work for basically everything
+					if (metadataType.Namespace.StartsWith ("System"))
+						return false;
+
 					return true;
 				}
 
@@ -1065,7 +1081,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static string? GetActualFullName (TypeSystemEntity? entity)
 		{
-			return NameUtils.TrimAssemblyNamePrefix (NameUtils.GetActualOriginDisplayName (entity));
+			return NameUtils.GetActualOriginDisplayName (entity);
 		}
 
 		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)

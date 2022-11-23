@@ -31,12 +31,16 @@ namespace ILCompiler
         {
             var sb = new StringBuilder();
 
+            if (method.ToString().Contains("C1"))
+                Debugger.Break();
+
             sb.Append(method.OwningType.GetDisplayName());
             sb.Append('.');
 
             if (method.IsConstructor)
             {
-                sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
+                DefType defType = method.OwningType.GetTypeDefinition() as DefType;
+                sb.Append(defType?.Name ?? method.Name);
             }
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
@@ -238,12 +242,8 @@ namespace ILCompiler
 
             protected override Unit AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, FormatOptions options)
             {
-                if ((options & FormatOptions.NamespaceQualify) != 0)
-                {
-                    AppendName(sb, containingType, options);
-                    sb.Append('.');
-                }
-
+                AppendName(sb, containingType, options);
+                sb.Append('.');
                 sb.Append(nestedType.Name);
 
                 return default;

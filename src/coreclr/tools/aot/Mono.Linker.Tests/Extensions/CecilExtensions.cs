@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -176,6 +177,9 @@ namespace Mono.Linker.Tests.Extensions
 		{
 			var sb = new System.Text.StringBuilder ();
 
+			if (method.ToString ().Contains ("RequirePublicParameterlessConstructor"))
+				Debugger.Break ();
+
 			// Match C# syntaxis name if setter or getter
 			var methodDefinition = method.Resolve ();
 			if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter)) {
@@ -310,6 +314,7 @@ namespace Mono.Linker.Tests.Extensions
 					break;
 				}
 
+				type = type.GetElementType ();
 				if (type.DeclaringType is not TypeReference declaringType)
 					break;
 
