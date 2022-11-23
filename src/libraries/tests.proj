@@ -536,6 +536,10 @@
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true' and '$(Scenario)' == 'WasmTestOnNodeJS'">
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />

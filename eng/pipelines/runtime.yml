@@ -385,6 +385,28 @@ extends:
         scenarios:
           - WasmTestOnBrowser
 
+    # Node JS smoke tests
+    
+    - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      parameters:
+        platforms:
+          - NodeJS_wasm
+        shouldRunSmokeOnly: true
+        alwaysRun: ${{ variables.isRollingBuild }}
+        extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
+        scenarios:
+          - WasmTestOnNodeJS
+    
+    - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      parameters:
+        platforms:
+          - NodeJS_wasm_win
+        shouldRunSmokeOnly: true
+        alwaysRun: ${{ variables.isRollingBuild }}
+        extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
+        scenarios:
+          - WasmTestOnNodeJS
+
     # EAT Library tests - only run on linux
     - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
       parameters:
