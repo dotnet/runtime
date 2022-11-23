@@ -25,7 +25,7 @@ namespace pal
     template<typename A, typename B>
     class StringConvert
     {
-        B const* _ptr;
+        B* _ptr;
         malloc_ptr _owner;
         uint32_t _charLength;
         bool _converted;
@@ -90,6 +90,11 @@ namespace pal
         }
 
         operator B const*() const noexcept
+        {
+            return _ptr;
+        }
+
+        operator B*() noexcept
         {
             return _ptr;
         }

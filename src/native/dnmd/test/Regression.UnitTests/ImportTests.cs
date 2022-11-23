@@ -125,6 +125,7 @@ namespace Regression.UnitTests
                 Assert.Equal(GetModuleRefProps(baselineImport, moduleref), GetModuleRefProps(currentImport, moduleref));
             }
 
+            Assert.Equal(FindTypeRef(baselineImport), FindTypeRef(currentImport));
             var typerefs = AssertAndReturn(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             foreach (var typeref in typerefs)
             {
@@ -765,6 +766,31 @@ namespace Regression.UnitTests
                 values.Add((uint)pchTypeDef);
                 values.Add(pdwTypeDefFlags);
                 values.Add(ptkExtends);
+            }
+            return values;
+        }
+
+        private static List<uint> FindTypeRef(IMetaDataImport import)
+        {
+            List<uint> values = new();
+            int hr;
+            uint tk;
+
+            // The first assembly ref token typically contains System.Object and Enumerator.
+            const uint assemblyRefToken = 0x23000001;
+            hr = import.FindTypeRef(assemblyRefToken, "System.Object", out tk);
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(tk);
+            }
+
+            // Look for a type that won't ever exist
+            hr = import.FindTypeRef(assemblyRefToken, "DoesntExist", out tk);
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(tk);
             }
             return values;
         }

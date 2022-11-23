@@ -185,6 +185,26 @@ namespace
 
         return S_OK;
     }
+
+    void SplitTypeName(
+        char* typeName,
+        char const** nspace,
+        char const** name)
+    {
+        // Search for the last delimiter.
+        char* pos = ::strrchr(typeName, '.');
+        if (pos == nullptr)
+        {
+            *nspace = nullptr;
+            *name = typeName;
+        }
+        else
+        {
+            *pos = '\0';
+            *nspace = typeName;
+            *name = pos + 1;
+        }
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
@@ -1497,7 +1517,60 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeRef(
     LPCWSTR     szName,
     mdTypeRef* ptr)
 {
-    return E_NOTIMPL;
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_TypeRef, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    char const* nspace;
+    char const* name;
+    SplitTypeName(cvt, &nspace, &name);
+
+    // A null namespace means empty string.
+    if (nspace == nullptr)
+        nspace = "";
+
+    bool scopeIsSet = !IsNilToken(tkResolutionScope);
+    mdToken resMaybe;
+    char const* str;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (1 != md_get_column_value_as_token(cursor, mdtTypeRef_ResolutionScope, 1, &resMaybe))
+            return CLDB_E_FILE_CORRUPT;
+
+        // See if the Resolution scopes match.
+        if ((IsNilToken(resMaybe) && scopeIsSet)    // User didn't state scope.
+            || resMaybe != tkResolutionScope)       // Match user scope.
+        {
+            goto Next;
+        }
+
+        if (1 != md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeNamespace, 1, &str))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (0 != ::strcmp(nspace, str))
+            goto Next;
+
+        if (1 != md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeName, 1, &str))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (0 == ::strcmp(name, str))
+        {
+            // Found, so match
+            (void)md_cursor_to_token(cursor, ptr);
+            return S_OK;
+        }
+
+Next:
+        (void)md_cursor_next(&cursor);
+    }
+
+    // Not found.
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMemberProps(
