@@ -712,7 +712,7 @@ namespace System
             const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
             // Figure out how many characters to read sequentially until we are vector aligned
             // This is equivalent to:
-            //         unaligned = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / ElementsPerByte
+            //         unaligned = ((int)pCh % sizeof(Vector<ushort>) / ElementsPerByte
             //         length = (Vector<ushort>.Count - unaligned) % Vector<ushort>.Count
 
             // This alignment is only valid if the GC does not relocate; so we use ReadUnaligned to get the data.
