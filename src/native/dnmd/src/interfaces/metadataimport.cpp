@@ -132,6 +132,16 @@ namespace
         ULONG cchBuffer,
         ULONG* pchBuffer)
     {
+        // Handle empty string.
+        if (str[0] == '\0')
+        {
+            if (szBuffer != nullptr)
+                ::memset(&szBuffer[0], 0, sizeof(*szBuffer));
+            if (pchBuffer != nullptr)
+                *pchBuffer = 0;
+            return S_OK;
+        }
+
         HRESULT hr = pal::ConvertUtf8ToUtf16(str, szBuffer, cchBuffer, (uint32_t*)pchBuffer);
         if (FAILED(hr))
         {
@@ -1204,7 +1214,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetModuleRefProps(
     ULONG       cchName,
     ULONG* pchName)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(mur) != mdtModuleRef)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), mur, &cursor))
+        return CLDB_E_INDEX_NOTFOUND;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtModuleRef_Name, 1, &name))
+        return CLDB_E_FILE_CORRUPT;
+
+    return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumModuleRefs(

@@ -125,7 +125,7 @@ namespace Common
         int GetSigFromToken(uint mdSig, out IntPtr ppvSig, out uint pcbSig);
 
         [PreserveSig]
-        int GetModuleRefProps(uint mur, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]char[] szName, uint cchName, out uint pchName);
+        int GetModuleRefProps(uint mur, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]char[] szName, int cchName, out int pchName);
 
         [PreserveSig]
         int EnumModuleRefs(ref IntPtr phEnum, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]uint[] rModuleRefs, int cMax, out uint pcModuleRefs);

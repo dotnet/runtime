@@ -117,7 +117,12 @@ namespace Regression.UnitTests
 
             // Verify APIs
             Assert.Equal(GetScopeProps(baselineImport), GetScopeProps(currentImport));
-            Assert.Equal(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+            var modulerefs = AssertAndReturn(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+            foreach (var moduleref in modulerefs)
+            {
+                Assert.Equal(GetModuleRefProps(baselineImport, moduleref), GetModuleRefProps(currentImport, moduleref));
+            }
+
             var typerefs = AssertAndReturn(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
             foreach (var typeref in typerefs)
             {
@@ -754,6 +759,26 @@ namespace Regression.UnitTests
                 uint hash = HashCharArray(name, pchTypeRef);
                 values.Add(hash);
                 values.Add((uint)pchTypeRef);
+            }
+            return values;
+        }
+
+        private static List<uint> GetModuleRefProps(IMetaDataImport import, uint moduleref)
+        {
+            List<uint> values = new();
+
+            var name = new char[CharBuffer];
+            int hr = import.GetModuleRefProps(moduleref,
+                name,
+                name.Length,
+                out int pchModuleRef);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                uint hash = HashCharArray(name, pchModuleRef);
+                values.Add(hash);
+                values.Add((uint)pchModuleRef);
             }
             return values;
         }
