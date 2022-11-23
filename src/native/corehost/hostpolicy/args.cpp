@@ -7,10 +7,8 @@
 
 arguments_t::arguments_t()
     : host_mode(host_mode_t::invalid)
-    , host_path(_X(""))
     , app_root(_X(""))
     , deps_path(_X(""))
-    , core_servicing(_X(""))
     , managed_application(_X(""))
     , app_argc(0)
     , app_argv(nullptr)
@@ -95,9 +93,7 @@ bool parse_arguments(
         init.host_info,
         init.tfm,
         init.host_mode,
-        init.additional_deps_serialized,
         init.deps_file,
-        init.probe_paths,
         /* init_from_file_system */ false,
         args);
     if (success)
@@ -159,15 +155,11 @@ bool init_arguments(
     const host_startup_info_t& host_info,
     const pal::string_t& tfm,
     host_mode_t host_mode,
-    const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
-    const std::vector<pal::string_t>& probe_paths,
     bool init_from_file_system,
     arguments_t& args)
 {
     args.host_mode = host_mode;
-    args.host_path = host_info.host_path;
-    args.additional_deps_serialized = additional_deps_serialized;
 
     // Components are never loaded from the bundle, the managed_application_path always means a file system path for a component case.
     if (!set_root_from_app(managed_application_path, /* file_system_lookup_only */ init_from_file_system, args))
@@ -182,19 +174,12 @@ bool init_arguments(
         args.app_root = get_directory(args.deps_path);
     }
 
-    for (const auto& probe : probe_paths)
-    {
-        args.probe_paths.push_back(probe);
-    }
-
     if (args.deps_path.empty())
     {
         args.deps_path = get_deps_from_app_binary(args.app_root, args.managed_application);
     }
 
-    pal::get_default_servicing_directory(&args.core_servicing);
-
-    setup_shared_store_paths(tfm, host_mode, get_directory(args.host_path), &args);
+    setup_shared_store_paths(tfm, host_mode, get_directory(host_info.host_path), &args);
 
     return true;
 }

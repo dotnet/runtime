@@ -223,11 +223,12 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
 }
 
 void deps_resolver_t::setup_probe_config(
-    const arguments_t& args)
+    const arguments_t& args,
+    const std::vector<pal::string_t>& additional_probe_paths)
 {
-    if (pal::directory_exists(args.core_servicing))
+    if (pal::directory_exists(m_core_servicing))
     {
-        pal::string_t ext_ni = args.core_servicing;
+        pal::string_t ext_ni = m_core_servicing;
         append_path(&ext_ni, get_current_arch_name());
         if (pal::directory_exists(ext_ni))
         {
@@ -236,7 +237,7 @@ void deps_resolver_t::setup_probe_config(
         }
 
         // Servicing normal probe.
-        pal::string_t ext_pkgs = args.core_servicing;
+        pal::string_t ext_pkgs = m_core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
 
@@ -258,9 +259,9 @@ void deps_resolver_t::setup_probe_config(
 
     setup_shared_store_probes(args);
 
-    if (!args.probe_paths.empty())
+    if (!additional_probe_paths.empty())
     {
-        for (const auto& probe : args.probe_paths)
+        for (const auto& probe : additional_probe_paths)
         {
             // Additional paths
             m_probes.push_back(probe_config_t::lookup(probe));
@@ -271,7 +272,7 @@ void deps_resolver_t::setup_probe_config(
 
     if (trace::is_enabled())
     {
-        trace::verbose(_X("-- Listing probe configurations..."));
+        trace::verbose(_X("-- Probe configurations:"));
         for (const auto& pc : m_probes)
         {
             pc.print();
@@ -617,7 +618,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const pal::string_t& additional_deps_serialized, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -636,7 +637,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::string_t& additional_de
         return;
     }
 
-    if (additional_deps_serialized.empty())
+    if (additional_deps_serialized == nullptr || pal::strlen(additional_deps_serialized) == 0)
     {
         return;
     }
