@@ -1103,9 +1103,8 @@ namespace System.Xml
                 return chars.Length;
             }
 
-            for (int i = count + 1; i < chars.Length; i++)
+            foreach (char c in chars.Slice(count + 1))
             {
-                char c = chars[i];
                 if (!IsWhitespace(c))
                 {
                     chars[count++] = c;
@@ -1124,9 +1123,9 @@ namespace System.Xml
             }
 
             int count = s.Length - 1;
-            for (int i = indexOfWhitespace + 1; i < s.Length; i++)
+            foreach (char c in s.AsSpan(indexOfWhitespace + 1))
             {
-                if (IsWhitespace(s[i]))
+                if (IsWhitespace(c))
                 {
                     count--;
                 }
