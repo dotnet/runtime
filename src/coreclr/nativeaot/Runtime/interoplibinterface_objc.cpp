@@ -35,105 +35,91 @@
 
 namespace
 {
-    struct GcBeginEndCallbacks
-    {
-        ObjCMarshalNative::BeginEndCallback m_pCallbackFunction;
-        // May be NULL for the end of the linked list
-        GcBeginEndCallbacks * m_pNext;
-    };
+    // TODO: Support registering multiple begin/end callbacks.
+    // NativeAOT support the concept of multiple managed "worlds",
+    // each with their own object heirarchy. Each of these worlds
+    // could potentially have its own set of callbacks.
+    // However this Objective-C Marshal API was not designed with such a
+    // possibility in mind.
+    ObjCMarshalNative::BeginEndCallback s_pBeginEndCallback = nullptr;
 
-    CrstStatic s_sLock;
-    GcBeginEndCallbacks * m_pBeginEndCallbacks = nullptr;
-
-    void CallBeginEndCallbacks()
+    struct DisableTriggerGcWhileCallingManagedCode
     {
-        GcBeginEndCallbacks * pCallback = m_pBeginEndCallbacks;
-        while (pCallback != nullptr)
+        Thread * m_pThread;
+        bool m_fGcStressWasSuppressed;
+
+        DisableTriggerGcWhileCallingManagedCode()
         {
-            ObjCMarshalNative::BeginEndCallback fn = pCallback->m_pCallbackFunction;
-            fn();
-            pCallback = pCallback->m_pNext;
+            // It is illegal for any of the callouts to trigger a GC.
+            m_pThread = ThreadStore::GetCurrentThread();
+            m_pThread->SetDoNotTriggerGc();
+
+            // Due to the above we have better suppress GC stress.
+            m_fGcStressWasSuppressed = m_pThread->IsSuppressGcStressSet();
+            if (!m_fGcStressWasSuppressed)
+                m_pThread->SetSuppressGcStress();
         }
-    }
+
+        ~DisableTriggerGcWhileCallingManagedCode()
+        {
+            // Revert GC stress mode if we changed it.
+            if (!m_fGcStressWasSuppressed)
+                m_pThread->ClearSuppressGcStress();
+
+            m_pThread->ClearDoNotTriggerGc();
+        }
+    };
 
     bool TryGetTaggedMemory(_In_ Object * obj, _Out_ void ** tagged)
     {
         void* fn = obj->get_EEType()
-                      ->GetTypeManagerPtr()
-                      ->AsTypeManager()
-                      ->GetClasslibFunction(ClasslibFunctionId::ObjectiveCMarshalTryGetTaggedMemory);
-        
-        if (fn == nullptr)
-            return false;
-        
+                       ->GetTypeManagerPtr()
+                       ->AsTypeManager()
+                       ->GetClasslibFunction(ClasslibFunctionId::ObjectiveCMarshalTryGetTaggedMemory);
+                       
+        ASSERT(fn != nullptr);
+
         auto pTryGetTaggedMemoryCallback = reinterpret_cast<ObjCMarshalNative::TryGetTaggedMemoryCallback>(fn);
 
-        // It is illegal for any of the callouts to trigger a GC.
-        Thread * pThread = ThreadStore::GetCurrentThread();
-        pThread->SetDoNotTriggerGc();
-
-        // Due to the above we have better suppress GC stress.
-        bool fGcStressWasSuppressed = pThread->IsSuppressGcStressSet();
-        if (!fGcStressWasSuppressed)
-            pThread->SetSuppressGcStress();
+        DisableTriggerGcWhileCallingManagedCode disabler{};
 
         bool result = pTryGetTaggedMemoryCallback(obj, tagged);
-
-        // Revert GC stress mode if we changed it.
-        if (!fGcStressWasSuppressed)
-            pThread->ClearSuppressGcStress();
-
-        pThread->ClearDoNotTriggerGc();
 
         return result;
     }
 
+    // Calls a managed classlib function to potentially get an unmanaged callback.
+    // Not for use with ObjectiveCMarshalTryGetTaggedMemory.
     template <typename T>
-    T TryGetCallbackViaClasslib(_In_ Object * object, _In_ ClasslibFunctionId id)
+    T GetCallbackViaClasslibCallback(_In_ Object * object, _In_ ClasslibFunctionId id)
     {
         void* fn = object->get_EEType()
                         ->GetTypeManagerPtr()
                         ->AsTypeManager()
                         ->GetClasslibFunction(id);
 
-        if (fn != nullptr)
-        {
-            fn = ((ObjCMarshalNative::TryGetCallback)fn)();
-        }
+        ASSERT(fn != nullptr);
+
+        DisableTriggerGcWhileCallingManagedCode disabler{};
+
+        fn = ((ObjCMarshalNative::TryGetCallback)fn)();
+
+        ASSERT(fn != nullptr);
 
         return (T)fn;
     }
 }
 
-// One time startup initialization.
-bool ObjCMarshalNative::Initialize()
-{
-    s_sLock.Init(CrstObjectiveCMarshalCallouts, CRST_DEFAULT);
-
-    return true;
-}
-
 bool ObjCMarshalNative::RegisterBeginEndCallback(void * callback)
 {
-    _ASSERTE(callback != nullptr);
+    ASSERT(callback != nullptr);
 
-     // We must be in Cooperative mode since we are setting callbacks that
-     // will be used during a GC and we want to ensure a GC isn't occurring
-     // while they are being set.
-     _ASSERTE(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
-    
-    GcBeginEndCallbacks * pCallback = new (nothrow) GcBeginEndCallbacks();
-    if (pCallback == NULL)
-        return false;
-    
-    pCallback->m_pCallbackFunction = (ObjCMarshalNative::BeginEndCallback)callback;
+    // We must be in Cooperative mode since we are setting callbacks that
+    // will be used during a GC and we want to ensure a GC isn't occurring
+    // while they are being set.
+    ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
-    CrstHolder lh(&s_sLock);
-
-    pCallback->m_pNext = m_pBeginEndCallbacks;
-    m_pBeginEndCallbacks = pCallback;
-
-    return true;
+    return PalInterlockedCompareExchangePointer(&s_pBeginEndCallback, callback, nullptr) == nullptr;
 }
 
 bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isReferenced)
@@ -143,15 +129,17 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
     if (!object->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
         return false;
     
-    auto pIsReferencedCallbackCallback = TryGetCallbackViaClasslib<ObjCMarshalNative::IsReferencedCallback>(
+    auto pIsReferencedCallbackCallback = GetCallbackViaClasslibCallback<ObjCMarshalNative::IsReferencedCallback>(
         object, ClasslibFunctionId::ObjectiveCMarshalGetIsTrackedReferenceCallback);
-
-    if (pIsReferencedCallbackCallback == nullptr)
-        return false;
 
     void* taggedMemory;
     if (!TryGetTaggedMemory(object, &taggedMemory))
+    {
+        // It should not be possible to create a ref-counted handle
+        // without setting up the tagged memory first.
+        ASSERT(false);
         return false;
+    }
     
     int result = pIsReferencedCallbackCallback(taggedMemory);
 
@@ -161,25 +149,29 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
 
 void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
 {
-    CallBeginEndCallbacks();
+    if (s_pBeginEndCallback != nullptr)
+        s_pBeginEndCallback();
 }
 
 void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
 {
-    CallBeginEndCallbacks();
+    if (s_pBeginEndCallback != nullptr)
+        s_pBeginEndCallback();
 }
 
 void ObjCMarshalNative::OnEnteredFinalizerQueue(_In_ Object * object)
 {
-    auto pOnEnteredFinalizerQueueCallback = TryGetCallbackViaClasslib<ObjCMarshalNative::EnteredFinalizationCallback>(
+    auto pOnEnteredFinalizerQueueCallback = GetCallbackViaClasslibCallback<ObjCMarshalNative::EnteredFinalizationCallback>(
         object, ClasslibFunctionId::ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback);
-
-    if (pOnEnteredFinalizerQueueCallback == nullptr)
-        return;
 
     void* taggedMemory;
     if (!TryGetTaggedMemory(object, &taggedMemory))
+    {
+        // Its possible to create an object that supports reference tracking
+        // without ever creating a ref-counted handle for it. In this case,
+        // there will be no tagged memory.
         return;
+    }
 
     pOnEnteredFinalizerQueueCallback(taggedMemory);
 }

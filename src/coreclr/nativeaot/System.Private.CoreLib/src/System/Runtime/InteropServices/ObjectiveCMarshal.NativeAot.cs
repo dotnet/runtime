@@ -94,10 +94,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
             if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
             {
-                // We failed to allocate unmanaged memory, so no state has been changed.
-                // Reset s_initialized so initialization can be attempted again.
+                // Prevent the creation of tracking handles by resetting the initialized state.
                 s_initialized = 0;
-                throw new OutOfMemoryException();
+                return false;
             }
 
             s_IsTrackedReferenceCallback = (IntPtr)isReferencedCallback;

@@ -105,14 +105,6 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!RestrictedCallouts::Initialize())
         return false;
 
-#ifdef FEATURE_OBJCMARSHAL
-    //
-    // Intialize support for registing GC callbacks for Objective-C Marshal.
-    //
-    if (!ObjCMarshalNative::Initialize())
-        return false;
-#endif
-
     //
     // Initialize RuntimeInstance state
     //

@@ -15,12 +15,10 @@ public:
 public: // Instance inspection
     static bool IsTrackedReference(_In_ Object * pObject, _Out_ bool* isReferenced);
 public: // GC interaction
+    static bool RegisterBeginEndCallback(void * callback);
     static void BeforeRefCountedHandleCallbacks();
     static void AfterRefCountedHandleCallbacks();
     static void OnEnteredFinalizerQueue(_In_ Object * object);
-    
-    static bool Initialize();
-    static bool RegisterBeginEndCallback(void * callback);
 };
 
 #endif // FEATURE_OBJCMARSHAL
