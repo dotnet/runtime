@@ -15,44 +15,6 @@ arguments_t::arguments_t()
 {
 }
 
-/**
- *
- * Setup the shared store directories.
- *
- *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
- *  o dotnet.exe relative shared store\<arch>\<tfm>
- *  o Global location
- *      Windows: global default location (Program Files) or globally registered location (registry) + store\<arch>\<tfm>
- *      Linux/macOS: none (no global locations are considered)
- */
-void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,const pal::string_t& own_dir, arguments_t* args)
-{
-    if (tfm.empty())
-    {
-        // Old (MNA < 1.1.*) "runtimeconfig.json" files do not contain TFM property.
-        return;
-    }
-
-    // Environment variable DOTNET_SHARED_STORE
-    (void) get_env_shared_store_dirs(&args->env_shared_store, get_current_arch_name(), tfm);
-
-    // "dotnet.exe" relative shared store folder
-    if (host_mode == host_mode_t::muxer)
-    {
-        args->dotnet_shared_store = own_dir;
-        append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
-        append_path(&args->dotnet_shared_store, get_current_arch_name());
-        append_path(&args->dotnet_shared_store, tfm.c_str());
-    }
-
-    // Global shared store dir
-    bool multilevel_lookup = multilevel_lookup_enabled();
-    if (multilevel_lookup)
-    {
-        get_global_shared_store_dirs(&args->global_shared_stores, get_current_arch_name(), tfm);
-    }
-}
-
 bool parse_arguments(
     const hostpolicy_init_t& init,
     const int argc, const pal::char_t* argv[],
@@ -90,8 +52,6 @@ bool parse_arguments(
 
     bool success = init_arguments(
         managed_application_path,
-        init.host_info,
-        init.tfm,
         init.host_mode,
         init.deps_file,
         /* init_from_file_system */ false,
@@ -152,8 +112,6 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
 
 bool init_arguments(
     const pal::string_t& managed_application_path,
-    const host_startup_info_t& host_info,
-    const pal::string_t& tfm,
     host_mode_t host_mode,
     const pal::string_t& deps_file,
     bool init_from_file_system,
@@ -178,8 +136,6 @@ bool init_arguments(
     {
         args.deps_path = get_deps_from_app_binary(args.app_root, args.managed_application);
     }
-
-    setup_shared_store_paths(tfm, host_mode, get_directory(host_info.host_path), &args);
 
     return true;
 }

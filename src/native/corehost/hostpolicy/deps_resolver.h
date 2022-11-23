@@ -45,6 +45,7 @@ public:
         const arguments_t& args,
         const fx_definition_vector_t& fx_definitions,
         const pal::char_t* additional_deps_serialized,
+        const std::vector<pal::string_t>& shared_stores,
         const std::vector<pal::string_t>& additional_probe_paths,
         const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
         bool is_framework_dependent)
@@ -86,7 +87,7 @@ public:
 
         resolve_additional_deps(additional_deps_serialized, root_framework_rid_fallback_graph);
 
-        setup_probe_config(args, additional_probe_paths);
+        setup_probe_config(shared_stores, additional_probe_paths);
     }
 
     bool valid(pal::string_t* errors)
@@ -174,10 +175,10 @@ public:
 
 private:
     void setup_shared_store_probes(
-        const arguments_t& args);
+        const std::vector<pal::string_t>& shared_stores);
 
     void setup_probe_config(
-        const arguments_t& args,
+        const std::vector<pal::string_t>& shared_stores,
         const std::vector<pal::string_t>& additional_probe_paths);
 
     void init_known_entry_path(

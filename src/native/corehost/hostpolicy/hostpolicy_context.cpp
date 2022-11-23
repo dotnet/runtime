@@ -9,6 +9,7 @@
 #include <trace.h>
 #include "bundle/runner.h"
 #include "bundle/file_entry.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -117,6 +118,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         args,
         hostpolicy_init.fx_definitions,
         hostpolicy_init.additional_deps_serialized.c_str(),
+        shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
         hostpolicy_init.probe_paths,
         /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
         hostpolicy_init.is_framework_dependent

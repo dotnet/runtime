@@ -9,6 +9,7 @@
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "deps_resolver.h"
+#include "shared_store.h"
 #include <utils.h>
 #include <fx_ver.h>
 
@@ -175,33 +176,14 @@ namespace
     }
 } // end of anonymous namespace
 
-
 void deps_resolver_t::setup_shared_store_probes(
-    const arguments_t& args)
+    const std::vector<pal::string_t>& shared_stores)
 {
-    for (const auto& shared : args.env_shared_store)
+    for (const pal::string_t& shared : shared_stores)
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
-            m_needs_file_existence_checks = true;
-        }
-    }
-
-    if (pal::directory_exists(args.dotnet_shared_store))
-    {
-        // Path relative to the location of "dotnet.exe" if it's being used to run the app
-        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
-        m_needs_file_existence_checks = true;
-    }
-
-    for (const auto& global_shared : args.global_shared_stores)
-    {
-        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
-        {
-            // Global store probe: the global location
-            m_probes.push_back(probe_config_t::lookup(global_shared));
             m_needs_file_existence_checks = true;
         }
     }
@@ -223,7 +205,7 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
 }
 
 void deps_resolver_t::setup_probe_config(
-    const arguments_t& args,
+    const std::vector<pal::string_t>& shared_stores,
     const std::vector<pal::string_t>& additional_probe_paths)
 {
     if (pal::directory_exists(m_core_servicing))
@@ -257,7 +239,7 @@ void deps_resolver_t::setup_probe_config(
         }
     }
 
-    setup_shared_store_probes(args);
+    setup_shared_store_probes(shared_stores);
 
     if (!additional_probe_paths.empty())
     {

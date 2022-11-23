@@ -93,9 +93,6 @@ struct arguments_t
     pal::string_t app_root;
     pal::string_t deps_path;
     pal::string_t managed_application;
-    std::vector<pal::string_t> global_shared_stores;
-    pal::string_t dotnet_shared_store;
-    std::vector<pal::string_t> env_shared_store;
 
     int app_argc;
     const pal::char_t** app_argv;
@@ -108,16 +105,6 @@ struct arguments_t
         {
             trace::verbose(_X("-- arguments_t: app_root='%s' deps='%s' mgd_app='%s'"),
                 app_root.c_str(), deps_path.c_str(), managed_application.c_str());
-
-            for (const auto& shared : env_shared_store)
-            {
-                trace::verbose(_X("-- arguments_t: env shared store: '%s'"), shared.c_str());
-            }
-            trace::verbose(_X("-- arguments_t: dotnet shared store: '%s'"), dotnet_shared_store.c_str());
-            for (const auto& global_shared : global_shared_stores)
-            {
-                trace::verbose(_X("-- arguments_t: global shared store: '%s'"), global_shared.c_str());
-            }
         }
     }
 };
@@ -128,8 +115,6 @@ bool parse_arguments(
     arguments_t& arg);
 bool init_arguments(
     const pal::string_t& managed_application_path,
-    const host_startup_info_t& host_info,
-    const pal::string_t& tfm,
     host_mode_t host_mode,
     const pal::string_t& deps_file,
     bool init_from_file_system,

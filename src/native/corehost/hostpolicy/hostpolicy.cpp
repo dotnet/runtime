@@ -18,6 +18,7 @@
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
 #include "bundle/runner.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -862,8 +863,6 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     arguments_t args;
     if (!init_arguments(
             component_main_assembly_path,
-            g_init.host_info,
-            g_init.tfm,
             host_mode,
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
             /* init_from_file_system */ true,
@@ -907,6 +906,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
         args,
         component_fx_definitions,
         /* additional_deps_serialized */ nullptr, // Additional deps - don't use those from the app, they're already in the app
+        shared_store::get_paths(g_init.tfm, host_mode, g_init.host_info.host_path),
         g_init.probe_paths,
         &g_init.root_rid_fallback_graph,
         true);
