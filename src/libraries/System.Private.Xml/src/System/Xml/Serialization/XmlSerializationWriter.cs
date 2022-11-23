@@ -404,6 +404,7 @@ namespace System.Xml.Serialization
             }
             else if (tryFormatResult != null)
             {
+                Debug.Assert(tryFormatResult.Value, "Something goes wrong with formatting primitives to the buffer.");
                 //all the primitive types except string and XmlQualifiedName writes to the buffer
                 _w.WriteChars(_primitivesBuffer, 0, charsWritten);
             }
