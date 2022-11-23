@@ -17622,6 +17622,12 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
             baseAddr = AsOp()->gtOp1;
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             offset   = AsOp()->gtOp2->AsIntCon()->IconValue();
+
+            if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            {
+                // fldSeq represents a known address (not a small offset) - bail out.
+                return false;
+            }
         }
         else
         {
@@ -17630,16 +17636,14 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
     }
     else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
-        baseAddr = this;
-        fldSeq   = AsIntCon()->gtFieldSeq;
-        offset   = AsIntCon()->IconValue();
+        fldSeq = AsIntCon()->gtFieldSeq;
+        offset = AsIntCon()->IconValue();
+        assert((fldSeq == nullptr) || (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress));
     }
     else
     {
         return false;
     }
-
-    assert(baseAddr != nullptr);
 
     if (fldSeq == nullptr)
     {

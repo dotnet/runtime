@@ -721,7 +721,7 @@ namespace System.Formats.Tar
             {
                 return false;
             }
-            line = line.Slice(spacePos + 1).TrimStart((byte)' ');
+            line = line.Slice(spacePos + 1);
 
             // Find the equal separator.
             int equalPos = line.IndexOf((byte)'=');
