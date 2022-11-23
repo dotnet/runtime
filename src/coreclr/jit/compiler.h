@@ -7095,9 +7095,11 @@ public:
         } op1;
         struct AssertionDscOp2
         {
-            optOp2Kind kind;             // a const or copy assignment
-            uint16_t   encodedIconFlags; // encoded icon gtFlags, don't use directly
-            ValueNum   vn;
+            optOp2Kind kind; // a const or copy assignment
+        private:
+            uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+        public:
+            ValueNum vn;
             struct IntVal
             {
                 ssize_t iconVal; // integer
@@ -7116,21 +7118,25 @@ public:
 
             bool HasIconFlag()
             {
-                assert(encodedIconFlags <= 0xFF);
-                return encodedIconFlags != 0;
+                assert(m_encodedIconFlags <= 0xFF);
+                return m_encodedIconFlags != 0;
             }
             GenTreeFlags GetIconFlag()
             {
-                GenTreeFlags flags = (GenTreeFlags)(encodedIconFlags << 24);
+                // number of trailing zeros in GTF_ICON_HDL_MASK
+                const int iconMaskTzc = 24;
+                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
+
+                GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
-                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> 24) == 0xFF);
                 return flags;
             }
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
+                const int iconMaskTzc = 24;
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
-                encodedIconFlags = flags >> 24;
-                u1.fieldSeq      = fieldSeq;
+                m_encodedIconFlags = flags >> iconMaskTzc;
+                u1.fieldSeq        = fieldSeq;
             }
         } op2;
 
