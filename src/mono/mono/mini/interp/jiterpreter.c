@@ -35,6 +35,7 @@ void jiterp_preserve_module (void);
 #include "interp-intrins.h"
 #include "tiering.h"
 
+#include <mono/utils/mono-math.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
@@ -436,6 +437,42 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 	// Probably not necessary right now and would bloat traces slightly
 	return 0;
 }
+
+#define JITERP_RELOP(opcode, type, op, noorder) \
+	case opcode: \
+		{ \
+			if (mono_isunordered (lhs, rhs)) \
+				return noorder; \
+			else \
+				return ((type)lhs op (type)rhs); \
+		}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
+	switch (opcode) {
+		JITERP_RELOP(MINT_CEQ_R4, float, ==, 0);
+		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
+		JITERP_RELOP(MINT_CNE_R4, float, !=, 1);
+		JITERP_RELOP(MINT_CNE_R8, double, !=, 1);
+		JITERP_RELOP(MINT_CGT_R4, float, >, 0);
+		JITERP_RELOP(MINT_CGT_R8, double, >, 0);
+		JITERP_RELOP(MINT_CGE_R4, float, >=, 0);
+		JITERP_RELOP(MINT_CGE_R8, double, >=, 0);
+		JITERP_RELOP(MINT_CGT_UN_R4, float, >, 1);
+		JITERP_RELOP(MINT_CGT_UN_R8, double, >, 1);
+		JITERP_RELOP(MINT_CLT_R4, float, <, 0);
+		JITERP_RELOP(MINT_CLT_R8, double, <, 0);
+		JITERP_RELOP(MINT_CLT_UN_R4, float, <, 1);
+		JITERP_RELOP(MINT_CLT_UN_R8, double, <, 1);
+		JITERP_RELOP(MINT_CLE_R4, float, <=, 0);
+		JITERP_RELOP(MINT_CLE_R8, double, <=, 0);
+
+		default:
+			g_assert_not_reached();
+	}
+}
+
+#undef JITERP_RELOP
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t

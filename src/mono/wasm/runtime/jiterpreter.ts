@@ -250,6 +250,7 @@ function getTraceImports () {
         ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
+        ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -487,6 +488,13 @@ function generate_wasm (
             "conv_ovf", {
                 "destination": WasmValtype.i32,
                 "source": WasmValtype.i32,
+                "opcode": WasmValtype.i32,
+            }, WasmValtype.i32
+        );
+        builder.defineType(
+            "relop_fp", {
+                "lhs": WasmValtype.f64,
+                "rhs": WasmValtype.f64,
                 "opcode": WasmValtype.i32,
             }, WasmValtype.i32
         );
@@ -1816,6 +1824,27 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
 };
 
+// HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
+// The opcode specifies whether the operands need to be promoted first.
+const intrinsicFpBinops : { [opcode: number] : WasmOpcode } = {
+    [MintOpcode.MINT_CEQ_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CEQ_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CNE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CNE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLE_R8]: WasmOpcode.nop,
+};
+
 const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_ADD_I4]:    [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ADD_OVF_I4]:[WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
@@ -1886,6 +1915,7 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
 
+    /*
     [MintOpcode.MINT_CEQ_R4]:    [WasmOpcode.f32_eq,    WasmOpcode.f32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CNE_R4]:    [WasmOpcode.f32_ne,    WasmOpcode.f32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CLT_R4]:    [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
@@ -1903,6 +1933,7 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_CGT_R8]:    [WasmOpcode.f64_gt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CLE_R8]:    [WasmOpcode.f64_le,    WasmOpcode.f64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CGE_R8]:    [WasmOpcode.f64_ge,    WasmOpcode.f64_load, WasmOpcode.i32_store],
+    */
 
     // FIXME: unordered float comparisons
 };
@@ -1996,6 +2027,22 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
         lhsVar = "math_lhs32", rhsVar = "math_rhs32",
         info : OpRec3 | OpRec4 | undefined,
         operandsCached = false;
+
+    const intrinsicFpBinop = intrinsicFpBinops[opcode];
+    if (intrinsicFpBinop) {
+        builder.local("pLocals");
+        const isF64 = intrinsicFpBinop == WasmOpcode.nop;
+        append_ldloc(builder, getArgU16(ip, 2), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        append_ldloc(builder, getArgU16(ip, 3), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        builder.i32_const(<any>opcode);
+        builder.callImport("relop_fp");
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+        return true;
+    }
 
     switch (opcode) {
         case MintOpcode.MINT_REM_R4:
