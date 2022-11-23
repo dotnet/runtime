@@ -4691,14 +4691,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
-    // Evaluating op1/op2 unconditionally effectively has the same effect as
-    // reordering them with the condition (for example, the condition could be
-    // an explicit bounds check and the operands could read an array element).
-    if ((cond->gtFlags & GTF_ORDER_SIDEEFF) != 0)
-    {
-        return false;
-    }
-
     // Block where the flows merge.
     BasicBlock* finalBlock = block->bbNext;
     // The node, statement and block of the assignment.
@@ -4799,6 +4791,17 @@ bool Compiler::optIfConvert(BasicBlock* block)
     if (asgNode == nullptr)
     {
         // The blocks checked didn't contain any ASG nodes.
+        return false;
+    }
+
+    // Evaluating op1/op2 unconditionally effectively has the same effect as
+    // reordering them with the condition (for example, the condition could be
+    // an explicit bounds check and the operand could read an array element).
+    // Disallow this except for some common cases that we know are always side
+    // effect free.
+    if (((cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !asgNode->gtGetOp2()->IsInvariant() &&
+        !asgNode->gtGetOp2()->OperIsLocal())
+    {
         return false;
     }
 
