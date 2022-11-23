@@ -92,6 +92,11 @@ else ()
   check_include_files("sys/types.h;sys/sysctl.h" HAVE_SYS_SYSCTL_H)
 endif()
 
+if (HOST_WASI)
+  # sysctl is deprecated on Linux and doesn't work on Browser
+  set(HAVE_GETRUSAGE 0)
+endif()
+
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
 if(NOT HOST_DARWIN)
