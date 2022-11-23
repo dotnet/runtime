@@ -219,7 +219,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
             // Unsupported type
             return nullptr;
         }
-        retType         = getSIMDTypeForSize(simdSize);
+        retType = getSIMDTypeForSize(simdSize);
     }
     else if (numArgs != 0)
     {
