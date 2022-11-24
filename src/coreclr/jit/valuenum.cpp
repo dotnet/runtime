@@ -8494,26 +8494,6 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     }
 }
 
-static FieldSeq* GetFieldSeqFromTree(GenTree* tree, ssize_t* address)
-{
-    if (tree->IsCnsIntOrI())
-    {
-        *address = tree->AsIntCon()->IconValue();
-        return tree->AsIntCon()->gtFieldSeq;
-    }
-    else if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI())
-    {
-        ssize_t   addr = 0;
-        FieldSeq* seq  = GetFieldSeqFromTree(tree->gtGetOp1(), &addr);
-        if (seq != nullptr && !tree->gtGetOp2()->IsIconHandle())
-        {
-            *address = addr + tree->gtGetOp2()->AsIntCon()->IconValue();
-            return seq;
-        }
-    }
-    return nullptr;
-}
-
 //----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
 //    and apply a constant VN representing given element at cns_index in that array.
@@ -8531,10 +8511,20 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         return false;
     }
 
-    ValueNum addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
-
+    // First, let's check if we can detect RVA[const_index] pattern to fold, e.g.:
+    //
+    //   static ReadOnlySpan<sbyte> RVA => new sbyte[] { -100, 100 }
+    //
+    //   sbyte GetVal() => RVA[1]; // fold to '100'
+    //
     ssize_t   address  = 0;
-    FieldSeq* fieldSeq = GetFieldSeqFromTree(tree->gtGetOp1(), &address);
+    FieldSeq* fieldSeq = nullptr;
+
+    if (tree->gtGetOp1()->IsCnsIntOrI())
+    {
+        fieldSeq = tree->gtGetOp1()->AsIntCon()->gtFieldSeq;
+        address  = tree->gtGetOp1()->AsIntCon()->IconValue();
+    }
 
     if (fieldSeq != nullptr)
     {
@@ -8549,6 +8539,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             uint8_t buffer[maxElementSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
             {
+                // For now we only support these primitives, we can extend this list to FP, SIMD and structs in future.
                 switch (tree->TypeGet())
                 {
 #define READ_VALUE(typ)                                                                                                \
@@ -8604,7 +8595,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
                         return true;
                     }
-                    // We can add support for fp, structs and SIMD if needed
                     default:
                         break;
                 }
@@ -8618,6 +8608,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         return false;
     }
 
+    ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
     if (!vnStore->GetVNFunc(addrVN, &funcApp))
     {
