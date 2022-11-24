@@ -2775,11 +2775,8 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length)
         {
             ArgumentNullException.ThrowIfNull(inArray);
-
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             if (inArray.Length == 0)
@@ -2971,7 +2968,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, (inArray.Length - length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToHexString(new ReadOnlySpan<byte>(inArray, offset, length));
         }
