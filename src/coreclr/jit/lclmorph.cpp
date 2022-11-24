@@ -300,8 +300,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+#ifdef FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
+#endif // FEATURE_HW_INTRINSICS
         LclVar,
         LclFld
     };
@@ -1058,11 +1060,13 @@ private:
                 return IndirTransform::LclFld;
             }
 
+#ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc) && indir->TypeIs(TYP_FLOAT) && ((val.Offset() % genTypeSize(TYP_FLOAT)) == 0) &&
                 m_compiler->IsBaselineSimdIsaSupported())
             {
                 return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
             }
+#endif // FEATURE_HW_INTRINSICS
 
             // Turn this into a bitcast if we can.
             if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
