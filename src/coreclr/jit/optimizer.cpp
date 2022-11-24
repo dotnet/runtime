@@ -9532,10 +9532,6 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_OR;
             cmpOp  = GT_LT;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_GE && m_testInfo2.compTree->gtOper == GT_GE)
-        {
-            return false;
-        }
         else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE)
         {
             // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
@@ -9598,10 +9594,6 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
             foldOp = GT_OR;
             cmpOp  = GT_GE;
-        }
-        else if (m_testInfo1.compTree->gtOper == GT_GE)
-        {
-            return false;
         }
         else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
         {
