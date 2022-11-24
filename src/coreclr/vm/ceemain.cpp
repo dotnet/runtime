@@ -951,19 +951,27 @@ void EEStartupHelper()
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 #ifdef TARGET_UNIX
-        // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
-        EX_TRY
+        // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
+        // into the single file host, so we need to check only when this code is in libcoreclr.so.
         {
-            NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+            SString currentModulePathName;
+            if (GetClrModulePathName(currentModulePathName) && currentModulePathName.EndsWith(SString(SString::Ascii, PAL_SHLIB_SUFFIX)))
+            {
+                // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
+                EX_TRY
+                {
+                    NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+                }
+                EX_HOOK
+                {
+                    Exception *ex = GET_EXCEPTION();
+                    SString err;
+                    ex->GetMessage(err);
+                    LogErrorToHost("Error message: %s", err.GetUTF8());
+                }
+                EX_END_HOOK;
+            }
         }
-        EX_HOOK
-        {
-            Exception *ex = GET_EXCEPTION();
-            SString err;
-            ex->GetMessage(err);
-            LogErrorToHost("Error message: %s", err.GetUTF8());
-        }
-        EX_END_HOOK;
 #endif // TARGET_UNIX
 
         g_fEEStarted = TRUE;
