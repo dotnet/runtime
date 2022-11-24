@@ -639,12 +639,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task SendReceive_Concurrent_Success_Base()
         {
-            Uri uri;
-            Task serverTask;
 
-            (uri, serverTask) = GetServer();
-
-            await CreateEchoServerAsync(Task.Run( async () =>
+            await CreateEchoServerAsync(async uri =>
             {
                 using (ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output))
                 {
@@ -669,7 +665,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Array.Reverse(receiveBuffer);
                     Assert.Equal<byte>(sendBuffer, receiveBuffer);
                 }
-            }), serverTask);
+            });
         }
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]

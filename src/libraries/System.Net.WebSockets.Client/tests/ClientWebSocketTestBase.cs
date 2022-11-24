@@ -57,7 +57,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     server = System.Net.Test.Common.Configuration.Http.RemoteEchoServer;
                     var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
-                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_ConnectStatusExpected", (int) HttpStatusCode.OK, (int) HttpStatusCode.SwitchingProtocols);
+                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_ConnectStatusExpected", (int)HttpStatusCode.OK, (int)HttpStatusCode.SwitchingProtocols);
 
                     yield return new object[] { ub.Uri, exceptionMessage, WebSocketError.NotAWebSocket };
                 }
@@ -145,9 +145,35 @@ namespace System.Net.WebSockets.Client.Tests
             return null;
         }
 
-        protected Task CreateEchoServerAsync(Task clientTask, Task serverTask)
+        protected Task CreateEchoServerAsync(Func<Uri, Task> clientFunc)
         {
-            return new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2) ;
+            if (UseRemoteServer)
+            {
+                if (UseVersion.Major == 2)
+                {
+                    return null;
+                }
+
+                if (UseSsl)
+                {
+                    return clientFunc(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer);
+                }
+                else
+                {
+                    return clientFunc(Test.Common.Configuration.WebSockets.RemoteEchoServer);
+                }
+            }
+            else
+            {
+                if (UseVersion.Major == 2)
+                {
+                    return WebSocketHelper.GetEchoHttp2LoopbackServer(clientFunc, new Http2Options() { WebSocketEndpoint = true, UseSsl = UseSsl });
+                }
+                else
+                {
+                    return WebSocketHelper.GetEchoLoopbackServer(clientFunc, new LoopbackServer.Options() { WebSocketEndpoint = true, UseSsl = UseSsl }); ;
+                }
+            }
         }
 
         protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
@@ -158,37 +184,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, UseVersion, GetInvoker());
-
-        protected virtual (Uri, Task) GetServer()
-        {
-            if (UseRemoteServer)
-            {
-                if (UseVersion.Major == 2)
-                {
-                    return (null, null);
-                }
-
-                if (UseSsl)
-                {
-                    return (Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, Task.CompletedTask);
-                }
-                else
-                {
-                    return (Test.Common.Configuration.WebSockets.RemoteEchoServer, Task.CompletedTask);
-                }
-            }
-            else
-            {
-                if (UseVersion.Major == 2)
-                {
-                    return WebSocketHelper.GetEchoHttp2LoopbackServer(new Http2Options() { WebSocketEndpoint = true, UseSsl = UseSsl });
-                }
-                else
-                {
-                    return WebSocketHelper.GetEchoLoopbackServer(new LoopbackServer.Options() { WebSocketEndpoint = true, UseSsl = UseSsl }); ;
-                }
-            }
-        }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
     }
