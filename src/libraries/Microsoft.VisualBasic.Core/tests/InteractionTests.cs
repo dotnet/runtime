@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Diagnostics.Runtime.Interop;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
@@ -251,13 +252,17 @@ namespace Microsoft.VisualBasic.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public void InputBox()
         {
+#pragma warning disable SYSLIB0049 // Microsoft.VisualBasic.Interaction.InputBox is deprecated
             InvokeMissingMethod(() => Interaction.InputBox("Prompt", Title: "", DefaultResponse: "", XPos: -1, YPos: -1));
+#pragma warning restore
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public void MsgBox()
         {
+#pragma warning disable SYSLIB0050 // Microsoft.VisualBasic.Interaction.MsgBox is deprecated, use System.Windows.Forms.MessageBox instead.
             InvokeMissingMethod(() => Interaction.MsgBox("Prompt", Buttons: MsgBoxStyle.ApplicationModal, Title: null));
+#pragma warning restore
         }
 
         [Theory]
