@@ -34,16 +34,16 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     //
     class Value
     {
-        GenTree* m_node;
-        unsigned m_lclNum;
-        unsigned m_offset;
-        bool     m_address;
-        INDEBUG(bool m_consumed;)
+        GenTree** m_use;
+        unsigned  m_lclNum;
+        unsigned  m_offset;
+        bool      m_address;
+        INDEBUG(bool m_consumed);
 
     public:
         // Produce an unknown value associated with the specified node.
-        Value(GenTree* node)
-            : m_node(node)
+        Value(GenTree** use)
+            : m_use(use)
             , m_lclNum(BAD_VAR_NUM)
             , m_offset(0)
             , m_address(false)
@@ -53,10 +53,16 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         {
         }
 
+        // Get the use for the node that produced this value.
+        GenTree** Use() const
+        {
+            return m_use;
+        }
+
         // Get the node that produced this value.
         GenTree* Node() const
         {
-            return m_node;
+            return *m_use;
         }
 
         // Does this value represent a location?
@@ -420,7 +426,7 @@ public:
             }
         }
 
-        PushValue(node);
+        PushValue(use);
 
         return Compiler::WALK_CONTINUE;
     }
@@ -559,9 +565,9 @@ public:
     }
 
 private:
-    void PushValue(GenTree* node)
+    void PushValue(GenTree** use)
     {
-        m_valueStack.Push(node);
+        m_valueStack.Push(use);
     }
 
     Value& TopValue(unsigned index)
