@@ -541,8 +541,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             yield return new object[] { (char)42 };
             yield return new object[] { (char)1 };
-            yield return new object[] { 'Ž' };
-            yield return new object[] { '♡' };
+            yield return new object[] { '\u017D' };
+            yield return new object[] { '\u2661' };
             yield return new object[] { char.MaxValue };
             yield return new object[] { char.MinValue };
         }

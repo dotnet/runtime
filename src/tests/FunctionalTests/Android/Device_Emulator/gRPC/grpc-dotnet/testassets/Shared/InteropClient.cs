@@ -456,7 +456,7 @@ namespace Grpc.Shared.TestAssets
             var echoStatus = new EchoStatus
             {
                 Code = 2,
-                Message = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
+                Message = "\t\ntest with whitespace\r\nand Unicode BMP \u263A and non-BMP \uD83D\uDE08\t\n"
             };
 
             try

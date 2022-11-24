@@ -840,32 +840,35 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 }
 
 static gboolean
-should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
+should_generate_trace_here (InterpBasicBlock *bb) {
 	int current_trace_length = 0;
 	// A preceding trace may have been in a branch block, but we only care whether the current
 	//  trace will have a branch block opened, because that determines whether calls and branches
 	//  will unconditionally abort the trace or not.
 	gboolean inside_branch_block = FALSE;
 
-	// We scan forward through the entire method body starting from the current block, not just
-	//  the current block (since the actual trace compiler doesn't know about block boundaries).
-	for (InterpInst *ins = bb->first_ins; (ins != NULL) && (ins != last_ins); ins = ins->next) {
-		int category = jiterp_should_abort_trace(ins, &inside_branch_block);
-		switch (category) {
-			case TRACE_ABORT: {
-				jiterpreter_abort_counts[ins->opcode]++;
-				return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+	while (bb) {
+		// We scan forward through the entire method body starting from the current block, not just
+		//  the current block (since the actual trace compiler doesn't know about block boundaries).
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int category = jiterp_should_abort_trace(ins, &inside_branch_block);
+			switch (category) {
+				case TRACE_ABORT:
+					jiterpreter_abort_counts[ins->opcode]++;
+					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+				case TRACE_IGNORE:
+					break;
+				default:
+					current_trace_length++;
+					break;
 			}
-			case TRACE_IGNORE:
-				break;
-			default:
-				current_trace_length++;
-				break;
+
+			// Once we know the trace is long enough we can stop scanning.
+			if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
+				return TRUE;
 		}
 
-		// Once we know the trace is long enough we can stop scanning.
-		if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
-			return TRUE;
+		bb = bb->next_bb;
 	}
 
 	return FALSE;
@@ -908,12 +911,12 @@ jiterp_insert_entry_points (void *_td)
 		//  multiple times and waste some work. At present this is unavoidable because
 		//  control flow means we can end up with two traces covering different subsets
 		//  of the same method in order to handle loops and resuming
-		gboolean should_generate = enabled && should_generate_trace_here(bb, td->last_ins);
+		gboolean should_generate = enabled && should_generate_trace_here(bb);
 
 		if (mono_opt_jiterpreter_call_resume_enabled && bb->contains_call_instruction)
 			enter_at_next = TRUE;
 
-		if (mono_opt_jiterpreter_always_generate)
+		if (mono_opt_jiterpreter_disable_heuristic)
 			should_generate = TRUE;
 
 		if (enabled && should_generate) {
