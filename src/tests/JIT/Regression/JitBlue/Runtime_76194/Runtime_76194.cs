@@ -61,7 +61,7 @@ public unsafe class Runtime_76194
         {
             return 100;
         }
-        
+
         for (int i = 0; i < 100; i++)
         {
             using CrossVirtualAlloc alloc = new();
@@ -112,30 +112,21 @@ public unsafe class CrossVirtualAlloc : IDisposable
         }
         else
         {
-            const int PROT_NONE = 0x0;
-            const int PROT_READ = 0x1;
-            const int PROT_WRITE = 0x2;
-            const int MAP_PRIVATE = 0x02;
-            const int MAP_ANONYMOUS = 0x20;
-
-            _ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            _ptr = Mmap(2 * PageSize);
             if (_ptr == (void*)-1)
             {
                 throw new InvalidOperationException($"mmap failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}");
-                _ptr = null;
             }
-            else if (mprotect(_ptr + PageSize, PageSize, PROT_NONE) != 0)
+            else if (mprotect(_ptr + PageSize, PageSize, 0) != 0)
             {
                 throw new InvalidOperationException($"mprotect failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}, _ptr={(nuint)_ptr}");
-                munmap(_ptr, 2 * PageSize);
-                _ptr = null;
             }
         }
     }
 
     public bool IsFailedToCommit => _ptr == null;
 
-    public nuint PageSize => (nuint)Environment.SystemPageSize;
+    public static readonly nuint PageSize = (nuint)Environment.SystemPageSize;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public byte* GetPointerNearPageEndFor<T>() => _ptr + PageSize - Unsafe.SizeOf<T>();
@@ -163,6 +154,21 @@ public unsafe class CrossVirtualAlloc : IDisposable
 
     [DllImport("kernel32")]
     static extern int VirtualFree(byte* lpAddress, nuint dwSize, uint dwFreeType);
+
+    static byte* Mmap(nuint length)
+    {
+        const int PROT_READ = 0x1;
+        const int PROT_WRITE = 0x2;
+        const int MAP_PRIVATE = 0x02;
+        const int MAP_ANONYMOUS = 0x20;
+        byte* ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (ptr == (byte*)-1)
+        {
+            // Workaround for systems where MAP_ANONYMOUS has a different value
+            ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | 0x10, -1, 0);
+        }
+        return ptr;
+    }
 
     [DllImport("libc", SetLastError = true)]
     static extern byte* mmap(byte* addr, nuint length, int prot, int flags, int fd, nuint offset);
