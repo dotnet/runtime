@@ -271,8 +271,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             {
                 if (!File.Exists(inFile))
                 {
-                    reason = $"Could not find dependency file {inFile} needed for compiling {srcFile} to {outFile}";
-                    Log.LogWarning(reason);
+                    reason = $"the dependency file {inFile} needed for compiling {srcFile} to {outFile} could not be found.";
                     return true;
                 }
 
