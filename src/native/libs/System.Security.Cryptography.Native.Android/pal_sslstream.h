@@ -16,7 +16,6 @@ typedef struct SSLStream
 {
     jobject sslContext;
     jobject sslEngine;
-    jobject sslSession;
     jobject appOutBuffer;
     jobject netOutBuffer;
     jobject appInBuffer;
