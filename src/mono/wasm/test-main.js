@@ -263,6 +263,25 @@ async function run() {
             .withExitCodeLogging()
             .withElementOnExit();
 
+        const response = await fetch("/memory.dat");
+        const buffer = await response.arrayBuffer();
+        const memory = new Int8Array(buffer);
+
+        console.log("Memory snapshot loaded");
+
+        dotnet
+            .withConfig({
+                mainAssemblyName: "WasmTestRunner.dll",
+                assets: [{
+                    behavior: "dotnetwasm",
+                    name: "dotnet.wasm"
+                }],
+                memory: memory
+            })
+            .withModuleConfig({
+                configSrc: null
+            });
+
         if (is_node) {
             dotnet
                 .withEnvironmentVariable("NodeJSPlatform", process.platform)
