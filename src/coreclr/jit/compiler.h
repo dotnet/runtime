@@ -10716,6 +10716,9 @@ protected:
         DoPostOrder       = false,
         DoLclVarsOnly     = false,
         UseExecutionOrder = false,
+        // Reverse the order operand nodes are visited in, allowing e.g. for a reverse post-order traversal.
+        // Only valid if UseExecutionOrder == true.
+        ReverseOrder      = false,
     };
 
     Compiler*            m_compiler;
@@ -10727,6 +10730,7 @@ protected:
 
         static_assert_no_msg(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
         static_assert_no_msg(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
+        static_assert_no_msg(!TVisitor::ReverseOrder || TVisitor::UseExecutionOrder);
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -10736,6 +10740,75 @@ protected:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+private:
+    template<typename TUse, typename Iterator, typename TFunc, size_t InlineSize>
+    fgWalkResult WalkOperandsInReverse(Iterator beg, Iterator end, TFunc visit, void* (&inlineArr)[InlineSize])
+    {
+        size_t count = 0;
+        Iterator firstNonInlined = beg;
+
+        for (Iterator cur = beg; cur != end; ++cur)
+        {
+            if (count == InlineSize)
+            {
+                firstNonInlined = cur;
+                count++;
+
+                while (true)
+                {
+                    ++cur;
+                    if (cur == end)
+                        break;
+
+                    count++;
+                }
+
+                break;
+            }
+
+            inlineArr[count] = &*cur;
+            count++;
+        }
+
+        if (count <= InlineSize)
+        {
+            for (size_t i = count; i != 0; i--)
+            {
+                if (visit(static_cast<TUse*>(inlineArr[i - 1])) == fgWalkResult::WALK_ABORT)
+                {
+                    return fgWalkResult::WALK_ABORT;
+                }
+            }
+        }
+        else
+        {
+            TUse** remaining = new (m_compiler, CMK_TreeWalk) TUse*[count - InlineSize];
+            size_t remainingCount = 0;
+            for (Iterator cur = firstNonInlined; cur != end; ++cur)
+            {
+                remaining[remainingCount++] = &*cur;
+            }
+
+            for (size_t i = remainingCount; i != 0; i--)
+            {
+                if (visit(static_cast<TUse*>(remaining[i - 1])) == fgWalkResult::WALK_ABORT)
+                {
+                    return fgWalkResult::WALK_ABORT;
+                }
+            }
+
+            for (size_t i = InlineSize; i != 0; i--)
+            {
+                if (visit(static_cast<TUse*>(inlineArr[i - 1])) == fgWalkResult::WALK_ABORT)
+                {
+                    return fgWalkResult::WALK_ABORT;
+                }
+            }
+        }
+
         return fgWalkResult::WALK_CONTINUE;
     }
 
@@ -10750,6 +10823,8 @@ public:
         {
             m_ancestors.Push(node);
         }
+
+        void* inlineDynamicOperands[8];
 
         fgWalkResult result = fgWalkResult::WALK_CONTINUE;
         if (TVisitor::DoPreOrder && !TVisitor::DoLclVarsOnly)
@@ -10879,23 +10954,57 @@ public:
 
             // Special nodes
             case GT_PHI:
-                for (GenTreePhi::Use& use : node->AsPhi()->Uses())
+                if (TVisitor::ReverseOrder)
                 {
-                    result = WalkTree(&use.NodeRef(), node);
+                    result = WalkOperandsInReverse<GenTreePhi::Use>(
+                        node->AsPhi()->Uses().begin(),
+                        node->AsPhi()->Uses().end(),
+                        [this, node](GenTreePhi::Use* use) {
+                            return WalkTree(&use->NodeRef(), node);
+                        }, inlineDynamicOperands);
+
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
                     }
                 }
+                else
+                {
+                    for (GenTreePhi::Use& use : node->AsPhi()->Uses())
+                    {
+                        result = WalkTree(&use.NodeRef(), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                }
                 break;
 
             case GT_FIELD_LIST:
-                for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
+                if (TVisitor::ReverseOrder)
                 {
-                    result = WalkTree(&use.NodeRef(), node);
+                    result = WalkOperandsInReverse<GenTreeFieldList::Use>(
+                        node->AsFieldList()->Uses().begin(),
+                        node->AsFieldList()->Uses().end(),
+                        [this, node](GenTreeFieldList::Use* use) {
+                            return WalkTree(&use->NodeRef(), node);
+                        }, inlineDynamicOperands);
+
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
+                    }
+                }
+                else
+                {
+                    for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
+                    {
+                        result = WalkTree(&use.NodeRef(), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
                 break;
@@ -10904,20 +11013,41 @@ public:
             {
                 GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
 
-                result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
+                if (TVisitor::ReverseOrder)
                 {
-                    return result;
+                    result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
-                result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
+                else
                 {
-                    return result;
-                }
-                result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
+                    result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
                 break;
             }
@@ -10926,19 +11056,40 @@ public:
             {
                 GenTreeArrElem* const arrElem = node->AsArrElem();
 
-                result = WalkTree(&arrElem->gtArrObj, arrElem);
-                if (result == fgWalkResult::WALK_ABORT)
+                if (TVisitor::ReverseOrder)
                 {
-                    return result;
-                }
+                    const unsigned rank = arrElem->gtArrRank;
+                    for (unsigned dim = rank; dim != 0; dim--)
+                    {
+                        result = WalkTree(&arrElem->gtArrInds[dim - 1], arrElem);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
 
-                const unsigned rank = arrElem->gtArrRank;
-                for (unsigned dim = 0; dim < rank; dim++)
-                {
-                    result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
+                    result = WalkTree(&arrElem->gtArrObj, arrElem);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
+                    }
+                }
+                else
+                {
+                    result = WalkTree(&arrElem->gtArrObj, arrElem);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+
+                    const unsigned rank = arrElem->gtArrRank;
+                    for (unsigned dim = 0; dim < rank; dim++)
+                    {
+                        result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
                 break;
@@ -10948,20 +11099,41 @@ public:
             {
                 GenTreeArrOffs* const arrOffs = node->AsArrOffs();
 
-                result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
+                if (TVisitor::ReverseOrder)
                 {
-                    return result;
+                    result = WalkTree(&arrOffs->gtArrObj, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&arrOffs->gtIndex, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&arrOffs->gtOffset, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
-                result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
+                else
                 {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
+                    result = WalkTree(&arrOffs->gtOffset, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&arrOffs->gtIndex, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&arrOffs->gtArrObj, arrOffs);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
                 break;
             }
@@ -10974,20 +11146,41 @@ public:
                 GenTree** op2Use = &dynBlock->gtOp2;
                 GenTree** op3Use = &dynBlock->gtDynamicSize;
 
-                result = WalkTree(op1Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
+                if (TVisitor::ReverseOrder)
                 {
-                    return result;
+                    result = WalkTree(op3Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(op2Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(op1Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
-                result = WalkTree(op2Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
+                else
                 {
-                    return result;
-                }
-                result = WalkTree(op3Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
+                    result = WalkTree(op1Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(op2Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(op3Use, dynBlock);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
                 break;
             }
@@ -10996,48 +11189,94 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                for (CallArg& arg : call->gtArgs.EarlyArgs())
+                if (TVisitor::ReverseOrder)
                 {
-                    result = WalkTree(&arg.EarlyNodeRef(), call);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    if (call->gtControlExpr != nullptr)
                     {
-                        return result;
-                    }
-                }
-
-                for (CallArg& arg : call->gtArgs.LateArgs())
-                {
-                    result = WalkTree(&arg.LateNodeRef(), call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    if (call->gtCallCookie != nullptr)
-                    {
-                        result = WalkTree(&call->gtCallCookie, call);
+                        result = WalkTree(&call->gtControlExpr, call);
                         if (result == fgWalkResult::WALK_ABORT)
                         {
                             return result;
                         }
                     }
 
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    if (call->gtCallType == CT_INDIRECT)
                     {
-                        return result;
-                    }
-                }
+                        result = WalkTree(&call->gtCallAddr, call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
 
-                if (call->gtControlExpr != nullptr)
+                        if (call->gtCallCookie != nullptr)
+                        {
+                            result = WalkTree(&call->gtCallCookie, call);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+
+                    WalkOperandsInReverse<CallArg>(
+                        call->gtArgs.LateArgs().begin(),
+                        call->gtArgs.LateArgs().end(),
+                        [this, call](CallArg* arg) {
+                            return WalkTree(&arg->LateNodeRef(), call);
+                        }, inlineDynamicOperands);
+
+                    WalkOperandsInReverse<CallArg>(
+                        call->gtArgs.EarlyArgs().begin(),
+                        call->gtArgs.EarlyArgs().end(),
+                        [this, call](CallArg* arg) {
+                            return WalkTree(&arg->EarlyNodeRef(), call);
+                        }, inlineDynamicOperands);
+                }
+                else
                 {
-                    result = WalkTree(&call->gtControlExpr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    for (CallArg& arg : call->gtArgs.EarlyArgs())
                     {
-                        return result;
+                        result = WalkTree(&arg.EarlyNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    for (CallArg& arg : call->gtArgs.LateArgs())
+                    {
+                        result = WalkTree(&arg.LateNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (call->gtCallType == CT_INDIRECT)
+                    {
+                        if (call->gtCallCookie != nullptr)
+                        {
+                            result = WalkTree(&call->gtCallCookie, call);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
+                        }
+
+                        result = WalkTree(&call->gtCallAddr, call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (call->gtControlExpr != nullptr)
+                    {
+                        result = WalkTree(&call->gtControlExpr, call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
 
@@ -11055,25 +11294,55 @@ public:
                 {
                     assert(node->AsMultiOp()->GetOperandCount() == 2);
 
-                    result = WalkTree(&node->AsMultiOp()->Op(2), node);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    if (TVisitor::ReverseOrder)
                     {
-                        return result;
+                        result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                        result = WalkTree(&node->AsMultiOp()->Op(2), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
-                    result = WalkTree(&node->AsMultiOp()->Op(1), node);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    else
                     {
-                        return result;
+                        result = WalkTree(&node->AsMultiOp()->Op(2), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                        result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
                 else
                 {
-                    for (GenTree** use : node->AsMultiOp()->UseEdges())
+                    if (TVisitor::ReverseOrder)
                     {
-                        result = WalkTree(use, node);
-                        if (result == fgWalkResult::WALK_ABORT)
+                        for (size_t i = node->AsMultiOp()->GetOperandCount(); i != 0; i--)
                         {
-                            return result;
+                            result = WalkTree(&node->AsMultiOp()->Op(i), node);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (GenTree** use : node->AsMultiOp()->UseEdges())
+                        {
+                            result = WalkTree(use, node);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
                         }
                     }
                 }
@@ -11084,20 +11353,41 @@ public:
             {
                 GenTreeConditional* const conditional = node->AsConditional();
 
-                result = WalkTree(&conditional->gtCond, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
+                if (TVisitor::ReverseOrder)
                 {
-                    return result;
+                    result = WalkTree(&conditional->gtOp2, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&conditional->gtOp1, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&conditional->gtCond, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
-                result = WalkTree(&conditional->gtOp1, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
+                else
                 {
-                    return result;
-                }
-                result = WalkTree(&conditional->gtOp2, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
+                    result = WalkTree(&conditional->gtCond, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&conditional->gtOp1, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&conditional->gtOp2, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
                 break;
             }
@@ -11117,21 +11407,44 @@ public:
                     std::swap(op1Use, op2Use);
                 }
 
-                if (*op1Use != nullptr)
+                if (TVisitor::ReverseOrder)
                 {
-                    result = WalkTree(op1Use, op);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    if (*op2Use != nullptr)
                     {
-                        return result;
+                        result = WalkTree(op2Use, op);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (*op1Use != nullptr)
+                    {
+                        result = WalkTree(op1Use, op);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
-
-                if (*op2Use != nullptr)
+                else
                 {
-                    result = WalkTree(op2Use, op);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    if (*op1Use != nullptr)
                     {
-                        return result;
+                        result = WalkTree(op1Use, op);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (*op2Use != nullptr)
+                    {
+                        result = WalkTree(op2Use, op);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
                 break;
