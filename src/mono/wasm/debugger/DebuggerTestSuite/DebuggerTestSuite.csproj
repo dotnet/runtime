@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" InitialTargets="CreateProjectWithColonInSourceName">
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -99,7 +99,6 @@
   </Target>
 
   <Target Name="CreateProjectWithColonInSourceName"
-    BeforeTargets="Build"
     Condition="!$([MSBuild]::IsOSPlatform('windows'))">
     <PropertyGroup>
         <CsprojContent>
