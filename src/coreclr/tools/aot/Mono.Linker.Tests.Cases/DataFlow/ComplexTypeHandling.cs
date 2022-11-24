@@ -28,6 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayInAttributeParameter_ViaReflection ();
 		}
 
+		// NativeAOT: No need to preserve the element type if it's never instantiated
+		// There will be a reflection record about it, but we don't validate that yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayElementType
 		{
@@ -56,6 +58,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (T[]));
 		}
 
+		// NativeAOT: No need to preserve the element type if it's never instantiated
+		// There will be a reflection record about it, but we don't validate that yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayElementInGenericType
 		{
@@ -93,7 +97,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_ = new RequirePublicMethodsGeneric<T[]> ();
 		}
 
-		[Kept(KeptBy = ProducedBy.Trimmer)]
+		// NativeAOT: No need to preserve the element type if it's never instantiated
+		// There will be a reflection record about it, but we don't validate that yet
+		[Kept (KeptBy = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromMethodParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -112,6 +118,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayGetTypeFromMethodParamHelper (null);
 		}
 
+		// NativeAOT: No need to preserve the element type if it's never instantiated
+		// There will be a reflection record about it, but we don't validate that yet
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromFieldElement
 		{
