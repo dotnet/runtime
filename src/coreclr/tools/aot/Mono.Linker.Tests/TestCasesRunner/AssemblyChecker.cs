@@ -130,7 +130,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
-				if (!ShouldIncludeType(methodDef.OwningType))
+				if (!ShouldIncludeType (methodDef.OwningType))
 					return;
 
 				if (!AddMember (methodDef))
@@ -144,7 +144,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				TypeDesc typeDef = type.GetTypeDefinition ();
 
-				if (!ShouldIncludeType(typeDef))
+				if (!ShouldIncludeType (typeDef))
 					return;
 
 				if (!AddMember (typeDef))
@@ -191,11 +191,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private static string? GetModuleName(TypeSystemEntity entity)
+		private static string? GetModuleName (TypeSystemEntity entity)
 		{
 			return entity switch {
-				MetadataType type => type.Module.ToString(),
-				MethodDesc { OwningType: MetadataType owningType } => owningType.Module.ToString(),
+				MetadataType type => type.Module.ToString (),
+				MethodDesc { OwningType: MetadataType owningType } => owningType.Module.ToString (),
 				_ => null
 			};
 		}
@@ -1640,10 +1640,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			//var cleanAssemblyName = assemblyName;
 			//if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
-				//cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
+			//cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
 			//return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _linkedReaderParameters);
 			// TODO - adapt to Native AOT
-			return ResolveOriginalsAssembly(assemblyName);
+			return ResolveOriginalsAssembly (assemblyName);
 		}
 
 		protected AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
