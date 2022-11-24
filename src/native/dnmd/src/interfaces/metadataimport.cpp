@@ -1431,37 +1431,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeSpecs(
     return enumImpl->ReadTokens(rTypeSpecs, cMax, pcTypeSpecs);
 }
 
-namespace
-{
-    HRESULT EnumNonEmptyUserStrings(
-        _In_ mdhandle_t handle,
-        _Inout_ HCORENUMImpl& enumImpl)
-    {
-        HRESULT hr;
-
-        mduserstring_t us[8];
-        uint32_t offsets[ARRAYSIZE(us)];
-
-        mduserstringcursor_t cursor = 0;
-        for (;;)
-        {
-            int32_t count = md_walk_user_string_heap(handle, &cursor, ARRAYSIZE(us), us, offsets);
-            if (count == 0)
-                break;
-
-            for (int32_t j = 0; j < count; ++j)
-            {
-                if (us[j].str_bytes == 0)
-                    continue;
-
-                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(enumImpl, RidToToken(offsets[j], mdtString)));
-            }
-        }
-
-        return S_OK;
-    }
-}
-
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
     HCORENUM* phEnum,
     mdString    rStrings[],
@@ -1475,7 +1444,25 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
 
         HCORENUMImpl_ptr cleanup{ enumImpl };
-        RETURN_IF_FAILED(EnumNonEmptyUserStrings(_md_ptr.get(), *enumImpl));
+        mduserstring_t us[16];
+        uint32_t offsets[ARRAYSIZE(us)];
+        mduserstringcursor_t cursor = 0;
+        for (;;)
+        {
+            int32_t count = md_walk_user_string_heap(_md_ptr.get(), &cursor, ARRAYSIZE(us), us, offsets);
+            if (count == 0)
+                break;
+
+            for (int32_t j = 0; j < count; ++j)
+            {
+                // Ignore strings that are of zero length.
+                if (us[j].str_bytes == 0)
+                    continue;
+
+                // Add mdtString token types to the enumeration.
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, RidToToken(offsets[j], mdtString)));
+            }
+        }
 
         *phEnum = cleanup.release();
     }
@@ -1488,7 +1475,39 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamForMethodIndex(
     ULONG       ulParamSeq,
     mdParamDef* ppd)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(md) != mdtMethodDef || ulParamSeq == UINT32_MAX || ppd == nullptr)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), md, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdcursor_t curr;
+    uint32_t count;
+    if (!md_get_column_value_as_range(cursor, mdtMethodDef_ParamList, &curr, &count))
+        return CLDB_E_FILE_CORRUPT;
+
+    uint32_t seqMaybe;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (1 != md_get_column_value_as_constant(curr, mdtParam_Sequence, 1, &seqMaybe))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (ulParamSeq == seqMaybe)
+        {
+            (void)md_cursor_to_token(curr, ppd);
+            return S_OK;
+        }
+
+        // If the requested sequence value is less than what is returned,
+        // we are done. Param sequences numbers are ordered - see II.22.33.
+        if (ulParamSeq < seqMaybe)
+            break;
+
+        (void)md_cursor_next(&curr);
+    }
+
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumCustomAttributes(

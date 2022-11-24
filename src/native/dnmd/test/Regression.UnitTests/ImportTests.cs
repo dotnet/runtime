@@ -157,6 +157,7 @@ namespace Regression.UnitTests
                     {
                         Assert.Equal(GetFieldMarshal(baselineImport, param), GetFieldMarshal(currentImport, param));
                     }
+                    Assert.Equal(GetParamForMethodIndex(baselineImport, methoddef), GetParamForMethodIndex(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
                     Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
@@ -714,6 +715,26 @@ namespace Regression.UnitTests
                 values.Add(hash);
                 values.Add((uint)pchImportName);
                 values.Add(pmrImportDLL);
+            }
+            return values;
+        }
+
+        private static List<uint> GetParamForMethodIndex(IMetaDataImport import, uint tk)
+        {
+            List<uint> values = new();
+
+            for (uint i = 0; i < uint.MaxValue; ++i)
+            {
+                int hr = import.GetParamForMethodIndex(tk, i, out uint param);
+                if (hr < 0)
+                {
+                    values.Add((uint)hr);
+                    break;
+                }
+                else
+                {
+                    values.Add(param);
+                }
             }
             return values;
         }
