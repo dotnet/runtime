@@ -10812,6 +10812,30 @@ private:
         return fgWalkResult::WALK_CONTINUE;
     }
 
+    fgWalkResult WalkEdges(GenTree* node, GenTree** edge)
+    {
+        return WalkTree(edge, node);
+    }
+
+    template<typename... TEdges>
+    fgWalkResult WalkEdges(GenTree* node, GenTree** edge, TEdges... edges)
+    {
+        if (TVisitor::ReverseOrder)
+        {
+            if (WalkEdges(node, edges...) == fgWalkResult::WALK_ABORT)
+                return fgWalkResult::WALK_ABORT;
+            
+            return WalkTree(edge, node);
+        }
+        else
+        {
+            if (WalkTree(edge, node) == fgWalkResult::WALK_ABORT)
+                return fgWalkResult::WALK_ABORT;
+
+            return WalkEdges(node, edges...);
+        }
+    }
+
 public:
     fgWalkResult WalkTree(GenTree** use, GenTree* user)
     {
@@ -11013,41 +11037,10 @@ public:
             {
                 GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
 
-                if (TVisitor::ReverseOrder)
+                result = WalkEdges(cmpXchg, &cmpXchg->gtOpLocation, &cmpXchg->gtOpValue, &cmpXchg->gtOpComparand);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
+                    return result;
                 }
                 break;
             }
@@ -11099,41 +11092,10 @@ public:
             {
                 GenTreeArrOffs* const arrOffs = node->AsArrOffs();
 
-                if (TVisitor::ReverseOrder)
+                result = WalkEdges(node, &arrOffs->gtOffset, &arrOffs->gtIndex, &arrOffs->gtArrObj);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
+                    return result;
                 }
                 break;
             }
@@ -11142,45 +11104,10 @@ public:
             {
                 GenTreeStoreDynBlk* const dynBlock = node->AsStoreDynBlk();
 
-                GenTree** op1Use = &dynBlock->gtOp1;
-                GenTree** op2Use = &dynBlock->gtOp2;
-                GenTree** op3Use = &dynBlock->gtDynamicSize;
-
-                if (TVisitor::ReverseOrder)
+                result = WalkEdges(dynBlock, &dynBlock->gtOp1, &dynBlock->gtOp2, &dynBlock->gtDynamicSize);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    result = WalkTree(op3Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(op2Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(op1Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    result = WalkTree(op1Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(op2Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(op3Use, dynBlock);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
+                    return result;
                 }
                 break;
             }
@@ -11293,32 +11220,10 @@ public:
                 if (TVisitor::UseExecutionOrder && node->IsReverseOp())
                 {
                     assert(node->AsMultiOp()->GetOperandCount() == 2);
-
-                    if (TVisitor::ReverseOrder)
+                    result = WalkEdges(node, &node->AsMultiOp()->Op(2), &node->AsMultiOp()->Op(1));
+                    if (result == fgWalkResult::WALK_ABORT)
                     {
-                        result = WalkTree(&node->AsMultiOp()->Op(1), node);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                        result = WalkTree(&node->AsMultiOp()->Op(2), node);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                    }
-                    else
-                    {
-                        result = WalkTree(&node->AsMultiOp()->Op(2), node);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                        result = WalkTree(&node->AsMultiOp()->Op(1), node);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
+                        return result;
                     }
                 }
                 else
@@ -11353,41 +11258,10 @@ public:
             {
                 GenTreeConditional* const conditional = node->AsConditional();
 
-                if (TVisitor::ReverseOrder)
+                result = WalkEdges(conditional, &conditional->gtCond, &conditional->gtOp1, &conditional->gtOp2);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    result = WalkTree(&conditional->gtOp2, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&conditional->gtOp1, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&conditional->gtCond, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    result = WalkTree(&conditional->gtCond, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&conditional->gtOp1, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&conditional->gtOp2, conditional);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
+                    return result;
                 }
                 break;
             }
