@@ -566,6 +566,7 @@ class HCORENUMImpl final
 
     uint32_t _readIn;
     uint32_t _total;
+    uint32_t _entrySpan; // The number of entries equal to a single unit.
     HCORENUMImpl* _next;
 
 public: // static
@@ -573,7 +574,9 @@ public: // static
     static HRESULT CreateTableEnum(_In_ uint32_t count, _Out_ HCORENUMImpl** impl) noexcept;
     static void InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept;
 
-    static HRESULT CreateDynamicEnum(_Out_ HCORENUMImpl** impl) noexcept;
+    // If multiple values represent a single entry, the "entrySpan" argument
+    // can be used to indicate the count for a single entry.
+    static HRESULT CreateDynamicEnum(_Out_ HCORENUMImpl** impl, _In_opt_ uint32_t entrySpan = 1) noexcept;
     static HRESULT AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t value) noexcept;
 
     static void Destroy(_In_ HCORENUMImpl* impl) noexcept;
@@ -585,6 +588,12 @@ public: // instance
     // Read in the tokens for this enumeration
     HRESULT ReadTokens(
         mdToken rTokens[],
+        ULONG cMax,
+        ULONG* pcTokens) noexcept;
+
+    HRESULT ReadTokenPairs(
+        mdToken rTokens1[],
+        mdToken rTokens2[],
         ULONG cMax,
         ULONG* pcTokens) noexcept;
 

@@ -30,7 +30,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::CountEnum(HCORENUM hEnum, ULONG* pul
         return E_INVALIDARG;
 
     HCORENUMImpl* enumImpl = ToHCORENUMImpl(hEnum);
-    *pulCount = enumImpl->Count();
+    *pulCount = enumImpl == nullptr ? 0 : enumImpl->Count();
     return S_OK;
 }
 
@@ -233,7 +233,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
         HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rTypeDefs, cMax, pcTypeDefs);
 }
 
@@ -261,7 +260,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumInterfaceImpls(
         HCORENUMImpl::InitTableEnum(*enumImpl, cursor, rows);
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rImpls, cMax, pcImpls);
 }
 
@@ -467,7 +465,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(
         HCORENUMImpl::InitTableEnum(enumImpl[1], fieldList, fieldListCount);
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rMembers, cMax, pcTokens);
 }
 
@@ -545,7 +542,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembersWithName(
 
         *phEnum = cleanup.release();
     }
-
     return enumImpl->ReadTokens(rMembers, cMax, pcTokens);
 }
 
@@ -677,7 +673,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMemberRefs(
         }
         *phEnum = cleanup.release();
     }
-
     return enumImpl->ReadTokens(rMemberRefs, cMax, pcTokens);
 }
 
@@ -689,7 +684,69 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodImpls(
     ULONG       cMax,
     ULONG* pcTokens)
 {
-    return E_NOTIMPL;
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        if (TypeFromToken(td) != mdtTypeDef)
+            return E_INVALIDARG;
+
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_MethodImpl, &cursor, &count))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl, 2));
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
+        mdcursor_t curr;
+        uint32_t currCount;
+        mdToken body;
+        mdToken decl;
+        if (md_find_range_from_cursor(cursor, mdtMethodImpl_Class, td, &curr, &currCount))
+        {
+            // Sorted data means we have a contiguous range we can use.
+            for (uint32_t i = 0; i < currCount; ++i)
+            {
+                if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodBody, 1, &body)
+                    || 1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodDeclaration, 1, &decl))
+                {
+                    return CLDB_E_FILE_CORRUPT;
+                }
+
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, body));
+                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, decl));
+                (void)md_cursor_next(&curr);
+            }
+        }
+        else
+        {
+            // Unsorted so we need to search across the entire table
+            curr = cursor;
+            currCount = count;
+            mdToken tmp;
+            for (uint32_t i = 0; i < currCount; ++i)
+            {
+                if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_Class, 1, &tmp))
+                    return CLDB_E_FILE_CORRUPT;
+
+                if (tmp == td)
+                {
+                    if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodBody, 1, &body)
+                        || 1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodDeclaration, 1, &decl))
+                    {
+                        return CLDB_E_FILE_CORRUPT;
+                    }
+
+                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, body));
+                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, decl));
+                }
+                (void)md_cursor_next(&curr);
+            }
+        }
+        *phEnum = cleanup.release();
+    }
+    return enumImpl->ReadTokenPairs(rMethodBody, rMethodDecl, cMax, pcTokens);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
@@ -753,7 +810,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumPermissionSets(
         }
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rPermission, cMax, pcTokens);
 }
 
@@ -919,7 +975,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumProperties(
         HCORENUMImpl::InitTableEnum(*enumImpl, propertyList, propertyListCount);
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rProperties, cMax, pcProperties);
 }
 
@@ -958,7 +1013,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
         HCORENUMImpl::InitTableEnum(*enumImpl, eventList, eventListCount);
         *phEnum = enumImpl;
     }
-
     return enumImpl->ReadTokens(rEvents, cMax, pcEvents);
 }
 
@@ -1028,7 +1082,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSemantics(
         }
         *phEnum = cleanup.release();
     }
-
     return enumImpl->ReadTokens(rEventProp, cMax, pcEventProp);
 }
 
@@ -1466,7 +1519,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUserStrings(
 
         *phEnum = cleanup.release();
     }
-
     return enumImpl->ReadTokens(rStrings, cMax, pcStrings);
 }
 

@@ -672,14 +672,14 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
 
 bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count)
 {
-    // Look for any instance of the value.
-    mdcursor_t found;
-    if (!find_row_from_cursor(begin, idx, &value, &found))
-        return false;
-
     // If the table isn't sorted, then a range isn't possible.
     mdtable_t* table = CursorTable(&begin);
     if (!table->is_sorted)
+        return false;
+
+    // Look for any instance of the value.
+    mdcursor_t found;
+    if (!find_row_from_cursor(begin, idx, &value, &found))
         return false;
 
     int32_t res;

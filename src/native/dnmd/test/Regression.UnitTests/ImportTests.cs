@@ -147,7 +147,8 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumMembers(baselineImport, typedef), EnumMembers(currentImport, typedef));
                 Assert.Equal(EnumMembersWithName(baselineImport, typedef), EnumMembersWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
-
+                Assert.Equal(EnumMethodImpls(baselineImport, typedef), EnumMethodImpls(currentImport, typedef));
+                
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
@@ -475,6 +476,33 @@ namespace Regression.UnitTests
             {
                 Assert.Equal(0, import.CountEnum(hcorenum, out int count));
                 Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<uint> EnumMethodImpls(IMetaDataImport import, uint typedef)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer1 = new uint[EnumBuffer];
+            var tokensBuffer2 = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumMethodImpls(ref hcorenum, typedef, tokensBuffer1, tokensBuffer2, tokensBuffer1.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer1[i]);
+                        tokens.Add(tokensBuffer2[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count / 2);
                 import.CloseEnum(hcorenum);
             }
             return tokens;

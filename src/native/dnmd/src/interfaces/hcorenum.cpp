@@ -46,9 +46,10 @@ void HCORENUMImpl::InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ mdcursor_t cur
     impl._table.Start = cursor;
     impl._readIn = 0;
     impl._total = rows;
+    impl._entrySpan = 1;
 }
 
-HRESULT HCORENUMImpl::CreateDynamicEnum(_Out_ HCORENUMImpl** impl) noexcept
+HRESULT HCORENUMImpl::CreateDynamicEnum(_Out_ HCORENUMImpl** impl, _In_opt_ uint32_t entrySpan) noexcept
 {
     assert(impl != nullptr);
 
@@ -62,6 +63,7 @@ HRESULT HCORENUMImpl::CreateDynamicEnum(_Out_ HCORENUMImpl** impl) noexcept
 
     ::memset(enumImpl, 0, sizeof(*enumImpl));
     enumImpl->_type = HCORENUMType::Dynamic;
+    enumImpl->_entrySpan = entrySpan;
     return S_OK;
 }
 
@@ -76,7 +78,7 @@ HRESULT HCORENUMImpl::AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t valu
     while (next >= ARRAYSIZE(currImpl->_dynamic.Page))
     {
         if (currImpl->_next == nullptr)
-            RETURN_IF_FAILED(CreateDynamicEnum(&currImpl->_next));
+            RETURN_IF_FAILED(CreateDynamicEnum(&currImpl->_next, currImpl->_entrySpan));
         currImpl = currImpl->_next;
         next = currImpl->_total;
     }
@@ -118,7 +120,7 @@ uint32_t HCORENUMImpl::Count() const noexcept
         curr = curr->_next;
     }
 
-    return count;
+    return count / _entrySpan;
 }
 
 HRESULT HCORENUMImpl::ReadTokens(
@@ -145,6 +147,39 @@ HRESULT HCORENUMImpl::ReadTokens(
         *pcTokens = tokenCount;
 
     return hr;
+}
+
+
+HRESULT HCORENUMImpl::ReadTokenPairs(
+    mdToken rTokens1[],
+    mdToken rTokens2[],
+    ULONG cMax,
+    ULONG* pcTokens) noexcept
+{
+    assert(_type == HCORENUMType::Dynamic);
+    assert(rTokens1 != nullptr && rTokens2 != nullptr && pcTokens != nullptr);
+
+    HCORENUMImpl* enumImpl = this;
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < cMax; ++i)
+    {
+        // Check if all values have been read.
+        while (enumImpl->_readIn == enumImpl->_total)
+        {
+            enumImpl = enumImpl->_next;
+            // Check next link in enumerator list
+            if (enumImpl == nullptr)
+                goto Done;
+        }
+
+        assert(((enumImpl->_total - enumImpl->_readIn) % 2) == 0);
+        rTokens1[count] = enumImpl->_dynamic.Page[enumImpl->_readIn++];
+        rTokens2[count] = enumImpl->_dynamic.Page[enumImpl->_readIn++];
+        count++;
+    }
+Done:
+    *pcTokens = count;
+    return S_OK;
 }
 
 HRESULT HCORENUMImpl::Reset(_In_ ULONG position) noexcept
