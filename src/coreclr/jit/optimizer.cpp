@@ -9514,41 +9514,35 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
             foldOp = GT_NONE;
         }
-        else if (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
-                 !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned())
+        else if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ)
         {
-            if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ)
-            {
-                // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
-                // So we will branch to BX if (c1&c2)==0
+            // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
+            // So we will branch to BX if (c1&c2)==0
 
-                foldOp = GT_AND;
-                cmpOp  = GT_EQ;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT)
-            {
-                // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
-                // So we will branch to BX if (c1|c2)<0
+            foldOp = GT_AND;
+            cmpOp  = GT_EQ;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT &&
+                 (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
+                  !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+        {
+            // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
+            // So we will branch to BX if (c1|c2)<0
 
-                foldOp = GT_OR;
-                cmpOp  = GT_LT;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_GE && m_testInfo2.compTree->gtOper == GT_GE)
-            {
-                return false;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE)
-            {
-                // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
-                // So we will branch to BX if (c1|c2)!=0
+            foldOp = GT_OR;
+            cmpOp  = GT_LT;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE && m_testInfo2.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE)
+        {
+            // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
+            // So we will branch to BX if (c1|c2)!=0
 
-                foldOp = GT_OR;
-                cmpOp  = GT_NE;
-            }
-            else
-            {
-                return false;
-            }
+            foldOp = GT_OR;
+            cmpOp  = GT_NE;
         }
         else
         {
@@ -9587,41 +9581,35 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
             foldOp = GT_NONE;
         }
-        else if (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
-                 !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned())
+        else if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
         {
-            if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
-            {
-                // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
-                // So we will branch to BX if (c1&c2)!=0
+            // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
+            // So we will branch to BX if (c1&c2)!=0
 
-                foldOp = GT_AND;
-                cmpOp  = GT_NE;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE)
-            {
-                // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
-                // So we will branch to BX if (c1|c2)>=0
+            foldOp = GT_AND;
+            cmpOp  = GT_NE;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE &&
+                 (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
+                  !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+        {
+            // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
+            // So we will branch to BX if (c1|c2)>=0
 
-                foldOp = GT_OR;
-                cmpOp  = GT_GE;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_GE)
-            {
-                return false;
-            }
-            else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
-            {
-                // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
-                // So we will branch to BX if (c1|c2)==0
+            foldOp = GT_OR;
+            cmpOp  = GT_GE;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
+        {
+            // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
+            // So we will branch to BX if (c1|c2)==0
 
-                foldOp = GT_OR;
-                cmpOp  = GT_EQ;
-            }
-            else
-            {
-                return false;
-            }
+            foldOp = GT_OR;
+            cmpOp  = GT_EQ;
         }
         else
         {
@@ -10123,68 +10111,63 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
 
         foldOp = GT_NONE;
     }
-    else if (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned())
+    else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ) &&
+             (it1val == 0 && it2val == 0 && it3val == 0))
     {
-        if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ) &&
-            (it1val == 0 && it2val == 0 && it3val == 0))
-        {
-            // Case: x == 0 && y == 0
-            //      t1:c1!=0 t2:c2==0 t3:c3==0
-            //      ==> true if (c1|c2)==0
-            foldOp = GT_OR;
-            cmpOp  = GT_EQ;
-        }
-        else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
-                 (it1val == 0 && it2val == 0 && it3val == 0))
-        {
-            // Case: x == 1 && y ==1
-            //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
-            //      ==> true if (c1&c2)!=0
-            foldOp = GT_AND;
-            cmpOp  = GT_NE;
-        }
-        else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
-                 (it1val == 0 && it2val == 0 && it3val == 0))
-        {
-            // Case: x >= 0 && y >= 0
-            //      t1:c1<0 t2:c2>=0 t3:c3==0
-            //      ==> true if (c1|c2)>=0
+        // Case: x == 0 && y == 0
+        //      t1:c1!=0 t2:c2==0 t3:c3==0
+        //      ==> true if (c1|c2)==0
+        foldOp = GT_OR;
+        cmpOp  = GT_EQ;
+    }
+    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
+             (it1val == 0 && it2val == 0 && it3val == 0))
+    {
+        // Case: x == 1 && y ==1
+        //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
+        //      ==> true if (c1&c2)!=0
+        foldOp = GT_AND;
+        cmpOp  = GT_NE;
+    }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
+             (it1val == 0 && it2val == 0 && it3val == 0) &&
+             (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+    {
+        // Case: x >= 0 && y >= 0
+        //      t1:c1<0 t2:c2>=0 t3:c3==0
+        //      ==> true if (c1|c2)>=0
 
-            foldOp = GT_OR;
-            cmpOp  = GT_GE;
-        }
-        else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
-                 (it1val == 0 && it2val == 0 && it3val == 1))
-        {
-            // Case: x == 0 || y == 0
-            //      t1:c1==0 t2:c2==0 t3:c3==1
-            //      ==> true if (c1&c2)==0
-            foldOp = GT_AND;
-            cmpOp  = GT_EQ;
-        }
-        else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
-                 (it1val == 0 && it2val == 0 && it3val == 1))
-        {
-            // Case: x == 1 || y == 1
-            //      t1:c1==1 t2:c2==1 t3:c3==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
-            //      ==> true if (c1|c2)!=0
-            foldOp = GT_OR;
-            cmpOp  = GT_NE;
-        }
-        else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
-                 (it1val == 0 && it2val == 0 && it3val == 1))
-        {
-            // Case: x < 0 || y < 0
-            //      t1:c1<0 t2:c2<0 t3:c3==1
-            //      ==> true if (c1|c2)<0
+        foldOp = GT_OR;
+        cmpOp  = GT_GE;
+    }
+    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
+             (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x == 0 || y == 0
+        //      t1:c1==0 t2:c2==0 t3:c3==1
+        //      ==> true if (c1&c2)==0
+        foldOp = GT_AND;
+        cmpOp  = GT_EQ;
+    }
+    else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
+             (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x == 1 || y == 1
+        //      t1:c1==1 t2:c2==1 t3:c3==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
+        //      ==> true if (c1|c2)!=0
+        foldOp = GT_OR;
+        cmpOp  = GT_NE;
+    }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
+             (it1val == 0 && it2val == 0 && it3val == 1) &&
+             (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+    {
+        // Case: x < 0 || y < 0
+        //      t1:c1<0 t2:c2<0 t3:c3==1
+        //      ==> true if (c1|c2)<0
 
-            foldOp = GT_OR;
-            cmpOp  = GT_LT;
-        }
-        else
-        {
-            return false;
-        }
+        foldOp = GT_OR;
+        cmpOp  = GT_LT;
     }
     else
     {
