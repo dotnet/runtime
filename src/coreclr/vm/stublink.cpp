@@ -377,13 +377,6 @@ StubLinker::StubLinker()
     m_cbStackSpace      = 0;
 #endif
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
-#ifdef TARGET_RISCV64
-    m_fProlog           = FALSE;
-    m_cIntRegArgs       = 0;
-    m_cFloatRegArgs     = 0;
-    m_cCalleeSavedRegs  = 0;
-    m_cbStackSpace      = 0;
-#endif
 }
 
 
@@ -1898,31 +1891,7 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
-#elif defined(TARGET_RISCV64)
-void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cFloatRegArgs, UINT cCalleeSavedRegs, UINT cbStackSpace)
-{
-    m_fProlog               = TRUE;
-    m_cIntRegArgs           = cIntRegArgs;
-    m_cFloatRegArgs         = cFloatRegArgs;
-    m_cCalleeSavedRegs      = cCalleeSavedRegs;
-    m_cbStackSpace          = cbStackSpace;
-}
-
-UINT StubLinker::GetSavedRegArgsOffset()
-{
-    _ASSERTE(m_fProlog);
-    // This is the offset from SP
-    // We're assuming that the stublinker will push the arg registers to the bottom of the stack frame
-    return m_cbStackSpace +  (2 + m_cCalleeSavedRegs)*sizeof(void*); // 2 is for FP and RA
-}
-
-UINT StubLinker::GetStackFrameSize()
-{
-    _ASSERTE(m_fProlog);
-    return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cFloatRegArgs) * sizeof(void*);
-}
-
-#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64), elif defined(TARGET_RISCV64)
+#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
 
 #endif // #ifndef DACCESS_COMPILE
 

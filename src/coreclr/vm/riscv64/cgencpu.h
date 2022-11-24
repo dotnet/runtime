@@ -377,16 +377,7 @@ public:
     void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
 
     void EmitCallRegister(IntReg reg);
-    void EmitProlog(unsigned short cIntRegArgs,
-                    unsigned short cFloatRegArgs,
-                    unsigned short cCalleeSavedRegs,
-                    unsigned short cbStackSpace = 0);
-
-    void EmitEpilog();
-
     void EmitRet(IntReg reg);
-
-
 };
 #endif
 
