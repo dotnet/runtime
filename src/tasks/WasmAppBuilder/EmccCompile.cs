@@ -244,7 +244,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
+        private static bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
         {
             if (!File.Exists(srcFile))
                 throw new LogAsErrorException($"Could not find source file {srcFile}");
