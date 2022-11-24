@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" InitialTargets="CreateProjectWithColonInSourceName">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -98,8 +98,8 @@
                       Overwrite="true" />
   </Target>
 
-
   <Target Name="CreateProjectWithColonInSourceName"
+    BeforeTargets="Build"
     Condition="!$([MSBuild]::IsOSPlatform('windows'))">
     <PropertyGroup>
         <CsprojContent>
@@ -128,6 +128,5 @@
         Lines="$(CsContent)"
         Overwrite="true"/>
   </Target>
-
 
 </Project>
