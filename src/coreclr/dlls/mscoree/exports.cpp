@@ -19,6 +19,8 @@
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
 #include "pinvokeoverride.h"
+#include <hostinformation.h>
+#include <corehost/host_runtime_contract.h>
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
@@ -122,7 +124,8 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyValuesWRef,
     BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
-    bool* hostPolicyEmbedded)
+    bool* hostPolicyEmbedded,
+    host_runtime_contract** hostContract)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -139,7 +142,8 @@ static void ConvertConfigPropertiesToUnicode(
         {
             // If this application is a single-file bundle, the bundle-probe callback
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
-            *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            if (*bundleProbe == nullptr)
+                *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
         {
@@ -151,6 +155,14 @@ static void ConvertConfigPropertiesToUnicode(
         {
             // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
             *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
+        {
+            // Host contract is passed in as the value of HOST_RUNTIME_CONTRACT property (encoded as a string).
+            host_runtime_contract* hostContractLocal = (host_runtime_contract*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            *hostContract = hostContractLocal;
+            if (hostContractLocal->bundle_probe != nullptr)
+                *bundleProbe = hostContractLocal->bundle_probe;
         }
     }
 
@@ -196,6 +208,7 @@ int coreclr_initialize(
     BundleProbeFn* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
+    host_runtime_contract* hostContract = nullptr;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -205,7 +218,8 @@ int coreclr_initialize(
         &propertyValuesW,
         &bundleProbe,
         &pinvokeOverride,
-        &hostPolicyEmbedded);
+        &hostPolicyEmbedded,
+        &hostContract);
 
 #ifdef TARGET_UNIX
     DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
@@ -221,7 +235,12 @@ int coreclr_initialize(
 
     g_hostpolicy_embedded = hostPolicyEmbedded;
 
-    if (pinvokeOverride != nullptr)
+    if (hostContract != nullptr)
+    {
+        HostInformation::SetContract(hostContract);
+    }
+
+    if (pinvokeOverride != nullptr && (hostContract == nullptr || hostContract->pinvoke_override == nullptr))
     {
         PInvokeOverride::SetPInvokeOverride(pinvokeOverride, PInvokeOverride::Source::RuntimeConfiguration);
     }
