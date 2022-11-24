@@ -473,6 +473,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass();
         }
 
+        [Fact]
+        public void HostRuntimeContract_get_runtime_property()
+        {
+            var fixture = sharedTestState.HostApiInvokerAppFixture;
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "ENTRY_ASSEMBLY_NAME", "DOES_NOT_EXIST")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
+                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}")
+                .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>");
+        }
+
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture HostApiInvokerAppFixture { get; }
