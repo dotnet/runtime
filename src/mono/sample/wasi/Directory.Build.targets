@@ -56,7 +56,7 @@
 
     <MakeDir Directories="$(WasmtimeDir)" />
     <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
-    <Exec Command="tar -Jx - -strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
+    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
     <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir).stamp-wasmtime-version.txt" SkipUnchangedFiles="true" />
   </Target>
 
