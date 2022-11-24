@@ -43,7 +43,7 @@ class SP2
 #endif
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         long res = M(1, 2);
         Console.WriteLine("M(1, 2) is {0}.", res);

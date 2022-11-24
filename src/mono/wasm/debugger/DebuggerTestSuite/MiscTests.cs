@@ -86,7 +86,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c0", '\u20AC');
                     await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
@@ -737,7 +737,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("lazy-debugger-test")]
-        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-\u3128")]
         public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();

@@ -40,6 +40,9 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
+      <Link>Internal\Runtime\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
@@ -605,8 +608,7 @@
 
   <!-- Import refererence assembly and ApiCompat logic -->
   <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
   </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

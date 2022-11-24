@@ -5,7 +5,6 @@
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>Exe</OutputType>
     <RootNamespace>DependencyLogViewer</RootNamespace>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>

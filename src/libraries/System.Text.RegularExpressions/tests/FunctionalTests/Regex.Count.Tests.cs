@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.None, 0 };
                 yield return new object[] { engine, @".", "\n\n\n", 0, RegexOptions.Singleline, 3 };
 
-                yield return new object[] { engine, @"[а-я-[аeиоуыэюя]]", "спокойной ночи", 0, RegexOptions.None, 8 };
+                yield return new object[] { engine, @"[\u0430-\u044F-[\u0430e\u0438\u043E\u0443\u044B\u044D\u044E\u044F]]", "\u0441\u043F\u043E\u043A\u043E\u0439\u043D\u043E\u0439 \u043D\u043E\u0447\u0438", 0, RegexOptions.None, 8 };
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {

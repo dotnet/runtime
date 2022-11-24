@@ -570,51 +570,45 @@ namespace System
             return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
         }
 
-        //
         // Is this a Bidirectional control char.. These get stripped
-        //
-        internal static bool IsBidiControlCharacter(char ch)
-        {
-            return (ch == '\u200E' /*LRM*/ || ch == '\u200F' /*RLM*/ || ch == '\u202A' /*LRE*/ ||
-                    ch == '\u202B' /*RLE*/ || ch == '\u202C' /*PDF*/ || ch == '\u202D' /*LRO*/ ||
-                    ch == '\u202E' /*RLO*/);
-        }
+        internal static bool IsBidiControlCharacter(char ch) =>
+            char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
-        //
         // Strip Bidirectional control characters from this string
-        //
         internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
             int charsToRemove = 0;
-            foreach (char c in strToClean)
+
+            int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange('\u200E', '\u202E');
+            if (indexOfPossibleCharToRemove >= 0)
             {
-                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
+                // Slow path: Contains chars that fall in the [u200E, u202E] range (so likely Bidi)
+                foreach (char c in strToClean.Slice(indexOfPossibleCharToRemove))
                 {
-                    charsToRemove++;
+                    if (IsBidiControlCharacter(c))
+                    {
+                        charsToRemove++;
+                    }
                 }
             }
 
             if (charsToRemove == 0)
             {
+                // Hot path
                 return backingString ?? new string(strToClean);
-            }
-
-            if (charsToRemove == strToClean.Length)
-            {
-                return string.Empty;
             }
 
             fixed (char* pStrToClean = &MemoryMarshal.GetReference(strToClean))
             {
-                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), (buffer, state) =>
+                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), static (buffer, state) =>
                 {
                     var strToClean = new ReadOnlySpan<char>((char*)state.StrToClean, state.Length);
                     int destIndex = 0;
                     foreach (char c in strToClean)
                     {
-                        if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                        if (!IsBidiControlCharacter(c))
                         {
                             buffer[destIndex++] = c;
                         }
