@@ -14,7 +14,8 @@
         _WasmStripAOTAssemblies;
         _WasmBuildNativeCore;
         _WasmGenerateAppBundle;
-        _AfterWasmBuildApp
+        _AfterWasmBuildApp;
+        _WasmMemorySnapshot
     </_WasmBuildCoreDependsOn>
 
     <WasmBuildAppDependsOn>

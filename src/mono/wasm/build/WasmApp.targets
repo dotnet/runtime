@@ -418,4 +418,21 @@
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
   </Target>
+
+  <Target Name="_WasmMemorySnapshot">
+    <PropertyGroup>
+      <WasmAppBundle>bin/$(Configuration)/AppBundle</WasmAppBundle>
+      <WasmMemorySnapshotCaptureFileName>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureFileName>
+      <WasmMemorySnapshotCaptureFilePath>$(WasmAppBundle)/$(WasmMemorySnapshotCaptureFileName)</WasmMemorySnapshotCaptureFilePath>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
+      <WasmMemorySnapshotCaptureLine Include="const { Module } = await dotnet.create()%3B" />
+      <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./memory.dat', Module.HEAP8)%3B" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(WasmMemorySnapshotCaptureFilePath)" Lines="@(MemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
+    <Exec WorkingDirectory="$(WasmAppBundle)" Command="node $(WasmMemorySnapshotCaptureFileName)" />
+    <Delete Files="$(WasmMemorySnapshotCaptureFilePath)" />
+    <Message Text="Memory snapshot taken" Importance="High" />
+  </Target>
 </Project>

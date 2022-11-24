@@ -6,7 +6,7 @@ async function exportMemory(memory) { // NodeJS
 
 async function runtime1() {
     console.log("Runtime 1");
-    const dotnet = (await import("./dotnet.js?1")).dotnet;
+    const dotnet = (await import("./dotnet.js")).dotnet;
     const { setModuleImports, getAssemblyExports, getConfig, Module } = await dotnet.create();
 
     // setModuleImports("main.js", { location: { href: () => "window.location.href" } });
