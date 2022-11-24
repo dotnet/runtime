@@ -199,7 +199,7 @@ namespace ILCompiler.Dataflow
                 if (_typeHierarchyDataFlow)
                 {
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        ((TypeOrigin)memberWithRequirements).ToString(),
+                        ((TypeOrigin)memberWithRequirements).GetDisplayName(),
                         entity.GetDisplayName(),
                         MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value)),
                         MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value)));
@@ -230,7 +230,7 @@ namespace ILCompiler.Dataflow
                 // annotation on a type, not a callsite which uses the annotation. We always want to warn about
                 // possible reflection access indicated by these annotations.
                 _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
-                    ((TypeOrigin)memberWithRequirements).ToString(), entity.GetDisplayName());
+                    ((TypeOrigin)memberWithRequirements).GetDisplayName(), entity.GetDisplayName());
             }
             else
             {

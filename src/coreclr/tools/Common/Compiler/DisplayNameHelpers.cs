@@ -31,9 +31,6 @@ namespace ILCompiler
         {
             var sb = new StringBuilder();
 
-            if (method.ToString().Contains("C1"))
-                Debugger.Break();
-
             sb.Append(method.OwningType.GetDisplayName());
             sb.Append('.');
 

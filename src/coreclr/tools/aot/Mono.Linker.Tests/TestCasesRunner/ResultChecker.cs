@@ -341,11 +341,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								break;
 							}
 
-							if (!expectedWarningFound)
-								Debugger.Break ();
-
 							var expectedOriginString = fileName == null
-								? NameUtils.ConvertSignatureToIlcFormat (NameUtils.GetExpectedOriginDisplayName (attrProvider)) + ": "
+								? NameUtils.GetExpectedOriginDisplayName (attrProvider) + ": "
 								: "";
 
 							Assert.True (expectedWarningFound,
@@ -404,7 +401,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				var origin = mc.Origin;
 				Debug.Assert (origin != null);
-				if (NameUtils.GetActualOriginDisplayName (origin?.MemberDefinition) == NameUtils.ConvertSignatureToIlcFormat (NameUtils.GetExpectedOriginDisplayName (expectedOriginProvider)))
+				if (NameUtils.GetActualOriginDisplayName (origin?.MemberDefinition) == NameUtils.GetExpectedOriginDisplayName (expectedOriginProvider))
 					return true;
 
 				var actualMember = origin!.Value.MemberDefinition;

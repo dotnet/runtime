@@ -18,13 +18,6 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
-		[MemberData (nameof (TestDatabase.LinqExpressions), MemberType = typeof (TestDatabase))]
-		public void LinqExpressions (string t)
-		{
-			Run (t);
-		}
-
-		[Theory]
 		[MemberData (nameof (TestDatabase.Repro), MemberType = typeof (TestDatabase))]
 		public void Repro (string t)
 		{

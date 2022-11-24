@@ -177,9 +177,6 @@ namespace Mono.Linker.Tests.Extensions
 		{
 			var sb = new System.Text.StringBuilder ();
 
-			if (method.ToString ().Contains ("RequirePublicParameterlessConstructor"))
-				Debugger.Break ();
-
 			// Match C# syntaxis name if setter or getter
 			var methodDefinition = method.Resolve ();
 			if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter)) {

@@ -90,7 +90,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 
 					linkedMembers.TryGetValue (
-						GetOriginalFullName (originalMember),
+						NameUtils.GetExpectedOriginDisplayName (originalMember),
 						out TypeSystemEntity? linkedMember);
 					VerifyTypeDefinition (td, linkedMember as TypeDesc);
 					linkedMembers.Remove (td.FullName);
@@ -157,7 +157,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			bool AddMember (TypeSystemEntity entity)
 			{
-				if (GetActualFullName (entity) is string fullName) {
+				if (NameUtils.GetActualOriginDisplayName (entity) is string fullName) {
 					if (linkedMembers.ContainsKey (fullName))
 						return false;
 
@@ -223,7 +223,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDesc? linked)
 		{
-			if (linked != null && GetActualFullName (linked) is string linkedDisplayName && verifiedGeneratedTypes.Contains (linkedDisplayName))
+			if (linked != null && NameUtils.GetActualOriginDisplayName (linked) is string linkedDisplayName && verifiedGeneratedTypes.Contains (linkedDisplayName))
 				return;
 
 			EcmaModule? linkedModule = (linked as MetadataType)?.Module as EcmaModule;
@@ -285,7 +285,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			//VerifyFixedBufferFields (original, linked);
 
 			foreach (var td in original.NestedTypes) {
-				string originalFullName = GetOriginalFullName (td);
+				string originalFullName = NameUtils.GetExpectedOriginDisplayName (td);
 				linkedMembers.TryGetValue (
 					originalFullName,
 					out TypeSystemEntity? linkedMember);
@@ -319,7 +319,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
 
-				string originalFullName = GetOriginalFullName (m);
+				string originalFullName = NameUtils.GetExpectedOriginDisplayName (m);
 				linkedMembers.TryGetValue (
 					originalFullName,
 					out TypeSystemEntity? linkedMember);
@@ -486,7 +486,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (!expectedKept) {
 				if (linked != null)
-					Assert.True (false, $"Method `{GetOriginalFullName (src)}' should have been removed");
+					Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
 
 				return;
 			}
@@ -526,7 +526,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDesc? linked)
 		{
 			if (linked == null) {
-				Assert.True (false, $"Method `{GetOriginalFullName (src)}' should have been kept");
+				Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
 				return;
 			}
 
@@ -1066,7 +1066,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (cap == null)
 				return false;
 
-			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
+			return GetActiveKeptAttributes (cap, nameof (KeptMemberAttribute)).Any (ca => {
+				if (ca.Constructor.Parameters.Count != 1 ||
+					ca.ConstructorArguments[0].Value is not string a)
+					return false;
+
+				return a == (signature ?? member.Name);
+			});
 		}
 
 		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)
@@ -1100,20 +1106,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return ((CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value)?.Select (arg => arg.Value.ToString ()!);
 		}
 
-		private static string GetOriginalFullName (ICustomAttributeProvider entity)
+		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
 		{
-			return NameUtils.ConvertSignatureToIlcFormat (NameUtils.GetExpectedOriginDisplayName (entity));
-		}
-
-		private static string? GetActualFullName (TypeSystemEntity? entity)
-		{
-			return NameUtils.GetActualOriginDisplayName (entity);
-		}
-
-		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
-		{
-			return provider.CustomAttributes.Any (ca => {
-				if (ca.AttributeType.Name != nameof (KeptAttribute)) {
+			return provider.CustomAttributes.Where (ca => {
+				if (ca.AttributeType.Name != attributeName) {
 					return false;
 				}
 
@@ -1122,16 +1118,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			});
 		}
 
-		private static bool HasActiveKeptDerivedAttribute (ICustomAttributeProvider provider)
+		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
 		{
-			return provider.CustomAttributes.Any (ca => {
+			return GetActiveKeptAttributes (provider, nameof (KeptAttribute)).Any ();
+		}
+
+		private static IEnumerable<CustomAttribute> GetActiveKeptDerivedAttributes (ICustomAttributeProvider provider)
+		{
+			return provider.CustomAttributes.Where (ca => {
 				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute))) {
 					return false;
 				}
 
-				object? keptBy = ca.GetPropertyValue (nameof(KeptAttribute.KeptBy));
+				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.KeptBy));
 				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
 			});
+		}
+
+
+		private static bool HasActiveKeptDerivedAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptDerivedAttributes (provider).Any ();
 		}
 
 		private void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)

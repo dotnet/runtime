@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_ => null
 		};
 
-		internal static string? TrimAssemblyNamePrefix (string? name)
+		private static string? TrimAssemblyNamePrefix (string? name)
 		{
 			if (name == null)
 				return null;
@@ -37,13 +37,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		internal static string GetExpectedOriginDisplayName (ICustomAttributeProvider provider) =>
-			provider switch {
+			ConvertSignatureToIlcFormat (provider switch {
 				MethodDefinition method => method.GetDisplayName (),
 				FieldDefinition field => field.GetDisplayName (),
 				IMemberDefinition member => member.FullName,
 				AssemblyDefinition asm => asm.Name.Name,
 				_ => throw new NotImplementedException ()
-			};
+			});
 
 		internal static string ConvertSignatureToIlcFormat (string value)
 		{

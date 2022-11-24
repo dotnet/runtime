@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -23,8 +24,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayGetTypeFromField ();
 			TestArrayTypeGetType ();
 			TestArrayCreateInstanceByName ();
-			typeof (ComplexTypeHandling).GetMethod ("TestArrayInAttributeParameter", System.Reflection.BindingFlags.NonPublic).Invoke (null, new object[] { } );
 			TestArrayInAttributeParameter ();
+			TestArrayInAttributeParameter_ViaReflection ();
 		}
 
 		[Kept (KeptBy = ProducedBy.Trimmer)]
@@ -146,10 +147,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
 		}
 
-		// Technically there's no reason to mark this type since it's only used as an array element type and CreateInstance
+		// ILLink: Technically there's no reason to mark this type since it's only used as an array element type and CreateInstance
 		// doesn't work on arrays, but the currently implementation will preserve it anyway due to how it processes
 		// string -> Type resolution. This will only impact code which would have failed at runtime, so very unlikely to
 		// actually occur in real apps (and even if it does happen, it just increases size, doesn't break behavior).
+		// NativeAOT: https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet - it ignores the [] and thus sees this as a direct type reference
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayCreateInstanceByNameElement
 		{
@@ -164,6 +167,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
 		}
 
+		// NativeAOT doesn't keep attributes on non-reflectable methods
 		[Kept (KeptBy = ProducedBy.Trimmer)]
 		class ArrayInAttributeParamElement
 		{
@@ -172,12 +176,37 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute))]
+		// NativeAOT doesn't keep attributes on non-reflectable methods
+		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute), KeptBy = ProducedBy.Trimmer)]
 		[RequiresPublicMethod (typeof (ArrayInAttributeParamElement[]))]
 		static void TestArrayInAttributeParameter ()
 		{
 		}
 
+		// The usage of a type in attribute parameter is not enough to create NativeAOT EEType
+		// which is what the test infra looks for right now, so the type is not kept.
+		// There should be a reflection record of the type though (we just don't validate that yet).
+		[Kept (KeptBy = ProducedBy.Trimmer)]
+		class ArrayInAttributeParamElement_ViaReflection
+		{
+			// This method should not be marked, instead Array.* should be marked
+			public void PublicMethod () { }
+		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute))]
+		[RequiresPublicMethod (typeof (ArrayInAttributeParamElement_ViaReflection[]))]
+		static void TestArrayInAttributeParameter_ViaReflection_Inner ()
+		{
+		}
+
+		[Kept]
+		static void TestArrayInAttributeParameter_ViaReflection ()
+		{
+			typeof (ComplexTypeHandling)
+				.GetMethod (nameof (TestArrayInAttributeParameter_ViaReflection_Inner), BindingFlags.NonPublic)
+				.Invoke (null, new object[] { });
+		}
 
 		[Kept]
 		private static void RequirePublicMethods (

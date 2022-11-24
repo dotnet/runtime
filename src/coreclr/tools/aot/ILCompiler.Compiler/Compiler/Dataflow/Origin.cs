@@ -18,7 +18,7 @@ namespace ILCompiler.Dataflow
             Method = method;
         }
 
-        public override string ToString() => Method.GetDisplayName();
+        public string GetDisplayName() => Method.GetDisplayName();
     }
 
     internal sealed class ParameterOrigin : Origin
@@ -32,7 +32,7 @@ namespace ILCompiler.Dataflow
             Index = index;
         }
 
-        public override string ToString() => Method.GetDisplayName();
+        public string GetDisplayName() => Method.GetDisplayName();
     }
 
     internal sealed class MethodOrigin : Origin
@@ -44,7 +44,7 @@ namespace ILCompiler.Dataflow
             Method = method;
         }
 
-        public override string ToString() => Method.GetDisplayName();
+        public string GetDisplayName() => Method.GetDisplayName();
     }
 
     internal sealed class FieldOrigin : Origin
@@ -56,7 +56,7 @@ namespace ILCompiler.Dataflow
             Field = field;
         }
 
-        public override string ToString() => Field.GetDisplayName();
+        public string GetDisplayName() => Field.GetDisplayName();
     }
 
     internal sealed class TypeOrigin : Origin
@@ -68,7 +68,7 @@ namespace ILCompiler.Dataflow
             Type = type;
         }
 
-        public override string ToString() => Type.GetDisplayName();
+        public string GetDisplayName() => Type.GetDisplayName();
     }
 
     internal sealed class GenericParameterOrigin : Origin
@@ -82,6 +82,6 @@ namespace ILCompiler.Dataflow
             GenericParameter = genericParam;
         }
 
-        public override string ToString() => GenericParameter.GetDisplayName();
+        public string GetDisplayName() => GenericParameter.GetDisplayName();
     }
 }

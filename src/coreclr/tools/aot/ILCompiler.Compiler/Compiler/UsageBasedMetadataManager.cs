@@ -305,13 +305,14 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
+                // https://github.com/dotnet/runtime/issues/78752
                 // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
                 // Asking to root an assembly with entrypoint will not actually root things in the assembly.
                 // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
                 // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
                 // TODO: We should technically reflection-root Main() here but hopefully the above issue
                 // will be fixed before it comes to that being necessary.
-                bool isEntrypointAssembly = false; // module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
+                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
 
                 if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
                 {

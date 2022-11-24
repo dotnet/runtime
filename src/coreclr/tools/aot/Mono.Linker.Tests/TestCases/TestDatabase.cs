@@ -18,11 +18,6 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ("DataFlow");
 		}
 
-		public static IEnumerable<object[]> LinqExpressions ()
-		{
-			return TestNamesBySuiteName ("LinqExpressions");
-		}
-
 		public static IEnumerable<object[]> Repro ()
 		{
 			return TestNamesBySuiteName ("Repro");

@@ -136,7 +136,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
+		[KeptMember (".ctor()")]
 		class FromStringConstantWithGeneric<T>
 		{
 			[Kept]

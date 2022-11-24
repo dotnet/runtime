@@ -48,8 +48,4 @@
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="tools\aot\mono.linker.tests\testcasesrunner\" />
-  </ItemGroup>
-
 </Project>
