@@ -10744,53 +10744,48 @@ protected:
     }
 
 private:
-    template<typename TUse, typename Iterator, typename TFunc, size_t InlineSize>
-    fgWalkResult WalkOperandsInReverse(Iterator beg, Iterator end, TFunc visit, void* (&inlineArr)[InlineSize])
+    template<typename TUse, typename Iterator, typename TFunc>
+    fgWalkResult WalkOperandsInReverse(Iterator beg, Iterator end, TFunc visit)
     {
+        // Intentionally leaving this kind of small to avoid large frames in
+        // this recursive function. We alloca below for a larger limit.
+        TUse* inlineArr[8];
         size_t count = 0;
-        Iterator firstNonInlined = beg;
 
         for (Iterator cur = beg; cur != end; ++cur)
         {
-            if (count == InlineSize)
+            if (count < ArrLen(inlineArr))
             {
-                firstNonInlined = cur;
+                inlineArr[count] = &*cur;
                 count++;
-
-                while (true)
-                {
-                    ++cur;
-                    if (cur == end)
-                        break;
-
-                    count++;
-                }
-
-                break;
+                continue;
             }
 
-            inlineArr[count] = &*cur;
-            count++;
-        }
-
-        if (count <= InlineSize)
-        {
-            for (size_t i = count; i != 0; i--)
+            // Overflowed inline array, finish counting them and process remaining operands here.
+            Iterator firstAllocated = cur;
+            do
             {
-                if (visit(static_cast<TUse*>(inlineArr[i - 1])) == fgWalkResult::WALK_ABORT)
-                {
-                    return fgWalkResult::WALK_ABORT;
-                }
+                count++;
+                ++cur;
+            } while (cur != end);
+
+            TUse** remaining;
+            if (count - ArrLen(inlineArr) <= 128)
+            {
+                remaining = static_cast<TUse**>(_alloca(sizeof(TUse*) * (count - ArrLen(inlineArr))));
             }
-        }
-        else
-        {
-            TUse** remaining = new (m_compiler, CMK_TreeWalk) TUse*[count - InlineSize];
+            else
+            {
+                remaining = new (m_compiler, CMK_TreeWalk) TUse*[count - ArrLen(inlineArr)];
+            }
+
             size_t remainingCount = 0;
-            for (Iterator cur = firstNonInlined; cur != end; ++cur)
+            for (cur = firstAllocated; cur != end; ++cur)
             {
                 remaining[remainingCount++] = &*cur;
             }
+
+            assert(ArrLen(inlineArr) + remainingCount == count);
 
             for (size_t i = remainingCount; i != 0; i--)
             {
@@ -10800,12 +10795,23 @@ private:
                 }
             }
 
-            for (size_t i = InlineSize; i != 0; i--)
+            for (size_t i = ArrLen(inlineArr); i != 0; i--)
             {
                 if (visit(static_cast<TUse*>(inlineArr[i - 1])) == fgWalkResult::WALK_ABORT)
                 {
                     return fgWalkResult::WALK_ABORT;
                 }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+        assert(count <= ArrLen(inlineArr));
+        for (size_t i = count; i != 0; i--)
+        {
+            if (visit(static_cast<TUse*>(inlineArr[i - 1])) == fgWalkResult::WALK_ABORT)
+            {
+                return fgWalkResult::WALK_ABORT;
             }
         }
 
@@ -10847,8 +10853,6 @@ public:
         {
             m_ancestors.Push(node);
         }
-
-        void* inlineDynamicOperands[8];
 
         fgWalkResult result = fgWalkResult::WALK_CONTINUE;
         if (TVisitor::DoPreOrder && !TVisitor::DoLclVarsOnly)
@@ -10985,7 +10989,7 @@ public:
                         node->AsPhi()->Uses().end(),
                         [this, node](GenTreePhi::Use* use) {
                             return WalkTree(&use->NodeRef(), node);
-                        }, inlineDynamicOperands);
+                        });
 
                     if (result == fgWalkResult::WALK_ABORT)
                     {
@@ -11013,7 +11017,7 @@ public:
                         node->AsFieldList()->Uses().end(),
                         [this, node](GenTreeFieldList::Use* use) {
                             return WalkTree(&use->NodeRef(), node);
-                        }, inlineDynamicOperands);
+                        });
 
                     if (result == fgWalkResult::WALK_ABORT)
                     {
@@ -11150,14 +11154,14 @@ public:
                         call->gtArgs.LateArgs().end(),
                         [this, call](CallArg* arg) {
                             return WalkTree(&arg->LateNodeRef(), call);
-                        }, inlineDynamicOperands);
+                        });
 
                     WalkOperandsInReverse<CallArg>(
                         call->gtArgs.EarlyArgs().begin(),
                         call->gtArgs.EarlyArgs().end(),
                         [this, call](CallArg* arg) {
                             return WalkTree(&arg->EarlyNodeRef(), call);
-                        }, inlineDynamicOperands);
+                        });
                 }
                 else
                 {
