@@ -904,14 +904,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 debugId = id;
         }
 
-        public bool EnC(byte[] meta, byte[] pdb)
+        public bool EnC(MonoSDBHelper sdbAgent, byte[] meta, byte[] pdb)
         {
             var asmStream = new MemoryStream(meta);
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
             enCMetadataReader.Add(new (asmMetadataReader, pdbMetadataReader));
-            PopulateEnC(asmMetadataReader, pdbMetadataReader);
+            PopulateEnC(sdbAgent, asmMetadataReader, pdbMetadataReader);
             return true;
         }
         private static int GetTypeDefIdx(MetadataReader asmMetadataReaderParm, int number)
@@ -958,10 +958,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
 
-        private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
+        private void PopulateEnC(MonoSDBHelper sdbAgent, MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             TypeInfo typeInfo = null;
             int methodIdxAsm = 1;
+            sdbAgent.ResetTypes(); // FIXME: only remove the cache for the affected type if fields or methods are added
+
             foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
             {
                 if (entry.Operation == EditAndContinueOperation.AddMethod ||
@@ -1351,9 +1353,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
         }
-        public static IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public static IEnumerable<MethodInfo> EnC(MonoSDBHelper sdbAgent, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
-            asm.EnC(meta_data, pdb_data);
+            asm.EnC(sdbAgent, meta_data, pdb_data);
             return GetEnCMethods(asm);
         }
 

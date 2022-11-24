@@ -188,14 +188,14 @@ namespace Internal.Runtime.CompilerHelpers
             ref object rawSpineData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(spine).Data);
 
             int currentBase = 0;
-            for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
+            for (IntPtr** block = (IntPtr**)gcStaticRegionStart; block < (IntPtr**)gcStaticRegionEnd; block++)
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
-                IntPtr* pBlock = (IntPtr*)*block;
-                nint blockAddr = *pBlock;
+                IntPtr* pBlock = *block;
+                nint blockAddr = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
                 if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
                     object? obj = null;
@@ -215,7 +215,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // which are pointer relocs to GC objects in frozen segment.
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
-                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
                         RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
@@ -231,6 +231,9 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return spine;
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
         }
 
         private static unsafe void RehydrateData(IntPtr dehydratedData, int length)

@@ -6,7 +6,8 @@ import { Module } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
-export const maxFailures = 4;
+export const maxFailures = 2,
+    maxMemsetSize = 64;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -650,8 +651,64 @@ export function addWasmFunctionPointer (f: Function) {
     return index;
 }
 
+export function try_append_memset_fast (builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
+    if (count <= 0) {
+        if (destOnStack)
+            builder.appendU8(WasmOpcode.drop);
+        return true;
+    }
+
+    if (count >= maxMemsetSize)
+        return false;
+
+    if (destOnStack)
+        builder.local("math_lhs32", WasmOpcode.set_local);
+
+    let offset = destOnStack ? 0 : localOffset;
+    // Do blocks of 8-byte sets first for smaller/faster code
+    while (count >= 8) {
+        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.i52_const(0);
+        builder.appendU8(WasmOpcode.i64_store);
+        builder.appendMemarg(offset, 0);
+        offset += 8;
+        count -= 8;
+    }
+
+    // Then set the remaining 0-7 bytes
+    while (count >= 1) {
+        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.i32_const(0);
+        let localCount = count % 4;
+        switch (localCount) {
+            case 0:
+                // since we did %, 4 bytes turned into 0. gotta fix that up to avoid infinite loop
+                localCount = 4;
+                builder.appendU8(WasmOpcode.i32_store);
+                break;
+            case 1:
+                builder.appendU8(WasmOpcode.i32_store8);
+                break;
+            case 3:
+            case 2:
+                // For 3 bytes we just want to do a 2 write then a 1
+                localCount = 2;
+                builder.appendU8(WasmOpcode.i32_store16);
+                break;
+        }
+        builder.appendMemarg(offset, 0);
+        offset += localCount;
+        count -= localCount;
+    }
+
+    return true;
+}
+
 export function append_memset_dest (builder: WasmBuilder, value: number, count: number) {
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
+    if (try_append_memset_fast(builder, 0, value, count, true))
+        return;
+
     builder.i32_const(value);
     builder.i32_const(count);
     builder.appendU8(WasmOpcode.PREFIX_sat);
@@ -661,6 +718,8 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
 
 // expects dest then source to have been pushed onto wasm stack
 export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
+    // FIXME: Unroll this like memset, since we now know that the memory ops generate expensive
+    //  function calls
     switch (count) {
         case 1:
             builder.appendU8(WasmOpcode.i32_load8_u);
@@ -732,14 +791,17 @@ export type JiterpreterOptions = {
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
-    alwaysGenerate: boolean;
+    disableHeuristic: boolean;
     enableStats: boolean;
     // Continue counting hits for traces that fail to compile and use it to estimate
     //  the relative importance of the opcode that caused them to abort
     estimateHeat: boolean;
     // Count the number of times a trace bails out (branch taken, etc) and for what reason
     countBailouts: boolean;
+    // Dump the wasm blob for all compiled traces
+    dumpTraces: boolean;
     minimumTraceLength: number;
+    minimumTraceHitCount: number;
 }
 
 const optionNames : { [jsName: string] : string } = {
@@ -750,10 +812,12 @@ const optionNames : { [jsName: string] : string } = {
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableStats": "jiterpreter-stats-enabled",
-    "alwaysGenerate": "jiterpreter-always-generate",
+    "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
     "countBailouts": "jiterpreter-count-bailouts",
+    "dumpTraces": "jiterpreter-dump-traces",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
+    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
 };
 
 let optionsVersion = -1;

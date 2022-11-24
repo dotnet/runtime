@@ -545,7 +545,7 @@ namespace System
                     RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
 
                     // need a proper declaring type instance method on a generic type
-                    if (RuntimeTypeHandle.IsGenericTypeDefinition(declaringType) || RuntimeTypeHandle.HasInstantiation(declaringType))
+                    if (declaringType.IsGenericType)
                     {
                         // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
                         RuntimeType reflectedType = (RuntimeType)GetType();
