@@ -9,9 +9,8 @@ async function runtime1() {
     const dotnet = (await import("./dotnet.js?1")).dotnet;
     const { setModuleImports, getAssemblyExports, getConfig, Module } = await dotnet.create();
 
-    setModuleImports("main.js", { location: { href: () => "window.location.href" } });
-
-    const exports = getAssemblyExports(getConfig().mainAssemblyName);
+    // setModuleImports("main.js", { location: { href: () => "window.location.href" } });
+    // const exports = getAssemblyExports(getConfig().mainAssemblyName);
 
     await exportMemory(Module.HEAP8);
 }
