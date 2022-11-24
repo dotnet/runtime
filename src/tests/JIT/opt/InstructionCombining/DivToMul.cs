@@ -163,7 +163,7 @@ public class Program
         if (Single.IsNaN(expected) && Single.IsNaN(actual))
         {
             // There can be multiple configurations for NaN values
-            // verifying that this values are NaNs should be enough
+            // verifying that these values are NaNs should be enough
             return;
         }
 
@@ -182,7 +182,7 @@ public class Program
         if (Double.IsNaN(expected) && Double.IsNaN(actual))
         {
             // There can be multiple configurations for NaN values
-            // verifying that this values are NaNs should be enough
+            // verifying that these values are NaNs should be enough
             return;
         }
 
