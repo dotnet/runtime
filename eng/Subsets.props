@@ -310,7 +310,7 @@
                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)tools\aot\ILCompiler\repro\repro.csproj;
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'loongarch64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
@@ -355,7 +355,7 @@
       Test="true" Category="tools"/>
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+')) and '$(TargetArchitecture)' != 'loongarch64'">
     <!-- Build crossgen2 that will be used to compile System.Private.CoreLib library for CoreCLR -->
     <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Condition="!('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64')" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
