@@ -556,34 +556,6 @@ mono_jiterp_adjust_abort_count (MintOpcode opcode, gint32 delta) {
 	return jiterpreter_abort_counts[opcode];
 }
 
-typedef struct {
-	InterpMethod *rmethod;
-	ThreadContext *context;
-	gpointer orig_domain;
-	gpointer attach_cookie;
-} JiterpEntryDataHeader;
-
-// we optimize delegate calls by attempting to cache the delegate invoke
-//  target - this will improve performance when the same delegate is invoked
-//  repeatedly inside a loop
-typedef struct {
-	MonoDelegate *delegate_invoke_is_for;
-	MonoMethod *delegate_invoke;
-	InterpMethod *delegate_invoke_rmethod;
-} JiterpEntryDataCache;
-
-// jitted interp_entry wrappers use custom tracking data structures
-//  that are allocated in the heap, one per wrapper
-// FIXME: For thread safety we need to make these thread-local or stack-allocated
-// Note that if we stack allocate these the cache will need to move somewhere else
-typedef struct {
-	// We split the cache out from the important data so that when
-	//  jiterp_interp_entry copies the important data it doesn't have
-	//  to also copy the cache. This reduces overhead slightly
-	JiterpEntryDataHeader header;
-	JiterpEntryDataCache cache;
-} JiterpEntryData;
-
 // at the start of a jitted interp_entry wrapper, this is called to perform initial setup
 //  like resolving the target for delegates and setting up the thread context
 // inlining this into the wrappers would make them unnecessarily big and complex
@@ -640,60 +612,6 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	sp_args = (stackval*)context->stack_pointer;
 
 	return sp_args;
-}
-
-// after interp_entry_prologue the wrapper will set up all the argument values
-//  in the correct place and compute the stack offset, then it passes that in to this
-//  function in order to actually enter the interpreter and process the return value
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
-{
-	JiterpEntryDataHeader header;
-	MonoType *type;
-
-	// Copy the scratch buffer into a local variable. This is necessary for us to be
-	//  reentrant-safe because mono_interp_exec_method could end up hitting the trampoline
-	//  again
-	jiterp_assert(_data);
-	header = _data->header;
-
-	jiterp_assert(header.rmethod);
-	jiterp_assert(header.rmethod->method);
-	jiterp_assert(sp_args);
-
-	stackval *sp = (stackval*)header.context->stack_pointer;
-
-	InterpFrame frame = {0};
-	frame.imethod = header.rmethod;
-	frame.stack = sp;
-	frame.retval = sp;
-
-	header.context->stack_pointer = (guchar*)sp_args;
-	g_assert ((guchar*)sp_args < header.context->stack_end);
-
-	MONO_ENTER_GC_UNSAFE;
-	mono_interp_exec_method (&frame, header.context, NULL);
-	MONO_EXIT_GC_UNSAFE;
-
-	header.context->stack_pointer = (guchar*)sp;
-
-	if (header.rmethod->needs_thread_attach)
-		mono_threads_detach_coop (header.orig_domain, &header.attach_cookie);
-
-	mono_jiterp_check_pending_unwind (header.context);
-
-	if (mono_llvm_only) {
-		if (header.context->has_resume_state)
-			/* The exception will be handled in a frame above us */
-			mono_llvm_cpp_throw_exception ();
-	} else {
-		g_assert (!header.context->has_resume_state);
-	}
-
-	// The return value is at the bottom of the stack, after the locals space
-	type = header.rmethod->rtype;
-	if (type->type != MONO_TYPE_VOID)
-		mono_jiterp_stackval_to_data (type, frame.stack, res);
 }
 
 // should_abort_trace returns one of these codes depending on the opcode and current state
