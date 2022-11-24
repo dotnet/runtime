@@ -856,6 +856,7 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetCustomAttributeValue
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
 //*****************************************************************************
 //*****************************************************************************
 HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
@@ -1987,5 +1988,7 @@ ErrExit:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER
 
 #endif //FEATURE_METADATA_EMIT
