@@ -931,7 +931,8 @@ private:
                 GenTree* hwiNode   = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
                                                                        CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
                                                                        /* isSimdAsHWIntrinsic */ false);
-                indir->ReplaceWith(hwiNode, m_compiler);
+                indir      = hwiNode;
+                *val.Use() = hwiNode;
             }
             break;
 
