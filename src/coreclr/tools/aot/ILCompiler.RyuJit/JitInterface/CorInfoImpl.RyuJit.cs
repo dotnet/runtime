@@ -2222,9 +2222,18 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
-            if (!field.IsThreadStatic && !field.HasRva && field.IsInitOnly && field.OwningType is MetadataType owningType)
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
-                Debug.Assert(valueOffset == 0); // is only used for RVA (not supported currently)
+                if (field.HasRva)
+                {
+                    // TODO: get data
+                    //ISymbolNode fieldRvaData = _compilation.GetFieldRvaData(field);
+                    //byte* ptr = (byte*)ObjectToHandle(fieldRvaData); -- indirect
+                    return false;
+                }
+
+                Debug.Assert(valueOffset == 0); // is only used for RVA at the moment
 
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))

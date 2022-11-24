@@ -12010,7 +12010,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         {
             _ASSERT(!field->IsRVA());
             _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
-            _ASSERT(bufferSize == field->GetSize());
+            _ASSERT((UINT)bufferSize == field->GetSize());
 
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)

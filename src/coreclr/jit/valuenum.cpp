@@ -8494,6 +8494,26 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     }
 }
 
+static FieldSeq* GetFieldSeqFromTree(GenTree* tree, ssize_t* address)
+{
+    if (tree->IsCnsIntOrI())
+    {
+        *address = tree->AsIntCon()->IconValue();
+        return tree->AsIntCon()->gtFieldSeq;
+    }
+    else if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI())
+    {
+        ssize_t   addr = 0;
+        FieldSeq* seq  = GetFieldSeqFromTree(tree->gtGetOp1(), &addr);
+        if (seq != nullptr && !tree->gtGetOp2()->IsIconHandle())
+        {
+            *address = addr + tree->gtGetOp2()->AsIntCon()->IconValue();
+            return seq;
+        }
+    }
+    return nullptr;
+}
+
 //----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
 //    and apply a constant VN representing given element at cns_index in that array.
@@ -8513,23 +8533,15 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
     ValueNum addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
 
-    // First, let's see if we have IND<primitive>(INT_CNS) field (RVA specifically)
-    FieldSeq* fieldSeq = nullptr;
-    if (vnStore->IsVNHandle(addrVN) && (vnStore->GetHandleFlags(addrVN) == GTF_ICON_FIELD_SEQ))
-    {
-        fieldSeq = vnStore->FieldSeqVNToFieldSeq(addrVN);
-    }
-    else if (tree->gtGetOp1()->IsCnsIntOrI())
-    {
-        fieldSeq = tree->gtGetOp1()->AsIntCon()->gtFieldSeq;
-    }
+    ssize_t   address  = 0;
+    FieldSeq* fieldSeq = GetFieldSeqFromTree(tree->gtGetOp1(), &address);
 
     if (fieldSeq != nullptr)
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
 
-        ssize_t   byteOffset     = tree->gtGetOp1()->AsIntCon()->IconValue() - fieldSeq->GetOffset();
+        ssize_t   byteOffset     = address - fieldSeq->GetOffset();
         int       size           = (int)genTypeSize(tree->TypeGet());
         const int maxElementSize = sizeof(int64_t);
         if ((size > 0) && (size <= maxElementSize) && (byteOffset >= 0) && (byteOffset < INT_MAX))
