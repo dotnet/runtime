@@ -30,7 +30,7 @@ namespace System.Net.Sockets
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);
         }
 
-        public static void CheckDualModeReceiveSupport(Socket socket)
+        public static void CheckDualModePacketInfoSupport(Socket socket)
         {
             if (!SupportsDualModeIPv4PacketInfo && socket.AddressFamily == AddressFamily.InterNetworkV6 && socket.DualMode)
             {

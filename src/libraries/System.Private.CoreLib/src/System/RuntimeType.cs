@@ -15,9 +15,6 @@ namespace System
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
         public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
-        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
-        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
-        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -246,14 +243,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
-        }
-
-        public override Type GetGenericTypeDefinition()
-        {
-            if (!IsGenericType)
-                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
-
-            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
         }
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);

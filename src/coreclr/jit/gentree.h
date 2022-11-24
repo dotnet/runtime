@@ -270,9 +270,10 @@ class FieldSeq
 public:
     enum class FieldKind : uintptr_t
     {
-        Instance     = 0, // An instance field.
-        SimpleStatic = 1, // Simple static field - the handle represents a unique location.
-        SharedStatic = 2, // Static field on a shared generic type: "Class<__Canon>.StaticField".
+        Instance                 = 0, // An instance field.
+        SimpleStatic             = 1, // Simple static field - the handle represents a unique location.
+        SimpleStaticKnownAddress = 2, // Simple static field - the handle represents a known location.
+        SharedStatic             = 3, // Static field on a shared generic type: "Class<__Canon>.StaticField".
     };
 
 private:
@@ -310,7 +311,8 @@ public:
 
     bool IsStaticField() const
     {
-        return (GetKind() == FieldKind::SimpleStatic) || (GetKind() == FieldKind::SharedStatic);
+        return (GetKind() == FieldKind::SimpleStatic) || (GetKind() == FieldKind::SharedStatic) ||
+               (GetKind() == FieldKind::SimpleStaticKnownAddress);
     }
 
     bool IsSharedStaticField() const

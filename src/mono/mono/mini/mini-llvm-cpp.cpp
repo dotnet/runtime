@@ -722,7 +722,7 @@ is_overloaded_intrins (IntrinsicId id)
  *   Register an LLVM intrinsic identified by ID.
  */
 LLVMValueRef
-mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
+mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *out_type)
 {
 	if (is_overloaded_intrins (id))
 		return NULL;
@@ -734,6 +734,8 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
 			outs () << id << "\n";
 			g_assert_not_reached ();
 		}
+		auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id);
+		*out_type = wrap (type);
 		return wrap (f);
 	} else {
 		return NULL;
@@ -746,7 +748,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id)
  *   Register an overloaded LLVM intrinsic identified by ID using the supplied types.
  */
 LLVMValueRef
-mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes)
+mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes, LLVMTypeRef *out_type)
 {
 	auto intrins_id = get_intrins_id (id);
 
@@ -756,6 +758,8 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 	for (int i = 0; i < ntypes; ++i)
 		arr [i] = unwrap (types [i]);
 	auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
+	auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id, { arr, (size_t)ntypes });
+	*out_type = wrap (type);
 	return wrap (f);
 }
 

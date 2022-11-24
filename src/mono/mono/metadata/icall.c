@@ -2074,7 +2074,7 @@ ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, Mono
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (m_field_get_parent (class_field));
 
-	/* TODO: metadata-update: figure out what CoreCLR does in this situation. */
+	/* metadata-update: mono only calls this for ExplicitLayout types */
 	g_assert (!m_field_is_from_update (class_field));
 
 	return m_field_get_offset (class_field) - MONO_ABI_SIZEOF (MonoObject);
@@ -2193,9 +2193,19 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			mono_field_static_set_value_internal (vtable, cf, v);
 	} else {
 
-		if (isref)
-			MONO_HANDLE_SET_FIELD_REF (obj, cf, value);
-		else
+		if (isref) {
+			MonoObject *obj_ptr = MONO_HANDLE_RAW (obj);
+			MonoObject *value_ptr = MONO_HANDLE_RAW (value);
+			gpointer *dest;
+			if (G_LIKELY (!m_field_is_from_update (cf))) {
+				dest = (gpointer*)(((char *)obj_ptr) + m_field_get_offset (cf));
+			} else {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (cf));
+				dest = mono_metadata_update_added_field_ldflda (obj_ptr, cf->type, token, error);
+				mono_error_assert_ok (error);
+			}
+			mono_gc_wbarrier_generic_store_internal (dest, value_ptr);
+		} else
 			mono_field_set_value_internal (MONO_HANDLE_RAW (obj), cf, v); /* FIXME: make mono_field_set_value take a handle for obj */
 	}
 leave:
@@ -2226,15 +2236,18 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
-	/* TODO: metadata-update: get the values of added fields */
-	g_assert (!m_field_is_from_update (field));
 
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
-		mono_error_set_not_implemented (error, "");
-		return MONO_HANDLE_NEW (MonoObject, NULL);
+		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
+		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		return ves_icall_RuntimeFieldInfo_GetValueInternal (field_h, objHandle, error);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject)));
 	} else {
+		/* metadata-update can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return mono_value_box_handle (klass, (guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject), error);
 	}
 }
@@ -2248,16 +2261,17 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 
 	mono_class_setup_fields (m_field_get_parent (f));
 
-	/* TODO: metadata-update: set the values of added fields */
-	g_assert (!m_field_is_from_update (f));
-
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
 		return_if_nok (error);
 		ves_icall_RuntimeFieldInfo_SetValueInternal (field_h, objHandle, value_h, error);
 	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), MONO_HANDLE_RAW (value_h), FALSE);
 	} else {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		MonoGCHandle gchandle = NULL;
 		g_assert (MONO_HANDLE_RAW (value_h));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), mono_object_handle_pin_unbox (value_h, &gchandle), FALSE);
@@ -6349,27 +6363,42 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 	(void)mono_handle_class (target);
 
-	int offset = 0;
+	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
+	gboolean relative = TRUE;
+	intptr_t offset = 0;
 	for (guint i = 0; i < mono_array_handle_length (fields); ++i) {
 		MonoClassField *f;
 		MONO_HANDLE_ARRAY_GETVAL (f, fields, MonoClassField*, i);
 
 		g_assert (f);
 
-		/* TODO: metadata-update: the first field might be added, right? the rest are inside structs */
-		g_assert (!m_field_is_from_update (f));
-
-		if (i == 0)
-			offset = m_field_get_offset (f);
-		else
+		if (i == 0) {
+			if (G_LIKELY (!m_field_is_from_update (f)))
+				offset = m_field_get_offset (f);
+			else {
+				/* The first field was added by a metadata-update to an exsiting type.
+				 * Since it's store outside the object, offset is an absolute address
+				 */
+				relative = FALSE;
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
+				offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
+				mono_error_assert_ok (error);
+			}
+		} else {
+			/* metadata-update: the first field might be added, the rest are inside structs */
+			g_assert (!m_field_is_from_update (f));
 			offset += m_field_get_offset (f) - sizeof (MonoObject);
+		}
 		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
 
 	res->type = ftype;
 	res->klass = mono_class_from_mono_type_internal (ftype);
-	res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
+	if (G_LIKELY (relative))
+		res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
+	else
+		res->value = (guint8*)offset;
 }
 
 void
@@ -6537,6 +6566,9 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 		mono_error_set_invalid_operation (error, NULL);
 		return NULL_HANDLE;
 	}
+
+	/* metadata-update: looks like Roslyn doesn't set the HasDefault attribute for updates */
+	g_assert (!m_property_is_from_update (prop));
 
 	def_value = mono_class_get_property_default_value (prop, &def_type);
 

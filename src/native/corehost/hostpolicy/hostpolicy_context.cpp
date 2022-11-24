@@ -9,6 +9,7 @@
 #include <trace.h>
 #include "bundle/runner.h"
 #include "bundle/file_entry.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -109,16 +110,19 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 {
     application = args.managed_application;
     host_mode = hostpolicy_init.host_mode;
-    host_path = args.host_path;
+    host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 
     deps_resolver_t resolver
-        {
-            args,
-            hostpolicy_init.fx_definitions,
-            /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
-            hostpolicy_init.is_framework_dependent
-        };
+    {
+        args,
+        hostpolicy_init.fx_definitions,
+        hostpolicy_init.additional_deps_serialized.c_str(),
+        shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
+        hostpolicy_init.probe_paths,
+        /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
+        hostpolicy_init.is_framework_dependent
+    };
 
     pal::string_t resolver_errors;
     if (!resolver.valid(&resolver_errors))
