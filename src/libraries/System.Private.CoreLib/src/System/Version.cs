@@ -27,11 +27,8 @@ namespace System
         public Version(int major, int minor, int build, int revision)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(major);
-
             ArgumentOutOfRangeException.ThrowIfNegative(minor);
-
             ArgumentOutOfRangeException.ThrowIfNegative(build);
-
             ArgumentOutOfRangeException.ThrowIfNegative(revision);
 
             _Major = major;
@@ -43,9 +40,7 @@ namespace System
         public Version(int major, int minor, int build)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(major);
-
             ArgumentOutOfRangeException.ThrowIfNegative(minor);
-
             ArgumentOutOfRangeException.ThrowIfNegative(build);
 
             _Major = major;
@@ -57,7 +52,6 @@ namespace System
         public Version(int major, int minor)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(major);
-
             ArgumentOutOfRangeException.ThrowIfNegative(minor);
 
             _Major = major;

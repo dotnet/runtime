@@ -1871,11 +1871,11 @@
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
     <value>'{0}' must be a non-negative and non-zero value.</value>
   </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeLowerOrEqual" xml:space="preserve">
-    <value>'{0}' must be lower than or equal to '{1}'.</value>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>'{0}' must be less than or equal to '{1}'.</value>
   </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeLower" xml:space="preserve">
-    <value>'{0}' must be lower than '{1}'.</value>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>'{0}' must be less than '{1}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
     <value>'{0}' must be greater than or equal to '{1}'.</value>

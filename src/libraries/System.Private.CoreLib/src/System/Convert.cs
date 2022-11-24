@@ -2316,7 +2316,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, (inArray.Length - length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToBase64String(new ReadOnlySpan<byte>(inArray, offset, length), options);
         }
@@ -2376,7 +2376,7 @@ namespace System
 
             int inArrayLength = inArray.Length;
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, (inArrayLength - length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
             if (inArrayLength == 0)
                 return 0;

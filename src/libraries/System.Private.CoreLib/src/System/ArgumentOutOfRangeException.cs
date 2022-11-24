@@ -110,13 +110,13 @@ namespace System
         [DoesNotReturn]
         private static void ThrowGreater<T>(string? paramName, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLowerOrEqual, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
         private static void ThrowGreaterEqual<T>(string? paramName, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLower, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLess, paramName, other));
         }
 
         [DoesNotReturn]

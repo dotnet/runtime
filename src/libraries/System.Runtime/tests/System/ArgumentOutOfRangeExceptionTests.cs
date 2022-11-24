@@ -67,6 +67,7 @@ namespace System.Tests
             Assert.Contains(argumentValue.ToString(), exception.Message);
         }
 
+        private const string HelpersParamName = "value";
         private static Action ZeroHelper<T>(T value) where T : INumberBase<T> => () => ArgumentOutOfRangeException.ThrowIfZero(value);
         private static Action NegativeOrZeroHelper<T>(T value) where T : INumberBase<T> => () => ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
         private static Action GreaterThanHelper<T>(T value, T other) where T : IComparable<T> => () => ArgumentOutOfRangeException.ThrowIfGreaterThan(value, other);
@@ -77,59 +78,61 @@ namespace System.Tests
         [Fact]
         public static void GenericHelpers_ThrowIfZero_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<int>(0));
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<uint>(0));
+            
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<float>(0.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<int>(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<uint>(0));
 
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<float>(0.0f));
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<float>(-0.0f));
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<double>(0));
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<double>(+0.0));
-            Assert.Throws<ArgumentOutOfRangeException>(ZeroHelper<double>(-0.0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<float>(0.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<float>(-0.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<double>(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<double>(+0.0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<double>(-0.0));
         }
 
         [Fact]
         public static void GenericHelpers_ThrowIfNegativeZero_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(NegativeOrZeroHelper<int>(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<int>(-1));
 
-            Assert.Throws<ArgumentOutOfRangeException>(NegativeOrZeroHelper<float>(-0.0f));
-            Assert.Throws<ArgumentOutOfRangeException>(NegativeOrZeroHelper<double>(-0.0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<float>(-0.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<double>(-0.0));
         }
 
         [Fact]
         public static void GenericHelpers_ThrowIfGreaterThan_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanHelper<int>(1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanHelper<uint>(1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanHelper<double>(1.000000001, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanHelper<float>(1.00001f, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanHelper<int>(1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanHelper<uint>(1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanHelper<double>(1.000000001, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanHelper<float>(1.00001f, 1));
         }
 
         [Fact]
         public static void GenericHelpers_ThrowIfGreaterThanOrEqual_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanOrEqualHelper<int>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanOrEqualHelper<uint>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanOrEqualHelper<double>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(GreaterThanOrEqualHelper<float>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanOrEqualHelper<int>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanOrEqualHelper<uint>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanOrEqualHelper<double>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, GreaterThanOrEqualHelper<float>(1, 1));
         }
 
         [Fact]
         public static void GenericHelpers_ThrowIfLessThan_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanHelper<int>(0, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanHelper<uint>(0, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanHelper<double>(1, 1.000000001));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanHelper<float>(1, 1.00001f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanHelper<int>(0, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanHelper<uint>(0, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanHelper<double>(1, 1.000000001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanHelper<float>(1, 1.00001f));
         }
 
         [Fact]
         public static void GenericHelpers_ThrowIfLessThanOrEqual_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanOrEqualHelper<int>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanOrEqualHelper<uint>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanOrEqualHelper<double>(1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(LessThanOrEqualHelper<float>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanOrEqualHelper<int>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanOrEqualHelper<uint>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanOrEqualHelper<double>(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, LessThanOrEqualHelper<float>(1, 1));
         }
     }
 }
