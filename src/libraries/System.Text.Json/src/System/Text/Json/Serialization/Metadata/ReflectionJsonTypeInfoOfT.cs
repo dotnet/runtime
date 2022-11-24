@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [SuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         internal override void LateAddProperties()
         {
