@@ -3364,9 +3364,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         case O2K_CONST_INT:
 
             // Don't propagate handles if we need to report relocs.
-            // Allow for static field handles.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() &&
-                (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL))
+            if (opts.compReloc && curAssertion->op2.HasIconFlag())
             {
                 return nullptr;
             }
