@@ -12042,7 +12042,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         }
         else
         {
-            // Either RVA, primitve or struct (or even part of that struct)
+            // Either RVA, primitive or struct (or even part of that struct)
             size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
             UINT size = field->GetSize();
             _ASSERTE(baseAddr > 0);
