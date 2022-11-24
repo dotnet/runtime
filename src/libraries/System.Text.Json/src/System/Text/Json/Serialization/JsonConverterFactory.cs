@@ -61,16 +61,6 @@ namespace System.Text.Json.Serialization
             return converter;
         }
 
-        internal sealed override object ReadCoreAsObject(
-            ref Utf8JsonReader reader,
-            JsonSerializerOptions options,
-            scoped ref ReadStack state)
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
-
         internal sealed override bool OnTryReadAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
