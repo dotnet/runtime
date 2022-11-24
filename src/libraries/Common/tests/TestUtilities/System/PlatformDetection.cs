@@ -73,6 +73,8 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        public static bool IsPrivilegedProcess => IsUnixAndSuperUser || IsWindowsAndElevated;
+
         public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 
         private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
