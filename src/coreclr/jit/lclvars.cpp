@@ -3441,11 +3441,13 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
 class LclVarDsc_SmallCode_Less
 {
     const LclVarDsc* m_lvaTable;
+    RefCountState m_rcs;
     INDEBUG(unsigned m_lvaCount;)
 
 public:
-    LclVarDsc_SmallCode_Less(const LclVarDsc* lvaTable DEBUGARG(unsigned lvaCount))
+    LclVarDsc_SmallCode_Less(const LclVarDsc* lvaTable, RefCountState rcs DEBUGARG(unsigned lvaCount))
         : m_lvaTable(lvaTable)
+        , m_rcs(rcs)
 #ifdef DEBUG
         , m_lvaCount(lvaCount)
 #endif
@@ -3467,8 +3469,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        unsigned weight1 = dsc1->lvRefCnt();
-        unsigned weight2 = dsc2->lvRefCnt();
+        unsigned weight1 = dsc1->lvRefCnt(m_rcs);
+        unsigned weight2 = dsc2->lvRefCnt(m_rcs);
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -3550,11 +3552,13 @@ public:
 class LclVarDsc_BlendedCode_Less
 {
     const LclVarDsc* m_lvaTable;
+    RefCountState m_rcs;
     INDEBUG(unsigned m_lvaCount;)
 
 public:
-    LclVarDsc_BlendedCode_Less(const LclVarDsc* lvaTable DEBUGARG(unsigned lvaCount))
+    LclVarDsc_BlendedCode_Less(const LclVarDsc* lvaTable, RefCountState rcs DEBUGARG(unsigned lvaCount))
         : m_lvaTable(lvaTable)
+        , m_rcs(rcs)
 #ifdef DEBUG
         , m_lvaCount(lvaCount)
 #endif
@@ -3576,8 +3580,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        weight_t weight1 = dsc1->lvRefCntWtd();
-        weight_t weight2 = dsc2->lvRefCntWtd();
+        weight_t weight1 = dsc1->lvRefCntWtd(m_rcs);
+        weight_t weight2 = dsc2->lvRefCntWtd(m_rcs);
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -3617,9 +3621,9 @@ public:
         }
 
         // If the weighted ref counts are different then try the unweighted ref counts.
-        if (dsc1->lvRefCnt() != dsc2->lvRefCnt())
+        if (dsc1->lvRefCnt(m_rcs) != dsc2->lvRefCnt(m_rcs))
         {
-            return dsc1->lvRefCnt() > dsc2->lvRefCnt();
+            return dsc1->lvRefCnt(m_rcs) > dsc2->lvRefCnt(m_rcs);
         }
 
         // If one is a GC type and the other is not the GC type wins.
@@ -3638,7 +3642,7 @@ public:
  *  Sort the local variable table by refcount and assign tracking indices.
  */
 
-void Compiler::lvaSortByRefCount()
+void Compiler::lvaSortByRefCount(RefCountState rcs)
 {
     lvaTrackedCount             = 0;
     lvaTrackedCountInSizeTUnits = 0;
@@ -3672,11 +3676,11 @@ void Compiler::lvaSortByRefCount()
         // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
 
-        if (varDsc->lvRefCnt() == 0)
+        if (varDsc->lvRefCnt(rcs) == 0)
         {
             // Zero ref count, make this untracked.
             varDsc->lvTracked = 0;
-            varDsc->setLvRefCntWtd(0);
+            varDsc->setLvRefCntWtd(0, rcs);
         }
 
 #if !defined(TARGET_64BIT)
@@ -3811,11 +3815,11 @@ void Compiler::lvaSortByRefCount()
     // Now sort the tracked variable table by ref-count
     if (compCodeOpt() == SMALL_CODE)
     {
-        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_SmallCode_Less(lvaTable DEBUGARG(lvaCount)));
+        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_SmallCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
     }
     else
     {
-        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_BlendedCode_Less(lvaTable DEBUGARG(lvaCount)));
+        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_BlendedCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
     }
 
     lvaTrackedCount = min((unsigned)JitConfig.JitMaxLocalsToTrack(), trackedCount);
@@ -3830,8 +3834,8 @@ void Compiler::lvaSortByRefCount()
         varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
 
         INDEBUG(if (verbose) { gtDispLclVar(tracked[varIndex]); })
-        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(),
-                refCntWtd2str(varDsc->lvRefCntWtd()));
+        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(rcs),
+                refCntWtd2str(varDsc->lvRefCntWtd(rcs)));
     }
 
     JITDUMP("\n");

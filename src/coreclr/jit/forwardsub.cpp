@@ -88,8 +88,6 @@
 //   and in the same EH region.
 // * Rerun this later, after we have built SSA, and handle single-def single-use
 //   from SSA perspective.
-// * Fix issue in morph that can unsoundly reorder call args, and remove
-//   extra effects computation from ForwardSubVisitor.
 // * We can be more aggressive with GTF_IND_INVARIANT / GTF_IND_NONFAULTING
 //   nodes--even though they may be marked GTF_GLOB_REF, they can be freely
 //   reordered. See if this offers any benefit.

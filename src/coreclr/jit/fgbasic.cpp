@@ -87,6 +87,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;
+    fgIsDoingEarlyLiveness = false;
 
     /* Statement list is not threaded yet */
 

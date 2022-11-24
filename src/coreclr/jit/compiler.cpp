@@ -4597,6 +4597,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    // Do an early pass of liveness for forward sub purposes.
+    //
+    DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);

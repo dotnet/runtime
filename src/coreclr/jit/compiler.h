@@ -3297,7 +3297,7 @@ public:
     unsigned lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason));
     unsigned lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG(const char* reason));
 
-    void lvaSortByRefCount();
+    void lvaSortByRefCount(RefCountState rcs = RCS_NORMAL);
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
@@ -4697,10 +4697,11 @@ public:
     bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode);
 
     void fgComputeLife(VARSET_TP&       life,
-                       GenTree*         startNode,
-                       GenTree*         endNode,
+                       GenTree*         node,
                        VARSET_VALARG_TP volatileVars,
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
+
+    GenTree* fgComputeLifeNode(GenTree* tree, VARSET_TP& life, const VARSET_TP& keepAliveVars, bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
@@ -5814,6 +5815,8 @@ private:
     MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
+
+    PhaseStatus fgEarlyLiveness();
 
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
@@ -9103,6 +9106,7 @@ public:
 
     bool fgLocalVarLivenessDone; // Note that this one is used outside of debug.
     bool fgLocalVarLivenessChanged;
+    bool fgIsDoingEarlyLiveness;
     bool compLSRADone;
     bool compRationalIRForm;
 

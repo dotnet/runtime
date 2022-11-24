@@ -28,7 +28,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
 
     // We should never encounter a reference to a lclVar that has a zero refCnt.
-    if (varDsc->lvRefCnt() == 0 && (!varTypeIsPromotable(varDsc) || !varDsc->lvPromoted))
+    if (varDsc->lvRefCnt(lvaRefCountState) == 0 && (!varTypeIsPromotable(varDsc) || !varDsc->lvPromoted))
     {
         JITDUMP("Found reference to V%02u with zero refCnt.\n", lclNum);
         assert(!"We should never encounter a reference to a lclVar that has a zero refCnt.");
@@ -261,6 +261,23 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
             unreached();
+            //if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
+            //{
+            //    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+            //}
+
+            //GenTreeLclVarCommon* lclVarTree = nullptr;
+            //GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+            //if (!addrArg->DefinesLocalAddr(&lclVarTree))
+            //{
+            //    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            //}
+            //else
+            //{
+            //    // Defines a local addr
+            //    assert(lclVarTree != nullptr);
+            //    fgMarkUseDef(lclVarTree->AsLclVarCommon());
+            //}
             break;
 
         // We'll assume these are use-then-defs of memory.
@@ -482,7 +499,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 fgPerNodeLocalVarLiveness(node);
             }
         }
-        else
+        else if (fgStmtListThreaded)
         {
             for (Statement* const stmt : block->NonPhiStatements())
             {
@@ -491,6 +508,34 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 {
                     fgPerNodeLocalVarLiveness(node);
                 }
+            }
+        }
+        else
+        {
+            struct LocalLivenessVisitor : GenTreeVisitor<LocalLivenessVisitor>
+            {
+                enum
+                {
+                    DoPreOrder = true,
+                    UseExecutionOrder = true,
+                };
+
+                LocalLivenessVisitor(Compiler* comp) : GenTreeVisitor(comp)
+                {
+                }
+
+                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                {
+                    m_compiler->fgPerNodeLocalVarLiveness(*use);
+                    return fgWalkResult::WALK_CONTINUE;
+                }
+            };
+
+            LocalLivenessVisitor visitor(this);
+            for (Statement* const stmt : block->Statements())
+            {
+                compCurStmt = stmt;
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
             }
         }
 
@@ -1782,8 +1827,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
  */
 
 void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         startNode,
-                             GenTree*         endNode,
+                             GenTree*         node,
                              VARSET_VALARG_TP volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
@@ -1791,13 +1835,59 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
-    noway_assert(endNode || (startNode == compCurStmt->GetRootNode()));
 
-    // NOTE: Live variable analysis will not work if you try
-    // to use the result of an assignment node directly!
-    for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
+    if (fgIsDoingEarlyLiveness)
     {
-    AGAIN:
+        class LifeVisitor : public GenTreeVisitor<LifeVisitor>
+        {
+            VARSET_TP& m_life;
+            const VARSET_TP& m_keepAliveVars;
+            bool* m_pStmtInfoDirty;
+
+        public:
+            INDEBUG(bool MadeChanges = false);
+
+            enum
+            {
+                DoPostOrder = true,
+                UseExecutionOrder = true,
+                ReverseOrder = true, 
+            };
+
+            LifeVisitor(Compiler* comp, VARSET_TP& life, const VARSET_TP& keepAliveVars, bool* pStmtInfoDirty)
+                : GenTreeVisitor(comp)
+                , m_life(life)
+                , m_keepAliveVars(keepAliveVars)
+                , m_pStmtInfoDirty(pStmtInfoDirty)
+            {
+            }
+
+            fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+            {
+                m_compiler->fgComputeLifeNode(*use, m_life, m_keepAliveVars, m_pStmtInfoDirty DEBUGARG(&MadeChanges));
+                return fgWalkResult::WALK_CONTINUE;
+            }
+        };
+
+        LifeVisitor lifeVisitor(this, life, keepAliveVars, pStmtInfoDirty);
+        lifeVisitor.WalkTree(&node, nullptr);
+        INDEBUG(*treeModf |= lifeVisitor.MadeChanges);
+    }
+    else
+    {
+        // NOTE: Live variable analysis will not work if you try
+        // to use the result of an assignment node directly!
+        for (GenTree* tree = node; tree != nullptr; tree = tree->gtPrev)
+        {
+            tree = fgComputeLifeNode(tree, life, keepAliveVars, pStmtInfoDirty DEBUGARG(treeModf));
+        }
+    }
+}
+
+GenTree* Compiler::fgComputeLifeNode(GenTree* tree, VARSET_TP& life, const VARSET_TP& keepAliveVars, bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
+{
+    while (true)
+    {
         assert(tree->OperGet() != GT_QMARK);
 
         if (tree->gtOper == GT_CALL)
@@ -1809,9 +1899,9 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
-                LclVarDsc* varDsc       = lvaGetDesc(tree->AsLclVarCommon());
-                bool       isUse        = (tree->gtFlags & GTF_VAR_USEASG) != 0;
-                bool       doAgain      = false;
+                LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+                bool       isUse = (tree->gtFlags & GTF_VAR_USEASG) != 0;
+                bool       doAgain = false;
                 bool       storeRemoved = false;
 
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
@@ -1844,11 +1934,15 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
 
                 if (doAgain)
                 {
-                    goto AGAIN;
+                    continue;
                 }
             }
         }
+
+        break;
     }
+
+    return tree;
 }
 
 void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars)
@@ -2695,7 +2789,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 /* Compute the liveness for each tree node in the statement */
                 bool stmtInfoDirty = false;
 
-                fgComputeLife(life, compCurStmt->GetRootNode(), nullptr, volatileVars,
+                fgComputeLife(life, compCurStmt->GetRootNode(), volatileVars,
                               &stmtInfoDirty DEBUGARG(&treeModf));
 
                 if (stmtInfoDirty)
@@ -2785,3 +2879,37 @@ void Compiler::fgDispBBLiveness()
 }
 
 #endif // DEBUG
+
+PhaseStatus Compiler::fgEarlyLiveness()
+{
+    fgIsDoingEarlyLiveness = false;
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    //fgIsDoingEarlyLiveness = true;
+    //lvaSortByRefCount(RCS_EARLY);
+
+    //ClearPromotedStructDeathVars();
+
+    //// Initialize the per-block var sets.
+    //fgInitBlockVarSets();
+
+    //fgLocalVarLivenessChanged = false;
+    //do
+    //{
+    //    /* Figure out use/def info for all basic blocks */
+    //    fgPerBlockLocalVarLiveness();
+    //    EndPhase(PHASE_LCLVARLIVENESS_PERBLOCK);
+
+    //    /* Live variable analysis. */
+
+    //    fgStmtRemoved = false;
+    //    fgInterBlockLocalVarLiveness();
+    //} while (fgStmtRemoved && fgLocalVarLivenessChanged);
+
+    fgIsDoingEarlyLiveness = false;
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
