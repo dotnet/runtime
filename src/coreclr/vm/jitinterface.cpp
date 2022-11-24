@@ -12010,6 +12010,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         {
             _ASSERT(!field->IsRVA());
             _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
+            _ASSERT(bufferSize == field->GetSize());
+
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)
             {
@@ -12042,10 +12044,11 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         {
             // Either RVA, primitve or struct (or even part of that struct)
             size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
-            size_t size = field->GetSize();
+            UINT size = field->GetSize();
             _ASSERTE(baseAddr > 0);
             _ASSERTE(size > 0);
-            if (valueOffset >= 0 && valueOffset <= size - bufferSize)
+          
+            if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
                 memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
                 result = true;
