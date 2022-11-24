@@ -1026,11 +1026,8 @@ namespace System.Text.Json.SourceGeneration
 
                         bool propertyOrderSpecified = false;
 
-                        Type[] sortedTypeHierarchy = type.IsInterface
-                            ? type.GetSortedInterfaceHierarchy()
-                            : type.GetSortedClassHierarchy();
-
-                        foreach (Type currentType in sortedTypeHierarchy)
+                        // Walk the type hierarchy starting from the current type up to the base type(s)
+                        foreach (Type currentType in type.GetSortedTypeHierarchy())
                         {
                             PropertyGenerationSpec spec;
 

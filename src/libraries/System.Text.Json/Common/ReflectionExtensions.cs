@@ -4,7 +4,9 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Collections.Generic;
+#if !BUILDING_SOURCE_GENERATOR
 using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace System.Text.Json.Reflection
 {
@@ -324,60 +326,69 @@ namespace System.Text.Json.Reflection
         }
 
         /// <summary>
-        /// Returns a list containing the class hierarchy for the given type,
-        /// starting from the current type up to the least derived base type.
+        /// Returns the type hierarchy for the given type, starting from the current type up to the base type(s) in the hierarchy.
+        /// Interface hierarchies with multiple inheritance will return results using topological sorting.
         /// </summary>
-        public static Type[] GetSortedClassHierarchy(this Type type)
+        public static Type[] GetSortedTypeHierarchy(
+#if !BUILDING_SOURCE_GENERATOR
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+#endif
+            this Type type)
         {
-            var results = new List<Type>();
-
-            for (Type? current = type; current != null && current != typeof(object); current = current.BaseType)
+            if (!type.IsInterface)
             {
-                results.Add(current);
+                // Non-interface hierarchies are linear, just walk up to the earliest ancestor.
+
+                var results = new List<Type>();
+                for (Type? current = type; current != null; current = current.BaseType)
+                {
+                    results.Add(current);
+                }
+
+                return results.ToArray();
             }
-
-            return results.ToArray();
-        }
-
-        /// <summary>
-        /// Returns a list containing the interface hierarchy for the given type,
-        /// starting from the most derived types down to the least derived ones using topological sorting.
-        /// </summary>
-        public static Type[] GetSortedInterfaceHierarchy(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
-        {
-            // Topologically sorts the interface hierarchy of the given type, from most derived type to base interfaces.
-            // Because interface hierarchies support multiple inheritance, we need to sort using topological sorting.
-            // Uses a standard implementation of Kahn's algorithm to do this.
-
-            Type[] interfaces = type.GetInterfaces();
-            if (type.IsInterface)
+            else
             {
-                // include the current type if an interface
-                Type[] newArray = new Type[interfaces.Length + 1];
-                newArray[0] = type;
-                interfaces.CopyTo(newArray, 1);
-                interfaces = newArray;
-            }
+                // Interface hierarchies support multiple inheritance,
+                // query the entire list and sort them topologically.
+                Type[] interfaces = type.GetInterfaces();
+                {
+                    // include the current type into the list of interfaces
+                    Type[] newArray = new Type[interfaces.Length + 1];
+                    newArray[0] = type;
+                    interfaces.CopyTo(newArray, 1);
+                    interfaces = newArray;
+                }
 
-            if (interfaces.Length < 2)
-            {
+                TopologicalSort(interfaces, static (t1, t2) => t1.IsAssignableFrom(t2));
                 return interfaces;
             }
+        }
 
-            var graph = new Dictionary<Type, HashSet<Type>>();
-            var next = new Queue<Type>();
+        private static void TopologicalSort<T>(T[] inputs, Func<T, T, bool> isLessThan)
+            where T : notnull
+        {
+            // Standard implementation of in-place topological sorting using Kahn's algorithm.
 
-            for (int i = 0; i < interfaces.Length; i++)
+            if (inputs.Length < 2)
             {
-                Type current = interfaces[i];
-                HashSet<Type>? dependencies = null;
+                return;
+            }
 
-                for (int j = 0; j < interfaces.Length; j++)
+            var graph = new Dictionary<T, HashSet<T>>();
+            var next = new Queue<T>();
+
+            // Step 1: construct the dependency graph.
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                T current = inputs[i];
+                HashSet<T>? dependencies = null;
+
+                for (int j = 0; j < inputs.Length; j++)
                 {
-                    if (i != j && current.IsAssignableFrom(interfaces[j]))
+                    if (i != j && isLessThan(current, inputs[j]))
                     {
-                        (dependencies ??= new()).Add(interfaces[j]);
+                        (dependencies ??= new()).Add(inputs[j]);
                     }
                 }
 
@@ -394,13 +405,14 @@ namespace System.Text.Json.Reflection
             Debug.Assert(next.Count > 0, "Input graph must be a DAG.");
             int index = 0;
 
+            // Step 2: Walk the dependency graph starting with nodes that have no dependencies.
             do
             {
-                Type nextTopLevelDependency = next.Dequeue();
+                T nextTopLevelDependency = next.Dequeue();
 
-                foreach (KeyValuePair<Type, HashSet<Type>> kvp in graph)
+                foreach (KeyValuePair<T, HashSet<T>> kvp in graph)
                 {
-                    HashSet<Type> dependencies = kvp.Value;
+                    HashSet<T> dependencies = kvp.Value;
                     if (dependencies.Count > 0)
                     {
                         dependencies.Remove(nextTopLevelDependency);
@@ -412,12 +424,11 @@ namespace System.Text.Json.Reflection
                     }
                 }
 
-                interfaces[index++] = nextTopLevelDependency;
+                inputs[index++] = nextTopLevelDependency;
             }
             while (next.Count > 0);
 
-            Debug.Assert(index == interfaces.Length);
-            return interfaces;
+            Debug.Assert(index == inputs.Length);
         }
     }
 }
