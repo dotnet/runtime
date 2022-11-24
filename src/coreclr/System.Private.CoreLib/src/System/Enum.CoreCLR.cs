@@ -11,7 +11,6 @@ namespace System
 {
     public abstract partial class Enum
     {
-        // This returns 0 for all values for float/double/nint/nuint.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
@@ -84,17 +83,19 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             static EnumInfo<TUnderlyingValue> InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
-                ulong[]? uint64Values = null;
+                TUnderlyingValue[]? values = null;
                 string[]? names = null;
-                RuntimeTypeHandle enumTypeHandle = enumType.TypeHandle;
+
                 GetEnumValuesAndNames(
-                    new QCallTypeHandle(ref enumTypeHandle),
-                    ObjectHandleOnStack.Create(ref uint64Values),
+                    new QCallTypeHandle(ref enumType),
+                    ObjectHandleOnStack.Create(ref values),
                     ObjectHandleOnStack.Create(ref names),
                     getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-                bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                TUnderlyingValue[] values = ToUnderlyingValues<TUnderlyingValue>(uint64Values!);
+                Debug.Assert(values!.GetType() == typeof(TUnderlyingValue[]));
+                Debug.Assert(!getNames || names!.GetType() == typeof(string[]));
+
+                bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
                 var entry = new EnumInfo<TUnderlyingValue>(hasFlagsAttribute, values, names!);
                 enumType.GenericCache = entry;

@@ -88,16 +88,13 @@ namespace System.Tests
                 yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
                 yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
 
-                if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/29266")]
-                {
-                    // Single - parses successfully, but doesn't properly represent the underlying value
-                    yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
-                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
+                // Single
+                yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(2) };
 
-                    // Double - parses successfully, but doesn't properly represent the underlying value
-                    yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-                }
+                // Double
+                yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(2) };
             }
 
             // SimpleEnum
@@ -1409,16 +1406,16 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetNames_InvokeSingleEnum_ReturnsExpected()
         {
-            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
-            Assert.Equal(new HashSet<string>(expected), new HashSet<string>(Enum.GetNames(s_floatEnumType))); // using sets because coreclr returns 0 for all float enum values, affecting sort order
+            var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
+            Assert.Equal(expected, Enum.GetNames(s_floatEnumType));
             Assert.NotSame(Enum.GetNames(s_floatEnumType), Enum.GetNames(s_floatEnumType));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetNames_InvokeDoubleEnum_ReturnsExpected()
         {
-            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
-            Assert.Equal(new HashSet<string>(expected), new HashSet<string>(Enum.GetNames(s_doubleEnumType))); // using sets because coreclr returns 0 for all double enum values, affecting sort order
+            var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
+            Assert.Equal(expected, Enum.GetNames(s_doubleEnumType));
             Assert.NotSame(Enum.GetNames(s_doubleEnumType), Enum.GetNames(s_doubleEnumType));
         }
 
@@ -1554,7 +1551,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetValues_InvokeSingleEnum_ReturnsExpected()
         {
-            var expected = new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
+            var expected = new object[] { Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
             Assert.Equal(expected, Enum.GetValues(s_floatEnumType));
             Assert.NotSame(Enum.GetValues(s_floatEnumType), Enum.GetValues(s_floatEnumType));
         }
@@ -1562,7 +1559,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetValues_InvokeDoubleEnum_ReturnsExpected()
         {
-            var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
+            var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
             Assert.Equal(expected, Enum.GetValues(s_doubleEnumType));
             Assert.NotSame(Enum.GetValues(s_doubleEnumType), Enum.GetValues(s_doubleEnumType));
         }

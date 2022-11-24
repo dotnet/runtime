@@ -41,6 +41,29 @@ namespace System
             return res!;
         }
 
+        /// <summary>Creates a new TUnderlyingValue[] from a ulong[] array of values.</summary>
+        private static TUnderlyingValue[] ToUnderlyingValues<TUnderlyingValue>(ulong[] uint64Values)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+        {
+            TUnderlyingValue[] values;
+
+            if (typeof(TUnderlyingValue) == typeof(ulong))
+            {
+                values = (TUnderlyingValue[])(object)uint64Values;
+            }
+            else
+            {
+                values = new TUnderlyingValue[uint64Values.Length];
+
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] = TUnderlyingValue.CreateTruncating(uint64Values[i]);
+                }
+            }
+
+            return values;
+        }
+
         private static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
             where TUnderlyingValue : struct, INumber<TUnderlyingValue>
         {

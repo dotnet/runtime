@@ -846,14 +846,14 @@ namespace System
                 if (underlyingType == typeof(float))
                 {
                     parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out float localResult);
-                    result = parsed ? InternalBoxEnum(rt, (long)localResult) : null;
+                    result = parsed ? InternalBoxEnum(rt, BitConverter.SingleToInt32Bits(localResult)) : null;
                     return parsed;
                 }
 
                 if (underlyingType == typeof(double))
                 {
                     parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out double localResult);
-                    result = parsed ? InternalBoxEnum(rt, (long)localResult) : null;
+                    result = parsed ? InternalBoxEnum(rt, BitConverter.DoubleToInt64Bits(localResult)) : null;
                     return parsed;
                 }
 
@@ -2191,29 +2191,6 @@ namespace System
             }
 
             names[foundItems[0]].CopyTo(destination);
-        }
-
-        /// <summary>Creates a new TUnderlyingValue[] from a ulong[] array of values.</summary>
-        private static TUnderlyingValue[] ToUnderlyingValues<TUnderlyingValue>(ulong[] uint64Values)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
-        {
-            TUnderlyingValue[] values;
-
-            if (typeof(TUnderlyingValue) == typeof(ulong))
-            {
-                values = (TUnderlyingValue[])(object)uint64Values;
-            }
-            else
-            {
-                values = new TUnderlyingValue[uint64Values.Length];
-
-                for (int i = 0; i < values.Length; i++)
-                {
-                    values[i] = TUnderlyingValue.CreateTruncating(uint64Values[i]);
-                }
-            }
-
-            return values;
         }
 
         private static RuntimeType ValidateRuntimeType(Type enumType)
