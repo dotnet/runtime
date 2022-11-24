@@ -26238,7 +26238,7 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
             fUnscannedPromotions = true;
 
         // mark queue must be empty after process_mark_overflow
-        assert (mark_queue.get_next_marked() == nullptr);
+        mark_queue.verify_empty();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
@@ -26871,7 +26871,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     scan_dependent_handles(condemned_gen_number, &sc, true);
 
     // mark queue must be empty after scan_dependent_handles
-    assert (mark_queue.get_next_marked() == nullptr);
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26963,7 +26963,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     scan_dependent_handles(condemned_gen_number, &sc, false);
 
     // mark queue must be empty after scan_dependent_handles
-    assert (mark_queue.get_next_marked() == nullptr);
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
