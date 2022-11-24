@@ -13,7 +13,7 @@ internal sealed class DocumentParser
     {
         CILLexer lexer = new(new AntlrInputStream(contents));
         CILParser parser = new(new CommonTokenStream(lexer));
-        var result = parser.prog();
+        var result = parser.decls();
 
     }
 }

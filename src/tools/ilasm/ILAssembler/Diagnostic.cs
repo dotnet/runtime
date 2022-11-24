@@ -14,3 +14,13 @@ public enum DiagnosticSeverity
 }
 
 public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message, Location Location);
+
+internal static class DiagnosticIds
+{
+    public const string LiteralOutOfRange = "ILA0001";
+}
+
+internal static class DiagnosticMessageTemplates
+{
+    public const string LiteralOutOfRange = "The value '{0}' is out of range";
+}
