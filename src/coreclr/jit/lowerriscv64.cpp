@@ -38,8 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    // TODO-RISCV64-CQ: using B/BL for optimization.
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64: using B/BL for optimization.
     return false;
 }
 
@@ -52,7 +51,53 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (!varTypeIsFloating(parentNode->TypeGet()))
+    {
+        // Make sure we have an actual immediate
+        if (!childNode->IsCnsIntOrI())
+            return false;
+        if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
+            return false;
+
+        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+
+        switch (parentNode->OperGet())
+        {
+            case GT_CMPXCHG:
+            case GT_LOCKADD:
+            case GT_XADD:
+                NYI_RISCV64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
+                break;
+
+            case GT_ADD:
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            case GT_BOUNDS_CHECK:
+                return emitter::isValidSimm12(immVal);
+            case GT_AND:
+            case GT_OR:
+            case GT_XOR:
+                return emitter::isValidUimm11(immVal);
+            case GT_JCMP:
+                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
+                return true;
+
+            case GT_STORE_LCL_FLD:
+            case GT_STORE_LCL_VAR:
+                if (immVal == 0)
+                    return true;
+                break;
+
+            default:
+                break;
+        }
+    }
+
     return false;
 }
 
@@ -103,7 +148,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (storeLoc->OperIs(GT_STORE_LCL_FLD))
+    {
+        // We should only encounter this for lclVars that are lvDoNotEnregister.
+        verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
+    }
+    ContainCheckStoreLoc(storeLoc);
 }
 
 //------------------------------------------------------------------------
@@ -117,7 +167,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    ContainCheckStoreIndir(node);
 }
 
 //------------------------------------------------------------------------
@@ -131,7 +181,116 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+        if (blkNode->OperIs(GT_STORE_OBJ))
+        {
+            blkNode->SetOper(GT_STORE_BLK);
+        }
+
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            // The fill value of an initblk is interpreted to hold a
+            // value of (unsigned int8) however a constant of any size
+            // may practically reside on the evaluation stack. So extract
+            // the lower byte out of the initVal constant and replicate
+            // it to a larger constant whose size is sufficient to support
+            // the largest width store of the desired inline expansion.
+
+            ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
+            if (fill == 0)
+            {
+                src->SetContained();
+            }
+            else if (size >= REGSIZE_BYTES)
+            {
+                fill *= 0x0101010101010101LL;
+                src->gtType = TYP_LONG;
+            }
+            else
+            {
+                fill *= 0x01010101;
+            }
+            src->AsIntCon()->SetIconValue(fill);
+
+            ContainBlockStoreAddress(blkNode, size, dstAddr);
+        }
+        else
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_IND))
+        {
+            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
+            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
+            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
+            src->AsIndir()->Addr()->ClearContained();
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+        }
+        if (blkNode->OperIs(GT_STORE_OBJ))
+        {
+            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            {
+                blkNode->SetOper(GT_STORE_BLK);
+            }
+            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                blkNode->SetOper(GT_STORE_BLK);
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
+        }
+
+        // CopyObj or CopyBlk
+        if (blkNode->OperIs(GT_STORE_OBJ))
+        {
+            assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
+
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            if (src->OperIs(GT_IND))
+            {
+                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr());
+            }
+
+            ContainBlockStoreAddress(blkNode, size, dstAddr);
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -181,7 +340,27 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
 void Lowering::LowerCast(GenTree* tree)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(tree->OperGet() == GT_CAST);
+
+    JITDUMP("LowerCast for: ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
+    GenTree*  op1     = tree->AsOp()->gtOp1;
+    var_types dstType = tree->CastToType();
+    var_types srcType = genActualType(op1->TypeGet());
+
+    if (varTypeIsFloating(srcType))
+    {
+        noway_assert(!tree->gtOverflow());
+        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small
+                                          // int.
+    }
+
+    assert(!varTypeIsSmall(srcType));
+
+    // Now determine if we have operands that should be contained.
+    ContainCheckCast(tree->AsCast());
 }
 
 //------------------------------------------------------------------------
@@ -302,7 +481,14 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    GenTree* src = node->Data();
+    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    {
+        // an integer zero for 'src' can be contained.
+        MakeSrcContained(node, src);
+    }
+
+    ContainCheckIndir(node);
 }
 
 //------------------------------------------------------------------------
@@ -319,7 +505,34 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 //
 void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // If this is the rhs of a block copy it will be handled when we handle the store.
+    if (indirNode->TypeGet() == TYP_STRUCT)
+    {
+        return;
+    }
+
+#ifdef FEATURE_SIMD
+    NYI_RISCV64("ContainCheckIndir-SIMD");
+#endif // FEATURE_SIMD
+
+    GenTree* addr = indirNode->Addr();
+    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    {
+        MakeSrcContained(indirNode, addr);
+    }
+    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    {
+        // These nodes go into an addr mode:
+        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        MakeSrcContained(indirNode, addr);
+    }
+    else if (addr->OperIs(GT_CLS_VAR_ADDR))
+    {
+        // These nodes go into an addr mode:
+        // - GT_CLS_VAR_ADDR turns into a constant.
+        // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(indirNode, addr);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -330,7 +543,8 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // Check and make op2 contained (if it is a containable immediate)
+    CheckImmedAndMakeContained(node, node->gtOp2);
 }
 
 //------------------------------------------------------------------------
@@ -374,7 +588,50 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 //
 void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(storeLoc->OperIsLocalStore());
+    GenTree* op1 = storeLoc->gtGetOp1();
+
+    if (op1->OperIs(GT_BITCAST))
+    {
+        // If we know that the source of the bitcast will be in a register, then we can make
+        // the bitcast itself contained. This will allow us to store directly from the other
+        // type if this node doesn't get a register.
+        GenTree* bitCastSrc = op1->gtGetOp1();
+        if (!bitCastSrc->isContained() && !bitCastSrc->IsRegOptional())
+        {
+            op1->SetContained();
+            return;
+        }
+    }
+
+    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+
+#ifdef FEATURE_SIMD
+    if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
+    {
+        // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
+        if ((op1->IsIntegralConst(0) || op1->IsVectorZero()) && varDsc->lvDoNotEnregister)
+        {
+            // For an InitBlk we want op1 to be contained
+            MakeSrcContained(storeLoc, op1);
+        }
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    if (IsContainableImmed(storeLoc, op1))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+
+    // If the source is a containable immediate, make it contained, unless it is
+    // an int-size or larger store of zero to memory, because we can generate smaller code
+    // by zeroing a register and then storing it.
+    var_types type = varDsc->GetRegisterType(storeLoc);
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(type)))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -396,7 +653,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
 //------------------------------------------------------------------------
