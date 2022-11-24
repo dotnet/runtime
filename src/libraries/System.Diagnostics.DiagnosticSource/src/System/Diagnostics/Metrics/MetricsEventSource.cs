@@ -471,8 +471,8 @@ namespace System.Diagnostics.Metrics
                 }
                 else
                 {
-                    string meterName = text.Substring(0, slashIdx).Trim();
-                    string? instrumentName = text.Substring(slashIdx + 1).Trim();
+                    string meterName = text.AsSpan(0, slashIdx).Trim().ToString();
+                    string? instrumentName = text.AsSpan(slashIdx + 1).Trim().ToString();
                     return new MetricSpec(meterName, instrumentName);
                 }
             }
