@@ -78,6 +78,14 @@ const linked_functions = [
     "mono_wasm_trace_logger",
     "mono_wasm_event_pipe_early_startup_callback",
 
+    // jiterpreter.c / interp.c / transform.c
+    "mono_interp_tier_prepare_jiterpreter",
+    "mono_interp_jit_wasm_entry_trampoline",
+    "mono_interp_jit_wasm_jit_call_trampoline",
+    "mono_interp_invoke_wasm_jit_call_trampoline",
+    "mono_interp_flush_jitcall_queue",
+    "mono_jiterp_do_jit_call_indirect",
+
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",
     "mono_wasm_get_object_property_ref",

@@ -15,7 +15,7 @@ namespace TestAnonymousTypes
 
     internal class Program
     {
-        private static int Main(string[] args)
+        private static int Main()
         {
             Customer c = new Customer { Name = "Sree", Address = "something somethwere", Zip = 98007 };
 

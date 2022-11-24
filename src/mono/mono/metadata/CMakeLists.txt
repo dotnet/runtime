@@ -16,8 +16,6 @@ set(ilgen_base_sources
     method-builder-ilgen.c
     method-builder-ilgen.h
     method-builder-ilgen-internals.h
-    marshal-ilgen.c
-    marshal-ilgen.h
     marshal-lightweight.c
     marshal-lightweight.h
     marshal-shared.c
@@ -25,15 +23,7 @@ set(ilgen_base_sources
     sgen-mono-ilgen.c
     sgen-mono-ilgen.h)
 
-if(NOT ENABLE_ILGEN)
-    addprefix(mono_ilgen_sources ../metadata "${ilgen_base_sources}")
-    set_source_files_properties(${mono_ilgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
-    add_library(mono-ilgen STATIC "${mono_ilgen_sources}")
-    target_link_libraries(mono-ilgen monoapi)
-    install(TARGETS mono-ilgen LIBRARY)
-else()
-    set(ilgen_sources ${ilgen_base_sources})
-endif()
+set(ilgen_sources ${ilgen_base_sources})
 
 set(metadata_win32_sources
     w32event-win32.c)
@@ -96,7 +86,6 @@ set(metadata_common_sources
     marshal.c
     marshal.h
     marshal-internals.h
-    marshal-noilgen.c
     mempool.c
     mempool.h
     mempool-internals.h

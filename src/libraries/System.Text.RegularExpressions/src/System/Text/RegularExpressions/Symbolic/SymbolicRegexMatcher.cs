@@ -1271,7 +1271,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TInputReader : struct, IInputReader
             {
                 // Find the first position that matches with some likely character.
-                if (!matcher._findOpts!.TryFindNextStartingPosition(input, ref pos, 0))
+                if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     // No match exists
                     return false;

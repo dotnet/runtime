@@ -134,7 +134,6 @@ namespace Internal.IL.Stubs
                 {
                     marshallers[i] = Marshaller.CreateDisabledMarshaller(
                         parameterType,
-                        parameterIndex,
                         MarshallerType.Argument,
                         direction,
                         marshallers,
@@ -345,6 +344,13 @@ namespace Internal.IL.Stubs
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             InteropTypes.GetPInvokeMarshal(context)
                             .GetKnownMethod("SaveLastError", null)));
+            }
+
+            if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _pInvokeMetadata))
+            {
+                MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCMarshal");
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
+                    .GetKnownMethod("ThrowPendingExceptionObject", null)));
             }
         }
 

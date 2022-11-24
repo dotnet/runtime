@@ -9,7 +9,7 @@ public class UnmanagedToManaged {
         [System.Runtime.InteropServices.DllImport("unmanaged.dll")]
 	public static extern void UnmanagedCode( int i) ;
 
-	public static int Main(String []args){
+	public static int Main(){
 		String s = "Done";
 		int retVal = 0;
 		try {

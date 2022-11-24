@@ -227,7 +227,7 @@ namespace IntrinsicsMisoptimizationTest {
             return true;
         }
 
-        static int Main (string [] args)
+        static int Main ()
         {
             bool result = true;
             result &= TestXmm_NoCSE();

@@ -8,7 +8,7 @@ namespace System.Security.AccessControl
 {
     public sealed partial class RegistrySecurity : NativeObjectSecurity
     {
-        private static Exception? _HandleErrorCodeCore(int errorCode, string? name, SafeHandle? handle, object? context)
+        private static Exception? _HandleErrorCodeCore(int errorCode)
         {
             Exception? exception = null;
 
@@ -19,7 +19,7 @@ namespace System.Security.AccessControl
                     break;
 
                 case Interop.Errors.ERROR_INVALID_NAME:
-                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(name));
+                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, "name");
                     break;
 
                 case Interop.Errors.ERROR_INVALID_HANDLE:

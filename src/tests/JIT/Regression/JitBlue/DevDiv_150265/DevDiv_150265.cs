@@ -8,7 +8,7 @@ class Program
 {
     static bool flag;
 
-    static int Main(string[] args)
+    static int Main()
     {            
         flag = true;
         return Test();

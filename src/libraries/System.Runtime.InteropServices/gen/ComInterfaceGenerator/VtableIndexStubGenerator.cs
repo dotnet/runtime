@@ -26,7 +26,8 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> GeneratorFactory,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
             ManagedTypeInfo TypeKeyType,
             ManagedTypeInfo TypeKeyOwner,
             SequenceEqualImmutableArray<Diagnostic> Diagnostics);
@@ -301,7 +302,8 @@ namespace Microsoft.Interop
                 new MethodSignatureDiagnosticLocations(syntax),
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 typeKeyType,
                 typeKeyOwner,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -337,8 +339,8 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
-                methodStub.GeneratorFactory.Key.TargetFramework,
-                methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
+                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFramework,
+                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFrameworkVersion,
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
@@ -346,7 +348,7 @@ namespace Microsoft.Interop
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.GeneratorFactory.GeneratorFactory);
+                methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,
@@ -368,19 +370,6 @@ namespace Microsoft.Interop
                         methodStub.SignatureContext,
                         code)),
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
-        }
-
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

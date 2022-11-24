@@ -73,7 +73,7 @@ class Program
             
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         Program prog = new Program();
 

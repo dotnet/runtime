@@ -452,7 +452,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_CreateBroadcast:
         case NI_VectorT256_CreateBroadcast:
         {
-            if (varTypeIsLong(simdBaseType))
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
                 // instruction, which takes a 64-bit memory address and
@@ -592,7 +592,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
+            if (!indexOp->IsIntegralConst())
             {
                 // TODO-XARCH-CQ: We should always import these like we do with GetElement
                 // Index is not a constant, use the software fallback
@@ -671,7 +671,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             assert(numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
+            if (!indexOp->IsIntegralConst())
             {
                 // TODO-ARM64-CQ: We should always import these like we do with GetElement
                 // If index is not constant use software fallback.

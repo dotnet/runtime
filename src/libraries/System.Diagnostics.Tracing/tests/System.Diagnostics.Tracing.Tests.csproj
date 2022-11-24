@@ -6,7 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <PropertyGroup>
-    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'Android'">diagnostics_tracing</RuntimeComponents>
+    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'Android'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
   </PropertyGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
