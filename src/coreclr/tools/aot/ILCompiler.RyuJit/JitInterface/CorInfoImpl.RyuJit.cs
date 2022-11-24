@@ -13,6 +13,8 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
+using System.Drawing;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -2227,9 +2229,15 @@ namespace Internal.JitInterface
             {
                 if (field.HasRva)
                 {
-                    // TODO: get data
-                    //ISymbolNode fieldRvaData = _compilation.GetFieldRvaData(field);
-                    //byte* ptr = (byte*)ObjectToHandle(fieldRvaData); -- indirect
+                    if (field is EcmaField ecmaField)
+                    {
+                        ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
+                        if (rvaData.Length >= bufferSize && valueOffset >= 0 && valueOffset <= rvaData.Length - bufferSize)
+                        {
+                            rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                            return true;
+                        }
+                    }
                     return false;
                 }
 
