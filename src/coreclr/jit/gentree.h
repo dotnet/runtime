@@ -454,15 +454,15 @@ enum GenTreeFlags : unsigned int
 // Note that a node marked GTF_VAR_MULTIREG can only be a pure definition of all the fields, or a pure use of all the fields,
 // so we don't need the equivalent of GTF_VAR_USEASG.
 
-    GTF_VAR_MULTIREG_DEATH0 = 0x04000000, // GT_LCL_VAR -- The last-use bit for a lclVar (the first register if it is multireg).
-    GTF_VAR_DEATH           = GTF_VAR_MULTIREG_DEATH0,
-    GTF_VAR_MULTIREG_DEATH1 = 0x08000000, // GT_LCL_VAR -- The last-use bit for the second register of a multireg lclVar.
-    GTF_VAR_MULTIREG_DEATH2 = 0x10000000, // GT_LCL_VAR -- The last-use bit for the third register of a multireg lclVar.
-    GTF_VAR_MULTIREG_DEATH3 = 0x20000000, // GT_LCL_VAR -- The last-use bit for the fourth register of a multireg lclVar.
-    GTF_VAR_DEATH_MASK      = GTF_VAR_MULTIREG_DEATH0 | GTF_VAR_MULTIREG_DEATH1 | GTF_VAR_MULTIREG_DEATH2 | GTF_VAR_MULTIREG_DEATH3,
+    GTF_VAR_FIELD_DEATH0 = 0x04000000, // The last-use bit for the first field of a promoted local.
+    GTF_VAR_FIELD_DEATH1 = 0x08000000, // The last-use bit for the second field of a promoted local.
+    GTF_VAR_FIELD_DEATH2 = 0x10000000, // The last-use bit for the third field of a promoted local.
+    GTF_VAR_FIELD_DEATH3 = 0x20000000, // The last-use bit for the fourth field of a promoted local.
+    GTF_VAR_DEATH_MASK   = GTF_VAR_FIELD_DEATH0 | GTF_VAR_FIELD_DEATH1 | GTF_VAR_FIELD_DEATH2 | GTF_VAR_FIELD_DEATH3,
+    GTF_VAR_DEATH        = GTF_VAR_FIELD_DEATH0, // The last-use bit for a tracked local.
 
-// This is the amount we have to shift, plus the regIndex, to get the last use bit we want.
-#define MULTIREG_LAST_USE_SHIFT 26
+// This is the amount we have to shift, plus the index, to get the last use bit we want.
+#define FIELD_LAST_USE_SHIFT 26
 
     GTF_VAR_MULTIREG        = 0x02000000, // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                           // to/from a multireg source or destination (e.g. a call arg or return, or an op
@@ -9325,9 +9325,10 @@ inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
 inline GenTreeFlags GenTree::GetLastUseBit(int regIndex) const
 {
     assert(regIndex < 4);
-    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
-    static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
-    return (GenTreeFlags)(1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_VAR_ADDR, GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_FLD_ADDR, GT_COPY,
+                  GT_RELOAD));
+    static_assert_no_msg((1 << FIELD_LAST_USE_SHIFT) == GTF_VAR_FIELD_DEATH0);
+    return (GenTreeFlags)(1 << (FIELD_LAST_USE_SHIFT + regIndex));
 }
 
 //-----------------------------------------------------------------------------------
@@ -9344,7 +9345,8 @@ inline GenTreeFlags GenTree::GetLastUseBit(int regIndex) const
 //
 inline bool GenTree::IsLastUse(int regIndex) const
 {
-    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_VAR_ADDR, GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_FLD_ADDR, GT_COPY,
+                  GT_RELOAD));
     return (gtFlags & GetLastUseBit(regIndex)) != 0;
 }
 
@@ -9366,14 +9368,14 @@ inline bool GenTree::HasLastUse() const
 // SetLastUse: Set the last use bit for the given index
 //
 // Arguments:
-//     regIndex - the register index
+//     regIndex - the index
 //
 // Notes:
 //     This must be a GenTreeLclVar or GenTreeCopyOrReload node.
 //
-inline void GenTree::SetLastUse(int regIndex)
+inline void GenTree::SetLastUse(int index)
 {
-    gtFlags |= GetLastUseBit(regIndex);
+    gtFlags |= GetLastUseBit(index);
 }
 
 //-----------------------------------------------------------------------------------
