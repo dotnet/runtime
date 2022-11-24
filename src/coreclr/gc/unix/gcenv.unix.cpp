@@ -361,7 +361,6 @@ bool GCToOSInterface::Initialize()
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
     if (cpuCount == -1)
     {
-        GCToEEInterface::LogErrorToHost("Cannot get CPU count");
         return false;
     }
 
@@ -386,7 +385,6 @@ bool GCToOSInterface::Initialize()
 
         if (g_helperPage == MAP_FAILED)
         {
-            GCToEEInterface::LogErrorToHost("Failed to allocate g_helperPage");
             return false;
         }
 
@@ -400,14 +398,12 @@ bool GCToOSInterface::Initialize()
 
         if (status != 0)
         {
-            GCToEEInterface::LogErrorToHost("Failed to mlock g_helperPage");
             return false;
         }
 
         status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
         if (status != 0)
         {
-            GCToEEInterface::LogErrorToHost("Failed to initialize g_flushProcessWriteBuffersMutex");
             munlock(g_helperPage, OS_PAGE_SIZE);
             return false;
         }

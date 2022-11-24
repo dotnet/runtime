@@ -147,11 +147,11 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
     return tpa_list.str();
 }
 
-static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr, bool isOptional = false)
+static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
 {
     assert(mod != nullptr && symbol != nullptr && fptr != nullptr);
     *fptr = pal::get_module_symbol(mod, symbol);
-    if ((*fptr != nullptr) || isOptional)
+    if (*fptr != nullptr)
         return true;
 
     pal::fprintf(stderr, W("Export '%s' not found.\n"), symbol);
@@ -297,7 +297,7 @@ static int run(const configuration& config)
     }
 
     // The coreclr_set_error_writer is optional
-    try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func, true /* isOptional */);
+    (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
 
     // Construct CoreCLR properties.
     pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());

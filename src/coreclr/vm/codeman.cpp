@@ -1969,6 +1969,10 @@ static bool ValidateJitName(LPCWSTR pwzJitName)
 
 CORINFO_OS getClrVmOs();
 
+#define LogJITInitializationError(...) \
+    LOG((LF_JIT, LL_FATALERROR, __VA_ARGS__)); \
+    LogErrorToHost(__VA_ARGS__);
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -2021,8 +2025,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         if (pwzJitName == nullptr)
         {
             pJitLoadData->jld_hr = E_FAIL;
-            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: pwzJitName is null"));
-            LogErrorToHost("LoadAndInitializeJIT: pwzJitName is null");
+            LogJITInitializationError("LoadAndInitializeJIT: pwzJitName is null");
             return;
         }
 
@@ -2049,9 +2052,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         }
         else
         {
-            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: invalid characters in %S\n", pwzJitName));
             MAKE_UTF8PTR_FROMWIDE_NOTHROW(utf8JitName, pwzJitName);
-            LogErrorToHost("LoadAndInitializeJIT: invalid characters in %s", utf8JitName);
+            LogJITInitializationError("LoadAndInitializeJIT: invalid characters in %s", utf8JitName);
         }
     }
 
@@ -2109,34 +2111,29 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
                     else
                     {
                         // Mismatched version ID. Fail the load.
-                        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: mismatched JIT version identifier in %S\n", pwzJitName));
-                        LogErrorToHost("LoadAndInitializeJIT: mismatched JIT version identifier in %s", utf8JitName);
+                        LogJITInitializationError("LoadAndInitializeJIT: mismatched JIT version identifier in %s", utf8JitName);
                     }
                 }
                 else
                 {
-                    LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to get ICorJitCompiler in %S\n", pwzJitName));
-                    LogErrorToHost("LoadAndInitializeJIT: failed to get ICorJitCompiler in %s", utf8JitName);
+                    LogJITInitializationError("LoadAndInitializeJIT: failed to get ICorJitCompiler in %s", utf8JitName);
                 }
             }
             else
             {
-                LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %S\n", pwzJitName));
-                LogErrorToHost("LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %s", utf8JitName);
+                LogJITInitializationError("LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %s", utf8JitName);
             }
         }
         EX_CATCH
         {
-            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: caught an exception trying to initialize %S\n", pwzJitName));
-            LogErrorToHost("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
+            LogJITInitializationError("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
         }
         EX_END_CATCH(SwallowAllExceptions)
     }
     else
     {
         pJitLoadData->jld_hr = hr;
-        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to load %S, hr=0x%08x\n", pwzJitName, hr));
-        LogErrorToHost("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
+        LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
 
