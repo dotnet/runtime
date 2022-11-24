@@ -416,6 +416,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1024 * 1024)]
         public async Task ShouldUseFastPathOnSmallPayloads(int defaultBufferSize)
         {
+            if (Serializer.ForceSmallBufferInOptions)
+            {
+                return;
+            }
+
             var instrumentedResolver = new PocoWithInstrumentedFastPath.Context(
                 new JsonSerializerOptions
                 {
@@ -427,12 +432,11 @@ namespace System.Text.Json.Serialization.Tests
             PocoWithInstrumentedFastPath smallValue = CreateValueWithSerializationSize(smallValueThreshold);
 
             var stream = new MemoryStream();
-            JsonTypeInfo<PocoWithInstrumentedFastPath> jsonTypeInfo = (JsonTypeInfo<PocoWithInstrumentedFastPath>)instrumentedResolver.GetTypeInfo(typeof(PocoWithInstrumentedFastPath));
 
             // The first 10 serializations should not call into the fast path
             for (int i = 0; i < 10; i++)
             {
-                await Serializer.SerializeWrapper(stream, smallValue, jsonTypeInfo);
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
                 stream.Position = 0;
                 Assert.Equal(0, instrumentedResolver.FastPathInvocationCount);
             }
@@ -440,23 +444,28 @@ namespace System.Text.Json.Serialization.Tests
             // Subsequent iterations do call into the fast path
             for (int i = 0; i < 10; i++)
             {
-                await Serializer.SerializeWrapper(stream, smallValue, jsonTypeInfo);
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
                 stream.Position = 0;
                 Assert.Equal(i + 1, instrumentedResolver.FastPathInvocationCount);
             }
 
-            // Attempt to serialize a value that is deemed large
-            var largeValue = CreateValueWithSerializationSize(smallValueThreshold + 1);
-            await Serializer.SerializeWrapper(stream, largeValue, jsonTypeInfo);
+            // Polymorphic serialization should use the fast path
+            await Serializer.SerializeWrapper(stream, (object)smallValue, instrumentedResolver.Options);
             stream.Position = 0;
             Assert.Equal(11, instrumentedResolver.FastPathInvocationCount);
+
+            // Attempt to serialize a value that is deemed large
+            var largeValue = CreateValueWithSerializationSize(smallValueThreshold + 1);
+            await Serializer.SerializeWrapper(stream, largeValue, instrumentedResolver.Options);
+            stream.Position = 0;
+            Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
 
             // Any subsequent attempts no longer call into the fast path
             for (int i = 0; i < 10; i++)
             {
-                await Serializer.SerializeWrapper(stream, smallValue, jsonTypeInfo);
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
                 stream.Position = 0;
-                Assert.Equal(11, instrumentedResolver.FastPathInvocationCount);
+                Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
             }
 
             static PocoWithInstrumentedFastPath CreateValueWithSerializationSize(int targetSerializationSize)
@@ -470,7 +479,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public string? Value { get; set; }
 
-            public class Context : JsonSerializerContext
+            public class Context : JsonSerializerContext, IJsonTypeInfoResolver
             {
                 public int FastPathInvocationCount { get; private set; }
 
@@ -478,22 +487,28 @@ namespace System.Text.Json.Serialization.Tests
                 { }
 
                 protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
 
-                public override JsonTypeInfo? GetTypeInfo(Type type)
+                public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
                 {
                     if (type == typeof(string))
                     {
-                        return JsonMetadataServices.CreateValueInfo<string>(Options, JsonMetadataServices.StringConverter);
+                        return JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter);
+                    }
+
+                    if (type == typeof(object))
+                    {
+                        return JsonMetadataServices.CreateValueInfo<object>(options, JsonMetadataServices.ObjectConverter);
                     }
 
                     if (type == typeof(PocoWithInstrumentedFastPath))
                     {
-                        return JsonMetadataServices.CreateObjectInfo<PocoWithInstrumentedFastPath>(Options,
+                        return JsonMetadataServices.CreateObjectInfo<PocoWithInstrumentedFastPath>(options,
                             new JsonObjectInfoValues<PocoWithInstrumentedFastPath>
                             {
                                 PropertyMetadataInitializer = _ => new JsonPropertyInfo[1]
                                 {
-                                    JsonMetadataServices.CreatePropertyInfo<string>(Options,
+                                    JsonMetadataServices.CreatePropertyInfo<string>(options,
                                         new JsonPropertyInfoValues<string>
                                         {
                                             DeclaringType = typeof(PocoWithInstrumentedFastPath),
