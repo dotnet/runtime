@@ -980,23 +980,18 @@ namespace DebuggerTests
             Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public async Task SetBreakpointInProjectWithColonInSourceName()
         {
-            var isWindowsOS = await cli.SendCommand("Runtime.evaluate", CreateEvaluateArgs("navigator.appVersion.indexOf(\"Win\")!=-1"), token);
-            if (isWindowsOS.Value["result"]["value"].Value<bool>() != true)
-            {
-                var bp = await SetBreakpointInMethod("debugger-test-with-colon-in-source-name.dll", "DebuggerTests.CheckColonInSourceName", "Evaluate", 1);
-                var ret = await EvaluateAndCheck(
-                    $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-with-colon-in-source-name] DebuggerTests.CheckColonInSourceName:Evaluate'); }}, 1);",
-                    "dotnet://debugger-test-with-colon-in-source-name.dll/test:.cs",
-                    bp.Value["locations"][0]["lineNumber"].Value<int>(),
-                    bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                    $"DebuggerTests.CheckColonInSourceName.Evaluate");
-                Assert.EndsWith("debugger-test-with-colon-in-source-name/test:.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
-            }
+            var bp = await SetBreakpointInMethod("debugger-test-with-colon-in-source-name.dll", "DebuggerTests.CheckColonInSourceName", "Evaluate", 1);
+            var ret = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-with-colon-in-source-name] DebuggerTests.CheckColonInSourceName:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-with-colon-in-source-name.dll/test:.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckColonInSourceName.Evaluate");
+            Assert.EndsWith("debugger-test-with-colon-in-source-name/test:.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
-
 
         [Theory]
         [InlineData(
