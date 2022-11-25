@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Microsoft.Interop.Tests.NativeExports</AssemblyName>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AssemblyName>Microsoft.Interop.Tests.NativeExports</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
-    <UseLiveAppHost>true</UseLiveAppHost>
+    <!-- We can't use the live app host here since it isn't already built when this project gets compiled on CI. -->
+    <!-- <UseLiveAppHost>true</UseLiveAppHost> -->
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
