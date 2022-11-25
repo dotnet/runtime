@@ -200,6 +200,8 @@ namespace Regression.UnitTests
             {
                 Assert.Equal(GetUserString(baselineImport, us), GetUserString(currentImport, us));
             }
+
+            var custAttrs = AssertAndReturn(EnumCustomAttributes(baselineImport), EnumCustomAttributes(currentImport));
         }
 
         /// <summary>
@@ -243,6 +245,8 @@ namespace Regression.UnitTests
                     }
                     Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
                 }
+
+                Assert.Equal(EnumCustomAttributes(baselineImport, typedef), EnumCustomAttributes(currentImport, typedef));
             }
         }
 
@@ -1107,6 +1111,31 @@ namespace Regression.UnitTests
                     }
                 }
             }
+        }
+
+        private static List<uint> EnumCustomAttributes(IMetaDataImport import, uint tk = 0, uint tkType = 0)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumCustomAttributes(ref hcorenum, tk, tkType, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
         }
 
         private static List<uint> EnumSignatures(IMetaDataImport import)

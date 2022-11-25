@@ -123,29 +123,20 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     return true;
 }
 
-int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, uint32_t out_length, mduserstring_t* strings, uint32_t* offsets)
+bool md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, mduserstring_t* str, uint32_t* offset)
 {
     mdcxt_t* cxt = extract_mdcxt(handle);
     if (cxt == NULL)
         return -1;
 
-    if (cursor == NULL)
-        return -1;
-
-    uint32_t offset = (uint32_t)*cursor;
+    assert(cursor != NULL);
+    *offset = (uint32_t)*cursor;
     size_t next_offset;
-    uint32_t read_in = 0;
-    for (uint32_t i = 0; i < out_length; ++i)
-    {
-        if (!try_get_user_string(cxt, offset, &strings[read_in], &next_offset))
-            break;
-        offsets[i] = offset;
-        read_in++;
-        offset = (uint32_t)next_offset;
-    }
+    if (!try_get_user_string(cxt, *offset, str, &next_offset))
+        return false;
 
-    *cursor = offset;
-    return read_in;
+    *cursor = next_offset;
+    return true;
 }
 
 typedef struct _query_cxt_t

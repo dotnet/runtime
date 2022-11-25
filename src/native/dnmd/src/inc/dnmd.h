@@ -120,7 +120,7 @@ typedef struct _mduserstring_t
     uint32_t str_bytes;
     uint8_t final_byte;
 } mduserstring_t;
-int32_t md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, uint32_t out_length, mduserstring_t* strings, uint32_t* offsets);
+bool md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, mduserstring_t* str, uint32_t* offset);
 
 // Define to help debug table indexing
 //#define DEBUG_TABLE_COLUMN_LOOKUP

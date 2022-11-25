@@ -38,6 +38,7 @@ namespace Regression.Performance
                 "CreateImport",
                 "EnumTypeDefs",
                 "GetScopeProps",
+                "EnumUserStrings",
             };
 
             // Look up each scenario test export.
@@ -96,7 +97,7 @@ namespace Regression.Performance
             Console.WriteLine("Warm-up");
             test.Run(100);
 
-            const int iter = 1_000_000;
+            const int iter = 100_000;
             Console.WriteLine($"\nRun iterations - {iter}");
             test.Run(iter);
         }

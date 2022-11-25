@@ -547,36 +547,43 @@ enum class HCORENUMType : uint32_t
 class HCORENUMImpl final
 {
     HCORENUMType _type;
+    uint32_t _entrySpan; // The number of entries equal to a single unit.
 
-    union
+    struct EnumData final
     {
-        // Enumerate for tables
-        struct
+        union
         {
-            mdcursor_t Current;
-            mdcursor_t Start;
-        } _table;
+            // Enumerate for tables
+            struct
+            {
+                mdcursor_t Current;
+                mdcursor_t Start;
+            } Table;
 
-        // Enumerate for dynamic uint32_t array
-        struct
-        {
-            uint32_t Page[16];
-        } _dynamic;
+            // Enumerate for dynamic uint32_t array
+            struct
+            {
+                uint32_t Page[16];
+            } Dynamic;
+        };
+
+        uint32_t ReadIn;
+        uint32_t Total;
+        EnumData* Next;
     };
 
-    uint32_t _readIn;
-    uint32_t _total;
-    uint32_t _entrySpan; // The number of entries equal to a single unit.
-    HCORENUMImpl* _next;
+    EnumData _data;
+    EnumData* _curr;
+    EnumData* _last;
 
 public: // static
     // Lifetime operations
     static HRESULT CreateTableEnum(_In_ uint32_t count, _Out_ HCORENUMImpl** impl) noexcept;
-    static void InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept;
+    static void InitTableEnum(_Inout_ HCORENUMImpl& impl, _In_ uint32_t index, _In_ mdcursor_t cursor, _In_ uint32_t rows) noexcept;
 
     // If multiple values represent a single entry, the "entrySpan" argument
     // can be used to indicate the count for a single entry.
-    static HRESULT CreateDynamicEnum(_Out_ HCORENUMImpl** impl, _In_opt_ uint32_t entrySpan = 1) noexcept;
+    static HRESULT CreateDynamicEnum(_Out_ HCORENUMImpl** impl, _In_ uint32_t entrySpan = 1) noexcept;
     static HRESULT AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t value) noexcept;
 
     static void Destroy(_In_ HCORENUMImpl* impl) noexcept;
@@ -601,7 +608,7 @@ public: // instance
     HRESULT Reset(_In_ ULONG position) noexcept;
 
 private:
-    HRESULT ReadOneToken(mdToken& rToken) noexcept;
+    HRESULT ReadOneToken(mdToken& rToken, uint32_t& count) noexcept;
     HRESULT ReadTableTokens(
         mdToken rTokens[],
         uint32_t cMax,
