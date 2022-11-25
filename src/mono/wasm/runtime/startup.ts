@@ -69,7 +69,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // execution order == [2] ==
     module.preRun = [() => preRunAsync(userPreRun)];
     // execution order == [4] ==
-    module.onRuntimeInitialized = () => { console.log("MF onInit"); onRuntimeInitializedAsync(userOnRuntimeInitialized); };
+    module.onRuntimeInitialized = () => { onRuntimeInitializedAsync(userOnRuntimeInitialized); };
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==
