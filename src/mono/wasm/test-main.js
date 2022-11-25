@@ -243,6 +243,20 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
+if (typeof (globalThis.fetch) !== "function" && typeof (read) === "function") {
+    // note that it can't open files with unicode names, like Stra<unicode char - Latin Small Letter Sharp S>e.xml
+    // https://bugs.chromium.org/p/v8/issues/detail?id=12541
+    globalThis.fetch = async (url) => {
+        const arrayBuffer = new Uint8Array(read(url, "binary"));
+        return {
+            ok: true,
+            url,
+            arrayBuffer: () => arrayBuffer,
+            json: () => { throw new Error("Dummy fetch doesn't support json"); }
+        };
+    }
+}
+
 async function run() {
     try {
         const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
@@ -263,7 +277,7 @@ async function run() {
             .withExitCodeLogging()
             .withElementOnExit();
 
-        const response = await fetch("/memory.dat");
+        const response = await fetch("./memory.dat");
         const buffer = await response.arrayBuffer();
         const memory = new Int8Array(buffer);
 
