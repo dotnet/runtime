@@ -5252,14 +5252,19 @@ namespace System.Threading.Tasks
                 // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
                 else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
                 {
-                    // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
-                    // so we only need to confirm that this TResult has the same bits as default(TResult).
-                    if ((Unsafe.SizeOf<TResult>() == sizeof(byte) && Unsafe.As<TResult, byte>(ref result) == default(byte)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ushort) && Unsafe.As<TResult, ushort>(ref result) == default(ushort)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(uint) && Unsafe.As<TResult, uint>(ref result) == default) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ulong) && Unsafe.As<TResult, ulong>(ref result) == default))
+                    unsafe
                     {
-                        return Task<TResult>.s_defaultResultTask;
+#pragma warning disable 8500 // sizeof of managed types
+                        // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
+                        // so we only need to confirm that this TResult has the same bits as default(TResult).
+                        if ((sizeof(TResult) == sizeof(byte) && Unsafe.As<TResult, byte>(ref result) == default(byte)) ||
+                            (sizeof(TResult) == sizeof(ushort) && Unsafe.As<TResult, ushort>(ref result) == default(ushort)) ||
+                            (sizeof(TResult) == sizeof(uint) && Unsafe.As<TResult, uint>(ref result) == default) ||
+                            (sizeof(TResult) == sizeof(ulong) && Unsafe.As<TResult, ulong>(ref result) == default))
+                        {
+                            return Task<TResult>.s_defaultResultTask;
+                        }
+#pragma warning restore 8500
                     }
                 }
             }

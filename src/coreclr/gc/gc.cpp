@@ -25971,6 +25971,7 @@ BOOL gc_heap::process_mark_overflow(int condemned_gen_number)
 
     BOOL  overflow_p = FALSE;
 recheck:
+    drain_mark_queue();
     if ((! (max_overflow_address == 0) ||
          ! (min_overflow_address == MAX_PTR)))
     {
@@ -26235,7 +26236,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         if (process_mark_overflow(condemned_gen_number))
             fUnscannedPromotions = true;
 
-        drain_mark_queue();
+        // mark queue must be empty after process_mark_overflow
+        mark_queue.verify_empty();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
@@ -26866,7 +26868,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // handle table has been fully promoted.
     GCScan::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
     scan_dependent_handles(condemned_gen_number, &sc, true);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26956,7 +26960,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // Scan dependent handles again to promote any secondaries associated with primaries that were promoted
     // for finalization. As before scan_dependent_handles will also process any mark stack overflow.
     scan_dependent_handles(condemned_gen_number, &sc, false);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 #endif //FEATURE_PREMORTEM_FINALIZATION
 

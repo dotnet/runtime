@@ -459,13 +459,18 @@ namespace System.Buffers
                             {
                                 trimCount++;
                             }
-                            if (Unsafe.SizeOf<T>() > StackModerateTypeSize)
+                            unsafe
                             {
-                                trimCount++;
-                            }
-                            if (Unsafe.SizeOf<T>() > StackLargeTypeSize)
-                            {
-                                trimCount++;
+#pragma warning disable 8500 // sizeof of managed types
+                                if (sizeof(T) > StackModerateTypeSize)
+                                {
+                                    trimCount++;
+                                }
+                                if (sizeof(T) > StackLargeTypeSize)
+                                {
+                                    trimCount++;
+                                }
+#pragma warning restore 8500
                             }
                             break;
 

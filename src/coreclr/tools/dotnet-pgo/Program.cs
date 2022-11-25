@@ -776,7 +776,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int shareWidth = (int)(Math.Round(share * tableWidth));
                 bool lastRow = (i == rows.Length - 1);
 
-                Console.Write($"        {(lastRow ? "≥" : " ")}{i,2}: [");
+                Console.Write($"        {(lastRow ? "\u2265" : " ")}{i,2}: [");
                 Console.Write(new string('#', shareWidth));
                 Console.Write(new string('.', tableWidth - shareWidth));
                 Console.Write("] ");
