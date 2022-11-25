@@ -92,7 +92,11 @@ namespace System.Net.Internals
             }
 
             InternalSize = size;
-            Buffer = new byte[(size / IntPtr.Size + 2) * IntPtr.Size];
+#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
+            // WSARecvFrom needs a pinned pointer to the size. Allocate 4 extra bytes for it, so we don't need to pin another buffer.
+            size += 4;
+#endif
+            Buffer = new byte[size];
 
             SocketAddressPal.SetAddressFamily(Buffer, family);
         }
@@ -174,16 +178,17 @@ namespace System.Net.Internals
         // For ReceiveFrom we need to pin address size, using reserved Buffer space.
         internal void CopyAddressSizeIntoBuffer()
         {
-            Buffer[Buffer.Length - IntPtr.Size] = unchecked((byte)(InternalSize));
-            Buffer[Buffer.Length - IntPtr.Size + 1] = unchecked((byte)(InternalSize >> 8));
-            Buffer[Buffer.Length - IntPtr.Size + 2] = unchecked((byte)(InternalSize >> 16));
-            Buffer[Buffer.Length - IntPtr.Size + 3] = unchecked((byte)(InternalSize >> 24));
+            int addressSizeOffset = GetAddressSizeOffset();
+            Buffer[addressSizeOffset] = unchecked((byte)(InternalSize));
+            Buffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
+            Buffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
+            Buffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
         }
 
         // Can be called after the above method did work.
         internal int GetAddressSizeOffset()
         {
-            return Buffer.Length - IntPtr.Size;
+            return Buffer.Length - 4;
         }
 
         public override bool Equals(object? comparand) =>
