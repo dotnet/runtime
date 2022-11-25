@@ -127,7 +127,6 @@
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemReflectionMetadataVersion>6.0.1</SystemReflectionMetadataVersion>
-    <SystemReflectionMetadataLoadContextVersion>6.0.0</SystemReflectionMetadataLoadContextVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
     <SystemReflectionEmitLightweightVersion>4.7.0</SystemReflectionEmitLightweightVersion>
