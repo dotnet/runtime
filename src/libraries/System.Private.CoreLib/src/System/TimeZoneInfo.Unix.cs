@@ -38,17 +38,6 @@ namespace System
 
             HasIanaId = true;
 
-            // Handle UTC and its aliases
-            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
-            {
-                _standardDisplayName = GetUtcStandardDisplayName();
-                _daylightDisplayName = _standardDisplayName;
-                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
-                _baseUtcOffset = TimeSpan.Zero;
-                _adjustmentRules = Array.Empty<AdjustmentRule>();
-                return;
-            }
-
             TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
@@ -95,6 +84,17 @@ namespace System
                         daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
+            }
+
+            // Handle UTC and its aliases
+            if (_baseUtcOffset == TimeSpan.Zero && StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            {
+                _standardDisplayName = GetUtcStandardDisplayName();
+                _daylightDisplayName = _standardDisplayName;
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
+                _baseUtcOffset = TimeSpan.Zero;
+                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                return;
             }
 
             // Set fallback values using abbreviations, base offset, and id
