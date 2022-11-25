@@ -1638,7 +1638,29 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeProps(
     void const** ppBlob,
     ULONG* pcbSize)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(cv) != mdtCustomAttribute)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), cv, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdToken obj;
+    mdToken type;
+    uint8_t const* blob;
+    uint32_t blobLen;
+    if (1 != md_get_column_value_as_token(cursor, mdtCustomAttribute_Parent, 1, &obj)
+        || 1 != md_get_column_value_as_token(cursor, mdtCustomAttribute_Type, 1, &type)
+        || 1 != md_get_column_value_as_blob(cursor, mdtCustomAttribute_Value, 1, &blob, &blobLen))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    *ptkObj = obj;
+    *ptkType = type;
+    *ppBlob = blob;
+    *pcbSize = blobLen;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeRef(

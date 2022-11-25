@@ -148,7 +148,7 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumMembersWithName(baselineImport, typedef), EnumMembersWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodImpls(baselineImport, typedef), EnumMethodImpls(currentImport, typedef));
-                
+
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
                 {
@@ -186,7 +186,7 @@ namespace Regression.UnitTests
                 }
                 Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
                 Assert.Equal(GetNestedClassProps(baselineImport, typedef), GetNestedClassProps(currentImport, typedef));
-                Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef)); 
+                Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
             }
 
             var sigs = AssertAndReturn(EnumSignatures(baselineImport), EnumSignatures(currentImport));
@@ -202,6 +202,10 @@ namespace Regression.UnitTests
             }
 
             var custAttrs = AssertAndReturn(EnumCustomAttributes(baselineImport), EnumCustomAttributes(currentImport));
+            foreach (var custAttr in custAttrs)
+            {
+                Assert.Equal(GetCustomAttributeProps(baselineImport, custAttr), GetCustomAttributeProps(currentImport, custAttr));
+            }
         }
 
         /// <summary>
@@ -958,6 +962,27 @@ namespace Regression.UnitTests
             if (hr >= 0)
             {
                 values.Add(ptkEnclosingClass);
+            }
+            return values;
+        }
+
+        private static List<nuint> GetCustomAttributeProps(IMetaDataImport import, uint tk)
+        {
+            List<nuint> values = new();
+
+            int hr = import.GetCustomAttributeProps(tk,
+                out uint ptkObj,
+                out uint ptkType,
+                out nint ppBlob,
+                out uint pcbSize);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(ptkObj);
+                values.Add(ptkType);
+                values.Add((nuint)ppBlob);
+                values.Add(pcbSize);
             }
             return values;
         }

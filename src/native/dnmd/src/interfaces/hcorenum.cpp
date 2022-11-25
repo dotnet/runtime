@@ -91,7 +91,7 @@ HRESULT HCORENUMImpl::AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t valu
 {
     assert(impl._type == HCORENUMType::Dynamic);
 
-    // Check if we have exhaused the last page
+    // Check if we have exhausted the last page
     EnumData* currData = impl._last;
     if (currData->Total >= ARRAYSIZE(currData->Dynamic.Page))
     {
