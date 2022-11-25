@@ -3364,10 +3364,16 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         case O2K_CONST_INT:
 
             // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() &&
-                (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL))
+            if (opts.compReloc && curAssertion->op2.HasIconFlag())
             {
-                return nullptr;
+                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL && tree->TypeIs(TYP_I_IMPL))
+                {
+                    // t
+                }
+                else
+                {
+                    return nullptr;
+                }
             }
 
             // We assume that we do not try to do assertion prop on mismatched
