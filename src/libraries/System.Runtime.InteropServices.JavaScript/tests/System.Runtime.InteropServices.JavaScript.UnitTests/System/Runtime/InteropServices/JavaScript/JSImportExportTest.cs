@@ -32,6 +32,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task Dynamic()
+        {
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            Assert.NotNull(first);
+            dynamic instance1 = first.GetPropertyAsJSObject("instance");
+
+            //Assert.Null((object)instance1.missing);
+            //Assert.Null((object)instance1.nnn);
+            Assert.Equal("xxx", (string)instance1.xxx);
+            var yyy = instance1.yyy;
+            Assert.IsType<JSObject>(yyy);
+            //double zzz = yyy.zzz;
+            //Assert.Equal(3.14d, (double)zzz);
+        }
+
+
+        [Fact]
         public unsafe void GlobalThis()
         {
             Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));

@@ -363,7 +363,13 @@ export function backback(arg1, arg2, arg3) {
     }
 }
 
-export const instance = {}
+export const instance = {
+    nnn:null,
+    xxx:"xxx",
+    yyy:{
+        zzz:3.14
+    }
+}
 
 globalThis.javaScriptTestHelper = instance;
 globalThis.data = new JSData("i-n-s-t-a-n-c-e");

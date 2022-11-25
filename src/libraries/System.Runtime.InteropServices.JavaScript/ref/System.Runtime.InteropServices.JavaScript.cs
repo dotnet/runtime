@@ -109,7 +109,7 @@ public abstract class JSType
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]
-public class JSObject : IDisposable
+public class JSObject : IDisposable, System.Dynamic.IDynamicMetaObjectProvider
 {
     internal JSObject() { throw null; }
     public bool IsDisposed { get { throw null; } }
@@ -131,6 +131,8 @@ public class JSObject : IDisposable
     public void SetProperty(string propertyName, string? value) { throw null; }
     public void SetProperty(string propertyName, JSObject? value) { throw null; }
     public void SetProperty(string propertyName, byte[]? value) { throw null; }
+
+    public System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter) => throw null;
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]

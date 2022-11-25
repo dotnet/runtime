@@ -10,5 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Linq.Expressions\ref\System.Linq.Expressions.csproj" />
   </ItemGroup>
 </Project>
