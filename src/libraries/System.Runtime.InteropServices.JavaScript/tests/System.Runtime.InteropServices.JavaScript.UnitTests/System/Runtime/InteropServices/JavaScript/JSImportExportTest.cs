@@ -34,6 +34,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task Dynamic()
         {
+            dynamic globalThis = JSHost.GlobalThis;
+            Console.WriteLine("Hello from " + globalThis.os?.d8Path);
+            Console.WriteLine("Hello from " + globalThis.location?.href);
+
             var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
             Assert.NotNull(first);
             dynamic instance1 = first.GetPropertyAsJSObject("instance");
