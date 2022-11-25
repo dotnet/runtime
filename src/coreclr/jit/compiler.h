@@ -548,6 +548,13 @@ public:
     unsigned char lvIsSplit : 1;   // Set if the argument is splited.
 #endif                             // defined(TARGET_LOONGARCH64)
 
+#if defined(TARGET_RISCV64)
+    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
+    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
+    unsigned char lvIsSplit : 1;   // Set if the argument is splited.
+#endif                             // defined(TARGET_RISCV64)
+
+
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates

@@ -1017,8 +1017,10 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    int srcCount = BuildOperandUses(cast->CastOp());
+    BuildDef(cast);
+
+    return srcCount;
 }
 
 #endif // TARGET_RISCV64
