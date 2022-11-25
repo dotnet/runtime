@@ -175,6 +175,7 @@ namespace System.Net.Internals
             return new IPEndPoint(GetIPAddress(), GetPort());
         }
 
+#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
         // For ReceiveFrom we need to pin address size, using reserved Buffer space.
         internal void CopyAddressSizeIntoBuffer()
         {
@@ -190,6 +191,7 @@ namespace System.Net.Internals
         {
             return Buffer.Length - 4;
         }
+#endif
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other &&
