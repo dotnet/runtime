@@ -3,14 +3,14 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.Json.Tests.SourceGenRegressionTests.Net60;
+using System.Text.Json.Tests.SourceGenRegressionTests.Net70;
 using Xunit;
-using HighLowTemps = System.Text.Json.Tests.SourceGenRegressionTests.Net60.HighLowTemps;
-using WeatherForecastWithPOCOs = System.Text.Json.Tests.SourceGenRegressionTests.Net60.WeatherForecastWithPOCOs;
+using HighLowTemps = System.Text.Json.Tests.SourceGenRegressionTests.Net70.HighLowTemps;
+using WeatherForecastWithPOCOs = System.Text.Json.Tests.SourceGenRegressionTests.Net70.WeatherForecastWithPOCOs;
 
 namespace System.Text.Json.Tests.SourceGenRegressionTests
 {
-    public static class Net60RegressionTests
+    public static class Net70RegressionTests
     {
         [Theory]
         [MemberData(nameof(GetSupportedTypeRoundtripData))]
@@ -26,7 +26,7 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
 
         public static IEnumerable<object[]> GetSupportedTypeRoundtripData()
         {
-            var ctx = Net60GeneratedContext.Default;
+            var ctx = Net70GeneratedContext.Default;
             yield return Wrap(ctx.Int32, 42, "42");
             yield return Wrap(ctx.DateTimeOffset, DateTimeOffset.MinValue, "\"0001-01-01T00:00:00+00:00\"");
             yield return Wrap(ctx.String, "I am a string", "\"I am a string\"");
@@ -41,7 +41,7 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
                 DatesAvailable = new List<DateTimeOffset> { DateTimeOffset.MinValue },
                 TemperatureRanges = new Dictionary<string, HighLowTemps>
                 {
-                    ["key"] = new HighLowTemps { Low = 0, High = 5}
+                    ["key"] = new HighLowTemps { Low = 0, High = 5 }
                 },
                 SummaryWords = new[] { "word1", "word2" },
             },
@@ -66,11 +66,11 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
         [MemberData(nameof(GetSupportedTypeRoundtripData_OptionsBased))]
         public static void SupportedTypeRoundtrip_OptionsBased<T>(T value, string expectedJson)
         {
-            string json = JsonSerializer.Serialize(value, Net60GeneratedContext.Default.Options);
+            string json = JsonSerializer.Serialize(value, Net70GeneratedContext.Default.Options);
             JsonTestHelper.AssertJsonEqual(expectedJson, json);
 
-            T deserializedValue = JsonSerializer.Deserialize<T>(json, Net60GeneratedContext.Default.Options);
-            json = JsonSerializer.Serialize(deserializedValue, Net60GeneratedContext.Default.Options);
+            T deserializedValue = JsonSerializer.Deserialize<T>(json, Net70GeneratedContext.Default.Options);
+            json = JsonSerializer.Serialize(deserializedValue, Net70GeneratedContext.Default.Options);
             JsonTestHelper.AssertJsonEqual(expectedJson, json);
         }
 
@@ -80,8 +80,8 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
             DateTime value = DateTime.MinValue;
             string json = JsonSerializer.Serialize(value);
 
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, value.GetType(), Net60GeneratedContext.Default));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, value.GetType(), Net60GeneratedContext.Default));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, value.GetType(), Net70GeneratedContext.Default));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, value.GetType(), Net70GeneratedContext.Default));
         }
 
         public static IEnumerable<object[]> GetSupportedTypeRoundtripData_OptionsBased()
@@ -119,7 +119,7 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
         [Fact]
         public static void HighLowTemps_ContextReportsCorrectMetadata()
         {
-            JsonTypeInfo<HighLowTemps> jsonTypeInfo = Net60GeneratedContext.Default.HighLowTemps;
+            JsonTypeInfo<HighLowTemps> jsonTypeInfo = Net70GeneratedContext.Default.HighLowTemps;
 
             HighLowTemps instance = jsonTypeInfo.CreateObject();
             Assert.Equal(0, instance.Low);
@@ -141,16 +141,17 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
         }
 
         [Fact]
-        public static void CombinedContexts_ThrowsInvalidOperationException()
+        public static void CombinedContexts_WorksAsExpected()
         {
             var options = new JsonSerializerOptions
             {
-                TypeInfoResolver = JsonTypeInfoResolver.Combine(Net60GeneratedContext.Default, new DefaultJsonTypeInfoResolver())
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(Net70GeneratedContext.Default, new DefaultJsonTypeInfoResolver())
             };
 
-            // v6 Contexts do not implement IJsonTypeInfoResolver so combined resolvers will throw by default.
-            // We're fine with this since it doesn't introduce any regressions to existing code.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new HighLowTemps(), options));
+            // Unlike v6, v7 Contexts do implement IJsonTypeInfoResolver so combined resolvers will produce the expected output.
+            string expected = JsonSerializer.Serialize(new HighLowTemps(), Net70GeneratedContext.Default.HighLowTemps);
+            string actual = JsonSerializer.Serialize(new HighLowTemps(), options);
+            Assert.Equal(expected, actual);
         }
     }
 }
