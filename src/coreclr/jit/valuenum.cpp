@@ -8578,7 +8578,8 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-    if (fgGetFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq))
+    if (fgGetFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq) &&
+        (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
