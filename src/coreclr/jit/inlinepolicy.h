@@ -228,6 +228,8 @@ public:
 
     double DetermineMultiplier() override;
 
+    bool BudgetCheck() const override;
+
     bool RequiresPreciseScan() override
     {
         return true;

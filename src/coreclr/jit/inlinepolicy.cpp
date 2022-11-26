@@ -1440,16 +1440,21 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
     m_ProfileFrequency = value;
 }
 
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
 bool ExtendedDefaultPolicy::BudgetCheck() const
 {
-    // Only relevant if we're actually inlining.
     if (m_IsPrejitRoot)
     {
+        // Only relevant if we're actually inlining.
         return false;
     }
 
-    // The strategy tracks the amout of inlining done so far,
-    // so it performs the actual check.
+    // The strategy tracks the amout of inlining done so far, so it performs the actual check.
     const bool overBudget = m_RootCompiler->m_inlineStrategy->BudgetCheck(m_CodeSize);
 
     if (overBudget)
@@ -1474,20 +1479,17 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
             // Analyze potential benefits, we take into account:
             //  FoldableBranches
             //  FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
-            double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
+            const double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
 
             // We ran out of time budget so have to be quite conservative
-            double cons =
+            const double cons =
                 m_CallsiteDepth * (2.0 + min(1.0, (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack()));
 
             JITDUMP("Considering over-budget inlining for forceinline - pros:%g, cons:%g\n", pros, cons);
 
-            if (pros > cons)
-            {
-                return false;
-            }
-            return true;
+            return pros < cons;
         }
+        return true;
     }
     return false;
 }
