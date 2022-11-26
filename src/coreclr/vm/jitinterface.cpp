@@ -11968,6 +11968,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     _ASSERT(fieldHnd != NULL);
     _ASSERT(buffer != NULL);
     _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
 
     bool result = false;
 

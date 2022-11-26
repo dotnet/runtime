@@ -8495,6 +8495,65 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 }
 
 //----------------------------------------------------------------------------------
+// fgGetFieldSeqAndAddress: Try to obtain a constant address with a FieldSeq from the
+//    given tree. It can be either INT_CNS or e.g. ADD(INT_CNS, ADD(INT_CNS, INT_CNS))
+//    tree where only one of the constants is expected to have a field sequence.
+//
+// Arguments:
+//    tree     - tree node to inspect
+//    pAddress - [Out] resulting address with all offsets combined
+//    pFseq    - [Out] field sequence
+//
+// Return Value:
+//    true if the pattern was recognized and a new VN is assigned
+//
+static bool fgGetFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+{
+    if (tree->IsCnsIntOrI())
+    {
+        ssize_t   val  = tree->AsIntCon()->IconValue();
+        FieldSeq* fseq = tree->AsIntCon()->gtFieldSeq;
+        if (fseq != nullptr)
+        {
+            *pFseq    = fseq;
+            *pAddress = val;
+            return true;
+        }
+        return false;
+    }
+
+    ssize_t val = 0;
+    while (tree->OperIs(GT_ADD))
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+        if (op1->IsCnsIntOrI() && (op1->AsIntCon()->gtFieldSeq == nullptr))
+        {
+            val += op1->AsIntCon()->IconValue();
+            tree = op2;
+        }
+        else if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq == nullptr))
+        {
+            val += op2->AsIntCon()->IconValue();
+            tree = op1;
+        }
+        else
+        {
+            // Unsupported tree
+            return false;
+        }
+    }
+
+    if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr))
+    {
+        *pFseq    = tree->AsIntCon()->gtFieldSeq;
+        *pAddress = tree->AsIntCon()->IconValue() + val;
+        return true;
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
 //    and apply a constant VN representing given element at cns_index in that array.
 //
@@ -8519,14 +8578,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-
-    if (tree->gtGetOp1()->IsCnsIntOrI())
-    {
-        fieldSeq = tree->gtGetOp1()->AsIntCon()->gtFieldSeq;
-        address  = tree->gtGetOp1()->AsIntCon()->IconValue();
-    }
-
-    if (fieldSeq != nullptr)
+    if (fgGetFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
