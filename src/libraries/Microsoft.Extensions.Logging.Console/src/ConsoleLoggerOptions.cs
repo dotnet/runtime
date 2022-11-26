@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         /// <summary>
-        /// Name of the log message formatter to use. Defaults to <c>simple</c>.
+        /// Name of the log message formatter to use. Defaults to "simple" />.
         /// </summary>
         public string? FormatterName { get; set; }
 
