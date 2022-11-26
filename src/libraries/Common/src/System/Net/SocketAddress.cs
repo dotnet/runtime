@@ -93,8 +93,9 @@ namespace System.Net.Internals
 
             InternalSize = size;
 #if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
-            // WSARecvFrom needs a pinned pointer to the size. Allocate 4 extra bytes for it, so we don't need to pin another buffer.
-            size += 4;
+            // WSARecvFrom needs a pinned pointer to the 32bit socket address size.
+            // Allocate extra bytes at the end of Buffer, so we don't need to pin anything else.
+            size += sizeof(int);
 #endif
             Buffer = new byte[size];
 
@@ -189,7 +190,7 @@ namespace System.Net.Internals
         // Can be called after the above method did work.
         internal int GetAddressSizeOffset()
         {
-            return Buffer.Length - 4;
+            return Buffer.Length - sizeof(int);
         }
 #endif
 
