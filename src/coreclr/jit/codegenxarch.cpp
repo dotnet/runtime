@@ -1315,7 +1315,7 @@ void CodeGen::genCodeForSelect(GenTreeConditional* select)
 
     // If the 'true' operand was allocated the same register as the target
     // register then flip it to the false value so we can skip a reg-reg mov.
-    if (!trueVal->isContained() && (trueVal->GetRegNum() == dstReg))
+    if (trueVal->isUsedFromReg() && (trueVal->GetRegNum() == dstReg))
     {
         std::swap(trueVal, falseVal);
         cmovKind = INS_cmove;
