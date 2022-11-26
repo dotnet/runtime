@@ -3008,6 +3008,9 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType))
+                return false;
+
             if (!field.IsThreadStatic && field.IsInitOnly && field.HasRva && field is EcmaField ecmaField)
             {
                 ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
