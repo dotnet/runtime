@@ -1273,9 +1273,9 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
 {
 #ifdef DEBUG
-    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsDisplayName(id),
-           emitIfName(id->idInsFmt()));
-    assert(!"PerfScore: unhandled instruction");
+    //printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsDisplayName(id),
+    //       emitIfName(id->idInsFmt()));
+    //assert(!"PerfScore: unhandled instruction");
 #endif
     pResult->insThroughput = PERFSCORE_THROUGHPUT_1C;
     pResult->insLatency    = PERFSCORE_LATENCY_1C;

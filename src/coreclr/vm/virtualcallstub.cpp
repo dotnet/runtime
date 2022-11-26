@@ -1245,7 +1245,9 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRec
     if (!ret)
     {
         // Free list is empty, allocate a block of indcells from indcell_heap and insert it into the free list.
-        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocMem(S_SIZE_T(cellsPerBlock) * S_SIZE_T(sizeof(BYTE *)));
+        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocMem(S_SIZE_T(cellsPerBlock) * S_SIZE_T(sizeof(BYTE *) * 3));
+
+        memset(pBlock, 0, cellsPerBlock * sizeof(BYTE *) * 3);
 
         // return the first cell in the block and add the rest to the free list
         ret = (BYTE *)pBlock;
@@ -1937,9 +1939,9 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         {
                             DispatchEntry entryD;
                             Prober probeD(&entryD);
-                            if (dispatchers->SetUpProber(token.To_SIZE_T(), (size_t) objectType, &probeD))
+                            if (dispatchers->SetUpProber(token.To_SIZE_T(), (size_t)objectType, &probeD))
                             {
-                                DispatchHolder *pDispatchHolder = NULL;
+                                DispatchHolder* pDispatchHolder = NULL;
                                 PCODE addrOfDispatch = (PCODE)(dispatchers->Find(&probeD));
                                 if (addrOfDispatch == CALL_STUB_EMPTY_ENTRY)
                                 {
@@ -1979,6 +1981,25 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
             if (stubKind == SK_LOOKUP)
             {
+                if (isDispatchingStub(stub))
+                {
+                    void** indirCell = (void**)pCallSite->GetIndirectCell();
+                    // Replace target and check if we won the race.
+                    if (InterlockedCompareExchangeT(indirCell + 64, (void*)target, nullptr) == nullptr)
+                    {
+                        void* orig = InterlockedCompareExchangeT(indirCell + 32, (void*)objectType, nullptr);
+                        _ASSERTE(orig == nullptr);
+
+                        //printf("Patched %p to target %p object type %p\n", indirCell, (void*)target, (void*)objectType);
+
+                        MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(target);
+                        if (pMD->IsVersionableWithVtableSlotBackpatch())
+                        {
+                            pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, (TADDR)(indirCell + 64), EntryPointSlots::SlotType_Executable);
+                        }
+                    }
+                }
+
                 BackPatchSite(pCallSite, (PCODE)stub);
             }
         }

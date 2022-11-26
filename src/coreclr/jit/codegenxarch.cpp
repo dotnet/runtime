@@ -6004,21 +6004,49 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         regNumber indirCellReg = getCallIndirectionCellReg(call);
         if (indirCellReg != REG_NA)
         {
-            // clang-format off
-            GetEmitter()->emitIns_Call(
-                emitter::EC_INDIR_ARD,
-                methHnd,
-                INDEBUG_LDISASM_COMMA(sigInfo)
-                nullptr,
-                0,
-                retSize
-                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                gcInfo.gcVarPtrSetCur,
-                gcInfo.gcRegGCrefSetCur,
-                gcInfo.gcRegByrefSetCur,
-                di, indirCellReg, REG_NA, 0, 0,
-                call->IsFastTailCall());
-            // clang-format on
+#ifdef TARGET_64BIT
+            if (!compiler->opts.IsReadyToRun())
+            {
+                GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_RAX, REG_R11, 32 * TARGET_POINTER_SIZE);
+                GetEmitter()->emitIns_R_AR(INS_cmp, EA_PTRSIZE, REG_RAX, REG_RCX, 0);
+                GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_RAX, REG_R11, 64 * TARGET_POINTER_SIZE);
+                GetEmitter()->emitIns_R_AR(INS_cmovne, EA_PTRSIZE, REG_RAX, REG_R11, 0);
+
+                // clang-format off
+                GetEmitter()->emitIns_Call(
+                    emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr,
+                    0,
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    gcInfo.gcVarPtrSetCur,
+                    gcInfo.gcRegGCrefSetCur,
+                    gcInfo.gcRegByrefSetCur,
+                    di, REG_RAX, REG_NA, 0, 0,
+                    call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+#endif
+            {
+                // clang-format off
+                GetEmitter()->emitIns_Call(
+                    emitter::EC_INDIR_ARD,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr,
+                    0,
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    gcInfo.gcVarPtrSetCur,
+                    gcInfo.gcRegGCrefSetCur,
+                    gcInfo.gcRegByrefSetCur,
+                    di, indirCellReg, REG_NA, 0, 0,
+                    call->IsFastTailCall());
+                // clang-format on
+            }
         }
 #ifdef FEATURE_READYTORUN
         else if (call->gtEntryPoint.addr != nullptr)
