@@ -325,6 +325,7 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
+    <Compile Include="QPack\QPackDecoderTest.cs" />
     <Compile Include="RuntimeSettingParserTest.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
     <Compile Include="HttpEnvironmentProxyTest.cs" />
@@ -393,8 +394,12 @@
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
