@@ -1337,6 +1337,7 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLEE_END_OPCODE_SCAN:
         {
+            // Based on DefaultPolicy with a few modifications around overBudget inlining
             if (m_StateMachine != nullptr)
             {
                 m_StateMachine->End();
