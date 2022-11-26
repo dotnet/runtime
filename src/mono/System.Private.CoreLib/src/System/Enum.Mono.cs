@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -41,39 +42,63 @@ namespace System
             return res!;
         }
 
-        /// <summary>Creates a new TUnderlyingValue[] from a ulong[] array of values.</summary>
-        private static TUnderlyingValue[] ToUnderlyingValues<TUnderlyingValue>(ulong[] uint64Values)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
-        {
-            TUnderlyingValue[] values;
-
-            if (typeof(TUnderlyingValue) == typeof(ulong))
-            {
-                values = (TUnderlyingValue[])(object)uint64Values;
-            }
-            else
-            {
-                values = new TUnderlyingValue[uint64Values.Length];
-
-                for (int i = 0; i < values.Length; i++)
-                {
-                    values[i] = TUnderlyingValue.CreateTruncating(uint64Values[i]);
-                }
-            }
-
-            return values;
-        }
-
-        private static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
+        private static unsafe EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
             where TUnderlyingValue : struct, INumber<TUnderlyingValue>
         {
             EnumInfo<TUnderlyingValue>? entry = enumType.Cache.EnumInfo as EnumInfo<TUnderlyingValue>;
+            Debug.Assert(entry is null || entry.Names is not null);
 
-            if (entry == null || (getNames && entry.Names == null))
+            if (entry == null)
             {
                 GetEnumValuesAndNames(new QCallTypeHandle(ref enumType), out ulong[]? uint64Values, out string[]? names);
+                Debug.Assert(names is not null);
+                Debug.Assert(uint64Values is not null);
 
-                TUnderlyingValue[] values = ToUnderlyingValues<TUnderlyingValue>(uint64Values!);
+                TUnderlyingValue[] values;
+                if (typeof(TUnderlyingValue) == typeof(ulong))
+                {
+                    values = (TUnderlyingValue[])(object)uint64Values;
+                }
+                else
+                {
+#pragma warning disable 8500 // pointer to / sizeof managed types
+                    values = new TUnderlyingValue[uint64Values.Length];
+                    switch (sizeof(TUnderlyingValue))
+                    {
+                        case 1:
+                            for (int i = 0; i < values.Length; i++)
+                            {
+                                byte value = (byte)uint64Values[i];
+                                values[i] = *(TUnderlyingValue*)(&value);
+                            }
+                            break;
+
+                        case 2:
+                            for (int i = 0; i < values.Length; i++)
+                            {
+                                ushort value = (ushort)uint64Values[i];
+                                values[i] = *(TUnderlyingValue*)(&value);
+                            }
+                            break;
+
+                        case 4:
+                            for (int i = 0; i < values.Length; i++)
+                            {
+                                uint value = (uint)uint64Values[i];
+                                values[i] = *(TUnderlyingValue*)(&value);
+                            }
+                            break;
+
+                        case 8:
+                            for (int i = 0; i < values.Length; i++)
+                            {
+                                ulong value = uint64Values[i];
+                                values[i] = *(TUnderlyingValue*)(&value);
+                            }
+                            break;
+                    }
+#pragma warning restore 8500
+                }
 
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
                 entry = new EnumInfo<TUnderlyingValue>(hasFlagsAttribute, values, names);

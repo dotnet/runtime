@@ -91,10 +91,14 @@ namespace System.Tests
                 // Single
                 yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
                 yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(2) };
+                yield return new object[] { "1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
+                yield return new object[] { "1.0", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
 
                 // Double
                 yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
                 yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(2) };
+                yield return new object[] { "1", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
+                yield return new object[] { "1.0", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
             }
 
             // SimpleEnum
@@ -209,16 +213,6 @@ namespace System.Tests
                 // Bool
                 yield return new object[] { s_boolEnumType, bool.TrueString, false, typeof(ArgumentException) };
                 yield return new object[] { s_boolEnumType, bool.FalseString, false, typeof(ArgumentException) };
-
-                // Single
-                yield return new object[] { s_floatEnumType, "1", false, typeof(ArgumentException) };
-                yield return new object[] { s_floatEnumType, "5", false, typeof(ArgumentException) };
-                yield return new object[] { s_floatEnumType, "1.0", false, typeof(ArgumentException) };
-
-                // Double
-                yield return new object[] { s_doubleEnumType, "1", false, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, "5", false, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, "1.0", false, typeof(ArgumentException) };
 
                 // IntPtr
                 yield return new object[] { s_intPtrEnumType, "1", false, typeof(InvalidCastException) };
@@ -977,6 +971,14 @@ namespace System.Tests
                 // Bool
                 yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
                 yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
+
+                // Float
+                yield return new object[] { s_floatEnumType, 1.0f, Enum.Parse(s_floatEnumType, "Value1") };
+                yield return new object[] { s_floatEnumType, 2.0f, Enum.Parse(s_floatEnumType, "Value2") };
+
+                // Double
+                yield return new object[] { s_doubleEnumType, 1.0, Enum.Parse(s_doubleEnumType, "Value1") };
+                yield return new object[] { s_doubleEnumType, 2.0, Enum.Parse(s_doubleEnumType, "Value2") };
             }
         }
 
@@ -1020,8 +1022,6 @@ namespace System.Tests
 
             if (PlatformDetection.IsReflectionEmitSupported)
             {
-                yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
                 yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
                 yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
             }
