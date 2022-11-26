@@ -1106,6 +1106,12 @@ AGAIN:
 
     if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
+        // Don't build address modes out of non-foldable constants
+        if (!op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
+        {
+            return false;
+        }
+
         // We should not be building address modes out of non-foldable constants
         assert(op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()));
 

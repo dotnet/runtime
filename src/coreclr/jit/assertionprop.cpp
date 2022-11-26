@@ -3335,7 +3335,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    GenTree* newTree = tree;
+    bool     propagateType = false;
+    GenTree* newTree       = tree;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3364,11 +3365,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         case O2K_CONST_INT:
 
             // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag())
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL && tree->TypeIs(TYP_I_IMPL))
+                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL && tree->TypeIs(TYP_BYREF))
                 {
-                    // t
+                    propagateType = true;
                 }
                 else
                 {
@@ -3401,6 +3402,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                         // Conservatively don't allow propagation of ICON TYP_REF into BYREF
                         return nullptr;
                     }
+                    propagateType = true;
+                }
+
+                if (propagateType)
+                {
                     newTree->ChangeType(tree->TypeGet());
                 }
             }
