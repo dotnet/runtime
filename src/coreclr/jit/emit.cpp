@@ -6965,7 +6965,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
             insGroup* tgt = jmp->idAddr()->iiaIGlabel;
 
-            if (jmp->idjTemp.idjAddr == nullptr)
+            if (jmp->idjTemp.idjAddr == nullptr || jmp->idAddr()->iiaHasInstrCount())
             {
                 continue;
             }

@@ -6005,16 +6005,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         if (indirCellReg != REG_NA)
         {
 #ifdef TARGET_64BIT
-            if (!compiler->opts.IsReadyToRun())
+            if (!compiler->opts.IsReadyToRun() && !call->IsFastTailCall())
             {
-                GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_RAX, REG_R11, 32 * TARGET_POINTER_SIZE);
-                GetEmitter()->emitIns_R_AR(INS_cmp, EA_PTRSIZE, REG_RAX, REG_RCX, 0);
-                GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_RAX, REG_R11, 64 * TARGET_POINTER_SIZE);
-                GetEmitter()->emitIns_R_AR(INS_cmovne, EA_PTRSIZE, REG_RAX, REG_R11, 0);
+                BasicBlock* notEqual = genCreateTempLabel();
+                BasicBlock* after = genCreateTempLabel();
 
                 // clang-format off
+
+                GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_RAX, REG_R11, 32 * TARGET_POINTER_SIZE);
+                GetEmitter()->emitIns_R_AR(INS_cmp, EA_PTRSIZE, REG_RAX, REG_RCX, 0);
+                GetEmitter()->emitIns_J(INS_jne, notEqual);
+
                 GetEmitter()->emitIns_Call(
-                    emitter::EC_INDIR_R,
+                    emitter::EC_INDIR_ARD,
                     methHnd,
                     INDEBUG_LDISASM_COMMA(sigInfo)
                     nullptr,
@@ -6024,8 +6027,28 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                     gcInfo.gcVarPtrSetCur,
                     gcInfo.gcRegGCrefSetCur,
                     gcInfo.gcRegByrefSetCur,
-                    di, REG_RAX, REG_NA, 0, 0,
+                    di, REG_R11, REG_NA, 0, 64 * TARGET_POINTER_SIZE,
                     call->IsFastTailCall());
+
+                GetEmitter()->emitIns_J(INS_jmp, after);
+
+                genDefineTempLabel(notEqual);
+                GetEmitter()->emitIns_Call(
+                    emitter::EC_INDIR_ARD,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr,
+                    0,
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    gcInfo.gcVarPtrSetCur,
+                    gcInfo.gcRegGCrefSetCur,
+                    gcInfo.gcRegByrefSetCur,
+                    di, REG_R11, REG_NA, 0, 0,
+                    call->IsFastTailCall());
+
+                genDefineTempLabel(after);
+
                 // clang-format on
             }
             else

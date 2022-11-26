@@ -1989,7 +1989,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     {
                         void* orig = InterlockedCompareExchangeT(indirCell + 32, (void*)objectType, nullptr);
                         _ASSERTE(orig == nullptr);
-
                         //printf("Patched %p to target %p object type %p\n", indirCell, (void*)target, (void*)objectType);
 
                         MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(target);
