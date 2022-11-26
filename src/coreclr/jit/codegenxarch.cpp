@@ -1303,6 +1303,33 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
 }
 
+void CodeGen::genCodeForSelect(GenTreeConditional* select)
+{
+    regNumber dstReg  = select->GetRegNum();
+    regNumber condReg = genConsumeReg(select->gtCond);
+    genConsumeOperands(select);
+
+    instruction cmovKind = INS_cmovne;
+    GenTree*    trueVal  = select->gtOp1;
+    GenTree*    falseVal = select->gtOp2;
+
+    // If the 'true' operand was allocated the same register as the target
+    // register then flip it to the false value so we can skip a reg-reg mov.
+    if (!trueVal->isContained() && (trueVal->GetRegNum() == dstReg))
+    {
+        std::swap(trueVal, falseVal);
+        cmovKind = INS_cmove;
+    }
+
+    // TODO-CQ: Support contained relops here.
+    GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+
+    inst_RV_TT(INS_mov, emitActualTypeSize(select), dstReg, falseVal);
+    inst_RV_TT(cmovKind, emitActualTypeSize(select), dstReg, trueVal);
+
+    genProduceReg(select);
+}
+
 //------------------------------------------------------------------------
 // genCodeForBT: Generates code for a GT_BT node.
 //
@@ -1735,6 +1762,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SETCC:
             genCodeForSetcc(treeNode->AsCC());
+            break;
+
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
             break;
 
         case GT_BT:

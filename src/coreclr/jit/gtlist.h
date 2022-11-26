@@ -147,6 +147,7 @@ GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
+// Conditional select with 3 operands: condition, true value, false value
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
 
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)

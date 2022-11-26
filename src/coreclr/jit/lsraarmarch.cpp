@@ -822,4 +822,14 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     return srcCount;
 }
 
+int LinearScan::BuildSelect(GenTreeConditional* select)
+{
+    int srcCount = BuildOperandUses(select->gtCond);
+    srcCount += BuildOperandUses(select->gtOp1);
+    srcCount += BuildOperandUses(select->gtOp2);
+    BuildDef(select);
+
+    return srcCount;
+}
+
 #endif // TARGET_ARMARCH

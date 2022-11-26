@@ -245,6 +245,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, allByteRegs());
             break;
 
+        case GT_SELECT:
+            assert(dstCount == 1);
+            srcCount = BuildSelect(tree->AsConditional());
+            break;
+
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -897,6 +902,44 @@ int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskT
             srcCount += BuildOperandUses(op2, op2Candidates);
         }
     }
+    return srcCount;
+}
+
+int LinearScan::BuildSelect(GenTreeConditional* select)
+{
+    int srcCount = BuildOperandUses(select->gtCond);
+
+    // cmov family of instructions are special in that they only conditionally
+    // define the destination register, so when generating code for GT_SELECT
+    // we normally need to preface it by a move into the destination with one
+    // of the operands. We can avoid this if one of the operands is already in
+    // the destination register, so try to prefer that.
+    //
+    // Because of the above we also need to set delayRegFree on the intervals
+    // for contained operands. Otherwise we could pick a target register that
+    // conflicted with one of those registers.
+    //
+    if (select->gtOp1->isContained())
+    {
+        srcCount += BuildDelayFreeUses(select->gtOp1);
+    }
+    else
+    {
+        tgtPrefUse = BuildUse(select->gtOp1);
+        srcCount++;
+    }
+
+    if (select->gtOp2->isContained())
+    {
+        srcCount += BuildDelayFreeUses(select->gtOp2);
+    }
+    else
+    {
+        tgtPrefUse2 = BuildUse(select->gtOp2);
+        srcCount++;
+    }
+
+    BuildDef(select);
     return srcCount;
 }
 

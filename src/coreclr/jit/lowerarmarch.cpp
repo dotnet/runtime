@@ -2424,6 +2424,8 @@ void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
     }
 }
 
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
 // ContainCheckSelect : determine whether the source of a select should be contained.
 //
@@ -2432,6 +2434,9 @@ void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeConditional* node)
 {
+#ifdef TARGET_ARM
+    noway_assert(!"GT_SELECT nodes are not supported on arm32");
+#else
     if (!comp->opts.OptimizationEnabled())
     {
         return;
@@ -2469,9 +2474,8 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
     {
         MakeSrcContained(node, node->gtOp2);
     }
+#endif
 }
-
-#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.

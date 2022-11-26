@@ -5593,6 +5593,46 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckSelect: determine whether the sources of a select should be contained.
+//
+// Arguments:
+//    select - the GT_SELECT node
+//
+void Lowering::ContainCheckSelect(GenTreeConditional* select)
+{
+    GenTree* cond = select->gtCond;
+    GenTree* op1  = select->gtOp1;
+    GenTree* op2  = select->gtOp2;
+
+    // op1 and op2 are emitted as two separate instructions due to the
+    // conditional nature of cmov, so both operands can be contained memory
+    // operands.
+    if (IsContainableMemoryOp(op1))
+    {
+        if (IsSafeToContainMem(select, op1))
+        {
+            MakeSrcContained(select, op1);
+        }
+    }
+    else if (IsSafeToContainMem(select, op1))
+    {
+        MakeSrcRegOptional(select, op1);
+    }
+
+    if (IsContainableMemoryOp(op2))
+    {
+        if (IsSafeToContainMem(select, op2))
+        {
+            MakeSrcContained(select, op2);
+        }
+    }
+    else if (IsSafeToContainMem(select, op2))
+    {
+        MakeSrcRegOptional(select, op2);
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerRMWMemOp: Determine if this is a valid RMW mem op, and if so lower it accordingly
 //
 // Arguments:

@@ -294,9 +294,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerJTrue(node->AsOp());
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_JMP:
@@ -6993,9 +6991,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_ADD:

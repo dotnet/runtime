@@ -4664,10 +4664,6 @@ PhaseStatus Compiler::optUnrollLoops()
 //
 bool Compiler::optIfConvert(BasicBlock* block)
 {
-#ifndef TARGET_ARM64
-    return false;
-#else
-
     // Don't optimise the block if it is inside a loop
     // When inside a loop, branches are quicker than selects.
     // Detect via the block weight as that will be high when inside a loop.
@@ -4811,14 +4807,22 @@ bool Compiler::optIfConvert(BasicBlock* block)
     // Put a limit on the original source and destination of the assignment.
     if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
     {
+#ifdef TARGET_XARCH
+        JITDUMP("Skipping if-converion on xarch\n");
+
+        // xarch does not support containing relops in GT_SELECT nodes
+        // currently so only introduce GT_SELECT in stress.
+        return false;
+#else
         int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
 
         // Cost to allow for "x = cond ? a + b : x".
         if (cost > 7)
         {
-            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d", cost);
+            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d\n", cost);
             return false;
         }
+#endif
     }
 
     // Duplicate the destination of the assign.
@@ -4858,7 +4862,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 
     // Create a select node.
     GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, asgNode->TypeGet());
+        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, genActualType(destination));
 
     // Use the select as the source of the assignment.
     asgNode->AsOp()->gtOp2 = select;
@@ -4923,7 +4927,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #endif
 
     return true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -4936,6 +4939,7 @@ PhaseStatus Compiler::optIfConversion()
 {
     bool madeChanges = false;
 
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
@@ -4943,6 +4947,8 @@ PhaseStatus Compiler::optIfConversion()
         madeChanges |= optIfConvert(block);
         block = block->bbPrev;
     }
+
+#endif
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
