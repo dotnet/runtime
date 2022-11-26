@@ -8582,12 +8582,11 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
-        assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
 
         ssize_t   byteOffset     = address - fieldSeq->GetOffset();
         int       size           = (int)genTypeSize(tree->TypeGet());
         const int maxElementSize = sizeof(int64_t);
-        if ((size > 0) && (size <= maxElementSize) && (byteOffset >= 0) && (byteOffset < INT_MAX))
+        if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
