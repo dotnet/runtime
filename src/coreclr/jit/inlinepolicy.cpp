@@ -1457,41 +1457,45 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     // The strategy tracks the amout of inlining done so far, so it performs the actual check.
     const bool overBudget = m_RootCompiler->m_inlineStrategy->BudgetCheck(m_CodeSize);
 
-    if (overBudget)
+    if (!overBudget)
     {
-        assert(m_IsForceInlineKnown);
-        assert(m_CallsiteDepth > 0);
-
-        if (m_IsForceInline)
-        {
-            if (m_CallsiteDepth == 1)
-            {
-                // If the candidate is a forceinline and the callsite is
-                // not too deep, allow the inline even if it goes over budget.
-                JITDUMP("Allowing over-budget top-level forceinline\n");
-                return false;
-            }
-
-            assert(m_CallsiteDepth > 1);
-            // For this case we want to take number of foldable branches into account: the more the foldable
-            // branches we have the less work JIT will have to do because those will be elided early in the importer.
-
-            // Analyze potential benefits, we take into account:
-            //  FoldableBranches
-            //  FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
-            const double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
-
-            // We ran out of time budget so have to be quite conservative
-            const double cons =
-                m_CallsiteDepth * (2.0 + min(1.0, (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack()));
-
-            JITDUMP("Considering over-budget inlining for forceinline - pros:%g, cons:%g\n", pros, cons);
-
-            return pros < cons;
-        }
-        return true;
+        // We're not over budget
+        return false;
     }
-    return false;
+
+    assert(m_IsForceInlineKnown);
+    if (!m_IsForceInline)
+    {
+        // For over-budget case we only inspect forceinline
+        return false;
+    }
+
+    if (m_CallsiteDepth == 1)
+    {
+        // Compatibility with DefaultPolicy:
+        // If the candidate is a forceinline and the callsite is
+        // not too deep, allow the inline even if it goes over budget.
+        JITDUMP("Allowing over-budget top-level forceinline\n");
+        return false;
+    }
+
+    assert(m_CallsiteDepth > 1);
+
+    // For this case we want to take number of foldable branches into account: the more the foldable
+    // branches we have the less work JIT will have to do because those will be elided early in the importer.
+
+    // Analyze potential benefits, we take into account:
+    //  FoldableBranches
+    //  FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
+    const double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
+
+    // We ran out of time budget so have to be quite conservative
+    const double cons =
+        m_CallsiteDepth * (2.0 + min(1.0, (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack()));
+
+    JITDUMP("Considering over-budget inlining for forceinline - pros:%g, cons:%g\n", pros, cons);
+
+    return pros < cons;
 }
 
 //------------------------------------------------------------------------
