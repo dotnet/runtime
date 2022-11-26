@@ -1335,6 +1335,63 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_IsCallsiteInNoReturnRegion = value;
             break;
 
+        case InlineObservation::CALLEE_END_OPCODE_SCAN:
+        {
+            if (m_StateMachine != nullptr)
+            {
+                m_StateMachine->End();
+            }
+
+            // This heuristic is copied from DefaultPolicy for compatibility
+            if (((m_InstructionCount - m_LoadStoreCount) < 4) ||
+                (((double)m_LoadStoreCount / (double)m_InstructionCount) > .90))
+            {
+                m_MethodIsMostlyLoadStore = true;
+            }
+
+            bool overBudget = !m_IsPrejitRoot && m_RootCompiler->m_inlineStrategy->BudgetCheck(m_CodeSize);
+            if (overBudget && m_IsForceInline)
+            {
+                if (m_CallsiteDepth == 1)
+                {
+                    // Unconditionally allow inlining for top-level force-inlines
+                    // (compatibility with DefaultPolicy)
+                    overBudget = false;
+                }
+                else
+                {
+                    // For this case we want to take number of foldable branches into account: the more the foldable
+                    // branches we found
+                    // the less work JIT will need to do because those will be elided early in the importer.
+                    // TODO: the current design validates time budget after full prescan while we could save JIT TP by
+                    // only doing a partial prescan.
+                    assert(m_CallsiteDepth > 1);
+
+                    // Calculate the benefits, we take into account:
+                    //  FoldableBranches
+                    //  FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
+                    double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
+
+                    // We ran out of time budget so have to be quite conservative
+                    double cons = m_CallsiteDepth *
+                                  (2.0 + min(1.0, (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack()));
+
+                    JITDUMP("Considering over-budget inlining - pros:%g, cons:%g\n", pros, cons);
+
+                    if (pros > cons)
+                    {
+                        overBudget = false;
+                    }
+                }
+            }
+
+            if (overBudget)
+            {
+                SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+            }
+            break;
+        }
+
         default:
             DefaultPolicy::NoteBool(obs, value);
             break;
