@@ -1448,61 +1448,44 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 //
 bool ExtendedDefaultPolicy::BudgetCheck() const
 {
-    if (m_IsPrejitRoot)
+    // First, use a more conservative DefaultPolicy::BudgetCheck
+    // if it's fine with inlining the callee - we're good as is.
+    if (!DefaultPolicy::BudgetCheck())
     {
-        // Only relevant if we're actually inlining.
         return false;
     }
 
-    // The strategy tracks the amout of inlining done so far, so it performs the actual check.
-    const bool overBudget = m_RootCompiler->m_inlineStrategy->BudgetCheck(m_CodeSize);
+    // ExtendedDefaultPolicy has a better understanding on how many branches are foldable
+    // so we can roughly predict the final IL size JIT will have to emit (all foldable
+    // branches will be eliminated early in the importer)
+    //
+    INT64 codeSize = (INT64)m_CodeSize;
 
-    if (!overBudget)
-    {
-        // We're not over budget
-        return false;
-    }
-
-    assert(m_IsForceInlineKnown);
-    if (!m_IsForceInline)
-    {
-        // For over-budget case we only inspect forceinline
-        // Otherwise, report "over-budget"
-        return true;
-    }
-
-    if (m_CallsiteDepth == 1)
-    {
-        // Compatibility with DefaultPolicy:
-        // If the candidate is a forceinline and the callsite is
-        // not too deep, allow the inline even if it goes over budget.
-        JITDUMP("Allowing over-budget top-level forceinline\n");
-        return false;
-    }
-
-    assert(m_CallsiteDepth > 1);
-
-    // For this case we want to take number of foldable branches into account: JIT is able to elide them
-    // early in the importer so it won't have to waste time compiling them.
-
-    // Analyze potential benefits, we take into account:
-    //  * FoldableBranches
-    //  * FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
-    // We assume that a single foldable branch is capable of removing 80 bytes of IL, e.g.:
+    // We assume each foldable branch reduces total IL size by 32 bytes, it's a pretty conservative
+    // guess, e.g. the following pattern:
     //
     //  if (typeof(TKey) == typeof(byte)) return (byte)(object)left < (byte)(object)right;
     //
-    // This branch is recognized as foldable and removes 52 bytes of IL.
+    // is recognized as foldable and removes 52 bytes of IL if TKey is not byte.
     //
-    // In future, we plan to have a real estimation of what will be folded.
-    const double pros = (m_FoldableBranch + m_FoldableSwitch * 2.0) * 80;
+    codeSize -= (INT64)m_FoldableBranch * 32;
 
-    // We take number of locals and IL size as a friction:
-    const double cons = this->m_CodeSize * (1.0 + (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack());
+    // Foldable switches are usually able to fold more than foldable branches
+    //
+    codeSize -= (INT64)m_FoldableSwitch * 64;
 
-    JITDUMP("Considering over-budget inlining for forceinline - pros:%g, cons:%g\n", pros, cons);
+    // Don't report negative number
+    //
+    codeSize = codeSize < 0 ? 0 : codeSize;
 
-    return pros < cons;
+    // Assume we can't fold more than 70% of IL
+    //
+    codeSize = max((INT64)(m_CodeSize * 0.3), codeSize);
+
+    // In future, we plan to introduce a more precise IL scan phase to know exactly what we can elide
+    // if we inline given callee.
+
+    return m_RootCompiler->m_inlineStrategy->BudgetCheck((unsigned)codeSize);
 }
 
 //------------------------------------------------------------------------
