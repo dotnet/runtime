@@ -4,6 +4,6 @@ Provides a base class for file-based configuration providers used with [Microsof
 
 For more information, see the documentation: 
 
-- [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration).
+- [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration)
 - [Microsoft.Extensions.Configuration.FileConfigurationProvider](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.fileconfigurationprovider)
 - [Microsoft.Extensions.Configuration.FileConfigurationExtensions](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.fileconfigurationextensions)
