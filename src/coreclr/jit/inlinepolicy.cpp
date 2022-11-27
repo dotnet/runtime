@@ -1462,7 +1462,7 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     //
     INT64 codeSize = (INT64)m_CodeSize;
 
-    // We assume each foldable branch reduces total IL size by 32 bytes, it's
+    // We assume each foldable branch reduces total IL size by 35 bytes, it's
     // a pretty conservative guess, e.g. the following branch:
     //
     //  if (typeof(TKey) == typeof(byte))
@@ -1470,23 +1470,19 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     //
     // is recognized as foldable and removes 52 bytes of IL if TKey is not byte.
     //
-    codeSize -= (INT64)m_FoldableBranch * 32;
+    codeSize -= (INT64)m_FoldableBranch * 35;
 
     // Foldable switches are usually able to fold more than foldable branches
     //
-    codeSize -= (INT64)m_FoldableSwitch * 64;
-
-    // Don't report negative number
-    //
-    codeSize = codeSize < 0 ? 0 : codeSize;
+    codeSize -= (INT64)m_FoldableSwitch * 70;
 
     // Assume we can't fold more than 70% of IL
     //
-    codeSize = max((INT64)(m_CodeSize * 0.3), codeSize);
+    codeSize = codeSize < (INT64)(m_CodeSize * 0.3) ? (INT64)(m_CodeSize * 0.3) : codeSize;
 
     // In future, we plan to introduce a more precise IL scan phase to know exactly
     // what we can elide if we inline given callee.
-
+    //
     return m_RootCompiler->m_inlineStrategy->BudgetCheck((unsigned)codeSize);
 }
 
