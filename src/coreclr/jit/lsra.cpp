@@ -3484,17 +3484,10 @@ void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newI
         regCountToUnassign = newInterval->regCount;
     }
 
-    regNumber currReg = regRecToUnassign->regNum;
-    do
+    if (regRecToUnassign->assignedInterval != nullptr)
     {
-        if (regRecToUnassign->assignedInterval != nullptr)
-        {
-            unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
-        }
-
-        currReg = REG_NEXT(currReg);
-        regRecToUnassign = getRegisterRecord(currReg);
-    } while (--regCountToUnassign > 0);
+        unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
+    }
 }
 
 //------------------------------------------------------------------------
