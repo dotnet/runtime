@@ -4040,11 +4040,11 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendASCII(DumpGeneratorName);
+    commandLine.AppendUTF8(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
-        commandLine.Append(" --name ");
+        commandLine.AppendUTF8(" --name ");
         commandLine.Append(dumpName);
     }
 
