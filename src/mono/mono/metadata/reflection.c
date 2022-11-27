@@ -2502,7 +2502,8 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 	} else if (strcmp (klass_name, "RuntimePropertyInfo") == 0) {
 		MonoReflectionPropertyHandle p = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
 
-		token = mono_class_get_property_token (MONO_HANDLE_GETVAL (p, property));
+		MonoProperty *prop = MONO_HANDLE_GETVAL (p, property);
+		token = mono_class_get_property_token (prop);
 	} else if (strcmp (klass_name, "RuntimeEventInfo") == 0) {
 		MonoReflectionMonoEventHandle p = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
 

@@ -9,8 +9,7 @@ namespace BasicEventSourceTests
     public partial class TestEventCounter
     {
         // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
-        private static bool IsProcessElevated => s_isElevated.Value;
+        private static bool IsProcessElevated => Environment.IsPrivilegedProcess;
 
         [ConditionalFact(nameof(IsProcessElevated))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]

@@ -85,8 +85,10 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [InlineData("key", "value")]
-        [InlineData("key     ", "   value    ")]
-        [InlineData("      key     ", "   value    ")]
+        [InlineData("key    ", "value    ")]
+        [InlineData("    key", "    value")]
+        [InlineData("    key   ", "    value    ")]
+        [InlineData("    key spaced   ", "    value spaced    ")]
         [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
         public void GlobalExtendedAttribute_Roundtrips(string key, string value)
         {
@@ -101,7 +103,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxGlobalExtendedAttributesTarEntry entry = Assert.IsType<PaxGlobalExtendedAttributesTarEntry>(reader.GetNextEntry());
                 Assert.Equal(1, entry.GlobalExtendedAttributes.Count);
-                Assert.Equal(KeyValuePair.Create(key.TrimStart(), value), entry.GlobalExtendedAttributes.First());
+                Assert.Equal(KeyValuePair.Create(key, value), entry.GlobalExtendedAttributes.First());
             }
         }
     }

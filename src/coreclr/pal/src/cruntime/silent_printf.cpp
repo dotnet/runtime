@@ -477,6 +477,14 @@ BOOL Silent_ExtractFormatA(LPCSTR *Fmt, LPSTR Out, LPINT Flags, LPINT Width, LPI
         *Fmt += 3;
         *Prefix = PFF_PREFIX_LONGLONG;
     }
+    /* grab a prefix of 'z' */
+    else if (**Fmt == 'z')
+    {
+#ifdef HOST_64BIT
+        *Prefix = PFF_PREFIX_LONGLONG;
+#endif
+        ++(*Fmt);
+    }
     /* grab a prefix of 'h' */
     else if (**Fmt == 'h')
     {

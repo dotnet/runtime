@@ -773,7 +773,9 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-                if (length < 2048 / Unsafe.SizeOf<T>())
+#pragma warning disable 8500 // sizeof of managed types
+                if (length < 2048 / sizeof(T))
+#pragma warning restore 8500
                 {
                     return new T[length];
                 }
