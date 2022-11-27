@@ -252,27 +252,7 @@ namespace System
 
         public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
-        private static int s_isWindowsElevated = -1;
-        public static bool IsWindowsAndElevated
-        {
-            get
-            {
-                if (s_isWindowsElevated != -1)
-                    return s_isWindowsElevated == 1;
-
-                if (!IsWindows || IsInAppContainer)
-                {
-                    s_isWindowsElevated = 0;
-                    return false;
-                }
-
-                s_isWindowsElevated = AdminHelpers.IsProcessElevated() ? 1 : 0;
-
-                return s_isWindowsElevated == 1;
-            }
-        }
-
-        public static bool IsWindowsAndNotElevated
-            => IsWindows && !IsWindowsAndElevated;
+        public static bool IsWindowsAndElevated => IsWindows && IsPrivilegedProcess;
+        public static bool IsWindowsAndNotElevated => IsWindows && !IsPrivilegedProcess;
     }
 }

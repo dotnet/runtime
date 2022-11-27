@@ -73,7 +73,19 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        public static bool IsPrivilegedProcess => IsUnixAndSuperUser || IsWindowsAndElevated;
+        private static int s_isPrivilegedProcess = -1;
+        public static bool IsPrivilegedProcess
+        {
+            get
+            {
+                if (s_isPrivilegedProcess != -1)
+                    return s_isPrivilegedProcess == 1;
+
+                s_isPrivilegedProcess = AdminHelpers.IsProcessElevated() ? 1 : 0;
+
+                return s_isPrivilegedProcess == 1;
+            }
+        }
 
         public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 

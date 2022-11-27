@@ -55,27 +55,8 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        private static int s_isSuperUser = -1;
-        public static bool IsSuperUser
-        {
-            get
-            {
-                if (s_isSuperUser != -1)
-                    return s_isSuperUser == 1;
-
-                if (IsBrowser || IsWindows)
-                {
-                    s_isSuperUser = 0;
-                    return false;
-                }
-
-                s_isSuperUser = AdminHelpers.IsProcessElevated() ? 1 : 0;
-
-                return s_isSuperUser == 1;
-            }
-        }
-
-        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : IsPrivilegedProcess;
+        public static bool IsUnixAndSuperUser => !IsWindows && IsPrivilegedProcess;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
