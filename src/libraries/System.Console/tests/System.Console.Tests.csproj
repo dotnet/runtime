@@ -38,7 +38,6 @@
     <Compile Include="..\src\System\TermInfo.Database.cs" Link="src\System\TermInfo.Database.cs" />
     <Compile Include="..\src\System\TerminalFormatStrings.cs" Link="src\System\TerminalFormatStrings.cs" />
     <Compile Include="..\src\System\IO\KeyParser.cs" Link="src\System\IO\KeyParser.cs" />
-    <Compile Include="..\src\System\IO\Net6KeyParser.cs" Link="src\System\IO\Net6KeyParser.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs" Link="src\System\Text\ConsoleEncoding.cs" />
     <Compile Include="KeyParserTests.cs" />
   </ItemGroup>

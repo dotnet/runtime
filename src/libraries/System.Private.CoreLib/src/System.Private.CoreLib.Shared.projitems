@@ -37,6 +37,7 @@
     <DefineConstants Condition="'$(TargetsiOS)' == 'true'">$(DefineConstants);TARGET_IOS</DefineConstants>
     <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
     <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWasi)' == 'true'">$(DefineConstants);TARGET_WASI</DefineConstants>
     <DefineConstants Condition="'$(TargetsAndroid)' == 'true'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <DefineConstants Condition="'$(TargetsLinux)' == 'true'">$(DefineConstants);TARGET_LINUX</DefineConstants>
     <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true'">$(DefineConstants);TARGET_FREEBSD</DefineConstants>
@@ -44,6 +45,10 @@
     <DefineConstants Condition="'$(Targetsillumos)' == 'true'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
     <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
+    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml" />
+  </ItemGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Shared.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.LittleEndian.xml" Condition="'$(IsBigEndian)' != 'true'" />
@@ -103,6 +108,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\BinaryPrimitives.ReverseEndianness.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\Reader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Binary\ReaderLittleEndian.cs" />
@@ -414,6 +420,24 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\BitVector256.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny1Value.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny2Values.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny3Values.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny4Values.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny5Values.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiByteValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiCharValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiSearcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyByteValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyCharValuesProbabilistic.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyLatin1CharValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesDebugView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesInRange.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfEmptyValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\ProbabilisticMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
@@ -552,7 +576,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ProbabilisticMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Progress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.ImplBase.cs" />
@@ -1192,6 +1215,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
@@ -1275,13 +1299,13 @@
       <Link>Common\System\SR.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\IProducerConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\IProducerConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs">
-        <Link>System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs</Link>
+      <Link>System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
@@ -1422,8 +1446,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.OpenProcessToken.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.RegCloseKey.cs</Link>
@@ -1457,6 +1487,15 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.RegSetValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ACCESS_LEVELS.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ACCESS_LEVELS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -1890,6 +1929,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs">
       <Link>Common\System\IO\FileSystem.Attributes.Windows.cs</Link>
     </Compile>
@@ -1905,7 +1947,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.OverlappedValueTaskSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Windows.cs" />
@@ -2384,9 +2425,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">

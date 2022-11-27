@@ -70,6 +70,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				new NoDynamicInvokeThunkGenerationPolicy (),
 				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
+				options: default,
 				logger,
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),

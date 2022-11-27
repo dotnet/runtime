@@ -206,13 +206,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
-            {
-                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);
-                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
-            });
-
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -625,13 +618,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _GCStatics.GetOrAdd(type);
-        }
-
-        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
-
-        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
-        {
-            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
@@ -1139,10 +1125,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
+            ReadyToRunHeader = new ReadyToRunHeaderNode();
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
+            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");

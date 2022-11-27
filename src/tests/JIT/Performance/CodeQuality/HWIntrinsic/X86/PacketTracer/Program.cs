@@ -48,7 +48,7 @@ class Program
         _freeBuffers = new ObjectPool<int[]>(() => new int[_width * 3 * _height]); // Each pixel has 3 fields (RGB)
     }
 
-    static unsafe int Main(string[] args)
+    static unsafe int Main()
     {
         if (Avx2.IsSupported)
         {

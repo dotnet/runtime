@@ -41,7 +41,7 @@ class X
         return test[i];
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         float v0 = P(0);
         float v1 = P(1);

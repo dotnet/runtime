@@ -6,6 +6,13 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <!-- only use for files that are not configuration dependent -->
+    <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PythonCmd Condition="'$(HostOS)' != 'windows'">python3</PythonCmd>
+    <PythonCmd Condition="'$(HostOS)' == 'windows'">python</PythonCmd>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -122,6 +129,8 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="FS_readFile" />
+      <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
@@ -157,6 +166,8 @@
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <!-- for jiterpreter -->
+      <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
@@ -240,8 +251,8 @@
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz  -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
@@ -249,7 +260,7 @@
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
-      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
+      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
 
       <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
@@ -257,10 +268,10 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true' and '$(Configuration)' == 'Release'">$(CMakeBuildRuntimeConfigureCmd) -DWASM_OPT_ADDITIONAL_FLAGS=&quot;--enable-simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
@@ -402,10 +413,16 @@
 		      Overwrite="true" />
   </Target>
 
+  <Target Name="GenerateMintopsTS"
+          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def"
+          Outputs="$(NativeGeneratedFilesDir)mintops.ts">
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)mintops.ts" />
+  </Target>
+
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile);$(NativeGeneratedFilesDir)mintops.ts"
           Outputs="$(NativeBinDir).rollup-stamp"
-	  DependsOnTargets="WriteRollupEnvToFile"
+	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>

@@ -220,45 +220,18 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
 
 #endif // !memcpyUnsafe_f
 
-//
-// By default logging, and debug GC are enabled under debug
-//
-// These can be enabled in non-debug by removing the #ifdef _DEBUG
-// allowing one to log/check_gc a free build.
-//
+FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
+{
+    WRAPPER_NO_CONTRACT;
+    return memcpy(dest, src, len);
+}
+
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-
-    //If memcpy has been defined to PAL_memcpy, we undefine it so that this case
-    //can be covered by the if !defined(memcpy) block below
-    #ifdef HOST_UNIX
-    #if IS_REDEFINED_IN_PAL(memcpy)
-    #undef memcpy
-    #endif //IS_REDEFINED_IN_PAL
-    #endif //HOST_UNIX
-
-        // You should be using CopyValueClass if you are doing an memcpy
-        // in the CG heap.
-    #if !defined(memcpy)
-    FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
-            WRAPPER_NO_CONTRACT;
-
-            #ifdef HOST_UNIX
-                return PAL_memcpy(dest, src, len);
-            #else //HOST_UNIX
-                return memcpy(dest, src, len);
-            #endif //HOST_UNIX
-
-        }
+    // You should be using CopyValueClass if you are doing an memcpy
+    // in the GC heap.
     extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
-    #define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
-    #endif // !defined(memcpy)
-#else // !_DEBUG && !DACCESS_COMPILE
-    FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
-            WRAPPER_NO_CONTRACT;
-
-            return memcpy(dest, src, len);
-        }
-#endif // !_DEBUG && !DACCESS_COMPILE
+#define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
+#endif // _DEBUG && !DACCESS_COMPILE
 
 namespace Loader
 {

@@ -17,7 +17,6 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
     <!-- These versions should not be newer than what Visual Studio MSBuild uses -->
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.Text.Json" Version="5.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_environment, set_imports_exports } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
@@ -169,8 +169,7 @@ class RuntimeList {
     }
 }
 
-function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType, env: any) {
-    set_environment(env);
+function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType) {
     Object.assign(moduleExports, export_module());
     set_emscripten_entrypoint(emscriptenEntrypoint);
 }

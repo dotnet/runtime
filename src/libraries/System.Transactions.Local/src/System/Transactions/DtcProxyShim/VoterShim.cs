@@ -11,7 +11,7 @@ internal sealed class VoterBallotShim
 
     internal ITransactionVoterBallotAsync2? VoterBallotAsync2 { get; set; }
 
-    internal VoterBallotShim(DtcProxyShimFactory shimFactory, VoterNotifyShim notifyShim)
+    internal VoterBallotShim(VoterNotifyShim notifyShim)
         => _voterNotifyShim = notifyShim;
 
     public void Vote(bool voteYes)

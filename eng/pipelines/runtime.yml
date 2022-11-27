@@ -1105,6 +1105,11 @@ extends:
     #     runtimeFlavor: mono
     #     platforms:
     #     - Linux_x64
+          extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          extraStepsParameters:
+            creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_Release
+        buildConfig: Release
     #     - Linux_arm64
     #     helixQueueGroup: pr
     #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -1118,6 +1123,11 @@ extends:
     #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
     #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
     #           eq(variables['isRollingBuild'], true))
+
+          extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          extraStepsParameters:
+            creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_Release
 
     # #
     # # Libraries Release Test Execution against a release mono runtime.
@@ -1144,6 +1154,11 @@ extends:
     #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
     #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
     #           eq(variables['isRollingBuild'], true))
+
+          extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          extraStepsParameters:
+            creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_Release
 
     # #
     # # Libraries Release Test Execution against a release mono interpreter runtime.

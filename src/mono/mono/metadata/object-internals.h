@@ -654,7 +654,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	gsize handleAndKind;
+	gsize taggedHandle;
 } MonoWeakReference;
 
 /* Safely access System.Delegate from native code */
@@ -1879,12 +1879,8 @@ void
 mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
-			       MonoObject **exc, MonoError *error);
-
-MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
-				   MonoError *error);
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+				MonoObject **exc, MonoError *error);
 
 void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);

@@ -1726,7 +1726,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     // We may have previously though this try entry was unreachable, but now we're going to
                     // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
                     //
-                    if (fgHaveProfileData() && !fromBlock->hasProfileWeight())
+                    if (fgHaveProfileWeights() && !fromBlock->hasProfileWeight())
                     {
                         JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
                                 fromBlock->bbNum, fgFirstBB->bbNum);
@@ -4389,6 +4389,20 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         newBlock->bbJumpSwt->bbsHasDominantCase = false;
 
+        if (fgStmtListThreaded)
+        {
+            // The switch tree has been modified.
+            JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
+            gtSetStmtInfo(switchStmt);
+            fgSetStmtSeq(switchStmt);
+
+            // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
+            // added new nodes if a COMMA was introduced.
+            JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
+            gtSetStmtInfo(jmpStmt);
+            fgSetStmtSeq(jmpStmt);
+        }
+
         modified = true;
     }
 
@@ -4776,9 +4790,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     //
     if (fgIsUsingProfileWeights())
     {
-        //
-        // Note that this is currently not yet implemented
-        //
         optimizedSwitches = fgOptimizeSwitchJumps();
         if (optimizedSwitches)
         {

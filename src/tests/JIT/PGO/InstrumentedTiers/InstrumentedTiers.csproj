@@ -2,20 +2,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
-    <CLRTestBatchPreCommands><![CDATA[
-      $(CLRTestBatchPreCommands)
-      set DOTNET_TieredCompilation=1
-      set DOTNET_TieredPGO=1
-      set DOTNET_TieredPGO_InstrumentOnlyHotCode=1
-      ]]></CLRTestBatchPreCommands>
-          <BashCLRTestPreCommands><![CDATA[
-      $(BashCLRTestPreCommands)
-      export DOTNET_TieredCompilation=1
-      export DOTNET_TieredPGO=1
-      export DOTNET_TieredPGO_InstrumentOnlyHotCode=1
-      ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InstrumentedTiers.cs" />
+
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestBatchEnvironmentVariable Include="DOTNET_TieredPGO_InstrumentOnlyHotCode" Value="1" />
   </ItemGroup>
 </Project>

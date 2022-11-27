@@ -96,7 +96,7 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
     advapi32.lib)
-endif(CLR_CMAKE_HOST_WIN32)  
+endif(CLR_CMAKE_HOST_WIN32)
 
 set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 
@@ -108,11 +108,6 @@ add_library_clr(clrgc SHARED ${GC_SOURCES})
 add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
-
-if(CLR_CMAKE_HOST_UNIX)
-  # dprintf causes many warnings (https://github.com/dotnet/runtime/issues/8737)
-  add_compile_options(-Wno-format)
-endif(CLR_CMAKE_HOST_UNIX)
 
 add_definitions(-DBUILD_AS_STANDALONE)
 add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
