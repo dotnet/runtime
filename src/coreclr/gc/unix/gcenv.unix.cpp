@@ -633,7 +633,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
-    if (alignment == 0)
+    if (alignment < OS_PAGE_SIZE)
     {
         alignment = OS_PAGE_SIZE;
     }
@@ -1391,7 +1391,7 @@ uint64_t GetAvailablePageFile()
 //      that is in use (0 indicates no memory use and 100 indicates full memory use).
 //  available_physical - The amount of physical memory currently available, in bytes.
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(unsigned long long restricted_limit, uint32_t* memory_load, unsigned long long* available_physical, unsigned long long* available_page_file)
 {
     uint64_t available = 0;
     uint32_t load = 0;
