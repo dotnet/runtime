@@ -1633,12 +1633,21 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
+            if (IsCompleted)
+            {
+                yield break;
+            }
+
             using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-            while (!IsCompleted)
+            while (true)
             {
                 if (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
                 {
                     yield return item;
+                }
+                else
+                {
+                    break;
                 }
             }
         }
