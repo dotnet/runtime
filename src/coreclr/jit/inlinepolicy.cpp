@@ -489,7 +489,7 @@ bool DefaultPolicy::BudgetCheck() const
     // so it performs the actual check.
     //
     InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+    const bool      overBudget = strategy->BudgetCheck(EstimatedTotalILSize());
 
     if (overBudget)
     {
@@ -1441,25 +1441,17 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 }
 
 //------------------------------------------------------------------------
-// BudgetCheck: see if this inline would exceed the current budget
+// EstimatedTotalILSize: Estimate final IL size to import.
+//    ExtendedDefaultPolicy has a better understanding on how many branches
+//    are foldable so we can roughly predict the final IL size the JIT will
+//    have to work with (all foldable branches will be eliminated early in the
+//    importer so they won't affect the time it takes to compile the callee)
 //
-// Returns:
-//   True if inline would exceed the budget.
-//
-bool ExtendedDefaultPolicy::BudgetCheck() const
-{
-    // First, use a more conservative DefaultPolicy::BudgetCheck
-    // if it's fine with inlining the current callee - we're good as is.
-    if (!DefaultPolicy::BudgetCheck())
-    {
-        return false;
-    }
+// Return value:
+//    Estimated IL size to import
 
-    // ExtendedDefaultPolicy has a better understanding on how many branches
-    // are foldable so we can roughly predict the final IL size JIT will have
-    // to work with (all foldable branches will be eliminated early in the
-    // importer so they won't affect the time it takes to compile the callee)
-    //
+unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
+{
     INT64 codeSize = (INT64)m_CodeSize;
 
     // We assume each foldable branch reduces total IL size by 35 bytes, it's
@@ -1480,10 +1472,7 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     //
     codeSize = codeSize < (INT64)(m_CodeSize * 0.3) ? (INT64)(m_CodeSize * 0.3) : codeSize;
 
-    // In future, we plan to introduce a more precise IL scan phase to know exactly
-    // what we can elide if we inline given callee.
-    //
-    return m_RootCompiler->m_inlineStrategy->BudgetCheck((unsigned)codeSize);
+    return (unsigned)codeSize;
 }
 
 //------------------------------------------------------------------------
