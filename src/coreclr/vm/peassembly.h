@@ -136,7 +136,7 @@ public:
 
 #ifdef LOGGING
     // This is useful for log messages
-    LPCWSTR GetDebugName();
+    LPCUTF8 GetDebugName();
 #endif
 
     // ------------------------------------------------------------
@@ -392,7 +392,7 @@ private:
  // ------------------------------------------------------------
 
 #ifdef _DEBUG
-    LPCWSTR                 m_pDebugName;
+    LPCUTF8                 m_pDebugName;
     SString                 m_debugName;
 #endif
 

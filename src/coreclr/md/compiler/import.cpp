@@ -129,8 +129,8 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
 
-    LOG((LOGMD, "MD RegMeta::EnumMembersWithName(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rMembers, cMax, pcTokens));
+    LOG((LOGMD, "MD RegMeta::EnumMembersWithName(0x%08x, 0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        phEnum, cl, szNameUtf8, rMembers, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -333,8 +333,8 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
 
-    LOG((LOGMD, "MD RegMeta::EnumMethodsWithName(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rMethods, cMax, pcTokens));
+    LOG((LOGMD, "MD RegMeta::EnumMethodsWithName(0x%08x, 0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        phEnum, cl, szNameUtf8, rMethods, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -518,8 +518,8 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
 
-    LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rFields, cMax, pcTokens));
+    LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        phEnum, cl, szNameUtf8, rFields, cMax, pcTokens));
 
 
 
@@ -965,8 +965,8 @@ STDMETHODIMP RegMeta::FindMethod(
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD RegMeta::FindMethod(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), pvSigBlob, cbSigBlob, pmb));
+    LOG((LOGMD, "MD RegMeta::FindMethod(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        td, szNameUtf8, pvSigBlob, cbSigBlob, pmb));
 
     LOCKREAD();
 
@@ -1047,8 +1047,8 @@ STDMETHODIMP RegMeta::FindMemberRef(
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD RegMeta::FindMemberRef(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        tkPar, MDSTR(szName), pvSigBlob, cbSigBlob, pmr));
+    LOG((LOGMD, "MD RegMeta::FindMemberRef(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        tkPar, MDSTRA(szNameUtf8), pvSigBlob, cbSigBlob, pmr));
 
     // <TODO>@todo: Can this causing building hash table? If so, should this consider the write lock?</TODO>
     LOCKREAD();

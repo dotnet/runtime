@@ -44,8 +44,8 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
     LPUTF8      szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD: RegMeta::DefineMethod(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), dwMethodFlags, pvSigBlob, cbSigBlob, ulCodeRVA, dwImplFlags, pmd));
+    LOG((LOGMD, "MD: RegMeta::DefineMethod(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
+        td, szNameUtf8, dwMethodFlags, pvSigBlob, cbSigBlob, ulCodeRVA, dwImplFlags, pmd));
 
     LOCKWRITE();
 
@@ -477,8 +477,8 @@ STDMETHODIMP RegMeta::DefineMemberRef(        // S_OK or error
     LPUTF8          szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD RegMeta::DefineMemberRef(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        tkImport, MDSTR(szName), pvSigBlob, cbSigBlob, pmr));
+    LOG((LOGMD, "MD RegMeta::DefineMemberRef(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x)\n",
+        tkImport, szNameUtf8, pvSigBlob, cbSigBlob, pmr));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2618,8 +2618,8 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
     LPUTF8      szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD: RegMeta::DefineField(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), dwFieldFlags, pvSigBlob, cbSigBlob, dwCPlusTypeFlag, pValue, cchValue, pmd));
+    LOG((LOGMD, "MD: RegMeta::DefineField(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
+        td, szNameUtf8, dwFieldFlags, pvSigBlob, cbSigBlob, dwCPlusTypeFlag, pValue, cchValue, pmd));
 
     LOCKWRITE();
 
@@ -2739,8 +2739,8 @@ HRESULT RegMeta::DefineProperty(
     LPUTF8      szUTF8Property;
     UTF8STR(szProperty, szUTF8Property);
 
-    LOG((LOGMD, "MD RegMeta::DefineProperty(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, szProperty, dwPropFlags, pvSig, cbSig, dwCPlusTypeFlag, pValue, cchValue, mdSetter, mdGetter,
+    LOG((LOGMD, "MD RegMeta::DefineProperty(0x%08x, %s, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
+        td, szUTF8Property, dwPropFlags, pvSig, cbSig, dwCPlusTypeFlag, pValue, cchValue, mdSetter, mdGetter,
         rmdOtherMethods, pmdProp));
 
     LOCKWRITE();

@@ -735,7 +735,7 @@ PEAssembly::PEAssembly(
 #if _DEBUG
     GetPathOrCodeBase(m_debugName);
     m_debugName.Normalize();
-    m_pDebugName = m_debugName;
+    m_pDebugName = m_debugName.GetUTF8();
 #endif
 }
 #endif // !DACCESS_COMPILE

@@ -4044,7 +4044,8 @@ BuildCreateDumpCommandLine(
 
     if (dumpName != nullptr)
     {
-        commandLine.AppendPrintf(" --name %S", dumpName);
+        commandLine.Append(" --name ");
+        commandLine.Append(dumpName);
     }
 
     const char* dumpTypeOption = nullptr;

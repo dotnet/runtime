@@ -903,7 +903,7 @@ void DomainAssembly::SetupDebuggingConfig(void)
 
     SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dacfFlags);
 
-    LOG((LF_CORDB, LL_INFO10, "Assembly %S: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
+    LOG((LF_CORDB, LL_INFO10, "Assembly %s: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 }
 

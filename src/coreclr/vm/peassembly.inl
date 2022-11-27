@@ -221,7 +221,7 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
 #endif // DACCESS_COMPILE
 
 #ifdef LOGGING
-inline LPCWSTR PEAssembly::GetDebugName()
+inline LPCUTF8 PEAssembly::GetDebugName()
 {
     CONTRACTL
     {
@@ -236,7 +236,8 @@ inline LPCWSTR PEAssembly::GetDebugName()
 #ifdef _DEBUG
     return m_pDebugName;
 #else
-    return GetPath();
+    SString path = GetPath();
+    return path.GetUTF8();
 #endif
 }
 #endif

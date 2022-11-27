@@ -1302,7 +1302,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         LPCUTF8 szName = pName->GetName();
         if (szName == NULL)
             szName = "<UNKNOWN>";
-        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%ws\" in hash table. Incomplete = %d\n",
+        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%s\" in hash table. Incomplete = %d\n",
             szName, GetAssembly()->GetDebugName(), incomplete));
 #endif
         return FALSE;
@@ -2866,7 +2866,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %S (%p) from level %s\n", name.GetUnicode(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %s (%p) from level %s\n", name.GetUTF8(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
     }
 #endif
 
@@ -3261,7 +3261,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %S to level %s\n", name.GetUnicode(), classLoadLevelName[targetLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %s to level %s\n", name.GetUTF8(), classLoadLevelName[targetLevel]));
         CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
         m_pUnresolvedClassHash->Dump();
     }
