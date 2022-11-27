@@ -1467,7 +1467,8 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     if (!m_IsForceInline)
     {
         // For over-budget case we only inspect forceinline
-        return false;
+        // Otherwise, report "over-budget"
+        return true;
     }
 
     if (m_CallsiteDepth == 1)
@@ -1481,17 +1482,23 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
 
     assert(m_CallsiteDepth > 1);
 
-    // For this case we want to take number of foldable branches into account: the more the foldable
-    // branches we have the less work JIT will have to do because those will be elided early in the importer.
+    // For this case we want to take number of foldable branches into account: JIT is able to elide them
+    // early in the importer so it won't have to waste time compiling them.
 
     // Analyze potential benefits, we take into account:
-    //  FoldableBranches
-    //  FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
-    const double pros = m_FoldableBranch + m_FoldableSwitch * 2.0;
+    //  * FoldableBranches
+    //  * FoldableSwitches (we usually elide more than in case of FoldableBranch, hence, multiply by 2)
+    // We assume that a single foldable branch is capable of removing 80 bytes of IL, e.g.:
+    //
+    //  if (typeof(TKey) == typeof(byte)) return (byte)(object)left < (byte)(object)right;
+    //
+    // This branch is recognized as foldable and removes 52 bytes of IL.
+    //
+    // In future, we plan to have a real estimation of what will be folded.
+    const double pros = (m_FoldableBranch + m_FoldableSwitch * 2.0) * 80;
 
-    // We ran out of time budget so have to be quite conservative
-    const double cons =
-        m_CallsiteDepth * (2.0 + min(1.0, (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack()));
+    // We take number of locals and IL size as a friction:
+    const double cons = this->m_CodeSize * (1.0 + (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack());
 
     JITDUMP("Considering over-budget inlining for forceinline - pros:%g, cons:%g\n", pros, cons);
 
