@@ -1511,6 +1511,16 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     }
 }
 
+//------------------------------------------------------------------------
+// DecomposeSelect: Decompose 64-bit GT_SELECT into a 32-bit GT_SELECT and
+// 32-bit GT_SELECT_HI.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
 GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
 {
     GenTreeConditional* select = use.Def()->AsConditional();

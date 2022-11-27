@@ -299,7 +299,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #ifdef TARGET_X86
         case GT_SELECT_HI:
-            ContainCheckSelectOperands(node->AsOp());
+            ContainCheckSelect(node->AsOp());
             break;
 #endif
 

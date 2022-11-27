@@ -91,10 +91,7 @@ private:
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
 #endif
-    void ContainCheckSelect(GenTreeConditional* select);
-#ifdef TARGET_XARCH
-    void ContainCheckSelectOperands(GenTreeOp* select);
-#endif
+    void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);

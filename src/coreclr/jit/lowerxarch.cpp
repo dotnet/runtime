@@ -5596,14 +5596,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 // ContainCheckSelect: determine whether the sources of a select should be contained.
 //
 // Arguments:
-//    select - the GT_SELECT
+//    select - the GT_SELECT or GT_SELECT_HI node.
 //
-void Lowering::ContainCheckSelect(GenTreeConditional* select)
-{
-    ContainCheckSelectOperands(select);
-}
-
-void Lowering::ContainCheckSelectOperands(GenTreeOp* select)
+void Lowering::ContainCheckSelect(GenTreeOp* select)
 {
 #ifdef TARGET_64BIT
     assert(select->OperIs(GT_SELECT));
@@ -5611,13 +5606,14 @@ void Lowering::ContainCheckSelectOperands(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
 #endif
 
+    // TODO-CQ: Support containing relops here for the GT_SELECT case.
+
     GenTree* op1 = select->gtOp1;
     GenTree* op2 = select->gtOp2;
 
     // op1 and op2 are emitted as two separate instructions due to the
     // conditional nature of cmov, so both operands can be contained memory
     // operands.
-
     if (IsContainableMemoryOp(op1))
     {
         if (IsSafeToContainMem(select, op1))

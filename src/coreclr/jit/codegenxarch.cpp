@@ -1303,6 +1303,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
+//
+// Arguments:
+//    select - the node
+//
 void CodeGen::genCodeForSelect(GenTreeOp* select)
 {
 #ifdef TARGET_X86
@@ -1333,8 +1339,10 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     if (select->OperIs(GT_SELECT))
     {
-        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
         // TODO-CQ: Support contained relops here.
+        assert(select->AsConditional()->gtCond->isUsedFromReg());
+
+        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
         GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
     }
 

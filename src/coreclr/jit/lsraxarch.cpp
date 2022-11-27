@@ -253,8 +253,7 @@ int LinearScan::BuildNode(GenTree* tree)
 #ifdef TARGET_X86
         case GT_SELECT_HI:
             assert(dstCount == 1);
-            srcCount = BuildSelectOperands(tree->AsOp());
-            BuildDef(tree);
+            srcCount = BuildSelect(tree->AsOp());
             break;
 #endif
 
@@ -913,17 +912,24 @@ int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskT
     return srcCount;
 }
 
-int LinearScan::BuildSelect(GenTreeConditional* select)
-{
-    int srcCount = BuildOperandUses(select->gtCond);
-    srcCount += BuildSelectOperands(select);
-    BuildDef(select);
-    return srcCount;
-}
-
-int LinearScan::BuildSelectOperands(GenTreeOp* select)
+//------------------------------------------------------------------------
+// BuildSelect: Build RefPositions for a GT_SELECT/GT_SELECT_HI node.
+//
+// Arguments:
+//    select - The GT_SELECT/GT_SELECT_HI node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
+
+    if (select->OperIs(GT_SELECT))
+    {
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+    }
+
     // cmov family of instructions are special in that they only conditionally
     // define the destination register, so when generating code for GT_SELECT
     // we normally need to preface it by a move into the destination with one
@@ -954,6 +960,7 @@ int LinearScan::BuildSelectOperands(GenTreeOp* select)
         srcCount++;
     }
 
+    BuildDef(select);
     return srcCount;
 }
 
