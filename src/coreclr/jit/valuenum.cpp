@@ -7065,6 +7065,10 @@ void ValueNumStore::InitValueNumStoreStatics()
         {
             arity = 2;
         }
+        else if (GenTree::StaticOperIs(gtOper, GT_SELECT))
+        {
+            arity = 3;
+        }
 
         vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
