@@ -184,6 +184,9 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // RSH_LO represents the lo operation of a 64-bit right shift by a constant int.
 GTNODE(LSH_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+
+// Variant of SELECT that reuses flags computed by a previous SELECT.
+GTNODE(SELECT_HI        , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 #endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_SIMD

@@ -1303,10 +1303,20 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
 }
 
-void CodeGen::genCodeForSelect(GenTreeConditional* select)
+void CodeGen::genCodeForSelect(GenTreeOp* select)
 {
-    regNumber dstReg  = select->GetRegNum();
-    regNumber condReg = genConsumeReg(select->gtCond);
+#ifdef TARGET_X86
+    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
+#else
+    assert(select->OperIs(GT_SELECT));
+#endif
+
+    regNumber dstReg = select->GetRegNum();
+    if (select->OperIs(GT_SELECT))
+    {
+        genConsumeReg(select->AsConditional()->gtCond);
+    }
+
     genConsumeOperands(select);
 
     instruction cmovKind = INS_cmovne;
@@ -1321,11 +1331,15 @@ void CodeGen::genCodeForSelect(GenTreeConditional* select)
         cmovKind = INS_cmove;
     }
 
-    // TODO-CQ: Support contained relops here.
-    GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+    if (select->OperIs(GT_SELECT))
+    {
+        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
+        // TODO-CQ: Support contained relops here.
+        GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+    }
 
-    inst_RV_TT(INS_mov, emitActualTypeSize(select), dstReg, falseVal);
-    inst_RV_TT(cmovKind, emitActualTypeSize(select), dstReg, trueVal);
+    inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
+    inst_RV_TT(cmovKind, emitTypeSize(select), dstReg, trueVal);
 
     genProduceReg(select);
 }
@@ -1767,6 +1781,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SELECT:
             genCodeForSelect(treeNode->AsConditional());
             break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            genCodeForSelect(treeNode->AsOp());
+            break;
+#endif
 
         case GT_BT:
             genCodeForBT(treeNode->AsOp());

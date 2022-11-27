@@ -297,6 +297,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckSelect(node->AsConditional());
             break;
 
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            ContainCheckSelectOperands(node->AsOp());
+            break;
+#endif
+
         case GT_JMP:
             LowerJmpMethod(node);
             break;
