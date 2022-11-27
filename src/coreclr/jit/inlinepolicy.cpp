@@ -1449,22 +1449,24 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 bool ExtendedDefaultPolicy::BudgetCheck() const
 {
     // First, use a more conservative DefaultPolicy::BudgetCheck
-    // if it's fine with inlining the callee - we're good as is.
+    // if it's fine with inlining the current callee - we're good as is.
     if (!DefaultPolicy::BudgetCheck())
     {
         return false;
     }
 
-    // ExtendedDefaultPolicy has a better understanding on how many branches are foldable
-    // so we can roughly predict the final IL size JIT will have to emit (all foldable
-    // branches will be eliminated early in the importer)
+    // ExtendedDefaultPolicy has a better understanding on how many branches
+    // are foldable so we can roughly predict the final IL size JIT will have
+    // to work with (all foldable branches will be eliminated early in the
+    // importer so they won't affect the time it takes to compile the callee)
     //
     INT64 codeSize = (INT64)m_CodeSize;
 
-    // We assume each foldable branch reduces total IL size by 32 bytes, it's a pretty conservative
-    // guess, e.g. the following pattern:
+    // We assume each foldable branch reduces total IL size by 32 bytes, it's
+    // a pretty conservative guess, e.g. the following branch:
     //
-    //  if (typeof(TKey) == typeof(byte)) return (byte)(object)left < (byte)(object)right;
+    //  if (typeof(TKey) == typeof(byte))
+    //      return (byte)(object)left < (byte)(object)right;
     //
     // is recognized as foldable and removes 52 bytes of IL if TKey is not byte.
     //
@@ -1482,8 +1484,8 @@ bool ExtendedDefaultPolicy::BudgetCheck() const
     //
     codeSize = max((INT64)(m_CodeSize * 0.3), codeSize);
 
-    // In future, we plan to introduce a more precise IL scan phase to know exactly what we can elide
-    // if we inline given callee.
+    // In future, we plan to introduce a more precise IL scan phase to know exactly
+    // what we can elide if we inline given callee.
 
     return m_RootCompiler->m_inlineStrategy->BudgetCheck((unsigned)codeSize);
 }
