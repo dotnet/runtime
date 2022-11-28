@@ -4941,6 +4941,7 @@ PhaseStatus Compiler::optIfConversion()
 
     // Currently only enabled on arm64 and under debug on xarch, since we only
     // do it under stress.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
