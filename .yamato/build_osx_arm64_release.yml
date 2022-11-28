@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Build OSX ARM64
+name: Build OSX ARM64 Release
 
 agent:
   type: Unity::VM::osx
@@ -11,14 +11,7 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-arm64.7z
 
 commands:
-  - ./.yamato/scripts/build_osx_arm64.sh
-  
-# We don't test ARM64 yet, so let's build it on PRs targeting unity-main to make sure it builds at least
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
+  - ./.yamato/scripts/build_osx.sh arm64 Release
 
 artifacts:
   7z-archives:

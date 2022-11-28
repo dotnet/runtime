@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Generate OSX x64+ARM64
+name: Build OSX ARM64 Debug
 
 agent:
   type: Unity::VM::osx
@@ -8,14 +8,10 @@ agent:
   flavor: m1.mac
 
 variables:
-  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-x64arm64.7z
-
-dependencies:
-  - path: .yamato/build_osx_arm64_release.yml
-  - path: .yamato/build_osx_x64_release.yml
+  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-arm64.7z
 
 commands:
-  - ./.yamato/scripts/generate_osx_x64_arm64.sh
+  - ./.yamato/scripts/build_osx.sh arm64 Debug
 
 artifacts:
   7z-archives:

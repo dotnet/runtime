@@ -1,0 +1,22 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Build OSX x64 Release
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:v0.1.8-972754
+  flavor: m1.mac
+
+variables:
+  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-x64.7z
+
+commands:
+  - ./.yamato/scripts/build_osx.sh x64 Release
+
+artifacts:
+  7z-archives:
+    paths:
+      - artifacts/unity/**
+  build:
+    paths:
+      - artifacts/bin/**

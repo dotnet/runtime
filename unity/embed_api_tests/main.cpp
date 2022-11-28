@@ -18,6 +18,15 @@
 #define UNITY_EDITOR 1
 #define USE_CORECLR
 
+// On macOS the compiler does not define _DEBUG, but CMake defines
+// NDEBUG for release builds, so if NDEBUG is not defined, assume this
+// is a debug build and define _DEBUG.
+#if defined(__APPLE__)
+#ifndef NDEBUG
+#define _DEBUG
+#endif
+#endif
+
 typedef signed short SInt16;
 typedef unsigned short UInt16;
 typedef unsigned char UInt8;
