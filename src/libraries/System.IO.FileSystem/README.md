@@ -1,7 +1,7 @@
 # System.IO.FileSystem
 This assembly no longer contains any code. It is provided only to permit type unification for libraries built against previous versions of .NET.
 
-## Source 
+## Source
 * All types previously part of this assembly (`FileStream`, `FileSystemInfo`, `FileSystemEnumerable`, etc.) are now part of [System.Private.CoreLib](../System.Private.CoreLib/), exposed via [System.Runtime](../System.Runtime/).
 
 * All of the tests for types previously in this library are still in the [tests](tests/) subdirectory.
