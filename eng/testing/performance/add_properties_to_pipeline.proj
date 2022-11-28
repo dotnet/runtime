@@ -2,6 +2,6 @@
   <Import Project="..\..\Versions.props" />
 
   <Target Name="SetVariables">
-    <Exec Command="echo ##vso[task.setvariable variable=productVersion]$(ProductVersion)"/>
+    <Exec Command="echo '##vso[task.setvariable variable=productVersion]$(ProductVersion)'"/>
   </Target>
 </Project>
