@@ -2443,8 +2443,8 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     }
 
     GenTree* cond = node->AsConditional()->gtCond;
-    GenTree* op1 = node->gtOp1;
-    GenTree* op2 = node->gtOp2;
+    GenTree* op1  = node->gtOp1;
+    GenTree* op2  = node->gtOp2;
 
     if (cond->OperIsCompare())
     {
