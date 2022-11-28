@@ -4939,6 +4939,8 @@ PhaseStatus Compiler::optIfConversion()
 {
     bool madeChanges = false;
 
+    // Currently only enabled on arm64 and under debug on xarch, since we only
+    // do it under stress.
 #if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
