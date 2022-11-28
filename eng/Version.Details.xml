@@ -84,13 +84,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22524.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22571.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
+      <Sha>60a4b756026f3ff7164f47aa09ece9e7c4e0ffca</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22524.1">
+    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22571.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>4a51257b6ac207cb7b0a51b34bfb3eab5d0dfae8</Sha>
+      <Sha>60a4b756026f3ff7164f47aa09ece9e7c4e0ffca</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
