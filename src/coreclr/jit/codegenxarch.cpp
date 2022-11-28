@@ -1514,7 +1514,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
     // contained nodes are part of their parents for codegen purposes
     // ex : immediates, most LEAs
-    if (treeNode->isContained())
+    if (treeNode->isContained() && !treeNode->OperIsCompare())
     {
         return;
     }

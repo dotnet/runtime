@@ -2621,8 +2621,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
     GenCondition condition = GenCondition::FromRelop(relop);
 
-    genCodeForCompare(relop);
-
     if (condition.PreferSwap())
     {
         condition = GenCondition::Swap(condition);
