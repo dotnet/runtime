@@ -232,15 +232,9 @@ inline LPCUTF8 PEAssembly::GetDebugName()
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
     return m_pDebugName;
-#else
-    SString path = GetPath();
-    return path.GetUTF8();
-#endif
 }
-#endif
+#endif // LOGGING
 
 // ------------------------------------------------------------
 // Classification

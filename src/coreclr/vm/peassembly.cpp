@@ -669,9 +669,9 @@ PEAssembly::PEAssembly(
     }
     CONTRACTL_END;
 
-#if _DEBUG
+#ifdef LOGGING
     m_pDebugName = NULL;
-#endif
+#endif // LOGGING
     m_PEImage = NULL;
     m_MDImportIsRW_Debugger_Use_Only = FALSE;
     m_pMDImport = NULL;
@@ -732,11 +732,11 @@ PEAssembly::PEAssembly(
         m_pHostAssembly = pBindResultInfo;
     }
 
-#if _DEBUG
+#ifdef LOGGING
     GetPathOrCodeBase(m_debugName);
     m_debugName.Normalize();
     m_pDebugName = m_debugName.GetUTF8();
-#endif
+#endif // LOGGING
 }
 #endif // !DACCESS_COMPILE
 
@@ -1038,10 +1038,10 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
-#ifdef _DEBUG
+#ifdef LOGGING
     // Not a big deal if it's NULL or fails.
     m_debugName.EnumMemoryRegions(flags);
-#endif
+#endif // LOGGING
 
     if (m_PEImage.IsValid())
     {
