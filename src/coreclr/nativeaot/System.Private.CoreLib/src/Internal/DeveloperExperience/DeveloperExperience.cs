@@ -66,8 +66,8 @@ namespace Internal.DeveloperExperience
             }
 
             StringBuilder sb = new StringBuilder();
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName);
-            int rva = (int)(ip.ToInt64() - moduleBase.ToInt64());
+            ReadOnlySpan<char> fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName.AsSpan());
+            int rva = (int)(ip - moduleBase);
             sb.Append(fileNameWithoutExtension);
             sb.Append("!<BaseAddress>+0x");
             sb.Append(rva.ToString("x"));
