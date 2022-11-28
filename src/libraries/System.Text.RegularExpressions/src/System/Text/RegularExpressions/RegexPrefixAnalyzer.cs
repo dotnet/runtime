@@ -219,6 +219,11 @@ namespace System.Text.RegularExpressions
                         result.Range = (lowInclusive, highInclusive, negated);
                         results[i] = result;
                     }
+                    else if (RegexCharClass.TryGetAsciiSetChars(result.Set, out char[]? asciiChars))
+                    {
+                        result.AsciiSet = (asciiChars, negated);
+                        results[i] = result;
+                    }
                 }
             }
 
@@ -437,13 +442,47 @@ namespace System.Text.RegularExpressions
             // for the fastest and that have the best chance of matching as few false positives as possible.
             results.Sort((s1, s2) =>
             {
-                // If both have chars, prioritize the one with the smaller frequency for those chars.
-                if (s1.Chars is not null && s2.Chars is not null)
+                char[]? s1Chars = s1.Chars ?? s1.AsciiSet?.Chars;
+                char[]? s2Chars = s2.Chars ?? s2.AsciiSet?.Chars;
+                int s1CharsLength = s1Chars?.Length ?? 0;
+                int s2CharsLength = s2Chars?.Length ?? 0;
+                bool s1Negated = s1.AsciiSet.GetValueOrDefault().Negated;
+                bool s2Negated = s2.AsciiSet.GetValueOrDefault().Negated;
+
+                if (s1Negated)
                 {
+                    s1CharsLength = char.MaxValue - s1CharsLength;
+                }
+
+                if (s2Negated)
+                {
+                    s2CharsLength = char.MaxValue - s2CharsLength;
+                }
+
+                // If both have chars, prioritize the one with the smaller frequency for those chars.
+                if (s1Chars is not null && s2Chars is not null)
+                {
+                    // If they have different lengths, prefer the shorter one.
+                    if (s1CharsLength != s2CharsLength)
+                    {
+                        return s1CharsLength.CompareTo(s2CharsLength);
+                    }
+
+                    Debug.Assert(s1Negated == s2Negated, "The lengths should have been different");
+
                     // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
                     // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
                     // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
+                    float s1Frequency = SumFrequencies(s1Chars);
+                    float s2Frequency = SumFrequencies(s2Chars);
+
+                    if (s1Negated)
+                    {
+                        s1Frequency = -s1Frequency;
+                        s2Frequency = -s2Frequency;
+                    }
+
+                    int c = s1Frequency.CompareTo(s2Frequency);
                     if (c != 0)
                     {
                         return c;

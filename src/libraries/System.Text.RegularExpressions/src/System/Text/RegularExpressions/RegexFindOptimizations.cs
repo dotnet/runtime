@@ -247,6 +247,8 @@ namespace System.Text.RegularExpressions
             public int Distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive, bool Negated)? Range;
+            /// <summary>As an alternative to <see cref="Chars"/>, a description of the set of ASCII characters it represents, if it does.</summary>
+            public (char[] Chars, bool Negated)? AsciiSet;
         }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
