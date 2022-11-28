@@ -58,7 +58,7 @@ namespace WebAssemblyInfo
             // TODO: support all modes
             var mode = DataMode.Active;
             uint count = 1;
-            var sectionLen = U32Len(count) + U32Len((uint)mode) + ConstI32ExprLen((int)Program.DataOffset) + (uint)bytes.Length;
+            var sectionLen = U32Len(count) + U32Len((uint)mode) + ConstI32ExprLen((int)Program.DataOffset) + U32Len((uint)bytes.Length) + (uint)bytes.Length;
 
             // section beginning
             Writer.Write((byte)SectionId.Data);
@@ -68,6 +68,7 @@ namespace WebAssemblyInfo
             WriteU32(count);
             WriteU32((uint)mode);
             WriteConstI32Expr((int)Program.DataOffset);
+            WriteU32((uint)bytes.Length);
             Writer.Write(bytes);
 
             //var pos = Writer.BaseStream.Position;
