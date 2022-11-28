@@ -89,7 +89,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionLocation.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BlobUtilities.cs" />
-    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>

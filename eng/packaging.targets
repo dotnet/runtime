@@ -11,6 +11,7 @@
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <SuppressDependenciesWhenPacking Condition="'$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
+    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
     <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
@@ -55,6 +56,11 @@
   <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
     <_FrameworkAssemblyReferences Include="$(MSBuildProjectName)"
                                   TargetFramework="$(NetFrameworkMinimum)" />
+  </ItemGroup>
+
+  <!-- Add a package README file from. -->
+  <ItemGroup Condition="'$(PackageReadmeFile)' != ''">
+    <None Include="$(PackageReadmeFile)" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <Choose>

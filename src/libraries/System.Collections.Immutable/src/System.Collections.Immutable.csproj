@@ -128,7 +128,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs" Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <None Include="Interfaces.cd" />
-    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
