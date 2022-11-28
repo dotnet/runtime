@@ -5,11 +5,12 @@
 #define DEBUG
 
 using System;
-using System.Text;
-using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Reflection;
+using System.Runtime;
+using System.Text;
 
 using Internal.Runtime.Augments;
 
@@ -65,7 +66,7 @@ namespace Internal.DeveloperExperience
             }
 
             StringBuilder sb = new StringBuilder();
-            string fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName);
             int rva = (int)(ip.ToInt64() - moduleBase.ToInt64());
             sb.Append(fileNameWithoutExtension);
             sb.Append("!<BaseAddress>+0x");
@@ -120,25 +121,6 @@ namespace Internal.DeveloperExperience
             {
                 s_developerExperience = value;
             }
-        }
-
-        private static string GetFileNameWithoutExtension(string path)
-        {
-            path = GetFileName(path);
-            int i;
-            if ((i = path.LastIndexOf('.')) == -1)
-                return path; // No path extension found
-            else
-                return path.Substring(0, i);
-        }
-
-        private static string GetFileName(string path)
-        {
-            int i = path.AsSpan().LastIndexOfAny('/', '\\', ':');
-
-            return i < 0
-                ? path
-                : path.Substring(i + 1);
         }
 
         private static DeveloperExperience s_developerExperience;
