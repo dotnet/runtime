@@ -41,7 +41,7 @@ private:
         GenTree*    node  = nullptr;
     };
 
-    GenTree* m_cond;                    // The condition in the conversion
+    GenTree*           m_cond;          // The condition in the conversion
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
@@ -267,8 +267,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     // with the condition (for example, the condition could be an explicit bounds
                     // check and the operand could read an array element). Disallow this except
                     // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op2->IsInvariant() &&
-                        !op2->OperIsLocal())
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op2->IsInvariant() && !op2->OperIsLocal())
                     {
                         return false;
                     }
@@ -312,8 +311,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     // with the condition (for example, the condition could be an explicit bounds
                     // check and the operand could read an array element). Disallow this except
                     // for some common cases that we know are always side effect free.
-                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() &&
-                        !op1->OperIsLocal())
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() && !op1->OperIsLocal())
                     {
                         return false;
                     }
@@ -610,8 +608,6 @@ bool OptIfConversionDsc::optIfConvert()
         }
     }
 
-
-
 #ifdef DEBUG
     if (m_comp->verbose)
     {
@@ -668,16 +664,22 @@ bool OptIfConversionDsc::optIfConvert()
     {
         if (m_doElseConversion)
         {
-            selectTrueInput = m_elseOperation.node->gtGetOp2();
+            selectTrueInput  = m_elseOperation.node->gtGetOp2();
+            selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
         else
         {
+            // Invert the condition (to help matching condition codes back to CIL).
+            GenTree* revCond = m_comp->gtReverseCond(m_cond);
+            assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+
             // Duplicate the destination of the Then assignment.
             assert(m_thenOperation.node->gtGetOp1()->IsLocal());
-            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
-            selectTrueInput->gtFlags &= GTF_EMPTY;
+            selectFalseInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
+            selectFalseInput->gtFlags &= GTF_EMPTY;
+
+            selectTrueInput = m_thenOperation.node->gtGetOp2();
         }
-        selectFalseInput = m_thenOperation.node->gtGetOp2();
     }
     else
     {
@@ -688,10 +690,6 @@ bool OptIfConversionDsc::optIfConvert()
         selectTrueInput  = m_elseOperation.node->gtGetOp1();
         selectFalseInput = m_thenOperation.node->gtGetOp1();
     }
-
-    // Invert the condition.
-    GenTree* revCond = m_comp->gtReverseCond(m_cond);
-    assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
 
     // Create a select node.
     GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
