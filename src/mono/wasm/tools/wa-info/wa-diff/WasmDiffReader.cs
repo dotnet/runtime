@@ -74,7 +74,7 @@ namespace WebAssemblyInfo
             if (functions != null && idx < functions.Length)
                 f1 = functions[idx];
 
-            if (other != null && other.functions != null && otherIdx < other.functions.Length)
+            if (other != null && (otherName != null || !other.HasFunctionNames) && other.functions != null && otherIdx < other.functions.Length)
                 f2 = other.functions[otherIdx];
 
             if (f1 != null && f2 == null)
@@ -172,11 +172,12 @@ namespace WebAssemblyInfo
         void CompareFunction(UInt32 idx, string name, object? data)
         {
             UInt32 otherIdx;
+            var otherReader = (WasmDiffReader)data;
 
-            if (HasFunctionNames && data != null && ((WasmDiffReader)data).GetFunctionIdx(name, out otherIdx))
-                CompareFunction(idx, name, otherIdx, name, (WasmDiffReader?)data);
+            if (otherReader.HasFunctionNames && otherReader != null && otherReader.GetFunctionIdx(name, out otherIdx))
+                CompareFunction(idx, name, otherIdx, name, otherReader);
             else
-                CompareFunction(idx, name, idx, null, (WasmDiffReader?)data);
+                CompareFunction(idx, name, idx, null, otherReader);
         }
 
         public int CompareDissasembledFunctions(WasmReader other)
