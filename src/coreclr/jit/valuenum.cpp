@@ -6005,8 +6005,6 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN)
 {
-    ValueNum result = NoVN;
-
     if (IsVNConstant(arg0VN))
     {
         switch (ni)
@@ -6017,16 +6015,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_LZCNT_LeadingZeroCount:
 #endif
             {
-                // Count leading zeroes in u32
-                unsigned u32          = (unsigned)GetConstantInt32(arg0VN);
-                int      leadingZeros = 0;
-                while (u32 != 0)
-                {
-                    u32 = u32 >> 1;
-                    leadingZeros++;
-                }
-                result = VNForIntCon(32 - leadingZeros);
-                break;
+                DWORD cns = (DWORD)GetConstantInt32(arg0VN);
+                DWORD bsr = 0;
+                BitScanReverse(&bsr, cns);
+                return VNForIntCon(cns == 0 ? 0 : 31 - bsr);
             }
 
 #ifdef TARGET_ARM64
@@ -6035,36 +6027,22 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_LZCNT_X64_LeadingZeroCount:
 #endif
             {
-                // Count leading zeroes in u64
-                uint64_t u64          = (uint64_t)GetConstantInt64(arg0VN);
-                int      leadingZeros = 0;
-                while (u64 != 0)
-                {
-                    u64 = u64 >> 1;
-                    leadingZeros++;
-                }
-                result = VNForIntCon(64 - leadingZeros);
-                break;
+                DWORD64 cns = (DWORD64)GetConstantInt64(arg0VN);
+                DWORD   bsr = 0;
+                BitScanReverse64(&bsr, cns);
+                return VNForIntCon(cns == 0 ? 0 : 63 - bsr);
             }
 
-            // TODO: consider other intrinsics: Popcnt, Bmi, etc.
             default:
                 break;
         }
     }
 
-    if (result == NoVN)
+    if (encodeResultType)
     {
-        if (encodeResultType)
-        {
-            result = VNForFunc(type, func, arg0VN, resultTypeVN);
-        }
-        else
-        {
-            result = VNForFunc(type, func, arg0VN);
-        }
+        return VNForFunc(type, func, arg0VN, resultTypeVN);
     }
-    return result;
+    return VNForFunc(type, func, arg0VN);
 }
 
 ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
@@ -6075,73 +6053,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                                                  bool           encodeResultType,
                                                  ValueNum       resultTypeVN)
 {
-    ValueNum result = NoVN;
+    // E.g. for "Sse2.Or(cnsVec1, cnsVec2)" it looks like this:
+    // case NI_SSE2_Or:
+    //{
+    //    simd16_t v1 = GetConstantSimd16(arg0VN);
+    //    simd16_t v2 = GetConstantSimd16(arg1VN);
+    //    v1.i64[0] |= v2.i64[0];
+    //    v1.i64[1] |= v2.i64[1];
+    //    return VNForSimd16Con(v1);
+    //}
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
+    if (encodeResultType)
     {
-        switch (ni)
-        {
-#ifdef TARGET_ARM64
-            case NI_AdvSimd_Or:
-#else
-            case NI_SSE2_Or:
-#endif
-            {
-                simd16_t v1 = GetConstantSimd16(arg0VN);
-                simd16_t v2 = GetConstantSimd16(arg1VN);
-                v1.i64[0] |= v2.i64[0];
-                v1.i64[1] |= v2.i64[1];
-                result = VNForSimd16Con(v1);
-                break;
-            }
-
-#ifdef TARGET_ARM64
-            case NI_AdvSimd_And:
-#else
-            case NI_SSE2_And:
-#endif
-            {
-                simd16_t v1 = GetConstantSimd16(arg0VN);
-                simd16_t v2 = GetConstantSimd16(arg1VN);
-                v1.i64[0] &= v2.i64[0];
-                v1.i64[1] &= v2.i64[1];
-                result = VNForSimd16Con(v1);
-                break;
-            }
-
-#ifdef TARGET_ARM64
-            case NI_AdvSimd_Xor:
-#else
-            case NI_SSE2_Xor:
-#endif
-            {
-                simd16_t v1 = GetConstantSimd16(arg0VN);
-                simd16_t v2 = GetConstantSimd16(arg1VN);
-                v1.i64[0] ^= v2.i64[0];
-                v1.i64[1] ^= v2.i64[1];
-                result = VNForSimd16Con(v1);
-                break;
-            }
-
-            // TODO: consider other intrinsics
-            default:
-                break;
-        }
+        return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
     }
-
-    if (result == NoVN)
-    {
-        if (encodeResultType)
-        {
-            result = VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
-        }
-        else
-        {
-            result = VNForFunc(type, func, arg0VN, arg1VN);
-        }
-    }
-
-    return result;
+    return VNForFunc(type, func, arg0VN, arg1VN);
 }
 #endif
 

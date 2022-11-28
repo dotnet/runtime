@@ -1110,6 +1110,7 @@ public:
 
     ValueNum EvalHWIntrinsicFunUnary(
         var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+
     ValueNum EvalHWIntrinsicFunBinary(var_types      type,
                                       NamedIntrinsic ni,
                                       VNFunc         func,
