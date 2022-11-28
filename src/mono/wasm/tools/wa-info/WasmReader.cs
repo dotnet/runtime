@@ -7,87 +7,14 @@ using NameMap = System.Collections.Generic.Dictionary<System.UInt32, string>;
 
 namespace WebAssemblyInfo
 {
-    class WasmReader
+    class WasmReader : WasmReaderBase
     {
-        public readonly BinaryReader Reader;
-        public UInt32 Version { get; private set; }
-        public string Path { get; private set; }
-
-        public WasmReader(string path)
+        public WasmReader(string path) : base(path)
         {
-            if (Program.Verbose)
-                Console.WriteLine($"Reading wasm file: {path}");
-
-            Path = path;
-            var stream = File.Open(Path, FileMode.Open);
-            Reader = new BinaryReader(stream);
         }
 
-        public void Parse()
+        override protected void ReadSection(SectionInfo section)
         {
-            ReadModule();
-        }
-
-        void ReadModule()
-        {
-            byte[] magicWasm = { 0x0, 0x61, 0x73, 0x6d };
-            var magicBytes = Reader.ReadBytes(4);
-
-            for (int i = 0; i < magicWasm.Length; i++)
-            {
-                if (magicWasm[i] != magicBytes[i])
-                    throw new FileLoadException("not wasm file, module magic is wrong");
-            }
-
-            Version = Reader.ReadUInt32();
-            if (Program.Verbose)
-                Console.WriteLine($"WebAssembly binary format version: {Version}");
-
-            while (Reader.BaseStream.Position < Reader.BaseStream.Length)
-                ReadSection();
-        }
-
-        protected enum SectionId
-        {
-            Custom = 0,
-            Type,
-            Import,
-            Function,
-            Table,
-            Memory,
-            Global,
-            Export,
-            Start,
-            Element,
-            Code,
-            Data,
-            DataCount,
-            Tag,
-        }
-
-        protected struct SectionInfo
-        {
-            public SectionId id;
-            public UInt32 size;
-        }
-        protected List<SectionInfo> sections = new();
-        protected Dictionary<SectionId, List<SectionInfo>> sectionsById = new();
-
-        void ReadSection()
-        {
-            var section = new SectionInfo() { id = (SectionId)Reader.ReadByte(), size = ReadU32() };
-            sections.Add(section);
-            if (!sectionsById.ContainsKey(section.id))
-                sectionsById[section.id] = new List<SectionInfo>();
-
-            sectionsById[section.id].Add(section);
-
-
-            if (Program.Verbose)
-                Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
-
-            var begin = Reader.BaseStream.Position;
-
             switch (section.id)
             {
                 case SectionId.Custom:
@@ -124,12 +51,8 @@ namespace WebAssemblyInfo
                 default:
                     break;
             }
-
-            if (Program.Verbose)
-                Console.WriteLine();
-
-            Reader.BaseStream.Seek(begin + section.size, SeekOrigin.Begin);
         }
+
 
         TableType[]? tables;
         void ReadTableSection()
@@ -1306,70 +1229,6 @@ namespace WebAssemblyInfo
             {
                 functions[i].TypeIdx = ReadU32();
             }
-        }
-
-        public UInt32 ReadU32()
-        {
-            UInt32 value = 0;
-            var offset = 0;
-            do
-            {
-                var b = Reader.ReadByte();
-                value |= (UInt32)(b & 0x7f) << offset;
-
-                if ((b & 0x80) == 0)
-                    break;
-
-                offset += 7;
-            } while (true);
-
-            return value;
-        }
-
-        Int32 ReadI32()
-        {
-            Int32 value = 0;
-            var offset = 0;
-            byte b;
-
-            do
-            {
-                b = Reader.ReadByte();
-                value |= (Int32)(b & 0x7f) << offset;
-
-                if ((b & 0x80) == 0)
-                    break;
-
-                offset += 7;
-            } while (true);
-
-            if (offset < 32 && (b & 0x40) == 0x40)
-                value |= (~(Int32)0 << offset);
-
-            return value;
-        }
-
-        Int64 ReadI64()
-        {
-            Int64 value = 0;
-            var offset = 0;
-            byte b;
-
-            do
-            {
-                b = Reader.ReadByte();
-                value |= (Int64)(b & 0x7f) << offset;
-
-                if ((b & 0x80) == 0)
-                    break;
-
-                offset += 7;
-            } while (true);
-
-            if (offset < 64 && (b & 0x40) == 0x40)
-                value |= (~(Int64)0 << offset);
-
-            return value;
         }
 
         public bool HasFunctionNames { get { return functionNames != null && functionNames.Count > 0; } }

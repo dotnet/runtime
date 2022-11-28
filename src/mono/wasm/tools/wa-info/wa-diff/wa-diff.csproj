@@ -22,6 +22,7 @@
     <Compile Include="..\Extensions.cs" Link="Extensions.cs" />
     <Compile Include="..\WasmOpcode.cs" Link="WasmOpcode.cs" />
     <Compile Include="..\WasmReader.cs" Link="WasmReader.cs" />
+    <Compile Include="..\WasmReaderBase.cs" Link="WasmReaderBase.cs" />
     <Compile Include="..\WasmMTOpcode.cs" Link="WasmMTOpcode.cs" />
     <Compile Include="..\WasmSIMDOpcode.cs" Link="WasmSIMDOpcode.cs" />
     <Compile Include="..\WasmStructs.cs" Link="WasmStructs.cs" />
