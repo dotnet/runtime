@@ -13,9 +13,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-#if NATIVEAOT
-	[Define ("NATIVEAOT")]
-#endif
 	public class RequiresInCompilerGeneratedCode
 	{
 		public static void Main ()
@@ -927,7 +924,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class DynamicallyAccessedLocalFunctionUnusedShouldWarn
 			{
-				// TODO: implement this for NativeAot (https://github.com/dotnet/runtime/issues/68786)
+				// https://github.com/dotnet/runtime/issues/68786
 				[ExpectedWarning ("IL2118", nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction", ProducedBy = ProducedBy.Trimmer)]
 				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
 				{
@@ -1896,7 +1893,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// In release mode, the async state machine is a struct which doesn't have a constructor, so no warning is emitted.
 #endif
 			// Linker warns about reflection access to compiler-generated state machine members.
-			// TODO: implement this for NativeAot (https://github.com/dotnet/runtime/issues/68786)
+			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
 				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestIteratorOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
@@ -2010,7 +2007,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			// Linker warns about reflection access to compiler-generated code
-			// TODO: implement this for NativeAot (https://github.com/dotnet/runtime/issues/68786)
+			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection),
 				ProducedBy = ProducedBy.Trimmer)]
 			static void TestAll ()
@@ -2031,7 +2028,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			// Linker warns about reflection access to compiler-generated code
-			// TODO: implement this for NativeAot (https://github.com/dotnet/runtime/issues/68786)
+			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">",
 				ProducedBy = ProducedBy.Trimmer)]
 			static void TestNonPublicMethods ()

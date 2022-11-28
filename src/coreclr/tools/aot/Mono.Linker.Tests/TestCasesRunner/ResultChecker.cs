@@ -207,22 +207,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
 
-										string actualName = methodDesc.OwningType.ToString ().Replace ("+", ".") + "." + methodDesc.Name;
-										if (actualName.Contains (expectedMember.DeclaringType.FullName.Replace ("/", ".")) &&
-											actualName.Contains ("<" + expectedMember.Name + ">")) {
+										string? actualName = GetActualOriginDisplayName (methodDesc);
+										string expectedTypeName = ConvertSignatureToIlcFormat (GetExpectedOriginDisplayName (expectedMember.DeclaringType));
+										if (actualName?.Contains (expectedTypeName) == true &&
+											actualName?.Contains ("<" + expectedMember.Name + ">") == true) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (actualName.StartsWith ($"[test]{expectedMember.DeclaringType.FullName.Replace ("/", ".")}") &&
-											actualName.Contains (".cctor") &&
+										if (actualName?.StartsWith (expectedTypeName) == true &&
+											actualName?.Contains (".cctor") == true &&
 											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
 										if (methodDesc.Name == ".ctor" &&
-										methodDesc.OwningType.ToString () == expectedMember.FullName) {
+											methodDesc.OwningType.ToString () == expectedMember.FullName) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -354,6 +355,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				provider switch {
 					MethodDefinition method => method.GetDisplayName (),
 					FieldDefinition field => field.GetDisplayName (),
+					TypeDefinition type => type.GetDisplayName (),
 					IMemberDefinition member => member.FullName,
 					AssemblyDefinition asm => asm.Name.Name,
 					_ => throw new NotImplementedException ()

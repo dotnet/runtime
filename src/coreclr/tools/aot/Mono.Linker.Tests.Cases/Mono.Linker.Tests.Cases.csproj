@@ -9,7 +9,6 @@
     <WarningLevel>0</WarningLevel>
     <AnalysisLevel>0</AnalysisLevel>
     <RunAnalyzers>true</RunAnalyzers>
-    <DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
