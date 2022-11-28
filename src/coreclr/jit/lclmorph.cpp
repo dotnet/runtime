@@ -1216,7 +1216,7 @@ private:
                     unsigned     indSize = node->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(node);
                     if (indSize > genTypeSize(fieldType))
                     {
-                        // Retargeting this nodeection to reference the promoted field would make it
+                        // Retargeting this indirection to reference the promoted field would make it
                         // "wide", address-exposing the whole parent struct (with all of its fields).
                         return;
                     }
