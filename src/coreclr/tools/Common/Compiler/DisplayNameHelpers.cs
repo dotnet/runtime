@@ -34,10 +34,9 @@ namespace ILCompiler
             sb.Append(method.OwningType.GetDisplayName());
             sb.Append('.');
 
-            if (method.IsConstructor)
+            if (method.IsConstructor && method.OwningType is DefType defType)
             {
-                DefType defType = method.OwningType.GetTypeDefinition() as DefType;
-                sb.Append(defType?.Name ?? method.Name);
+                sb.Append(defType.Name);
             }
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)

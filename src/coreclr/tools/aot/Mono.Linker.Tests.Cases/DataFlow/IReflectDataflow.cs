@@ -120,8 +120,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// NativeAOT: Doesn't preserve this type because there's no need. The type itself is never instantiated
 		// there's only a field of that type and accessed to that field can be made without knowing it's type (just memory address access)
-		[Kept (KeptBy = ProducedBy.Trimmer)]
-		[KeptBaseType (typeof (MyReflect), KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
+		[KeptBaseType (typeof (MyReflect), By = ProducedBy.Trimmer)]
 		class MyReflectDerived : MyReflect
 		{
 		}

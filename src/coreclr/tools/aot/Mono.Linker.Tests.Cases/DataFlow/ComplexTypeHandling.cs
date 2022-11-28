@@ -30,7 +30,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// NativeAOT: No need to preserve the element type if it's never instantiated
 		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class ArrayElementType
 		{
 			public ArrayElementType () { }
@@ -60,7 +60,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// NativeAOT: No need to preserve the element type if it's never instantiated
 		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class ArrayElementInGenericType
 		{
 			public ArrayElementInGenericType () { }
@@ -99,7 +99,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// NativeAOT: No need to preserve the element type if it's never instantiated
 		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromMethodParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -120,7 +120,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// NativeAOT: No need to preserve the element type if it's never instantiated
 		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		sealed class ArrayGetTypeFromFieldElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -144,7 +144,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			// https://github.com/dotnet/runtime/issues/72833
 			// NativeAOT doesn't implement full type name parser yet - it ignores the [] and thus sees this as a direct type reference
-			[Kept (KeptBy = ProducedBy.NativeAot)]
+			[Kept (By = ProducedBy.NativeAot)]
 			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
@@ -161,7 +161,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// actually occur in real apps (and even if it does happen, it just increases size, doesn't break behavior).
 		// NativeAOT: https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet - it ignores the [] and thus sees this as a direct type reference
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class ArrayCreateInstanceByNameElement
 		{
 			public ArrayCreateInstanceByNameElement ()
@@ -176,7 +176,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// NativeAOT doesn't keep attributes on non-reflectable methods
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class ArrayInAttributeParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -185,7 +185,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// NativeAOT doesn't keep attributes on non-reflectable methods
-		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute), KeptBy = ProducedBy.Trimmer)]
+		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute), By = ProducedBy.Trimmer)]
 		[RequiresPublicMethod (typeof (ArrayInAttributeParamElement[]))]
 		static void TestArrayInAttributeParameter ()
 		{
@@ -194,7 +194,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// The usage of a type in attribute parameter is not enough to create NativeAOT EEType
 		// which is what the test infra looks for right now, so the type is not kept.
 		// There should be a reflection record of the type though (we just don't validate that yet).
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class ArrayInAttributeParamElement_ViaReflection
 		{
 			// This method should not be marked, instead Array.* should be marked

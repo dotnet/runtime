@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 	// NativeAOT: https://github.com/dotnet/runtime/issues/78752
 	// Once the above issue is fixed the ctor should be preserved even in NativeAOT
-	[KeptMember (".ctor()", KeptBy = ProducedBy.Trimmer)]
+	[KeptMember (".ctor()", By = ProducedBy.Trimmer)]
 	public class MemberTypesAllOnCopyAssembly
 	{
 		public static void Main ()

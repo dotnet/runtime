@@ -130,7 +130,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInner
 		{
 		}
@@ -145,10 +145,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerInner
 		{
-			[Kept (KeptBy = ProducedBy.Trimmer)]
+			[Kept (By = ProducedBy.Trimmer)]
 			public void Method ()
 			{
 			}
@@ -156,17 +156,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), KeptBy = ProducedBy.Trimmer)]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = ProducedBy.Trimmer)]
 		T>
 		{
 		}
 
 		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class FromStringConstantWithGenericInnerTwo
 		{
 			void UnusedMethod ()
@@ -176,7 +176,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT doesn't implement full type name parser yet
-		[Kept (KeptBy = ProducedBy.Trimmer)]
+		[Kept (By = ProducedBy.Trimmer)]
 		class FromStringConstantWitGenericInnerMultiDimArray
 		{
 		}
@@ -184,12 +184,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/runtime/issues/72833
 		// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
 		[Kept]
-		[KeptMember (".ctor()", KeptBy = ProducedBy.NativeAot)]
+		[KeptMember (".ctor()", By = ProducedBy.NativeAot)]
 		class FromStringConstantWithMultiDimArray
 		{
 			// https://github.com/dotnet/runtime/issues/72833
 			// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
-			[Kept (KeptBy = ProducedBy.NativeAot)]
+			[Kept (By = ProducedBy.NativeAot)]
 			public void UnusedMethod () { }
 		}
 
