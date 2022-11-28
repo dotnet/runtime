@@ -27,7 +27,7 @@
   IL_000d:  ret
 }
 
-.method assembly static int32  main(string[] args) cil managed
+.method assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  6

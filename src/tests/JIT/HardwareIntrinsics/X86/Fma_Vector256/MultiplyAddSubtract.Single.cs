@@ -600,13 +600,13 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
 
             for (var i = 0; i < RetElementCount; i += 2)
             {
-                if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[i] * secondOp[i]) - thirdOp[i], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
+                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i], secondOp[i], -thirdOp[i]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
                 {
                     succeeded = false;
                     break;
                 }
 
-                if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[i + 1] * secondOp[i + 1]) + thirdOp[i + 1], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
+                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], thirdOp[i + 1]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
                 {
                     succeeded = false;
                     break;

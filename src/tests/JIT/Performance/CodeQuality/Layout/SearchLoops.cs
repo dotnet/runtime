@@ -10,7 +10,7 @@ namespace Layout
 {
     public unsafe class SearchLoops
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Make sure equal strings compare as such
             if (!LoopReturn("hello", "hello") || !LoopGoto("goodbye", "goodbye"))

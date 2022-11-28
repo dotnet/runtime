@@ -136,6 +136,14 @@ namespace System.Reflection
             return attrs;
         }
 
+        private static bool AttrTypeMatches(Type? attributeType, Type attrType)
+        {
+            if (attributeType == null)
+                return true;
+            return attributeType.IsAssignableFrom(attrType) ||
+                (attributeType.IsGenericTypeDefinition && attrType.IsGenericType && attributeType.IsAssignableFrom(attrType.GetGenericTypeDefinition()));
+        }
+
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -160,7 +168,7 @@ namespace System.Reflection
                 if (res[0] == null)
                     throw new CustomAttributeFormatException("Invalid custom attribute format");
 
-                if (attributeType != null)
+                if (attributeType != null && !attributeType.IsGenericTypeDefinition)
                 {
                     if (attributeType.IsAssignableFrom(res[0].GetType()))
                     {
@@ -219,13 +227,11 @@ namespace System.Reflection
                     if (attr == null)
                         throw new CustomAttributeFormatException("Invalid custom attribute format");
 
-                    Type attrType = attr.GetType();
-                    if (attributeType != null && !attributeType.IsAssignableFrom(attrType))
-                        continue;
-                    a.Add(attr);
+                    if (AttrTypeMatches(attributeType, attr.GetType()))
+                        a.Add(attr);
                 }
 
-                if (attributeType == null || attributeType.IsValueType)
+                if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                     array = new Attribute[a.Count];
                 else
                     array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
@@ -247,11 +253,8 @@ namespace System.Reflection
                         throw new CustomAttributeFormatException("Invalid custom attribute format");
 
                     Type attrType = attr.GetType();
-                    if (attributeType != null)
-                    {
-                        if (!attributeType.IsAssignableFrom(attrType))
-                            continue;
-                    }
+                    if (!AttrTypeMatches(attributeType, attr.GetType()))
+                        continue;
 
                     AttributeInfo? firstAttribute;
                     if (attributeInfos.TryGetValue(attrType, out firstAttribute))
@@ -284,7 +287,7 @@ namespace System.Reflection
                 }
             } while (btype != null);
 
-            if (attributeType == null || attributeType.IsValueType)
+            if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                 array = new Attribute[a.Count];
             else
                 array = (Array.CreateInstance(attributeType, a.Count) as object[])!;

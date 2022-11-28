@@ -1279,6 +1279,18 @@ namespace System
         // Returns true for actual enum types only.
         internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
+        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
+        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
+        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
+
+        public override Type GetGenericTypeDefinition()
+        {
+            if (!IsGenericType)
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+
+            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
+        }
+
         public override GenericParameterAttributes GenericParameterAttributes
         {
             get
@@ -1648,83 +1660,12 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
-        /// </summary>
-        /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
-        internal bool CheckValue(
-            ref object? value,
-            ref ParameterCopyBackAction copyBack,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr)
+        // FIXME Reuse with coreclr
+        private CheckValueStatus TryChangeTypeSpecial(
+            ref object value,
+            out bool isValueType)
         {
-            // Already fast-pathed by the caller.
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
-
-            copyBack = ParameterCopyBackAction.Copy;
-
-            CheckValueStatus status = TryConvertToType(ref value);
-            if (status == CheckValueStatus.Success)
-            {
-                return true;
-            }
-
-            if (status == CheckValueStatus.NotSupported_ByRefLike)
-            {
-                throw new NotSupportedException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
-            }
-
-            if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
-            }
-
-            if (binder != null && binder != DefaultBinder)
-            {
-                value = binder.ChangeType(value!, this, culture);
-                return true;
-            }
-
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
-        }
-
-        private enum CheckValueStatus
-        {
-            Success = 0,
-            ArgumentException,
-            NotSupported_ByRefLike
-        }
-
-        private CheckValueStatus TryConvertToType(ref object? value)
-        {
-            if (IsInstanceOfType(value))
-                return CheckValueStatus.Success;
-
-            if (IsByRef)
-            {
-                Type elementType = GetElementType();
-                if (elementType.IsByRefLike)
-                {
-                    return CheckValueStatus.NotSupported_ByRefLike;
-                }
-
-                if (value == null || elementType.IsInstanceOfType(value))
-                {
-                    return CheckValueStatus.Success;
-                }
-            }
-
-            if (value == null)
-            {
-                if (IsByRefLike)
-                {
-                    return CheckValueStatus.NotSupported_ByRefLike;
-                }
-
-                return CheckValueStatus.Success;
-            }
-
+            isValueType = true;
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
@@ -1763,13 +1704,9 @@ namespace System
                 }
             }
 
+            isValueType = false;
             return CheckValueStatus.ArgumentException;
         }
-
-        // Stub method to allow for shared code with CoreClr.
-#pragma warning disable CA1822, IDE0060
-        internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
-#pragma warning restore CA1822, IDE0060
 
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
@@ -2161,6 +2098,16 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CreateInstanceInternal(QCallTypeHandle type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void AllocateValueType(QCallTypeHandle type, object? value, ObjectHandleOnStack res);
+
+        internal static object AllocateValueType(RuntimeType type, object? value)
+        {
+            object? res = null;
+            AllocateValueType(new QCallTypeHandle(ref type), value, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetDeclaringMethod(QCallTypeHandle type, ObjectHandleOnStack res);

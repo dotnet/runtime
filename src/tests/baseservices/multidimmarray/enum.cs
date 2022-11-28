@@ -3,7 +3,7 @@ using System;
 public class Test
 {
     enum State : sbyte { OK = 0, BUG = -1 }
-    static int Main(string[] args)
+    static int Main()
     {
         TestLibrary.TestFramework.BeginTestCase("Enum MultidimmArray");
         var s = new State[1, 1];

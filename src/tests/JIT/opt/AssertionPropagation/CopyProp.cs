@@ -21,7 +21,7 @@ internal class Sample2
         return (sbyte)res;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         bool failed = false;
         if (func(1, 2) != -1)

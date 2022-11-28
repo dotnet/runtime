@@ -14,7 +14,7 @@ class TOCElement
 public:
     __int64 Offset;
     int     Number;
-    char    Hash[MD5_HASH_BUFFER_SIZE];
+    char    Hash[MM3_HASH_BUFFER_SIZE];
 
     TOCElement()
     {

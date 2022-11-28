@@ -183,7 +183,9 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+#pragma warning disable 8500 // sizeof of managed types
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
+#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
