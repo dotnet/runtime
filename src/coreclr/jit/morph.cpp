@@ -12790,7 +12790,15 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    op2->AsIntConCommon()->SetIconValue(0);
+    if (op2->OperIs(GT_CNS_LNG))
+    {
+        op2->AsIntConCommon()->SetLngValue(0);
+    }
+    else
+    {
+        op2->AsIntConCommon()->SetIconValue(0);
+    }
+
     fgUpdateConstTreeValueNumber(op2);
 
     GenTree* const zero = op2;
