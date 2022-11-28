@@ -18,7 +18,7 @@
 #define UNITY_EDITOR 1
 #define USE_CORECLR
 
-// On macOS the compiler does note define _DEBUG, but CMake defines
+// On macOS the compiler does not define _DEBUG, but CMake defines
 // NDEBUG for release builds, so if NDEBUG is not defined, assume this
 // is a debug build and define _DEBUG.
 #if defined(__APPLE__)
