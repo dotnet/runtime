@@ -4664,13 +4664,13 @@ PhaseStatus Compiler::optUnrollLoops()
 //
 bool Compiler::optIfConvert(BasicBlock* block)
 {
-    //// Don't optimise the block if it is inside a loop
-    //// When inside a loop, branches are quicker than selects.
-    //// Detect via the block weight as that will be high when inside a loop.
-    //if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    //{
-    //    return false;
-    //}
+    // Don't optimise the block if it is inside a loop
+    // When inside a loop, branches are quicker than selects.
+    // Detect via the block weight as that will be high when inside a loop.
+    if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    {
+        return false;
+    }
 
     // Does the block end by branching via a JTRUE after a compare?
     if (block->bbJumpKind != BBJ_COND || block->NumSucc() != 2)
@@ -4682,10 +4682,10 @@ bool Compiler::optIfConvert(BasicBlock* block)
     GenTree* last = block->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
     GenTree* cond = last->gtGetOp1();
-    //if (!cond->OperIsCompare())
-    //{
-    //    return false;
-    //}
+    if (!cond->OperIsCompare())
+    {
+        return false;
+    }
 
     // Block where the flows merge.
     BasicBlock* finalBlock = block->bbNext;
@@ -4803,27 +4803,27 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 #endif
 
-//    // Using SELECT nodes means that full assignment is always evaluated.
-//    // Put a limit on the original source and destination of the assignment.
-//    if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
-//    {
-//#ifdef TARGET_XARCH
-//        JITDUMP("Skipping if-converion on xarch\n");
-//
-//        // xarch does not support containing relops in GT_SELECT nodes
-//        // currently so only introduce GT_SELECT in stress.
-//        return false;
-//#else
-//        int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
-//
-//        // Cost to allow for "x = cond ? a + b : x".
-//        if (cost > 7)
-//        {
-//            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d\n", cost);
-//            return false;
-//        }
-//#endif
-//    }
+    // Using SELECT nodes means that full assignment is always evaluated.
+    // Put a limit on the original source and destination of the assignment.
+    if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
+    {
+#ifdef TARGET_XARCH
+        JITDUMP("Skipping if-converion on xarch\n");
+
+        // xarch does not support containing relops in GT_SELECT nodes
+        // currently so only introduce GT_SELECT in stress.
+        return false;
+#else
+        int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
+
+        // Cost to allow for "x = cond ? a + b : x".
+        if (cost > 7)
+        {
+            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d\n", cost);
+            return false;
+        }
+#endif
+    }
 
     // Duplicate the destination of the assign.
     // This will be used as the false result of the select node.
