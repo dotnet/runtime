@@ -344,7 +344,11 @@ DO_API(void, mono_dl_fallback_unregister, (MonoDlFallbackHandler * handler))
 
 #endif
 
-typedef UNUSED_SYMBOL void(*vprintf_func)(const char* msg, va_list args);
+#ifdef WIN32
+typedef int (__cdecl *vprintf_func)(const char* msg, va_list args);
+#else
+typedef int (*vprintf_func)(const char* msg, va_list args);
+#endif
 DO_API(void, mono_unity_set_vprintf_func, (vprintf_func func))
 
 DO_API(void*, mono_unity_liveness_allocate_struct, (MonoClass * filter, int max_object_count, mono_register_object_callback callback, void* userdata, mono_liveness_reallocate_callback reallocate))
