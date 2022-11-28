@@ -3840,15 +3840,13 @@ namespace System
             }
 
             // Then look up the syntax in a string-based table.
-            string str;
-            fixed (char* pSpan = span)
+#pragma warning disable CS8500 // takes address of managed type
+            string str = string.Create(span.Length, (IntPtr)(&span), (buffer, spanPtr) =>
             {
-                str = string.Create(span.Length, (ip: (IntPtr)pSpan, length: span.Length), (buffer, state) =>
-                {
-                    int charsWritten = new ReadOnlySpan<char>((char*)state.ip, state.length).ToLowerInvariant(buffer);
-                    Debug.Assert(charsWritten == buffer.Length);
-                });
-            }
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
         }

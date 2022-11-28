@@ -1536,34 +1536,33 @@ namespace System.Text.RegularExpressions
             }
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
-            fixed (char* charsPtr = chars)
-            {
+#pragma warning disable CS8500 // takes address of managed type
 #if REGEXGENERATOR
-                return StringExtensions.Create(
+            return StringExtensions.Create(
 #else
-                return string.Create(
+            return string.Create(
 #endif
-                    SetStartIndex + count, ((IntPtr)charsPtr, chars.Length), static (span, state) =>
-                {
-                    // Reconstruct the span now that we're inside of the lambda.
-                    ReadOnlySpan<char> chars = new ReadOnlySpan<char>((char*)state.Item1, state.Length);
+                SetStartIndex + count, (IntPtr)(&chars), static (span, charsPtr) =>
+            {
+                // Reconstruct the span now that we're inside of the lambda.
+                ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
 
-                    // Fill in the set string
-                    span[FlagsIndex] = (char)0;
-                    span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
-                    span[CategoryLengthIndex] = (char)0;
-                    int i = SetStartIndex;
-                    foreach (char c in chars)
+                // Fill in the set string
+                span[FlagsIndex] = (char)0;
+                span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                span[CategoryLengthIndex] = (char)0;
+                int i = SetStartIndex;
+                foreach (char c in chars)
+                {
+                    span[i++] = c;
+                    if (c != LastChar)
                     {
-                        span[i++] = c;
-                        if (c != LastChar)
-                        {
-                            span[i++] = (char)(c + 1);
-                        }
+                        span[i++] = (char)(c + 1);
                     }
-                    Debug.Assert(i == span.Length);
-                });
-            }
+                }
+                Debug.Assert(i == span.Length);
+            });
+#pragma warning restore CS8500
         }
 
         /// <summary>
