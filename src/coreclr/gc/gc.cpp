@@ -3869,8 +3869,11 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
         uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
         uint32_t current_num_units = get_num_units (current_val);
         bool free_p = is_unit_memory_free (current_val);
+
+#ifdef _DEBUG
         dprintf (REGIONS_LOG, ("ALLOC[%s: %Id]%d->%d", (free_p ? "F" : "B"), (size_t)current_num_units,
             (int)(current_index - region_map_left_start), (int)(current_index + current_num_units - region_map_left_start)));
+#endif //_DEBUG
 
         if (free_p)
         {
@@ -12877,10 +12880,61 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
             heap_committed -= small_committed;
         }
     }
-    dprintf (REGIONS_LOG, ("%s regions: %Id bytes (%Id bytes of commit) on global free region list",
+    // compute how much committed space we have now have in per-heap region free lists vs. the global free list
+    size_t all_heaps_committed = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+
+        all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
+    }
+    // we desire a certain fraction of the total committed free space on the global list
+    const float desired_fraction_in_global = 0.4f;
+    size_t desired_in_global = (size_t)((all_heaps_committed + global_free_regions[kind].get_size_committed_in_free())*desired_fraction_in_global);
+
+    // remove regions from the per-heap free lists until we achieve that
+    while (global_free_regions[kind].get_size_committed_in_free() < desired_in_global)
+    {
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            heap_segment *small_region = hp->free_regions[kind].get_last_free_region();
+            if (small_region == nullptr)
+            {
+                continue;
+            }
+
+            ptrdiff_t small_committed = get_region_committed_size (small_region);
+
+            assert (small_committed <= (ptrdiff_t)hp->free_regions[kind].get_size_committed_in_free());
+
+            dprintf (REGIONS_LOG, ("%s regions: moving %Id bytes of commit from heap %d to global free region list",
+                kind_name[kind],
+                small_committed,
+                i));
+
+            region_free_list::unlink_region (small_region);
+            global_free_regions[kind].add_region_front (small_region);
+        }
+    }
+#ifdef TRACE_GC
+    size_t all_heaps_free = 0;
+    all_heaps_committed = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+
+        all_heaps_free      += hp->free_regions[kind].get_size_free_regions();
+        all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
+    }
+    dprintf (REGIONS_LOG, ("%s free regions: %Id (%Id commit) heap, %Id (%Id commit) global",
         kind_name[kind],
+        all_heaps_free,
+        all_heaps_committed,
         global_free_regions[kind].get_size_free_regions(),
         global_free_regions[kind].get_size_committed_in_free()));
+#endif //TRACE_GC
 
     global_free_regions[kind].sort_by_committed_and_age();
 }
@@ -22982,6 +23036,50 @@ void gc_heap::garbage_collect (int n)
 #endif //FEATURE_BASICFREEZE
 
 #ifdef MULTIPLE_HEAPS
+
+#ifdef TRACE_GC
+        size_t total_committed_in_free = 0;
+        for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+        {
+            size_t all_heaps_free = 0;
+            size_t all_heaps_committed = 0;
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+
+                all_heaps_free      += hp->free_regions[kind].get_size_free_regions();
+                all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
+            }
+            const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
+            dprintf (REGIONS_LOG, ("%s free regions: %Id (%Id commit) heap, %Id (%Id commit) global",
+                kind_name[kind],
+                all_heaps_free,
+                all_heaps_committed,
+                global_free_regions[kind].get_size_free_regions(),
+                global_free_regions[kind].get_size_committed_in_free()));
+
+            total_committed_in_free += all_heaps_committed + global_free_regions[kind].get_size_committed_in_free();
+        }
+        size_t total_committed = total_committed_in_free;
+        size_t total_allocated = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            for (int gen_idx = soh_gen0; gen_idx < total_generation_count; gen_idx++)
+            {
+                generation* gen = hp->generation_of (gen_idx);
+                for (heap_segment* region = heap_segment_rw (generation_start_segment (gen));
+                    region != nullptr; region = heap_segment_next (region))
+                {
+                    total_committed += get_region_committed_size (region);
+                    total_allocated += heap_segment_allocated (region) - heap_segment_mem (region);
+                }
+            }
+        }
+        dprintf (REGIONS_LOG, ("total committed memory: %Id (%Id in free) total allocated: %Id", total_committed, total_committed_in_free, total_allocated));
+#endif //TRACE_GC
+
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
