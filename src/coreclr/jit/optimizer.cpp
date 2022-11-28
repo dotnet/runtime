@@ -4939,7 +4939,7 @@ PhaseStatus Compiler::optIfConversion()
 {
     bool madeChanges = false;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
@@ -4947,7 +4947,6 @@ PhaseStatus Compiler::optIfConversion()
         madeChanges |= optIfConvert(block);
         block = block->bbPrev;
     }
-
 #endif
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
