@@ -1,0 +1,14 @@
+all:
+  name: All Tests
+  dependencies:
+  - path: .yamato/windows.yml#all
+  - path: .yamato/osx.yml#all
+  - path: .yamato/linux.yml#all
+  triggers:
+    pull_requests:
+      - targets:
+          only:
+            - "unity-main"
+    recurring:
+    - branch: unity-main
+      frequency: daily

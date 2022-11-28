@@ -3,8 +3,4 @@ all:
   dependencies:
   - path: .yamato/test_linux_x64_release.yml
   - path: .yamato/test_linux_x64_debug.yml
-  triggers:
-    pull_requests:
-      - targets:
-          only:
-            - "unity-main"
+

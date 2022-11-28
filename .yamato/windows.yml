@@ -5,8 +5,3 @@ all:
   - path: .yamato/test_windows_x64_debug.yml
   - path: .yamato/test_windows_x86_release.yml
   - path: .yamato/test_windows_x86_debug.yml
-  triggers:
-    pull_requests:
-      - targets:
-          only:
-            - "unity-main"
