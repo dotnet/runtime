@@ -6001,6 +6001,150 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
     m_checkedBoundVNs.AddOrUpdate(vn, true);
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
+    var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN)
+{
+    ValueNum result = NoVN;
+
+    if (IsVNConstant(arg0VN))
+    {
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_ArmBase_LeadingZeroCount:
+#else
+            case NI_LZCNT_LeadingZeroCount:
+#endif
+            {
+                // Count leading zeroes in u32
+                unsigned u32          = (unsigned)GetConstantInt32(arg0VN);
+                int      leadingZeros = 0;
+                while (u32 != 0)
+                {
+                    u32 = u32 >> 1;
+                    leadingZeros++;
+                }
+                result = VNForIntCon(32 - leadingZeros);
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_ArmBase_Arm64_LeadingZeroCount:
+#else
+            case NI_LZCNT_X64_LeadingZeroCount:
+#endif
+            {
+                // Count leading zeroes in u64
+                uint64_t u64          = (uint64_t)GetConstantInt64(arg0VN);
+                int      leadingZeros = 0;
+                while (u64 != 0)
+                {
+                    u64 = u64 >> 1;
+                    leadingZeros++;
+                }
+                result = VNForIntCon(64 - leadingZeros);
+                break;
+            }
+
+            // TODO: consider other intrinsics: Popcnt, Bmi, etc.
+            default:
+                break;
+        }
+    }
+
+    if (result == NoVN)
+    {
+        if (encodeResultType)
+        {
+            result = VNForFunc(type, func, arg0VN, resultTypeVN);
+        }
+        else
+        {
+            result = VNForFunc(type, func, arg0VN);
+        }
+    }
+    return result;
+}
+
+ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
+                                                 NamedIntrinsic ni,
+                                                 VNFunc         func,
+                                                 ValueNum       arg0VN,
+                                                 ValueNum       arg1VN,
+                                                 bool           encodeResultType,
+                                                 ValueNum       resultTypeVN)
+{
+    ValueNum result = NoVN;
+
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
+    {
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Or:
+#else
+            case NI_SSE2_Or:
+#endif
+            {
+                simd16_t v1 = GetConstantSimd16(arg0VN);
+                simd16_t v2 = GetConstantSimd16(arg1VN);
+                v1.i64[0] |= v2.i64[0];
+                v1.i64[1] |= v2.i64[1];
+                result = VNForSimd16Con(v1);
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_And:
+#else
+            case NI_SSE2_And:
+#endif
+            {
+                simd16_t v1 = GetConstantSimd16(arg0VN);
+                simd16_t v2 = GetConstantSimd16(arg1VN);
+                v1.i64[0] &= v2.i64[0];
+                v1.i64[1] &= v2.i64[1];
+                result = VNForSimd16Con(v1);
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Xor:
+#else
+            case NI_SSE2_Xor:
+#endif
+            {
+                simd16_t v1 = GetConstantSimd16(arg0VN);
+                simd16_t v2 = GetConstantSimd16(arg1VN);
+                v1.i64[0] ^= v2.i64[0];
+                v1.i64[1] ^= v2.i64[1];
+                result = VNForSimd16Con(v1);
+                break;
+            }
+
+            // TODO: consider other intrinsics
+            default:
+                break;
+        }
+    }
+
+    if (result == NoVN)
+    {
+        if (encodeResultType)
+        {
+            result = VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
+        }
+        else
+        {
+            result = VNForFunc(type, func, arg0VN, arg1VN);
+        }
+    }
+
+    return result;
+}
+#endif
+
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
@@ -9759,18 +9903,14 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             if (tree->GetOperandCount() == 1)
             {
-                excSetPair = op1Xvnp;
+                normalPair = ValueNumPair(vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func,
+                                                                           op1vnp.GetLiberal(), encodeResultType,
+                                                                           resultTypeVNPair.GetLiberal()),
+                                          vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func,
+                                                                           op1vnp.GetConservative(), encodeResultType,
+                                                                           resultTypeVNPair.GetConservative()));
 
-                if (encodeResultType)
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, resultTypeVNPair);
-                    assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
-                }
-                else
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
-                    assert((vnStore->VNFuncArity(func) == 1) || isVariableNumArgs);
-                }
+                excSetPair = op1Xvnp;
             }
             else
             {
@@ -9778,17 +9918,16 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 ValueNumPair op2Xvnp;
                 getOperandVNs(tree->Op(2), &op2vnp, &op2Xvnp);
 
+                normalPair =
+                    ValueNumPair(vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
+                                                                   op1vnp.GetLiberal(), op2vnp.GetLiberal(),
+                                                                   encodeResultType, resultTypeVNPair.GetLiberal()),
+                                 vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
+                                                                   op1vnp.GetConservative(), op2vnp.GetConservative(),
+                                                                   encodeResultType,
+                                                                   resultTypeVNPair.GetConservative()));
+
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-                if (encodeResultType)
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp, resultTypeVNPair);
-                    assert((vnStore->VNFuncArity(func) == 3) || isVariableNumArgs);
-                }
-                else
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
-                    assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
-                }
             }
         }
     }

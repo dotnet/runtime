@@ -6119,6 +6119,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_NEG:
         case GT_CAST:
         case GT_INTRINSIC:
+        case GT_HWINTRINSIC:
         case GT_ARR_LENGTH:
             break;
 
