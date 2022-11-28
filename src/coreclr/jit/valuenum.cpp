@@ -8495,7 +8495,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 }
 
 //----------------------------------------------------------------------------------
-// fgGetFieldSeqAndAddress: Try to obtain a constant address with a FieldSeq from the
+// fgGetStaticFieldSeqAndAddress: Try to obtain a constant address with a FieldSeq from the
 //    given tree. It can be either INT_CNS or e.g. ADD(INT_CNS, ADD(INT_CNS, INT_CNS))
 //    tree where only one of the constants is expected to have a field sequence.
 //
@@ -8507,22 +8507,10 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the pattern was recognized and a new VN is assigned
 //
-static bool fgGetFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+static bool fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
 {
-    if (tree->IsCnsIntOrI())
-    {
-        ssize_t   val  = tree->AsIntCon()->IconValue();
-        FieldSeq* fseq = tree->AsIntCon()->gtFieldSeq;
-        if (fseq != nullptr)
-        {
-            *pFseq    = fseq;
-            *pAddress = val;
-            return true;
-        }
-        return false;
-    }
-
     ssize_t val = 0;
+    // Accumulate final offset
     while (tree->OperIs(GT_ADD))
     {
         GenTree* op1 = tree->gtGetOp1();
@@ -8539,12 +8527,14 @@ static bool fgGetFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq**
         }
         else
         {
-            // Unsupported tree
+            // We only inspect constants and additions
             return false;
         }
     }
 
-    if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr))
+    // Base address is expected to be static field's address
+    if ((tree->IsCnsIntOrI()) && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
+        (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
     {
         *pFseq    = tree->AsIntCon()->gtFieldSeq;
         *pAddress = tree->AsIntCon()->IconValue() + val;
@@ -8578,9 +8568,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-    if (fgGetFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq) &&
-        (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+    if (fgGetStaticFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq))
     {
+        assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
 
         ssize_t   byteOffset     = address - fieldSeq->GetOffset();

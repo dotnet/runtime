@@ -3001,24 +3001,12 @@ namespace Internal.JitInterface
         private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
-            Debug.Assert(buffer != null);
-            Debug.Assert(bufferSize > 0);
-            Debug.Assert(valueOffset >= 0);
-
             FieldDesc field = HandleToObject(fieldHandle);
-            Debug.Assert(field.IsStatic);
 
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType))
-                return false;
-
-            if (!field.IsThreadStatic && field.IsInitOnly && field.HasRva && field is EcmaField ecmaField)
+            // For crossgen2 we only support RVA fields
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) && field.HasRva)
             {
-                ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
-                if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
-                {
-                    rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
-                    return true;
-                }
+                return tryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
             }
             return false;
         }

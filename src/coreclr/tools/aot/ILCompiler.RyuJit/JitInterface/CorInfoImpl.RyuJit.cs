@@ -2229,16 +2229,7 @@ namespace Internal.JitInterface
             {
                 if (field.HasRva)
                 {
-                    if (field is EcmaField ecmaField)
-                    {
-                        ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
-                        if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
-                        {
-                            rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
-                            return true;
-                        }
-                    }
-                    return false;
+                    return tryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
                 }
 
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
