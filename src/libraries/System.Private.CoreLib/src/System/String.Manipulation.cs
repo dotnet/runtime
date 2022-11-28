@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +17,17 @@ namespace System
 {
     public partial class String
     {
+        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
+        private static class IndexOfAnyValuesStorage
+        {
+            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            // also specifically excludes VT from the list of newline functions, so we do not include
+            // it in the needle list.
+            public static readonly IndexOfAnyValues<char> NewLineChars =
+                IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+        }
+
         private const int StackallocIntBufferSizeLimit = 128;
 
         private static void FillStringChecked(string dest, int destPos, string src)
@@ -1008,55 +1020,20 @@ namespace System
             // Copy the remaining characters, doing the replacement as we go.
             ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
             ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
-            nuint i = 0;
 
-            if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
+            // If the string is long enough for vectorization to kick in, we'd like to
+            // process the remaining elements vectorized too.
+            // Thus we adjust the pointers so that at least one full vector from the end can be processed.
+            nuint length = (uint)Length;
+            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<ushort>.Count)
             {
-                Vector<ushort> oldChars = new(oldChar);
-                Vector<ushort> newChars = new(newChar);
-
-                Vector<ushort> original;
-                Vector<ushort> equals;
-                Vector<ushort> results;
-
-                if (remainingLength > (nuint)Vector<ushort>.Count)
-                {
-                    nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
-
-                    do
-                    {
-                        original = Vector.LoadUnsafe(ref pSrc, i);
-                        equals = Vector.Equals(original, oldChars);
-                        results = Vector.ConditionalSelect(equals, newChars, original);
-                        results.StoreUnsafe(ref pDst, i);
-
-                        i += (nuint)Vector<ushort>.Count;
-                    }
-                    while (i < lengthToExamine);
-                }
-
-                // There are [0, Vector<ushort>.Count) elements remaining now.
-                // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
-                // elements available, we read a vector from the very end of the string, perform the replace
-                // and write to the destination at the very end.
-                // Thus we can eliminate the scalar processing of the remaining elements.
-                // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
-                // additional check which would introduce a branch here.
-
-                i = (uint)(Length - Vector<ushort>.Count);
-                original = Vector.LoadUnsafe(ref GetRawStringDataAsUInt16(), i);
-                equals = Vector.Equals(original, oldChars);
-                results = Vector.ConditionalSelect(equals, newChars, original);
-                results.StoreUnsafe(ref result.GetRawStringDataAsUInt16(), i);
+                nuint adjust = (length - remainingLength) & ((uint)Vector128<ushort>.Count - 1);
+                pSrc = ref Unsafe.Subtract(ref pSrc, adjust);
+                pDst = ref Unsafe.Subtract(ref pDst, adjust);
+                remainingLength += adjust;
             }
-            else
-            {
-                for (; i < remainingLength; ++i)
-                {
-                    ushort currentChar = Unsafe.Add(ref pSrc, i);
-                    Unsafe.Add(ref pDst, i) = currentChar == oldChar ? newChar : currentChar;
-                }
-            }
+
+            SpanHelpers.ReplaceValueType(ref pSrc, ref pDst, oldChar, newChar, remainingLength);
 
             return result;
         }
@@ -1267,16 +1244,9 @@ namespace System
             // the haystack; or O(n) if no needle is found. This ensures that in the common case
             // of this method being called within a loop, the worst-case runtime is O(n) rather than
             // O(n^2), where n is the length of the input text.
-            //
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-
-            const string needles = "\r\n\f\u0085\u2028\u2029";
 
             stride = default;
-            int idx = text.IndexOfAny(needles);
+            int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
             if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
@@ -1674,16 +1644,13 @@ namespace System
             {
                 unsafe
                 {
-                    ProbabilisticMap map = default;
-                    uint* charMap = (uint*)&map;
-                    ProbabilisticMap.Initialize(charMap, separators);
+                    var map = new ProbabilisticMap(separators);
+                    ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
-                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                            separators.Contains(c))
+                        if (ProbabilisticMap.Contains(ref charMap, separators, c))
                         {
                             sepListBuilder.Append(i);
                         }

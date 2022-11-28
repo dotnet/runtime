@@ -206,13 +206,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
-            {
-                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);
-                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
-            });
-
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -625,13 +618,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _GCStatics.GetOrAdd(type);
-        }
-
-        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
-
-        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
-        {
-            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;

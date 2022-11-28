@@ -584,21 +584,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte* _getClassName(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getClassName(cls);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
         private static byte* _getClassNameFromMetadata(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
         {
             var _this = GetThis(thisHandle);
@@ -629,12 +614,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, char** ppBuf, int* pnBufLen, CORINFO_CLASS_STRUCT_* cls, byte fNamespace, byte fFullInst, byte fAssembly)
+        private static UIntPtr _printClassName(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte* buffer, UIntPtr bufferSize, UIntPtr* pRequiredBufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.appendClassName(ppBuf, ref *pnBufLen, cls, fNamespace != 0, fFullInst != 0, fAssembly != 0);
+                return _this.printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
             }
             catch (Exception ex)
             {
@@ -1033,6 +1018,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static byte _getStringChar(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getStringChar(strObj, index, value) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static CORINFO_CLASS_STRUCT_* _getObjectType(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* objPtr)
         {
             var _this = GetThis(thisHandle);
@@ -1073,21 +1073,6 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static byte* _getHelperName(IntPtr thisHandle, IntPtr* ppException, CorInfoHelpFunc helpFunc)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getHelperName(helpFunc);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
             }
         }
 
@@ -1256,6 +1241,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static TypeCompareState _isEnum(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.isEnum(cls, underlyingType);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static CORINFO_CLASS_STRUCT_* _getParentType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
@@ -1376,12 +1376,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte* _getFieldName(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* ftn, byte** moduleName)
+        private static UIntPtr _printFieldName(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, byte* buffer, UIntPtr bufferSize, UIntPtr* pRequiredBufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldName(ftn, moduleName);
+                return _this.printFieldName(field, buffer, bufferSize, pRequiredBufferSize);
             }
             catch (Exception ex)
             {
@@ -1801,12 +1801,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte* _getMethodName(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** moduleName)
+        private static UIntPtr _printMethodName(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte* buffer, UIntPtr bufferSize, UIntPtr* pRequiredBufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodName(ftn, moduleName);
+                return _this.printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
             }
             catch (Exception ex)
             {
@@ -2726,51 +2726,51 @@ namespace Internal.JitInterface
             callbacks[36] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, uint, char*, int, int, int>)&_getStringLiteral;
             callbacks[37] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printObjectDescription;
             callbacks[38] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_asCorInfoType;
-            callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*>)&_getClassName;
-            callbacks[40] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;
-            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*>)&_getTypeInstantiationArgument;
-            callbacks[42] = (delegate* unmanaged<IntPtr, IntPtr*, char**, int*, CORINFO_CLASS_STRUCT_*, byte, byte, byte, int>)&_appendClassName;
-            callbacks[43] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isValueClass;
-            callbacks[44] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoInlineTypeCheckSource, CorInfoInlineTypeCheck>)&_canInlineTypeCheck;
-            callbacks[45] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassAttribs;
-            callbacks[46] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_*>)&_getClassModule;
-            callbacks[47] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, CORINFO_ASSEMBLY_STRUCT_*>)&_getModuleAssembly;
-            callbacks[48] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASSEMBLY_STRUCT_*, byte*>)&_getAssemblyName;
-            callbacks[49] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_LongLifetimeMalloc;
-            callbacks[50] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_LongLifetimeFree;
-            callbacks[51] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_**, void**, UIntPtr>)&_getClassModuleIdForStatics;
-            callbacks[52] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassSize;
-            callbacks[53] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getHeapClassSize;
-            callbacks[54] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_canAllocateOnStack;
-            callbacks[55] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, uint>)&_getClassAlignmentRequirement;
-            callbacks[56] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, uint>)&_getClassGClayout;
-            callbacks[57] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassNumInstanceFields;
-            callbacks[58] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, int, CORINFO_FIELD_STRUCT_*>)&_getFieldInClass;
-            callbacks[59] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, byte, byte>)&_checkMethodModifier;
-            callbacks[60] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, bool*, CorInfoHelpFunc>)&_getNewHelper;
-            callbacks[61] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getNewArrHelper;
-            callbacks[62] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&_getCastingHelper;
-            callbacks[63] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getSharedCCtorHelper;
-            callbacks[64] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getTypeForBox;
-            callbacks[65] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getBoxHelper;
-            callbacks[66] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getUnBoxHelper;
-            callbacks[67] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_OBJECT_STRUCT_*>)&_getRuntimeTypePointer;
-            callbacks[68] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte>)&_isObjectImmutable;
+            callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;
+            callbacks[40] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*>)&_getTypeInstantiationArgument;
+            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printClassName;
+            callbacks[42] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isValueClass;
+            callbacks[43] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoInlineTypeCheckSource, CorInfoInlineTypeCheck>)&_canInlineTypeCheck;
+            callbacks[44] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassAttribs;
+            callbacks[45] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_*>)&_getClassModule;
+            callbacks[46] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, CORINFO_ASSEMBLY_STRUCT_*>)&_getModuleAssembly;
+            callbacks[47] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASSEMBLY_STRUCT_*, byte*>)&_getAssemblyName;
+            callbacks[48] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_LongLifetimeMalloc;
+            callbacks[49] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_LongLifetimeFree;
+            callbacks[50] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_**, void**, UIntPtr>)&_getClassModuleIdForStatics;
+            callbacks[51] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassSize;
+            callbacks[52] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getHeapClassSize;
+            callbacks[53] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_canAllocateOnStack;
+            callbacks[54] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, uint>)&_getClassAlignmentRequirement;
+            callbacks[55] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, uint>)&_getClassGClayout;
+            callbacks[56] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassNumInstanceFields;
+            callbacks[57] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, int, CORINFO_FIELD_STRUCT_*>)&_getFieldInClass;
+            callbacks[58] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, byte, byte>)&_checkMethodModifier;
+            callbacks[59] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, bool*, CorInfoHelpFunc>)&_getNewHelper;
+            callbacks[60] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getNewArrHelper;
+            callbacks[61] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&_getCastingHelper;
+            callbacks[62] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getSharedCCtorHelper;
+            callbacks[63] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getTypeForBox;
+            callbacks[64] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getBoxHelper;
+            callbacks[65] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getUnBoxHelper;
+            callbacks[66] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_OBJECT_STRUCT_*>)&_getRuntimeTypePointer;
+            callbacks[67] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte>)&_isObjectImmutable;
+            callbacks[68] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int, ushort*, byte>)&_getStringChar;
             callbacks[69] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getObjectType;
             callbacks[70] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, byte>)&_getReadyToRunHelper;
             callbacks[71] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_LOOKUP*, void>)&_getReadyToRunDelegateCtorHelper;
-            callbacks[72] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, byte*>)&_getHelperName;
-            callbacks[73] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult>)&_initClass;
-            callbacks[74] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void>)&_classMustBeLoadedBeforeCodeIsRun;
-            callbacks[75] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*>)&_getBuiltinClass;
-            callbacks[76] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveValueClass;
-            callbacks[77] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveNumericClass;
-            callbacks[78] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_canCast;
-            callbacks[79] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_areTypesEquivalent;
-            callbacks[80] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState>)&_compareTypesForCast;
-            callbacks[81] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState>)&_compareTypesForEquality;
-            callbacks[82] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_mergeClasses;
-            callbacks[83] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_isMoreSpecificType;
+            callbacks[72] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult>)&_initClass;
+            callbacks[73] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void>)&_classMustBeLoadedBeforeCodeIsRun;
+            callbacks[74] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*>)&_getBuiltinClass;
+            callbacks[75] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveValueClass;
+            callbacks[76] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveNumericClass;
+            callbacks[77] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_canCast;
+            callbacks[78] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_areTypesEquivalent;
+            callbacks[79] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState>)&_compareTypesForCast;
+            callbacks[80] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, TypeCompareState>)&_compareTypesForEquality;
+            callbacks[81] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_mergeClasses;
+            callbacks[82] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_isMoreSpecificType;
+            callbacks[83] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_**, TypeCompareState>)&_isEnum;
             callbacks[84] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getParentType;
             callbacks[85] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_**, CorInfoType>)&_getChildType;
             callbacks[86] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_satisfiesClassConstraints;
@@ -2779,7 +2779,7 @@ namespace Internal.JitInterface
             callbacks[89] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoArrayIntrinsic>)&_getArrayIntrinsicID;
             callbacks[90] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint, void*>)&_getArrayInitializationData;
             callbacks[91] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_HELPER_DESC*, CorInfoIsAccessAllowedResult>)&_canAccessClass;
-            callbacks[92] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte**, byte*>)&_getFieldName;
+            callbacks[92] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printFieldName;
             callbacks[93] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getFieldClass;
             callbacks[94] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_**, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getFieldType;
             callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint>)&_getFieldOffset;
@@ -2808,7 +2808,7 @@ namespace Internal.JitInterface
             callbacks[118] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void>)&_getEEInfo;
             callbacks[119] = (delegate* unmanaged<IntPtr, IntPtr*, char*>)&_getJitTimeLogFilename;
             callbacks[120] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken>)&_getMethodDefFromMethod;
-            callbacks[121] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte*>)&_getMethodName;
+            callbacks[121] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printMethodName;
             callbacks[122] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, byte*>)&_getMethodNameFromMetadata;
             callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodHash;
             callbacks[124] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, mdToken, byte*, UIntPtr, UIntPtr>)&_findNameOfToken;

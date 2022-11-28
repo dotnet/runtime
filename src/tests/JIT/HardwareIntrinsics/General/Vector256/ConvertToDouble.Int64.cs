@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256
 {
     public static partial class Program
     {
-        private static void ConvertToDoubleInt64()
+        [Fact]
+        public static void ConvertToDoubleInt64()
         {
             var test = new VectorUnaryOpTest__ConvertToDoubleInt64();
 
@@ -285,7 +287,6 @@ namespace JIT.HardwareIntrinsics.General
 
             if (result[0] != (double)(firstOp[0]))
             {
-                Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                 succeeded = false;
             }
             else
@@ -294,7 +295,6 @@ namespace JIT.HardwareIntrinsics.General
                 {
                     if (result[i] != (double)(firstOp[i]))
                     {
-                        Environment.FailFast("Temporary instrumentation to diagnose https://github.com/dotnet/runtime/issues/76280");
                         succeeded = false;
                         break;
                     }

@@ -123,13 +123,13 @@ namespace System.Text.RegularExpressions.Generator
             if (rm.Tree.CaptureNumberSparseMapping is not null)
             {
                 writer.Write("        base.Caps = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as int?));
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNameToNumberMapping is not null)
             {
                 writer.Write("        base.CapNames = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping);
+                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as string, StringComparer.Ordinal));
                 writer.WriteLine($" }};");
             }
             if (rm.Tree.CaptureNames is not null)
@@ -149,11 +149,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine(runnerFactoryImplementation);
             writer.WriteLine($"}}");
 
-            static void AppendHashtableContents(IndentedTextWriter writer, Hashtable ht)
+            static void AppendHashtableContents(IndentedTextWriter writer, IEnumerable<DictionaryEntry> contents)
             {
-                IDictionaryEnumerator en = ht.GetEnumerator();
                 string separator = "";
-                while (en.MoveNext())
+                foreach (DictionaryEntry en in contents)
                 {
                     writer.Write(separator);
                     separator = ", ";
@@ -173,8 +172,27 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the code for the RunnerFactory.  This is the actual logic for the regular expression.</summary>
-        private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
+        private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
+            void EnterCheckOverflow()
+            {
+                if (checkOverflow)
+                {
+                    writer.WriteLine($"unchecked");
+                    writer.WriteLine($"{{");
+                    writer.Indent++;
+                }
+            }
+
+            void ExitCheckOverflow()
+            {
+                if (checkOverflow)
+                {
+                    writer.Indent--;
+                    writer.WriteLine($"}}");
+                }
+            }
+
             writer.WriteLine($"/// <summary>Provides a factory for creating <see cref=\"RegexRunner\"/> instances to be used by methods on <see cref=\"Regex\"/>.</summary>");
             writer.WriteLine($"private sealed class RunnerFactory : RegexRunnerFactory");
             writer.WriteLine($"{{");
@@ -209,7 +227,9 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"        protected override void Scan(ReadOnlySpan<char> inputSpan)");
             writer.WriteLine($"        {{");
             writer.Indent += 3;
+            EnterCheckOverflow();
             (bool needsTryFind, bool needsTryMatch) = EmitScan(writer, rm);
+            ExitCheckOverflow();
             writer.Indent -= 3;
             writer.WriteLine($"        }}");
             if (needsTryFind)
@@ -221,7 +241,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"        private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)");
                 writer.WriteLine($"        {{");
                 writer.Indent += 3;
+                EnterCheckOverflow();
                 EmitTryFindNextPossibleStartingPosition(writer, rm, requiredHelpers);
+                ExitCheckOverflow();
                 writer.Indent -= 3;
                 writer.WriteLine($"        }}");
             }
@@ -234,7 +256,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)");
                 writer.WriteLine($"        {{");
                 writer.Indent += 3;
-                EmitTryMatchAtCurrentPosition(writer, rm, requiredHelpers);
+                EnterCheckOverflow();
+                EmitTryMatchAtCurrentPosition(writer, rm, requiredHelpers, checkOverflow);
+                ExitCheckOverflow();
                 writer.Indent -= 3;
                 writer.WriteLine($"        }}");
             }
@@ -289,23 +313,24 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Adds the IsBoundary helper to the required helpers collection.</summary>
-        private static void AddIsBoundaryHelper(Dictionary<string, string[]> requiredHelpers)
+        private static void AddIsBoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
             const string IsBoundary = nameof(IsBoundary);
             if (!requiredHelpers.ContainsKey(IsBoundary))
             {
+                string uncheckedKeyword = checkOverflow ? "unchecked" : "";
                 requiredHelpers.Add(IsBoundary, new string[]
                 {
-                    "/// <summary>Determines whether the specified index is a boundary.</summary>",
-                    "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    "internal static bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)",
-                    "{",
-                    "    int indexMinus1 = index - 1;",
-                    "    return ((uint)indexMinus1 < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[indexMinus1])) !=",
-                    "           ((uint)index < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[index]));",
-                    "",
-                    "    static bool IsBoundaryWordChar(char ch) => IsWordChar(ch) || (ch == '\\u200C' | ch == '\\u200D');",
-                    "}",
+                    $"/// <summary>Determines whether the specified index is a boundary.</summary>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)",
+                    $"{{",
+                    $"    int indexMinus1 = index - 1;",
+                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[indexMinus1])) !=",
+                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[index]));",
+                    $"",
+                    $"    static bool IsBoundaryWordChar(char ch) => IsWordChar(ch) || (ch == '\\u200C' | ch == '\\u200D');",
+                    $"}}",
                 });
 
                 AddIsWordCharHelper(requiredHelpers);
@@ -313,27 +338,27 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Adds the IsECMABoundary helper to the required helpers collection.</summary>
-        private static void AddIsECMABoundaryHelper(Dictionary<string, string[]> requiredHelpers)
+        private static void AddIsECMABoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
             const string IsECMABoundary = nameof(IsECMABoundary);
             if (!requiredHelpers.ContainsKey(IsECMABoundary))
             {
+                string uncheckedKeyword = checkOverflow ? "unchecked" : "";
                 requiredHelpers.Add(IsECMABoundary, new string[]
                 {
-                    "/// <summary>Determines whether the specified index is a boundary (ECMAScript).</summary>",
-                    "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    "internal static bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)",
-                    "{",
-                    "    int indexMinus1 = index - 1;",
-                    "    return ((uint)indexMinus1 < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[indexMinus1])) !=",
-                    "           ((uint)index < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[index]));",
-                    "",
-                    "    static bool IsECMAWordChar(char ch) =>",
-                    "        ((((uint)ch - 'A') & ~0x20) < 26) || // ASCII letter",
-                    "        (((uint)ch - '0') < 10) || // digit",
-                    "        ch == '_' || // underscore",
-                    "        ch == '\\u0130'; // latin capital letter I with dot above",
-                    "}",
+                    $"/// <summary>Determines whether the specified index is a boundary (ECMAScript).</summary>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)",
+                    $"{{",
+                    $"    int indexMinus1 = index - 1;",
+                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[indexMinus1])) !=",
+                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[index]));",
+                    $"",
+                    $"    static bool IsECMAWordChar(char ch) =>",
+                    $"        char.IsAsciiLetterOrDigit(ch) ||",
+                    $"        ch == '_' ||",
+                    $"        ch == '\\u0130'; // latin capital letter I with dot above",
+                    $"}}",
                 });
             }
         }
@@ -427,7 +452,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the body of the TryFindNextPossibleStartingPosition.</summary>
         private static void EmitTryFindNextPossibleStartingPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
-            RegexOptions options = (RegexOptions)rm.Options;
+            RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
             bool rtl = (options & RegexOptions.RightToLeft) != 0;
 
@@ -780,8 +805,12 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
+                // We avoid using it for the relatively common case of the starting set being '.', aka anything other than
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Chars is not null || primarySet.Range is not null;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    (primarySet.Chars is not null || primarySet.Range is not null);
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;
@@ -1031,7 +1060,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the TryMatchAtCurrentPosition.</summary>
-        private static void EmitTryMatchAtCurrentPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
+        private static void EmitTryMatchAtCurrentPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -2674,14 +2703,14 @@ namespace System.Text.RegularExpressions.Generator
                     call = node.Kind is RegexNodeKind.Boundary ?
                         $"!{HelpersTypeName}.IsBoundary" :
                         $"{HelpersTypeName}.IsBoundary";
-                    AddIsBoundaryHelper(requiredHelpers);
+                    AddIsBoundaryHelper(requiredHelpers, checkOverflow);
                 }
                 else
                 {
                     call = node.Kind is RegexNodeKind.ECMABoundary ?
                         $"!{HelpersTypeName}.IsECMABoundary" :
                         $"{HelpersTypeName}.IsECMABoundary";
-                    AddIsECMABoundaryHelper(requiredHelpers);
+                    AddIsECMABoundaryHelper(requiredHelpers, checkOverflow);
                 }
 
                 using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}))"))

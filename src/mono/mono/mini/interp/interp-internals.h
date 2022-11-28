@@ -298,6 +298,43 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 void
 mono_interp_error_cleanup (MonoError *error);
 
+gboolean
+mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
+
+MONO_NEVER_INLINE void
+mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
+
+#if HOST_BROWSER
+
+gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass);
+
+void
+mono_jiterp_check_pending_unwind (ThreadContext *context);
+
+void *
+mono_jiterp_get_context (void);
+
+int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode);
+
+int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
+
+void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
+
+int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
+
+int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+#endif
+
 static inline int
 mint_type(MonoType *type)
 {

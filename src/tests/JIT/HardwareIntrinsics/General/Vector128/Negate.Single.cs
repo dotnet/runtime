@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector128
 {
     public static partial class Program
     {
-        private static void NegateSingle()
+        [Fact]
+        public static void NegateSingle()
         {
             var test = new VectorUnaryOpTest__NegateSingle();
 

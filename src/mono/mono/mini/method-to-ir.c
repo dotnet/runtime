@@ -6667,8 +6667,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt && !cfg->interp_entry_only) {
 		if (header->num_clauses) {
-			/* deopt is only disabled for gsharedvt */
-			g_assert (cfg->gsharedvt);
 			for (guint i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */

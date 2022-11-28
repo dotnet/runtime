@@ -72,13 +72,13 @@ namespace Internal.Runtime.TypeLoader
                         var sb = new System.Text.StringBuilder();
                         sb.AppendLine("Generic virtual method pointer lookup failure.");
                         sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetHandle.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Declaring type handle: " + RuntimeAugments.GetLastResortString(declaringType));
+                        sb.AppendLine("Target type handle: " + RuntimeAugments.GetLastResortString(targetHandle));
                         sb.AppendLine("Method name: " + methodNameAndSignature.Name);
                         sb.AppendLine("Instantiation:");
                         for (int i = 0; i < genericArguments.Length; i++)
                         {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + RuntimeAugments.GetLastResortString(genericArguments[i]));
                         }
 
                         Environment.FailFast(sb.ToString());
@@ -616,13 +616,13 @@ namespace Internal.Runtime.TypeLoader
                         var sb = new System.Text.StringBuilder();
                         sb.AppendLine("Generic virtual method pointer lookup failure.");
                         sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetTypeHandle.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Declaring type handle: " + RuntimeAugments.GetLastResortString(declaringType));
+                        sb.AppendLine("Target type handle: " + RuntimeAugments.GetLastResortString(targetTypeHandle));
                         sb.AppendLine("Method name: " + targetMethodNameAndSignature.Name);
                         sb.AppendLine("Instantiation:");
                         for (int i = 0; i < genericArguments.Length; i++)
                         {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + RuntimeAugments.GetLastResortString(genericArguments[i]));
                         }
 
                         Environment.FailFast(sb.ToString());

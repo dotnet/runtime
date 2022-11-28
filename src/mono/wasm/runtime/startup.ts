@@ -27,11 +27,13 @@ import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
+import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
 let isCustomStartup = false;
+export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<void>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
@@ -71,15 +73,19 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==
-    module.ready = module.ready.then(async () => {
+
+    module.ready.then(async () => {
         // wait for previous stage
         await afterPostRun.promise;
         // startup end
         endMeasure(mark, MeasuredBlock.emscriptenStartup);
         // - here we resolve the promise returned by createDotnetRuntime export
-        return exportedAPI;
         // - any code after createDotnetRuntime is executed now
+        dotnetReady.promise_control.resolve(exportedAPI);
+    }).catch(err => {
+        dotnetReady.promise_control.reject(err);
     });
+    module.ready = dotnetReady.promise;
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = () => mono_on_abort;
@@ -234,6 +240,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
+    dotnetReady.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -382,6 +389,21 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
+function replace_linker_placeholders(
+    imports: WebAssembly.Imports,
+    realFunctions: any
+) {
+    // the output from emcc contains wrappers for these linker imports which add overhead,
+    //  but now we have what we need to replace them with the actual functions
+    const env = imports.env;
+    for (const k in realFunctions) {
+        const v = realFunctions[k];
+        if (typeof (v) !== "function")
+            continue;
+        if (k in env)
+            env[k] = v;
+    }
+}
 
 async function instantiate_wasm_module(
     imports: WebAssembly.Imports,
@@ -389,6 +411,7 @@ async function instantiate_wasm_module(
 ): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
+        replace_linker_placeholders(imports, export_linker());
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");

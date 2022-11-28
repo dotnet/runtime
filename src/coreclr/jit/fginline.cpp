@@ -240,13 +240,6 @@ private:
             *use          = inlineCandidate;
             m_madeChanges = true;
 
-            // TODO-Inlining: We should really only propagate BBF_COPY_PROPAGATE
-            // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
-            // propagating that has the effect that inlining a tree from a hot
-            // block into a block without profile weights means we suddenly
-            // start to see the inliner block as hot and treat future inline
-            // candidates more aggressively.
-            //
             if (inlineeBB != nullptr)
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.

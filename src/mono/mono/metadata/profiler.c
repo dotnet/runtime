@@ -22,7 +22,7 @@ typedef void (*MonoProfilerInitializer) (const char *);
 #define OLD_INITIALIZER_NAME "mono_profiler_startup"
 #define NEW_INITIALIZER_NAME "mono_profiler_init"
 
-#if defined(TARGET_WASM) && defined(MONO_CROSS_COMPILE)
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
 MONO_API void mono_profiler_init_browser (const char *desc);
 #endif
 
@@ -178,7 +178,7 @@ mono_profiler_load (const char *desc)
 		mname = g_strdup (desc);
 	}
 
-#if defined(TARGET_WASM) && defined(MONO_CROSS_COMPILE)
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
 	// this code could be running as part of mono-aot-cross.exe
 	// in case of WASM we staticaly link in the browser.c profiler plugin
 	if(strcmp (mname, "browser") == 0) {

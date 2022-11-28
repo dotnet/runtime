@@ -72,7 +72,7 @@ namespace Microsoft.Interop
                 if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
                 {
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.Generator.AsNativeType(marshaller.TypeInfo),
+                        marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                         native,
                         initializeToDefault));
                 }

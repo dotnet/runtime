@@ -57,7 +57,7 @@
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRid) out-of-band assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>

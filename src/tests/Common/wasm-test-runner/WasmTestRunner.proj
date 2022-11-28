@@ -12,7 +12,7 @@
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
-    <IsWasmProject>true</IsWasmProject>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>

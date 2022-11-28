@@ -859,6 +859,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<T> CreateScalar<T>(T value)
             where T : struct
@@ -871,160 +872,88 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<byte> CreateScalar(byte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<byte>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<byte>(value);
-            }
-        }
+        public static unsafe Vector64<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<double> CreateScalar(double value) => CreateScalar<double>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> CreateScalar(short value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<short>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<short>(value);
-            }
-        }
+        public static unsafe Vector64<short> CreateScalar(short value) => CreateScalar<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> CreateScalar(int value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<int>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<int>(value);
-            }
-        }
+        public static unsafe Vector64<int> CreateScalar(int value) => CreateScalar<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<long> CreateScalar(long value) => CreateScalar<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<nint> CreateScalar(nint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((long)(value)).AsNInt();
-#else
-            return CreateScalar((int)(value)).AsNInt();
-#endif
-        }
+        public static unsafe Vector64<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<nuint> CreateScalar(nuint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((ulong)(value)).AsNUInt();
-#else
-            return CreateScalar((uint)(value)).AsNUInt();
-#endif
-        }
+        public static unsafe Vector64<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<sbyte> CreateScalar(sbyte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<sbyte>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<sbyte>(value);
-            }
-        }
+        public static unsafe Vector64<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> CreateScalar(float value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<float>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<float>(value);
-            }
-        }
+        public static unsafe Vector64<float> CreateScalar(float value) => CreateScalar<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ushort> CreateScalar(ushort value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<ushort>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<ushort>(value);
-            }
-        }
+        public static unsafe Vector64<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> CreateScalar(uint value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<uint>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<uint>(value);
-            }
-        }
+        public static unsafe Vector64<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
