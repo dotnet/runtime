@@ -87,7 +87,6 @@ namespace WebAssemblyInfo
 
             sectionsById[section.id].Add(section);
 
-
             if (Program.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
 

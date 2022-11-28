@@ -15,8 +15,8 @@ namespace WebAssemblyInfo
         static public bool Verbose { get { return VerboseLevel > 0; } }
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
 
-        static string DataSectionFile = "";
-        static long DataOffset = 0;
+        public static string DataSectionFile = "";
+        public static long DataOffset = 0;
 
         static int Main(string[] args)
         {

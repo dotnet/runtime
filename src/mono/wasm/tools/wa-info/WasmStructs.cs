@@ -278,13 +278,6 @@ namespace WebAssemblyInfo
         public byte[] Content;
     }
 
-    enum DataMode
-    {
-        Active = 0,
-        Passive = 1,
-        ActiveMemory = 2,
-    }
-
     struct Global
     {
         public ValueType Type;

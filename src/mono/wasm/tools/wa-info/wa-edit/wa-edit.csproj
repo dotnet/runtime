@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="..\Extensions.cs" Link="Extensions.cs" />
+    <Compile Include="..\WasmData.cs" Link="WasmData.cs" />
     <Compile Include="..\WasmOpcode.cs" Link="WasmOpcode.cs" />
     <Compile Include="..\WasmReaderBase.cs" Link="WasmReaderBase.cs" />
     <Compile Include="..\WasmMTOpcode.cs" Link="WasmMTOpcode.cs" />
