@@ -8505,7 +8505,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    pFseq    - [Out] field sequence
 //
 // Return Value:
-//    true if the pattern was recognized and a new VN is assigned
+//    true if the given tree is a static field address
 //
 static bool fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
 {

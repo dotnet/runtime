@@ -4080,7 +4080,7 @@ namespace Internal.JitInterface
         }
 #endif
 
-        private static bool tryReadRvaFieldData(FieldDesc field, byte* buffer, int bufferSize, int valueOffset)
+        private static bool TryReadRvaFieldData(FieldDesc field, byte* buffer, int bufferSize, int valueOffset)
         {
             Debug.Assert(buffer != null);
             Debug.Assert(bufferSize > 0);

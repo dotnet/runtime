@@ -2229,7 +2229,7 @@ namespace Internal.JitInterface
             {
                 if (field.HasRva)
                 {
-                    return tryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+                    return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
                 }
 
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;

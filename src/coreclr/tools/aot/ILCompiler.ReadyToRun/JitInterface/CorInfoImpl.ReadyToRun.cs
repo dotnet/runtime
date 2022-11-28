@@ -3006,7 +3006,7 @@ namespace Internal.JitInterface
             // For crossgen2 we only support RVA fields
             if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) && field.HasRva)
             {
-                return tryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+                return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
             }
             return false;
         }
