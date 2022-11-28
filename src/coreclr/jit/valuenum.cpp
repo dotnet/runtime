@@ -9829,13 +9829,14 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             if (tree->GetOperandCount() == 1)
             {
-                normalPair = ValueNumPair(vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func,
-                                                                           op1vnp.GetLiberal(), encodeResultType,
-                                                                           resultTypeVNPair.GetLiberal()),
-                                          vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func,
-                                                                           op1vnp.GetConservative(), encodeResultType,
-                                                                           resultTypeVNPair.GetConservative()));
+                ValueNum normalLVN =
+                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetLiberal(),
+                                                     encodeResultType, resultTypeVNPair.GetLiberal());
+                ValueNum normalCVN =
+                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetConservative(),
+                                                     encodeResultType, resultTypeVNPair.GetConservative());
 
+                normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = op1Xvnp;
             }
             else
@@ -9844,15 +9845,14 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 ValueNumPair op2Xvnp;
                 getOperandVNs(tree->Op(2), &op2vnp, &op2Xvnp);
 
-                normalPair =
-                    ValueNumPair(vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
-                                                                   op1vnp.GetLiberal(), op2vnp.GetLiberal(),
-                                                                   encodeResultType, resultTypeVNPair.GetLiberal()),
-                                 vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
-                                                                   op1vnp.GetConservative(), op2vnp.GetConservative(),
-                                                                   encodeResultType,
-                                                                   resultTypeVNPair.GetConservative()));
-
+                ValueNum normalLVN = vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
+                                                                       op1vnp.GetLiberal(), op2vnp.GetLiberal(),
+                                                                       encodeResultType, resultTypeVNPair.GetLiberal());
+                ValueNum normalCVN =
+                    vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func, op1vnp.GetConservative(),
+                                                      op2vnp.GetConservative(), encodeResultType,
+                                                      resultTypeVNPair.GetConservative());
+                normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             }
         }

@@ -10,7 +10,7 @@ using Xunit;
 public class ScalarConstantFoldings
 {
     [Fact]
-    public static void Test()
+    public static void LeadingZeroCountTests()
     {
         if (Lzcnt.IsSupported)
         {
