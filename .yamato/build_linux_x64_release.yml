@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Build Linux x64
+name: Build Linux x64 Release
 
 agent:
   type: Unity::VM
@@ -11,8 +11,8 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-linux-x64.7z
 
 commands:
-  - ./.yamato/scripts/build_linux_x64.sh
-  
+  - ./.yamato/scripts/build_linux.sh Release
+
 artifacts:
   7z-archives:
     paths:

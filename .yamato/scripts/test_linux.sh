@@ -1,37 +1,55 @@
 #!/bin/sh
 set -e
 
+# Usage: test_linux.cmd <Configuration>
+#
+#   Configuration is one of Debug or Release - Release is the default is not specified
+
+if [ "$1" = "" ]; then
+    configuration=Release
+else
+    configuration=$1
+fi
+
 echo "*****************************"
 echo "Unity: Starting CoreCLR tests"
+echo "  Platform:      Linux"
+echo "  Architecture:  x64"
+echo "  Configuration: $configuration"
 echo "*****************************"
+
+echo
+echo "******************************"
+echo "Unity: Building embedding host"
+echo "******************************"
+echo
+./dotnet.sh build unity/managed.sln -c $configuration
 
 echo
 echo "***********************************"
 echo "Unity: Skipping embedding API tests"
 echo "***********************************"
 echo
-# build/run tests
-#  - dotnet build unity/managed.sln -c Release
-#  - |
-#    cd unity/embed_api_tests
-#    cmake -DCMAKE_BUILD_TYPE=Release .
-#    cmake --build .
-#    ./mono_test_app
+# cd unity/embed_api_tests
+# cmake -DCMAKE_BUILD_TYPE=$configuration .
+# cmake --build .
+# ./mono_test_app
+# cd ../../
 
 echo
 echo "**********************************"
 echo "Unity: Running class library tests"
 echo "**********************************"
 echo
-./build.sh -subset libs.tests -test /p:RunSmokeTestsOnly=true -a x64 -c release -ci -ninja
+./build.sh -subset libs.tests -test /p:RunSmokeTestsOnly=true -a x64 -c $configuration -ci -ninja
 
 echo
 echo "****************************"
 echo "Unity: Running runtime tests"
 echo "****************************"
 echo
-./src/tests/build.sh x64 release ci -tree:baseservices -tree:interop -tree:reflection
-./src/tests/run.sh x64 release
+./src/tests/build.sh x64 $configuration /p:LibrariesConfiguration=$configuration ci -tree:baseservices -tree:interop -tree:reflection
+./src/tests/run.sh x64 $configuration
 
 echo
 echo "************************"
