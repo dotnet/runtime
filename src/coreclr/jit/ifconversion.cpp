@@ -41,6 +41,7 @@ private:
         GenTree*    node  = nullptr;
     };
 
+    GenTree* m_cond;                    // The condition in the conversion
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
@@ -262,6 +263,16 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
+                    // Evaluating unconditionally effectively has the same effect as reordering
+                    // with the condition (for example, the condition could be an explicit bounds
+                    // check and the operand could read an array element). Disallow this except
+                    // for some common cases that we know are always side effect free.
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op2->IsInvariant() &&
+                        !op2->OperIsLocal())
+                    {
+                        return false;
+                    }
+
                     found                 = true;
                     foundOperation->block = block;
                     foundOperation->stmt  = stmt;
@@ -293,6 +304,16 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    {
+                        return false;
+                    }
+
+                    // Evaluating unconditionally effectively has the same effect as reordering
+                    // with the condition (for example, the condition could be an explicit bounds
+                    // check and the operand could read an array element). Disallow this except
+                    // for some common cases that we know are always side effect free.
+                    if (((m_cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !op1->IsInvariant() &&
+                        !op1->OperIsLocal())
                     {
                         return false;
                     }
@@ -545,8 +566,8 @@ bool OptIfConversionDsc::optIfConvert()
     // Verify the test block ends with a condition that we can manipulate.
     GenTree* last = m_startBlock->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
-    GenTree* cond = last->gtGetOp1();
-    if (!cond->OperIsCompare())
+    m_cond = last->gtGetOp1();
+    if (!m_cond->OperIsCompare())
     {
         return false;
     }
@@ -588,6 +609,8 @@ bool OptIfConversionDsc::optIfConvert()
             }
         }
     }
+
+
 
 #ifdef DEBUG
     if (m_comp->verbose)
@@ -667,11 +690,11 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Invert the condition.
-    GenTree* revCond = m_comp->gtReverseCond(cond);
-    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+    GenTree* revCond = m_comp->gtReverseCond(m_cond);
+    assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
 
     // Create a select node.
-    GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, cond, selectTrueInput, selectFalseInput,
+    GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
                                                               m_thenOperation.node->TypeGet());
     m_thenOperation.node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
 

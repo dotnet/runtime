@@ -10,7 +10,7 @@ namespace DefaultNamespace
 
     class unsignedNegative
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             Int16 testUI = (-1);
 

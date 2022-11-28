@@ -902,7 +902,10 @@ namespace Internal.Runtime
                         return DynamicTemplateType->DispatchMap;
                 }
 
-                return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+                if (SupportsRelativePointers)
+                    return (DispatchMap*)FollowRelativePointer((int*)TypeManager.DispatchMap + idxDispatchMap);
+                else
+                    return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
             }
         }
 

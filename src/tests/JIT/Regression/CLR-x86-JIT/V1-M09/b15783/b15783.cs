@@ -12,7 +12,7 @@ namespace DefaultNamespace
             return UInt16.MaxValue;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             Object v = ((UInt16)65535);
             Console.WriteLine("v.ToUInt16: " + v);

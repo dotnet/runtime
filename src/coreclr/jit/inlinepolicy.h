@@ -112,6 +112,7 @@ public:
         , m_IsNoReturnKnown(false)
         , m_ConstArgFeedsIsKnownConst(false)
         , m_ArgFeedsIsKnownConst(false)
+        , m_InsideThrowBlock(false)
     {
         // empty
     }
@@ -182,6 +183,7 @@ protected:
     bool                    m_IsNoReturnKnown : 1;
     bool                    m_ConstArgFeedsIsKnownConst : 1;
     bool                    m_ArgFeedsIsKnownConst : 1;
+    bool                    m_InsideThrowBlock : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of

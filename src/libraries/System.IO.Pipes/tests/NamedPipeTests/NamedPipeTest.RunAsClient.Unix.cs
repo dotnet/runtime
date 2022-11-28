@@ -19,7 +19,7 @@ namespace System.IO.Pipes.Tests
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe uint geteuid();
 
-        public static bool IsSuperUserAndRemoteExecutorSupported => geteuid() == 0 && RemoteExecutor.IsSupported;
+        public static bool IsSuperUserAndRemoteExecutorSupported => Environment.IsPrivilegedProcess && RemoteExecutor.IsSupported;
 
         [ConditionalFact(nameof(IsSuperUserAndRemoteExecutorSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes

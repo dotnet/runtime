@@ -42,7 +42,7 @@ class Runtime_4781
         return new Foo(2);
     }
     
-    static int Main(string[] args)
+    static int Main()
     {
         Test().Dispose();
         GC.Collect();

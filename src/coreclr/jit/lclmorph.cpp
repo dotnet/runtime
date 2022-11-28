@@ -34,16 +34,16 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     //
     class Value
     {
-        GenTree* m_node;
-        unsigned m_lclNum;
-        unsigned m_offset;
-        bool     m_address;
-        INDEBUG(bool m_consumed;)
+        GenTree** m_use;
+        unsigned  m_lclNum;
+        unsigned  m_offset;
+        bool      m_address;
+        INDEBUG(bool m_consumed);
 
     public:
         // Produce an unknown value associated with the specified node.
-        Value(GenTree* node)
-            : m_node(node)
+        Value(GenTree** use)
+            : m_use(use)
             , m_lclNum(BAD_VAR_NUM)
             , m_offset(0)
             , m_address(false)
@@ -53,10 +53,16 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         {
         }
 
+        // Get the use for the node that produced this value.
+        GenTree** Use() const
+        {
+            return m_use;
+        }
+
         // Get the node that produced this value.
         GenTree* Node() const
         {
-            return m_node;
+            return *m_use;
         }
 
         // Does this value represent a location?
@@ -294,6 +300,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+#ifdef FEATURE_HW_INTRINSICS
+        GetElement,
+        WithElement,
+#endif // FEATURE_HW_INTRINSICS
         LclVar,
         LclFld
     };
@@ -418,7 +428,7 @@ public:
             }
         }
 
-        PushValue(node);
+        PushValue(use);
 
         return Compiler::WALK_CONTINUE;
     }
@@ -557,9 +567,9 @@ public:
     }
 
 private:
-    void PushValue(GenTree* node)
+    void PushValue(GenTree** use)
     {
-        m_valueStack.Push(node);
+        m_valueStack.Push(use);
     }
 
     Value& TopValue(unsigned index)
@@ -909,13 +919,46 @@ private:
 
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
-                indir->gtGetOp1()->ChangeOper(GT_LCL_VAR);
-                indir->gtGetOp1()->ChangeType(varDsc->TypeGet());
-                indir->gtGetOp1()->AsLclVar()->SetLclNum(lclNum);
-                lclNode = indir->gtGetOp1()->AsLclVarCommon();
+                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
                 break;
 
+#ifdef FEATURE_HW_INTRINSICS
+            case IndirTransform::GetElement:
+            {
+                var_types elementType = indir->TypeGet();
+                assert(elementType == TYP_FLOAT);
+
+                lclNode            = BashToLclVar(indir->gtGetOp1(), lclNum);
+                GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                GenTree* hwiNode   = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
+                                                                       CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
+                                                                       /* isSimdAsHWIntrinsic */ false);
+                indir      = hwiNode;
+                *val.Use() = hwiNode;
+            }
+            break;
+
+            case IndirTransform::WithElement:
+            {
+                assert(user->OperIs(GT_ASG) && (user->gtGetOp1() == indir));
+                var_types elementType = indir->TypeGet();
+                assert(elementType == TYP_FLOAT);
+
+                lclNode              = BashToLclVar(indir, lclNum);
+                GenTree* simdLclNode = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+                GenTree* indexNode   = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                GenTree* elementNode = user->gtGetOp2();
+                user->AsOp()->gtOp2 =
+                    m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
+                                                         /* isSimdAsHWIntrinsic */ false);
+                user->ChangeType(varDsc->TypeGet());
+            }
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
             case IndirTransform::LclVar:
+                // TODO-ADDR: use "BashToLclVar" here.
                 if (indir->TypeGet() != varDsc->TypeGet())
                 {
                     assert(genTypeSize(indir) == genTypeSize(varDsc)); // BOOL <-> UBYTE.
@@ -996,14 +1039,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            if (varTypeIsSIMD(varDsc))
-            {
-                // TODO-ADDR: skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
-                // fgMorphFieldToSimdGetElement need to be updated to recognize LCL_FLDs or moved
-                // here.
-                return IndirTransform::None;
-            }
-
             // Bool and ubyte are the same type.
             if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
                 (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
@@ -1011,9 +1046,10 @@ private:
                 return IndirTransform::LclVar;
             }
 
+            bool isDef = user->OperIs(GT_ASG) && (user->gtGetOp1() == indir);
+
             // For small locals on the LHS we can ignore the signed/unsigned diff.
-            if (user->OperIs(GT_ASG) && (user->gtGetOp1() == indir) &&
-                (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
+            if (isDef && (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
             {
                 assert(varTypeIsSmall(indir));
                 return IndirTransform::LclVar;
@@ -1023,6 +1059,14 @@ private:
             {
                 return IndirTransform::LclFld;
             }
+
+#ifdef FEATURE_HW_INTRINSICS
+            if (varTypeIsSIMD(varDsc) && indir->TypeIs(TYP_FLOAT) && ((val.Offset() % genTypeSize(TYP_FLOAT)) == 0) &&
+                m_compiler->IsBaselineSimdIsaSupported())
+            {
+                return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+            }
+#endif // FEATURE_HW_INTRINSICS
 
             // Turn this into a bitcast if we can.
             if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
@@ -1139,16 +1183,23 @@ private:
                     // the promoted local would look like "{ int a, B }", while the IR would contain "FIELD"
                     // nodes for the outer struct "A".
                     //
+                    // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
+                    if (indir->OperIs(GT_IND) && indir->TypeIs(TYP_STRUCT))
+                    {
+                        return;
+                    }
+
+                    ClassLayout* layout  = indir->TypeIs(TYP_STRUCT) ? indir->GetLayout(m_compiler) : nullptr;
+                    unsigned     indSize = indir->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(indir);
+                    if (indSize > genTypeSize(fieldType))
+                    {
+                        // Retargeting this indirection to reference the promoted field would make it
+                        // "wide", address-exposing the whole parent struct (with all of its fields).
+                        return;
+                    }
+
                     if (indir->TypeIs(TYP_STRUCT))
                     {
-                        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
-                        if (indir->OperIs(GT_IND))
-                        {
-                            // We do not have a layout for this node.
-                            return;
-                        }
-
-                        ClassLayout* layout = indir->GetLayout(m_compiler);
                         indir->SetOper(GT_OBJ);
                         indir->AsBlk()->SetLayout(layout);
                         indir->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
@@ -1298,6 +1349,27 @@ private:
     {
         return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
     }
+
+    //------------------------------------------------------------------------
+    // BashToLclVar: Bash node to a LCL_VAR.
+    //
+    // Arguments:
+    //    node   - the node to bash
+    //    lclNum - the local's number
+    //
+    // Return Value:
+    //    The bashed node.
+    //
+    GenTreeLclVar* BashToLclVar(GenTree* node, unsigned lclNum)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        node->ChangeOper(GT_LCL_VAR);
+        node->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+        node->AsLclVar()->SetLclNum(lclNum);
+
+        return node->AsLclVar();
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1314,6 +1386,7 @@ private:
 //
 PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
+    bool                madeChanges = false;
     LocalAddressVisitor visitor(this);
 
     for (BasicBlock* const block : Blocks())
@@ -1323,27 +1396,129 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 
         for (Statement* const stmt : block->Statements())
         {
+#ifdef FEATURE_SIMD
+            if (opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
+                stmt->GetRootNode()->OperIs(GT_ASG))
+            {
+                madeChanges |= fgMorphCombineSIMDFieldAssignments(block, stmt);
+            }
+#endif
+
             visitor.VisitStmt(stmt);
         }
     }
 
-    return visitor.MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    madeChanges |= visitor.MadeChanges();
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-//------------------------------------------------------------------------
-// fgMarkAddressExposedLocals: Traverses the specified statement and marks address
-//    exposed locals.
+#ifdef FEATURE_SIMD
+//-----------------------------------------------------------------------------------
+// fgMorphCombineSIMDFieldAssignments:
+//    If the RHS of the input stmt is a read for simd vector X Field, then this
+//    function will keep reading next few stmts based on the vector size(2, 3, 4).
+//    If the next stmts LHS are located contiguous and RHS are also located
+//    contiguous, then we replace those statements with one store.
 //
-// Arguments:
-//    stmt - the statement to traverse
+// Argument:
+//    block - BasicBlock*. block which stmt belongs to
+//    stmt  - Statement*. the stmt node we want to check
 //
-// Notes:
-//    Trees such as IND(ADDR(LCL_VAR)), that morph is expected to fold
-//    to just LCL_VAR, do not result in the involved local being marked
-//    address exposed.
+// Return Value:
+//    Whether the assignments were successfully coalesced.
 //
-void Compiler::fgMarkAddressExposedLocals(Statement* stmt)
+bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt)
 {
-    LocalAddressVisitor visitor(this);
-    visitor.VisitStmt(stmt);
+    GenTree* tree = stmt->GetRootNode();
+    assert(tree->OperGet() == GT_ASG);
+
+    GenTree*    originalLHS     = tree->AsOp()->gtOp1;
+    GenTree*    prevLHS         = tree->AsOp()->gtOp1;
+    GenTree*    prevRHS         = tree->AsOp()->gtOp2;
+    unsigned    index           = 0;
+    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+    unsigned    simdSize        = 0;
+    GenTree*    simdStructNode  = getSIMDStructFromField(prevRHS, &simdBaseJitType, &index, &simdSize, true);
+
+    if ((simdStructNode == nullptr) || (index != 0) || (simdBaseJitType != CORINFO_TYPE_FLOAT))
+    {
+        // if the RHS is not from a SIMD vector field X, then there is no need to check further.
+        return false;
+    }
+
+    var_types  simdBaseType         = JitType2PreciseVarType(simdBaseJitType);
+    var_types  simdType             = getSIMDTypeForSize(simdSize);
+    int        assignmentsCount     = simdSize / genTypeSize(simdBaseType) - 1;
+    int        remainingAssignments = assignmentsCount;
+    Statement* curStmt              = stmt->GetNextStmt();
+    Statement* lastStmt             = stmt;
+
+    while (curStmt != nullptr && remainingAssignments > 0)
+    {
+        GenTree* exp = curStmt->GetRootNode();
+        if (exp->OperGet() != GT_ASG)
+        {
+            break;
+        }
+        GenTree* curLHS = exp->gtGetOp1();
+        GenTree* curRHS = exp->gtGetOp2();
+
+        if (!areArgumentsContiguous(prevLHS, curLHS) || !areArgumentsContiguous(prevRHS, curRHS))
+        {
+            break;
+        }
+
+        remainingAssignments--;
+        prevLHS = curLHS;
+        prevRHS = curRHS;
+
+        lastStmt = curStmt;
+        curStmt  = curStmt->GetNextStmt();
+    }
+
+    if (remainingAssignments > 0)
+    {
+        // if the left assignments number is bigger than zero, then this means
+        // that the assignments are not assigning to the contiguously memory
+        // locations from same vector.
+        return false;
+    }
+
+    JITDUMP("\nFound contiguous assignments from a SIMD vector to memory.\n");
+    JITDUMP("From " FMT_BB ", " FMT_STMT " to " FMT_STMT "\n", block->bbNum, stmt->GetID(), lastStmt->GetID());
+
+    for (int i = 0; i < assignmentsCount; i++)
+    {
+        fgRemoveStmt(block, stmt->GetNextStmt());
+    }
+
+    GenTree* dstNode;
+
+    if (originalLHS->OperIs(GT_LCL_FLD))
+    {
+        dstNode         = originalLHS;
+        dstNode->gtType = simdType;
+    }
+    else
+    {
+        GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
+        dstNode             = gtNewOperNode(GT_IND, simdType, copyBlkDst);
+    }
+
+    JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
+    DISPSTMT(stmt);
+
+    assert(!simdStructNode->CanCSE() && varTypeIsSIMD(simdStructNode));
+    simdStructNode->ClearDoNotCSE();
+
+    tree = gtNewAssignNode(dstNode, simdStructNode);
+
+    stmt->SetRootNode(tree);
+
+    JITDUMP("\nReplaced " FMT_BB " " FMT_STMT " (after):\n", block->bbNum, stmt->GetID());
+    DISPSTMT(stmt);
+
+    return true;
 }
+#endif // FEATURE_SIMD

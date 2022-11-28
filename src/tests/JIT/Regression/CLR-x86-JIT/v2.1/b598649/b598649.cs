@@ -58,7 +58,7 @@ namespace Bug565326
 
     class Class1
     {
-        static int Main(string[] args)
+        static int Main()
         {
             try
             {

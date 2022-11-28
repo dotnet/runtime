@@ -40,50 +40,12 @@ void jiterp_preserve_module (void);
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
+#include <mono/utils/options.h>
 
 #include "jiterpreter.h"
 
 static gint32 jiterpreter_abort_counts[MINT_LASTOP + 1] = { 0 };
 static int64_t jiterp_trace_bailout_counts[256] = { 0 };
-
-#if FEATURE_WASM_THREADS
-// the jiterpreter is not yet thread safe due to the need to synchronize function pointers
-//  and wasm modules between threads. before these can be enabled we need to implement all that
-gboolean jiterpreter_traces_enabled       = FALSE,
-	jiterpreter_interp_entry_enabled  = FALSE,
-	jiterpreter_jit_call_enabled      = FALSE,
-#else
-// traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-gboolean jiterpreter_traces_enabled       = FALSE,
-// interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
-	jiterpreter_interp_entry_enabled  = FALSE,
-// jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
-	jiterpreter_jit_call_enabled      = FALSE,
-#endif
-// if enabled, we will insert trace entry points at backwards branch targets, so that we can
-//  JIT loop bodies
-	jiterpreter_backward_branch_entries_enabled = TRUE,
-// if enabled, after a call instruction terminates a trace, we will attempt to start a new
-//  one at the next basic block. this allows jitting loop bodies that start with 'if (x) continue' etc
-	jiterpreter_call_resume_enabled = TRUE,
-// enables using WASM try/catch_all instructions where appropriate (currently only do_jit_call),
-//  will be automatically turned off if the instructions are not available.
-	jiterpreter_wasm_eh_enabled     = TRUE,
-// For locations where the jiterpreter heuristic says we will be unable to generate
-//  a trace, insert an entry point opcode anyway. This enables collecting accurate
-//  stats for options like estimateHeat, but raises overhead.
-	jiterpreter_always_generate     = FALSE,
-// Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-	jiterpreter_stats_enabled       = FALSE,
-// Continue counting hits for traces that fail to compile and use it to estimate
-//  the relative importance of the opcode that caused them to abort
-	jiterpreter_estimate_heat       = FALSE,
-// Count the number of times a trace bails out (branch taken, etc) and for what reason
-	jiterpreter_count_bailouts      = FALSE;
-
-gint32 jiterpreter_options_version = 0,
-// any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
-	jiterpreter_minimum_trace_length = 8;
 
 // This function pointer is used by interp.c to invoke jit_call_cb for exception handling purposes
 // See jiterpreter-jit-call.ts mono_jiterp_do_jit_call_indirect
@@ -878,32 +840,35 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 }
 
 static gboolean
-should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
+should_generate_trace_here (InterpBasicBlock *bb) {
 	int current_trace_length = 0;
 	// A preceding trace may have been in a branch block, but we only care whether the current
 	//  trace will have a branch block opened, because that determines whether calls and branches
 	//  will unconditionally abort the trace or not.
 	gboolean inside_branch_block = FALSE;
 
-	// We scan forward through the entire method body starting from the current block, not just
-	//  the current block (since the actual trace compiler doesn't know about block boundaries).
-	for (InterpInst *ins = bb->first_ins; (ins != NULL) && (ins != last_ins); ins = ins->next) {
-		int category = jiterp_should_abort_trace(ins, &inside_branch_block);
-		switch (category) {
-			case TRACE_ABORT: {
-				jiterpreter_abort_counts[ins->opcode]++;
-				return current_trace_length >= jiterpreter_minimum_trace_length;
+	while (bb) {
+		// We scan forward through the entire method body starting from the current block, not just
+		//  the current block (since the actual trace compiler doesn't know about block boundaries).
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int category = jiterp_should_abort_trace(ins, &inside_branch_block);
+			switch (category) {
+				case TRACE_ABORT:
+					jiterpreter_abort_counts[ins->opcode]++;
+					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+				case TRACE_IGNORE:
+					break;
+				default:
+					current_trace_length++;
+					break;
 			}
-			case TRACE_IGNORE:
-				break;
-			default:
-				current_trace_length++;
-				break;
+
+			// Once we know the trace is long enough we can stop scanning.
+			if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
+				return TRUE;
 		}
 
-		// Once we know the trace is long enough we can stop scanning.
-		if (current_trace_length >= jiterpreter_minimum_trace_length)
-			return TRUE;
+		bb = bb->next_bb;
 	}
 
 	return FALSE;
@@ -922,7 +887,7 @@ should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
 void
 jiterp_insert_entry_points (void *_td)
 {
-	if (!jiterpreter_traces_enabled)
+	if (!mono_opt_jiterpreter_traces_enabled)
 		return;
 	TransformData *td = (TransformData *)_td;
 
@@ -937,7 +902,7 @@ jiterp_insert_entry_points (void *_td)
 
 		// If backwards branches target a block, enter a trace there so that
 		//  after the backward branch we can re-enter jitted code
-		if (jiterpreter_backward_branch_entries_enabled && bb->backwards_branch_target)
+		if (mono_opt_jiterpreter_backward_branch_entries_enabled && bb->backwards_branch_target)
 			is_backwards_branch = TRUE;
 
 		gboolean enabled = (is_backwards_branch || is_resume_or_first);
@@ -946,12 +911,12 @@ jiterp_insert_entry_points (void *_td)
 		//  multiple times and waste some work. At present this is unavoidable because
 		//  control flow means we can end up with two traces covering different subsets
 		//  of the same method in order to handle loops and resuming
-		gboolean should_generate = enabled && should_generate_trace_here(bb, td->last_ins);
+		gboolean should_generate = enabled && should_generate_trace_here(bb);
 
-		if (jiterpreter_call_resume_enabled && bb->contains_call_instruction)
+		if (mono_opt_jiterpreter_call_resume_enabled && bb->contains_call_instruction)
 			enter_at_next = TRUE;
 
-		if (jiterpreter_always_generate)
+		if (mono_opt_jiterpreter_disable_heuristic)
 			should_generate = TRUE;
 
 		if (enabled && should_generate) {
@@ -975,97 +940,29 @@ mono_jiterp_parse_option (const char *option)
 	if (!option || (*option == 0))
 		return FALSE;
 
-	const char *mtl = "jiterpreter-minimum-trace-length=";
-	const int mtl_l = strlen(mtl);
-
-	if (!strcmp (option, "jiterpreter-enable-traces"))
-		jiterpreter_traces_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-traces"))
-		jiterpreter_traces_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-interp-entry"))
-		jiterpreter_interp_entry_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-interp-entry"))
-		jiterpreter_interp_entry_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-jit-call"))
-		jiterpreter_jit_call_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-jit-call"))
-		jiterpreter_jit_call_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-backward-branches"))
-		jiterpreter_backward_branch_entries_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-backward-branches"))
-		jiterpreter_backward_branch_entries_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-call-resume"))
-		jiterpreter_call_resume_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-call-resume"))
-		jiterpreter_call_resume_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-wasm-eh"))
-		jiterpreter_wasm_eh_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-wasm-eh"))
-		jiterpreter_wasm_eh_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-always-generate"))
-		jiterpreter_always_generate = TRUE;
-	else if (!strcmp (option, "jiterpreter-enable-all"))
-		jiterpreter_traces_enabled = jiterpreter_interp_entry_enabled = jiterpreter_jit_call_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-all"))
-		jiterpreter_traces_enabled = jiterpreter_interp_entry_enabled = jiterpreter_jit_call_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-enable-stats"))
-		jiterpreter_stats_enabled = TRUE;
-	else if (!strcmp (option, "jiterpreter-disable-stats"))
-		jiterpreter_stats_enabled = FALSE;
-	else if (!strcmp (option, "jiterpreter-estimate-heat"))
-		jiterpreter_always_generate = jiterpreter_estimate_heat = TRUE;
-	else if (!strcmp (option, "jiterpreter-count-bailouts"))
-		jiterpreter_always_generate = jiterpreter_count_bailouts = TRUE;
-	else if (!strncmp (option, mtl, mtl_l))
-		jiterpreter_minimum_trace_length = atoi(option + mtl_l);
-	else
-		return FALSE;
-
-	jiterpreter_options_version++;
+	const char *arr[2] = { option, NULL };
+	int temp;
+	mono_options_parse_options (arr, 1, &temp, NULL);
 	return TRUE;
 }
 
 // When jiterpreter options change we increment this version so that the typescript knows
 //  it will have to re-query all the option values
 EMSCRIPTEN_KEEPALIVE gint32
-mono_jiterp_get_options_version () {
-	return jiterpreter_options_version;
+mono_jiterp_get_options_version ()
+{
+	return mono_options_version;
 }
 
-// The typescript uses this to query the full jiterpreter configuration so it can behave
-//  appropriately (minimum trace length, EH enabled state, etc)
-EMSCRIPTEN_KEEPALIVE gint32
-mono_jiterp_get_option (const char * option) {
-	if (!strcmp (option, "jiterpreter-enable-traces"))
-		return jiterpreter_traces_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-interp-entry"))
-		return jiterpreter_interp_entry_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-jit-call"))
-		return jiterpreter_jit_call_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-all"))
-		return jiterpreter_traces_enabled && jiterpreter_interp_entry_enabled && jiterpreter_jit_call_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-backward-branches"))
-		return jiterpreter_backward_branch_entries_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-call-resume"))
-		return jiterpreter_call_resume_enabled;
-	else if (!strcmp (option, "jiterpreter-enable-wasm-eh"))
-		return jiterpreter_wasm_eh_enabled;
-	else if (!strcmp (option, "jiterpreter-always-generate"))
-		return jiterpreter_always_generate;
-	else if (!strcmp (option, "jiterpreter-enable-stats"))
-		return jiterpreter_stats_enabled;
-	else if (!strcmp (option, "jiterpreter-minimum-trace-length"))
-		return jiterpreter_minimum_trace_length;
-	else if (!strcmp (option, "jiterpreter-estimate-heat"))
-		return jiterpreter_estimate_heat;
-	else if (!strcmp (option, "jiterpreter-count-bailouts"))
-		return jiterpreter_count_bailouts;
-	else
-		return -1;
+EMSCRIPTEN_KEEPALIVE char *
+mono_jiterp_get_options_as_json ()
+{
+	return mono_options_get_as_json ();
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher) {
+mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
+{
 	// If we received a 0 dispatcher that means the TS side failed to compile
 	//  any kind of dispatcher - this likely indicates that content security policy
 	//  blocked the use of Module.addFunction

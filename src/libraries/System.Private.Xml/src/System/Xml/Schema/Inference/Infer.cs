@@ -326,7 +326,7 @@ namespace System.Xml.Schema
                     xs = parentSchema;
                     add = false;
                 }
-                else if (childURI != null && !_schemaSet!.Contains(childURI))
+                else if (!_schemaSet!.Contains(childURI))
                 {
                     /*if (parentSchema.AttributeFormDefault = XmlSchemaForm.Unqualified && childURI.Length == 0)
                 {

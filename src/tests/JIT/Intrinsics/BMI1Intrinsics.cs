@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace BMI1Intrinsics
@@ -7,7 +7,7 @@ namespace BMI1Intrinsics
     {
         private static int _errorCode = 100;
 
-        static int Main(string[] args)
+        static int Main()
         {
             // bmi1 expression are folded to to hwintrinsics that return identical results
 
