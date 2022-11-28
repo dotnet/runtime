@@ -1,15 +1,15 @@
 {
   "sdk": {
-    "version": "7.0.100-rc.1.22431.12",
+    "version": "7.0.100",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "7.0.100-rc.1.22431.12",
+    "dotnet": "7.0.100",
     "xcopy-msbuild": "17.2.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "8.0.0-beta.22554.2",
+    "Microsoft.DotNet.Arcade.Sdk": "8.0.0-beta.22575.1",
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "7.0.0-rtm.22507.1"
   }
