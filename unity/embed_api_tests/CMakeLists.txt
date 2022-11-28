@@ -10,5 +10,8 @@ include_directories(${CLR_DIR}/src/inc)
 
 add_executable(${PROJECT_NAME_STR} ${PROJECT_SRC_FILES})
 target_link_libraries(${PROJECT_NAME_STR} ${CMAKE_DL_LIBS})
+if(UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME_STR} pthread)
+endif()
 target_compile_features(${PROJECT_NAME_STR} PRIVATE cxx_range_for)
 target_compile_definitions(${PROJECT_NAME_STR} PRIVATE ENABLE_MONO=1 PLATFORM_STANDALONE=1)
