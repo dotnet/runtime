@@ -10007,7 +10007,7 @@ calli_end:
 				}
 
 				if (il_op == MONO_CEE_LDFLDA) {
-					if (sp [0]->type == STACK_OBJ) {
+					if (sp [0]->type == STACK_OBJ || sp [0]->type == STACK_PTR) {
 						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
 						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
 					}

@@ -90,6 +90,14 @@ struct DLDD
     DWORD     C;
 };
 
+struct DLDDD
+{
+    DWORDLONG A;
+    DWORD     B;
+    DWORD     C;
+    DWORD     D;
+};
+
 struct Agnostic_CORINFO_METHODNAME_TOKENin
 {
     DWORDLONG ftn;

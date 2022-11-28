@@ -18,7 +18,8 @@ export function export_internal(): any {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.printErr("MONO_WASM: early exit " + exit_code); },
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
-        mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
+        mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
+        mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
         mono_method_resolve,//MarshalTests.cs
         mono_intern_string,// MarshalTests.cs
@@ -81,7 +82,8 @@ export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
-        mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
+        mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
+        mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     });
 }

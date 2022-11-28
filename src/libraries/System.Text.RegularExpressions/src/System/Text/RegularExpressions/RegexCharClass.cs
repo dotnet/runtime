@@ -97,6 +97,8 @@ namespace System.Text.RegularExpressions
         internal const string ECMADigitClass = "\x00\x02\x00" + ECMADigitRanges;
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitRanges;
 
+        internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
+
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";
 
@@ -989,10 +991,6 @@ namespace System.Text.RegularExpressions
 
             return true;
         }
-
-        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        public static bool IsAsciiLetter(char c) =>
-            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.  This will return false if the set has subtraction.</remarks>

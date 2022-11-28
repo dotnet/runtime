@@ -102,11 +102,34 @@ namespace System.Formats.Tar.Tests
         {
             using (TempDirectory root = new TempDirectory())
             {
-                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "docker-hello-world");
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "docker-hello-world");
                 await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
 
                 Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
                 Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
+            }
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public async Task ExtractEntry_PodmanImageTarWithRelativeSymlinksPointingInExtractDirectory_SuccessfullyExtracts_Async()
+        {
+            using (TempDirectory root = new TempDirectory())
+            {
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "podman-hello-world");
+                await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+
+                Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
+                Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
+                Assert.True(File.Exists(Path.Join(root.Path, "efb53921da3394806160641b72a2cbd34ca1a9a8345ac670a85a04ad3d0e3507.tar")));
+
+                string symlinkPath = Path.Join(root.Path, "e7fc2b397c1ab5af9938f18cc9a80d526cccd1910e4678390157d8cc6c94410d/layer.tar");
+                Assert.True(File.Exists(symlinkPath));
+
+                FileInfo? fileInfo = new(symlinkPath);
+                Assert.Equal("../efb53921da3394806160641b72a2cbd34ca1a9a8345ac670a85a04ad3d0e3507.tar", fileInfo.LinkTarget);
+
+                FileSystemInfo? symlinkTarget = File.ResolveLinkTarget(symlinkPath, returnFinalTarget: true);
+                Assert.True(File.Exists(symlinkTarget.FullName));
             }
         }
 

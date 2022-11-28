@@ -60,9 +60,9 @@ if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
+if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
-if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
+if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)

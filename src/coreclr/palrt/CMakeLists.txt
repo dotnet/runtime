@@ -5,7 +5,6 @@ set(PALRT_SOURCES
     comem.cpp
     guid.cpp
     memorystream.cpp
-    path.cpp
     variant.cpp
 )
 

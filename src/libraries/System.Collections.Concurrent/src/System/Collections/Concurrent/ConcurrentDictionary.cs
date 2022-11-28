@@ -2068,8 +2068,7 @@ namespace System.Collections.Concurrent
 
                 if (count == 0)
                 {
-                    // TODO https://github.com/dotnet/runtime/issues/76028: Replace with ReadOnlyCollection<TKey>.Empty.
-                    return Array.Empty<TKey>().AsReadOnly();
+                    return ReadOnlyCollection<TKey>.Empty;
                 }
 
                 var keys = new TKey[count];
@@ -2110,8 +2109,7 @@ namespace System.Collections.Concurrent
 
                 if (count == 0)
                 {
-                    // TODO https://github.com/dotnet/runtime/pull/76097:  Replace with ReadOnlyCollection<TValue>.Empty.
-                    return Array.Empty<TValue>().AsReadOnly();
+                    return ReadOnlyCollection<TValue>.Empty;
                 }
 
                 var values = new TValue[count];

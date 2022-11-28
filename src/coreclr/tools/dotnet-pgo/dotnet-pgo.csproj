@@ -21,6 +21,7 @@
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
     <RollForward>Major</RollForward>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

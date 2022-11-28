@@ -8,6 +8,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Don't add references to the netstandard platform since this is a core assembly -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

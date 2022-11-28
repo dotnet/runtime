@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.General
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
-            return new ReadOnlyCollection<T>(enumeration.ToArray());
+            return Array.AsReadOnly(enumeration.ToArray());
         }
 
         public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)

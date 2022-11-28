@@ -267,7 +267,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                return false;
+                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+                return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
             switch (method)
@@ -566,8 +567,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
             }
-
-            return false;
+            // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
+            return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
@@ -1271,7 +1272,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = GetContext(sessionId);
-                foreach (var source in store.Add(sessionId, assembly_name, assembly_data, pdb_data, token))
+                foreach (var source in store.Add(sessionId, assembly_data, pdb_data, token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
@@ -1524,27 +1525,40 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
-            if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
-                return await context.ready.Task;
-            var res = await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token, false);
-            if (res.HasError) //it's not a wasm page then the command returns an error
+            try
+            {
+                ExecutionContext context = GetContext(sessionId);
+                if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
+                    return await context.ready.Task;
+                await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token);
+
+                if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
+                    await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
+
+                await context.SdbAgent.SetProtocolVersion(token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.UserBreak, token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.EnC, token);
+                await context.SdbAgent.EnableReceiveRequests(EventKind.MethodUpdate, token);
+
+                DebugStore store = await LoadStore(sessionId, true, token);
+                context.ready.SetResult(store);
+                await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+                await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
+                context.SdbAgent.ResetStore(store);
+                return store;
+            }
+            catch (DebuggerAgentException e)
+            {
+                //it's not a wasm page then the command throws an error
+                if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                    logger.LogDebug($"Unexpected error on RuntimeReady {e}");
                 return null;
-
-            if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
-                await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
-
-            await context.SdbAgent.SetProtocolVersion(token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.UserBreak, token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.EnC, token);
-            await context.SdbAgent.EnableReceiveRequests(EventKind.MethodUpdate, token);
-
-            DebugStore store = await LoadStore(sessionId, true, token);
-            context.ready.SetResult(store);
-            await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
-            await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
-            context.SdbAgent.ResetStore(store);
-            return store;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unexpected error on RuntimeReady {e}");
+                return null;
+            }
         }
 
         private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req, bool ifNoneFoundThenFindNext = false)

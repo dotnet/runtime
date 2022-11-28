@@ -265,11 +265,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
 #ifdef FEATURE_SIMD
-        call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
-        if (call != nullptr)
+        if (isIntrinsic)
         {
-            bIntrinsicImported = true;
-            goto DONE_CALL;
+            call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
+            if (call != nullptr)
+            {
+                bIntrinsicImported = true;
+                goto DONE_CALL;
+            }
         }
 #endif // FEATURE_SIMD
 
@@ -1288,7 +1291,7 @@ DONE:
         //    have to check for anything that might introduce a recursive tail call.
         // * We only instrument root method blocks in OSR methods,
         //
-        if (opts.IsOSR() && !compIsForInlining())
+        if ((opts.IsInstrumentedOptimized() || opts.IsOSR()) && !compIsForInlining())
         {
             // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
@@ -1312,9 +1315,9 @@ DONE:
 
             // Only schedule importation if we're not currently importing.
             //
-            if (mustImportEntryBlock && (compCurBB != fgEntryBB))
+            if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
             {
-                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
                         dspTreeID(call), fgEntryBB->bbNum);
                 impImportBlockPending(fgEntryBB);
@@ -1389,7 +1392,7 @@ DONE_CALL:
                 impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI, false);
 
                 // TODO: Still using the widened type.
-                GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
+                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(callRetTyp));
 
                 // Link the retExpr to the call so if necessary we can manipulate it later.
                 origCall->gtInlineCandidateInfo->retExpr = retExpr;
@@ -2584,12 +2587,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst())
+                if (op1->OperIsConst() || gtIsTypeof(op1))
                 {
                     // op1 is a known constant, replace with 'true'.
                     retNode = gtNewIconNode(1);
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
-                    // We can also consider FTN_ADDR and typeof(T) here
+                    // We can also consider FTN_ADDR here
                 }
                 else
                 {
@@ -2851,6 +2854,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsByRefLike:
             {
@@ -2862,31 +2866,52 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // to `true` or `false`
                 // e.g., `typeof(int).IsValueType` => `true`
                 // e.g., `typeof(Span<int>).IsByRefLike` => `true`
-                if (impStackTop().val->IsCall())
+                CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
+                if (gtIsTypeof(impStackTop().val, &hClass))
                 {
-                    GenTreeCall* call = impStackTop().val->AsCall();
-                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    switch (ni)
                     {
-                        assert(call->gtArgs.CountArgs() == 1);
-                        CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                        if (hClass != NO_CLASS_HANDLE)
+                        case NI_System_Type_get_IsEnum:
                         {
-                            switch (ni)
+                            TypeCompareState state = info.compCompHnd->isEnum(hClass, nullptr);
+                            if (state == TypeCompareState::May)
                             {
-                                case NI_System_Type_get_IsValueType:
-                                    retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
-                                    break;
-                                case NI_System_Type_get_IsByRefLike:
-                                    retNode = gtNewIconNode(
-                                        (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
-                                    break;
-                                default:
-                                    NO_WAY("Intrinsic not supported in this path.");
+                                retNode = nullptr;
+                                break;
                             }
-                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                            retNode = gtNewIconNode(state == TypeCompareState::Must ? 1 : 0);
+                            break;
                         }
+                        case NI_System_Type_get_IsValueType:
+                            retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
+                            break;
+                        case NI_System_Type_get_IsByRefLike:
+                            retNode = gtNewIconNode(
+                                (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
+                            break;
+                        default:
+                            NO_WAY("Intrinsic not supported in this path.");
                     }
+                    if (retNode != nullptr)
+                    {
+                        impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                    }
+                }
+                break;
+            }
+
+            case NI_System_Type_GetEnumUnderlyingType:
+            {
+                GenTree*             type             = impStackTop().val;
+                CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
+                CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
+                if (gtIsTypeof(type, &hClassEnum) && (hClassEnum != NO_CLASS_HANDLE) &&
+                    (info.compCompHnd->isEnum(hClassEnum, &hClassUnderlying) == TypeCompareState::Must) &&
+                    (hClassUnderlying != NO_CLASS_HANDLE))
+                {
+                    GenTree* handle = gtNewIconEmbClsHndNode(hClassUnderlying);
+                    retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                    impPopStack();
                 }
                 break;
             }
@@ -6290,7 +6315,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
         return false;
     }
 
-    assert(opts.OptimizationDisabled() || opts.IsOSR());
+    assert(opts.OptimizationDisabled() || opts.IsInstrumentedOptimized());
     assert(!compIsForInlining());
 
     // During importation, optionally flag this block as one that
@@ -6633,7 +6658,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
             //
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, compiler->fgHaveSufficientProfileData());
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS,
+                                   compiler->fgHaveSufficientProfileWeights());
 
             bool const forceInline = (pParam->methAttr & CORINFO_FLG_FORCEINLINE) != 0;
 
@@ -7136,6 +7162,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_RuntimeTypeHandle_GetValueInternal;
             }
         }
+        else if (strcmp(className, "RuntimeType") == 0)
+        {
+            if (strcmp(methodName, "get_IsActualEnum") == 0)
+            {
+                result = NI_System_Type_get_IsEnum;
+            }
+        }
         else if (strcmp(className, "Type") == 0)
         {
             if (strcmp(methodName, "get_IsValueType") == 0)
@@ -7165,6 +7198,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "GetTypeFromHandle") == 0)
             {
                 result = NI_System_Type_GetTypeFromHandle;
+            }
+            else if (strcmp(methodName, "get_IsEnum") == 0)
+            {
+                result = NI_System_Type_get_IsEnum;
+            }
+            else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
+            {
+                result = NI_System_Type_GetEnumUnderlyingType;
             }
         }
         else if (strcmp(className, "String") == 0)

@@ -15,8 +15,6 @@ namespace System.Formats.Tar
     // Reads the header attributes from a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private const string UstarPrefixFormat = "{0}/{1}"; // "prefix/name"
-
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
@@ -201,7 +199,7 @@ namespace System.Formats.Tar
                     // No data section
                     if (_size > 0)
                     {
-                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                        throw new InvalidDataException(SR.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
                     }
                     break;
                 case TarEntryType.RegularFile:
@@ -263,7 +261,7 @@ namespace System.Formats.Tar
                     // No data section
                     if (_size > 0)
                     {
-                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                        throw new InvalidDataException(SR.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
                     }
                     break;
                 case TarEntryType.RegularFile:
@@ -380,7 +378,7 @@ namespace System.Formats.Tar
             Debug.Assert(size <= TarHelpers.MaxSizeLength, "size exceeded the max value possible with 11 octal digits. Actual size " + size);
             if (size < 0)
             {
-                throw new InvalidDataException(string.Format(SR.TarSizeFieldNegative));
+                throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
             }
 
             // Continue with the rest of the fields that require no special checks
@@ -414,7 +412,7 @@ namespace System.Formats.Tar
                     // V7 is the only one that uses 'V7RegularFile'.
                     TarEntryType.V7RegularFile => TarEntryFormat.V7,
 
-                    TarEntryType.SparseFile => throw new NotSupportedException(string.Format(SR.TarEntryTypeNotSupported, header._typeFlag)),
+                    TarEntryType.SparseFile => throw new NotSupportedException(SR.Format(SR.TarEntryTypeNotSupported, header._typeFlag)),
 
                     // We can quickly determine the *minimum* possible format if the entry type
                     // is the POSIX 'RegularFile', although later we could upgrade it to PAX or GNU
@@ -478,7 +476,7 @@ namespace System.Formats.Tar
                         // Check for gnu version header for mixed case
                         if (!version.SequenceEqual(GnuVersionBytes))
                         {
-                            throw new InvalidDataException(string.Format(SR.TarPosixFormatExpected, _name));
+                            throw new InvalidDataException(SR.Format(SR.TarPosixFormatExpected, _name));
                         }
 
                         _version = GnuVersion;
@@ -496,7 +494,7 @@ namespace System.Formats.Tar
                         // Check for ustar or pax version header for mixed case
                         if (!version.SequenceEqual(UstarVersionBytes))
                         {
-                            throw new InvalidDataException(string.Format(SR.TarGnuFormatExpected, _name));
+                            throw new InvalidDataException(SR.Format(SR.TarGnuFormatExpected, _name));
                         }
 
                         _version = UstarVersion;
@@ -557,9 +555,9 @@ namespace System.Formats.Tar
             // Name, if the full path did not fit in the Name byte array.
             if (!string.IsNullOrEmpty(_prefix))
             {
-                // Prefix never has a leading separator, so we add it
-                // it should always  be a forward slash for compatibility
-                _name = string.Format(UstarPrefixFormat, _prefix, _name);
+                // Prefix never has a leading separator, so we add it.
+                // It should always  be a forward slash for compatibility
+                _name = $"{_prefix}/{_name}";
             }
         }
 
@@ -615,7 +613,7 @@ namespace System.Formats.Tar
 
             [DoesNotReturn]
             void ThrowSizeFieldTooLarge() =>
-                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
         }
 
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
@@ -627,7 +625,7 @@ namespace System.Formats.Tar
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
-                    throw new InvalidDataException(string.Format(SR.TarDuplicateExtendedAttribute, name));
+                    throw new InvalidDataException(SR.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
@@ -50,7 +50,6 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Internal\IDebuggerDisplay.cs" />
     <Compile Include="Internal\ImmutableArray.cs" />
     <Compile Include="Internal\Padding.cs" />
-    <Compile Include="Internal\ProducerConsumerQueues.cs" />
     <Compile Include="Internal\QueuedMap.cs" />
     <Compile Include="Internal\ReorderingBuffer.cs" />
     <Compile Include="Internal\SourceCore.cs" />
@@ -59,6 +58,12 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Internal\TargetRegistry.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
