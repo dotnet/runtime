@@ -8514,18 +8514,21 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     // Accumulate final offset
     while (tree->OperIs(GT_ADD))
     {
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* op2 = tree->gtGetOp2();
-        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() &&
-            vnStore->IsVNConstant(op1->gtVNPair.GetLiberal()))
+        GenTree* op1   = tree->gtGetOp1();
+        GenTree* op2   = tree->gtGetOp2();
+        ValueNum op1vn = op1->gtVNPair.GetLiberal();
+        ValueNum op2vn = op2->gtVNPair.GetLiberal();
+
+        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) &&
+            varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
-            val += vnStore->CoercedConstantValue<ssize_t>(op1->gtVNPair.GetLiberal());
+            val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() &&
-                 vnStore->IsVNConstant(op2->gtVNPair.GetLiberal()))
+        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) &&
+                 varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
-            val += vnStore->CoercedConstantValue<ssize_t>(op2->gtVNPair.GetLiberal());
+            val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
             tree = op1;
         }
         else
