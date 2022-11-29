@@ -1864,7 +1864,10 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
 
             fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
             {
-                m_compiler->fgComputeLifeNode(*use, m_life, m_keepAliveVars, m_pStmtInfoDirty DEBUGARG(&MadeChanges));
+                GenTree* newNode = m_compiler->fgComputeLifeNode(*use, m_life, m_keepAliveVars, m_pStmtInfoDirty DEBUGARG(&MadeChanges));
+                if (newNode == nullptr)
+                    return fgWalkResult::WALK_ABORT;
+
                 return fgWalkResult::WALK_CONTINUE;
             }
         };
@@ -1879,7 +1882,11 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
         // to use the result of an assignment node directly!
         for (GenTree* tree = node; tree != nullptr; tree = tree->gtPrev)
         {
-            tree = fgComputeLifeNode(tree, life, keepAliveVars, pStmtInfoDirty DEBUGARG(treeModf));
+            GenTree* newNode = fgComputeLifeNode(tree, life, keepAliveVars, pStmtInfoDirty DEBUGARG(treeModf));
+            if (newNode == nullptr)
+                break;
+
+            tree = newNode;
         }
     }
 }
@@ -1906,8 +1913,7 @@ GenTree* Compiler::fgComputeLifeNode(GenTree* tree, VARSET_TP& life, const VARSE
 
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
                 {
-                    assert(!doAgain);
-                    break;
+                    return nullptr;
                 }
 
                 if (isUse && !storeRemoved)
