@@ -1673,8 +1673,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _dict.GetEnumerator();
 
-            // The following are members which has same names as the IDictionary<,> members.
-            // Adding these to the test to ensure not getting System.Reflection.AmbiguousMatchException when we bind the dictionary.
+            // The following are members which have the same names as the IDictionary<,> members.
+            // The following members test that there's no System.Reflection.AmbiguousMatchException when binding to the dictionary.
             private string? v;
             public string? this[string key] { get => v; set => v = value; }
             public bool TryGetValue() { return true; }
