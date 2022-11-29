@@ -4626,10 +4626,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // To determine whether a character is in the set, we subtract the lowest char; this subtraction happens before
-                // the result is zero-extended to uint, meaning that `charMinusLowUInt32` will always have upper 16 bits equal to 0.
+                // the result is zero-extended to uint, meaning that `charMinusLowUInt64` will always have upper 32 bits equal to 0.
                 // We then left shift the constant with this offset, and apply a bitmask that has the highest bit set (the sign bit)
-                // if and only if `chExpr` is in the [low, low + 32) range. Then we only need to check whether this final result is
-                // less than 0: this will only be the case if both `charMinusLowUInt32` was in fact the index of a set bit in the constant,
+                // if and only if `chExpr` is in the [low, low + 64) range. Then we only need to check whether this final result is
+                // less than 0: this will only be the case if both `charMinusLowUInt64` was in fact the index of a set bit in the constant,
                 // and also `chExpr` was in the allowed range (this ensures that false positive bit shifts are ignored).
                 negate ^= negatedClass;
                 return $"((long)((0x{bitmap:X}UL << (int)(charMinusLowUInt64 = (uint){chExpr} - {Literal((char)analysis.LowerBoundInclusiveIfOnlyRanges)})) & (charMinusLowUInt64 - 64)) {(negate ? ">=" : "<")} 0)";
