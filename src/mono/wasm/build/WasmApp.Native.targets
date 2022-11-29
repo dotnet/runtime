@@ -58,13 +58,15 @@
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
+
+      <EmscriptenNodeExecutable>$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</EmscriptenNodeExecutable>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
-      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeExecutable)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -657,4 +659,22 @@
       <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
+
+  <Target Name="_WasmMemorySnapshot" DependsOnTargets="_SetupEmscripten"
+          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Outputs="$(WasmAppDir)\memory.dat">
+    <PropertyGroup>
+      <WasmMemorySnapshotCaptureGenerator>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureGenerator>
+      <WasmMemorySnapshotFileName>memory.dat</WasmMemorySnapshotFileName>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
+      <WasmMemorySnapshotCaptureLine Include="const { Module } = await dotnet.create()%3B" />
+      <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./$(WasmMemorySnapshotFileName)', Module.HEAP8)%3B" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
+    <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
+    <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" />
+    <Message Text="Memory snapshot taken at $(WasmAppDir)$(WasmMemorySnapshotFileName)" Importance="High" />
+  </Target>
 </Project>
