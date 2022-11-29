@@ -8500,6 +8500,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    tree where only one of the constants is expected to have a field sequence.
 //
 // Arguments:
+//    vnStore  - ValueNumStore object
 //    tree     - tree node to inspect
 //    pAddress - [Out] resulting address with all offsets combined
 //    pFseq    - [Out] field sequence
@@ -8507,7 +8508,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the given tree is a static field address
 //
-static bool fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
 {
     ssize_t val = 0;
     // Accumulate final offset
@@ -8515,14 +8516,16 @@ static bool fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, Fiel
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
-        if (op1->IsCnsIntOrI() && (op1->AsIntCon()->gtFieldSeq == nullptr))
+        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() &&
+            vnStore->IsVNConstant(op1->gtVNPair.GetLiberal()))
         {
-            val += op1->AsIntCon()->IconValue();
+            val += vnStore->CoercedConstantValue<ssize_t>(op1->gtVNPair.GetLiberal());
             tree = op2;
         }
-        else if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq == nullptr))
+        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() &&
+                 vnStore->IsVNConstant(op2->gtVNPair.GetLiberal()))
         {
-            val += op2->AsIntCon()->IconValue();
+            val += vnStore->CoercedConstantValue<ssize_t>(op2->gtVNPair.GetLiberal());
             tree = op1;
         }
         else
@@ -8568,7 +8571,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-    if (fgGetStaticFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq))
+    if (GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
     {
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
