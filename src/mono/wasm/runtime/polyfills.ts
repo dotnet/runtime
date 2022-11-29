@@ -209,7 +209,9 @@ export async function init_polyfills_async(): Promise<void> {
             }
             
             if (!nodeCrypto) {
-                nodeCrypto.randomBytes = () => { throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module."); };
+                globalThis.crypto.getRandomValues = () => { 
+                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module."); 
+                };
             } else if (nodeCrypto.webcrypto) {
                 globalThis.crypto = nodeCrypto.webcrypto;
             } else if (nodeCrypto.randomBytes) {
