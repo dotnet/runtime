@@ -857,8 +857,6 @@ export type JiterpreterOptions = {
     countBailouts: boolean;
     // Dump the wasm blob for all compiled traces
     dumpTraces: boolean;
-    // Instantly tiers up methods and traces
-    tierInstantly: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
 }
@@ -876,8 +874,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
-    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
-    "tierInstantly": "interp-tier-instantly",
+    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count"
 };
 
 let optionsVersion = -1;

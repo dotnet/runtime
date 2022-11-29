@@ -2939,7 +2939,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    const minHitCount = mostRecentOptions.tierInstantly ? 2 : mostRecentOptions.minimumTraceHitCount;
+    const minHitCount = mostRecentOptions.minimumTraceHitCount;
 
     if (info.hitCount < minHitCount)
         return JITERPRETER_TRAINING;
