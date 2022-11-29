@@ -1290,7 +1290,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         else if (klassName.StartsWith("VB$"))
                         {
                             var match = regexForVBAsyncMethodName.Match(klassName);
-                            ret = ret.Insert(0, match.Groups[2].Value);
+                            if (match.Success)
+                                ret = ret.Insert(0, match.Groups[2].Value);
                         }
                         else
                         {
@@ -1983,7 +1984,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (fieldName.EndsWith("__this", StringComparison.Ordinal))
                 {
                     asyncLocal["name"] = "this";
-                    asyncLocalsFull.Add(asyncLocal);
                 }
                 else if (IsClosureReferenceField(fieldName)) //same code that has on debugger-libs
                 {
@@ -1997,6 +1997,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
                     }
+                    continue;
                 }
                 else if (fieldName.StartsWith("<>", StringComparison.Ordinal)) //examples: <>t__builder, <>1__state
                 {
@@ -2011,13 +2012,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             continue;
                         asyncLocal["name"] = match.Groups[1].Value;
                     }
-                    asyncLocalsFull.Add(asyncLocal);
                 }
                 //VB language
                 else if (fieldName.StartsWith("$VB$Local_", StringComparison.Ordinal))
                 {
                     asyncLocal["name"] = fieldName.Remove(0, 10);
-                    asyncLocalsFull.Add(asyncLocal);
                 }
                 else if (fieldName.StartsWith("$VB$ResumableLocal_", StringComparison.Ordinal))
                 {
@@ -2028,16 +2027,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                             continue;
                         asyncLocal["name"] = match.Groups[1].Value;
                     }
-                    asyncLocalsFull.Add(asyncLocal);
                 }
                 else if (fieldName.StartsWith("$"))
                 {
                     continue;
                 }
-                else
-                {
-                    asyncLocalsFull.Add(asyncLocal);
-                }
+                asyncLocalsFull.Add(asyncLocal);
             }
             return asyncLocalsFull;
         }
