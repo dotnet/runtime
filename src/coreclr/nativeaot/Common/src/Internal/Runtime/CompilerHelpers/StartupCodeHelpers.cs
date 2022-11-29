@@ -132,7 +132,7 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
-                Debug.Assert(length % IntPtr.Size == 0);
+                Debug.Assert(length % (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint)) == 0);
 
                 object[] spine = InitializeStatics(staticsSection, length);
 
@@ -170,32 +170,40 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void RunInitializers(TypeManagerHandle typeManager, ReadyToRunSectionType section)
         {
-            var initializers = (delegate*<void>*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
-            Debug.Assert(length % IntPtr.Size == 0);
-            int count = length / IntPtr.Size;
-            for (int i = 0; i < count; i++)
+            var pInitializers = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
+            Debug.Assert(length % (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint)) == 0);
+
+            for (byte* pCurrent = pInitializers;
+                pCurrent < (pInitializers + length);
+                pCurrent += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
             {
-                initializers[i]();
+                var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)ReadRelPtr32(pCurrent) : (delegate*<void>)pCurrent;
+                initializer();
             }
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
         }
 
         private static unsafe object[] InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
-            IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
+            byte* gcStaticRegionEnd = (byte*)gcStaticRegionStart + length;
 
-            object[] spine = new object[length / IntPtr.Size];
+            object[] spine = new object[length / (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))];
 
             ref object rawSpineData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(spine).Data);
 
             int currentBase = 0;
-            for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
+            for (byte* block = (byte*)gcStaticRegionStart;
+                block < gcStaticRegionEnd;
+                block += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
-                IntPtr* pBlock = (IntPtr*)*block;
-                nint blockAddr = *pBlock;
+                IntPtr* pBlock = MethodTable.SupportsRelativePointers ? (IntPtr*)ReadRelPtr32(block) : *(IntPtr**)block;
+                nint blockAddr = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
                 if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
                     object? obj = null;
@@ -215,7 +223,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // which are pointer relocs to GC objects in frozen segment.
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
-                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
                         RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
@@ -231,6 +239,9 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return spine;
+
+            static void* ReadRelPtr32(void* address)
+                => (byte*)address + *(int*)address;
         }
 
         private static unsafe void RehydrateData(IntPtr dehydratedData, int length)

@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -2213,17 +2214,24 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
             Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
 
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
+
             if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
+                if (field.HasRva)
+                {
+                    return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+                }
+
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
                 {
@@ -2234,6 +2242,7 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
+                        Debug.Assert(valueOffset == 0);
                         Debug.Assert(bufferSize == targetPtrSize);
 
                         // Write "null" to buffer
@@ -2246,13 +2255,15 @@ namespace Internal.JitInterface
                         switch (data)
                         {
                             case byte[] bytes:
-                                Debug.Assert(bufferSize == bytes.Length);
-
-                                // Ensure we have enough room in the buffer, it can be a large struct
-                                bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
-                                return true;
+                                if (bytes.Length >= bufferSize && valueOffset <= bytes.Length - bufferSize)
+                                {
+                                    bytes.AsSpan(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                                    return true;
+                                }
+                                return false;
 
                             case FrozenObjectNode or FrozenStringNode:
+                                Debug.Assert(valueOffset == 0);
                                 Debug.Assert(bufferSize == targetPtrSize);
 
                                 // save handle's value to buffer

@@ -39,7 +39,7 @@ namespace Sample
             Console.WriteLine($"WaitForCompletion started on thread {Thread.CurrentThread.ManagedThreadId}");
             await comp.Completion;
             Console.WriteLine($"WaitForCompletion completed on thread {Thread.CurrentThread.ManagedThreadId}");
-            UpdateProgress("✌︎");
+            UpdateProgress("\u270C\uFE0E");
         }
 
         [JSExport]
@@ -112,7 +112,7 @@ public class Demo
         private readonly Action<string> _updateProgress;
         private int _counter = 0;
 
-        private readonly IReadOnlyList<string> _animations = new string[] { "⚀", "⚁", "⚂", "⚃", "⚄", "⚅" };
+        private readonly IReadOnlyList<string> _animations = new string[] { "\u2680", "\u2681", "\u2682", "\u2683", "\u2684", "\u2685" };
 
         public void Step(string suffix = "")
         {

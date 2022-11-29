@@ -305,8 +305,10 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
+#pragma warning disable 8500 // sizeof of managed types
+            if (checked(ofs + sizeof(T)) > size)
                 throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
@@ -384,8 +386,10 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
+#pragma warning disable 8500 // sizeof of managed types
+            if (checked(ofs + sizeof(T)) > size)
                 throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
