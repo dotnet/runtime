@@ -109,18 +109,6 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-        public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
-        }
-
-        public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
-        }
-
 #if FEATURE_UNIVERSAL_GENERICS
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
