@@ -9524,11 +9524,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
-
-                        // TODO-ADDR: use FIELD_ADDR for all fields, not just those of classes.
-                        //
-                        if (isLoadAddress && ((typeFlags & CORINFO_FLG_VALUECLASS) == 0))
+                        if (isLoadAddress)
                         {
                             op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
                                                      obj, fieldInfo.offset);
@@ -9550,15 +9546,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        if (StructHasOverlappingFields(typeFlags))
+                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
                             op1->AsField()->gtFldMayOverlap = true;
-                        }
-
-                        // Wrap it in a address of operator if necessary.
-                        if (isLoadAddress && op1->OperIs(GT_FIELD))
-                        {
-                            op1 = gtNewOperNode(GT_ADDR, varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, op1);
                         }
 
                         if (!isLoadAddress && compIsForInlining() &&
@@ -12938,41 +12928,27 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 // Remarks:
 //   This is a variant of GenTree::IsLocalAddrExpr that is more suitable for
-//   use during import. Unlike that function, this one handles GT_FIELD nodes.
+//   use during import. Unlike that function, this one handles field nodes.
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    if (tree->gtOper != GT_ADDR)
-    {
-        return false;
-    }
-
-    GenTree* op = tree->AsOp()->gtOp1;
-    while (op->gtOper == GT_FIELD)
+    const GenTree* op = tree;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsField()->IsInstance())
     {
         op = op->AsField()->GetFldObj();
-        if (op && op->gtOper == GT_ADDR) // Skip static fields where op will be NULL.
-        {
-            op = op->AsOp()->gtOp1;
-        }
-        else
-        {
-            return false;
-        }
     }
 
-    if (op->gtOper == GT_LCL_VAR)
+    if (op->OperIs(GT_ADDR) && op->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
         if (lclVarTreeOut != nullptr)
         {
-            *lclVarTreeOut = op;
+            *lclVarTreeOut = op->AsUnOp()->gtOp1;
         }
+
         return true;
     }
-    else
-    {
-        return false;
-    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
