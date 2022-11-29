@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,8 +20,13 @@ internal sealed class IcallTableGenerator
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
+    private readonly Func<string, string> _fixupSymbolName;
 
-    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
+    public IcallTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
+    {
+        Log = log;
+        _fixupSymbolName = fixupSymbolName;
+    }
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
