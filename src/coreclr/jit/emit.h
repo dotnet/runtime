@@ -2181,6 +2181,7 @@ private:
 
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
+    instrDesc* emitPrevLastIns;
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //

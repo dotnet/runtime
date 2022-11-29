@@ -1038,6 +1038,11 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
+        // Make a copy of "emitLastIns", to be used in the event that a future
+        // optimisation call for the removal of a previously-emitted instruction.
+
+        emitPrevLastIns = emitLastIns;
+
         emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
         emitLastInsIG = ig;
     }
@@ -1188,8 +1193,9 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns   = nullptr;
-    emitLastInsIG = nullptr;
+    emitLastIns     = nullptr;
+    emitLastInsIG   = nullptr;
+    emitPrevLastIns = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1509,6 +1515,11 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     }
 
     /* Grab the space for the instruction */
+
+    // Make a copy of "emitLastIns", to be used in the event that a future
+    // optimisation calls for the removal of a previously-emitted instruction.
+
+    emitPrevLastIns = emitLastIns;
 
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitLastInsIG    = emitCurIG;
@@ -8656,7 +8667,6 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
         // printf("[IG=%02u;ID=%03u;OF=%04X] <= %08X\n", ig->igNum, emitGetInsNumFromCodePos(codePos), of, codePos);
 
         /* Make sure the offset estimate is accurate */
-
         assert(of == emitFindOffset(ig, emitGetInsNumFromCodePos(codePos)));
     }
 
@@ -9144,7 +9154,8 @@ void emitter::emitRemoveLastInstruction()
         assert(emitCurIGinsCnt >= 1);
         assert(emitCurIGsize >= emitLastIns->idCodeSize());
 
-        size_t insSize    = emitCurIGfreeNext - (BYTE*)lastInsActualStartAddr;
+        size_t insSize = emitCurIGfreeNext - (BYTE*)lastInsActualStartAddr;
+
         emitCurIGfreeNext = (BYTE*)lastInsActualStartAddr;
         emitCurIGinsCnt -= 1;
         emitCurIGsize -= emitLastIns->idCodeSize();
@@ -9167,8 +9178,11 @@ void emitter::emitRemoveLastInstruction()
         // but it's not necessary, and leaving it might be useful for debugging.
     }
 
-    // We no longer know what the previous instruction is.
-    emitLastIns = nullptr;
+    // As we are removing the instruction, so we need to wind back
+    // "emitLastIns" to its previous value.
+
+    emitLastIns     = emitPrevLastIns;
+    emitPrevLastIns = nullptr;
 }
 
 /*****************************************************************************
