@@ -44,7 +44,7 @@ MONO_API int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned 
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
 	void** delegate);
 
-MONO_API int  coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer);
+MONO_API int STDAPICALLTYPE coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer);
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
