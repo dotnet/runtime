@@ -103,7 +103,7 @@ namespace WebAssemblyInfo
             } while (true);
 
             if (Program.Verbose)
-                Console.Write($"    segments detected: {list.Count} zero bytes stripped: {stripped}");
+                Console.Write($"    segments detected: {list.Count:N0} zero bytes stripped: {stripped:N0}");
 
             return list;
         }
