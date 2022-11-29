@@ -12,7 +12,7 @@
   <!-- Analyzer package properties -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
+    <!--PackageId>Microsoft.NET.ILLink.Analyzers</PackageId-->
     <Authors>Microsoft</Authors>
     <Description>Analyzer utilities for ILLink attributes and single-file</Description>
     <NoPackageAnalysis>true</NoPackageAnalysis>
