@@ -6018,7 +6018,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
                 DWORD cns = (DWORD)GetConstantInt32(arg0VN);
                 DWORD bsr = 0;
                 BitScanReverse(&bsr, cns);
-                return VNForIntCon(cns == 0 ? 0 : 31 - bsr);
+                return VNForIntCon(cns == 0 ? 32 : 31 - bsr);
             }
 
 #ifdef TARGET_ARM64
@@ -6030,7 +6030,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
                 DWORD64 cns = (DWORD64)GetConstantInt64(arg0VN);
                 DWORD   bsr = 0;
                 BitScanReverse64(&bsr, cns);
-                return VNForIntCon(cns == 0 ? 0 : 63 - bsr);
+                return VNForIntCon(cns == 0 ? 64 : 63 - bsr);
             }
 
             default:
