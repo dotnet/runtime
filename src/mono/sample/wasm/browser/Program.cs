@@ -14,7 +14,7 @@ namespace Sample
 
         public static int Main(string[] args)
         {
-            Console.WriteLine($"MF .NET, args({args.Length}): {String.Join(", ", args)}, static location: '{Location}', location: '{GetLocation()}', created: '{Created.ToString("yyyy-MM-dd HH:mm:ss")}'");
+            Console.WriteLine($".NET, args({args.Length}): {String.Join(", ", args)}, static location: '{Location}', location: '{GetLocation()}', created: '{Created.ToString("yyyy-MM-dd HH:mm:ss")}'");
             return 0;
         }
 
@@ -22,6 +22,6 @@ namespace Sample
         internal static partial string GetLocation();
 
         [JSExport]
-        internal static string Greet() => "MF JSExport";
+        internal static string Greet() => "JSExport";
     }
 }
