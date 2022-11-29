@@ -5677,8 +5677,7 @@ void emitter::emitIns_R_R_I(
             return;
         }
 
-        // If we have replaced an LDR or STR instruction with
-        // an LDP or STP then we do not want to carry on to
+        // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
         // emit the second instruction.
         if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
         {
@@ -6913,7 +6912,9 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(!"Instruction cannot be encoded: Add/Sub IF_DR_3A");
         }
     }
+
     assert(fmt != IF_NONE);
+
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
@@ -6942,7 +6943,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
-
 }
 
 /*****************************************************************************
@@ -9930,6 +9930,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // Backward branches using instruction count must be within the same instruction group.
             assert(insNum + 1 >= (unsigned)(-instrCount));
         }
+
         dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
         dstAddr = emitOffsetToPtr(dstOffs);
     }
@@ -16170,51 +16171,56 @@ bool emitter::IsRedundantLdStr(
 bool emitter::ReplacedLdrStr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    if (emitComp->opts.OptimizationEnabled())
+    if (!emitComp->opts.OptimizationEnabled())
     {
-        RegisterOrder optimizationOrder = IsOptimizableLdrStr(ins, reg1, reg2, imm, size, fmt);
+        return false;
+    }
 
-        if (optimizationOrder != eRO_none)
+    // Register 2 needs conversion to unencoded value.
+    reg2 = encodingZRtoSP(reg2);
+
+    RegisterOrder optimizationOrder = IsOptimizableLdrStr(ins, reg1, reg2, imm, size, fmt);
+
+    if (optimizationOrder != eRO_none)
+    {
+        regNumber oldReg1 = emitLastIns->idReg1();
+
+        ssize_t     oldImm = emitGetInsSC(emitLastIns);
+        instruction optIns = (ins == INS_ldr) ? INS_ldp : INS_stp;
+
+        emitAttr oldReg1Attr;
+        switch (emitLastIns->idGCref())
         {
-            regNumber oldReg1 = emitLastIns->idReg1();
-
-            ssize_t     oldImm       = emitGetInsSC(emitLastIns);
-            instruction optIns       = (ins == INS_ldr) ? INS_ldp : INS_stp;
-            ssize_t     scaledOldImm = oldImm * size;
-
-            emitAttr oldReg1Attr;
-            switch (emitLastIns->idGCref())
-            {
-                case GCT_GCREF:
-                    oldReg1Attr = EA_GCREF;
-                    break;
-                case GCT_BYREF:
-                    oldReg1Attr = EA_BYREF;
-                    break;
-                default:
-                    oldReg1Attr = emitLastIns->idOpSize();
-                    break;
-            }
-
-            // Remove the last instruction written.
-            emitRemoveLastInstruction();
-
-            // Overwrite the "sub-optimal" instruction with the *optimised* instruction, directly
-            // into the output buffer.
-            if (optimizationOrder == eRO_ascending)
-            {
-                // The FIRST register is at the lower offset
-                emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
-            }
-            else
-            {
-                // The SECOND register is at the lower offset
-                emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
-            }
-
-            // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
-            return true;
+            case GCT_GCREF:
+                oldReg1Attr = EA_GCREF;
+                break;
+            case GCT_BYREF:
+                oldReg1Attr = EA_BYREF;
+                break;
+            default:
+                oldReg1Attr = emitLastIns->idOpSize();
+                break;
         }
+
+        // Remove the last instruction written.
+        emitRemoveLastInstruction();
+
+        // We need to scale the immediate value by the operand size.
+        // This is either the "old" immediate (for ascending) or the
+        // "current" immediate (for descending) register order.
+        if (optimizationOrder == eRO_ascending)
+        {
+            // The FIRST register is at the lower offset
+            emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
+        }
+        else
+        {
+            // The SECOND register is at the lower offset
+            emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
+        }
+
+        // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
+        return true;
     }
 
     return false;
@@ -16224,10 +16230,16 @@ bool emitter::ReplacedLdrStr(
 // IsOptimizableLdrStr: Check if it is possible to optimize two "ldr" or "str"
 //                      instructions into a single "ldp" or "stp" instruction.
 //
+// Examples:            ldr     w1, [x20, #0x10]
+//                      ldr     w2, [x20, #0x14]    =>  ldp     w1, w2, [x20, #0x10]
+//
+//                      ldr     w1, [x20, #0x14]
+//                      ldr     w2, [x20, #0x10]    =>  ldp     w2, w1, [x20, #0x10]
+//
 // Arguments:
 //     ins  - The instruction code
 //     reg1 - Register 1 number
-//     reg2 - Encoded register 2 number
+//     reg2 - Register 2 number
 //     imm  - Immediate offset, prior to scaling by operand size
 //     size - Operand size
 //     fmt  - Instruction format
@@ -16240,8 +16252,8 @@ bool emitter::ReplacedLdrStr(
 emitter::RegisterOrder emitter::IsOptimizableLdrStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-    RegisterOrder optimisationOrder = eRO_none;
+    bool          isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    RegisterOrder optimisationOrder   = eRO_none;
 
     if (((ins != INS_ldr) && (ins != INS_str)) || isFirstInstrInBlock || (emitLastIns == nullptr))
     {
@@ -16251,12 +16263,6 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
     if (ins != emitLastIns->idIns())
     {
         // Not successive ldr or str instructions
-        return eRO_none;
-    }
-
-    if (emitSizeOfInsDsc(emitLastIns) != sizeof(instrDesc))
-    {
-        // Not instruction descriptors of the same, standard size.
         return eRO_none;
     }
 
@@ -16287,6 +16293,12 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
         return eRO_none;
     }
 
+    if ((emitInsIsLoad(ins)) && (prevReg1 == prevReg2))
+    {
+        // Then the previous load overwrote the register that we are indexing against.
+        return eRO_none;
+    }
+
     if ((emitInsIsLoad(ins)) && (reg1 == prevReg1))
     {
         // Cannot load to the same register twice.
@@ -16309,7 +16321,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
     }
     else if (imm == (prevImm - 1))
     {
-        // Previous Register 1 is at a loker offset than This Register 1
+        // Previous Register 1 is at a lower offset than This Register 1
         optimisationOrder = eRO_descending;
     }
     else
@@ -16324,6 +16336,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
         // pointer.
         return eRO_none;
     }
+
     return optimisationOrder;
 }
 
