@@ -234,7 +234,7 @@ internal sealed class PInvokeTableGenerator
 
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = FixupSymbolName(module) + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
@@ -255,7 +255,7 @@ internal sealed class PInvokeTableGenerator
         w.Write("static void *pinvoke_tables[] = { ");
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = FixupSymbolName(module) + "_imports";
             w.Write(symbol + ",");
         }
         w.WriteLine("};");
@@ -265,18 +265,6 @@ internal sealed class PInvokeTableGenerator
             w.Write("\"" + module + "\"" + ",");
         }
         w.WriteLine("};");
-
-        static string ModuleNameToId(string name)
-        {
-            if (name.IndexOfAny(s_charsToReplace) < 0)
-                return name;
-
-            string fixedName = name;
-            foreach (char c in s_charsToReplace)
-                fixedName = fixedName.Replace(c, '_');
-
-            return fixedName;
-        }
 
         static bool ShouldTreatAsVariadic(PInvoke[] candidates)
         {
