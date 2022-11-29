@@ -1478,6 +1478,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77334")]
         public async Task JsImportTaskTypes()
         {
             object a = new object();
