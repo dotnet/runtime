@@ -22,7 +22,7 @@
 #define ENUM_BUFFER_SIZE 10
 #define TAB_SIZE 8
 
-#define ISFLAG(p,x) if (Is##p##x(flags)) strcat_s(sFlags,STRING_BUFFER_LEN, "["#x "] ");
+#define ISFLAG(p,x) if (Is##p##x(flags)) strcat_s(szTempBuf,STRING_BUFFER_LEN, "["#x "] ");
 
 extern HRESULT  _FillVariant(
     BYTE        bCPlusTypeFlag,
@@ -876,9 +876,9 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
 
     VWriteLine("\t\tMethodName: %s (%8.8X)", ConvertToUtf8(memberName, memberNameUtf8, ARRAY_SIZE(memberNameUtf8)), inMethod);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Md, Public);
     ISFLAG(Md, Private);
     ISFLAG(Md, Family);
@@ -897,22 +897,22 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
     ISFLAG(Md, RTSpecialName);
     ISFLAG(Md, PinvokeImpl);
     ISFLAG(Md, UnmanagedExport);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
     bool result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".ctor")));
-    if (result) strcat_s(sFlags, STRING_BUFFER_LEN, "[.ctor] ");
+    if (result) strcat_s(szTempBuf, STRING_BUFFER_LEN, "[.ctor] ");
     result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".cctor")));
-    if (result) strcat_s(sFlags,STRING_BUFFER_LEN, "[.cctor] ");
+    if (result) strcat_s(szTempBuf,STRING_BUFFER_LEN, "[.cctor] ");
     // "Reserved" flags
     ISFLAG(Md, HasSecurity);
     ISFLAG(Md, RequireSecObject);
 
-    VWriteLine("\t\tFlags     : %s (%08x)", sFlags, flags);
+    VWriteLine("\t\tFlags     : %s (%08x)", szTempBuf, flags);
     VWriteLine("\t\tRVA       : 0x%08x", ulCodeRVA);
 
     flags = ulImplFlags;
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Mi, Native);
     ISFLAG(Mi, IL);
     ISFLAG(Mi, OPTIL);
@@ -924,10 +924,10 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
     ISFLAG(Mi, InternalCall);
     ISFLAG(Mi, Synchronized);
     ISFLAG(Mi, NoInlining);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\t\tImplFlags : %s (%08x)", sFlags, flags);
+    VWriteLine("\t\tImplFlags : %s (%08x)", szTempBuf, flags);
 
     if (ulSigBlob)
         DisplaySignature(pbSigBlob, ulSigBlob, "");
@@ -971,9 +971,9 @@ void MDInfo::DisplayFieldInfo(mdFieldDef inField, DWORD *pdwFlags)
     _FillVariant((BYTE)dwCPlusTypeFlag, pValue, cbValue, &defaultValue);
 #endif
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Fd, Public);
     ISFLAG(Fd, Private);
     ISFLAG(Fd, Family);
@@ -990,14 +990,14 @@ void MDInfo::DisplayFieldInfo(mdFieldDef inField, DWORD *pdwFlags)
     ISFLAG(Fd, PinvokeImpl);
     // "Reserved" flags
     ISFLAG(Fd, HasDefault);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
     VWriteLine("\t\tField Name: %s (%8.8X)", ConvertToUtf8(memberName, memberNameUtf8, ARRAY_SIZE(memberNameUtf8)), inField);
-    VWriteLine("\t\tFlags     : %s (%08x)", sFlags, flags);
+    VWriteLine("\t\tFlags     : %s (%08x)", szTempBuf, flags);
 #ifdef FEATURE_COMINTEROP
     if (IsFdHasDefault(flags))
-        VWriteLine("\tDefltValue: (%s) %s", g_szMapElementType[dwCPlusTypeFlag], VariantAsString(&defaultValue));
+        VWriteLine("\tDefltValue: (%s) %s", g_szMapElementType[dwCPlusTypeFlag], VariantAsString(&defaultValue, szTempBuf, ARRAY_SIZE(szTempBuf)));
 #endif
     if (!ulSigBlob) // Signature size should be non-zero for fields
         VWriteLine("\t\tERROR: no valid signature ");
@@ -1195,22 +1195,22 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
 #endif
 
-    char sFlags[STRING_BUFFER_LEN];
-    sFlags[0] = 0;
+    char szTempBuf[STRING_BUFFER_LEN];
+    szTempBuf[0] = 0;
     ISFLAG(Pd, In);
     ISFLAG(Pd, Out);
     ISFLAG(Pd, Optional);
     // "Reserved" flags.
     ISFLAG(Pd, HasDefault);
     ISFLAG(Pd, HasFieldMarshal);
-    if (!*sFlags)
-        strcpy_s(sFlags,STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf,STRING_BUFFER_LEN, "[none]");
 
     VWrite("\t\t\t(%ld) ParamToken : (%08x) Name : %s flags: %s (%08x)",
-        num, inParamDef, ConvertToUtf8(paramName, paramNameUtf8, ARRAY_SIZE(paramNameUtf8)), sFlags, flags);
+        num, inParamDef, ConvertToUtf8(paramName, paramNameUtf8, ARRAY_SIZE(paramNameUtf8)), szTempBuf, flags);
 #ifdef FEATURE_COMINTEROP
     if (IsPdHasDefault(flags))
-        VWriteLine(" Default: (%s) %s", g_szMapElementType[dwCPlusFlags], VariantAsString(&defValue));
+        VWriteLine(" Default: (%s) %s", g_szMapElementType[dwCPlusFlags], VariantAsString(&defValue, szTempBuf, ARRAY_SIZE(szTempBuf)));
     else
 #endif
         VWriteLine("");
@@ -1415,11 +1415,10 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
         &extends);              // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr)) Error("GetTypeDefProps failed.", hr);
 
-    char sFlags[STRING_BUFFER_LEN];
     char szTempBuf[STRING_BUFFER_LEN];
 
     VWriteLine("\tTypDefName: %s  (%8.8X)",ConvertToUtf8(typeDefName, typeDefNameUtf8, ARRAY_SIZE(typeDefNameUtf8)),inTypeDef);
-    VWriteLine("\tFlags     : %s (%08x)",ClassFlags(flags, sFlags), flags);
+    VWriteLine("\tFlags     : %s (%08x)",ClassFlags(flags, szTempBuf), flags);
     VWriteLine("\tExtends   : %8.8X [%s] %s",extends,TokenTypeName(extends),
                                  TypeDeforRefName(extends, szTempBuf, ARRAY_SIZE(szTempBuf)));
 
@@ -1557,9 +1556,9 @@ void MDInfo::DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix)
 // associated with the class.
 //
 
-char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags)
+char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *szTempBuf)
 {
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Td, NotPublic);
     ISFLAG(Td, Public);
     ISFLAG(Td, NestedPublic);
@@ -1587,10 +1586,10 @@ char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFla
     ISFLAG(Td, RTSpecialName);
     ISFLAG(Td, HasSecurity);
     ISFLAG(Td, WindowsRuntime);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    return sFlags;
+    return szTempBuf;
 } // char *MDInfo::ClassFlags()
 
 // prints out all info on the given typeDef, including all information that
@@ -1728,27 +1727,25 @@ void MDInfo::DisplayPropertyInfo(mdProperty inProp)
 
     VWriteLine("\t\tProp.Name : %s (%8.8X)",ConvertToUtf8(propName, propNameUtf8, ARRAY_SIZE(propNameUtf8)),inProp);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Pr, SpecialName);
     ISFLAG(Pr, RTSpecialName);
     ISFLAG(Pr, HasDefault);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\t\tFlags     : %s (%08x)", sFlags, flags);
+    VWriteLine("\t\tFlags     : %s (%08x)", szTempBuf, flags);
 
     if (ulSigBlob)
         DisplaySignature(pbSigBlob, ulSigBlob, "");
     else
         VWriteLine("\t\tERROR: no valid signature ");
 
-    char szTempBuf[STRING_BUFFER_LEN];
-
 #ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusTypeFlag, pValue, cbValue, &defaultValue);
-    VWriteLine("\t\tDefltValue: %s",VariantAsString(&defaultValue));
+    VWriteLine("\t\tDefltValue: %s",VariantAsString(&defaultValue, szTempBuf, ARRAY_SIZE(szTempBuf)));
 #endif
 
     VWriteLine("\t\tSetter    : (%08x) %s",setter,MemberDeforRefName(setter, szTempBuf, ARRAY_SIZE(szTempBuf)));
@@ -1828,17 +1825,15 @@ void MDInfo::DisplayEventInfo(mdEvent inEvent)
 
     VWriteLine("\t\tName      : %s (%8.8X)",ConvertToUtf8(eventName, eventNameUtf8, ARRAY_SIZE(eventNameUtf8)),inEvent);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Ev, SpecialName);
     ISFLAG(Ev, RTSpecialName);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\t\tFlags     : %s (%08x)", sFlags, flags);
-
-    char szTempBuf[STRING_BUFFER_LEN];
+    VWriteLine("\t\tFlags     : %s (%08x)", szTempBuf, flags);
     VWriteLine("\t\tEventType : %8.8X [%s]",eventType,TokenTypeName(eventType));
     VWriteLine("\t\tAddOnMethd: (%08x) %s",addOn,MemberDeforRefName(addOn, szTempBuf, ARRAY_SIZE(szTempBuf)));
     VWriteLine("\t\tRmvOnMethd: (%08x) %s",removeOn,MemberDeforRefName(removeOn, szTempBuf, ARRAY_SIZE(szTempBuf)));
@@ -2198,35 +2193,29 @@ LPCSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPSTR guidString, 
 } // LPCSTR MDInfo::GUIDAsString()
 
 #ifdef FEATURE_COMINTEROP
-LPCWSTR MDInfo::VariantAsString(VARIANT *pVariant)
+LPCSTR MDInfo::VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen)
 {
     HRESULT hr = S_OK;
     if (V_VT(pVariant) == VT_UNKNOWN)
     {
         _ASSERTE(V_UNKNOWN(pVariant) == NULL);
-        return W("<NULL>");
+        return "<NULL>";
     }
     else if (SUCCEEDED(hr = ::VariantChangeType(pVariant, pVariant, 0, VT_BSTR)))
-        return V_BSTR(pVariant);
+    {
+        return ConvertToUtf8(V_BSTR(pVariant), buffer, bufLen);
+    }
     else if (hr == DISP_E_BADVARTYPE && V_VT(pVariant) == VT_I8)
     {
-        // allocate the bstr.
-        char    szStr[32];
-        WCHAR   wszStr[32];
         // Set variant type to bstr.
         V_VT(pVariant) = VT_BSTR;
-        // Create the ansi string.
-        sprintf_s(szStr, 32, "%lld", V_CY(pVariant).int64);
-        // Convert to unicode.
-        WszMultiByteToWideChar(CP_ACP, 0, szStr, -1, wszStr, 32);
-        // convert to bstr and set variant value.
-        V_BSTR(pVariant) = ::SysAllocString(wszStr);
-        if (V_BSTR(pVariant) == NULL)
-            Error("SysAllocString() failed.", E_OUTOFMEMORY);
-        return V_BSTR(pVariant);
+        sprintf_s(buffer, bufLen, "%lld", V_CY(pVariant).int64);
+        return buffer;
     }
     else
-        return W("ERROR");
+    {
+        return "ERROR";
+    }
 
 } // LPSTR MDInfo::VariantAsString()
 #endif
@@ -2500,7 +2489,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
     char rcImportUtf8[ARRAY_SIZE(rcImport) * 3];
     mdModuleRef tkModuleRef;
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
 
     hr = m_pImport->GetPinvokeMap(inToken, &flags, rcImport,
                                   ARRAY_SIZE(rcImport), 0, &tkModuleRef);
@@ -2515,7 +2504,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
     VWriteLine("\t\tEntry point:      %s", ConvertToUtf8(rcImport, rcImportUtf8, ARRAY_SIZE(rcImportUtf8)));
     VWriteLine("\t\tModule ref:       %08x", tkModuleRef);
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Pm, NoMangle);
     ISFLAG(Pm, CharSetNotSpec);
     ISFLAG(Pm, CharSetAnsi);
@@ -2534,10 +2523,10 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
     ISFLAG(Pm, ThrowOnUnmappableCharEnabled);
     ISFLAG(Pm, ThrowOnUnmappableCharDisabled);
     ISFLAG(Pm, ThrowOnUnmappableCharUseAssem);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\t\tMapping flags:    %s (%08x)", sFlags, flags);
+    VWriteLine("\t\tMapping flags:    %s (%08x)", szTempBuf, flags);
 }   // void MDInfo::DisplayPinvokeInfo()
 
 
@@ -3135,18 +3124,18 @@ void MDInfo::DisplayAssemblyInfo()
     if(MetaData.rProcessor) delete [] MetaData.rProcessor;
     if(MetaData.rOS) delete [] MetaData.rOS;
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
     DWORD flags = dwFlags;
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Af, PublicKey);
     ISFLAG(Af, Retargetable);
     ISFLAG(AfContentType_, WindowsRuntime);
 
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\tFlags : %s (%08x)", sFlags, dwFlags);
+    VWriteLine("\tFlags : %s (%08x)", szTempBuf, dwFlags);
     DisplayCustomAttributes(mda, "\t");
     DisplayPermissions(mda, "\t");
     WriteLine("");
@@ -3223,10 +3212,10 @@ void MDInfo::DisplayAssemblyRefInfo(mdAssemblyRef inAssemblyRef)
     if(MetaData.rOS) delete [] MetaData.rOS;
     DumpHex("\tHashValue Blob", pbHashValue, cbHashValue, false, 24);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
     DWORD flags = dwFlags;
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Af, PublicKey);
     ISFLAG(Af, Retargetable);
     ISFLAG(AfContentType_, WindowsRuntime);
@@ -3236,10 +3225,10 @@ void MDInfo::DisplayAssemblyRefInfo(mdAssemblyRef inAssemblyRef)
     ISFLAG(Af, Library);
     ISFLAG(Af, Platform);
 #endif
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\tFlags: %s (%08x)", sFlags, dwFlags);
+    VWriteLine("\tFlags: %s (%08x)", szTempBuf, dwFlags);
     DisplayCustomAttributes(inAssemblyRef, "\t");
     WriteLine("");
 }   // void MDInfo::DisplayAssemblyRefInfo()
@@ -3286,16 +3275,16 @@ void MDInfo::DisplayFileInfo(mdFile inFile)
     VWriteLine("\tName : %s", ConvertToUtf8(szName, szNameUtf8, ARRAY_SIZE(szNameUtf8)));
     DumpHex("\tHashValue Blob ", pbHashValue, cbHashValue, false, 24);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
     DWORD flags = dwFlags;
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Ff, ContainsMetaData);
     ISFLAG(Ff, ContainsNoMetaData);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\tFlags : %s (%08x)", sFlags, dwFlags);
+    VWriteLine("\tFlags : %s (%08x)", szTempBuf, dwFlags);
     DisplayCustomAttributes(inFile, "\t");
     WriteLine("");
 
@@ -3332,7 +3321,7 @@ void MDInfo::DisplayExportedTypeInfo(mdExportedType inExportedType)
     mdToken         tkImplementation;
     mdTypeDef       tkTypeDef;
     DWORD           dwFlags;
-    char            sFlags[STRING_BUFFER_LEN];
+    char            szTempBuf[STRING_BUFFER_LEN];
 
     VWriteLine("\tToken: 0x%08x", inExportedType);
 
@@ -3345,7 +3334,7 @@ void MDInfo::DisplayExportedTypeInfo(mdExportedType inExportedType)
     VWriteLine("\tName: %s", ConvertToUtf8(szName, szNameUtf8, ARRAY_SIZE(szNameUtf8)));
     VWriteLine("\tImplementation token: 0x%08x", tkImplementation);
     VWriteLine("\tTypeDef token: 0x%08x", tkTypeDef);
-    VWriteLine("\tFlags     : %s (%08x)",ClassFlags(dwFlags, sFlags), dwFlags);
+    VWriteLine("\tFlags     : %s (%08x)",ClassFlags(dwFlags, szTempBuf), dwFlags);
     DisplayCustomAttributes(inExportedType, "\t");
     WriteLine("");
 }   // void MDInfo::DisplayExportedTypeInfo()
@@ -3394,16 +3383,16 @@ void MDInfo::DisplayManifestResourceInfo(mdManifestResource inManifestResource)
     VWriteLine("Implementation token: 0x%08x", tkImplementation);
     VWriteLine("Offset: 0x%08x", dwOffset);
 
-    char sFlags[STRING_BUFFER_LEN];
+    char szTempBuf[STRING_BUFFER_LEN];
     DWORD flags = dwFlags;
 
-    sFlags[0] = 0;
+    szTempBuf[0] = 0;
     ISFLAG(Mr, Public);
     ISFLAG(Mr, Private);
-    if (!*sFlags)
-        strcpy_s(sFlags, STRING_BUFFER_LEN, "[none]");
+    if (!*szTempBuf)
+        strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    VWriteLine("\tFlags: %s (%08x)", sFlags, dwFlags);
+    VWriteLine("\tFlags: %s (%08x)", szTempBuf, dwFlags);
     DisplayCustomAttributes(inManifestResource, "\t");
     WriteLine("");
 }   // void MDInfo::DisplayManifestResourceInfo()

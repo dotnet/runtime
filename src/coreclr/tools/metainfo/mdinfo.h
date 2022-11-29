@@ -46,7 +46,7 @@ public:
 
 private:
 #ifdef FEATURE_COMINTEROP
-    LPCWSTR VariantAsString(VARIANT *pVariant);
+    LPCSTR VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
 #endif
 
     void DisplayVersionInfo(void);
