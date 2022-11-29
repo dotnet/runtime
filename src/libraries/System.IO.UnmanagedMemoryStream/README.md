@@ -8,7 +8,6 @@ This assembly no longer contains any code.  It is provided only to permit type u
 
 ## Contribution Bar
 - [x] We consider changes that move tests from the [tests](tests/) subdirectory into [System.IO.Tests](../System.IO/tests/) project.
-- [x] We encourage you to add new tests in [System.IO.Tests](../System.IO/tests/) project.
 
 ## Deployment
 The System.IO.UnmanagedMemoryStream assembly is part of the shared framework, and ships with every new release of .NET.
