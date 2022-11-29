@@ -3774,20 +3774,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            unsigned             realSize  = retVal->AsIndir()->Size();
-            CORINFO_CLASS_HANDLE structCls = comp->info.compMethodInfo->args.retTypeClass;
-            if (realSize == 0)
-            {
-                // TODO-ADDR: delete once "IND<struct>" nodes are no more
-                realSize = comp->info.compCompHnd->getClassSize(structCls);
-            }
-
-            if (genTypeSize(nativeReturnType) > realSize)
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                comp->lvaSetStruct(tmpNum, structCls, false);
-                comp->genReturnLocal = tmpNum;
+                comp->lvaSetStruct(tmpNum, comp->info.compMethodInfo->args.retTypeClass, false);
+
                 ReplaceWithLclVar(retValUse, tmpNum);
                 LowerRetSingleRegStructLclVar(ret);
                 break;

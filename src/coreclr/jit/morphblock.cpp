@@ -753,21 +753,10 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcVarDsc    = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
-    // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
+    // Verify that the types on the LHS and RHS match.
     assert(m_dst->TypeGet() == m_src->TypeGet());
     if (m_dst->TypeIs(TYP_STRUCT))
     {
-        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
-        if (m_src->OperIs(GT_IND))
-        {
-            m_src->SetOper(m_blockLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
-            m_src->AsBlk()->SetLayout(m_blockLayout);
-            m_src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-            m_src->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
-        }
-
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
     // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
