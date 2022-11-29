@@ -554,7 +554,7 @@ namespace Microsoft.Extensions.Configuration
             return dictionary;
         }
 
-        // Binds and potentially overwrites a concrete dictionary.
+        // Binds and potentially overwrites a dictionary object.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
         // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
@@ -563,7 +563,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindDictionary(
-            object? dictionary,
+            object dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
@@ -594,9 +594,9 @@ namespace Microsoft.Extensions.Configuration
 
 
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
-            PropertyInfo? setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
+            PropertyInfo? indexerProperty  = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
 
-            if (setter is null || !setter.CanWrite)
+            if (indexerProperty is null || !indexerProperty.CanWrite)
             {
                 // Cannot set any item on the dictionary object.
                 return;
@@ -624,7 +624,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
                 catch(Exception ex)
