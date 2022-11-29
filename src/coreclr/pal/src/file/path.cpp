@@ -112,8 +112,6 @@ GetFullPathNameA(
     }
 
     unixPathBuf = unixPath.OpenStringBuffer(unixPath.GetCount());
-    /* do conversion to Unix path */
-    FILEDosToUnixPathA( unixPathBuf );
 
     /* now we can canonicalize this */
     FILECanonicalizePath(unixPathBuf);
@@ -430,57 +428,6 @@ GetTempPathW(
     LOGEXIT("GetTempPathW returns DWORD %u\n", dwRetVal );
     PERF_EXIT(GetTempPathW);
     return dwRetVal;
-}
-
-
-
-/*++
-Function:
-  FileDosToUnixPathA
-
-Abstract:
-  Change a DOS path to a Unix path.
-
-  Replaces '\' by '/'
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void
-FILEDosToUnixPathA(
-       LPSTR lpPath)
-{
-    LPSTR p;
-
-    TRACE("Original DOS path = [%s]\n", lpPath);
-
-    if (!lpPath)
-    {
-        return;
-    }
-
-    for (p = lpPath; *p; p++)
-    {
-        /* Replace \ with / */
-        if (*p == '\\')
-        {
-            *p = '/';
-        }
-    }
-
-    TRACE("Resulting Unix path = [%s]\n", lpPath);
-}
-
-void
-FILEDosToUnixPathA(
-       PathCharString&  lpPath)
-{
-
-    SIZE_T len = lpPath.GetCount();
-    LPSTR lpPathBuf = lpPath.OpenStringBuffer(len);
-    FILEDosToUnixPathA(lpPathBuf);
-    lpPath.CloseBuffer(len);
-
 }
 
 

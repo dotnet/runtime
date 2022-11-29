@@ -3448,9 +3448,6 @@ getFileName(
 
         lpPathFileName.CloseBuffer(length -1);
 
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpTemp);
-
         return TRUE;
     }
     else
@@ -3521,8 +3518,6 @@ getFileName(
         /* restore last character */
         *lpEnd = wcEnd;
 
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpFileName);
         if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
