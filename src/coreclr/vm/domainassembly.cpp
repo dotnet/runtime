@@ -981,7 +981,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
                     *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
                 }
 
-                LOG((LF_CORDB, LL_INFO10, "Assembly %S: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
+                LOG((LF_CORDB, LL_INFO10, "Assembly %s: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
                      DEBUGGABLE_ATTRIBUTE_TYPE_NAME,
                      blob[2], blob[3], *pdwFlags));
             }

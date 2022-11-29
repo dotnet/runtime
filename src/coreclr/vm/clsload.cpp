@@ -375,7 +375,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
                 StackSString codeBase;
                 GetAssembly()->GetCodeBase(codeBase);
 
-                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%ws\"\n", szName, (LPCWSTR)codeBase));
+                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%s\"\n", szName, codeBase.GetUTF8()));
             }
 #endif
 
