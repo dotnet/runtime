@@ -15,8 +15,9 @@ namespace WebAssemblyInfo
         static public bool Verbose { get { return VerboseLevel > 0; } }
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
 
+        public static bool DataSectionAutoSplit = false;
         public static string DataSectionFile = "";
-        public static long DataOffset = 0;
+        public static int DataOffset = 0;
 
         static int Main(string[] args)
         {
@@ -38,12 +39,15 @@ namespace WebAssemblyInfo
                 "Copyright 2022 Microsoft Corporation",
                 "",
                 "Options:",
+                { "a|data-auto-split",
+                    "Split the data segment to avoid long empty chunks with zeroes",
+                    v => DataSectionAutoSplit = true },
                 { "d|data-section=",
                     "Replace the data section with content of the {FILE}",
                     v => DataSectionFile = v },
                 { "o|data-offset=",
                     "Data section offset",
-                    v => { if (!long.TryParse(v, out DataOffset))
+                    v => { if (!int.TryParse(v, out DataOffset))
                             Console.WriteLine("Specify number for data-offset option"); } },
                 { "h|help|?",
                     "Show this message and exit",

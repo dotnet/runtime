@@ -51,30 +51,103 @@ namespace WebAssemblyInfo
             Writer.Write(Reader.ReadBytes((int)section.size + (int)(section.begin - section.offset)));
         }
 
+        struct Chunk
+        {
+            public int index, size;
+        }
+
+        List<Chunk> Split(byte[] data)
+        {
+            int zeroesLen = 9;
+            var list = new List<Chunk>();
+            var span = new ReadOnlySpan<byte>(data);
+            var zeroes = new ReadOnlySpan<byte>(new byte[zeroesLen]);
+            int offset = 0;
+            int stripped = 0;
+
+            do
+            {
+                int index = span.IndexOf(zeroes);
+                if (index == -1)
+                {
+                    if (Program.Verbose2)
+                        Console.WriteLine($"  add last idx: {offset} size: {data.Length - offset} span remaining len: {span.Length}");
+
+                    list.Add(new Chunk { index = offset, size = data.Length - offset });
+                    return list;
+                }
+                if (index != 0)
+                {
+                    if (Program.Verbose2)
+                        Console.WriteLine($"  add idx: {offset} size: {index} span remaining len: {span.Length} span index: {index}");
+
+                    list.Add(new Chunk { index = offset, size = index });
+                    span = span.Slice(index + zeroesLen);
+                    offset += index + zeroesLen;
+                    stripped += zeroesLen;
+                }
+                index = span.IndexOfAnyExcept((byte)0);
+                if (index == -1)
+                {
+                    stripped += data.Length - offset;
+                    break;
+                }
+
+                //Console.WriteLine($"skip: {index}");
+                if (index != 0)
+                {
+                    span = span.Slice(index);
+                    offset += index;
+                    stripped += index;
+                }
+            } while (true);
+
+            if (Program.Verbose)
+                Console.Write($"    segments detected: {list.Count} zero bytes stripped: {stripped}");
+
+            return list;
+        }
+
         void RewriteDataSection()
         {
             //var oo = Writer.BaseStream.Position;
             var bytes = File.ReadAllBytes(Program.DataSectionFile);
+            var chunk = new Chunk { index = 0, size = bytes.Length };
+            var segments = Program.DataSectionAutoSplit ? Split(bytes) : new List<Chunk> { chunk };
+
             // TODO: support all modes
             var mode = DataMode.Active;
-            uint count = 1;
-            var sectionLen = U32Len(count) + U32Len((uint)mode) + ConstI32ExprLen((int)Program.DataOffset) + U32Len((uint)bytes.Length) + (uint)bytes.Length;
+            var sectionLen = U32Len((uint)segments.Count);
+            foreach (var segment in segments)
+                sectionLen += GetDataSegmentLength(mode, segment, Program.DataOffset + segment.index);
 
             // section beginning
             Writer.Write((byte)SectionId.Data);
             WriteU32(sectionLen);
 
             // section content
-            WriteU32(count);
-            WriteU32((uint)mode);
-            WriteConstI32Expr((int)Program.DataOffset);
-            WriteU32((uint)bytes.Length);
-            Writer.Write(bytes);
+            WriteU32((uint)segments.Count);
+            foreach (var segment in segments)
+                WriteDataSegment(mode, bytes, segment, Program.DataOffset + segment.index);
 
             //var pos = Writer.BaseStream.Position;
             //Writer.BaseStream.Position = oo;
             //DumpBytes(64);
             //Writer.BaseStream.Position = pos;
+        }
+
+        uint GetDataSegmentLength(DataMode mode, Chunk chunk, int memoryOffset)
+        {
+            return U32Len((uint)mode) + ConstI32ExprLen(memoryOffset) + U32Len((uint)chunk.size) + (uint)chunk.size;
+        }
+
+        void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
+        {
+            // data segment
+            WriteU32((uint)mode);
+            WriteConstI32Expr(memoryOffset);
+            WriteU32((uint)chunk.size);
+            Writer.Write(data, chunk.index, chunk.size);
         }
 
         public void DumpBytes(int count)
