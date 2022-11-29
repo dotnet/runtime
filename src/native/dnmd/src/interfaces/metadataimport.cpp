@@ -1017,9 +1017,76 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     return enumImpl->ReadTokens(rEvents, cMax, pcEvents);
 }
 
+namespace
+{
+    // Starting from the supplied cursor, find and then enumerate
+    // the range of rows in "lookupRange" with the given "lookupTk"
+    // value. When a value is found, the supplied type instance will
+    // be used to call back to the caller.
+    //
+    // Example of type instance:
+    //   struct Operation
+    //   {
+    //       bool operator()(mdcursor_t cursor)
+    //       {
+    //           return stopEnumeration; // Return true to stop, false to continue.
+    //       }
+    //   };
+    template<typename T>
+    void EnumTableRange(
+        mdcursor_t begin,
+        uint32_t count,
+        col_index_t lookupRange,
+        mdToken lookupTk,
+        T& op)
+    {
+        mdcursor_t curr;
+        uint32_t currCount;
+        if (md_find_range_from_cursor(begin, lookupRange, lookupTk, &curr, &currCount))
+        {
+            // Table is sorted and subset found
+            for (uint32_t i = 0; i < currCount; ++i)
+            {
+                if (op(curr))
+                    return;
+                (void)md_cursor_next(&curr);
+            }
+        }
+        else
+        {
+            // Unsorted so we need to search across the entire table
+            curr = begin;
+            currCount = count;
+
+            // Read in for matching in bulk
+            mdToken matchedGroup[64];
+            uint32_t i = 0;
+            while (i < currCount)
+            {
+                int32_t read = md_get_column_value_as_token(curr, lookupRange, ARRAYSIZE(matchedGroup), matchedGroup);
+                if (read == 0)
+                    break;
+
+                assert(read > 0);
+                for (int32_t j = 0; j < read; ++j)
+                {
+                    if (matchedGroup[j] == lookupTk)
+                    {
+                        if (op(curr))
+                            return;
+                    }
+                    (void)md_cursor_next(&curr);
+                }
+                i += read;
+            }
+        }
+    }
+}
+
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
     mdEvent     ev,
     mdTypeDef* pClass,
+    // Should be defined as _Out_writes_to_opt_(cchEvent, *pchEvent) and non-const. Mistake from initial release.
     LPCWSTR     szEvent,
     ULONG       cchEvent,
     ULONG* pchEvent,
@@ -1032,7 +1099,92 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
     ULONG       cMax,
     ULONG* pcOtherMethod)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(ev) != mdtEvent)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), ev, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdTypeDef classDef;
+    if (!md_find_token_of_range_element(cursor, &classDef))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    *pClass = classDef;
+
+    uint32_t flags;
+    mdToken type;
+    if (1 != md_get_column_value_as_constant(cursor, mdtEvent_EventFlags, 1, &flags)
+        || 1 != md_get_column_value_as_token(cursor, mdtEvent_EventType, 1, &type))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    *pdwEventFlags = flags;
+    *ptkEventType = type;
+
+    mdcursor_t methodSemCursor;
+    uint32_t methodSemCount;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSemantics, &methodSemCursor, &methodSemCount))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    struct _Finder
+    {
+        mdMethodDef AddOn;
+        mdMethodDef RemoveOn;
+        mdMethodDef Fire;
+        mdMethodDef* Other;
+        uint32_t const OtherLen;
+        uint32_t OtherCount;
+        HRESULT Result; // Result of the operation
+
+        bool operator()(mdcursor_t c)
+        {
+            mdMethodDef tk;
+            uint32_t semantics;
+            if (1 != md_get_column_value_as_token(c, mdtMethodSemantics_Method, 1, &tk)
+                || 1 != md_get_column_value_as_constant(c, mdtMethodSemantics_Semantics, 1, &semantics))
+            {
+                Result = CLDB_E_FILE_CORRUPT;
+                return true; // Failure detected, so stop.
+            }
+            switch (semantics)
+            {
+            case msAddOn: AddOn = tk;
+                break;
+            case msRemoveOn: RemoveOn = tk;
+                break;
+            case msFire: Fire = tk;
+                break;
+            case msOther:
+                if (OtherCount < OtherLen)
+                    Other[OtherCount] = tk;
+                OtherCount++;
+                break;
+            default:
+                assert(!"Unknown semantic");
+            }
+            return false;
+        }
+    } finder{ mdMethodDefNil, mdMethodDefNil, mdMethodDefNil, rmdOtherMethod, cMax, 0, S_OK };
+
+    EnumTableRange(methodSemCursor, methodSemCount, mdtMethodSemantics_Association, ev, finder);
+
+    HRESULT hr;
+    RETURN_IF_FAILED(finder.Result);
+
+    *pmdAddOn = finder.AddOn;
+    *pmdRemoveOn = finder.RemoveOn;
+    *pmdFire = finder.Fire;
+    *pcOtherMethod = finder.OtherCount;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtEvent_Name, 1, &name))
+        return CLDB_E_FILE_CORRUPT;
+
+    // The const_cast<> is needed because the signature incorrectly expresses the
+    // desired semantics. This has been wrong since .NET Framework 1.0.
+    return ConvertAndReturnStringOutput(name, const_cast<WCHAR*>(szEvent), cchEvent, pchEvent);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSemantics(
@@ -1091,7 +1243,43 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSemantics(
     mdToken     tkEventProp,
     DWORD* pdwSemanticsFlags)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(mb) != mdtMethodDef || pdwSemanticsFlags == nullptr)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSemantics, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    struct _Finder
+    {
+        mdMethodDef const MethodDef; // Look for this methoddef
+        uint32_t Value; // Value to acquire
+        HRESULT Result; // Result of the operation
+
+        bool operator()(mdcursor_t c)
+        {
+            mdToken matchedTk;
+            if (1 == md_get_column_value_as_token(c, mdtMethodSemantics_Method, 1, &matchedTk)
+                && MethodDef == matchedTk)
+            {
+                // Found result, stop iterating
+                Result = (1 == md_get_column_value_as_constant(c, mdtMethodSemantics_Semantics, 1, &Value))
+                    ? S_OK
+                    : CLDB_E_FILE_CORRUPT;
+                return true;
+            }
+            return false;
+        }
+    } finder{ mb, 0, CLDB_E_RECORD_NOTFOUND };
+
+    EnumTableRange(cursor, count, mdtMethodSemantics_Association, tkEventProp, finder);
+
+    HRESULT hr;
+    RETURN_IF_FAILED(finder.Result);
+
+    *pdwSemanticsFlags = finder.Value;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetClassLayout(
@@ -1762,6 +1950,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFieldProps(
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPropertyProps(
     mdProperty  prop,
     mdTypeDef* pClass,
+    // Should be defined as _Out_writes_to_opt_(cchProperty, *pchProperty) and non-const. Mistake from initial release.
     LPCWSTR     szProperty,
     ULONG       cchProperty,
     ULONG* pchProperty,
@@ -1777,7 +1966,117 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPropertyProps(
     ULONG       cMax,
     ULONG* pcOtherMethod)
 {
-    return E_NOTIMPL;
+    if (TypeFromToken(prop) != mdtProperty)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), prop, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdTypeDef classDef;
+    if (!md_find_token_of_range_element(cursor, &classDef))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    *pClass = classDef;
+
+    uint32_t flags;
+    uint8_t const* sig;
+    uint32_t sigLen;
+    if (1 != md_get_column_value_as_constant(cursor, mdtProperty_Flags, 1, &flags)
+        || 1 != md_get_column_value_as_blob(cursor, mdtProperty_Type, 1, &sig, &sigLen))
+    {
+        return CLDB_E_FILE_CORRUPT;
+    }
+
+    *pdwPropFlags = flags;
+    *ppvSig = sig;
+    *pbSig = sigLen;
+
+    mdcursor_t constantCursor;
+    uint32_t constantCount;
+    mdcursor_t constantPropCursor;
+    uint32_t corType;
+    uint8_t const* defaultValue;
+    uint32_t defaultValueLen;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_Constant, &constantCursor, &constantCount)
+        || !md_find_row_from_cursor(constantCursor, mdtConstant_Parent, prop, &constantPropCursor))
+    {
+        corType = ELEMENT_TYPE_VOID;
+        defaultValue = nullptr;
+        defaultValueLen = 0;
+    }
+    else
+    {
+        if (1 != md_get_column_value_as_constant(constantPropCursor, mdtConstant_Type, 1, &corType))
+            return CLDB_E_FILE_CORRUPT;
+        if (1 != md_get_column_value_as_blob(constantPropCursor, mdtConstant_Value, 1, &defaultValue, &defaultValueLen))
+            return CLDB_E_FILE_CORRUPT;
+    }
+
+    *pdwCPlusTypeFlag = corType;
+    *ppDefaultValue = (UVCP_CONSTANT)defaultValue;
+    *pcchDefaultValue = corType == ELEMENT_TYPE_STRING
+        ? defaultValueLen / sizeof(WCHAR)
+        : defaultValueLen;
+
+    mdcursor_t methodSemCursor;
+    uint32_t methodSemCount;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSemantics, &methodSemCursor, &methodSemCount))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    struct _Finder
+    {
+        mdMethodDef Setter;
+        mdMethodDef Getter;
+        mdMethodDef* Other;
+        uint32_t const OtherLen;
+        uint32_t OtherCount;
+        HRESULT Result; // Result of the operation
+
+        bool operator()(mdcursor_t c)
+        {
+            mdMethodDef tk;
+            uint32_t semantics;
+            if (1 != md_get_column_value_as_token(c, mdtMethodSemantics_Method, 1, &tk)
+                || 1 != md_get_column_value_as_constant(c, mdtMethodSemantics_Semantics, 1, &semantics))
+            {
+                Result = CLDB_E_FILE_CORRUPT;
+                return true; // Failure detected, so stop.
+            }
+            switch (semantics)
+            {
+            case msSetter: Setter = tk;
+                break;
+            case msGetter: Getter = tk;
+                break;
+            case msOther:
+                if (OtherCount < OtherLen)
+                    Other[OtherCount] = tk;
+                OtherCount++;
+                break;
+            default:
+                assert(!"Unknown semantic");
+            }
+            return false;
+        }
+    } finder{ mdMethodDefNil, mdMethodDefNil, rmdOtherMethod, cMax, 0, S_OK };
+
+    EnumTableRange(methodSemCursor, methodSemCount, mdtMethodSemantics_Association, prop, finder);
+
+    HRESULT hr;
+    RETURN_IF_FAILED(finder.Result);
+
+    *pmdSetter = finder.Setter;
+    *pmdGetter = finder.Getter;
+    *pcOtherMethod = finder.OtherCount;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtProperty_Name, 1, &name))
+        return CLDB_E_FILE_CORRUPT;
+
+    // The const_cast<> is needed because the signature incorrectly expresses the
+    // desired semantics. This has been wrong since .NET Framework 1.0.
+    return ConvertAndReturnStringOutput(name, const_cast<WCHAR*>(szProperty), cchProperty, pchProperty);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamProps(
@@ -1856,10 +2155,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::IsGlobal(
 
     mdToken parent;
     mdcursor_t cursor;
+    BOOL result;
     switch (TypeFromToken(pd))
     {
     case mdtTypeDef:
-        *pbGlobal = (pd == MD_GLOBAL_PARENT_TOKEN);
+        result = pd == MD_GLOBAL_PARENT_TOKEN ? TRUE : FALSE;
         break;
     case mdtFieldDef:
     case mdtMethodDef:
@@ -1869,12 +2169,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::IsGlobal(
             return CLDB_E_RECORD_NOTFOUND;
         if (!md_find_token_of_range_element(cursor, &parent))
             return CLDB_E_FILE_CORRUPT;
-        *pbGlobal = (parent == MD_GLOBAL_PARENT_TOKEN);
+        result = parent == MD_GLOBAL_PARENT_TOKEN ? TRUE : FALSE;
         break;
     default:
-        *pbGlobal = FALSE;
+        result = FALSE;
     }
 
+    *pbGlobal = result;
     return S_OK;
 }
 

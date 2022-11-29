@@ -169,11 +169,21 @@ namespace Regression.UnitTests
                 foreach (var eventdef in events)
                 {
                     Assert.Equal(IsGlobal(baselineImport, eventdef), IsGlobal(currentImport, eventdef));
+                    Assert.Equal(GetEventProps(baselineImport, eventdef, out var _), GetEventProps(currentImport, eventdef, out List<uint> mds));
+                    foreach (var md in mds)
+                    {
+                        Assert.Equal(GetMethodSemantics(baselineImport, eventdef, md), GetMethodSemantics(currentImport, eventdef, md));
+                    }
                 }
                 var props = AssertAndReturn(EnumProperties(baselineImport, typedef), EnumProperties(currentImport, typedef));
                 foreach (var propdef in props)
                 {
                     Assert.Equal(IsGlobal(baselineImport, propdef), IsGlobal(currentImport, propdef));
+                    Assert.Equal(GetPropertyProps(baselineImport, propdef, out var _), GetPropertyProps(currentImport, propdef, out List<uint> mds));
+                    foreach (var md in mds)
+                    {
+                        Assert.Equal(GetMethodSemantics(baselineImport, propdef, md), GetMethodSemantics(currentImport, propdef, md));
+                    }
                 }
                 Assert.Equal(EnumFieldsWithName(baselineImport, typedef), EnumFieldsWithName(currentImport, typedef));
                 var fields = AssertAndReturn(EnumFields(baselineImport, typedef), EnumFields(currentImport, typedef));
@@ -915,6 +925,7 @@ namespace Regression.UnitTests
             {
                 uint hash = HashCharArray(name, pchMethod);
                 values.Add(hash);
+                values.Add((uint)pchMethod);
                 values.Add(pdwAttr);
                 values.Add((nuint)ppvSigBlob);
                 values.Add(pcbSigBlob);
@@ -944,6 +955,7 @@ namespace Regression.UnitTests
                 values.Add(parent);
                 uint hash = HashCharArray(name, pchMethod);
                 values.Add(hash);
+                values.Add((uint)pchMethod);
                 values.Add((nuint)ppvSigBlob);
                 values.Add(pcbSigBlob);
 
@@ -983,6 +995,117 @@ namespace Regression.UnitTests
                 values.Add(ptkType);
                 values.Add((nuint)ppBlob);
                 values.Add(pcbSize);
+            }
+            return values;
+        }
+
+        private static List<uint> GetEventProps(IMetaDataImport import, uint tk, out List<uint> methoddefs)
+        {
+            List<uint> values = new();
+            methoddefs = new List<uint>();
+
+            var name = new char[CharBuffer];
+            var others = new uint[CharBuffer];
+            int hr = import.GetEventProps(tk,
+                out uint pClass,
+                name,
+                name.Length,
+                out int pchEvent,
+                out uint pdwEventFlags,
+                out uint ptkEventType,
+                out uint pmdAddOn,
+                out uint pmdRemoveOn,
+                out uint pmdFire,
+                others,
+                others.Length,
+                out int pcOtherMethod);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pClass);
+                uint hash = HashCharArray(name, pchEvent);
+                values.Add(hash);
+                values.Add((uint)pchEvent);
+                values.Add(pdwEventFlags);
+                values.Add(ptkEventType);
+                values.Add(pmdAddOn);
+                values.Add(pmdRemoveOn);
+                values.Add(pmdFire);
+                for (int i = 0; i < Math.Min(others.Length, pcOtherMethod); ++i)
+                {
+                    values.Add(others[i]);
+                    methoddefs.Add(others[i]);
+                }
+
+                methoddefs.Add(pmdAddOn);
+                methoddefs.Add(pmdRemoveOn);
+                methoddefs.Add(pmdFire);
+            }
+            return values;
+        }
+
+        private static List<nuint> GetPropertyProps(IMetaDataImport import, uint tk, out List<uint> methoddefs)
+        {
+            List<nuint> values = new();
+            methoddefs = new List<uint>();
+
+            var name = new char[CharBuffer];
+            var others = new uint[CharBuffer];
+            int hr = import.GetPropertyProps(tk,
+                out uint pClass,
+                name,
+                name.Length,
+                out int pchProperty,
+                out uint pdwPropFlags,
+                out nint ppvSig,
+                out uint pbSig,
+                out uint pdwCPlusTypeFlag,
+                out nint ppDefaultValue,
+                out uint pcchDefaultValue,
+                out uint pmdSetter,
+                out uint pmdGetter,
+                others,
+                others.Length,
+                out int pcOtherMethod);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pClass);
+                uint hash = HashCharArray(name, pchProperty);
+                values.Add(hash);
+                values.Add((uint)pchProperty);
+                values.Add(pdwPropFlags);
+                values.Add((nuint)ppvSig);
+                values.Add(pbSig);
+                values.Add(pdwCPlusTypeFlag);
+                values.Add((nuint)ppDefaultValue);
+                values.Add(pcchDefaultValue);
+                values.Add(pmdSetter);
+                values.Add(pmdGetter);
+                for (int i = 0; i < Math.Min(others.Length, pcOtherMethod); ++i)
+                {
+                    values.Add(others[i]);
+                    methoddefs.Add(others[i]);
+                }
+
+                methoddefs.Add(pmdSetter);
+                methoddefs.Add(pmdGetter);
+            }
+            return values;
+        }
+
+        private static List<uint> GetMethodSemantics(IMetaDataImport import, uint tkEventProp, uint methodDef)
+        {
+            List<uint> values = new();
+
+            int hr = import.GetMethodSemantics(methodDef, tkEventProp, out uint pdwSemanticsFlags);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pdwSemanticsFlags);
             }
             return values;
         }
