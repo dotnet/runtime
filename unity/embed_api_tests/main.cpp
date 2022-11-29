@@ -18,10 +18,10 @@
 #define UNITY_EDITOR 1
 #define USE_CORECLR
 
-// On macOS the compiler does not define _DEBUG, but CMake defines
+// On macOS and Linux the compiler does not define _DEBUG, but CMake defines
 // NDEBUG for release builds, so if NDEBUG is not defined, assume this
 // is a debug build and define _DEBUG.
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__linux__)
 #ifndef NDEBUG
 #define _DEBUG
 #endif
@@ -89,6 +89,7 @@ void* get_handle()
         if(s_MonoLibrary == nullptr)
         {
             assert(false && "Failed to load mono\n");
+            printf("Failed to load mono from '%s'\n", g_monoDllPath.c_str());
             exit(1);
         }
     }
@@ -2439,8 +2440,13 @@ void SetupMono(Mode mode)
 #endif // __aarch64__
 #endif
 #elif defined(__linux__)
-        monoLibFolder = "/usr/share/dotnet/shared/Microsoft.NETCore.App/3.1.0";
-        g_monoDllPath = "../../bin/Product/Linux.x64.Debug/libcoreclr.so";
+#if defined(_DEBUG)
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/lib/net7.0");
+        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/native/libcoreclr.so");
+#else
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/lib/net7.0");
+        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native/libcoreclr.so");
+#endif
 #elif defined(WIN32)
 #if defined(_DEBUG)
 #ifdef _M_AMD64
