@@ -10,20 +10,18 @@ namespace Internal
     {
         public static unsafe void Write(string s)
         {
-            byte[] bytes = Encoding.Unicode.GetBytes(s);
-            fixed (byte* pBytes = bytes)
+            fixed (char* ptr = s)
             {
-                Interop.Sys.Log(pBytes, bytes.Length);
+                Interop.Sys.Log((byte*)ptr, s.Length * 2);
             }
         }
         public static partial class Error
         {
             public static unsafe void Write(string s)
             {
-                byte[] bytes = Encoding.Unicode.GetBytes(s);
-                fixed (byte* pBytes = bytes)
+                fixed (char* ptr = s)
                 {
-                    Interop.Sys.LogError(pBytes, bytes.Length);
+                    Interop.Sys.Log((byte*)ptr, s.Length * 2);
                 }
             }
         }
