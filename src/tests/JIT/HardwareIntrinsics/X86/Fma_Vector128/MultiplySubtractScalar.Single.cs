@@ -598,7 +598,7 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
         {
             bool succeeded = true;
 
-            if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[0] * secondOp[0]) - thirdOp[0], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
+            if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[0], secondOp[0], -thirdOp[0]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
             {
                 succeeded = false;
             }

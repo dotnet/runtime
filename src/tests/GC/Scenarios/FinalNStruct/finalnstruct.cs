@@ -38,7 +38,7 @@ namespace NStruct {
             return ( FinalizeCount.icFinal == FinalizeCount.icCreat );
         }
 
-        public static int Main(String [] args){
+        public static int Main(){
             int iObj = 100;
 
             Console.WriteLine("Test should return with ExitCode 100 ...");

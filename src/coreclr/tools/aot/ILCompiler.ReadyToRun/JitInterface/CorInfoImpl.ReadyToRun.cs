@@ -452,6 +452,7 @@ namespace Internal.JitInterface
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
+        private HashSet<MethodDesc> _synthesizedPgoDependencies;
 
         public bool HasColdCode { get; private set; }
 
@@ -2997,8 +2998,16 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
+            Debug.Assert(fieldHandle != null);
+            FieldDesc field = HandleToObject(fieldHandle);
+
+            // For crossgen2 we only support RVA fields
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) && field.HasRva)
+            {
+                return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+            }
             return false;
         }
 
@@ -3010,6 +3019,11 @@ namespace Internal.JitInterface
         private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();
+        }
+
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            return false;
         }
         
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)

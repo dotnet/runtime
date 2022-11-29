@@ -4311,6 +4311,7 @@ namespace System
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsBrowser() { throw null; }
+        // TODO public static bool IsWasi() { throw null; } see https://github.com/dotnet/runtime/issues/78389
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
@@ -7051,6 +7052,15 @@ namespace System.Buffers
     {
         System.Memory<T> Memory { get; }
     }
+    public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
+    {
+        internal IndexOfAnyValues() { }
+    }
+    public static class IndexOfAnyValues
+    {
+        public static System.Buffers.IndexOfAnyValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.IndexOfAnyValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+    }
     public partial interface IPinnable
     {
         System.Buffers.MemoryHandle Pin(int elementIndex);
@@ -9671,8 +9681,8 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
-        public static bool EndsInDirectorySeparator(string path) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
+        public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string? GetDirectoryName(string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }

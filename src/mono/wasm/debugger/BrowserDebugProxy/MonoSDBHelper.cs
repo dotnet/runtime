@@ -835,6 +835,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             ClearCache();
         }
 
+        public void ResetTypes() {
+            this.types = new ();
+        }
+
         public async Task<AssemblyInfo> GetAssemblyInfo(int assemblyId, CancellationToken token)
         {
             if (assemblies.TryGetValue(assemblyId, out AssemblyInfo asm))

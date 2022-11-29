@@ -6,6 +6,13 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <!-- only use for files that are not configuration dependent -->
+    <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PythonCmd Condition="'$(HostOS)' != 'windows'">python3</PythonCmd>
+    <PythonCmd Condition="'$(HostOS)' == 'windows'">python</PythonCmd>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -122,6 +129,8 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="FS_readFile" />
+      <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
@@ -157,6 +166,8 @@
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <!-- for jiterpreter -->
+      <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
@@ -402,10 +413,16 @@
 		      Overwrite="true" />
   </Target>
 
+  <Target Name="GenerateMintopsTS"
+          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def"
+          Outputs="$(NativeGeneratedFilesDir)mintops.ts">
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)mintops.ts" />
+  </Target>
+
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile);$(NativeGeneratedFilesDir)mintops.ts"
           Outputs="$(NativeBinDir).rollup-stamp"
-	  DependsOnTargets="WriteRollupEnvToFile"
+	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>

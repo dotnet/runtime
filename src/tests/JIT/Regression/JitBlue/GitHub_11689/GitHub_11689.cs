@@ -30,7 +30,7 @@ namespace N
             return s;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             return foo(20, 4);
         }
