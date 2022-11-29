@@ -73,7 +73,7 @@ void SystemNative_FreeLibrary(void* handle)
 #endif /* TARGET_WASI */
 }
 
-#if defined TARGET_ANDROID || TARGET_WASI
+#if defined TARGET_WASI
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
     return NULL;
@@ -99,3 +99,4 @@ void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
     }
     return defaultSearchOrderPseudoHandle;
 }
+#endif
