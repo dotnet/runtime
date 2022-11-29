@@ -702,13 +702,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            PlatformDetection.IsSuperUser);
+                            PlatformDetection.IsPrivilegedProcess);
         }
 
         [Fact]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsPrivilegedProcess);
         }
 
         /// <summary>

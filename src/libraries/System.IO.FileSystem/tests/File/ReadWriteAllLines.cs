@@ -126,7 +126,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsPrivilegedProcess)
                 {
                     Write(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, Read(path));
@@ -314,7 +314,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsPrivilegedProcess)
                 {
                     Write(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, Read(path));

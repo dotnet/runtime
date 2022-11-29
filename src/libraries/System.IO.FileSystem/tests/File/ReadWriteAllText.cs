@@ -139,7 +139,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsPrivilegedProcess)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));

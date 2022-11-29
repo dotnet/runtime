@@ -121,7 +121,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsPrivilegedProcess)
                 {
                     await WriteAsync(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, await ReadAsync(path));

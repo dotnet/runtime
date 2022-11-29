@@ -55,9 +55,6 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : IsPrivilegedProcess;
-        public static bool IsUnixAndSuperUser => !IsWindows && IsPrivilegedProcess;
-
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();

@@ -87,6 +87,8 @@ namespace System
             }
         }
 
+        public static bool IsNotPrivilegedProcess => !IsPrivilegedProcess;
+
         public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 
         private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));

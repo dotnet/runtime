@@ -94,7 +94,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsPrivilegedProcess)
                 {
                     File.WriteAllBytes(path, "text"u8.ToArray());
                     Assert.Equal("text"u8.ToArray(), File.ReadAllBytes(path));

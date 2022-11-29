@@ -248,11 +248,8 @@ namespace System
             }
         }
 
-        public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+        public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
 
         public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
-
-        public static bool IsWindowsAndElevated => IsWindows && IsPrivilegedProcess;
-        public static bool IsWindowsAndNotElevated => IsWindows && !IsPrivilegedProcess;
     }
 }
