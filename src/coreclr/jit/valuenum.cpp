@@ -6015,10 +6015,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_LZCNT_LeadingZeroCount:
 #endif
             {
-                DWORD cns = (DWORD)GetConstantInt32(arg0VN);
-                DWORD bsr = 0;
-                BitScanReverse(&bsr, cns);
-                return VNForIntCon(cns == 0 ? 32 : 31 - bsr);
+                UINT32 cns = (UINT32)GetConstantInt32(arg0VN);
+                int    lzc = 0;
+                while(cns != 0)
+                {
+                    cns = cns >> 1;
+                    lzc++;
+                }
+                return VNForIntCon(32 - lzc);
             }
 
 #ifdef TARGET_ARM64
@@ -6027,10 +6031,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_LZCNT_X64_LeadingZeroCount:
 #endif
             {
-                DWORD64 cns = (DWORD64)GetConstantInt64(arg0VN);
-                DWORD   bsr = 0;
-                BitScanReverse64(&bsr, cns);
-                return VNForIntCon(cns == 0 ? 64 : 63 - bsr);
+                UINT64 cns = (UINT64)GetConstantInt64(arg0VN);
+                int    lzc = 0;
+                while(cns != 0)
+                {
+                    cns = cns >> 1;
+                    lzc++;
+                }
+                return VNForIntCon(64 - lzc);
             }
 
             default:
