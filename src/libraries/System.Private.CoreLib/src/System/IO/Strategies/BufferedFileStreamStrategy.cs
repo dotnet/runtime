@@ -65,15 +65,7 @@ namespace System.IO.Strategies
             }
             set
             {
-                if (_writePos > 0)
-                {
-                    FlushWrite();
-                }
-
-                _readPos = 0;
-                _readLen = 0;
-
-                _strategy.Position = value;
+                Seek(value, SeekOrigin.Begin);
             }
         }
 
