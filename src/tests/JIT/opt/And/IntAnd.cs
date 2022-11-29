@@ -19,7 +19,7 @@ namespace CodeGenTests
             // X64-NOT: movzx
 
             // We expect 'and r8, r8'.
-            // X64: and [[REG0:[^x]+]], [[REG1:[^x]+]]
+            // X64: and [[REG0:[a-z]+[l|b]]], [[REG1:[a-z]+[l|b]]]
 
             if ((byte)(x & y) == 0)
             {
@@ -35,7 +35,7 @@ namespace CodeGenTests
             // X64-NOT: movzx
 
             // We expect 'and r8, r8'.
-            // X64: and [[REG0:[^x]+]], [[REG1:[^x]+]]
+            // X64: and [[REG0:[a-z]+[l|b]]], [[REG1:[a-z]+[l|b]]]
 
             if ((byte)((byte)x & y) == 0)
             {
@@ -51,7 +51,7 @@ namespace CodeGenTests
             // X64-NOT: movzx
 
             // We expect 'and r8, r8'.
-            // X64: and [[REG0:[^x]+]], [[REG1:[^x]+]]
+            // X64: and [[REG0:[a-z]+[l|b]]], [[REG1:[a-z]+[l|b]]]
 
             if ((byte)((byte)x & (byte)y) == 0)
             {
