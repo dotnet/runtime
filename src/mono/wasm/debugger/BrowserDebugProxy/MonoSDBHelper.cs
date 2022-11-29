@@ -2003,24 +2003,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var match = regexForAsyncLocals.Match(fieldName);
                     if (match.Success)
                     {
-                        if (!method.Info.AsyncScopes.Where(s => s.Id == Convert.ToInt32(match.Groups[4].Value) && offset >= s.StartOffset && offset <= s.EndOffset).Any())
+                        if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups[4].Value), offset))
                             continue;
                         asyncLocal["name"] = match.Groups[1].Value;
                     }
                     asyncLocalsFull.Add(asyncLocal);
                 }
                 //VB language
-                else if (fieldName.StartsWith("$VB$Local_"))
+                else if (fieldName.StartsWith("$VB$Local_", StringComparison.Ordinal))
                 {
                     asyncLocal["name"] = fieldName.Remove(0, 10);
                     asyncLocalsFull.Add(asyncLocal);
                 }
-                else if (fieldName.StartsWith("$VB$ResumableLocal_"))
+                else if (fieldName.StartsWith("$VB$ResumableLocal_", StringComparison.Ordinal))
                 {
                     var match = regexForVBAsyncLocals.Match(fieldName);
                     if (match.Success)
                     {
-                        if (!method.Info.AsyncScopes.Where(s => s.Id == (Convert.ToInt32(match.Groups[2].Value) + 1) && offset >= s.StartOffset && offset <= s.EndOffset).Any())
+                        if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups[2].Value) + 1, offset))
                             continue;
                         asyncLocal["name"] = match.Groups[1].Value;
                     }
