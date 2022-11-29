@@ -3,7 +3,7 @@
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
     <WasmDebugLevel>0</WasmDebugLevel>
-    <EmccInitialHeapSize>52625408</EmccInitialHeapSize>
+    <EmccInitialHeapSize>105250816</EmccInitialHeapSize>
     <!-- 
     <WasmNativeStrip>false</WasmNativeStrip>
     -->
