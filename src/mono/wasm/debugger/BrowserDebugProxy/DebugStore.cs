@@ -350,7 +350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
-        private readonly AsyncScope[] _asyncScopes;
+        private readonly AsyncScopeDebugInformation[] _asyncScopes;
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -362,7 +362,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.TypeInfo = type;
             TypeInfo.Methods.Add(this);
             assembly.Methods[methodToken] = this;
-            _asyncScopes = Array.Empty<AsyncScope>();
+            _asyncScopes = Array.Empty<AsyncScopeDebugInformation>();
         }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -459,16 +459,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (scopeDebugInformation != null)
                 {
-                    _asyncScopes = new AsyncScope[scopeDebugInformation.Length / 8];
+                    _asyncScopes = new AsyncScopeDebugInformation[scopeDebugInformation.Length / 8];
                     for (int i = 0; i < _asyncScopes.Length; i++)
                     {
                         int scopeOffset = BitConverter.ToInt32(scopeDebugInformation, i * 8);
                         int scopeLen = BitConverter.ToInt32(scopeDebugInformation, (i * 8) + 4);
-                        _asyncScopes[i] = new AsyncScope(scopeOffset, scopeOffset + scopeLen);
+                        _asyncScopes[i] = new AsyncScopeDebugInformation(scopeOffset, scopeOffset + scopeLen);
                     }
                 }
 
-                _asyncScopes ??= Array.Empty<AsyncScope>();
+                _asyncScopes ??= Array.Empty<AsyncScopeDebugInformation>();
             }
         }
 
@@ -647,7 +647,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private record struct AsyncScope(int StartOffset, int EndOffset);
+        private record struct AsyncScopeDebugInformation(int StartOffset, int EndOffset);
     }
 
     internal sealed class ParameterInfo
