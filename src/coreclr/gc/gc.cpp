@@ -12907,7 +12907,7 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
         all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
     }
     // we desire a certain fraction of the total committed free space on the global list
-    const float desired_fraction_in_global = 0.4f;
+    const float desired_fraction_in_global = 0.2f;
     size_t desired_in_global = (size_t)((all_heaps_committed + global_free_regions[kind].get_size_committed_in_free())*desired_fraction_in_global);
 
     // remove regions from the per-heap free lists until we achieve that
