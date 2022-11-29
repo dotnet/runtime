@@ -2929,11 +2929,37 @@ namespace Mono.Linker.Steps
 			if (Annotations.GetAction (method) == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);
 
-			EnqueueMethod (method, reason, origin);
 
 			// Use the original reason as it's important to correctly generate warnings
 			// the updated reason is only useful for better tracking of dependencies.
 			ProcessAnalysisAnnotationsForMethod (method, originalReasonKind, origin);
+
+			// Record the reason for marking a method on each call.
+			switch (reason.Kind) {
+			case DependencyKind.AlreadyMarked:
+				Debug.Assert (Annotations.IsMarked (method));
+				break;
+			default:
+				Annotations.Mark (method, reason, origin);
+				break;
+			}
+
+			bool markedForCall =
+				reason.Kind == DependencyKind.DirectCall ||
+				reason.Kind == DependencyKind.VirtualCall ||
+				reason.Kind == DependencyKind.Newobj;
+			if (markedForCall) {
+				// Record declaring type of a called method up-front as a special case so that we may
+				// track at least some method calls that trigger a cctor.
+				// Temporarily switch to the original source for marking this method
+				// this is for the same reason as for tracking, but this time so that we report potential
+				// warnings from a better place.
+				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
+			}
+
+			// We will only enqueue a method to be processed if it hasn't been processed yet.
+			if (!CheckProcessed (method))
+				EnqueueMethod (method, reason, origin);
 
 			return method;
 		}
@@ -3113,32 +3139,10 @@ namespace Mono.Linker.Steps
 			using var parentScope = ScopeStack.PushScope (new MarkScopeStack.Scope (origin));
 			using var methodScope = ScopeStack.PushScope (new MessageOrigin (method));
 
-			// Record the reason for marking a method on each call. The logic under CheckProcessed happens
-			// only once per method.
-			switch (reason.Kind) {
-			case DependencyKind.AlreadyMarked:
-				Debug.Assert (Annotations.IsMarked (method));
-				break;
-			default:
-				Annotations.Mark (method, reason, ScopeStack.CurrentScope.Origin);
-				break;
-			}
-
 			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
 				reason.Kind == DependencyKind.VirtualCall ||
 				reason.Kind == DependencyKind.Newobj;
-			if (markedForCall) {
-				// Record declaring type of a called method up-front as a special case so that we may
-				// track at least some method calls that trigger a cctor.
-				// Temporarily switch to the original source for marking this method
-				// this is for the same reason as for tracking, but this time so that we report potential
-				// warnings from a better place.
-				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
-			}
-
-			if (CheckProcessed (method))
-				return;
 
 			foreach (Action<MethodDefinition> handleMarkMethod in MarkContext.MarkMethodActions)
 				handleMarkMethod (method);
