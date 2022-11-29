@@ -27,6 +27,13 @@ namespace System.Buffers
             return new[] { Unsafe.As<TImpl, T>(ref e0), Unsafe.As<TImpl, T>(ref e1), Unsafe.As<TImpl, T>(ref e2), Unsafe.As<TImpl, T>(ref e3) };
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(T value) =>
+            Unsafe.As<T, TImpl>(ref value) == _e0 ||
+            Unsafe.As<T, TImpl>(ref value) == _e1 ||
+            Unsafe.As<T, TImpl>(ref value) == _e2 ||
+            Unsafe.As<T, TImpl>(ref value) == _e3;
+
 #if MONO // Revert this once https://github.com/dotnet/runtime/pull/78015 is merged
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
             span.IndexOfAny(GetValues());

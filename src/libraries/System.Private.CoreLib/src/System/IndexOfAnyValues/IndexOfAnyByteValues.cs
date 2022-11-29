@@ -19,6 +19,10 @@ namespace System.Buffers
         internal override byte[] GetValues() => _lookup.GetByteValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(byte value) =>
+            _lookup.Contains(value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
             IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
 

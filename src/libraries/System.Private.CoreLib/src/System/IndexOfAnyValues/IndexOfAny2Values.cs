@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
     internal sealed class IndexOfAny2Values<T> : IndexOfAnyValues<T>
-        where T : struct, IEquatable<T>
+        where T : struct, INumber<T>
     {
         private readonly T _e0, _e1;
 
@@ -18,6 +19,10 @@ namespace System.Buffers
         }
 
         internal override T[] GetValues() => new[] { _e0, _e1 };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(T value) =>
+            value == _e0 || value == _e1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>

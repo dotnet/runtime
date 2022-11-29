@@ -28,6 +28,14 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(T value) =>
+            Unsafe.As<T, TImpl>(ref value) == _e0 ||
+            Unsafe.As<T, TImpl>(ref value) == _e1 ||
+            Unsafe.As<T, TImpl>(ref value) == _e2 ||
+            Unsafe.As<T, TImpl>(ref value) == _e3 ||
+            Unsafe.As<T, TImpl>(ref value) == _e4;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
             SpanHelpers.IndexOfAnyValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, _e3, _e4, span.Length);
 
