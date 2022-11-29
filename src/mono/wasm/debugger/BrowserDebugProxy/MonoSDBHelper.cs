@@ -1292,6 +1292,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var match = regexForVBAsyncMethodName.Match(klassName);
                             if (match.Success)
                                 ret = ret.Insert(0, match.Groups[2].Value);
+                            else
+                                ret = ret.Insert(0, klassName);
                         }
                         else
                         {
