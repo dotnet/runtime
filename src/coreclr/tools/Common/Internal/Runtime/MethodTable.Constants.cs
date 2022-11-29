@@ -140,11 +140,7 @@ namespace Internal.Runtime
 
         // UNUSED2 = 0x00000040,
 
-        /// <summary>
-        /// This MethodTable was constructed from a universal canonical template, and has
-        /// its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        /// </summary>
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        // UNUSED = 0x00000080,
 
         /// <summary>
         /// This MethodTable represents a structure that is an HFA
@@ -196,7 +192,6 @@ namespace Internal.Runtime
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
-        ETF_DynamicDispatchMap,
         ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,

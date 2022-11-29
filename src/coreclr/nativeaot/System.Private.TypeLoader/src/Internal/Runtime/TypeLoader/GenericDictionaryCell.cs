@@ -45,24 +45,6 @@ namespace Internal.Runtime.TypeLoader
             return th;
         }
 
-        private class PointerToOtherDictionarySlotCell : GenericDictionaryCell
-        {
-            internal uint OtherDictionarySlot;
-
-            internal override void Prepare(TypeBuilder builder) { }
-            internal override IntPtr Create(TypeBuilder builder)
-            {
-                // This api should never be called. The intention is that this cell is special
-                // cased to have a value which is relative to other cells being emitted.
-                throw new NotSupportedException();
-            }
-
-            internal override unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
-            {
-                pDictionary[slotIndex] = new IntPtr(pDictionary + OtherDictionarySlot);
-            }
-        }
-
         public static GenericDictionaryCell CreateTypeHandleCell(TypeDesc type)
         {
             TypeHandleCell typeCell = new TypeHandleCell();
@@ -1077,65 +1059,6 @@ namespace Internal.Runtime.TypeLoader
             return dictionary;
         }
 
-        internal static unsafe GenericDictionaryCell[] BuildFloatingDictionary(TypeBuilder typeBuilder, NativeLayoutInfoLoadContext nativeLayoutInfoLoadContext, NativeParser parser, out int floatingVersionCellIndex, out int floatingVersionInLayout)
-        {
-            //
-            // The format of a dictionary that has a floating portion is as follows:
-            //
-            // "Fixed" portion:
-            //      - First slot is a pointer to the first cell of the "floating" portion
-            //      - Followed by N various dictionary lookup cells
-            // "Floating" portion:
-            //      - Cell containing the version number of the floating portion
-            //      - Followed by N various dictionary lookup cells
-            //
-
-            floatingVersionCellIndex = floatingVersionInLayout = -1;
-
-            uint count = parser.GetSequenceCount();
-            Debug.Assert(count > 1);
-
-            GenericDictionaryCell cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
-            if (!(cell is PointerToOtherDictionarySlotCell))
-            {
-                // This is not a dictionary layout that has a floating portion
-                Debug.Fail("Unreachable: we should never reach here if the target dictionary does not have a floating layout");
-                return null;
-            }
-
-            PointerToOtherDictionarySlotCell pointerToCell = (PointerToOtherDictionarySlotCell)cell;
-            floatingVersionCellIndex = (int)pointerToCell.OtherDictionarySlot;
-            Debug.Assert(count > pointerToCell.OtherDictionarySlot);
-
-            GenericDictionaryCell[] dictionary = new GenericDictionaryCell[count - pointerToCell.OtherDictionarySlot];
-
-            for (uint i = 1; i < pointerToCell.OtherDictionarySlot; i++)
-            {
-                // Parse and discard the fixed dictionary cells. We only need to build the cells of the floating portion
-                ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
-            }
-
-            for (uint i = pointerToCell.OtherDictionarySlot; i < count; i++)
-            {
-                TypeLoaderLogger.WriteLine("  -> FloatingDictionaryCell[" + (i - pointerToCell.OtherDictionarySlot).LowLevelToString() + "] (" + i.LowLevelToString() + " in all) = ");
-
-                cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
-
-                if ((i == pointerToCell.OtherDictionarySlot) && (cell is IntPtrCell))
-                {
-                    // The first cell in the floating portion should always be the version number
-                    floatingVersionInLayout = (int)((IntPtrCell)cell).Value;
-                }
-
-                dictionary[i - pointerToCell.OtherDictionarySlot] = cell;
-            }
-
-            for (uint i = pointerToCell.OtherDictionarySlot; i < count; i++)
-                dictionary[i - pointerToCell.OtherDictionarySlot].Prepare(typeBuilder);
-
-            return dictionary;
-        }
-
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         /// <summary>
         /// Build an array of GenericDictionaryCell from a NativeParser stream that has the appropriate metadata
@@ -1874,14 +1797,6 @@ namespace Internal.Runtime.TypeLoader
                 case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
-
-                case FixupSignatureKind.PointerToOtherSlot:
-                    cell = new PointerToOtherDictionarySlotCell
-                    {
-                        OtherDictionarySlot = parser.GetUnsigned()
-                    };
-                    TypeLoaderLogger.WriteLine("PointerToOtherSlot: " + ((PointerToOtherDictionarySlotCell)cell).OtherDictionarySlot.LowLevelToString());
-                    break;
 
                 case FixupSignatureKind.IntValue:
                     cell = new IntPtrCell
