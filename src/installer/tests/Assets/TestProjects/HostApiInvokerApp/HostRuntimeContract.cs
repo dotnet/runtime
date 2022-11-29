@@ -12,10 +12,11 @@ namespace HostApiInvokerApp
     {
         internal struct host_runtime_contract
         {
+            public nint size;
             public void* context;
+            public delegate* unmanaged[Stdcall]<byte*, byte*, nint, void*, nint> get_runtime_property;
             public IntPtr bundle_probe;
             public IntPtr pinvoke_override;
-            public delegate* unmanaged[Stdcall]<byte*, byte*, nint, void*, nint> get_runtime_property;
         }
 
         private static host_runtime_contract GetContract()

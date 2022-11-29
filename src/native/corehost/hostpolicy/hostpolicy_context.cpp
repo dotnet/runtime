@@ -351,7 +351,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 #endif
 
     {
-        host_contract = { this };
+        host_contract = { sizeof(host_runtime_contract), this };
         if (bundle::info_t::is_single_file_bundle())
         {
             host_contract.bundle_probe = &bundle_probe;

@@ -19,7 +19,14 @@
 
 struct host_runtime_contract
 {
+    size_t size;
     void* context;
+
+    size_t(HOST_CONTRACT_CALLTYPE* get_runtime_property)(
+        const char* key,
+        char* value_buffer,
+        size_t value_buffer_size,
+        void* contract_context);
 
     bool(HOST_CONTRACT_CALLTYPE* bundle_probe)(
         const char* path,
@@ -30,12 +37,6 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
-
-    size_t(HOST_CONTRACT_CALLTYPE* get_runtime_property)(
-        const char* key,
-        char* value_buffer,
-        size_t value_buffer_size,
-        void* contract_context);
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__
