@@ -804,8 +804,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
 
         internal readonly ILogger logger;
-        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>([^)]*)([_][_])([0-9]*)", RegexOptions.Singleline);
-        private static readonly Regex regexForVBAsyncLocals = new (@"\$VB\$ResumableLocal_([^)]*)\$([0-9]*)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
+        private static readonly Regex regexForAsyncLocals = new(@"\<([^)]*)\>([^)]*)([_][_])([0-9]*)", RegexOptions.Singleline);
+        private static readonly Regex regexForVBAsyncLocals = new(@"\$VB\$ResumableLocal_([^)]*)\$([0-9]*)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
         private static readonly Regex regexForVBAsyncMethodName = new(@"VB\$StateMachine_([0-9]*)_([^)]*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
