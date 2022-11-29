@@ -141,7 +141,7 @@ mono_jiterp_increase_entry_count (void *_imethod) {
 	InterpMethod *imethod = (InterpMethod*)_imethod;
 	imethod->entry_count++;
 	// Return whether the trace should bail out because the method needs to be tiered
-	return imethod->entry_count >= (mono_opt_interp_tier_instantly ? INTERP_TIER_ENTRY_LIMIT_LOW : INTERP_TIER_ENTRY_LIMIT);
+	return imethod->entry_count >= INTERP_TIER_ENTRY_LIMIT;
 }
 
 EMSCRIPTEN_KEEPALIVE void*
