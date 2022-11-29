@@ -102,8 +102,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString () is string mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
-					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
 						continue;
@@ -159,10 +157,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							bool expectedWarningFound = false;
 
 							foreach (var loggedMessage in loggedMessages) {
-								if (loggedMessage.ToString ().Contains ("RequiresInCompilerGeneratedCode.SuppressInLambda")) {
-									Debug.WriteLine ("Print 2");
-								}
-
 								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
 									continue;
 
@@ -213,21 +207,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
 
-										string actualName = methodDesc.OwningType.ToString ().Replace ("+", ".") + "." + methodDesc.Name;
-										if (actualName.Contains (expectedMember.DeclaringType.FullName.Replace ("/", ".")) &&
-											actualName.Contains ("<" + expectedMember.Name + ">")) {
+										string? actualName = GetActualOriginDisplayName (methodDesc);
+										string expectedTypeName = ConvertSignatureToIlcFormat (GetExpectedOriginDisplayName (expectedMember.DeclaringType));
+										if (actualName?.Contains (expectedTypeName) == true &&
+											actualName?.Contains ("<" + expectedMember.Name + ">") == true) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+										if (actualName?.StartsWith (expectedTypeName) == true &&
+											actualName?.Contains (".cctor") == true &&
+											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
 										if (methodDesc.Name == ".ctor" &&
-										methodDesc.OwningType.ToString () == expectedMember.FullName) {
+											methodDesc.OwningType.ToString () == expectedMember.FullName) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -359,6 +355,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				provider switch {
 					MethodDefinition method => method.GetDisplayName (),
 					FieldDefinition field => field.GetDisplayName (),
+					TypeDefinition type => type.GetDisplayName (),
 					IMemberDefinition member => member.FullName,
 					AssemblyDefinition asm => asm.Name.Name,
 					_ => throw new NotImplementedException ()

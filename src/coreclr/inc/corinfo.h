@@ -3212,6 +3212,7 @@ public:
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
+                    int                     valueOffset = 0,
                     bool                    ignoreMovableObjects = true
                     ) = 0;
 

@@ -989,6 +989,6 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        public static bool EndsInDirectorySeparator(string path) => PathInternal.EndsInDirectorySeparator(path);
+        public static bool EndsInDirectorySeparator([NotNullWhen(true)] string? path) => PathInternal.EndsInDirectorySeparator(path);
     }
 }
