@@ -13,6 +13,22 @@ QSTRING: '"' (~('"' | '\\') | '\\' ('"' | '\\'))* '"';
 SQSTRING: '\'' (~('\'' | '\\') | '\\' ('\'' | '\\'))* '\'';
 NULLREF: 'nullref';
 HASH: '.hash';
+CHAR: 'char';
+STRING: 'string';
+BOOL: 'bool';
+INT8: 'int8';
+INT16: 'int16';
+INT32_: 'int32';
+INT64_: 'int64';
+FLOAT32: 'float32';
+FLOAT64_: 'float64';
+UNSIGNED: 'unsigned';
+UINT8: 'uint8';
+UINT16: 'uint16';
+UINT32: 'uint32';
+UINT64: 'uint64';
+TYPE: 'type';
+OBJECT: 'object';
 
 WHITESPACE: [ \r\n] -> skip;
 
@@ -76,8 +92,8 @@ int64: INT64 | INT32;
 
 float64:
 	FLOAT64
-	| 'float32' '(' int32 ')'
-	| 'float64' '(' int64 ')';
+	| FLOAT32 '(' int32 ')'
+	| FLOAT64_ '(' int64 ')';
 
 intOrWildcard: int32 | '*';
 
@@ -136,8 +152,8 @@ seralizType: seralizTypeElement ('[' ']')?;
 
 seralizTypeElement:
 	simpleType
-	| 'type'
-	| 'object'
+	| TYPE
+	| OBJECT
 	| 'enum' 'class' SQSTRING
 	| 'enum' className;
 
@@ -152,8 +168,8 @@ vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
 
 vtfixupAttr:
 	/* EMPTY */
-	| vtfixupAttr 'int32'
-	| vtfixupAttr 'int64'
+	| vtfixupAttr INT32_
+	| vtfixupAttr INT64_
 	| vtfixupAttr 'fromunmanaged'
 	| vtfixupAttr 'callmostderived'
 	| vtfixupAttr 'retainappdomain';
@@ -359,22 +375,22 @@ nativeTypeElement:
 	| 'currency'
 	| 'syschar'
 	| 'void'
-	| 'bool'
-	| 'int8'
-	| 'int16'
-	| 'int32'
-	| 'int64'
-	| 'float32'
-	| 'float64'
+	| BOOL
+	| INT8
+	| INT16
+	| INT32_
+	| INT64_
+	| FLOAT32
+	| FLOAT64_
 	| 'error'
-	| 'unsigned' 'int8'
-	| 'unsigned' 'int16'
-	| 'unsigned' 'int32'
-	| 'unsigned' 'int64'
-	| 'uint8'
-	| 'uint16'
-	| 'uint32'
-	| 'uint64'
+	| UNSIGNED INT8
+	| UNSIGNED INT16
+	| UNSIGNED INT32_
+	| UNSIGNED INT64_
+	| UINT8
+	| UINT16
+	| UINT32
+	| UINT64
 	| 'decimal'
 	| 'date'
 	| 'bstr'
@@ -389,13 +405,13 @@ nativeTypeElement:
 	| 'safearray' variantType
 	| 'safearray' variantType ',' compQstring
 	| 'int'
-	| 'unsigned' 'int'
+	| UNSIGNED 'int'
 	| 'uint'
 	| 'nested' 'struct'
 	| 'byvalstr'
 	| 'ansi' 'bstr'
 	| 'tbstr'
-	| 'variant' 'bool'
+	| 'variant' BOOL
 	| 'method'
 	| 'as' 'any'
 	| 'lpstruct'
@@ -411,21 +427,21 @@ variantTypeElement:
 	| 'variant'
 	| 'currency'
 	| 'void'
-	| 'bool'
-	| 'int8'
-	| 'int16'
-	| 'int32'
-	| 'int64'
-	| 'float32'
-	| 'float64'
-	| 'unsigned' 'int8'
-	| 'unsigned' 'int16'
-	| 'unsigned' 'int32'
-	| 'unsigned' 'int64'
-	| 'uint8'
-	| 'uint16'
-	| 'uint32'
-	| 'uint64'
+	| BOOL
+	| INT8
+	| INT16
+	| INT32_
+	| INT64_
+	| FLOAT32
+	| FLOAT64_
+	| UNSIGNED INT8
+	| UNSIGNED INT16
+	| UNSIGNED INT32_
+	| UNSIGNED INT64_
+	| UINT8
+	| UINT16
+	| UINT32
+	| UINT64
 	| '*'
 	| 'decimal'
 	| 'date'
@@ -436,7 +452,7 @@ variantTypeElement:
 	| 'idispatch'
 	| 'safearray'
 	| 'int'
-	| 'unsigned' 'int'
+	| UNSIGNED 'int'
 	| 'uint'
 	| 'error'
 	| 'hresult'
@@ -468,7 +484,7 @@ type:
 
 elementType:
 	'class' className
-	| 'object'
+	| OBJECT
 	| 'value' 'class' className
 	| 'valuetype' className
 	| 'method' callConv type '*' sigArgs
@@ -479,29 +495,29 @@ elementType:
 	| 'typedref'
 	| 'void'
 	| 'native' 'int'
-	| 'native' 'unsigned' 'int'
+	| 'native' UNSIGNED 'int'
 	| 'native' 'uint'
 	| simpleType
 	| ELLIPSIS type;
 
 simpleType:
-	'char'
-	| 'string'
-	| 'bool'
-	| 'int8'
-	| 'int16'
-	| 'int32'
-	| 'int64'
-	| 'float32'
-	| 'float64'
-	| 'unsigned' 'int8'
-	| 'unsigned' 'int16'
-	| 'unsigned' 'int32'
-	| 'unsigned' 'int64'
-	| 'uint8'
-	| 'uint16'
-	| 'uint32'
-	| 'uint64'
+	CHAR
+	| STRING
+	| BOOL
+	| INT8
+	| INT16
+	| INT32_
+	| INT64_
+	| FLOAT32
+	| FLOAT64_
+	| UNSIGNED INT8
+	| UNSIGNED INT16
+	| UNSIGNED INT32_
+	| UNSIGNED INT64_
+	| UINT8
+	| UINT16
+	| UINT32
+	| UINT64
 	| dottedName /* typedef */;
 
 bound:
@@ -534,11 +550,11 @@ truefalse: 'true' | 'false';
 caValue:
 	truefalse
 	| int32
-	| 'int32' '(' int32 ')'
+	| INT32_ '(' int32 ')'
 	| compQstring
-	| className '(' 'int8' ':' int32 ')'
-	| className '(' 'int16' ':' int32 ')'
-	| className '(' 'int32' ':' int32 ')'
+	| className '(' INT8 ':' int32 ')'
+	| className '(' INT16 ':' int32 ')'
+	| className '(' INT32_ ':' int32 ')'
 	| className '(' int32 ')';
 
 secAction:
@@ -641,11 +657,11 @@ classDecl:
 		callConv type typeSpec '::' methodName genArity sigArgs
 	| languageDecl
 	| compControl
-	| '.param' 'type' '[' int32 ']'
-	| '.param' 'type' dottedName
+	| '.param' TYPE '[' int32 ']'
+	| '.param' TYPE dottedName
 	| '.param' 'constraint' '[' int32 ']' ',' typeSpec
 	| '.param' 'constraint' dottedName ',' typeSpec
-	| '.interfaceimpl' 'type' typeSpec customDescr;
+	| '.interfaceimpl' TYPE typeSpec customDescr;
 
 /*  Field declaration  */
 fieldDecl:
@@ -824,8 +840,8 @@ methodDecl:
 	| '.override' typeSpec '::' methodName
 	| '.override' 'method' callConv type typeSpec '::' methodName genArity sigArgs
 	| scopeBlock
-	| '.param' 'type' '[' int32 ']'
-	| '.param' 'type' dottedName
+	| '.param' TYPE '[' int32 ']'
+	| '.param' TYPE dottedName
 	| '.param' 'constraint' '[' int32 ']' ',' typeSpec
 	| '.param' 'constraint' dottedName ',' typeSpec
 	| '.param' '[' int32 ']' initOpt;
@@ -882,42 +898,42 @@ ddItemList: ddItem ',' ddItemList | ddItem;
 ddItemCount: /* EMPTY */ | '[' int32 ']';
 
 ddItem:
-	'char' '*' '(' compQstring ')'
+	CHAR '*' '(' compQstring ')'
 	| '&' '(' id ')'
 	| 'bytearray' '(' bytes ')'
-	| 'float32' '(' float64 ')' ddItemCount
-	| 'float64' '(' float64 ')' ddItemCount
-	| 'int64' '(' int64 ')' ddItemCount
-	| 'int32' '(' int32 ')' ddItemCount
-	| 'int16' '(' int32 ')' ddItemCount
-	| 'int8' '(' int32 ')' ddItemCount
-	| 'float32' ddItemCount
-	| 'float64' ddItemCount
-	| 'int64' ddItemCount
-	| 'int32' ddItemCount
-	| 'int16' ddItemCount
-	| 'int8' ddItemCount;
+	| FLOAT32 '(' float64 ')' ddItemCount
+	| FLOAT64_ '(' float64 ')' ddItemCount
+	| INT64_ '(' int64 ')' ddItemCount
+	| INT32_ '(' int32 ')' ddItemCount
+	| INT16 '(' int32 ')' ddItemCount
+	| INT8 '(' int32 ')' ddItemCount
+	| FLOAT32 ddItemCount
+	| FLOAT64_ ddItemCount
+	| INT64_ ddItemCount
+	| INT32_ ddItemCount
+	| INT16 ddItemCount
+	| INT8 ddItemCount;
 
 /*  Default values declaration for fields, parameters and verbal form of CA blob description  */
 fieldSerInit:
-	'float32' '(' float64 ')'
-	| 'float64' '(' float64 ')'
-	| 'float32' '(' int32 ')'
-	| 'float64' '(' int64 ')'
-	| 'int64' '(' int64 ')'
-	| 'int32' '(' int32 ')'
-	| 'int16' '(' int32 ')'
-	| 'int8' '(' int32 ')'
-	| 'unsigned' 'int64' '(' int64 ')'
-	| 'unsigned' 'int32' '(' int32 ')'
-	| 'unsigned' 'int16' '(' int32 ')'
-	| 'unsigned' 'int8' '(' int32 ')'
-	| 'uint64' '(' int64 ')'
-	| 'uint32' '(' int32 ')'
-	| 'uint16' '(' int32 ')'
-	| 'uint8' '(' int32 ')'
-	| 'char' '(' int32 ')'
-	| 'bool' '(' truefalse ')'
+	FLOAT32 '(' float64 ')'
+	| FLOAT64_ '(' float64 ')'
+	| FLOAT32 '(' int32 ')'
+	| FLOAT64_ '(' int64 ')'
+	| INT64_ '(' int64 ')'
+	| INT32_ '(' int32 ')'
+	| INT16 '(' int32 ')'
+	| INT8 '(' int32 ')'
+	| UNSIGNED INT64_ '(' int64 ')'
+	| UNSIGNED INT32_ '(' int32 ')'
+	| UNSIGNED INT16 '(' int32 ')'
+	| UNSIGNED INT8 '(' int32 ')'
+	| UINT64 '(' int64 ')'
+	| UINT32 '(' int32 ')'
+	| UINT16 '(' int32 ')'
+	| UINT8 '(' int32 ')'
+	| CHAR '(' int32 ')'
+	| BOOL '(' truefalse ')'
 	| 'bytearray' '(' bytes ')';
 
 bytes: hexbytes*;
@@ -929,31 +945,31 @@ fieldInit: fieldSerInit | compQstring | NULLREF;
 /*  Values for verbal form of CA blob description  */
 serInit:
 	fieldSerInit
-	| 'string' '(' NULLREF ')'
-	| 'string' '(' SQSTRING ')'
-	| 'type' '(' 'class' SQSTRING ')'
-	| 'type' '(' className ')'
-	| 'type' '(' NULLREF ')'
-	| 'object' '(' serInit ')'
-	| 'float32' '[' int32 ']' '(' f32seq ')'
-	| 'float64' '[' int32 ']' '(' f64seq ')'
-	| 'int64' '[' int32 ']' '(' i64seq ')'
-	| 'int32' '[' int32 ']' '(' i32seq ')'
-	| 'int16' '[' int32 ']' '(' i16seq ')'
-	| 'int8' '[' int32 ']' '(' i8seq ')'
-	| 'uint64' '[' int32 ']' '(' i64seq ')'
-	| 'uint32' '[' int32 ']' '(' i32seq ')'
-	| 'uint16' '[' int32 ']' '(' i16seq ')'
-	| 'uint8' '[' int32 ']' '(' i8seq ')'
-	| 'unsigned' 'int64' '[' int32 ']' '(' i64seq ')'
-	| 'unsigned' 'int32' '[' int32 ']' '(' i32seq ')'
-	| 'unsigned' 'int16' '[' int32 ']' '(' i16seq ')'
-	| 'unsigned' 'int8' '[' int32 ']' '(' i8seq ')'
-	| 'char' '[' int32 ']' '(' i16seq ')'
-	| 'bool' '[' int32 ']' '(' boolSeq ')'
-	| 'string' '[' int32 ']' '(' sqstringSeq ')'
-	| 'type' '[' int32 ']' '(' classSeq ')'
-	| 'object' '[' int32 ']' '(' objSeq ')';
+	| STRING '(' NULLREF ')'
+	| STRING '(' SQSTRING ')'
+	| TYPE '(' 'class' SQSTRING ')'
+	| TYPE '(' className ')'
+	| TYPE '(' NULLREF ')'
+	| OBJECT '(' serInit ')'
+	| FLOAT32 '[' int32 ']' '(' f32seq ')'
+	| FLOAT64_ '[' int32 ']' '(' f64seq ')'
+	| INT64_ '[' int32 ']' '(' i64seq ')'
+	| INT32_ '[' int32 ']' '(' i32seq ')'
+	| INT16 '[' int32 ']' '(' i16seq ')'
+	| INT8 '[' int32 ']' '(' i8seq ')'
+	| UINT64 '[' int32 ']' '(' i64seq ')'
+	| UINT32 '[' int32 ']' '(' i32seq ')'
+	| UINT16 '[' int32 ']' '(' i16seq ')'
+	| UINT8 '[' int32 ']' '(' i8seq ')'
+	| UNSIGNED INT64_ '[' int32 ']' '(' i64seq ')'
+	| UNSIGNED INT32_ '[' int32 ']' '(' i32seq ')'
+	| UNSIGNED INT16 '[' int32 ']' '(' i16seq ')'
+	| UNSIGNED INT8 '[' int32 ']' '(' i8seq ')'
+	| CHAR '[' int32 ']' '(' i16seq ')'
+	| BOOL '[' int32 ']' '(' boolSeq ')'
+	| STRING '[' int32 ']' '(' sqstringSeq ')'
+	| TYPE '[' int32 ']' '(' classSeq ')'
+	| OBJECT '[' int32 ']' '(' objSeq ')';
 
 f32seq: (float64 | int32)*;
 

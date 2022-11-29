@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 
 namespace ILAssembler
@@ -25,10 +24,10 @@ namespace ILAssembler
         public sealed record Sequence<T>(ImmutableArray<T> Value): GrammarResult;
 
         /// <summary>
-        /// A sequence of bytes written by a BlobBuilder.
+        /// A formatted blob of bytes.
         /// </summary>
         /// <param name="Value">The bytes of the blob.</param>
-        public sealed record FormattedBlob(ImmutableArray<byte> Value): GrammarResult;
+        public sealed record FormattedBlob(BlobBuilder Value): GrammarResult;
 
         public sealed record SentinelValue
         {
@@ -61,7 +60,7 @@ namespace ILAssembler
         public GrammarResult VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitAtOpt(CILParser.AtOptContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitBoolSeq(CILParser.BoolSeqContext context) => VisitBoolSeq(context);
-        public static GrammarResult.Sequence<bool> VisitBoolSeq(CILParser.BoolSeqContext context)
+        public static GrammarResult.FormattedBlob VisitBoolSeq(CILParser.BoolSeqContext context)
         {
             var builder = ImmutableArray.CreateBuilder<bool>();
 
@@ -70,7 +69,7 @@ namespace ILAssembler
                 builder.AddRange(VisitTruefalse(item).Value);
             }
 
-            return new(builder.ToImmutable());
+            return new(builder.ToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitBound(CILParser.BoundContext context) => VisitBound(context);
         public GrammarResult.Sequence<int> VisitBound(CILParser.BoundContext context)
@@ -122,8 +121,33 @@ namespace ILAssembler
         public GrammarResult VisitClassHead(CILParser.ClassHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitClassHeadBegin(CILParser.ClassHeadBeginContext context) => throw new NotImplementedException();
         public GrammarResult VisitClassName(CILParser.ClassNameContext context) => throw new NotImplementedException();
-        public GrammarResult VisitClassSeq(CILParser.ClassSeqContext context) => throw new NotImplementedException();
-        public GrammarResult VisitClassSeqElement(CILParser.ClassSeqElementContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
+        public static GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
+        {
+            // We're going to add all of the elements in the sequence as prefix blobs to this blob.
+            BlobBuilder objSeqBlob = new(0);
+            foreach (var item in context.classSeqElement())
+            {
+                objSeqBlob.LinkPrefix(VisitClassSeqElement(item).Value);
+            }
+            return new(objSeqBlob);
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitClassSeqElement(CILParser.ClassSeqElementContext context) => VisitClassSeqElement(context);
+
+        public static GrammarResult.FormattedBlob VisitClassSeqElement(CILParser.ClassSeqElementContext context)
+        {
+            if (context.className() is CILParser.ClassNameContext className)
+            {
+                // TODO: convert className to a reflection-notation string.
+                _ = className;
+                throw new NotImplementedException();
+            }
+
+            BlobBuilder blob = new();
+            blob.WriteSerializedString(context.SQSTRING()?.Symbol.Text);
+            return new(blob);
+        }
         public GrammarResult VisitCompControl(CILParser.CompControlContext context)
         {
             throw new NotImplementedException("Compilation control directives should be handled by a custom token stream.");
@@ -191,7 +215,7 @@ namespace ILAssembler
         public GrammarResult VisitExtendsClause(CILParser.ExtendsClauseContext context) => throw new NotImplementedException();
         public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
-        public GrammarResult.Sequence<float> VisitF32seq(CILParser.F32seqContext context)
+        public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
         {
             var builder = ImmutableArray.CreateBuilder<float>();
 
@@ -204,10 +228,10 @@ namespace ILAssembler
                     _ => throw new InvalidOperationException("unreachable")
                 }));
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitF64seq(CILParser.F64seqContext context) => VisitF64seq(context);
-        public GrammarResult.Sequence<double> VisitF64seq(CILParser.F64seqContext context)
+        public GrammarResult.FormattedBlob VisitF64seq(CILParser.F64seqContext context)
         {
             var builder = ImmutableArray.CreateBuilder<double>();
 
@@ -220,14 +244,98 @@ namespace ILAssembler
                     _ => throw new InvalidOperationException("unreachable")
                 }));
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
         public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldAttr(CILParser.FieldAttrContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldInit(CILParser.FieldInitContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFieldSerInit(CILParser.FieldSerInitContext context) => throw new NotImplementedException();
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitFieldSerInit(CILParser.FieldSerInitContext context) => VisitFieldSerInit(context);
+        public GrammarResult.FormattedBlob VisitFieldSerInit(CILParser.FieldSerInitContext context)
+        {
+            // The max length for the majority of the blobs is 9 bytes. 1 for the type of blob, 8 for the max 64-bit value.
+            // Byte arrays can be larger, so we handle that case separately.
+            const int CommonMaxBlobLength = 9;
+            BlobBuilder builder;
+            var bytesNode = context.bytes();
+            if (bytesNode is not null)
+            {
+                var bytesResult = VisitBytes(bytesNode);
+                // Our blob length is the number of bytes in the byte array + the code for the byte array.
+                builder = new BlobBuilder(bytesResult.Value.Length + 1);
+                builder.WriteByte((byte)SerializationTypeCode.String);
+                builder.WriteBytes(bytesResult.Value);
+                return new(builder);
+            }
+            builder = new BlobBuilder(CommonMaxBlobLength);
+
+            int tokenType;
+            if (context.UNSIGNED() is not null)
+            {
+                tokenType = GetUnsignedTokenTypeForSignedTokenType(((ITerminalNode)context.GetChild(1)).Symbol.Type);
+            }
+            else
+            {
+                tokenType = ((ITerminalNode)context.GetChild(0)).Symbol.Type;
+            }
+
+            builder.WriteByte((byte)GetTypeCodeForToken(tokenType));
+
+            switch (tokenType)
+            {
+                case CILParser.BOOL:
+                    builder.WriteBoolean(VisitTruefalse(context.truefalse()).Value);
+                    break;
+                case CILParser.INT8:
+                case CILParser.UINT8:
+                    builder.WriteByte((byte)VisitInt32(context.int32()).Value);
+                    break;
+                case CILParser.CHAR:
+                case CILParser.INT16:
+                case CILParser.UINT16:
+                    builder.WriteInt16((short)VisitInt32(context.int32()).Value);
+                    break;
+                case CILParser.INT32:
+                case CILParser.UINT32:
+                    builder.WriteInt32(VisitInt32(context.int32()).Value);
+                    break;
+                case CILParser.INT64:
+                case CILParser.UINT64:
+                    builder.WriteInt64(VisitInt64(context.int64()).Value);
+                    break;
+                case CILParser.FLOAT32:
+                    {
+                        if (context.float64() is CILParser.Float64Context float64)
+                        {
+                            builder.WriteSingle((float)VisitFloat64(float64).Value);
+                        }
+                        if (context.int32() is CILParser.Int32Context int32)
+                        {
+                            int value = VisitInt32(int32).Value;
+                            builder.WriteSingle(Unsafe.As<int, float>(ref value));
+                        }
+                        break;
+                    }
+                case CILParser.FLOAT64:
+                    {
+                        if (context.float64() is CILParser.Float64Context float64)
+                        {
+                            builder.WriteDouble(VisitFloat64(float64).Value);
+                        }
+                        if (context.int64() is CILParser.Int64Context int64)
+                        {
+                            long value = VisitInt64(int64).Value;
+                            builder.WriteDouble(Unsafe.As<long, double>(ref value));
+                        }
+                        break;
+                    }
+            }
+
+            return new(builder);
+        }
+
         public GrammarResult VisitFileAttr(CILParser.FileAttrContext context) => throw new NotImplementedException();
         public GrammarResult VisitFileDecl(CILParser.FileDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitFileEntry(CILParser.FileEntryContext context) => throw new NotImplementedException();
@@ -280,7 +388,7 @@ namespace ILAssembler
             return new(builder.MoveToImmutable());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitI16seq(CILParser.I16seqContext context) => VisitI16seq(context);
-        public GrammarResult.Sequence<short> VisitI16seq(CILParser.I16seqContext context)
+        public GrammarResult.FormattedBlob VisitI16seq(CILParser.I16seqContext context)
         {
             var values = context.int32();
             var builder = ImmutableArray.CreateBuilder<short>(values.Length);
@@ -288,10 +396,10 @@ namespace ILAssembler
             {
                 builder.Add((short)VisitInt32(value).Value);
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitI32seq(CILParser.I32seqContext context) => VisitI32seq(context);
-        public GrammarResult.Sequence<int> VisitI32seq(CILParser.I32seqContext context)
+        public GrammarResult.FormattedBlob VisitI32seq(CILParser.I32seqContext context)
         {
             var values = context.int32();
             var builder = ImmutableArray.CreateBuilder<int>(values.Length);
@@ -299,11 +407,11 @@ namespace ILAssembler
             {
                 builder.Add(VisitInt32(value).Value);
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitI8seq(CILParser.I8seqContext context) => VisitI8seq(context);
-        public GrammarResult.Sequence<byte> VisitI8seq(CILParser.I8seqContext context)
+        public GrammarResult.FormattedBlob VisitI8seq(CILParser.I8seqContext context)
         {
             var values = context.int32();
             var builder = ImmutableArray.CreateBuilder<byte>(values.Length);
@@ -311,11 +419,11 @@ namespace ILAssembler
             {
                 builder.Add((byte)VisitInt32(value).Value);
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitI64seq(CILParser.I64seqContext context) => VisitI64seq(context);
-        public GrammarResult.Sequence<long> VisitI64seq(CILParser.I64seqContext context)
+        public GrammarResult.FormattedBlob VisitI64seq(CILParser.I64seqContext context)
         {
             var values = context.int64();
             var builder = ImmutableArray.CreateBuilder<long>(values.Length);
@@ -323,7 +431,7 @@ namespace ILAssembler
             {
                 builder.Add(VisitInt64(value).Value);
             }
-            return new(builder.MoveToImmutable());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
@@ -358,11 +466,10 @@ namespace ILAssembler
         public GrammarResult VisitInstr_type(CILParser.Instr_typeContext context) => throw new NotImplementedException();
         public GrammarResult VisitInstr_var(CILParser.Instr_varContext context) => throw new NotImplementedException();
 
-
-        private static ReadOnlySpan<char> ProcessIntegerValue(ReadOnlySpan<char> value, out NumberStyles parseStyle, out bool negate)
+        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
         {
-            parseStyle = NumberStyles.None;
-            negate = false;
+            NumberStyles parseStyle = NumberStyles.None;
+            bool negate = false;
             if (value.StartsWith("-".AsSpan()))
             {
                 negate = true;
@@ -375,13 +482,32 @@ namespace ILAssembler
             }
             else if (value.StartsWith("0".AsSpan()))
             {
-                // TODO: Handle octal
+                // Octal support isn't built-in, so we'll do it manually.
+                result = 0;
+                for (int i = 0; i < value.Length; i++, result *= 8)
+                {
+                    int digitValue = value[i] - '0';
+                    if (digitValue < 0 || digitValue > 7)
+                    {
+                        // COMPAT: native ilasm skips invalid digits silently
+                        continue;
+                    }
+                    result += digitValue;
+                }
+                return true;
             }
 
-            return value;
+            bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
+            if (!success)
+            {
+                return false;
+            }
+
+            result *= negate ? -1 : 1;
+            return true;
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitInt32(ILAssembler.CILParser.Int32Context context)
+        GrammarResult ICILVisitor<GrammarResult>.VisitInt32(CILParser.Int32Context context)
         {
             return VisitInt32(context);
         }
@@ -392,59 +518,39 @@ namespace ILAssembler
 
             ReadOnlySpan<char> value = node.Text.AsSpan();
 
-            NumberStyles parseStyle;
-            bool negate;
-            value = ProcessIntegerValue(value, out parseStyle, out negate);
-
-            string trimmedValue = value.ToString();
-            if (!long.TryParse(trimmedValue, parseStyle, CultureInfo.InvariantCulture, out long num))
+            if (!ParseIntegerValue(value, out long num))
             {
                 _diagnostics.Add(new Diagnostic(
                     DiagnosticIds.LiteralOutOfRange,
                     DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, trimmedValue),
+                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
                     Location.From(node, _document)));
                 return new GrammarResult.Literal<int>(0);
-            }
-
-            if (negate)
-            {
-                num = -num;
             }
 
             return new GrammarResult.Literal<int>((int)num);
         }
 
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitInt64(ILAssembler.CILParser.Int64Context context)
+        GrammarResult ICILVisitor<GrammarResult>.VisitInt64(CILParser.Int64Context context)
         {
             return VisitInt64(context);
         }
 
         public GrammarResult.Literal<long> VisitInt64(CILParser.Int64Context context)
         {
-            IToken node = context.INT32().Symbol;
+            IToken node = context.GetChild<ITerminalNode>(0).Symbol;
 
             ReadOnlySpan<char> value = node.Text.AsSpan();
 
-            NumberStyles parseStyle;
-            bool negate;
-            value = ProcessIntegerValue(value, out parseStyle, out negate);
-
-            string trimmedValue = value.ToString();
-            if (!long.TryParse(trimmedValue, parseStyle, CultureInfo.InvariantCulture, out long num))
+            if (!ParseIntegerValue(value, out long num))
             {
                 _diagnostics.Add(new Diagnostic(
                     DiagnosticIds.LiteralOutOfRange,
                     DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, trimmedValue),
+                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
                     Location.From(node, _document)));
                 return new GrammarResult.Literal<long>(0);
-            }
-
-            if (negate)
-            {
-                num = -num;
             }
 
             return new GrammarResult.Literal<long>(num);
@@ -477,7 +583,19 @@ namespace ILAssembler
         public GrammarResult VisitNameValPairs(CILParser.NameValPairsContext context) => throw new NotImplementedException();
         public GrammarResult VisitNativeType(CILParser.NativeTypeContext context) => throw new NotImplementedException();
         public GrammarResult VisitNativeTypeElement(CILParser.NativeTypeElementContext context) => throw new NotImplementedException();
-        public GrammarResult VisitObjSeq(CILParser.ObjSeqContext context) => throw new NotImplementedException();
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitObjSeq(CILParser.ObjSeqContext context) => VisitObjSeq(context);
+        public GrammarResult.FormattedBlob VisitObjSeq(CILParser.ObjSeqContext context)
+        {
+            // We're going to add all of the elements in the sequence as prefix blobs to this blob.
+            BlobBuilder objSeqBlob = new(0);
+            foreach (var item in context.serInit())
+            {
+                objSeqBlob.LinkPrefix(VisitSerInit(item).Value);
+            }
+            return new(objSeqBlob);
+        }
+
         public GrammarResult VisitOwnerType(CILParser.OwnerTypeContext context) => throw new NotImplementedException();
         public GrammarResult VisitParamAttr(CILParser.ParamAttrContext context) => throw new NotImplementedException();
         public GrammarResult VisitParamAttrElement(CILParser.ParamAttrElementContext context) => throw new NotImplementedException();
@@ -497,7 +615,96 @@ namespace ILAssembler
         public GrammarResult VisitSehClauses(CILParser.SehClausesContext context) => throw new NotImplementedException();
         public GrammarResult VisitSeralizType(CILParser.SeralizTypeContext context) => throw new NotImplementedException();
         public GrammarResult VisitSeralizTypeElement(CILParser.SeralizTypeElementContext context) => throw new NotImplementedException();
-        public GrammarResult VisitSerInit(CILParser.SerInitContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitSerInit(CILParser.SerInitContext context) => VisitSerInit(context);
+        public GrammarResult.FormattedBlob VisitSerInit(CILParser.SerInitContext context)
+        {
+            if (context.fieldSerInit() is CILParser.FieldSerInitContext fieldSerInit)
+            {
+                return VisitFieldSerInit(fieldSerInit);
+            }
+
+            if (context.serInit() is CILParser.SerInitContext serInit)
+            {
+                Debug.Assert(context.OBJECT() is not null);
+                BlobBuilder taggedObjectBlob = new(1);
+                taggedObjectBlob.WriteByte((byte)SerializationTypeCode.TaggedObject);
+                taggedObjectBlob.LinkSuffix(VisitSerInit(serInit).Value);
+                return new(taggedObjectBlob);
+            }
+
+            if (context.int32() is not CILParser.Int32Context arrLength)
+            {
+                // The only cases where there is no int32 node is when the value is a string or type.
+                BlobBuilder blob = new();
+                blob.WriteByte((byte)GetTypeCodeForToken(((ITerminalNode)context.GetChild(0)).Symbol.Type));
+                if (context.className() is CILParser.ClassNameContext className)
+                {
+                    // TODO: convert className to a reflection-notation string.
+                    _ = className;
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    blob.WriteSerializedString(context.SQSTRING()?.Symbol.Text);
+                }
+                return new(blob);
+            }
+
+            int tokenType;
+            if (context.UNSIGNED() is not null)
+            {
+                tokenType = GetUnsignedTokenTypeForSignedTokenType(((ITerminalNode)context.GetChild(1)).Symbol.Type);
+            }
+            else
+            {
+                tokenType = ((ITerminalNode)context.GetChild(0)).Symbol.Type;
+            }
+
+            // 1 byte for ELEMENT_TYPE_SZARRAY, 1 byte for the array element type, 4 bytes for the length.
+            BlobBuilder arrayHeader = new(6);
+            arrayHeader.WriteByte((byte)SerializationTypeCode.SZArray);
+            arrayHeader.WriteByte((byte)GetTypeCodeForToken(tokenType));
+            arrayHeader.WriteInt32(VisitInt32(arrLength).Value);
+            var sequenceResult = (GrammarResult.FormattedBlob)Visit(context.GetRuleContext<ParserRuleContext>(0));
+            arrayHeader.LinkSuffix(sequenceResult.Value);
+            return new(arrayHeader);
+        }
+
+        private static int GetUnsignedTokenTypeForSignedTokenType(int tokenType)
+        {
+            return tokenType switch
+            {
+                CILParser.INT8 => CILParser.UINT8,
+                CILParser.INT16 => CILParser.UINT16,
+                CILParser.INT32 => CILParser.UINT32,
+                CILParser.INT64 => CILParser.UINT64,
+                _ => throw new InvalidOperationException("unreachable")
+            };
+        }
+
+        private static SerializationTypeCode GetTypeCodeForToken(int tokenType)
+        {
+            return tokenType switch
+            {
+                CILParser.INT8 => SerializationTypeCode.SByte,
+                CILParser.UINT8 => SerializationTypeCode.Byte,
+                CILParser.INT16 => SerializationTypeCode.Int16,
+                CILParser.UINT16 => SerializationTypeCode.UInt16,
+                CILParser.INT32_ => SerializationTypeCode.Int32,
+                CILParser.UINT32 => SerializationTypeCode.UInt32,
+                CILParser.INT64_ => SerializationTypeCode.Int64,
+                CILParser.UINT64 => SerializationTypeCode.UInt64,
+                CILParser.FLOAT32 => SerializationTypeCode.Single,
+                CILParser.FLOAT64_ => SerializationTypeCode.Double,
+                CILParser.CHAR => SerializationTypeCode.Char,
+                CILParser.BOOL => SerializationTypeCode.Boolean,
+                CILParser.STRING => SerializationTypeCode.String,
+                CILParser.TYPE => SerializationTypeCode.Type,
+                CILParser.OBJECT => SerializationTypeCode.TaggedObject,
+                _ => throw new InvalidOperationException("unreachable")
+            };
+        }
+
         public GrammarResult VisitSigArg(CILParser.SigArgContext context) => throw new NotImplementedException();
         public GrammarResult VisitSigArgs(CILParser.SigArgsContext context) => throw new NotImplementedException();
         public GrammarResult VisitSimpleType(CILParser.SimpleTypeContext context) => throw new NotImplementedException();
@@ -516,9 +723,9 @@ namespace ILAssembler
             return new(builder.ToString());
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitSqstringSeq(ILAssembler.CILParser.SqstringSeqContext context) => VisitSqstringSeq(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitSqstringSeq(CILParser.SqstringSeqContext context) => VisitSqstringSeq(context);
 
-        public static GrammarResult.Sequence<string?> VisitSqstringSeq(CILParser.SqstringSeqContext context)
+        public static GrammarResult.FormattedBlob VisitSqstringSeq(CILParser.SqstringSeqContext context)
         {
             var strings = ImmutableArray.CreateBuilder<string?>(context.ChildCount);
             foreach (var child in context.children)
@@ -532,7 +739,7 @@ namespace ILAssembler
 
                 strings.Add(str);
             }
-            return new(strings.ToImmutable());
+            return new(strings.ToImmutable().SerializeSequence());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitStackreserve(CILParser.StackreserveContext context) => VisitStackreserve(context);
@@ -544,7 +751,7 @@ namespace ILAssembler
         public GrammarResult VisitTerminal(ITerminalNode node) => throw new NotImplementedException();
         public GrammarResult VisitTls(CILParser.TlsContext context) => throw new NotImplementedException();
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(ILAssembler.CILParser.TruefalseContext context) => VisitTruefalse(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(CILParser.TruefalseContext context) => VisitTruefalse(context);
 
         public static GrammarResult.Literal<bool> VisitTruefalse(CILParser.TruefalseContext context)
         {
