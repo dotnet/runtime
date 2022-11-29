@@ -121,6 +121,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <!-- FreeBSD has two versions of the GSSAPI it can use, but we only use the ports version (MIT version) here -->
+      <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(TargetOS)' == 'FreeBSD'" />
       <!-- FreeBSD's inotify is an installed package and not found in default libraries. Remove next line if using kqueue under FreeBSD -->
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(TargetOS)' == 'FreeBSD'" />
 
@@ -149,7 +151,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(HostOS)' == 'FreeBSD'">
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">llvm-objcopy11</ObjCopyName>
+      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">llvm-objcopy12</ObjCopyName>
     </PropertyGroup>
 
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
