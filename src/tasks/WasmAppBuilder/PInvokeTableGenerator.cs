@@ -438,7 +438,7 @@ internal sealed class PInvokeTableGenerator
 
             bool is_void = method.ReturnType.Name == "Void";
 
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            string module_symbol = FixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             uint token = (uint)method.MetadataToken;
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
@@ -505,7 +505,7 @@ internal sealed class PInvokeTableGenerator
         foreach (var cb in callbacks)
         {
             var method = cb.Method;
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            string module_symbol = FixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
             w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
