@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	internal static class NameUtils
 	{
 		internal static string? GetActualOriginDisplayName (TypeSystemEntity? entity) => entity switch {
-			DefType defType => TrimAssemblyNamePrefix (defType.ToString ()),
+			DefType defType => TrimAssemblyNamePrefix (defType.GetDisplayName ()),
 			MethodDesc method => TrimAssemblyNamePrefix (method.GetDisplayName ()),
 			FieldDesc field => TrimAssemblyNamePrefix (field.ToString ()),
 			ModuleDesc module => module.Assembly.GetName ().Name,
@@ -40,6 +40,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ConvertSignatureToIlcFormat (provider switch {
 				MethodDefinition method => method.GetDisplayName (),
 				FieldDefinition field => field.GetDisplayName (),
+				TypeDefinition type => type.GetDisplayName (),
 				IMemberDefinition member => member.FullName,
 				AssemblyDefinition asm => asm.Name.Name,
 				_ => throw new NotImplementedException ()

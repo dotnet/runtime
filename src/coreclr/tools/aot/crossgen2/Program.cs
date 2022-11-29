@@ -891,7 +891,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineBuilder(new Crossgen2RootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(Crossgen2RootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()

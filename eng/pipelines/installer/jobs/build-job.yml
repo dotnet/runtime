@@ -75,6 +75,11 @@ jobs:
     crossBuild: ${{ parameters.crossBuild }}
 
     gatherAssetManifests: true
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{ variable }}
