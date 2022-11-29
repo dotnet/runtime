@@ -4079,5 +4079,25 @@ namespace Internal.JitInterface
             return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
         }
 #endif
+
+        private static bool TryReadRvaFieldData(FieldDesc field, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
+            Debug.Assert(field.IsStatic);
+            Debug.Assert(field.HasRva);
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field is EcmaField ecmaField)
+            {
+                ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
+                if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
+                {
+                    rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

@@ -28,7 +28,7 @@ Such transport packages represent the set of libraries which are produced in dot
 
 To add a library to the target's shared framework, that library should be listed in the `AspNetCoreAppLibrary` or `WindowsDesktopAppLibrary` section in `NetCoreAppLibrary.props`.
 
-Source generators and analyzers can be included in the package by adding them to the `Microsoft.Internal.Runtime.**TARGET**.Transport.proj` as an AnalyzerReference. The analyzer projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the package by adding them to the `Microsoft.Internal.Runtime.**TARGET**.Transport.proj` as a ProjectReference with the `ReferenceOutputAssembly=false` and `PackAsAnalyzer=true` metadata set. The analyzer projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the target's shared framework or the Microsoft.NETCore.App shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 
@@ -70,10 +70,13 @@ Build props and targets may be needed in NuGet packages. To define these, author
 
 Some packages may wish to include a companion analyzer or source-generator with their library. Analyzers are much different from normal library contributors: their dependencies shouldn't be treated as nuget package dependencies, their TargetFramework isn't applicable to the project they are consumed in (since they run in the compiler). To facilitate this, we've defined some common infrastructure for packaging Analyzers.
 
-To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer and set the `Pack` metadata to true. If you just want to include the analyzer but not consume it, set the `ReferenceAnalyzer` metadata to false.
+To include an analyzer in a package, simply add a `ProjectReference` item to the project that produces the package that should contain the analyzer and set the `ReferenceOutputAssembly` metadata to false and the `PackAsAnalyzer` metadata to true. If you also want to consume the analyzer, set the `OutputItemType` metadata to `Analyzer`.
 ```xml
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" Pack="true" ReferenceAnalyzer="false" />
+    <!-- Includes the analyzer in the package without consuming it. -->
+    <ProjectReference Include="..\gen\System.Banana.Generators.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    <!-- Includes the analyzer in the package and consumes it. -->
+    <ProjectReference Include="..\gen\System.Banana.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" PackAsAnalyzer="true" />
   </ItemGroup>
 ```
 

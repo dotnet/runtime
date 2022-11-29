@@ -3569,16 +3569,17 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return (void*)value.fieldAddress;
 }
 
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects, bool result)
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result)
 {
     if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DLDD, DD>();
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLDDD, DD>();
 
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)ignoreMovableObjects;
+    key.D = (DWORD)valueOffset;
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
@@ -3591,18 +3592,19 @@ void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     GetReadonlyStaticFieldValue->Add(key, value);
     DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
 }
-void MethodContext::dmpGetReadonlyStaticFieldValue(DLDD key, DD value)
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLDDD key, DD value)
 {
-    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, ignoremovable-%u, result-%u", key.A, key.B, key.C, value.A);
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, ignoremovable-%u, valOffset-%u result-%u", key.A, key.B, key.C, key.D, value.A);
     GetReadonlyStaticFieldValue->Unlock();
 }
-bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)ignoreMovableObjects;
+    key.D = (DWORD)valueOffset;
 
     DD value = LookupByKeyOrMiss(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
 
