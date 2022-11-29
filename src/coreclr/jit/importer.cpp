@@ -10462,7 +10462,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
                                 GenTree* nullcheck = gtNewNullCheck(op1, block);
-                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                // Add an ordering dependency between the null
+                                // check and forming the byref; the JIT assumes
+                                // in many places that the only legal null
+                                // byref is literally 0, and since the byref
+                                // leaks out here, we need to ensure it is
+                                // nullchecked.
+                                nullcheck->gtFlags |= GTF_ORDER_SIDEEFF;
+                                boxPayloadAddress->gtFlags |= GTF_ORDER_SIDEEFF;
+                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }

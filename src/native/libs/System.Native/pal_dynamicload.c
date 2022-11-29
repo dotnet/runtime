@@ -86,11 +86,16 @@ void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
     void* defaultSearchOrderPseudoHandle = (void*)g_defaultSearchOrderPseudoHandle;
     if (defaultSearchOrderPseudoHandle == NULL)
     {
+#ifdef TARGET_ANDROID
+        int flag = RTLD_NOW;
+#else
+        int flag = RTLD_LAZY;
+#endif
+
         // Assign back to the static as well as the local here.
         // We don't need to check for a race between two threads as the value returned by
         // dlopen here will always be the same in a given environment.
-        g_defaultSearchOrderPseudoHandle = defaultSearchOrderPseudoHandle = dlopen(NULL, RTLD_LAZY);
+        g_defaultSearchOrderPseudoHandle = defaultSearchOrderPseudoHandle = dlopen(NULL, flag);
     }
     return defaultSearchOrderPseudoHandle;
 }
-#endif

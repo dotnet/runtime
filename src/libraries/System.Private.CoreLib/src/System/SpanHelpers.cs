@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable 8500 // sizeof of managed types
+
 namespace System
 {
     internal static partial class SpanHelpers
@@ -557,28 +559,28 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Reverse<T>(ref T elements, nuint length)
+        public static unsafe void Reverse<T>(ref T elements, nuint length)
         {
             Debug.Assert(length > 1);
 
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                if (sizeof(T) == sizeof(byte))
                 {
                     Reverse(ref Unsafe.As<T, byte>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                else if (sizeof(T) == sizeof(char))
                 {
                     Reverse(ref Unsafe.As<T, char>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                else if (sizeof(T) == sizeof(int))
                 {
                     Reverse(ref Unsafe.As<T, int>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                else if (sizeof(T) == sizeof(long))
                 {
                     Reverse(ref Unsafe.As<T, long>(ref elements), length);
                     return;

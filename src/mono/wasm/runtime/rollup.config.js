@@ -1,14 +1,14 @@
 import { defineConfig } from "rollup";
 import typescript from "@rollup/plugin-typescript";
-import { terser } from "rollup-plugin-terser";
+import terser from "@rollup/plugin-terser";
+import virtual from "@rollup/plugin-virtual";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
-import consts from "rollup-plugin-consts";
 import { createFilter } from "@rollup/pluginutils";
-import * as fast_glob from "fast-glob";
+import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
 
 const configuration = process.env.Configuration;
@@ -71,6 +71,20 @@ try {
     gitHash = gitInfo.hash;
 } catch (e) {
     gitHash = "unknown";
+}
+
+function consts(dict) {
+    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    /// and the virtual module always exports a single default binding (the const value).
+
+    let newDict = {};
+    for (const k in dict) {
+        const newKey = "consts:" + k;
+        const newVal = JSON.stringify (dict[k]);
+        newDict[newKey] = `export default ${newVal}`;
+    }
+    return virtual(newDict);
 }
 
 // set tsconfig.json options note exclude comes from tsconfig.json

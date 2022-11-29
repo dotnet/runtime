@@ -791,25 +791,46 @@ namespace System.Text.Json.Serialization.Metadata
                     // Overwrite previously cached property since it has [JsonIgnore].
                     propertyCache[jsonPropertyInfo.Name] = jsonPropertyInfo;
                 }
-                else if (
-                    // Does the current property have `JsonIgnoreAttribute`?
-                    !jsonPropertyInfo.IsIgnored &&
-                    // Is the current property hidden by the previously cached property
-                    // (with `new` keyword, or by overriding)?
-                    other.MemberName != memberName &&
-                    // Was a property with the same CLR name was ignored? That property hid the current property,
-                    // thus, if it was ignored, the current property should be ignored too.
-                    ignoredMembers?.ContainsKey(memberName) != true)
+                else
                 {
-                    // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo.Name);
+                    bool ignoreCurrentProperty;
+
+                    if (!Type.IsInterface)
+                    {
+                        ignoreCurrentProperty =
+                            // Does the current property have `JsonIgnoreAttribute`?
+                            jsonPropertyInfo.IsIgnored ||
+                            // Is the current property hidden by the previously cached property
+                            // (with `new` keyword, or by overriding)?
+                            other.MemberName == memberName ||
+                            // Was a property with the same CLR name ignored? That property hid the current property,
+                            // thus, if it was ignored, the current property should be ignored too.
+                            ignoredMembers?.ContainsKey(memberName) == true;
+                    }
+                    else
+                    {
+                        // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
+                        // Conflicts like this are possible in two cases:
+                        // 1. Diamond ambiguity in property names, or
+                        // 2. Linear interface hierarchies that use properties with DIMs.
+                        //
+                        // Diamond ambiguities are not supported. Assuming there is demand, we might consider
+                        // adding support for DIMs in the future, however that would require adding more APIs
+                        // for the case of source gen.
+
+                        ignoreCurrentProperty = jsonPropertyInfo.IsIgnored;
+                    }
+
+                    if (!ignoreCurrentProperty)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo.Name);
+                    }
                 }
-                // Ignore the current property.
             }
 
             if (jsonPropertyInfo.IsIgnored)
             {
-                (ignoredMembers ??= new Dictionary<string, JsonPropertyInfo>()).Add(memberName, jsonPropertyInfo);
+                (ignoredMembers ??= new()).Add(memberName, jsonPropertyInfo);
             }
         }
 

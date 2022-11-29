@@ -4794,6 +4794,17 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
+    // Evaluating op1/op2 unconditionally effectively has the same effect as
+    // reordering them with the condition (for example, the condition could be
+    // an explicit bounds check and the operand could read an array element).
+    // Disallow this except for some common cases that we know are always side
+    // effect free.
+    if (((cond->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !asgNode->gtGetOp2()->IsInvariant() &&
+        !asgNode->gtGetOp2()->OperIsLocal())
+    {
+        return false;
+    }
+
 #ifdef DEBUG
     if (verbose)
     {

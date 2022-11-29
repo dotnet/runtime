@@ -2728,6 +2728,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
                 assert(resultType == result->TypeGet());
+                // Add an ordering dependency between the bounds check and
+                // forming the byref to prevent these from being reordered. The
+                // JIT is not allowed to create arbitrary illegal byrefs.
+                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
+                result->gtFlags |= GTF_ORDER_SIDEEFF;
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
