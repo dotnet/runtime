@@ -285,6 +285,12 @@ namespace WebAssemblyInfo
         public Instruction[] Expression;
     }
 
+    struct Memory
+    {
+        public UInt32 Min;
+        public UInt32 Max;
+    }
+
     enum Mutability
     {
         Const = 0,

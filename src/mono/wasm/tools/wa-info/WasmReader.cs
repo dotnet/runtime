@@ -48,6 +48,9 @@ namespace WebAssemblyInfo
                 case SectionId.Global:
                     ReadGlobalSection();
                     break;
+                case SectionId.Memory:
+                    ReadMemorySection();
+                    break;
                 default:
                     break;
             }
@@ -234,6 +237,32 @@ namespace WebAssemblyInfo
                             Console.Write(instruction.ToString(this).Indent("    "));
                     }
                 }
+
+                if (Program.Verbose2)
+                    Console.WriteLine();
+            }
+        }
+
+        Memory[]? memories;
+        void ReadMemorySection()
+        {
+            var count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            memories = new Memory[count];
+            for (uint i = 0; i < count; i++)
+            {
+                var limitsType = Reader.ReadByte();
+                memories[i].Min = ReadU32();
+                memories[i].Max = limitsType == 1 ? ReadU32() : UInt32.MaxValue;
+
+                if (Program.Verbose2)
+                    Console.Write($"  memory: {i} limits: {memories[i].Min}, {memories[i].Max} has max: {limitsType == 1}");
 
                 if (Program.Verbose2)
                     Console.WriteLine();
