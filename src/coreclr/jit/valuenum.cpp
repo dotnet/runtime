@@ -6017,7 +6017,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             {
                 UINT32 cns = (UINT32)GetConstantInt32(arg0VN);
                 int    lzc = 0;
-                while(cns != 0)
+                while (cns != 0)
                 {
                     cns = cns >> 1;
                     lzc++;
@@ -6033,7 +6033,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             {
                 UINT64 cns = (UINT64)GetConstantInt64(arg0VN);
                 int    lzc = 0;
-                while(cns != 0)
+                while (cns != 0)
                 {
                     cns = cns >> 1;
                     lzc++;
