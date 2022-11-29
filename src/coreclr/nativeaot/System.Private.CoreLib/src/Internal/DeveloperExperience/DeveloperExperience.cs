@@ -65,13 +65,9 @@ namespace Internal.DeveloperExperience
                 return "<unknown>";
             }
 
-            StringBuilder sb = new StringBuilder();
             ReadOnlySpan<char> fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName.AsSpan());
             int rva = (int)(ip - moduleBase);
-            sb.Append(fileNameWithoutExtension);
-            sb.Append("!<BaseAddress>+0x");
-            sb.Append(rva.ToString("x"));
-            return sb.ToString();
+            return $"{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}";
         }
 
         public virtual void TryGetSourceLineInfo(IntPtr ip, out string fileName, out int lineNumber, out int columnNumber)
