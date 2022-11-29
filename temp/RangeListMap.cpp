@@ -7,61 +7,6 @@
 
 #define TARGET_64BIT
 
-
-class Range
-{
-public:
-    void* begin;
-    void* end;
-};
-
-class RangeList
-{
-public:
-    RangeList(Range range) :
-        _range(range)
-    {}
-
-    Range _range;
-
-    RangeList* pRangeListNextForDelete = nullptr; // Used for adding to the cleanup list
-};
-
-// Unlike a RangeList, a RangeListMini cannot span multiple elements of the last level of the SegmentMap
-// Always allocated via calloc
-class RangeListMini
-{
-public:
-    RangeListMini* pRangeListMiniNext;
-    Range _range;
-    RangeList* pRangeList;
-    bool InRange(void* address) { return address >= _range.begin && address <= _range.end && pRangeList->pRangeListNextForDelete == NULL; }
-    bool isPrimaryRangeListMini; // RangeListMini are allocated in arrays, but we only need to free the first allocated one. It will be marked with this flag.
-};
-
-
-// For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
-// For *reasons* the X64 hardware is limited to 57bits of addressable address space, and the minimum granularity that makes sense for range lists is 64KB (or every 2^16 bits)
-// Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
-// So the first level is bits [56:47] -> L4
-// Then                       [46:37] -> L3
-//                            [36:27] -> L2
-//                            [26:17] -> L1
-// This leaves 17 bits of the address to be handled by the RangeList linked list
-//
-// For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bites of address resolution per level.    [31:24] and [23:16].
-
-// The memory safety model for segment maps is that the pointers held within the individual segments can never change other than to go from NULL to a meaningful pointer, 
-// except for the final level, which is only permitted to change when CleanupWhileNoThreadMayLookupRangeLists is in use.
-
-
-
-class SingleElementSegmentMap
-{
-
-};
-
-
 template<typename T>
 void VolatileStore(T* ptr, T val)
 {
@@ -69,7 +14,7 @@ void VolatileStore(T* ptr, T val)
 }
 
 template<typename T>
-T VolatileRead(T* ptr)
+T VolatileLoad(T* ptr)
 {
     return *ptr;
 }
@@ -80,26 +25,83 @@ T VolatileLoadWithoutBarrier(T* ptr)
     return *ptr;
 }
 
+class Range
+{
+public:
+    void* begin;
+    void* end;
+};
+
+class RangeSection
+{
+public:
+    RangeSection(Range range) :
+        _range(range)
+    {}
+
+    Range _range;
+
+    RangeSection* pRangeListNextForDelete = nullptr; // Used for adding to the cleanup list
+};
+
+// For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
+// For *reasons* the X64 hardware is limited to 57bits of addressable address space, and the minimum granularity that makes sense for range lists is 64KB (or every 2^16 bits)
+// Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
+// So the first level is bits [56:47] -> L4
+// Then                       [46:37] -> L3
+//                            [36:27] -> L2
+//                            [26:17] -> L1
+// This leaves 17 bits of the address to be handled by the RangeSection linked list
+//
+// For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bites of address resolution per level.    [31:24] and [23:16].
+
+// The memory safety model for segment maps is that the pointers held within the individual segments can never change other than to go from NULL to a meaningful pointer, 
+// except for the final level, which is only permitted to change when CleanupWhileNoThreadMayLookupRangeLists is in use.
+
+
+
 class RangeListMap
 {
+    // Unlike a RangeSection, a RangeSectionFragment cannot span multiple elements of the last level of the RangeListMap
+    // Always allocated via calloc
+    class RangeSectionFragment
+    {
+    public:
+        RangeSectionFragment* pRangeListFragmentNext;
+        Range _range;
+        RangeSection* pRangeList;
+        bool InRange(void* address) { return address >= _range.begin && address <= _range.end && pRangeList->pRangeListNextForDelete == NULL; }
+        bool isPrimaryRangeListFragment; // RangeSectionFragment are allocated in arrays, but we only need to free the first allocated one. It will be marked with this flag.
+    };
+
 #ifdef TARGET_64BIT
     static const uintptr_t entriesPerMapLevel = 1024;
+#else
+    static const uintptr_t entriesPerMapLevel = 256;
+#endif
+
+    typedef RangeSectionFragment* RangeSectionList;
+    typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
+    typedef RangeSectionL1* RangeSectionL2[entriesPerMapLevel];
+    typedef RangeSectionL2* RangeSectionL3[entriesPerMapLevel];
+    typedef RangeSectionL3* RangeSectionL4[entriesPerMapLevel];
+
+#ifdef TARGET_64BIT
+    typedef RangeSectionL4 RangeSectionTopLevel;
     static const uintptr_t mapLevels = 4;
     static const uintptr_t maxSetBit = 56; // This is 0 indexed
     static const uintptr_t bitsPerLevel = 10;
-    RangeListMini***** _rangeListL4;
-    void** GetTopLevelAddress() { return reinterpret_cast<void**>(&_rangeListL4); }
 #else
-    static const uintptr_t entriesPerMapLevel = 256;
+    typedef RangeSectionL2 RangeSectionTopLevel;
     static const uintptr_t mapLevels = 2;
     static const uintptr_t maxSetBit = 31; // This is 0 indexed
     static const uintptr_t bitsPerLevel = 8;
-
-    RangeListMini** _rangeListL2;
-    void** GetTopLevelAddress() { return reinterpret_cast<void**>(&_rangeListL2); }
 #endif
+
+    RangeSectionTopLevel *_topLevel = nullptr;
+
     int _lock = 0; // 0 indicates unlocked. -1 indicates in the process of cleanup, Positive numbers indicate read locks
-    RangeList* pCleanupList = nullptr;
+    RangeSection* pCleanupList = nullptr;
 
     const uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
     const uintptr_t bytesAtLastLevel = (((uintptr_t)1) << (bitsAtLastLevel - 1));
@@ -115,142 +117,151 @@ class RangeListMap
         return addressBitsUsedInLevel;
     }
 
-    template<typename T>
-    T EnsureLevel(void *address, T* outerLevel, uintptr_t level)
+    template<class T>
+    auto EnsureLevel(void *address, T* outerLevel, uintptr_t level) -> decltype(&((**outerLevel)[0]))
     {
         uintptr_t index = EffectiveBitsForLevel(address, level);
-        T rangeListResult = outerLevel[index];
-        if (rangeListResult == NULL)
-        {
-            T rangeListNew = static_cast<T>(AllocateLevel());
-            T rangeListOld = (T)InterlockedCompareExchangePointer((volatile PVOID*)&outerLevel[index], (PVOID)rangeListNew, NULL);
+        auto levelToGetPointerIn = VolatileLoadWithoutBarrier(outerLevel);
 
-            if (rangeListOld != NULL)
+        if (levelToGetPointerIn == NULL)
+        {
+            auto levelNew = static_cast<decltype(&(*outerLevel)[0])>(AllocateLevel());
+            if (levelNew == NULL)
+                return NULL;
+            auto levelPreviouslyStored = (decltype(&(*outerLevel)[0]))InterlockedCompareExchangePointer((volatile PVOID*)outerLevel, (PVOID)levelNew, NULL);
+            if (levelPreviouslyStored != nullptr)
             {
-                rangeListResult = rangeListOld;
-                free(rangeListNew);
+                // Handle race where another thread grew the table
+                levelToGetPointerIn = levelPreviouslyStored;
+                free(levelNew);
             }
             else
             {
-                rangeListResult = rangeListNew;
+                levelToGetPointerIn = levelNew;
             }
+            assert(levelToGetPointerIn != nullptr);
         }
 
-        return rangeListResult;
+        return &((*levelToGetPointerIn)[index]);
     }
 
-    // Returns pointer to address in last level map that actually points at RangeList space.
-    RangeListMini** EnsureMapsForAddress(void* address)
+    // Returns pointer to address in last level map that actually points at RangeSection space.
+    RangeSectionFragment** EnsureMapsForAddress(void* address)
     {
+        uintptr_t level = mapLevels;
 #ifdef TARGET_64BIT
-        RangeListMini**** _rangeListL3 = EnsureLevel(address, _rangeListL4, 4);
+        auto _rangeListL3 = EnsureLevel(address, &_topLevel, level);
         if (_rangeListL3 == NULL)
             return NULL; // Failure case
-        RangeListMini*** _rangeListL2 = EnsureLevel(address, _rangeListL3, 3);
+        auto _rangeListL2 = EnsureLevel(address, _rangeListL3, --level);
         if (_rangeListL2 == NULL)
             return NULL; // Failure case
+#else
+        auto _rangeListL2 = &topLevel;
 #endif
-        RangeListMini** _rangeListL1 = EnsureLevel(address, _rangeListL2, 2);
+        auto _rangeListL1 = EnsureLevel(address, _rangeListL2, --level);
         if (_rangeListL1 == NULL)
             return NULL; // Failure case
-        return &_rangeListL1[EffectiveBitsForLevel(address, 1)];
+
+        auto result = EnsureLevel(address, _rangeListL1, --level);
+        if (result == NULL)
+            return NULL; // Failure case
+
+        return result;
     }
 
-    RangeListMini* GetRangeListForAddress(void* address)
+    RangeSectionFragment* GetRangeListForAddress(void* address)
     {
 #ifdef TARGET_64BIT
-        RangeListMini**** _rangeListL3 = VolatileRead(&_rangeListL4[EffectiveBitsForLevel(address, 4)]); // Use a VolatileRead on the top level operation to ensure that the entire map is synchronized to a state that includes all data needed to examine currently active function pointers.
+        auto _rangeListL4 = VolatileLoad(&_topLevel);
+        auto _rangeListL3 = (*_rangeListL4)[EffectiveBitsForLevel(address, 4)];
         if (_rangeListL3 == NULL)
             return NULL;
-        RangeListMini*** _rangeListL2 = _rangeListL3[EffectiveBitsForLevel(address, 3)];
+        auto _rangeListL2 = (*_rangeListL3)[EffectiveBitsForLevel(address, 3)];
         if (_rangeListL2 == NULL)
             return NULL;
-        RangeListMini** _rangeListL1 = _rangeListL2[EffectiveBitsForLevel(address, 2)];
+        auto _rangeListL1 = (*_rangeListL2)[EffectiveBitsForLevel(address, 2)];
 #else
-        RangeListMini** _rangeListL1 = VolatileRead(&_rangeListL2[EffectiveBitsForLevel(address, 2)]);
+        auto _rangeListL1 = VolatileLoad(&_topLevel[EffectiveBitsForLevel(address, 2)]); // Use a VolatileLoad on the top level operation to ensure that the entire map is synchronized to a state that includes all data needed to examine currently active function pointers.
 #endif
-        if (_rangeListL2 == NULL)
+        if (_rangeListL1 == NULL)
             return NULL;
 
-        return _rangeListL1[EffectiveBitsForLevel(address, 1)];
+        return (*_rangeListL1)[EffectiveBitsForLevel(address, 1)];
     }
 
-    uintptr_t RangeListMiniCount(RangeList *pRangeList)
+    uintptr_t RangeListFragmentCount(RangeSection *pRangeList)
     {
         uintptr_t rangeSize = reinterpret_cast<uintptr_t>(pRangeList->_range.end) - reinterpret_cast<uintptr_t>(pRangeList->_range.begin);
         rangeSize /= bytesAtLastLevel;
         return rangeSize + 1;
     }
 
-    void* IncrementAddressByMaxSizeOfMini(void* input)
+    void* IncrementAddressByMaxSizeOfFragment(void* input)
     {
         uintptr_t inputAsInt = reinterpret_cast<uintptr_t>(input);
         return reinterpret_cast<void*>(inputAsInt + bytesAtLastLevel);
     }
 
 public:
-    RangeListMap()
+    RangeListMap() : _topLevel{0}
     {
     }
 
     bool Init()
     {
-        *GetTopLevelAddress() = AllocateLevel();
-        if (*GetTopLevelAddress() == NULL)
-            return false;
-
         return true;
     }
 
-    bool AttachRangeListToMap(RangeList* pRangeList)
+    bool AttachRangeListToMap(RangeSection* pRangeList)
     {
-        uintptr_t rangeListMiniCount = RangeListMiniCount(pRangeList);
-        RangeListMini* minis = (RangeListMini*)calloc(rangeListMiniCount, sizeof(RangeListMini));
+        uintptr_t rangeListFragmentCount = RangeListFragmentCount(pRangeList);
+        RangeSectionFragment* fragments = (RangeSectionFragment*)calloc(rangeListFragmentCount, sizeof(RangeSectionFragment));
 
-        if (minis == NULL)
+        if (fragments == NULL)
         {
             return false;
         }
 
-        RangeListMini*** entriesInMapToUpdate = (RangeListMini***)calloc(rangeListMiniCount, sizeof(RangeListMini**));
+        RangeSectionFragment*** entriesInMapToUpdate = (RangeSectionFragment***)calloc(rangeListFragmentCount, sizeof(RangeSectionFragment**));
         if (entriesInMapToUpdate == NULL)
         {
-            free(minis);
+            free(fragments);
             return false;
         }
 
-        minis[0].isPrimaryRangeListMini = true;
+        fragments[0].isPrimaryRangeListFragment = true;
 
         void* addressToPrepForUpdate = pRangeList->_range.begin;
-        for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
+        for (uintptr_t iFragment = 0; iFragment < rangeListFragmentCount; iFragment++)
         {
-            minis[iMini].pRangeList = pRangeList;
-            minis[iMini]._range = pRangeList->_range;
-            RangeListMini** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
+            fragments[iFragment].pRangeList = pRangeList;
+            fragments[iFragment]._range = pRangeList->_range;
+            RangeSectionFragment** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
             if (entryInMapToUpdate == NULL)
             {
-                free(minis);
+                free(fragments);
                 free(entriesInMapToUpdate);
                 return false;
             }
 
-            entriesInMapToUpdate[iMini] = entryInMapToUpdate;
-            addressToPrepForUpdate = IncrementAddressByMaxSizeOfMini(addressToPrepForUpdate);
+            entriesInMapToUpdate[iFragment] = entryInMapToUpdate;
+            addressToPrepForUpdate = IncrementAddressByMaxSizeOfFragment(addressToPrepForUpdate);
         }
 
         // At this point all the needed memory is allocated, and it is no longer possible to fail.
-        for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
+        for (uintptr_t iFragment = 0; iFragment < rangeListFragmentCount; iFragment++)
         {
-            RangeListMini* initialMiniInMap = VolatileRead(entriesInMapToUpdate[iMini]);
+            RangeSectionFragment* initialFragmentInMap = VolatileLoad(entriesInMapToUpdate[iFragment]);
             do
             {
-                VolatileStore(&minis[iMini].pRangeListMiniNext, initialMiniInMap);
-                RangeListMini* currentMiniInMap = (RangeListMini*)InterlockedCompareExchangePointer((volatile PVOID*)entriesInMapToUpdate[iMini], &(minis[iMini]), initialMiniInMap);
-                if (currentMiniInMap == initialMiniInMap)
+                VolatileStore(&fragments[iFragment].pRangeListFragmentNext, initialFragmentInMap);
+                RangeSectionFragment* currentFragmentInMap = (RangeSectionFragment*)InterlockedCompareExchangePointer((volatile PVOID*)entriesInMapToUpdate[iFragment], &(fragments[iFragment]), initialFragmentInMap);
+                if (currentFragmentInMap == initialFragmentInMap)
                 {
                     break;
                 }
-                initialMiniInMap = currentMiniInMap;
+                initialFragmentInMap = currentFragmentInMap;
             } while (true);
         }
 
@@ -261,27 +272,27 @@ public:
     }
 
 private:
-    RangeList* LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(void* address)
+    RangeSection* LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(void* address)
     {
-        RangeListMini* mini = GetRangeListForAddress(address);
-        if (mini == NULL)
+        RangeSectionFragment* fragment = GetRangeListForAddress(address);
+        if (fragment == NULL)
             return NULL;
 
-        while (mini != NULL && !mini->InRange(address))
+        while (fragment != NULL && !fragment->InRange(address))
         {
-            mini = VolatileLoadWithoutBarrier(&mini->pRangeListMiniNext);
+            fragment = VolatileLoadWithoutBarrier(&fragment->pRangeListFragmentNext);
         }
 
-        if (mini != NULL)
+        if (fragment != NULL)
         {
-            return mini->pRangeList;
+            return fragment->pRangeList;
         }
 
         return NULL;
     }
 
 public:
-    bool TryLookupRangeListByAddressForKnownValidAddress(void* address, RangeList** pRangeList)
+    bool TryLookupRangeListByAddressForKnownValidAddress(void* address, RangeSection** pRangeList)
     {
         *pRangeList = NULL;
 
@@ -290,7 +301,7 @@ public:
 
         do
         {
-            lockVal = VolatileRead(&_lock);
+            lockVal = VolatileLoad(&_lock);
 
             // Cleanup in process. Do not succeed in producing result
             if (lockVal < 0)
@@ -306,23 +317,23 @@ public:
     }
 
     // Due to the thread safety semantics of removal, the address passed in here MUST be the address of a function on the stack, and therefore not eligible to be cleaned up due to some race.
-    RangeList* LookupRangeListCannotCallInParallelWithCleanup(void* address)
+    RangeSection* LookupRangeListCannotCallInParallelWithCleanup(void* address)
     {
         // Locked readers may be reading, but no cleanup can be happening
         assert(_lock != -1);
         return LookupRangeListByAddressForKnownValidAddressWhileCleanupCannotHappenOrUnderLock(address);
     }
 
-    void RemoveRangeListCannotCallInParallelWithCleanup(RangeList* pRangeList)
+    void RemoveRangeListCannotCallInParallelWithCleanup(RangeSection* pRangeList)
     {
         assert(pRangeList->pRangeListNextForDelete = nullptr);
         assert(pRangeList == LookupRangeListCannotCallInParallelWithCleanup(pRangeList->_range.begin));
 
         // Removal is implemented by placing onto the cleanup linked list. This is then processed later during cleanup
-        RangeList* pLatestRemovedRangeList;
+        RangeSection* pLatestRemovedRangeList;
         do
         {
-            pLatestRemovedRangeList = VolatileRead(&pCleanupList);
+            pLatestRemovedRangeList = VolatileLoad(&pCleanupList);
             VolatileStore(&pRangeList->pRangeListNextForDelete, pLatestRemovedRangeList);
         } while (InterlockedCompareExchangePointer((volatile PVOID *)&pCleanupList, pRangeList, pLatestRemovedRangeList) == pLatestRemovedRangeList);
     }
@@ -336,40 +347,41 @@ public:
             return;
         }
 
-        RangeListMini *minisToFree = nullptr;
-
         while (this->pCleanupList != nullptr)
         {
-            RangeList* pRangeListToCleanup = this->pCleanupList;
-            RangeListMini* pRangeListMiniToFree = nullptr;
+            RangeSection* pRangeListToCleanup = this->pCleanupList;
+            RangeSectionFragment* pRangeListFragmentToFree = nullptr;
             this->pCleanupList = pRangeListToCleanup->pRangeListNextForDelete;
 
-            uintptr_t rangeListMiniCount = RangeListMiniCount(pRangeListToCleanup);
+            uintptr_t rangeListFragmentCount = RangeListFragmentCount(pRangeListToCleanup);
 
             void* addressToPrepForCleanup = pRangeListToCleanup->_range.begin;
 
-            for (uintptr_t iMini = 0; iMini < rangeListMiniCount; iMini++)
+            // Remove fragments from each of the fragment linked lists
+            for (uintptr_t iFragment = 0; iFragment < rangeListFragmentCount; iFragment++)
             {
-                RangeListMini** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
+                RangeSectionFragment** entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
                 assert(entryInMapToUpdate != NULL);
 
                 while ((*entryInMapToUpdate)->pRangeList != pRangeListToCleanup)
                 {
-                    entryInMapToUpdate = &(*entryInMapToUpdate)->pRangeListMiniNext;
+                    entryInMapToUpdate = &(*entryInMapToUpdate)->pRangeListFragmentNext;
                 }
 
-                if (iMini == 0)
+                // The fragment associated with the start of the range has the address that was allocated earlier
+                if (iFragment == 0)
                 {
-                    pRangeListMiniToFree = *entryInMapToUpdate;
-                    assert(pRangeListMiniToFree->isPrimaryRangeListMini);
+                    pRangeListFragmentToFree = *entryInMapToUpdate;
+                    assert(pRangeListFragmentToFree->isPrimaryRangeListFragment);
                 }
 
-                *entryInMapToUpdate = (*entryInMapToUpdate)->pRangeListMiniNext;
+                *entryInMapToUpdate = (*entryInMapToUpdate)->pRangeListFragmentNext;
 
-                addressToPrepForCleanup = IncrementAddressByMaxSizeOfMini(addressToPrepForCleanup);
+                addressToPrepForCleanup = IncrementAddressByMaxSizeOfFragment(addressToPrepForCleanup);
             }
 
-            free(pRangeListMiniToFree);
+            // Free the array of fragments
+            free(pRangeListFragmentToFree);
         }
 
         // Release lock
@@ -379,7 +391,34 @@ public:
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    RangeListMap map;
+    Range rFirst;
+    rFirst.begin = (void*)0x1111000;
+    rFirst.end = (void*)0x1111050;
+    Range rSecond;
+    rSecond.begin = (void*)0x1111051;
+    rSecond.end = (void*)0x1192050;
+    RangeSection rSectionFirst(rFirst);
+    RangeSection rSectionSecond(rSecond);
+
+
+    map.AttachRangeListToMap(&rSectionFirst);
+    map.AttachRangeListToMap(&rSectionSecond);
+
+    RangeSection *result;
+
+    result = map.LookupRangeListCannotCallInParallelWithCleanup((void*)0x1111000);
+    assert(result == &rSectionFirst);
+    result = map.LookupRangeListCannotCallInParallelWithCleanup((void*)0x1111050);
+    assert(result == &rSectionFirst);
+    result = map.LookupRangeListCannotCallInParallelWithCleanup((void*)0x1111051);
+    assert(result == &rSectionSecond);
+    result = map.LookupRangeListCannotCallInParallelWithCleanup((void*)0x1151050);
+    assert(result == &rSectionSecond);
+    result = map.LookupRangeListCannotCallInParallelWithCleanup((void*)0x1192050);
+    assert(result == &rSectionSecond);
+
+    std::cout << "Done\n";
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
