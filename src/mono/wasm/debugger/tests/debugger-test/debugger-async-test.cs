@@ -232,36 +232,36 @@ namespace DebuggerTests.AsyncTests
 
     public class VariablesWithSameNameDifferentScopes
     {
-        public static async System.Threading.Tasks.Task Run()
+        public static async Task Run()
         {
             await RunCSharpScope(10);
             await RunCSharpScope(1000);
         }
 
-        public static async System.Threading.Tasks.Task<string> RunCSharpScope(int number)
+        public static async Task<string> RunCSharpScope(int number)
         {
-            await System.Threading.Tasks.Task.Delay(1);
+            await Task.Delay(1);
             if (number < 999)
             {
-                var testCSharpScope = new String("hello");
+                string testCSharpScope = "hello"; string onlyInFirstScope = "only-in-first-scope";
                 System.Diagnostics.Debugger.Break();
                 return testCSharpScope;
             }
             else
             {
-                var testCSharpScope = new String("hi");
+                string testCSharpScope = "hi"; string onlyInSecondScope = "only-in-second-scope";
                 System.Diagnostics.Debugger.Break();
                 return testCSharpScope;
             }
         }
 
-        public static async System.Threading.Tasks.Task RunContinueWith()
+        public static async Task RunContinueWith()
         {
             await RunContinueWithSameVariableName(10);
             await RunContinueWithSameVariableName(1000);
         }
 
-        public static async System.Threading.Tasks.Task RunNestedContinueWith()
+        public static async Task RunNestedContinueWith()
         {
             await RunNestedContinueWithSameVariableName(10);
             await RunNestedContinueWithSameVariableName(1000);
@@ -271,16 +271,16 @@ namespace DebuggerTests.AsyncTests
         {
             await Task.Delay(500).ContinueWith(async t =>
             {
-                await System.Threading.Tasks.Task.Delay(1);
+                await Task.Delay(1);
                 if (number < 999)
                 {
-                    var testCSharpScope = new String("hello");
+                    var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
                     System.Diagnostics.Debugger.Break();
                     return testCSharpScope;
                 }
                 else
                 {
-                    var testCSharpScope = new String("hi");
+                    var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
                     System.Diagnostics.Debugger.Break();
                     return testCSharpScope;
                 }
@@ -294,25 +294,25 @@ namespace DebuggerTests.AsyncTests
             {
                 if (number < 999)
                 {
-                    var testCSharpScope = new String("hello_out");
+                    var testCSharpScope = new String("hello_out"); string onlyInFirstScope = "only-in-first-scope_out";
                     Console.WriteLine(testCSharpScope);
                 }
                 else
                 {
-                    var testCSharpScope = new String("hi_out");
+                    var testCSharpScope = new String("hi_out"); string onlyInSecondScope = "only-in-second-scope_out";
                     Console.WriteLine(testCSharpScope);
                 }
                 await Task.Delay(300).ContinueWith(t2 =>
                 {
                     if (number < 999)
                     {
-                        var testCSharpScope = new String("hello");
+                        var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
                         System.Diagnostics.Debugger.Break();
                         return testCSharpScope;
                     }
                     else
                     {
-                        var testCSharpScope = new String("hi");
+                        var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
                         System.Diagnostics.Debugger.Break();
                         return testCSharpScope;
                     }
@@ -331,13 +331,13 @@ namespace DebuggerTests.AsyncTests
         {
             if (number < 999)
             {
-                var testCSharpScope = new String("hello");
+                var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
                 System.Diagnostics.Debugger.Break();
                 return testCSharpScope;
             }
             else
             {
-                var testCSharpScope = new String("hi");
+                var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
                 System.Diagnostics.Debugger.Break();
                 return testCSharpScope;
             }

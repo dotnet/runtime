@@ -9,13 +9,17 @@ Public Class TestVbScope
         a = 10
         If data < 999 Then
             Dim testVbScope As String
+            Dim onlyInFirstScope As String
             testVbScope = "hello"
+            onlyInFirstScope = "only-in-first-scope"
             System.Diagnostics.Debugger.Break()
             Await Task.Delay(1)
             Return data
         Else
             Dim testVbScope As String
+            Dim onlyInSecondScope As String
             testVbScope = "hi"
+            onlyInSecondScope = "only-in-second-scope"
             System.Diagnostics.Debugger.Break()
             Await Task.Delay(1)
             Return data

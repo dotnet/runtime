@@ -87,7 +87,7 @@ namespace DebuggerTests
         [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunContinueWith", "dotnet://debugger-test.dll/debugger-async-test.cs", 277, 20, 283, 20, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunContinueWithSameVariableName", "testCSharpScope")]
         [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunNestedContinueWith", "dotnet://debugger-test.dll/debugger-async-test.cs", 309, 24, 315, 24, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunNestedContinueWithSameVariableName.AnonymousMethod__1", "testCSharpScope")]
         [InlineData("[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:RunNonAsyncMethod", "dotnet://debugger-test.dll/debugger-async-test.cs", 334, 16, 340, 16, "DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.RunNonAsyncMethodSameVariableName", "testCSharpScope")]
-        [InlineData("[debugger-test-vb] DebuggerTestVB.TestVbScope:Run", "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 12, 12, 18, 12, "DebuggerTestVB.TestVbScope.RunVBScope", "testVbScope")]
+        [InlineData("[debugger-test-vb] DebuggerTestVB.TestVbScope:Run", "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12, 22, 12, "DebuggerTestVB.TestVbScope.RunVBScope", "testVbScope")]
         public async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(string method_to_run, string source_to_pause, int line1, int col1, int line2, int col2, string func_to_pause, string variable_to_inspect)
         {
             var expression = $"{{ invoke_static_method('{method_to_run}'); }}";
@@ -99,12 +99,16 @@ namespace DebuggerTests
                 locals_fn: async (locals) =>
                 {
                     await CheckString(locals, variable_to_inspect, "hello");
+                    await CheckString(locals, "onlyInFirstScope", "only-in-first-scope");
+                    Assert.False(locals.Any(jt => jt["name"]?.Value<string>() == "onlyInSecondScope"));
                 }
             );
             await StepAndCheck(StepKind.Resume, source_to_pause, line2, col2, func_to_pause,
                 locals_fn: async (locals) =>
                 {
                     await CheckString(locals, variable_to_inspect, "hi");
+                    await CheckString(locals, "onlyInSecondScope", "only-in-second-scope");
+                    Assert.False(locals.Any(jt => jt["name"]?.Value<string>() == "onlyInFirstScope"));
                 }
             );
         }
