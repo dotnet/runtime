@@ -599,10 +599,17 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 continue;
             }
 
+            PCODE codeEntryPoint = activeCodeVersion.GetNativeCode();
+            if (codeEntryPoint == NULL)
+            {
+                // The active IL/native code version has changed since the method was queued, and the currently active version
+                // doesn't have a code entry point yet
+                continue;
+            }
+
             EX_TRY
             {
-                bool wasSet =
-                    CallCountingManager::SetCodeEntryPoint(activeCodeVersion, activeCodeVersion.GetNativeCode(), false, nullptr);
+                bool wasSet = CallCountingManager::SetCodeEntryPoint(activeCodeVersion, codeEntryPoint, false, nullptr);
                 _ASSERTE(wasSet);
             }
             EX_CATCH
