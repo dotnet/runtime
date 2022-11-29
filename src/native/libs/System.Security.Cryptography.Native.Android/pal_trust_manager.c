@@ -2,14 +2,12 @@
 
 static RemoteCertificateValidationCallback verifyRemoteCertificate;
 
-void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
+ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
     verifyRemoteCertificate = callback;
 }
 
-static
-
-jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamProxyHandle)
+ARGS_NON_NULL_ALL jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamProxyHandle)
 {
     jobjectArray trustManagers = NULL;
     INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, dotnetProxyTrustManager);
@@ -68,7 +66,7 @@ cleanup:
     return trustManagers;
 }
 
-jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
+ARGS_NON_NULL_ALL jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle)
 {
     abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");

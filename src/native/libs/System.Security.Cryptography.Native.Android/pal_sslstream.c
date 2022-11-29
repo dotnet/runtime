@@ -41,7 +41,7 @@ static bool IsHandshaking(int handshakeStatus)
     return handshakeStatus != HANDSHAKE_STATUS__NOT_HANDSHAKING && handshakeStatus != HANDSHAKE_STATUS__FINISHED;
 }
 
-static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
+ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
     jobject sslSession = IsHandshaking(handshakeStatus)
         ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
@@ -53,7 +53,7 @@ static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeSta
     return sslSession;
 }
 
-static jobject GetCurrentSslSession(JNIEnv* env, SSLStream* sslStream)
+ARGS_NON_NULL_ALL static jobject GetCurrentSslSession(JNIEnv* env, SSLStream* sslStream)
 {
     int handshakeStatus =
         GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
