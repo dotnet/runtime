@@ -366,6 +366,8 @@ cleanup:
 
 SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
 {
+    abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
+
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
@@ -375,13 +377,10 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
     if (!loc[sslContext])
         goto cleanup;
 
-    if (sslStreamProxyHandle != 0)
-    {
-        // Init trust managers
-        loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
-        if (!loc[trustManagers])
-            goto cleanup;
-    }
+    // Init trust managers
+    loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
+    if (!loc[trustManagers])
+        goto cleanup;
 
     // Init the SSLContext
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, NULL, loc[trustManagers], NULL);
@@ -466,6 +465,8 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStrea
                                                                jobject* /*X509Certificate[]*/ certs,
                                                                int32_t certsLen)
 {
+    abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
+
     SSLStream* sslStream = NULL;
     JNIEnv* env = GetJNIEnv();
 
@@ -499,13 +500,10 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStrea
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (sslStreamProxyHandle != 0)
-    {
-        // TrustManager[] trustMangers = InitTrustManagersWithDotnetProxy(sslStreamProxyHandle);
-        loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
-        if (!loc[trustManagers])
-            goto cleanup;
-    }
+    // TrustManager[] trustMangers = InitTrustManagersWithDotnetProxy(sslStreamProxyHandle);
+    loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
+    if (!loc[trustManagers])
+        goto cleanup;
 
     // sslContext.init(keyManagers, trustManagers, null);
     (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], loc[trustManagers], NULL);

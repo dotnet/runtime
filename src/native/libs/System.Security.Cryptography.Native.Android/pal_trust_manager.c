@@ -7,26 +7,27 @@ void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCerti
     verifyRemoteCertificate = callback;
 }
 
+static
+
 jobjectArray InitTrustManagersWithDotnetProxy(JNIEnv* env, intptr_t sslStreamProxyHandle)
 {
-    abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET remote certificate validator");
-
     jobjectArray trustManagers = NULL;
     INIT_LOCALS(loc, defaultAlgorithm, tmf, trustManager, dotnetProxyTrustManager);
 
     // string defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+    // TrustManagerFactory tmf = TrustManagerFactory.getInstance(defaultAlgorithm);
+    // tmf.init();
+    // TrustManager[] trustManagers = tmf.getTrustManagers();
+
     loc[defaultAlgorithm] = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetDefaultAlgorithm);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // TrustManagerFactory tmf = TrustManagerFactory.getInstance(defaultAlgorithm);
     loc[tmf] = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetInstance, loc[defaultAlgorithm]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // tmf.init();
     (*env)->CallVoidMethod(env, loc[tmf], g_TrustManagerFactoryInit, NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // TrustManager[] trustManagers = tmf.getTrustManagers();
     trustManagers = (*env)->CallObjectMethod(env, loc[tmf], g_TrustManagerFactoryGetTrustManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
