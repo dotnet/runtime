@@ -36,6 +36,215 @@ namespace System.Buffers.Text
         /// </returns>
         public static unsafe OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
+            // Validation must occur prior to decoding as the actual length will impact future calculations
+            bool containsIgnoredBytes = utf8.IndexOfAny(BytesToIgnore) != -1;
+            if (containsIgnoredBytes)
+            {
+                // Create a new span without bytes to be ignored
+                Span<byte> utf8WithIgnoredBytesRemoved = stackalloc byte[utf8.Length];
+                int usedBytesIndex = 0;
+
+                fixed (byte* srcBytes = &MemoryMarshal.GetReference(utf8))
+                {
+                    byte* src = srcBytes;
+
+                    for (int i = 0; i < utf8.Length; i++)
+                    {
+                        byte byteToValidate = *src++;
+                        if (!IsByteToBeIgnored(byteToValidate))
+                        {
+                            utf8WithIgnoredBytesRemoved[usedBytesIndex++] = byteToValidate;
+                        }
+                    }
+                }
+
+                // Remove unused space
+                utf8WithIgnoredBytesRemoved = utf8WithIgnoredBytesRemoved.Slice(0, usedBytesIndex);
+
+                return DecodeFromUtf8WithoutIgnoredChars(utf8WithIgnoredBytesRemoved, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
+            }
+            else
+            {
+                return DecodeFromUtf8WithoutIgnoredChars(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
+            }
+        }
+
+        /// <summary>
+        /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size "length".
+        /// </summary>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="length"/> is less than 0.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetMaxDecodedFromUtf8Length(int length)
+        {
+            if (length < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+
+            return (length >> 2) * 3;
+        }
+
+        /// <summary>
+        /// Decode the span of UTF-8 encoded text in base 64 (in-place) into binary data.
+        /// The decoded binary output is smaller than the text data contained in the input (the operation deflates the data).
+        /// If the input is not a multiple of 4, it will not decode any.
+        /// </summary>
+        /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
+        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
+        /// <returns>It returns the OperationStatus enum values:
+        /// - Done - on successful processing of the entire input span
+        /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
+        ///   or if the input is incomplete (i.e. not a multiple of 4).
+        /// It does not return DestinationTooSmall since that is not possible for base 64 decoding.
+        /// It does not return NeedMoreData since this method tramples the data in the buffer and
+        /// hence can only be called once with all the data in the buffer.
+        /// </returns>
+        public static unsafe OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
+        {
+            bool containsIgnoredBytes = buffer.IndexOfAny(BytesToIgnore) != -1;
+            if (containsIgnoredBytes)
+            {
+                Span<byte> bufferWithIgnoredBytesRemoved;
+                int spanWriteIndex = 0;
+
+                fixed (byte* srcBytes = &MemoryMarshal.GetReference(buffer))
+                {
+                    byte* src = srcBytes;
+
+                    // Overwrite span without bytes to be ignored
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        byte byteToValidate = src[i];
+
+                        if (IsByteToBeIgnored(byteToValidate))
+                        {
+                            continue;
+                        }
+
+                        src[spanWriteIndex++] = src[i];
+                    }
+
+                    // Set remaining trailing space to null
+                    for (int i = spanWriteIndex; i < buffer.Length; i++)
+                    {
+                        src[i] = 0;
+                    }
+
+                    // Trim unused space so that decoding operations do not fail
+                    bufferWithIgnoredBytesRemoved = buffer.Slice(0, spanWriteIndex);
+                }
+
+                return DecodeFromUtf8WithoutIgnoredCharsInPlace(buffer, bufferWithIgnoredBytesRemoved, out bytesWritten);
+            }
+            else
+            {
+                return DecodeFromUtf8WithoutIgnoredCharsInPlace(buffer, buffer, out bytesWritten);
+            }
+        }
+
+        /// <param name="writeBuffer">The original buffer that will be overwritten</param>
+        /// <param name="readBufferWithoutIgnoredChars">A buffer striped of chars to ignore</param>
+        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe OperationStatus DecodeFromUtf8WithoutIgnoredCharsInPlace(Span<byte> writeBuffer, ReadOnlySpan<byte> readBufferWithoutIgnoredChars, out int bytesWritten)
+        {
+            if (readBufferWithoutIgnoredChars.IsEmpty)
+            {
+                bytesWritten = 0;
+                return OperationStatus.Done;
+            }
+
+            fixed (byte* readBufferBytes = &MemoryMarshal.GetReference(readBufferWithoutIgnoredChars))
+            fixed (byte* writeBufferBytes = &MemoryMarshal.GetReference(writeBuffer))
+            {
+                int bufferLength = readBufferWithoutIgnoredChars.Length;
+                uint sourceIndex = 0;
+                uint destIndex = 0;
+
+                // only decode input if it is a multiple of 4
+                if (bufferLength != ((bufferLength >> 2) * 4))
+                    goto InvalidExit;
+                if (bufferLength == 0)
+                    goto DoneExit;
+
+                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
+
+                while (sourceIndex < bufferLength - 4)
+                {
+                    int result = Decode(readBufferBytes + sourceIndex, ref decodingMap);
+                    if (result < 0)
+                        goto InvalidExit;
+                    WriteThreeLowOrderBytes(writeBufferBytes + destIndex, result);
+                    destIndex += 3;
+                    sourceIndex += 4;
+                }
+
+                uint t0 = readBufferBytes[bufferLength - 4];
+                uint t1 = readBufferBytes[bufferLength - 3];
+                uint t2 = readBufferBytes[bufferLength - 2];
+                uint t3 = readBufferBytes[bufferLength - 1];
+
+                int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
+                int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
+
+                i0 <<= 18;
+                i1 <<= 12;
+
+                i0 |= i1;
+
+                if (t3 != EncodingPad)
+                {
+                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
+                    int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
+
+                    i2 <<= 6;
+
+                    i0 |= i3;
+                    i0 |= i2;
+
+                    if (i0 < 0)
+                        goto InvalidExit;
+
+                    WriteThreeLowOrderBytes(writeBufferBytes + destIndex, i0);
+                    destIndex += 3;
+                }
+                else if (t2 != EncodingPad)
+                {
+                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
+
+                    i2 <<= 6;
+
+                    i0 |= i2;
+
+                    if (i0 < 0)
+                        goto InvalidExit;
+
+                    writeBufferBytes[destIndex] = (byte)(i0 >> 16);
+                    writeBufferBytes[destIndex + 1] = (byte)(i0 >> 8);
+                    destIndex += 2;
+                }
+                else
+                {
+                    if (i0 < 0)
+                        goto InvalidExit;
+
+                    writeBufferBytes[destIndex] = (byte)(i0 >> 16);
+                    destIndex += 1;
+                }
+
+            DoneExit:
+                bytesWritten = (int)destIndex;
+                return OperationStatus.Done;
+
+            InvalidExit:
+                bytesWritten = (int)destIndex;
+                return OperationStatus.InvalidData;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe OperationStatus DecodeFromUtf8WithoutIgnoredChars(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        {
             if (utf8.IsEmpty)
             {
                 bytesConsumed = 0;
@@ -221,131 +430,6 @@ namespace System.Buffers.Text
             InvalidDataExit:
                 bytesConsumed = (int)(src - srcBytes);
                 bytesWritten = (int)(dest - destBytes);
-                return OperationStatus.InvalidData;
-            }
-        }
-
-        /// <summary>
-        /// Returns the maximum length (in bytes) of the result if you were to deocde base 64 encoded text within a byte span of size "length".
-        /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="length"/> is less than 0.
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetMaxDecodedFromUtf8Length(int length)
-        {
-            if (length < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
-
-            return (length >> 2) * 3;
-        }
-
-        /// <summary>
-        /// Decode the span of UTF-8 encoded text in base 64 (in-place) into binary data.
-        /// The decoded binary output is smaller than the text data contained in the input (the operation deflates the data).
-        /// If the input is not a multiple of 4, it will not decode any.
-        /// </summary>
-        /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
-        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
-        /// <returns>It returns the OperationStatus enum values:
-        /// - Done - on successful processing of the entire input span
-        /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
-        ///   or if the input is incomplete (i.e. not a multiple of 4).
-        /// It does not return DestinationTooSmall since that is not possible for base 64 decoding.
-        /// It does not return NeedMoreData since this method tramples the data in the buffer and
-        /// hence can only be called once with all the data in the buffer.
-        /// </returns>
-        public static unsafe OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
-        {
-            if (buffer.IsEmpty)
-            {
-                bytesWritten = 0;
-                return OperationStatus.Done;
-            }
-
-            fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
-            {
-                int bufferLength = buffer.Length;
-                uint sourceIndex = 0;
-                uint destIndex = 0;
-
-                // only decode input if it is a multiple of 4
-                if (bufferLength != ((bufferLength >> 2) * 4))
-                    goto InvalidExit;
-                if (bufferLength == 0)
-                    goto DoneExit;
-
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
-
-                while (sourceIndex < bufferLength - 4)
-                {
-                    int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
-                    if (result < 0)
-                        goto InvalidExit;
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
-                    destIndex += 3;
-                    sourceIndex += 4;
-                }
-
-                uint t0 = bufferBytes[bufferLength - 4];
-                uint t1 = bufferBytes[bufferLength - 3];
-                uint t2 = bufferBytes[bufferLength - 2];
-                uint t3 = bufferBytes[bufferLength - 1];
-
-                int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
-                int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
-
-                i0 <<= 18;
-                i1 <<= 12;
-
-                i0 |= i1;
-
-                if (t3 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-                    int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
-
-                    i2 <<= 6;
-
-                    i0 |= i3;
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                        goto InvalidExit;
-
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
-                    destIndex += 3;
-                }
-                else if (t2 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-
-                    i2 <<= 6;
-
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                        goto InvalidExit;
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
-                    destIndex += 2;
-                }
-                else
-                {
-                    if (i0 < 0)
-                        goto InvalidExit;
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    destIndex += 1;
-                }
-
-            DoneExit:
-                bytesWritten = (int)destIndex;
-                return OperationStatus.Done;
-
-            InvalidExit:
-                bytesWritten = (int)destIndex;
                 return OperationStatus.InvalidData;
             }
         }
@@ -715,5 +799,22 @@ namespace System.Buffers.Text
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         };
+
+        private static ReadOnlySpan<byte> BytesToIgnore => new byte[] { 9, 10, 13, 32 };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsByteToBeIgnored(byte charByte)
+        {
+            switch (charByte)
+            {
+                case 9:  // Line feed
+                case 10: // Horizontal tab
+                case 13: // Carriage return
+                case 32: // Space
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 }
