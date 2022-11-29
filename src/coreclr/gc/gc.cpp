@@ -11730,7 +11730,7 @@ void gc_heap::clear_gen1_cards()
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = use_large_pages_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;
@@ -11755,8 +11755,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     heap_segment_mem (new_segment) = start;
     heap_segment_used (new_segment) = start;
     heap_segment_reserved (new_segment) = new_pages + size;
-    heap_segment_committed (new_segment) = (use_large_pages_p ?
-        heap_segment_reserved(new_segment) : (new_pages + initial_commit));
+    heap_segment_committed (new_segment) = new_pages + initial_commit;
 
     init_heap_segment (new_segment, hp
 #ifdef USE_REGIONS
