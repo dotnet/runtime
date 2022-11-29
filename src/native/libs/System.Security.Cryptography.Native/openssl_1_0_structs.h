@@ -184,11 +184,3 @@ struct bio_st
     const void*_ignored11;
     int references;
 };
-
-struct bignum_st {
-    const void* _ignored1;
-    int top;
-    int _ignored2;
-    int _ignored3;
-    int _ignored4;
-};
