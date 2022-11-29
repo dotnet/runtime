@@ -18,6 +18,7 @@ namespace System.Runtime.Serialization
     using System.Collections.Concurrent;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics;
+    using System.Xml.Linq;
 
     internal abstract class DataContract
     {
@@ -1248,9 +1249,34 @@ namespace System.Runtime.Serialization
             {
                 itemType = itemType.GetElementType()!;
             }
-            if (previousCollectionTypes.Contains(itemType))
+
+            // Do a breadth first traversal of the generic type tree to
+            // produce the closure of all generic argument types and
+            // check that none of these is in the previousCollectionTypes
+            List<Type> itemTypeClosure = new List<Type>();
+            Queue<Type> itemTypeQueue = new Queue<Type>();
+
+            itemTypeQueue.Enqueue(itemType);
+            itemTypeClosure.Add(itemType);
+
+            while (itemTypeQueue.Count > 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.RecursiveCollectionType, GetClrTypeFullName(itemType))));
+                itemType = itemTypeQueue.Dequeue();
+                if (previousCollectionTypes.Contains(itemType))
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.RecursiveCollectionType, GetClrTypeFullName(itemType))));
+                }
+                if (itemType.IsGenericType)
+                {
+                    foreach (Type argType in itemType.GetGenericArguments())
+                    {
+                        if (!itemTypeClosure.Contains(argType))
+                        {
+                            itemTypeQueue.Enqueue(argType);
+                            itemTypeClosure.Add(argType);
+                        }
+                    }
+                }
             }
         }
 
@@ -1335,9 +1361,15 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetStableName(Type type, out bool hasDataContract)
         {
+            return GetStableName(type, new HashSet<Type>(), out hasDataContract);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static XmlQualifiedName GetStableName(Type type, HashSet<Type> previousCollectionTypes, out bool hasDataContract)
+        {
             type = UnwrapRedundantNullableType(type);
             XmlQualifiedName? stableName;
-            if (TryGetBuiltInXmlAndArrayTypeStableName(type, out stableName))
+            if (TryGetBuiltInXmlAndArrayTypeStableName(type, previousCollectionTypes, out stableName))
             {
                 hasDataContract = false;
             }
@@ -1351,7 +1383,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    stableName = GetNonDCTypeStableName(type);
+                    stableName = GetNonDCTypeStableName(type, previousCollectionTypes);
                     hasDataContract = false;
                 }
             }
@@ -1389,14 +1421,17 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static XmlQualifiedName GetNonDCTypeStableName(Type type)
+        private static XmlQualifiedName GetNonDCTypeStableName(Type type, HashSet<Type> previousCollectionTypes)
         {
             string? name = null, ns = null;
 
             Type? itemType;
             CollectionDataContractAttribute? collectionContractAttribute;
             if (CollectionDataContract.IsCollection(type, out itemType))
-                return GetCollectionStableName(type, itemType, out collectionContractAttribute);
+            {
+                ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
+                return GetCollectionStableName(type, itemType, previousCollectionTypes, out collectionContractAttribute);
+            }
             name = GetDefaultStableLocalName(type);
 
             // ensures that ContractNamespaceAttribute is honored when used with non-attributed types
@@ -1412,7 +1447,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool TryGetBuiltInXmlAndArrayTypeStableName(Type type, [NotNullWhen(true)] out XmlQualifiedName? stableName)
+        private static bool TryGetBuiltInXmlAndArrayTypeStableName(Type type, HashSet<Type> previousCollectionTypes, [NotNullWhen(true)] out XmlQualifiedName? stableName)
         {
             stableName = null;
 
@@ -1431,8 +1466,9 @@ namespace System.Runtime.Serialization
             }
             else if (type.IsArray)
             {
-                CollectionDataContractAttribute? collectionContractAttribute;
-                stableName = GetCollectionStableName(type, type.GetElementType()!, out collectionContractAttribute);
+                Type itemType = type.GetElementType()!;
+                ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
+                stableName = GetCollectionStableName(type, itemType, previousCollectionTypes, out _);
             }
             return stableName != null;
         }
@@ -1456,6 +1492,12 @@ namespace System.Runtime.Serialization
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetCollectionStableName(Type type, Type itemType, out CollectionDataContractAttribute? collectionContractAttribute)
+        {
+            return GetCollectionStableName(type, itemType, new HashSet<Type>(), out collectionContractAttribute);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static XmlQualifiedName GetCollectionStableName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
         {
             string? name, ns;
             object[] collectionContractAttributes = type.GetCustomAttributes(Globals.TypeOfCollectionDataContractAttribute, false).ToArray();
@@ -1492,7 +1534,7 @@ namespace System.Runtime.Serialization
             {
                 collectionContractAttribute = null;
                 string arrayOfPrefix = Globals.ArrayPrefix + GetArrayPrefix(ref itemType);
-                XmlQualifiedName elementStableName = GetStableName(itemType);
+                XmlQualifiedName elementStableName = GetStableName(itemType, previousCollectionTypes, out _);
                 name = arrayOfPrefix + elementStableName.Name;
                 ns = GetCollectionNamespace(elementStableName.Namespace);
             }

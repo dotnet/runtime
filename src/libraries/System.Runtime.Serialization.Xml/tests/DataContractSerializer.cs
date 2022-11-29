@@ -805,7 +805,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO1.Count == 1);
         Assert.True((char)y.RO1[0] == 'x');
     }
-	
+
     [Fact]
     public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
     {
@@ -2151,7 +2151,21 @@ public static partial class DataContractSerializerTests
     {
         Assert.Throws<InvalidDataContractException>(() =>
         {
-            (new DataContractSerializer(typeof (RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+            (new DataContractSerializer(typeof(RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            (new DataContractSerializer(typeof(RecursiveEnumerable))).WriteObject(new MemoryStream(), new RecursiveEnumerable());
+        });
+
+        // When constructing an element name, we seem to ignore recursion for types marked with [CollectionDataContract].
+        var name = new XsdDataContractExporter().GetRootElementName(typeof(RecursiveCollection));
+
+        // But 'RecursiveEnumerable' is not marked with the attribute. So it takes a code path that looks for this.
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            new XsdDataContractExporter().GetRootElementName(typeof(RecursiveEnumerable));
         });
     }
 
