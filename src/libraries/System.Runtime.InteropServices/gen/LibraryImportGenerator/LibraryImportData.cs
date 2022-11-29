@@ -1,17 +1,27 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Runtime.InteropServices;
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.Interop
 {
     /// <summary>
     /// LibraryImportAttribute data
     /// </summary>
-    internal sealed record LibraryImportData(string ModuleName) : InteropAttributeData
+    internal sealed record LibraryImportCompilationData(string ModuleName) : InteropAttributeCompilationData
     {
         public string EntryPoint { get; init; }
+    }
+
+    internal sealed record LibraryImportData(string ModuleName) : InteropAttributeModelData
+    {
+        public string EntryPoint { get; init; }
+
+        public static LibraryImportData From(LibraryImportCompilationData libraryImport)
+            => new LibraryImportData(libraryImport.ModuleName) with
+            {
+                EntryPoint = libraryImport.EntryPoint,
+                IsUserDefined = libraryImport.IsUserDefined,
+                SetLastError = libraryImport.SetLastError,
+                StringMarshalling = libraryImport.StringMarshalling
+            };
     }
 }

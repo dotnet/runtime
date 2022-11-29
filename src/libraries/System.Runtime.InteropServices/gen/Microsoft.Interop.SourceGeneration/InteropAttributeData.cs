@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -24,7 +23,11 @@ namespace Microsoft.Interop
     /// <summary>
     /// Common data for all source-generated-interop trigger attributes
     /// </summary>
-    public record InteropAttributeData
+    public record InteropAttributeCompilationData : InteropAttributeModelData
+    {
+        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
+    }
+    public record InteropAttributeModelData
     {
         /// <summary>
         /// Value set by the user on the original declaration.
@@ -32,19 +35,18 @@ namespace Microsoft.Interop
         public InteropAttributeMember IsUserDefined { get; init; }
         public bool SetLastError { get; init; }
         public StringMarshalling StringMarshalling { get; init; }
-        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
     }
 
     public static class InteropAttributeDataExtensions
     {
-        public static T WithValuesFromNamedArguments<T>(this T t, ImmutableDictionary<string, TypedConstant> namedArguments) where T : InteropAttributeData
+        public static T WithValuesFromNamedArguments<T>(this T t, ImmutableDictionary<string, TypedConstant> namedArguments) where T : InteropAttributeCompilationData
         {
             InteropAttributeMember userDefinedValues = InteropAttributeMember.None;
             bool setLastError = false;
             StringMarshalling stringMarshalling = StringMarshalling.Custom;
             INamedTypeSymbol? stringMarshallingCustomType = null;
 
-            if (namedArguments.TryGetValue(nameof(InteropAttributeData.SetLastError), out TypedConstant setLastErrorValue))
+            if (namedArguments.TryGetValue(nameof(InteropAttributeCompilationData.SetLastError), out TypedConstant setLastErrorValue))
             {
                 userDefinedValues |= InteropAttributeMember.SetLastError;
                 if (setLastErrorValue.Value is not bool)
@@ -53,7 +55,7 @@ namespace Microsoft.Interop
                 }
                 setLastError = (bool)setLastErrorValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(InteropAttributeData.StringMarshalling), out TypedConstant stringMarshallingValue))
+            if (namedArguments.TryGetValue(nameof(InteropAttributeCompilationData.StringMarshalling), out TypedConstant stringMarshallingValue))
             {
                 userDefinedValues |= InteropAttributeMember.StringMarshalling;
                 // TypedConstant's Value property only contains primitive values.
@@ -64,7 +66,7 @@ namespace Microsoft.Interop
                 // A boxed primitive can be unboxed to an enum with the same underlying type.
                 stringMarshalling = (StringMarshalling)stringMarshallingValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(InteropAttributeData.StringMarshallingCustomType), out TypedConstant stringMarshallingCustomTypeValue))
+            if (namedArguments.TryGetValue(nameof(InteropAttributeCompilationData.StringMarshallingCustomType), out TypedConstant stringMarshallingCustomTypeValue))
             {
                 userDefinedValues |= InteropAttributeMember.StringMarshallingCustomType;
                 if (stringMarshallingCustomTypeValue.Value is not INamedTypeSymbol)
