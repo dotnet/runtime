@@ -4485,6 +4485,11 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     // See comment in code:DacDbiInterfaceImpl::EnumerateModulesInAssembly code for details.
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
+    if (pAppDomain == nullptr)
+    {
+        return;
+    }
+
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
