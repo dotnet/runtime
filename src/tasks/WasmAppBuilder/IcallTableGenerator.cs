@@ -88,7 +88,7 @@ internal sealed class IcallTableGenerator
             if (assembly == "System.Private.CoreLib")
                 aname = "corlib";
             else
-                aname = assembly.Replace(".", "_");
+                aname = _fixupSymbolName(assembly);
             w.WriteLine($"#define ICALL_TABLE_{aname} 1\n");
 
             w.WriteLine($"static int {aname}_icall_indexes [] = {{");
