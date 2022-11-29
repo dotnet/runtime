@@ -285,16 +285,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return s_integers.GetOrAdd(integer);
             }
-
-            private static NodeCache<int, GenericLookupResult> s_pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
-            {
-                return new PointerToSlotLookupResult(slotIndex);
-            });
-
-            public static GenericLookupResult PointerToSlot(int slotIndex)
-            {
-                return s_pointersToSlots.GetOrAdd(slotIndex);
-            }
         }
 
         public GenericLookupResults GenericLookup = new GenericLookupResults();

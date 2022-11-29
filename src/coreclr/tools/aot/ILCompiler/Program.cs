@@ -657,7 +657,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()
