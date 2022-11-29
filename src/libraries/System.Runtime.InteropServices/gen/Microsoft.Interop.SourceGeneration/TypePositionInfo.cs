@@ -49,7 +49,7 @@ namespace Microsoft.Interop
         public const int ReturnIndex = UnsetIndex + 1;
         public const int ExceptionIndex = UnsetIndex + 2;
 
-        private static bool IsSpecialIndex(int index)
+        public static bool IsSpecialIndex(int index)
         {
             return index is UnsetIndex or ReturnIndex;
         }

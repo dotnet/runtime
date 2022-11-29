@@ -30,25 +30,17 @@ namespace Microsoft.Interop
             IMarshallingGeneratorFactory generatorFactory)
         {
             _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator, (info, details) => marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details }));
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+
+            foreach (var failure in _marshallers.GeneratorBindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
-            }
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new Forwarder();
-                }
             }
         }
 

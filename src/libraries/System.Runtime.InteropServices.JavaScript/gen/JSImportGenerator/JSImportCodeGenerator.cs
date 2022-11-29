@@ -40,13 +40,17 @@ namespace Microsoft.Interop.JavaScript
             _signatureContext = signatureContext;
             ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator, extendedInvariantViolationsCallback);
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+
+            foreach (var failure in _marshallers.GeneratorBindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSImportCodeContext(attributeData, innerContext);
-                _marshallers = new BoundGenerators(argTypes, CreateGenerator, extendedInvariantViolationsCallback);
             }
 
             // validate task + span mix
@@ -59,20 +63,6 @@ namespace Microsoft.Interop.JavaScript
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
-                }
-            }
-
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new EmptyJSGenerator();
                 }
             }
         }

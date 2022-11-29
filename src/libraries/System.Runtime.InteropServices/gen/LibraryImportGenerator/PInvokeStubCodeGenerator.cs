@@ -68,7 +68,12 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator, (info, details) => marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details }));
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+
+            foreach (var failure in _marshallers.GeneratorBindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
@@ -92,19 +97,6 @@ namespace Microsoft.Interop
             StubIsBasicForwarder = !setLastError
                 && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
                 && noMarshallingNeeded;
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new Forwarder();
-                }
-            }
         }
 
         /// <summary>

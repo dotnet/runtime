@@ -99,7 +99,7 @@ namespace Microsoft.Interop.Analyzers
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-            _ = new BoundGenerators(targetSignatureContext.ElementTypeInformation, info =>
+            BoundGenerators generators = new(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
             {
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
@@ -111,19 +111,10 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return forwarder;
                 }
-                try
-                {
-                    return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
-                }
-                catch (MarshallingNotSupportedException)
-                {
-                    mayRequireAdditionalWork = true;
-                    return forwarder;
-                }
-            },
-                // If any extendend variants are violated, then we may require additional work.
-                // Treat this the same as unsupported marshalling.
-                (info, details) => mayRequireAdditionalWork = true);
+                return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
+            }), stubCodeContext);
+
+            mayRequireAdditionalWork |= generators.GeneratorBindingFailures.Length > 0;
 
             if (anyExplicitlyUnsupportedInfo)
             {
@@ -146,7 +137,7 @@ namespace Microsoft.Interop.Analyzers
             if (info.MarshallingAttributeInfo is not MarshalAsInfo(UnmanagedType unmanagedType, _))
                 return false;
 
-            return !System.Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+            return !Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
                 || unmanagedType == UnmanagedType.CustomMarshaler
                 || unmanagedType == UnmanagedType.Interface
                 || unmanagedType == UnmanagedType.IDispatch
@@ -175,6 +166,18 @@ namespace Microsoft.Interop.Analyzers
             public bool AnyDiagnostics { get; private set; }
             public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
             public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
+        }
+
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        {
+            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            {
+                _func = func;
+            }
+
+            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
     }
 }
