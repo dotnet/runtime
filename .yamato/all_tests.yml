@@ -5,10 +5,9 @@ all:
   - path: .yamato/osx.yml#all
   - path: .yamato/linux.yml#all
   triggers:
-    pull_requests:
-      - targets:
-          only:
-            - "unity-main"
+    expression: |-
+      NOT pull_request.draft AND
+      pull_request.target eq "unity-main"
     recurring:
     - branch: unity-main
       frequency: daily
