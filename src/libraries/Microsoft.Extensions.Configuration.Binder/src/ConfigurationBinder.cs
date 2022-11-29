@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (dictionaryInterface != null)
                 {
-                    BindConcreteDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
                 }
                 else
                 {
@@ -549,7 +549,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            BindConcreteDictionary(dictionary, dictionaryType, config, options);
+            BindDictionary(dictionary, genericType, config, options);
 
             return dictionary;
         }
@@ -562,12 +562,15 @@ namespace Microsoft.Extensions.Configuration
         // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindConcreteDictionary(
+        private static void BindDictionary(
             object? dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
         {
+            Debug.Assert(dictionaryType.IsGenericType &&
+                         (dictionaryType.GetGenericTypeDefinition() == typeof(IDictionary<,>) || dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>)));
+
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
@@ -589,12 +592,9 @@ namespace Microsoft.Extensions.Configuration
 
             Debug.Assert(dictionary is not null);
 
-            Type? iDictionaryObjectType = FindOpenGenericInterface(typeof(IDictionary<,>), dictionary.GetType());
 
-            Debug.Assert(iDictionaryObjectType is not null);
-
-            MethodInfo tryGetValue = iDictionaryObjectType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
-            PropertyInfo? setter = iDictionaryObjectType.GetProperty("Item", DeclaredOnlyLookup);
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+            PropertyInfo? setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
 
             if (setter is null || !setter.CanWrite)
             {
