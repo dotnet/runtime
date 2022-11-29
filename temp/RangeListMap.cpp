@@ -4,10 +4,20 @@
 #include <iostream>
 #include <assert.h>
 #include <Windows.h>
+using namespace std;
+class IJitManager;
+class Module;
+class HeapList;
 
+typedef Module* PTR_Module;
+typedef HeapList* PTR_HeapList;
+typedef uintptr_t TADDR;
 #define TARGET_64BIT
 
-typedef uintptr_t TADDR;
+
+
+
+
 
 template<typename T>
 void VolatileStore(T* ptr, T val)
@@ -30,6 +40,7 @@ T VolatileLoadWithoutBarrier(T* ptr)
 class Range
 {
 public:
+    // [begin,end] (This is an inclusive range)
     void* begin;
     void* end;
 };
@@ -40,11 +51,39 @@ class RangeSection
 {
     friend class RangeListMap;
 public:
-    RangeSection(Range range) :
-        _range(range)
+    enum RangeSectionFlags
+    {
+        RANGE_SECTION_NONE          = 0x0,
+        RANGE_SECTION_COLLECTIBLE   = 0x1,
+        RANGE_SECTION_CODEHEAP      = 0x2,
+    };
+
+#ifdef FEATURE_READYTORUN
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_Module pR2RModule) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(pR2RModule),
+        _pHeapList(NULL)
+    {
+        assert(!(flags & RANGE_SECTION_COLLECTIBLE));
+        assert(pR2RModule != NULL);
+    }
+#endif
+
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_HeapList pHeapList) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(NULL),
+        _pHeapList(pHeapList)
     {}
 
-    Range _range;
+    const Range _range;
+    const RangeSectionFlags _flags;
+    IJitManager *const _pjit;
+    const PTR_Module _pR2RModule;
+    const PTR_HeapList _pHeapList;
 
     RangeSection* pRangeListNextForDelete = nullptr; // Used for adding to the cleanup list
 };
@@ -73,7 +112,7 @@ enum class RangeListLockState
 
 class RangeListMap
 {
-    RangeSection EndOfCleanupListMarker;
+    RangeSection* EndOfCleanupListMarker() { return (RangeSection*)1; }
 
     class RangeSectionFragment;
     class RangeSectionFragmentPointer
@@ -285,16 +324,6 @@ class RangeListMap
         return reinterpret_cast<void*>(inputAsInt + bytesAtLastLevel);
     }
 
-public:
-    RangeListMap() : _topLevel{0}, EndOfCleanupListMarker(Range()), pCleanupList(&EndOfCleanupListMarker)
-    {
-    }
-
-    bool Init()
-    {
-        return true;
-    }
-
     bool AttachRangeListToMap(RangeSection* pRangeList, RangeListLockState *pLockState)
     {
         assert(*pLockState == RangeListLockState::ReaderLocked); // Must be locked so that the cannot fail case, can't fail. NOTE: This only needs the reader lock, as the attach process can happen in parallel to reads.
@@ -321,6 +350,7 @@ public:
         {
             fragments[iFragment].pRangeList = pRangeList;
             fragments[iFragment]._range = pRangeList->_range;
+            fragments[iFragment].isCollectibleRangeListFragment = !!(pRangeList->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
             RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
             if (entryInMapToUpdate == NULL)
             {
@@ -351,6 +381,48 @@ public:
         return true;
     }
 
+public:
+    RangeListMap() : _topLevel{0}, pCleanupList(EndOfCleanupListMarker())
+    {
+    }
+
+    bool Init()
+    {
+        return true;
+    }
+
+#ifdef FEATURE_READYTORUN
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule, RangeListLockState* pLockState)
+    {
+        RangeListLockState lockState = RangeListLockState::ReaderLocked;
+        RangeSection *pSection = new(nothrow)RangeSection(range, pJit, flags, pR2RModule);
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeListToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+#endif
+
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_HeapList pHeapList, RangeListLockState* pLockState)
+    {
+        RangeListLockState lockState = RangeListLockState::ReaderLocked;
+        RangeSection *pSection = new(nothrow)RangeSection(range, pJit, flags, pHeapList);
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeListToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+
     RangeSection* LookupRangeList(void* address, RangeListLockState *pLockState)
     {
         RangeSectionFragment* fragment = GetRangeListForAddress(address, pLockState);
@@ -375,6 +447,10 @@ public:
     void RemoveRangeList(RangeSection* pRangeList)
     {
         assert(pRangeList->pRangeListNextForDelete == nullptr);
+        assert(pRangeList->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
+#ifdef FEATURE_READYTORUN
+        assert(pRangeList->pR2RModule == NULL);
+#endif
 
         // Removal is implemented by placing onto the cleanup linked list. This is then processed later during cleanup
         RangeSection* pLatestRemovedRangeList;
@@ -389,7 +465,7 @@ public:
     {
         assert(*pLockState == RangeListLockState::WriteLocked);
 
-        while (this->pCleanupList != &EndOfCleanupListMarker)
+        while (this->pCleanupList != EndOfCleanupListMarker())
         {
             RangeSection* pRangeListToCleanup = this->pCleanupList;
             RangeSectionFragment* pRangeListFragmentToFree = nullptr;
@@ -424,6 +500,7 @@ public:
             }
 
             // Free the array of fragments
+            delete pRangeListToCleanup;
             free(pRangeListFragmentToFree);
         }
     }
@@ -438,42 +515,72 @@ int main()
     Range rSecond;
     rSecond.begin = (void*)0x1111051;
     rSecond.end = (void*)0x1192050;
-    RangeSection rSectionFirst(rFirst);
-    RangeSection rSectionSecond(rSecond);
-
 
     RangeListLockState lockState = RangeListLockState::ReaderLocked;
-    map.AttachRangeListToMap(&rSectionFirst, &lockState);
-    map.AttachRangeListToMap(&rSectionSecond, &lockState);
+    RangeSection *rSectionFirst = map.AllocateRange(rFirst, NULL, RangeSection::RANGE_SECTION_COLLECTIBLE, (PTR_HeapList)NULL, &lockState);
+    RangeSection *rSectionSecond = map.AllocateRange(rSecond, NULL, RangeSection::RANGE_SECTION_NONE, (PTR_HeapList)NULL, &lockState);
 
     RangeSection *result;
 
     lockState = RangeListLockState::None;
-
     result = map.LookupRangeList((void*)0x1111000, &lockState);
-    assert(result == &rSectionFirst);
-    result = map.LookupRangeList((void*)0x1111050, &lockState);
-    assert(result == &rSectionFirst);
-    result = map.LookupRangeList((void*)0x1111051, &lockState);
-    assert(result == &rSectionSecond);
-    result = map.LookupRangeList((void*)0x1151050, &lockState);
-    assert(result == &rSectionSecond);
-    result = map.LookupRangeList((void*)0x1192050, &lockState);
-    assert(result == &rSectionSecond);
+    assert(lockState == RangeListLockState::NeedsLock);
+    assert(result == NULL);
+    lockState = RangeListLockState::ReaderLocked;
+    result = map.LookupRangeList((void*)0x1111000, &lockState);
+    assert(result == rSectionFirst);
+    assert(lockState == RangeListLockState::ReaderLocked);
 
+    lockState = RangeListLockState::None;
+    result = map.LookupRangeList((void*)0x1111050, &lockState);
+    assert(lockState == RangeListLockState::NeedsLock);
+    assert(result == NULL);
+    lockState = RangeListLockState::ReaderLocked;
+    result = map.LookupRangeList((void*)0x1111050, &lockState);
+    assert(result == rSectionFirst);
+    assert(lockState == RangeListLockState::ReaderLocked);
+    lockState = RangeListLockState::None;
+
+    result = map.LookupRangeList((void*)0x1111051, &lockState);
     assert(lockState == RangeListLockState::None);
-    map.RemoveRangeList(&rSectionFirst);
+    assert(result == rSectionSecond);
+    result = map.LookupRangeList((void*)0x1151050, &lockState);
+    assert(lockState == RangeListLockState::None);
+    assert(result == rSectionSecond);
+    result = map.LookupRangeList((void*)0x1192050, &lockState);
+    assert(lockState == RangeListLockState::None);
+    assert(result == rSectionSecond);
 
+    map.RemoveRangeList(rSectionFirst);
+
+    lockState = RangeListLockState::None;
+    result = map.LookupRangeList((void*)0x1111000, &lockState);
+    assert(lockState == RangeListLockState::NeedsLock);
+    assert(result == NULL);
+    lockState = RangeListLockState::ReaderLocked;
     result = map.LookupRangeList((void*)0x1111000, &lockState);
     assert(result == NULL);
+    assert(lockState == RangeListLockState::ReaderLocked);
+
+    lockState = RangeListLockState::None;
+    result = map.LookupRangeList((void*)0x1111050, &lockState);
+    assert(lockState == RangeListLockState::NeedsLock);
+    assert(result == NULL);
+    lockState = RangeListLockState::ReaderLocked;
     result = map.LookupRangeList((void*)0x1111050, &lockState);
     assert(result == NULL);
+    assert(lockState == RangeListLockState::ReaderLocked);
+    lockState = RangeListLockState::None;
+
     result = map.LookupRangeList((void*)0x1111051, &lockState);
-    assert(result == &rSectionSecond);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
     result = map.LookupRangeList((void*)0x1151050, &lockState);
-    assert(result == &rSectionSecond);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
     result = map.LookupRangeList((void*)0x1192050, &lockState);
-    assert(result == &rSectionSecond);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
 
     assert(lockState == RangeListLockState::None);
     lockState = RangeListLockState::WriteLocked;
@@ -482,44 +589,19 @@ int main()
 
     result = map.LookupRangeList((void*)0x1111000, &lockState);
     assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1111050, &lockState);
-    assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1111051, &lockState);
-    assert(result == &rSectionSecond);
-    result = map.LookupRangeList((void*)0x1151050, &lockState);
-    assert(result == &rSectionSecond);
-    result = map.LookupRangeList((void*)0x1192050, &lockState);
-    assert(result == &rSectionSecond);
-
     assert(lockState == RangeListLockState::None);
-    map.RemoveRangeList(&rSectionSecond);
-
-    result = map.LookupRangeList((void*)0x1111000, &lockState);
-    assert(result == NULL);
     result = map.LookupRangeList((void*)0x1111050, &lockState);
     assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1111051, &lockState);
-    assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1151050, &lockState);
-    assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1192050, &lockState);
-    assert(result == NULL);
-
     assert(lockState == RangeListLockState::None);
-    lockState = RangeListLockState::WriteLocked;
-    map.CleanupRangeLists(&lockState);
-    lockState = RangeListLockState::None;
-
-    result = map.LookupRangeList((void*)0x1111000, &lockState);
-    assert(result == NULL);
-    result = map.LookupRangeList((void*)0x1111050, &lockState);
-    assert(result == NULL);
     result = map.LookupRangeList((void*)0x1111051, &lockState);
-    assert(result == NULL);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
     result = map.LookupRangeList((void*)0x1151050, &lockState);
-    assert(result == NULL);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
     result = map.LookupRangeList((void*)0x1192050, &lockState);
-    assert(result == NULL);
+    assert(result == rSectionSecond);
+    assert(lockState == RangeListLockState::None);
 
     std::cout << "Done\n";
 }
