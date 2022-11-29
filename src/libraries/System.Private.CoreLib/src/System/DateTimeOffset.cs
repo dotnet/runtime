@@ -418,7 +418,7 @@ namespace System
         public TimeSpan Offset => new TimeSpan(0, _offsetMinutes, 0);
 
         /// <summary>
-        /// Gets the total number of minutes represented the time's offset from Coordinated Universal Time (UTC).
+        /// Gets the total number of minutes representing the time's offset from Coordinated Universal Time (UTC).
         /// </summary>
         public int TotalOffsetMinutes => _offsetMinutes;
 
