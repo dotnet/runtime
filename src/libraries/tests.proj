@@ -39,6 +39,7 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-webpack\Wasm.Browser.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\node-webpack\Wasm.Node.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-nextjs\Wasm.Browser.NextJs.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-advanced\Wasm.Advanced.Sample.csproj" />
 
     <!-- These tests are completely disabled on wasm -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Generators.Tests/System.Text.RegularExpressions.Generators.Tests.csproj" />
