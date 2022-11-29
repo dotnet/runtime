@@ -6,10 +6,9 @@ This assembly no longer contains executable code, it contains the code for the r
 
 * Some of the tests for types previously in this library are still in the [tests](tests/) subdirectory.
 
-
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] We consider changes that move tests from the [tests](tests/) subdirectory into [System.IO.Pipes.Tests](../System.IO.Pipes/tests/) project.
+- [x] We encourage you to add new tests in [System.IO.Pipes.Tests](../System.IO.Pipes/tests/) project.
 
 ## Deployment
 The System.IO.Pipes.AccessControl assembly is part of the shared framework, and ships with every new release of .NET.
