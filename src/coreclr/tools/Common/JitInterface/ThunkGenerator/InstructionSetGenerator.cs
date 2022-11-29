@@ -3,17 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Diagnostics;
 
 namespace Thunkerator
 {
     public class InstructionSetGenerator
     {
-        class InstructionSetInfo
+        private sealed class InstructionSetInfo
         {
             public string Architecture { get; }
             public string ManagedName { get; }
@@ -26,7 +26,7 @@ namespace Thunkerator
             {
                 Architecture = architecture;
                 ManagedName = managedName;
-                R2rName = String.IsNullOrEmpty(r2rName) ? managedName : r2rName;
+                R2rName = string.IsNullOrEmpty(r2rName) ? managedName : r2rName;
                 R2rNumericValue = r2rNumericValue;
                 JitName = jitName;
                 CommandLineName = commandLineName;
@@ -46,11 +46,11 @@ namespace Thunkerator
             {
                 get
                 {
-                    if (!String.IsNullOrEmpty(CommandLineName))
+                    if (!string.IsNullOrEmpty(CommandLineName))
                         return CommandLineName;
-                    if (!String.IsNullOrEmpty(ManagedName))
+                    if (!string.IsNullOrEmpty(ManagedName))
                         return ManagedName;
-                    else if (!String.IsNullOrEmpty(R2rName))
+                    else if (!string.IsNullOrEmpty(R2rName))
                         return R2rName;
                     else
                         return JitName;
@@ -58,9 +58,9 @@ namespace Thunkerator
             }
         }
 
-        record InstructionSetGroup(string Names, string Archs, string Sets);
+        private sealed record InstructionSetGroup(string Names, string Archs, string Sets);
 
-        class InstructionSetImplication
+        private sealed class InstructionSetImplication
         {
             public string Architecture { get; }
             public string JitName { get; }
@@ -81,21 +81,22 @@ namespace Thunkerator
             }
         }
 
-        List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
-        List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
-        List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
-        Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
-        SortedDictionary<string,int> _r2rNamesByName = new SortedDictionary<string,int>();
-        SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
-        SortedSet<string> _architectures = new SortedSet<string>();
-        Dictionary<string,List<string>> _architectureJitNames = new Dictionary<string,List<string>>();
-        Dictionary<string,List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string,List<string>>();
-        HashSet<string> _64BitArchitectures = new HashSet<string>();
-        Dictionary<string,string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string,string>();
-        // This represents the number of flags fields we currently track
-        const int FlagsFieldCount = 1;
+        private List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
+        private List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
+        private List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
+        private Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
+        private SortedDictionary<string, int> _r2rNamesByName = new SortedDictionary<string, int>();
+        private SortedDictionary<int, string> _r2rNamesByNumber = new SortedDictionary<int, string>();
+        private SortedSet<string> _architectures = new SortedSet<string>();
+        private Dictionary<string, List<string>> _architectureJitNames = new Dictionary<string, List<string>>();
+        private Dictionary<string, List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string, List<string>>();
+        private HashSet<string> _64BitArchitectures = new HashSet<string>();
+        private Dictionary<string, string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string, string>();
 
-        void ArchitectureEncountered(string arch)
+        // This represents the number of flags fields we currently track
+        private const int FlagsFieldCount = 1;
+
+        private void ArchitectureEncountered(string arch)
         {
             if (!_64bitVariants.ContainsKey(arch))
                 _64bitVariants.Add(arch, new HashSet<string>());
@@ -106,13 +107,13 @@ namespace Thunkerator
                 _architectureVectorInstructionSetJitNames.Add(arch, new List<string>());
         }
 
-        void ValidateArchitectureEncountered(string arch)
+        private void ValidateArchitectureEncountered(string arch)
         {
             if (!_architectures.Contains(arch))
                 throw new Exception("Architecture not defined");
         }
 
-        private string ArchToIfDefArch(string arch)
+        private static string ArchToIfDefArch(string arch)
         {
             if (arch == "X64")
                 return "AMD64";
@@ -147,7 +148,7 @@ namespace Thunkerator
                     {
                         command[i] = command[i].Trim();
                     }
-                    switch(command[0])
+                    switch (command[0])
                     {
                         case "definearch":
                             if (command.Length != 4)
@@ -168,7 +169,7 @@ namespace Thunkerator
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _architectureJitNames[command[1]].Add(command[5]);
-                            _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5],command[6]));
+                            _instructionSets.Add(new InstructionSetInfo(command[1], command[2], command[3], command[4], command[5], command[6]));
                             break;
                         case "vectorinstructionset":
                             if (command.Length != 3)
@@ -187,7 +188,7 @@ namespace Thunkerator
                             if (command.Length != 4)
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
-                            _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
+                            _implications.Add(new InstructionSetImplication(command[1], command[2], command[3]));
                             break;
                         case "instructionsetgroup":
                             if (command.Length != 4)
@@ -237,9 +238,9 @@ namespace Thunkerator
 
             foreach (var instructionSet in _instructionSets)
             {
-                if (!String.IsNullOrEmpty(instructionSet.R2rName))
+                if (!string.IsNullOrEmpty(instructionSet.R2rName))
                 {
-                    int r2rValue = Int32.Parse(instructionSet.R2rNumericValue);
+                    int r2rValue = int.Parse(instructionSet.R2rNumericValue);
                     if (_r2rNamesByName.ContainsKey(instructionSet.R2rName))
                     {
                         if (_r2rNamesByName[instructionSet.R2rName] != r2rValue)
@@ -330,7 +331,7 @@ namespace Internal.ReadyToRunConstants
                     if (instructionSet.Architecture != architecture) continue;
 
                     string r2rEnumerationValue;
-                    if (!String.IsNullOrEmpty(instructionSet.R2rName))
+                    if (!string.IsNullOrEmpty(instructionSet.R2rName))
                         r2rEnumerationValue = $"ReadyToRunInstructionSet.{instructionSet.R2rName}";
                     else
                         r2rEnumerationValue = $"null";
@@ -706,7 +707,7 @@ namespace Internal.JitInterface
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.CommandLineName);
+                    bool instructionSetIsSpecifiable = !string.IsNullOrEmpty(instructionSet.CommandLineName);
                     string name = instructionSet.PublicName;
                     string managedName = instructionSet.ManagedName;
                     string specifiable = instructionSetIsSpecifiable ? "true" : "false";
@@ -1024,9 +1025,9 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
                 {
                     if (instructionSet.Architecture != architecture) continue;
                     string r2rEnumerationValue;
-                    if (String.IsNullOrEmpty(instructionSet.R2rName))
+                    if (string.IsNullOrEmpty(instructionSet.R2rName))
                         continue;
-                    
+
                     r2rEnumerationValue = $"READYTORUN_INSTRUCTION_{instructionSet.R2rName}";
 
                     tr.WriteLine($"        case {r2rEnumerationValue}: return InstructionSet_{instructionSet.JitName};");

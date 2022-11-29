@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -29,6 +30,10 @@ using ILCompiler.DependencyAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
+
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
+#pragma warning disable IDE0060
 
 namespace Internal.JitInterface
 {
@@ -474,8 +479,24 @@ namespace Internal.JitInterface
 #endif
                 );
 #pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+#if READYTORUN
+            if (_methodColdCodeNode != null)
+            {
+                var relocs2 = _coldCodeRelocs.ToArray();
+                Array.Sort(relocs2, (x, y) => (x.Offset - y.Offset));
+                var coldObjectData = new ObjectNode.ObjectData(_coldCode,
+                    relocs2,
+                    alignment,
+                    new ISymbolDefinitionNode[] { _methodColdCodeNode });
+                _methodColdCodeNode.SetCode(coldObjectData);
+                _methodCodeNode.ColdCodeNode = _methodColdCodeNode;
+            }
+#endif
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
+#endif
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
@@ -538,10 +559,15 @@ namespace Internal.JitInterface
                     }
                 }
             }
+
+            if (_synthesizedPgoDependencies != null)
+            {
+                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
+            }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -551,6 +577,8 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
+
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
         }
 
         private void PublishROData()
@@ -615,7 +643,9 @@ namespace Internal.JitInterface
             }
 
             _methodCodeNode = null;
-
+#if READYTORUN
+            _methodColdCodeNode = null;
+#endif
             _code = null;
             _coldCode = null;
 
@@ -624,19 +654,27 @@ namespace Internal.JitInterface
 
             _codeRelocs = default(ArrayBuilder<Relocation>);
             _roDataRelocs = default(ArrayBuilder<Relocation>);
-
+#if READYTORUN
+            _coldCodeRelocs = default(ArrayBuilder<Relocation>);
+#endif
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
             _frameInfos = null;
 
+#if READYTORUN
+            _numColdFrameInfos = 0;
+            _usedColdFrameInfos = 0;
+            _coldFrameInfos = null;
+#endif
+
             _gcInfo = null;
             _ehClauses = null;
+            _additionalDependencies = null;
 
 #if !READYTORUN
             _debugInfo = null;
-
-            _additionalDependencies = null;
 #endif
+
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
@@ -649,6 +687,7 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _synthesizedPgoDependencies = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -1833,24 +1872,38 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private nuint printObjectDescription(void* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
-            Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
+            Debug.Assert(handle != null);
 
-            int bufferSize32 = checked((int)bufferSize);
-            ReadOnlySpan<char> objStr = HandleToObject(handle).ToString();
+            return PrintFromUtf16(HandleToObject(handle).ToString(), buffer, bufferSize, pRequiredBufferSize);
+        }
 
+        private nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        {
             int written = 0;
             if (bufferSize > 0)
             {
-                Utf8.FromUtf16(objStr, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
+                OperationStatus status = Utf8.FromUtf16(utf16, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
                 // Always null-terminate
                 buffer[written] = 0;
+
+                if (status == OperationStatus.Done)
+                {
+                    if (pRequiredBufferSize != null)
+                    {
+                        *pRequiredBufferSize = (nuint)written + 1;
+                    }
+
+                    return (nuint)written;
+                }
             }
+
             if (pRequiredBufferSize != null)
             {
-                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(objStr) + 1;
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(utf16) + 1;
             }
+
             return (nuint)written;
         }
 
@@ -1858,14 +1911,6 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
             return asCorInfoType(type);
-        }
-
-        private byte* getClassName(CORINFO_CLASS_STRUCT_* cls)
-        {
-            var type = HandleToObject(cls);
-            StringBuilder nameBuilder = new StringBuilder();
-            TypeString.Instance.AppendName(nameBuilder, type);
-            return (byte*)GetPin(StringToUTF8(nameBuilder.ToString()));
         }
 
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
@@ -1892,37 +1937,11 @@ namespace Internal.JitInterface
         }
 
 
-        private int appendClassName(char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
+        private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
-            // We support enough of this to make SIMD work, but not much else.
-
-            Debug.Assert(fNamespace && !fFullInst && !fAssembly);
-
-            var type = HandleToObject(cls);
-            string name = TypeString.Instance.FormatName(type);
-
-            int length = name.Length;
-            if (pnBufLen > 0)
-            {
-                char* buffer = *ppBuf;
-                int lengthToCopy = Math.Min(name.Length, pnBufLen);
-                for (int i = 0; i < lengthToCopy; i++)
-                    buffer[i] = name[i];
-                if (name.Length < pnBufLen)
-                {
-                    buffer[name.Length] = (char)0;
-                }
-                else
-                {
-                    buffer[pnBufLen - 1] = (char)0;
-                    lengthToCopy -= 1;
-                }
-
-                pnBufLen -= lengthToCopy;
-                *ppBuf = buffer + lengthToCopy;
-            }
-
-            return length;
+            TypeDesc type = HandleToObject(cls);
+            string name = JitTypeNameFormatter.Instance.FormatName(type);
+            return PrintFromUtf16(name, buffer, bufferSize, pRequiredBufferSize);
         }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
@@ -2351,11 +2370,6 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private byte* getHelperName(CorInfoHelpFunc helpFunc)
-        {
-            return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
-        }
-
         private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
             FieldDesc fd = field == null ? null : HandleToObject(field);
@@ -2725,6 +2739,36 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
+        {
+            Debug.Assert(cls != null);
+
+            if (underlyingType != null)
+            {
+                *underlyingType = null;
+            }
+
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsGenericParameter)
+            {
+                return TypeCompareState.May;
+            }
+
+            if (type.IsEnum)
+            {
+                if (underlyingType != null)
+                {
+                    *underlyingType = ObjectToHandle(type.UnderlyingType);
+                }
+                return TypeCompareState.Must;
+            }
+            else
+            {
+                return TypeCompareState.MustNot;
+            }
+        }
+
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getParentType"); }
 
@@ -2804,19 +2848,10 @@ namespace Internal.JitInterface
             return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
         }
 
-        private byte* getFieldName(CORINFO_FIELD_STRUCT_* ftn, byte** moduleName)
+        private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
-            var field = HandleToObject(ftn);
-            if (moduleName != null)
-            {
-                MetadataType typeDef = field.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(field.Name));
+            FieldDesc field = HandleToObject(fld);
+            return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
@@ -3100,20 +3135,10 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private byte* getMethodName(CORINFO_METHOD_STRUCT_* ftn, byte** moduleName)
+        private nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             MethodDesc method = HandleToObject(ftn);
-
-            if (moduleName != null)
-            {
-                MetadataType typeDef = method.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(method.Name));
+            return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
@@ -3360,8 +3385,16 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+#if READYTORUN
+        private int _numColdFrameInfos;
+        private int _usedColdFrameInfos;
+        private FrameInfo[] _coldFrameInfos;
+#endif
+
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
+
+        private DependencyList _additionalDependencies;
 
         private void allocMem(ref AllocMemArgs args)
         {
@@ -3370,6 +3403,10 @@ namespace Internal.JitInterface
 
             if (args.coldCodeSize != 0)
             {
+
+#if READYTORUN
+                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
                 args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
                 args.coldCodeBlockRW = args.coldCodeBlock;
             }
@@ -3413,11 +3450,27 @@ namespace Internal.JitInterface
             {
                 _frameInfos = new FrameInfo[_numFrameInfos];
             }
+
+#if READYTORUN
+            if (_numColdFrameInfos > 0)
+            {
+                _coldFrameInfos = new FrameInfo[_numColdFrameInfos];
+            }
+#endif
         }
 
         private void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize)
         {
-            _numFrameInfos++;
+#if READYTORUN
+            if (isColdCode)
+            {
+                _numColdFrameInfos++;
+            }
+            else
+#endif
+            {
+                _numFrameInfos++;
+            }
         }
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
@@ -3433,11 +3486,15 @@ namespace Internal.JitInterface
                     flags |= FrameInfoFlags.ReversePInvoke;
             }
 
-            byte[] blobData = new byte[unwindSize];
+            byte[] blobData = null;
 
-            for (uint i = 0; i < unwindSize; i++)
+            if (pUnwindBlock != null || pColdCode == null)
             {
-                blobData[i] = pUnwindBlock[i];
+                blobData = new byte[unwindSize];
+                for (uint i = 0; i < unwindSize; i++)
+                {
+                    blobData[i] = pUnwindBlock[i];
+                }
             }
 
 #if !READYTORUN
@@ -3448,8 +3505,18 @@ namespace Internal.JitInterface
                 blobData = CompressARM64CFI(blobData);
             }
 #endif
-
-            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+#if READYTORUN
+            if (pColdCode == null)
+#endif
+            {
+                _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#if READYTORUN
+            else
+            {
+                _coldFrameInfos[_usedColdFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#endif
         }
 
         private void* allocGCInfo(UIntPtr size)
@@ -3490,7 +3557,9 @@ namespace Internal.JitInterface
 
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
-
+#if READYTORUN
+        private ArrayBuilder<Relocation> _coldCodeRelocs;
+#endif
 
         /// <summary>
         /// Various type of block.
@@ -3568,6 +3637,11 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     length = _roData.Length;
                     return ref _roDataRelocs;
+#if READYTORUN
+                case BlockType.ColdCode:
+                    length = _coldCode.Length;
+                    return ref _coldCodeRelocs;
+#endif
                 default:
                     throw new NotImplementedException("Arbitrary relocs");
             }
@@ -3641,8 +3715,13 @@ namespace Internal.JitInterface
                     break;
 
                 case BlockType.ColdCode:
-                    // TODO: Arbitrary relocs
+#if READYTORUN
+                    Debug.Assert(_methodColdCodeNode != null);
+                    relocTarget = _methodColdCodeNode;
+                    break;
+#else
                     throw new NotImplementedException("ColdCode relocs");
+#endif
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
@@ -3841,11 +3920,6 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
-        private PgoSchemaElem[] getPgoInstrumentationResults(MethodDesc method)
-        {
-            return _compilation.ProfileData[method]?.SchemaData;
-        }
-
         private MemoryStream _cachedMemoryStream = new MemoryStream();
 
         public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
@@ -3923,7 +3997,19 @@ namespace Internal.JitInterface
 
             if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
             {
-                var pgoResultsSchemas = getPgoInstrumentationResults(methodDesc);
+#if READYTORUN
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+
+                if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
+                {
+                    if (_synthesizedPgoDependencies == null)
+                        _synthesizedPgoDependencies = new HashSet<MethodDesc>();
+
+                    _synthesizedPgoDependencies.Add(methodDesc);
+                }
+#else
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;
+#endif
                 if (pgoResultsSchemas == null)
                 {
                     pgoResults.hr = HRESULT.E_NOTIMPL;

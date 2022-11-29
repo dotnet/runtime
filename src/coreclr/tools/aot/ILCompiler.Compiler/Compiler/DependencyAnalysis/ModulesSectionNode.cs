@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -13,21 +12,11 @@ namespace ILCompiler.DependencyAnalysis
         // in the final binary. This list is created via a special .modules section that
         // contains list of pointers to all module headers.
 
-        private TargetDetails _target;
-
-        public ModulesSectionNode(TargetDetails target)
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            _target = target;
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return _target.IsWindows ?
-                    ObjectNodeSection.ModulesWindowsContentSection :
-                    ObjectNodeSection.ModulesUnixContentSection;
-            }
+            return factory.Target.IsWindows ?
+                ObjectNodeSection.ModulesWindowsContentSection :
+                ObjectNodeSection.ModulesUnixContentSection;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

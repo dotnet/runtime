@@ -24,8 +24,8 @@ namespace ILCompiler
 
         public GeneratingMetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
-            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, invokeThunkGenerationPolicy)
+            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy, MetadataManagerOptions options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, invokeThunkGenerationPolicy, options)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;

@@ -15,7 +15,7 @@
 {
 .field static value class [mscorlib]System.RuntimeTypeHandle args
 
-.method public hidebysig static int32 Main(class [mscorlib]System.String[]) il managed
+.method public hidebysig static int32 Main() il managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00

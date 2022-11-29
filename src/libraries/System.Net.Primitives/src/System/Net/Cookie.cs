@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,7 +42,7 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal const string ReservedToName = "\t\r\n=;,";
+        private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -238,7 +239,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.AsSpan().IndexOfAny(ReservedToName) >= 0)
+                || value.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 m_name = string.Empty;
                 return false;
@@ -346,7 +347,7 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.AsSpan().IndexOfAny(ReservedToName) >= 0)
+                m_name.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 if (shouldThrow)
                 {

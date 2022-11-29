@@ -1535,8 +1535,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
         PRECONDITION(returnAddress != NULL);
     } CONTRACTL_END
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
@@ -1546,8 +1544,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     PREFIX_ASSUME(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
-
-    END_ENTRYPOINT_VOIDRET;
 }
 
 #if defined(TARGET_X86) && defined(TARGET_UNIX)

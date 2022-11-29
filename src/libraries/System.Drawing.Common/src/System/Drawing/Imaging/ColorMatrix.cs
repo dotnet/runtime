@@ -406,7 +406,7 @@ namespace System.Drawing.Imaging
             public static ref float GetPinnableReference(ColorMatrix managed) => ref (managed is null ? ref Unsafe.NullRef<float>() : ref managed.GetPinnableReference());
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
-            public static float* ConvertToUnmanaged(ColorMatrix managed) => throw new UnreachableException();
+            public static float* ConvertToUnmanaged(ColorMatrix _) => throw new UnreachableException();
         }
 #endif
     }

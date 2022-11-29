@@ -1878,16 +1878,13 @@ void CodeGen::genGenerateMachineCode()
 
     genFinalizeFrame();
 
-    unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
-
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                ,
-                            maxTmpSize);
+                                );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -2058,13 +2055,6 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
-
-#if defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
-    if (compiler->verbose)
-    {
-        varLiveKeeper->dumpLvaVariableLiveRanges();
-    }
-#endif // defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
 
 #ifdef LATE_DISASM
     unsigned finalHotCodeSize;
@@ -4267,13 +4257,6 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Initialization of OSR locals must be handled specially
-        if (compiler->lvaIsOSRLocal(varNum))
-        {
-            varDsc->lvMustInit = 0;
-            continue;
-        }
-
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -5407,14 +5390,6 @@ void CodeGen::genFinalizeFrame()
 
     compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
-    /* We want to make sure that the prolog size calculated here is accurate
-       (that is instructions will not shrink because of conservative stack
-       frame approximations).  We do this by filling in the correct size
-       here (where we have committed to the final numbers for the frame offsets)
-       This will ensure that the prolog size is always correct
-    */
-    GetEmitter()->emitMaxTmpSize = regSet.tmpGetTotalSize();
-
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
     {
@@ -6339,8 +6314,6 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
-
-    noway_assert(GetEmitter()->emitMaxTmpSize == regSet.tmpGetTotalSize());
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -6959,8 +6932,11 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 end++;
             }
 
-            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
-            liveRangeIndex++;
+            if (start < end)
+            {
+                genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+                liveRangeIndex++;
+            }
         };
 
         siVarLoc*      curLoc   = nullptr;
@@ -7552,9 +7528,12 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
-        const char* className;
-        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
-        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        auto append = [&]() {
+            char        buffer[256];
+            const char* methodName = compiler->eeGetMethodName(context->GetCallee(), buffer, sizeof(buffer));
+            fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        };
+        append();
         fprintf(file, "\"Inlinees\":[");
         if (context->GetChild() != nullptr)
         {

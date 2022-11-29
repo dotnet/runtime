@@ -25,7 +25,6 @@
 #include "clrhost.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
-#include "winnls.h"
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
@@ -37,7 +36,6 @@
 #endif
 
 #include "contract.h"
-#include "entrypoints.h"
 
 #include<minipal/utils.h>
 
@@ -913,15 +911,9 @@ inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 // Paths functions. Use these instead of the CRT.
 //
 //*****************************************************************************
-// secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(const WCHAR *path,
-                  __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
-                  __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
-                  __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
-                  __inout_z __inout_ecount_opt(extSizeInWords) WCHAR *ext, size_t extSizeInWords);
 
 //*******************************************************************************
-// A much more sensible version that just points to each section of the string.
+// Split a path into individual components - points to each section of the string
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
@@ -949,31 +941,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // Allocate free memory with specific alignment
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
-
-class NumaNodeInfo
-{
-private:
-    static BOOL m_enableGCNumaAware;
-    static uint16_t m_nNodes;
-    static BOOL InitNumaNodeInfoAPI();
-
-public:
-    static BOOL CanEnableGCNumaAware();
-    static void InitNumaNodeInfo();
-
-#if !defined(FEATURE_NATIVEAOT)
-public: 	// functions
-
-    static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
-                                     DWORD allocType, DWORD prot, DWORD node);
-#ifdef HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
-    static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // HOST_WINDOWS
-    static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // HOST_WINDOWS
-#endif
-};
 
 #ifdef HOST_WINDOWS
 
@@ -2363,32 +2330,6 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
     return HashCOUNT_T(currentHash, COUNT_T(SIZE_T(dac_cast<TADDR>(ptr))));
 }
 
-inline DWORD HashThreeToOne(DWORD a, DWORD b, DWORD c)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    /*
-    lookup3.c, by Bob Jenkins, May 2006, Public Domain.
-
-    These are functions for producing 32-bit hashes for hash table lookup.
-    hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final()
-    are externally useful functions.  Routines to test the hash are included
-    if SELF_TEST is defined.  You can use this free for any purpose.  It's in
-    the public domain.  It has no warranty.
-    */
-
-    #define rot32(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
-    c ^= b; c -= rot32(b,14);
-    a ^= c; a -= rot32(c,11);
-    b ^= a; b -= rot32(a,25);
-    c ^= b; c -= rot32(b,16);
-    a ^= c; a -= rot32(c,4);
-    b ^= a; b -= rot32(a,14);
-    c ^= b; c -= rot32(b,24);
-
-    return c;
-}
-
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2803,139 +2744,6 @@ private:
     int         m_iCollisions;              // How many have we had.
     BYTE        *m_rgData;                  // Data element list.
 };
-
-//*****************************************************************************
-// IMPORTANT: This data structure is deprecated, please do not add any new uses.
-// The hashtable implementation that should be used instead is code:SHash.
-// If code:SHash does not work for you, talk to mailto:clrdeag.
-//*****************************************************************************
-template <class T> class CClosedHash : public CClosedHashBase
-{
-public:
-    CClosedHash(
-        int         iBuckets,               // How many buckets should we start with.
-        bool        bPerfect=false) :       // true if bucket size will hash with no collisions.
-        CClosedHashBase(iBuckets, sizeof(T), bPerfect)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    T &operator[](int iIndex)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T &) *(Data() + (iIndex * sizeof(T))));
-    }
-
-
-//*****************************************************************************
-// Add a new item to hash table given the key value.  If this new entry
-// exceeds maximum size, then the table will grow and be re-hashed, which
-// may cause a memory error.
-//*****************************************************************************
-    T *Add(                                 // New item to fill out on success.
-        void        *pData)                 // The value to hash on.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::Add(pData));
-    }
-
-//*****************************************************************************
-// Lookup a key value and return a pointer to the element if found.
-//*****************************************************************************
-    T *Find(                                // The item if found, 0 if not.
-        void        *pData)                 // The key to lookup.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::Find(pData));
-    }
-
-//*****************************************************************************
-// Look for an item in the table.  If it isn't found, then create a new one and
-// return that.
-//*****************************************************************************
-    T *FindOrAdd(                           // The item if found, 0 if not.
-        void        *pData,                 // The key to lookup.
-        bool        &bNew)                  // true if created.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::FindOrAdd(pData, bNew));
-    }
-
-
-//*****************************************************************************
-// The following functions are used to traverse each used entry.  This code
-// will skip over deleted and free entries freeing the caller up from such
-// logic.
-//*****************************************************************************
-    T *GetFirst()                           // The first entry, 0 if none.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::GetFirst());
-    }
-
-    T *GetNext(T *Prev)                     // The next entry, 0 if done.
-    {
-        WRAPPER_NO_CONTRACT;
-        return ((T *) CClosedHashBase::GetNext((BYTE *) Prev));
-    }
-};
-
-
-//*****************************************************************************
-// IMPORTANT: This data structure is deprecated, please do not add any new uses.
-// The hashtable implementation that should be used instead is code:SHash.
-// If code:SHash does not work for you, talk to mailto:clrdeag.
-//*****************************************************************************
-// Closed hash with typed parameters.  The derived class is the second
-//  parameter to the template.  The derived class must implement:
-//    unsigned long Hash(const T *pData);
-//    unsigned long Compare(const T *p1, T *p2);
-//    ELEMENTSTATUS Status(T *pEntry);
-//    void SetStatus(T *pEntry, ELEMENTSTATUS s);
-//    void* GetKey(T *pEntry);
-//*****************************************************************************
-template<class T, class H>class CClosedHashEx : public CClosedHash<T>
-{
-public:
-    CClosedHashEx(
-        int         iBuckets,               // How many buckets should we start with.
-        bool        bPerfect=false) :       // true if bucket size will hash with no collisions.
-        CClosedHash<T> (iBuckets, bPerfect)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    unsigned int Hash(const void *pData)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Hash((const T*)pData);
-    }
-
-    unsigned int Compare(const void *p1, BYTE *p2)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Compare((const T*)p1, (T*)p2);
-    }
-
-    typename CClosedHash<T>::ELEMENTSTATUS Status(BYTE *p)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->Status((T*)p);
-    }
-
-    void SetStatus(BYTE *p, typename CClosedHash<T>::ELEMENTSTATUS s)
-    {
-        WRAPPER_NO_CONTRACT;
-        static_cast<H*>(this)->SetStatus((T*)p, s);
-    }
-
-    void* GetKey(BYTE *p)
-    {
-        WRAPPER_NO_CONTRACT;
-        return static_cast<H*>(this)->GetKey((T*)p);
-    }
-};
-
 
 //*****************************************************************************
 // IMPORTANT: This data structure is deprecated, please do not add any new uses.

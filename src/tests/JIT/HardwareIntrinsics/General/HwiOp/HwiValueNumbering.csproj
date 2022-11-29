@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

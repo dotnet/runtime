@@ -82,7 +82,6 @@ set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
 if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
-    set(GC_PAL gc_unix)
 endif (CLR_CMAKE_HOST_UNIX)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
@@ -109,7 +108,7 @@ set(CORECLR_LIBRARIES
     System.Globalization.Native-Static
     interop
     coreclrminipal
-    ${GC_PAL}
+    gc_pal
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

@@ -140,12 +140,6 @@ namespace System.Security.Cryptography.Xml
                 return !nearestAncestorWithSamePrefix.Value.Equals(a.Value);
         }
 
-        internal static bool IsXmlPrefixDefinitionNode(XmlAttribute a)
-        {
-            return false;
-            //            return a.Prefix.Equals("xmlns") && a.LocalName.Equals("xml") && a.Value.Equals(NamespaceUrlForXmlPrefix);
-        }
-
         internal static string DiscardWhiteSpaces(string inputBuffer)
         {
             return DiscardWhiteSpaces(inputBuffer, 0, inputBuffer.Length);

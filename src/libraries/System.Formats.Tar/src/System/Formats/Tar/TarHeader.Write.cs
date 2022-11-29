@@ -893,32 +893,22 @@ namespace System.Formats.Tar
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.
-        // Format: "%d/GlobalHead.%p/%n"
+        // Format: "%d/GlobalHead.%p.%n"
         // - %d: The path of the $TMPDIR variable, if found. Otherwise, the value is '/tmp'.
         // - %p: The current process ID.
-        // - %n: The sequence number of the global extended header record of the archive, starting at 1. In our case, since we only generate one, the value is always 1.
+        // - %n: The sequence number of the global extended header record of the archive, starting at 1.
         // If the path of $TMPDIR makes the final string too long to fit in the 'name' field,
         // then the TMPDIR='/tmp' is used.
         private static string GenerateGlobalExtendedAttributeName(int globalExtendedAttributesEntryNumber)
         {
             Debug.Assert(globalExtendedAttributesEntryNumber >= 1);
 
-            string tmpDir = Path.GetTempPath();
-            if (Path.EndsInDirectorySeparator(tmpDir))
-            {
-                tmpDir = Path.TrimEndingDirectorySeparator(tmpDir);
-            }
-            int processId = Environment.ProcessId;
+            ReadOnlySpan<char> tmp = Path.TrimEndingDirectorySeparator(Path.GetTempPath());
 
-            string result = string.Format(GlobalHeadFormatPrefix, tmpDir, processId);
-            string suffix = $".{globalExtendedAttributesEntryNumber}"; // GEA sequence number
-            if (result.Length + suffix.Length >= FieldLengths.Name)
-            {
-                result = string.Format(GlobalHeadFormatPrefix, "/tmp", processId);
-            }
-            result += suffix;
-
-            return result;
+            string result = $"{tmp}/GlobalHead.{Environment.ProcessId}.{globalExtendedAttributesEntryNumber}";
+            return result.Length >= FieldLengths.Name ?
+                string.Concat("/tmp", result.AsSpan(tmp.Length)) :
+                result;
         }
 
         private static int GetUtf8TextLength(ReadOnlySpan<char> text)

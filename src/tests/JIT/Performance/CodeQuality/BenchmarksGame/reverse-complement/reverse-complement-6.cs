@@ -227,7 +227,7 @@ namespace BenchmarksGame
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             var outBytes = new byte[helpers.FileLength];
