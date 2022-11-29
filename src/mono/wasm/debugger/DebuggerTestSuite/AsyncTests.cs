@@ -143,7 +143,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 12, 12,
+                "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12,
                 "DebuggerTestVB.TestVbScope.RunVBScope",
                 locals_fn: async (locals) =>
                 {
