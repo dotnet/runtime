@@ -589,12 +589,13 @@ namespace Microsoft.Extensions.Configuration
 
             Debug.Assert(dictionary is not null);
 
-            Type dictionaryObjectType = dictionary.GetType();
+            Type? iDictionaryObjectType = FindOpenGenericInterface(typeof(IDictionary<,>), dictionary.GetType());
 
-            MethodInfo tryGetValue = dictionaryObjectType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
+            Debug.Assert(iDictionaryObjectType is not null);
 
-            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo? setter = dictionaryObjectType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            MethodInfo tryGetValue = iDictionaryObjectType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+            PropertyInfo? setter = iDictionaryObjectType.GetProperty("Item", DeclaredOnlyLookup);
+
             if (setter is null || !setter.CanWrite)
             {
                 // Cannot set any item on the dictionary object.

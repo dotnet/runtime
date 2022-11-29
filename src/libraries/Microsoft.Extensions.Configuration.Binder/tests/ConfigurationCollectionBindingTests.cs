@@ -1171,7 +1171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotMofifyTheOriginal()
+        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotModifyTheOriginal()
         {
             // A field declared as IEnumerable<T> that is instantiated with a class
             // that indirectly implements IEnumerable<T> is still bound, but with
@@ -1672,6 +1672,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public bool TryGetValue(TKey key, out TValue value) => _dict.TryGetValue(key, out value);
 
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _dict.GetEnumerator();
+
+            // The following are members which has same names as the IDictionary<,> members.
+            // Adding these to the test to ensure not getting System.Reflection.AmbiguousMatchException when we bind the dictionary.
+            private string? v;
+            public string? this[string key] { get => v; set => v = value; }
+            public bool TryGetValue() { return true; }
+
         }
 
         public class ExtendedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
