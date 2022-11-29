@@ -31,6 +31,7 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
 let isCustomStartup = false;
+export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<void>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
@@ -69,13 +70,17 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==
-    module.ready = module.ready.then(async () => {
+
+    module.ready.then(async () => {
         // wait for previous stage
         await afterPostRun.promise;
         // - here we resolve the promise returned by createDotnetRuntime export
-        return exportedAPI;
         // - any code after createDotnetRuntime is executed now
+        dotnetReady.promise_control.resolve(exportedAPI);
+    }).catch(err => {
+        dotnetReady.promise_control.reject(err);
     });
+    module.ready = dotnetReady.promise;
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = () => mono_on_abort;
@@ -220,6 +225,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
+    dotnetReady.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
