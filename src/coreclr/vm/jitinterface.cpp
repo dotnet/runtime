@@ -11957,7 +11957,7 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11968,6 +11968,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     _ASSERT(fieldHnd != NULL);
     _ASSERT(buffer != NULL);
     _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
 
     bool result = false;
 
@@ -11975,7 +11976,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
     _ASSERTE(field->IsStatic());
-    _ASSERTE((unsigned)bufferSize == field->GetSize());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
     _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
@@ -11991,6 +11991,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         GCX_COOP();
         if (field->IsObjRef())
         {
+            _ASSERT(!field->IsRVA());
+            _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
+            _ASSERT((UINT)bufferSize == field->GetSize());
+
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)
             {
@@ -12021,10 +12025,17 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         }
         else
         {
-            void* fldAddr = field->GetCurrentStaticAddress();
-            _ASSERTE(fldAddr != nullptr);
-            memcpy(buffer, fldAddr, bufferSize);
-            result = true;
+            // Either RVA, primitive or struct (or even part of that struct)
+            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+            UINT size = field->GetSize();
+            _ASSERTE(baseAddr > 0);
+            _ASSERTE(size > 0);
+          
+            if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
+            {
+                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                result = true;
+            }
         }
     }
 
