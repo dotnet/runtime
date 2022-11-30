@@ -1092,6 +1092,11 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
         return;
     }
 
+    if (m_comp->opts.OptimizationDisabled() && (m_blockSize >= genTypeSize(TYP_INT)))
+    {
+        return;
+    }
+
     var_types asgType = TYP_UNDEF;
     assert((m_src == m_src->gtEffectiveVal()) && (m_dst == m_dst->gtEffectiveVal()));
 
