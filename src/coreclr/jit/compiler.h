@@ -5712,7 +5712,7 @@ private:
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
+    GenTree* fgMorphLocalVar(GenTree* tree);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);

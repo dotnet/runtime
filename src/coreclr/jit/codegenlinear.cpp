@@ -1922,7 +1922,8 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
+            // This can go via helper which takes the size as a native uint.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
         }
         else
         {
