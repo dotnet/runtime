@@ -91,14 +91,16 @@ namespace System.Net.WebSockets.Client.Tests
                     cws.Options.KeepAliveInterval = keepAliveInterval;
                 }
 
-                if (invoker == null)
+                if (!PlatformDetection.IsBrowser)
                 {
-                    cws.Options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate());
-                    cws.Options.RemoteCertificateValidationCallback = delegate { return true; };
+                    if (invoker == null)
+                    {
+                        cws.Options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate());
+                        cws.Options.RemoteCertificateValidationCallback = delegate { return true; };
+                    }
+                    cws.Options.HttpVersion = version;
+                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                 }
-
-                cws.Options.HttpVersion = version;
-                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                 using (var cts = new CancellationTokenSource(timeOutMilliseconds))
                 {
@@ -119,7 +121,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public static async Task<T> Retry<T>(ITestOutputHelper output, Func<Task<T>> func)
         {
-            const int MaxTries = 1;
+            const int MaxTries = 5;
             int betweenTryDelayMilliseconds = 1000;
 
             for (int i = 1; ; i++)

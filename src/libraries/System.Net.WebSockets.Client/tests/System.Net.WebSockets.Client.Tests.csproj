@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -70,7 +70,7 @@
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
-    <Compile Include="SendReceiveTest.Http2.cs" Condition="'$(TargetsBrowser)' == 'false'" />
+    <Compile Include="SendReceiveTest.Http2.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
@@ -78,7 +78,8 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Test" />
   </ItemGroup>
 </Project>
