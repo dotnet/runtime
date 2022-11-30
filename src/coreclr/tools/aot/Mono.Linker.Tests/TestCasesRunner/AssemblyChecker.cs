@@ -157,9 +157,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			bool AddMember (TypeSystemEntity entity)
 			{
-				if (NameUtils.GetActualOriginDisplayName (entity) is string fullName) {
-					if (linkedMembers.ContainsKey (fullName))
-						return false;
+				if (NameUtils.GetActualOriginDisplayName (entity) is string fullName &&
+					!linkedMembers.ContainsKey (fullName)) {
 
 					linkedMembers.Add (fullName, entity);
 					return true;
@@ -273,16 +272,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			//if (!original.IsInterface)
-			// VerifyBaseType (original, linked);
+#if false
+			if (!original.IsInterface)
+				VerifyBaseType (original, linked);
 
-			//VerifyInterfaces (original, linked);
-			//VerifyPseudoAttributes (original, linked);
-			//VerifyGenericParameters (original, linked);
-			//VerifyCustomAttributes (original, linked);
-			//VerifySecurityAttributes (original, linked);
+			VerifyInterfaces (original, linked);
+			VerifyPseudoAttributes (original, linked);
+			VerifyGenericParameters (original, linked);
+			VerifyCustomAttributes (original, linked);
+			VerifySecurityAttributes (original, linked);
 
-			//VerifyFixedBufferFields (original, linked);
+			VerifyFixedBufferFields (original, linked);
+#endif
 
 			foreach (var td in original.NestedTypes) {
 				string originalFullName = NameUtils.GetExpectedOriginDisplayName (td);
@@ -294,26 +295,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				linkedMembers.Remove (originalFullName);
 			}
 
+#if false
 			//// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
-			//foreach (var p in original.Properties) {
-			//  VerifyProperty (p, linked.Properties.FirstOrDefault (l => p.Name == l.Name), linked);
-			//  linkedMembers.Remove (p.FullName);
-			//}
-			//// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
-			//foreach (var e in original.Events) {
-			//  VerifyEvent (e, linked.Events.FirstOrDefault (l => e.Name == l.Name), linked);
-			//  linkedMembers.Remove (e.FullName);
-			//}
+			foreach (var p in original.Properties) {
+				VerifyProperty (p, linked.Properties.FirstOrDefault (l => p.Name == l.Name), linked);
+				linkedMembers.Remove (p.FullName);
+			}
+			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
+			foreach (var e in original.Events) {
+				VerifyEvent (e, linked.Events.FirstOrDefault (l => e.Name == l.Name), linked);
+				linkedMembers.Remove (e.FullName);
+			}
 
-			//// Need to check delegate cache fields before the normal field check
-			//VerifyDelegateBackingFields (original, linked);
+			// Need to check delegate cache fields before the normal field check
+			VerifyDelegateBackingFields (original, linked);
 
-			//foreach (var f in original.Fields) {
-			//  if (verifiedGeneratedFields.Contains (f.FullName))
-			//    continue;
-			//  VerifyField (f, linked.Fields.FirstOrDefault (l => f.Name == l.Name));
-			//  linkedMembers.Remove (f.FullName);
-			//}
+			foreach (var f in original.Fields) {
+				if (verifiedGeneratedFields.Contains (f.FullName))
+					continue;
+				VerifyField (f, linked.Fields.FirstOrDefault (l => f.Name == l.Name));
+				linkedMembers.Remove (f.FullName);
+			}
+#endif
 
 			foreach (var m in original.Methods) {
 				if (verifiedEventMethods.Contains (m.FullName))
@@ -530,16 +533,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			//VerifyPseudoAttributes (src, linked);
-			//VerifyGenericParameters (src, linked);
-			//VerifyCustomAttributes (src, linked);
-			//VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
-			//VerifyParameters (src, linked);
-			//VerifySecurityAttributes (src, linked);
-			//VerifyArrayInitializers (src, linked);
+#if false
+			VerifyPseudoAttributes (src, linked);
+			VerifyGenericParameters (src, linked);
+			VerifyCustomAttributes (src, linked);
+			VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+			VerifyParameters (src, linked);
+			VerifySecurityAttributes (src, linked);
+			VerifyArrayInitializers (src, linked);
 
 			// Method bodies are not very different in Native AOT
-			//VerifyMethodBody (src, linked);
+			VerifyMethodBody (src, linked);
+#endif
 		}
 
 		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)

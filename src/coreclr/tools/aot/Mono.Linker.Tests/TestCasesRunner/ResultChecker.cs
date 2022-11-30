@@ -115,40 +115,41 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var actionAssemblies = new HashSet<string> ();
 			//bool trimModeIsCopy = false;
 
-#pragma warning disable SA1027 // Use tabs correctly
 			foreach (var assemblyAttr in assembliesToCheck) {
 				var name = (string) assemblyAttr.ConstructorArguments.First ().Value;
 				name = Path.GetFileNameWithoutExtension (name);
 
-				var exists = testResult.TrimmingResults.ConstructedEETypes;
-				//if (assemblyAttr.AttributeType.Name == nameof (RemovedAssemblyAttribute))
-				//	Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
-				//else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
-				//	Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
-				//else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerActionAttribute)) {
-				//	string assemblyName = (string) assemblyAttr.ConstructorArguments[1].Value;
-				//	if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy") {
-				//		VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
-				//	}
+#if false
+				if (assemblyAttr.AttributeType.Name == nameof (RemovedAssemblyAttribute))
+					Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
+				else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
+					Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
+				else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerActionAttribute)) {
+					string assemblyName = (string) assemblyAttr.ConstructorArguments[1].Value;
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy") {
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+					}
 
-				//	actionAssemblies.Add (assemblyName);
-				//} else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute)) {
-				//	// We delay checking that everything was copied after processing all assemblies
-				//	// with a specific action, since assembly action wins over trim mode.
-				//	if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy")
-				//		trimModeIsCopy = true;
-				//} else
-				//	throw new NotImplementedException ($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+					actionAssemblies.Add (assemblyName);
+				} else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute)) {
+					// We delay checking that everything was copied after processing all assemblies
+					// with a specific action, since assembly action wins over trim mode.
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy")
+						trimModeIsCopy = true;
+				} else
+					throw new NotImplementedException ($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+#endif
 			}
 
-			//if (trimModeIsCopy) {
-			//	foreach (string assemblyName in Directory.GetFiles (Directory.GetParent (outputDirectory).ToString (), "input")) {
-			//		var fileInfo = new FileInfo (assemblyName);
-			//		if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains (assemblyName))
-			//			VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
-			//	}
-			//}
-#pragma warning restore SA1027 // Use tabs correctly
+#if false
+			if (trimModeIsCopy) {
+				foreach (string assemblyName in Directory.GetFiles (Directory.GetParent (outputDirectory).ToString (), "input")) {
+					var fileInfo = new FileInfo (assemblyName);
+					if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains (assemblyName))
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+				}
+			}
+#endif
 		}
 
 #pragma warning disable IDE0060 // Remove unused parameter
