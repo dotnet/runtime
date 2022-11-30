@@ -33,7 +33,6 @@ namespace Internal.Runtime.TypeLoader
 #if FEATURE_UNIVERSAL_GENERICS
     using ThunkKind = CallConverterThunk.ThunkKind;
 #endif
-    using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
     internal static class LowLevelListExtensions
     {
@@ -335,14 +334,6 @@ namespace Internal.Runtime.TypeLoader
                     " Type size = " + (state.TypeSize.HasValue ? state.TypeSize.Value.LowLevelToString() : "UNDEF") +
                     " Fields size = " + (state.UnalignedTypeSize.HasValue ? state.UnalignedTypeSize.Value.LowLevelToString() : "UNDEF") +
                     " Type alignment = " + (state.FieldAlignment.HasValue ? state.FieldAlignment.Value.LowLevelToString() : "UNDEF"));
-
-#if FEATURE_UNIVERSAL_GENERICS
-                if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    state.VTableSlotsMapping = new VTableSlotMapper(state.TemplateType.RuntimeTypeHandle.GetNumVtableSlots());
-                    ComputeVTableLayout(type, state.TemplateType, state);
-                }
-#endif
             }
         }
 
@@ -729,102 +720,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 #endif
-
-        private unsafe void ComputeVTableLayout(TypeDesc currentType, TypeDesc currentTemplateType, TypeBuilderState targetTypeState)
-        {
-            TypeDesc baseType = GetBaseTypeThatIsCorrectForMDArrays(currentType);
-            TypeDesc baseTemplateType = GetBaseTypeUsingRuntimeTypeHandle(currentTemplateType);
-
-            Debug.Assert((baseType == null && baseTemplateType == null) || (baseType != null && baseTemplateType != null));
-
-            // Compute the vtable layout for the current type starting with base types first
-            if (baseType != null)
-                ComputeVTableLayout(baseType, baseTemplateType, targetTypeState);
-
-            currentTemplateType.RetrieveRuntimeTypeHandleIfPossible();
-            Debug.Assert(!currentTemplateType.RuntimeTypeHandle.IsNull());
-            Debug.Assert(baseTemplateType == null || !baseTemplateType.RuntimeTypeHandle.IsNull());
-
-            // The m_usNumVtableSlots field on EETypes includes the count of vtable slots of the base type,
-            // so make sure we don't count that twice!
-            int currentVtableIndex = baseTemplateType == null ? 0 : baseTemplateType.RuntimeTypeHandle.GetNumVtableSlots();
-
-            IntPtr dictionarySlotInVtable = IntPtr.Zero;
-
-            if (currentType.IsGeneric())
-            {
-                if (!currentType.CanShareNormalGenericCode() && currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    // We are building a type that cannot share code with normal canonical types, so the type has to have
-                    // the same vtable layout as non-shared generics, meaning no dictionary pointer in the vtable.
-                    // We use universal canonical template types to build such types. Universal canonical types have 'NULL'
-                    // dictionary pointers in their vtables, so we'll start copying the vtable entries right after that
-                    // dictionary slot (dictionaries are accessed/used at runtime in a different way, not through the vtable
-                    // dictionary pointer for such types).
-                    currentVtableIndex++;
-                }
-                else if (currentType.CanShareNormalGenericCode())
-                {
-                    // In the case of a normal canonical type in their base class hierarchy,
-                    // we need to keep track of its dictionary slot in the vtable mapping, and try to
-                    // copy its value values directly from its template type vtable.
-                    // Two possible cases:
-                    //      1)  The template type is a normal canonical type. In this case, the dictionary value
-                    //          in the vtable slot of the template is NULL, but that's ok because this case is
-                    //          correctly handled anyways by the FinishBaseTypeAndDictionaries() API.
-                    //      2)  The template type is NOT a canonical type. In this case, the dictionary value
-                    //          in the vtable slot of the template is not null, and we keep track of it in the
-                    //          VTableSlotsMapping so we can copy it to the dynamic type after creation.
-                    //          This corner case is not handled by FinishBaseTypeAndDictionaries(), so we track it
-                    //          here.
-                    // Examples:
-                    //      1) Derived<T,U> : Base<U>, instantiated over [int,string]
-                    //      2) Derived<__Universal> : BaseClass, and BaseClass : BaseBaseClass<object>
-                    //      3) Derived<__Universal> : BaseClass<object>
-                    Debug.Assert(currentTemplateType != null && !currentTemplateType.RuntimeTypeHandle.IsNull());
-
-                    IntPtr* pTemplateVtable = (IntPtr*)((byte*)(currentTemplateType.RuntimeTypeHandle.ToEETypePtr()) + sizeof(MethodTable));
-                    dictionarySlotInVtable = pTemplateVtable[currentVtableIndex];
-                }
-            }
-            else if (currentType is ArrayType)
-            {
-                if (currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    TypeDesc canonicalElementType = currentType.Context.ConvertToCanon(((ArrayType)currentType).ElementType, CanonicalFormKind.Specific);
-                    bool quickIsNotCanonical = canonicalElementType == ((ArrayType)currentType).ElementType;
-
-                    Debug.Assert(quickIsNotCanonical == !canonicalElementType.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                    if (quickIsNotCanonical)
-                    {
-                        // We are building a type that cannot share code with normal canonical types, so the type has to have
-                        // the same vtable layout as non-shared generics, meaning no dictionary pointer in the vtable.
-                        // We use universal canonical template types to build such types. Universal canonical types have 'NULL'
-                        // dictionary pointers in their vtables, so we'll start copying the vtable entries right after that
-                        // dictionary slot (dictionaries are accessed/used at runtime in a different way, not through the vtable
-                        // dictionary pointer for such types).
-                        currentVtableIndex++;
-                    }
-                }
-            }
-
-            // Map vtable entries from target type's template type
-            int numVtableSlotsOnCurrentTemplateType = currentTemplateType.RuntimeTypeHandle.GetNumVtableSlots();
-            for (; currentVtableIndex < numVtableSlotsOnCurrentTemplateType; currentVtableIndex++)
-            {
-                targetTypeState.VTableSlotsMapping.AddMapping(
-                    currentVtableIndex,
-                    targetTypeState.VTableSlotsMapping.NumSlotMappings,
-                    dictionarySlotInVtable);
-
-                // Reset dictionarySlotInVtable (only one dictionary slot in vtable per type)
-                dictionarySlotInVtable = IntPtr.Zero;
-            }
-
-            // Sanity check: vtable of the dynamic type should be equal or smaller than the vtable of the template type
-            Debug.Assert(targetTypeState.VTableSlotsMapping.NumSlotMappings <= numVtableSlotsOnCurrentTemplateType);
-        }
 
         /// <summary>
         /// Wraps information about how a type is laid out into one package.  Types may have been laid out by
@@ -1858,101 +1753,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        //
-        // This method is used to build the floating portion of a generic dictionary.
-        //
-        private unsafe IntPtr BuildFloatingDictionary(TypeSystemContext typeSystemContext, IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
-        {
-            isNewlyAllocatedDictionary = true;
-
-            NativeParser nativeLayoutParser;
-            NativeLayoutInfoLoadContext nlilContext;
-
-            if (isTypeContext)
-            {
-                TypeDesc typeContext = typeSystemContext.ResolveRuntimeTypeHandle(*(RuntimeTypeHandle*)&context);
-
-                TypeLoaderLogger.WriteLine("Building floating dictionary layout for type " + typeContext.ToString() + "...");
-
-                // We should only perform updates to floating dictionaries for types that share normal canonical code
-                Debug.Assert(typeContext.CanShareNormalGenericCode());
-
-                // Computing the template will throw if no template is found.
-                typeContext.ComputeTemplate();
-
-                TypeBuilderState state = typeContext.GetOrCreateTypeBuilderState();
-                nativeLayoutParser = state.GetParserForNativeLayoutInfo();
-                nlilContext = state.NativeLayoutInfo.LoadContext;
-            }
-            else
-            {
-                RuntimeTypeHandle declaringTypeHandle;
-                MethodNameAndSignature nameAndSignature;
-                RuntimeTypeHandle[] genericMethodArgHandles;
-                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
-                Debug.Assert(success);
-
-                DefType declaringType = (DefType)typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
-                InstantiatedMethod methodContext = (InstantiatedMethod)typeSystemContext.ResolveGenericMethodInstantiation(
-                    false,
-                    declaringType,
-                    nameAndSignature,
-                    typeSystemContext.ResolveRuntimeTypeHandles(genericMethodArgHandles),
-                    IntPtr.Zero,
-                    false);
-
-                TypeLoaderLogger.WriteLine("Building floating dictionary layout for method " + methodContext.ToString() + "...");
-
-                // We should only perform updates to floating dictionaries for gemeric methods that share normal canonical code
-                Debug.Assert(!methodContext.IsNonSharableMethod);
-
-                uint nativeLayoutInfoToken;
-                NativeFormatModuleInfo nativeLayoutModule;
-                MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
-                if (templateMethod == null)
-                    throw new TypeBuilder.MissingTemplateException();
-
-                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
-
-                nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
-                nlilContext = new NativeLayoutInfoLoadContext
-                {
-                    _typeSystemContext = methodContext.Context,
-                    _typeArgumentHandles = methodContext.OwningType.Instantiation,
-                    _methodArgumentHandles = methodContext.Instantiation,
-                    _module = nativeLayoutModule
-                };
-            }
-
-            NativeParser dictionaryLayoutParser = nativeLayoutParser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
-            if (dictionaryLayoutParser.IsNull)
-                return IntPtr.Zero;
-
-            int floatingVersionCellIndex, floatingVersionInLayout;
-            GenericDictionaryCell[] floatingCells = GenericDictionaryCell.BuildFloatingDictionary(this, nlilContext, dictionaryLayoutParser, out floatingVersionCellIndex, out floatingVersionInLayout);
-            if (floatingCells == null)
-                return IntPtr.Zero;
-
-            // If the floating section is already constructed, then return. This means we are beaten by another thread.
-            if (*((IntPtr*)fixedDictionary) != IntPtr.Zero)
-            {
-                isNewlyAllocatedDictionary = false;
-                return *((IntPtr*)fixedDictionary);
-            }
-
-            GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);
-
-            IntPtr result = floatingDict.Allocate();
-
-            ProcessTypesNeedingPreparation();
-
-            FinishTypeAndMethodBuilding();
-
-            floatingDict.Finish(this);
-
-            return result;
-        }
-
         public static bool TryBuildGenericType(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             Debug.Assert(!genericTypeDefinitionHandle.IsNull() && genericTypeArgumentHandles != null && genericTypeArgumentHandles.Length > 0);
@@ -2226,33 +2026,6 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContextFactory.Recycle(context);
 
             return success;
-        }
-
-        //
-        // This method is used to build the floating portion of a generic dictionary.
-        //
-        internal static IntPtr TryBuildFloatingDictionary(IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
-        {
-            isNewlyAllocatedDictionary = true;
-
-            try
-            {
-                TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
-
-                IntPtr ret = new TypeBuilder().BuildFloatingDictionary(typeSystemContext, context, isTypeContext, fixedDictionary, out isNewlyAllocatedDictionary);
-
-                TypeSystemContextFactory.Recycle(typeSystemContext);
-
-                return ret;
-            }
-            catch (MissingTemplateException e)
-            {
-                // This should not ever happen. The static compiler should ensure that the templates are always
-                // available for types and methods that have floating dictionaries
-                Environment.FailFast("MissingTemplateException thrown during dictionary update", e);
-
-                return IntPtr.Zero;
-            }
         }
     }
 }
