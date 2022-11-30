@@ -351,11 +351,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
                                                 forceAsTemplateParams = true;
                                             }
-                                            else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName))
+                                            else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                             }
-                                            else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName))
+                                            else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                             }
@@ -419,7 +419,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 bool found = false;
                                                 foreach (LoggerParameter p in lm.AllParameters)
                                                 {
-                                                    if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                                                    if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase) || t.Key.Equals(p.CodeName, StringComparison.OrdinalIgnoreCase))
                                                     {
                                                         found = true;
                                                         break;

@@ -7,5 +7,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
     {
         [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = "M0 {event}")]
         internal static partial void M0(ILogger logger, string @event);
+
+        [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "M1 {@myevent}")]
+        internal static partial void M1(ILogger logger, string @myevent);
     }
 }

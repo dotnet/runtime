@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
                         string t = lm.TemplateList[i];
-                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase))
+                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase) && !t.Equals(lm.TemplateParameters[i].CodeName, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -198,7 +198,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} _{p.Name};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} _{p.CodeName};");
                 }
             }
 
@@ -206,7 +206,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this._{p.Name} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this._{p.CodeName} = {p.CodeName};");
                 }
             }
 
