@@ -23,16 +23,16 @@ jobs:
         NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     - name: Install dependencies
       run: |
-        dotnet restore wa-info; dotnet restore wa-diff
+        dotnet restore wa-info; dotnet restore wa-diff; dotnet restore wa-edit
     - name: Build
       run: |
-        dotnet build --configuration Release --no-restore wa-info; dotnet build --configuration Release --no-restore wa-diff
+        dotnet build --configuration Release --no-restore wa-info; dotnet build --configuration Release --no-restore wa-diff; dotnet build --configuration Release --no-restore wa-edit
     - name: Test
       run: |
-        dotnet test --no-restore --verbosity normal wa-info; dotnet test --no-restore --verbosity normal wa-diff
+        dotnet test --no-restore --verbosity normal wa-info; dotnet test --no-restore --verbosity normal wa-diff; dotnet test --no-restore --verbosity normal wa-edit
     - name: Pack nuget
       run: |
-        dotnet pack -c Release wa-info; dotnet pack -c Release wa-diff
+        dotnet pack -c Release wa-info; dotnet pack -c Release wa-diff; dotnet pack -c Release wa-edit
     - name: Artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -40,8 +40,9 @@ jobs:
         path: |
           wa-info\nupkg\*.nupkg
           wa-diff\nupkg\*.nupkg
+          wa-edit\nupkg\*.nupkg
     - name: Setup NuGet
       uses: nuget/setup-nuget@v1
     - name: Publish to nuget
       run: |
-        dotnet nuget push wa-info\nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"; dotnet nuget push wa-diff\nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"
+        dotnet nuget push wa-info\nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"; dotnet nuget push wa-diff\nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"; dotnet nuget push wa-edit\nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"
