@@ -6052,31 +6052,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     }
     return VNForFunc(type, func, arg0VN);
 }
-
-ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
-                                                 NamedIntrinsic ni,
-                                                 VNFunc         func,
-                                                 ValueNum       arg0VN,
-                                                 ValueNum       arg1VN,
-                                                 bool           encodeResultType,
-                                                 ValueNum       resultTypeVN)
-{
-    // E.g. for "Sse2.Or(cnsVec1, cnsVec2)" it looks like this:
-    // case NI_SSE2_Or:
-    //{
-    //    simd16_t v1 = GetConstantSimd16(arg0VN);
-    //    simd16_t v2 = GetConstantSimd16(arg1VN);
-    //    v1.i64[0] |= v2.i64[0];
-    //    v1.i64[1] |= v2.i64[1];
-    //    return VNForSimd16Con(v1);
-    //}
-
-    if (encodeResultType)
-    {
-        return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
-    }
-    return VNForFunc(type, func, arg0VN, arg1VN);
-}
 #endif
 
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
@@ -9858,16 +9833,17 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 ValueNumPair op2vnp;
                 ValueNumPair op2Xvnp;
                 getOperandVNs(tree->Op(2), &op2vnp, &op2Xvnp);
-
-                ValueNum normalLVN = vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func,
-                                                                       op1vnp.GetLiberal(), op2vnp.GetLiberal(),
-                                                                       encodeResultType, resultTypeVNPair.GetLiberal());
-                ValueNum normalCVN =
-                    vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), intrinsicId, func, op1vnp.GetConservative(),
-                                                      op2vnp.GetConservative(), encodeResultType,
-                                                      resultTypeVNPair.GetConservative());
-                normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+                if (encodeResultType)
+                {
+                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp, resultTypeVNPair);
+                    assert((vnStore->VNFuncArity(func) == 3) || isVariableNumArgs);
+                }
+                else
+                {
+                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
+                    assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
+                }
             }
         }
     }
