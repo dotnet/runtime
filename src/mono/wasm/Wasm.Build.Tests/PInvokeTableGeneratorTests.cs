@@ -560,7 +560,7 @@ namespace Wasm.Build.Tests
                 "with🚀unicode#"
             } })]
 
-        public void BuildLibraryWithInvalidCharacters(BuildArgs buildArgs, string[] libraryNames, RunHost host, string id)
+        public void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(BuildArgs buildArgs, string[] libraryNames, RunHost host, string id)
         {
             buildArgs = ExpandBuildArgs(buildArgs,
                                         extraItems: @$"<NativeFileReference Include=""*.c"" />",
