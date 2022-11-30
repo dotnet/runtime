@@ -35,11 +35,19 @@ namespace WebAssemblyInfo
 
         override protected void ReadSection(SectionInfo section)
         {
-            if (section.id == SectionId.Data && File.Exists(Program.DataSectionFile))
+            if (File.Exists(Program.DataSectionFile))
             {
-                // TODO: rewrite also DataCount section
-                RewriteDataSection();
-                return;
+                if (section.id == SectionId.Data)
+                {
+                    RewriteDataSection();
+                    return;
+                }
+
+                if (section.id == SectionId.DataCount)
+                {
+                    // omit DataCount section for now, it is not needed
+                    return;
+                }
             }
 
             WriteSection(section);
