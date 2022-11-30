@@ -5655,7 +5655,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH) != RBM_NONE)
+    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH(compiler)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }

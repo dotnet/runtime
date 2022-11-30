@@ -94,7 +94,7 @@
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE
-  #define RBM_FLT_CALLEE_TRASH     RBM_ALLFLOAT
+  #define RBM_FLT_CALLEE_TRASH(c)     RBM_ALLFLOAT
   #define REG_VAR_ORDER_FLT        REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
@@ -121,7 +121,7 @@
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX)
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
-  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
+  #define RBM_CALLEE_TRASH(c)        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH(c))
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
 
@@ -200,7 +200,7 @@
   #define RBM_OPTIMIZED_WRITE_BARRIER_SRC   (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
 #endif // NOGC_WRITE_BARRIERS
 
-  #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
+  #define RBM_CALLEE_TRASH_NOGC(c)    RBM_EDX
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
@@ -208,20 +208,20 @@
   CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
+  #define RBM_CALLEE_TRASH_WRITEBARRIER(c)         (RBM_EAX | RBM_EDX)
 #else // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
-  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH
+  #define RBM_CALLEE_TRASH_WRITEBARRIER(c)         RBM_CALLEE_TRASH(c)
 #endif // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_EDX
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER(c)       RBM_EDX
 
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_ESI | RBM_EDI | RBM_ECX)
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF(c)   (RBM_ESI | RBM_EDI | RBM_ECX)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_ECX
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF(c) RBM_ECX
 
   // GenericPInvokeCalliHelper unmanaged target parameter
   #define REG_PINVOKE_TARGET_PARAM REG_EAX
@@ -269,11 +269,11 @@
   #define RBM_DOUBLERET            RBM_NONE
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
-  #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
+  #define RBM_STOP_FOR_GC_TRASH(c)    RBM_CALLEE_TRASH(c)
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
   // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
+  #define RBM_INIT_PINVOKE_FRAME_TRASH(c)  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
@@ -307,9 +307,9 @@
 
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\i386\asmhelpers.asm for more details.
-  #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
-  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
-  #define RBM_PROFILER_TAILCALL_TRASH  (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)
+  #define RBM_PROFILER_ENTER_TRASH(c)     RBM_NONE
+  #define RBM_PROFILER_LEAVE_TRASH(c)     RBM_NONE
+  #define RBM_PROFILER_TAILCALL_TRASH(c)  (RBM_CALLEE_TRASH(c) & ~RBM_ARG_REGS)
 
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW

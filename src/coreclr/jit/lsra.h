@@ -75,9 +75,9 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 //------------------------------------------------------------------------
 // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
 //
-inline regMaskTP callerSaveRegs(RegisterType rt)
+inline regMaskTP callerSaveRegs(RegisterType rt, Compiler *compiler)
 {
-    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH(compiler);
 }
 
 //------------------------------------------------------------------------
@@ -737,7 +737,7 @@ private:
 
     // This controls the registers available for allocation
     enum LsraStressLimitRegs{LSRA_LIMIT_NONE = 0, LSRA_LIMIT_CALLEE = 0x1, LSRA_LIMIT_CALLER = 0x2,
-                             LSRA_LIMIT_SMALL_SET = 0x3, LSRA_LIMIT_UPPER_SIMD_SET = 0x4, LSRA_LIMIT_MASK = 0x5};
+                             LSRA_LIMIT_SMALL_SET = 0x3, LSRA_LIMIT_UPPER_SIMD_SET = 0x4, LSRA_LIMIT_MASK = 0x7};
 
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.

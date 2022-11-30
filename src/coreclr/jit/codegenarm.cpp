@@ -1642,7 +1642,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    );
     }
 
-    regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
+    regSet.verifyRegistersUsed(RBM_CALLEE_TRASH(compiler));
 }
 
 #ifdef PROFILING_SUPPORTED

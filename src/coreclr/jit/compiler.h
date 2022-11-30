@@ -9055,6 +9055,7 @@ private:
     // Returns:
     //    `true` if user requests EVEX encoding and it's safe, `false` if not.
     //
+public:
     bool DoJitStressEvexEncoding() const
     {
 #if defined(TARGET_XARCH) && defined(DEBUG)

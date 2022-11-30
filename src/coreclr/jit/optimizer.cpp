@@ -7289,7 +7289,14 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
         if (!loopContainsCall)
         {
-            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
+            availRegCount += (CNT_CALLEE_TRASH_FLOAT - 1);
+            // TODO-XARCH-AVX512 fix this
+#if defined(TARGET_AMD64)
+            if (!DoJitStressEvexEncoding())
+            {
+                availRegCount -= 16;
+            }
+#endif
         }
 #ifdef TARGET_ARM
         // For ARM each double takes two FP registers

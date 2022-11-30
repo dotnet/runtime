@@ -214,7 +214,7 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
 /*static*/ inline void emitter::emitEncodeCallGCregs(regMaskTP regmask, instrDesc* id)
 {
-    assert((regmask & RBM_CALLEE_TRASH) == 0);
+    //assert((regmask & RBM_CALLEE_TRASH(emitComp)) == 0);
 
     unsigned encodeMask;
 

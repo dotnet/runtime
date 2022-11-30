@@ -5655,7 +5655,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskTP killMask = RBM_CALLEE_TRASH;
+    regMaskTP killMask = RBM_CALLEE_TRASH(compiler);
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -9100,7 +9100,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
 
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
+    if ((RBM_CALLEE_TRASH(compiler) & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9137,7 +9137,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
 
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
+    if ((RBM_CALLEE_TRASH(compiler) & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9178,7 +9178,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
         regMaskTP thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
-        noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
+        noway_assert((RBM_PROFILER_LEAVE_TRASH(compiler) & thisPtrMask) == 0);
     }
 
     // At this point return value is computed and stored in RAX or XMM0.
