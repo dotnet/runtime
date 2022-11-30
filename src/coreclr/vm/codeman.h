@@ -851,9 +851,9 @@ class RangeSectionMap
     // Returns pointer to address in last level map that actually points at RangeSection space.
     RangeSectionFragmentPointer* EnsureMapsForAddress(TADDR address)
     {
-        uintptr_t level = mapLevels;
+        uintptr_t level = mapLevels + 1;
 #ifdef TARGET_64BIT
-        auto _RangeSectionL3 = EnsureLevel(address, &_topLevel, level);
+        auto _RangeSectionL3 = EnsureLevel(address, &_topLevel, --level);
         if (_RangeSectionL3 == NULL)
             return NULL; // Failure case
         auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level);
@@ -877,16 +877,18 @@ class RangeSectionMap
     {
 #ifdef TARGET_64BIT
         auto _RangeSectionL4 = VolatileLoad(&_topLevel);
+        if (_RangeSectionL4 == NULL)
+            return NULL;
         auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)];
         if (_RangeSectionL3 == NULL)
             return NULL;
         auto _RangeSectionL2 = (*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)];
+#else
+        auto _RangeSectionL2 = VolatileLoad(&_topLevel);
+#endif
         if (_RangeSectionL2 == NULL)
             return NULL;
         auto _RangeSectionL1 = (*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)];
-#else
-        auto _RangeSectionL1 = VolatileLoad(&_topLevel[EffectiveBitsForLevel(address, 2)]); // Use a VolatileLoad on the top level operation to ensure that the entire map is synchronized to a state that includes all data needed to examine currently active function pointers.
-#endif
         if (_RangeSectionL1 == NULL)
             return NULL;
 
