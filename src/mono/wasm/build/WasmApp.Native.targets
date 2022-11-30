@@ -666,6 +666,8 @@
     <PropertyGroup>
       <WasmMemorySnapshotCaptureGenerator>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureGenerator>
       <WasmMemorySnapshotFileName>memory.dat</WasmMemorySnapshotFileName>
+      <WasmEditToolPath Condition="'$(ContinuousIntegrationBuild)' != 'true'">wa-edit</WasmEditToolPath>
+      <WasmEditToolPath Condition="'$(ContinuousIntegrationBuild)' == 'true'">~/.dotnet/tools/wa-edit</WasmEditToolPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
@@ -675,7 +677,7 @@
     <Exec Command="dotnet tool update -g wa-edit" IgnoreExitCode="true" />
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
     <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
-    <Exec WorkingDirectory="$(WasmAppDir)" Command="wa-edit -v ./dotnet.wasm ./dotnet2.wasm -o 0 -d ./$(WasmMemorySnapshotFileName) -a" />
+    <Exec WorkingDirectory="$(WasmAppDir)" Command="$(WasmEditToolPath) -v ./dotnet.wasm ./dotnet2.wasm -o 0 -d ./$(WasmMemorySnapshotFileName) -a" />
     <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator);$(WasmAppDir)dotnet.wasm;$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Move SourceFiles="$(WasmAppDir)dotnet2.wasm" DestinationFiles="$(WasmAppDir)dotnet.wasm" />
     <Message Text="Memory snapshot merged into the dotnet.wasm" Importance="High" />
