@@ -489,11 +489,14 @@ void Compiler::fgPerBlockLocalVarLiveness()
         }
         else
         {
+            assert(fgIsDoingEarlyLiveness);
+
             struct LocalLivenessVisitor : GenTreeVisitor<LocalLivenessVisitor>
             {
                 enum
                 {
                     DoPreOrder = true,
+                    DoPostOrder = true,
                     UseExecutionOrder = true,
                 };
 
@@ -503,8 +506,60 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
                 fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
                 {
-                    m_compiler->fgPerNodeLocalVarLiveness(*use);
+                    GenTree* node = *use;
+                    // GT_ASG is special in that the top level LHS node (the
+                    // "location") is not actually evaluated. However, it is
+                    // marked with GTF_VAR_DEF to indicate that it is being
+                    // defined, and fgPerNodeLocalVarLiveness uses this to mark
+                    // defs.
+                    // GenTreeVisitor does not handle this in any special way
+                    // -- it always visits the full LHS/RHS operands and so we
+                    // will often see the location before the RHS here.
+                    // If the RHS involves a use of the written location then
+                    // that is a problem, as we will not consider it live. We
+                    // handle assignments specially here to fix this problem.
+                    // We could do this in GenTreeVisitor, but GT_ASG is
+                    // expected (hoped) to go away, and there would perhaps be
+                    // some clean ups required to make this work.
+                    //
+                    // Note that the situation does not occur for later
+                    // liveness as morph will mark GTF_REVERSE_OPS on all
+                    // assignments that define tracked locals.
+                    //
+                    if (node->OperIs(GT_ASG))
+                    {
+                        if ((node->gtFlags & GTF_REVERSE_OPS) != 0)
+                        {
+                            // Normal visit order is 'correct'.
+                            return WALK_CONTINUE;
+                        }
+
+                        if (node->gtGetOp1()->OperIsLocal() || (node->gtGetOp1()->OperIs(GT_FIELD) && node->gtGetOp1()->AsField()->IsStatic()))
+                        {
+                            WalkTree(&node->AsOp()->gtOp2, node);
+                        }
+                        else
+                        {
+                            assert(node->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_FIELD));
+                            // Visit address of indir, which is actually evaluated.
+                            WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1);
+                            WalkTree(&node->AsOp()->gtOp2, node);
+                        }
+
+                        // Post-order visit.
+                        m_compiler->fgPerNodeLocalVarLiveness(node->gtGetOp1());
+                        m_compiler->fgPerNodeLocalVarLiveness(node);
+
+                        return WALK_SKIP_SUBTREES;
+                    }
+
                     return fgWalkResult::WALK_CONTINUE;
+                }
+
+                fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+                {
+                    m_compiler->fgPerNodeLocalVarLiveness(*use);
+                    return WALK_CONTINUE;
                 }
             };
 
@@ -2658,52 +2713,56 @@ void Compiler::fgInterBlockLocalVarLiveness()
         }
     }
 
-    LclVarDsc* varDsc;
-    unsigned   varNum;
 
-    for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
+    if (!fgIsDoingEarlyLiveness)
     {
-        // Ignore the variable if it's not tracked
+        LclVarDsc* varDsc;
+        unsigned   varNum;
 
-        if (!varDsc->lvTracked)
+        for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
         {
-            continue;
-        }
+            // Ignore the variable if it's not tracked
 
-        // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
-        // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
-        // as appropriate.
-
-        bool fieldOfDependentlyPromotedStruct = lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-
-        // Un-init locals may need auto-initialization. Note that the
-        // liveness of such locals will bubble to the top (fgFirstBB)
-        // in fgInterBlockLocalVarLiveness()
-
-        if (!varDsc->lvIsParam && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
-            (info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
-        {
-            varDsc->lvMustInit = true;
-        }
-
-        // Mark all variables that are live on entry to an exception handler
-        // or on exit from a filter handler or finally.
-
-        bool isFinallyVar = VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex);
-        if (isFinallyVar || VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex))
-        {
-            // Mark the variable appropriately.
-            lvaSetVarLiveInOutOfHandler(varNum);
-
-            // Mark all pointer variables live on exit from a 'finally' block as
-            // 'explicitly initialized' (must-init) for GC-ref types.
-
-            if (isFinallyVar)
+            if (!varDsc->lvTracked)
             {
-                // Set lvMustInit only if we have a non-arg, GC pointer.
-                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                continue;
+            }
+
+            // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
+            // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
+            // as appropriate.
+
+            bool fieldOfDependentlyPromotedStruct = lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+
+            // Un-init locals may need auto-initialization. Note that the
+            // liveness of such locals will bubble to the top (fgFirstBB)
+            // in fgInterBlockLocalVarLiveness()
+
+            if (!varDsc->lvIsParam && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+                (info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
+            {
+                varDsc->lvMustInit = true;
+            }
+
+            // Mark all variables that are live on entry to an exception handler
+            // or on exit from a filter handler or finally.
+
+            bool isFinallyVar = VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex);
+            if (isFinallyVar || VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex))
+            {
+                // Mark the variable appropriately.
+                lvaSetVarLiveInOutOfHandler(varNum);
+
+                // Mark all pointer variables live on exit from a 'finally' block as
+                // 'explicitly initialized' (must-init) for GC-ref types.
+
+                if (isFinallyVar)
                 {
-                    varDsc->lvMustInit = true;
+                    // Set lvMustInit only if we have a non-arg, GC pointer.
+                    if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                    {
+                        varDsc->lvMustInit = true;
+                    }
                 }
             }
         }
