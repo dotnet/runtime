@@ -8,14 +8,20 @@
 
 #include <assert.h>
 #include <errno.h>
+#if HAVE_GRP_H
 #include <grp.h>
+#endif
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#if HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <unistd.h>
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -23,7 +29,9 @@
 #if HAVE_PIPE2
 #include <fcntl.h>
 #endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
@@ -41,6 +49,7 @@
 
 #include <minipal/getexepath.h>
 
+#if !defined(TARGET_WASI)
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
 c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
@@ -208,6 +217,7 @@ handler_from_sigaction (struct sigaction *sa)
         return sa->sa_handler;
     }
 }
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
@@ -511,6 +521,7 @@ done:;
 #endif
 }
 
+#if !defined(TARGET_WASI)
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -519,10 +530,14 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
     {
         case PAL_RLIMIT_CPU:
             return RLIMIT_CPU;
+#ifdef RLIMIT_FSIZE
         case PAL_RLIMIT_FSIZE:
             return RLIMIT_FSIZE;
+#endif
+#ifdef RLIMIT_DATA
         case PAL_RLIMIT_DATA:
             return RLIMIT_DATA;
+#endif
         case PAL_RLIMIT_STACK:
             return RLIMIT_STACK;
         case PAL_RLIMIT_CORE:
@@ -605,11 +620,12 @@ typedef __priority_which_t priorityWhich;
 typedef int rlimitResource;
 typedef int priorityWhich;
 #endif
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
     assert(limits != NULL);
-
+#if HAVE_SYS_RESOURCE_H
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     int result = getrlimit((rlimitResource)platformLimit, &internalLimit);
@@ -621,6 +637,10 @@ int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
     {
         memset(limits, 0, sizeof(RLimit));
     }
+#else /* HAVE_SYS_RESOURCE_H */
+    int result = -1;
+    memset(limits, 0, sizeof(RLimit));
+#endif
 
     return result;
 }
@@ -629,14 +649,19 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 {
     assert(limits != NULL);
 
+#if HAVE_SYS_RESOURCE_H
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     ConvertFromRLimitManagedToPal(limits, &internalLimit);
     return setrlimit((rlimitResource)platformLimit, &internalLimit);
+#else /* HAVE_SYS_RESOURCE_H */
+    return -1;
+#endif
 }
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+#if HAVE_SIGNAL_KILL
     switch (signal)
     {
         case PAL_NONE:
@@ -658,25 +683,39 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     }
 
     return kill(pid, signal);
+#else /* HAVE_SIGNAL_KILL */
+    return -1;
+#endif /* HAVE_SIGNAL_KILL */
 }
 
 int32_t SystemNative_GetPid(void)
 {
+#if !defined(TARGET_WASI)
     return getpid();
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_GetSid(int32_t pid)
 {
+#if !defined(TARGET_WASI)
     return getsid(pid);
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
+#if !defined(TARGET_WASI)
     syslog((int)(LOG_USER | priority), message, arg1);
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
+#if !defined(TARGET_WASI)
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
@@ -696,10 +735,14 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
         result = 0;
     }
     return result;
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
 {
+#if !defined(TARGET_WASI)
     assert(exitCode != NULL);
 
     int32_t result;
@@ -723,6 +766,9 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         }
     }
     return result;
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int64_t SystemNative_PathConf(const char* path, PathConfName name)
@@ -771,6 +817,7 @@ int64_t SystemNative_PathConf(const char* path, PathConfName name)
 
 int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
+#if !defined(TARGET_WASI)
     // GetPriority uses errno 0 to show success to make sure we don't have a stale value
     errno = 0;
 #if PRIORITY_REQUIRES_INT_WHO
@@ -778,15 +825,22 @@ int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 #else
     return getpriority((priorityWhich)which, (id_t)who);
 #endif
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
+#if !defined(TARGET_WASI)
 #if PRIORITY_REQUIRES_INT_WHO
     return setpriority((priorityWhich)which, who, nice);
 #else
     return setpriority((priorityWhich)which, (id_t)who, nice);
 #endif
+#else /* TARGET_WASI */
+    return -1;
+#endif /* TARGET_WASI */
 }
 
 char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)

@@ -1,0 +1,49 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  isExtraPlatformsBuild: false
+  nameSuffix: ''
+  platforms: []
+
+jobs:
+
+#
+# Build for WASI/wasm and test it
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    variables:
+      # map dependencies variables to local variables
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            and(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_non_runtimetests.containsChange'], true)),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true))
+          ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
+      buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:ArchiveTests=true ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      # if !alwaysRun, then:
+      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #     - then run only if it would not have run on default pipelines (based
+      #       on path changes)
+      #     - else run based on path changes
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))

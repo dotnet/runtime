@@ -15,6 +15,7 @@ internal static class KeyParser
     private const int MinimalSequenceLength = 3;
     private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
+#if !TARGET_WASI
     internal static ConsoleKeyInfo Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;
@@ -308,8 +309,9 @@ internal static class KeyParser
         static ConsoleKeyInfo Create(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
             => new(keyChar, key, (modifiers & ConsoleModifiers.Shift) != 0, (modifiers & ConsoleModifiers.Alt) != 0, (modifiers & ConsoleModifiers.Control) != 0);
     }
+#endif
 
-    private static ConsoleKeyInfo ParseFromSingleChar(char single, bool isAlt)
+    internal static ConsoleKeyInfo ParseFromSingleChar(char single, bool isAlt)
     {
         bool isShift = false, isCtrl = false;
         char keyChar = single;

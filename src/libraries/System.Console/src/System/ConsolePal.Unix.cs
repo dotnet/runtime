@@ -25,6 +25,7 @@ namespace System
         // and we can use a smaller buffer to minimize working set.
         private const int InteractiveBufferSize = 255;
 
+#if !TARGET_WASI
         // For performance we cache Cursor{Left,Top} and Window{Width,Height}.
         // These values must be read/written under lock (Console.Out).
         // We also need to invalidate these values when certain signals occur.
@@ -38,7 +39,6 @@ namespace System
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
-
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
         public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
         private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
@@ -59,6 +59,25 @@ namespace System
             return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
         }
 
+#else
+        // there is no dup on WASI
+        public static Stream OpenStandardInput()
+        {
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDIN_FILENO), FileAccess.Read,
+                                         useReadLine: !Console.IsInputRedirected);
+        }
+
+        public static Stream OpenStandardOutput()
+        {
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDOUT_FILENO), FileAccess.Write);
+        }
+
+        public static Stream OpenStandardError()
+        {
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.FileDescriptors.STDERR_FILENO), FileAccess.Write);
+        }
+
+#endif
         public static Encoding InputEncoding
         {
             get { return GetConsoleEncoding(); }
@@ -138,6 +157,26 @@ namespace System
             return keyInfo;
         }
 
+#if TARGET_WASI
+        public static bool TreatControlCAsInput
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static ConsoleColor ForegroundColor
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+        public static ConsoleColor BackgroundColor
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+        public static void ResetColor() => throw new PlatformNotSupportedException();
+
+#else
         public static bool TreatControlCAsInput
         {
             get
@@ -183,6 +222,7 @@ namespace System
                 WriteResetColorString();
             }
         }
+#endif
 
         public static bool NumberLock { get { throw new PlatformNotSupportedException(); } }
 
@@ -194,9 +234,13 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
+
         public static string Title
         {
             get { throw new PlatformNotSupportedException(); }
+#if TARGET_WASI
+            set => throw new PlatformNotSupportedException();
+#else
             set
             {
                 if (Console.IsOutputRedirected)
@@ -209,8 +253,12 @@ namespace System
                     WriteStdoutAnsiString(ansiStr, mayChangeCursorPosition: false);
                 }
             }
+#endif
         }
 
+#if TARGET_WASI
+        public static void Beep() => throw new PlatformNotSupportedException();
+#else
         public static void Beep()
         {
             if (!Console.IsOutputRedirected)
@@ -218,7 +266,15 @@ namespace System
                 WriteStdoutAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
         }
+#endif
 
+#if TARGET_WASI
+        public static void Clear() => throw new PlatformNotSupportedException();
+        public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
+        public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
+#else
         public static void Clear()
         {
             if (!Console.IsOutputRedirected)
@@ -295,6 +351,7 @@ namespace System
             return hasCachedCursorPosition;
         }
 
+#endif
         public static int BufferWidth
         {
             get { return WindowWidth; }
@@ -351,6 +408,9 @@ namespace System
 
         private static void GetWindowSize(out int width, out int height)
         {
+#if TARGET_WASI
+            throw new PlatformNotSupportedException();
+#else
             lock (Console.Out)
             {
                 // Invalidate before reading cached values.
@@ -373,10 +433,14 @@ namespace System
                 width = s_windowWidth;
                 height = s_windowHeight;
             }
+#endif
         }
 
         public static void SetWindowSize(int width, int height)
         {
+#if TARGET_WASI
+            throw new PlatformNotSupportedException();
+#else
            lock (Console.Out)
            {
                Interop.Sys.WinSize winsize = default;
@@ -395,6 +459,7 @@ namespace System
                        Interop.GetIOException(errorInfo);
                }
            }
+#endif
         }
 
         public static bool CursorVisible
@@ -402,16 +467,25 @@ namespace System
             get { throw new PlatformNotSupportedException(); }
             set
             {
+#if TARGET_WASI
+                throw new PlatformNotSupportedException();
+#else
                 if (!Console.IsOutputRedirected)
                 {
                     WriteStdoutAnsiString(value ?
                         TerminalFormatStringsInstance.CursorVisible :
                         TerminalFormatStringsInstance.CursorInvisible);
                 }
+#endif
             }
         }
 
         public static (int Left, int Top) GetCursorPosition()
+#if TARGET_WASI
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
         {
             TryGetCursorPosition(out int left, out int top);
             return (left, top);
@@ -702,6 +776,7 @@ namespace System
             return IsHandleRedirected(Interop.Sys.FileDescriptors.STDERR_FILENO);
         }
 
+#endif
         /// <summary>Creates an encoding from the current environment.</summary>
         /// <returns>The encoding.</returns>
         private static Encoding GetConsoleEncoding()
@@ -752,6 +827,11 @@ namespace System
 
 #pragma warning restore IDE0060
 
+#if TARGET_WASI
+        internal static void EnsureConsoleInitialized()
+        {
+        }
+#else
         /// <summary>
         /// Refreshes the foreground and background colors in use by the terminal by resetting
         /// the colors and then reissuing commands for both foreground and background, if necessary.
@@ -937,6 +1017,7 @@ namespace System
                 }
             }
         }
+#endif
 
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
@@ -969,7 +1050,9 @@ namespace System
                 int count = buffer.Length;
                 while (count > 0)
                 {
+#if !TARGET_WASI
                     int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+#endif
 
                     int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
                     if (bytesWritten < 0)
@@ -998,6 +1081,7 @@ namespace System
                             throw Interop.GetExceptionForIoErrno(errorInfo);
                         }
                     }
+#if !TARGET_WASI
                     else
                     {
                         if (mayChangeCursorPosition)
@@ -1005,6 +1089,7 @@ namespace System
                             UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
                         }
                     }
+#endif
 
                     count -= bytesWritten;
                     bufPtr += bytesWritten;
@@ -1012,6 +1097,7 @@ namespace System
             }
         }
 
+#if !TARGET_WASI
         private static unsafe void UpdatedCachedCursorPosition(byte* bufPtr, int count, int cursorVersion)
         {
             lock (Console.Out)
@@ -1099,6 +1185,7 @@ namespace System
         {
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
+#endif
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>

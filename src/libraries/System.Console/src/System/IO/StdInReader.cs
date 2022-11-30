@@ -15,8 +15,10 @@ namespace System.IO
      */
     internal sealed class StdInReader : TextReader
     {
+#if !TARGET_WASI
         private static string? s_moveLeftString; // string written to move the cursor to the left
         private static string? s_clearToEol;     // string written to clear from cursor to end of line
+#endif
 
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
@@ -198,6 +200,7 @@ namespace System.IO
                             removed = _tmpKeys.TryPop(out _);
                         }
 
+#if !TARGET_WASI
                         if (removed && freshKeys)
                         {
                             // The ReadLine input may wrap across terminal rows and we need to handle that.
@@ -223,6 +226,7 @@ namespace System.IO
                                 Console.Write(s_moveLeftString);
                             }
                         }
+#endif
                     }
                     else if (keyInfo.Key == ConsoleKey.Tab)
                     {
@@ -294,12 +298,19 @@ namespace System.IO
             return -1;
         }
 
+#if TARGET_WASI
+        private static bool IsEol(char c)
+        {
+            return false; // TODOWASI
+        }
+#else
         private static bool IsEol(char c)
         {
             return
                 c != ConsolePal.s_posixDisableValue &&
                 (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
+#endif
 
         /// <summary>
         /// Try to intercept the key pressed.
@@ -345,15 +356,24 @@ namespace System.IO
                         // Could be empty if EOL entered on its own.  Pick one of the EOL characters we have,
                         // or just use 0 if none are available.
                         return new ConsoleKeyInfo((char)
+#if TARGET_WASI
+                            0,// TODOWASI
+#else
                             (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
                              ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
                              ConsolePal.s_veofCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veofCharacter :
                              0),
+#endif
                             default(ConsoleKey), false, false, false);
                     }
                 }
 
+#if TARGET_WASI
+                // TODOWASI
+                return KeyParser.ParseFromSingleChar(_unprocessedBufferToBeRead[_startIndex++], false);
+#else
                 return KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
+#endif
             }
             finally
             {

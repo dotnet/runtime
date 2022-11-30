@@ -13,10 +13,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#if HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 #include <unistd.h>
 #include <poll.h>
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <signal.h>
 
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
@@ -87,6 +91,7 @@ void SystemNative_SetKeypadXmit(const char* terminfoString)
     WriteKeypadXmit();
 }
 
+#if !defined(TARGET_WASI)
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER; // prevents races when initializing and changing the terminal.
 
 static bool g_signalForBreak = true;          // tracks whether the terminal should send signals for breaks, such that attributes have been changed
@@ -225,9 +230,11 @@ void UninitializeTerminal(void)
         pthread_mutex_unlock(&g_lock);
     }
 }
+#endif /* TARGET_WASI */
 
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
+#if !defined(TARGET_WASI)
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
@@ -236,20 +243,24 @@ void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t deciseco
 
         pthread_mutex_unlock(&g_lock);
     }
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_UninitializeConsoleAfterRead(void)
 {
+#if !defined(TARGET_WASI)
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = false;
 
         pthread_mutex_unlock(&g_lock);
     }
+#endif /* TARGET_WASI */
 }
 
 void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 {
+#if !defined(TARGET_WASI)
     assert(childUsesTerminal == 0 || childUsesTerminal == 1);
 
     if (pthread_mutex_lock(&g_lock) == 0)
@@ -281,8 +292,10 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 
         pthread_mutex_unlock(&g_lock);
     }
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 static int TranslatePalControlCharacterName(int name)
 {
     switch (name)
@@ -341,6 +354,7 @@ static int TranslatePalControlCharacterName(int name)
         default: return -1;
     }
 }
+#endif /* TARGET_WASI */
 
 void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
@@ -359,6 +373,7 @@ void SystemNative_GetControlCharacters(
 
     memset(controlCharacterValues, *posixDisableValue, sizeof(uint8_t) * Int32ToSizeT(controlCharacterLength));
 
+#if HAVE_TERMIOS_H
     if (controlCharacterLength > 0)
     {
         struct termios newTermios;
@@ -376,6 +391,7 @@ void SystemNative_GetControlCharacters(
             }
         }
     }
+#endif
 }
 
 int32_t SystemNative_StdinReady(void)
@@ -405,13 +421,18 @@ int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
 
 int32_t SystemNative_GetSignalForBreak(void)
 {
+#if !defined(TARGET_WASI)
     return g_signalForBreak;
+#else /* TARGET_WASI */
+    return false;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
+#if !defined(TARGET_WASI)
     int rv = 0;
 
     if (pthread_mutex_lock(&g_lock) == 0)
@@ -426,6 +447,9 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
     }
 
     return rv;
+#else /* TARGET_WASI */
+    return 0;
+#endif /* TARGET_WASI */
 }
 
 void ReinitializeTerminal(void)
@@ -433,6 +457,7 @@ void ReinitializeTerminal(void)
     // Restores the state of the terminal after being suspended.
     // pal_signal.cpp calls this on SIGCONT from the signal handling thread.
 
+#if !defined(TARGET_WASI)
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         if (!g_childUsesTerminal)
@@ -447,8 +472,10 @@ void ReinitializeTerminal(void)
 
         pthread_mutex_unlock(&g_lock);
     }
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 static void InitializeTerminalCore(void)
 {
     bool haveInitTermios = tcgetattr(STDIN_FILENO, &g_initTermios) >= 0;
@@ -467,9 +494,11 @@ static void InitializeTerminalCore(void)
         g_signalForBreak = true;
     }
 }
+#endif /* TARGET_WASI */
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
+#if !defined(TARGET_WASI)
     static int32_t initialized = 0;
 
     // The Process, Console and PosixSignalRegistration classes call this method for initialization.
@@ -484,4 +513,7 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
     }
 
     return initialized;
+#else /* TARGET_WASI */
+    return true;
+#endif /* TARGET_WASI */
 }
