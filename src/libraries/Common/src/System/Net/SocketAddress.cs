@@ -94,11 +94,9 @@ namespace System.Net.Internals
             InternalSize = size;
 #if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
             // WSARecvFrom needs a pinned pointer to the 32bit socket address size: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom
-            // Allocate sizeof(int) extra bytes at the end of Buffer ensuring sizeof(int) alignment for the LPINT lpFromlen pointer, so we don't need to pin anything else.
-            // The following forumla will extend 'size' to the 4-byte alignment boundary then add 4 more bytes.
-            // eg. size=16 will be extended to 20, while size=17 will be extended to 24.
-            const int PtrSize = sizeof(int);
-            size = (size + PtrSize -  1) / PtrSize * PtrSize + PtrSize;
+            // Allocate IntPtr.Size extra bytes at the end of Buffer ensuring IntPtr.Size alignment, so we don't need to pin anything else.
+            // The following forumla will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
+            size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
 #endif
             Buffer = new byte[size];
 
@@ -193,7 +191,7 @@ namespace System.Net.Internals
         // Can be called after the above method did work.
         internal int GetAddressSizeOffset()
         {
-            return Buffer.Length - sizeof(int);
+            return Buffer.Length - IntPtr.Size;
         }
 #endif
 
