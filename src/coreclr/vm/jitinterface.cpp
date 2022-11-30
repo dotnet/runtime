@@ -1509,7 +1509,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassPreInited())
+            if (!pFieldMT->IsClassInited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1555,7 +1555,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pLocalModule->PopulateClass(pFieldMT);
 
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassPreInited())
+                if (!pFieldMT->IsClassInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
 
                 GCX_COOP();
