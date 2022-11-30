@@ -2631,9 +2631,9 @@ GetTempFileNameA(
     file_templatePS.CloseBuffer(length);
 
     chLastPathNameChar = file_template[strlen(file_template)-1];
-    if (chLastPathNameChar != '\\' && chLastPathNameChar != '/')
+    if (chLastPathNameChar != '/')
     {
-        strcat_s( file_template, file_templatePS.GetSizeOf(), "\\" );
+        strcat_s( file_template, file_templatePS.GetSizeOf(), "/" );
     }
 
     if ( lpPrefixString )

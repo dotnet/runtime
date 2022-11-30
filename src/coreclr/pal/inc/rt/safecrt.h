@@ -1370,13 +1370,13 @@ errno_t __cdecl _wmakepath_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Dri
         } while (*p != 0);
 
         p = p - 1;
-        if (*p != L'/' && *p != L'\\')
+        if (*p != L'/')
         {
             if(++written >= _SizeInWords)
             {
                 goto error_return;
             }
-            *d++ = L'\\';
+            *d++ = L'/';
         }
     }
 
@@ -1531,7 +1531,7 @@ errno_t __cdecl _wsplitpath_s(
     for (; *tmp != 0; ++tmp)
     {
         {
-            if (*tmp == L'/' || *tmp == L'\\')
+            if (*tmp == L'/')
             {
                 /* point to one beyond for later copy */
                 last_slash = tmp + 1;
