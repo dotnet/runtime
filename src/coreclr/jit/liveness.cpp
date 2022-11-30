@@ -209,12 +209,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
     switch (tree->gtOper)
     {
-        case GT_QMARK:
-        case GT_COLON:
-            // We never should encounter a GT_QMARK or GT_COLON node
-            noway_assert(!"unexpected GT_QMARK/GT_COLON");
-            break;
-
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_LCL_VAR_ADDR:
@@ -260,24 +254,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
-            unreached();
-            //if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
-            //{
-            //    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-            //}
-
-            //GenTreeLclVarCommon* lclVarTree = nullptr;
-            //GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-            //if (!addrArg->DefinesLocalAddr(&lclVarTree))
-            //{
-            //    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-            //}
-            //else
-            //{
-            //    // Defines a local addr
-            //    assert(lclVarTree != nullptr);
-            //    fgMarkUseDef(lclVarTree->AsLclVarCommon());
-            //}
+            fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
         // We'll assume these are use-then-defs of memory.
@@ -1895,8 +1872,6 @@ GenTree* Compiler::fgComputeLifeNode(GenTree* tree, VARSET_TP& life, const VARSE
 {
     while (true)
     {
-        assert(tree->OperGet() != GT_QMARK);
-
         if (tree->gtOper == GT_CALL)
         {
             fgComputeLifeCall(life, tree->AsCall());
@@ -2894,26 +2869,26 @@ PhaseStatus Compiler::fgEarlyLiveness()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    //fgIsDoingEarlyLiveness = true;
-    //lvaSortByRefCount(RCS_EARLY);
+    fgIsDoingEarlyLiveness = true;
+    lvaSortByRefCount(RCS_EARLY);
 
-    //ClearPromotedStructDeathVars();
+    ClearPromotedStructDeathVars();
 
-    //// Initialize the per-block var sets.
-    //fgInitBlockVarSets();
+    // Initialize the per-block var sets.
+    fgInitBlockVarSets();
 
-    //fgLocalVarLivenessChanged = false;
-    //do
-    //{
-    //    /* Figure out use/def info for all basic blocks */
-    //    fgPerBlockLocalVarLiveness();
-    //    EndPhase(PHASE_LCLVARLIVENESS_PERBLOCK);
+    fgLocalVarLivenessChanged = false;
+    do
+    {
+        /* Figure out use/def info for all basic blocks */
+        fgPerBlockLocalVarLiveness();
+        EndPhase(PHASE_LCLVARLIVENESS_PERBLOCK);
 
-    //    /* Live variable analysis. */
+        /* Live variable analysis. */
 
-    //    fgStmtRemoved = false;
-    //    fgInterBlockLocalVarLiveness();
-    //} while (fgStmtRemoved && fgLocalVarLivenessChanged);
+        fgStmtRemoved = false;
+        fgInterBlockLocalVarLiveness();
+    } while (fgStmtRemoved && fgLocalVarLivenessChanged);
 
     fgIsDoingEarlyLiveness = false;
     return PhaseStatus::MODIFIED_NOTHING;
