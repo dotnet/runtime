@@ -724,7 +724,7 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
     while ((result = fchmod(ToFileDescriptor(fd), (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 #else /* HAVE_FCHMOD */
-    (void)path; // unused
+    (void)fd; // unused
     (void)mode; // unused
     return EINTR;
 #endif /* HAVE_FCHMOD */

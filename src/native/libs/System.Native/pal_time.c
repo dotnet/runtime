@@ -171,7 +171,8 @@ double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 
     return cpuUtilization;
 #else
-        assert(false);
-        return 0;
+    (void)previousCpuInfo; // unused
+    assert(false);
+    return 0;
 #endif
 }
