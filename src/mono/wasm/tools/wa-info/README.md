@@ -13,16 +13,26 @@ It can show sections overview in the summary output, disassemble function(s) cod
 
 ### Installation
 
-To install `wa-info` and `wa-diff` as dotnet tool run:
+To install `wa-info`, `wa-diff` and `wa-edit` as dotnet tool run:
 ```
 dotnet tool install -g wa-info
 dotnet tool install -g wa-diff
+dotnet tool install -g wa-edit
 ```
 to update use:
 ```
 dotnet tool update -g wa-info
 dotnet tool update -g wa-diff
+dotnet tool update -g wa-edit
 ```
+
+### Nugets
+
+The packaged tools can be also retrieved as nugets
+
+https://www.nuget.org/packages/wa-info
+https://www.nuget.org/packages/wa-diff
+https://www.nuget.org/packages/wa-edit
 
 ### Command line options
 
