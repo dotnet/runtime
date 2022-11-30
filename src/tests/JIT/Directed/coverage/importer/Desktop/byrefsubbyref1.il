@@ -27,6 +27,7 @@ ret
 ldarg 0
 conv.u
 ldarg 1
+conv.u
 sub
 ret
 }
