@@ -927,7 +927,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 #else
     // Unix doesn't have a distinction between a network or a local path
-    _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
+    _ASSERTE(i[0] == W('/'));
     SString sss(SString::Literal, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);

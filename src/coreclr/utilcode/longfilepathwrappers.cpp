@@ -17,9 +17,9 @@ private:
         static const WCHAR* UNCExtendedPathPrefix;
         static const WCHAR VolumeSeparatorChar;
 		#define UNCPATHPREFIX W("\\\\")
+        static const WCHAR AltDirectorySeparatorChar;
 #endif //HOST_WINDOWS
         static const WCHAR DirectorySeparatorChar;
-        static const WCHAR AltDirectorySeparatorChar;
 public:
         static BOOL ContainsDirectorySeparator(SString & path);
         static BOOL IsDirectorySeparator(WCHAR c);
@@ -534,8 +534,8 @@ CopyFileExWrapper(
 
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');
-const WCHAR LongFile::AltDirectorySeparatorChar = W('/');
 #ifdef HOST_WINDOWS
+const WCHAR LongFile::AltDirectorySeparatorChar = W('/');
 const WCHAR LongFile::VolumeSeparatorChar = W(':');
 const WCHAR* LongFile::ExtendedPrefix = W("\\\\?\\");
 const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
@@ -697,10 +697,10 @@ HRESULT LongFile::NormalizePath(SString & path)
 
 BOOL LongFile::ContainsDirectorySeparator(SString & path)
 {
-    return path.Find(path.Begin(), DirectorySeparatorChar) || path.Find(path.Begin(), AltDirectorySeparatorChar);
+    return path.Find(path.Begin(), DirectorySeparatorChar);
 }
 
 BOOL LongFile::IsDirectorySeparator(WCHAR c)
 {
-    return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
+    return c == DirectorySeparatorChar;
 }
