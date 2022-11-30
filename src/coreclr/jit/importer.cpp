@@ -1354,15 +1354,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             makeTemp = true;
             break;
 
-        case GT_FIELD:
-            // Wrap it in a GT_OBJ, if needed.
-            structVal->gtType = structType;
-            if (structType == TYP_STRUCT)
-            {
-                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            }
-            break;
-
         case GT_LCL_VAR:
         case GT_LCL_FLD:
             structLcl = structVal->AsLclVarCommon();
@@ -1370,16 +1361,12 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
             FALLTHROUGH;
 
+        case GT_IND:
         case GT_OBJ:
         case GT_BLK:
+        case GT_FIELD:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
-            alreadyNormalized = true;
-            break;
-
-        case GT_IND:
-            assert(structVal->gtType == structType);
-            structVal         = gtNewObjNode(structHnd, structVal->gtGetOp1());
             alreadyNormalized = true;
             break;
 
