@@ -187,7 +187,7 @@ Compare functions
 
 Replace Data section
 ```
-wa-edit -v dotnet.wasm d4.wasm -a -o 0 -d memory.dat
+> wa-edit -v dotnet.wasm d4.wasm -a -o 0 -d memory.dat
 Reading wasm file: dotnet.wasm
 Writing wasm file: d4.wasm
 WebAssembly binary format version: 1
