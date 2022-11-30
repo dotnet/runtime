@@ -28,8 +28,7 @@
 #define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
 #define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
 
-#define LEARN_ABOUT_RUNTIME_INSTALLATION _X("Learn about runtime installation:")
-#define LEARN_ABOUT_FRAMEWORK_RESOLUTION _X("Learn about framework resolution:")
+#define DOC_LINK_INTRO _X("Learn more:")
 
 #define MISSING_RUNTIME_ERROR_FORMAT \
     _X("%s\n\n")                                \
@@ -38,7 +37,7 @@
     _X("App host version: %s\n")                \
     _X(".NET location: %s\n")                   \
     _X("\n")                                    \
-    LEARN_ABOUT_RUNTIME_INSTALLATION _X("\n")   \
+    DOC_LINK_INTRO _X("\n")                     \
     DOTNET_APP_LAUNCH_FAILED_URL                \
     _X("\n\n")                                  \
     _X("Download the .NET runtime:\n")          \

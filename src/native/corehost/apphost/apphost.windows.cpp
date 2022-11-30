@@ -152,7 +152,6 @@ namespace
         const pal::char_t *executable_name,
         const pal::char_t *instruction,
         const pal::char_t *details,
-        const pal::char_t *docs_link_intro,
         const pal::char_t *url)
     {
         HMODULE comctl32 = ::LoadLibraryExW(L"comctl32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -174,7 +173,7 @@ namespace
 
         TASKDIALOGCONFIG config{0};
         config.cbSize = sizeof(TASKDIALOGCONFIG);
-        config.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_SIZE_TO_CONTENT | TDF_USE_COMMAND_LINKS;
+        config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_ENABLE_HYPERLINKS | TDF_SIZE_TO_CONTENT | TDF_USE_COMMAND_LINKS;
         config.dwCommonButtons = TDCBF_CLOSE_BUTTON;
         config.pszWindowTitle = executable_name;
         config.pszMainInstruction = instruction;
@@ -192,19 +191,16 @@ namespace
             config.pszMainIcon = TD_ERROR_ICON;
         }
 
-        pal::string_t content(details);
-        content.append(docs_link_intro);
-        content.append(_X("\n"));
-        append_hyperlink(content, DOTNET_APP_LAUNCH_FAILED_URL);
-        config.pszContent = content.c_str();
-
         int download_button_id = 1000;
         TASKDIALOG_BUTTON download_button { download_button_id, _X("Download it now\n") _X("You will need to run the downloaded installer") };
         config.cButtons = 1;
         config.pButtons = &download_button;
         config.nDefaultButton = download_button_id;
 
-        pal::string_t expanded_info(_X("Download link:\n"));
+        pal::string_t expanded_info(details);
+        expanded_info.append(DOC_LINK_INTRO _X("\n"));
+        append_hyperlink(expanded_info, DOTNET_APP_LAUNCH_FAILED_URL);
+        expanded_info.append(_X("\n\nDownload link:\n"));
         append_hyperlink(expanded_info, url);
         config.pszExpandedInformation = expanded_info.c_str();
 
@@ -314,24 +310,19 @@ namespace
         assert(is_gui_application());
         url.append(_X("&gui=true"));
 
-        const pal::char_t* doc_link_intro = error_code == StatusCode::FrameworkMissingFailure
-            ? LEARN_ABOUT_FRAMEWORK_RESOLUTION
-            : LEARN_ABOUT_RUNTIME_INSTALLATION;
-
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - details: %s"), executable_name, error_code, url.c_str(), details.c_str());
 
         if (enable_visual_styles())
         {
             // Task dialog requires enabling visual styles
-            if (try_show_error_with_task_dialog(executable_name, instruction, details.c_str(), doc_link_intro, url.c_str()))
+            if (try_show_error_with_task_dialog(executable_name, instruction, details.c_str(), url.c_str()))
                 return;
         }
 
         pal::string_t dialog_message(instruction);
         dialog_message.append(_X("\n\n"));
         dialog_message.append(details);
-        dialog_message.append(doc_link_intro);
-        dialog_message.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
+        dialog_message.append(DOC_LINK_INTRO _X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
             _X("Would you like to download it now?"));
         if (::MessageBoxW(nullptr, dialog_message.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)
         {

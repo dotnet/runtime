@@ -138,7 +138,7 @@ void fx_resolver_t::display_missing_framework_error(
     pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());
     trace::error(
         _X("\n")
-        LEARN_ABOUT_FRAMEWORK_RESOLUTION _X("\n")
+        DOC_LINK_INTRO _X("\n")
         DOTNET_APP_LAUNCH_FAILED_URL
         _X("\n\n")
         _X("To install missing framework, download:\n")
