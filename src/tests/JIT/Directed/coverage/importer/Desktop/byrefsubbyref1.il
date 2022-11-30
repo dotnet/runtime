@@ -18,25 +18,26 @@
 .method public static native int byrefsubbyref(class ctest& V_1, class ctest& V_2)
 {
 ldarg 0
-ldarg 1
-sub
 conv.u
+ldarg 1
+conv.u
+sub
 ret
 }
 .method public static native int byrefsubi4(class ctest& V_1, int32 V_2)
 {
 ldarg 0
+conv.u
 ldarg 1
 sub
-conv.u
 ret
 }
 .method public static native int i4subbyref(int32, class ctest& V_2)
 {
 ldarg 0
 ldarg 1
-sub
 conv.u
+sub
 ret
 }
 .method public static int32 main() cil managed
