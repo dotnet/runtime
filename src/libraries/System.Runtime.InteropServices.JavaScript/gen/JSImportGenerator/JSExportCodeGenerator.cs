@@ -34,7 +34,7 @@ namespace Microsoft.Interop.JavaScript
             NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSExportCodeContext(attributeData, innerContext);
 
-            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context, new EmptyJSGenerator());
             foreach (var failure in _marshallers.GeneratorBindingFailures)
             {
                 marshallingNotSupportedCallback(failure.Info, failure.Exception);

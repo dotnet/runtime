@@ -30,7 +30,7 @@ namespace Microsoft.Interop
             IMarshallingGeneratorFactory generatorFactory)
         {
             _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context, new Forwarder());
 
             foreach (var failure in _marshallers.GeneratorBindingFailures)
             {

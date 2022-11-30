@@ -112,7 +112,7 @@ namespace Microsoft.Interop.Analyzers
                     return forwarder;
                 }
                 return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
-            }), stubCodeContext);
+            }), stubCodeContext, forwarder);
 
             mayRequireAdditionalWork |= generators.GeneratorBindingFailures.Length > 0;
 

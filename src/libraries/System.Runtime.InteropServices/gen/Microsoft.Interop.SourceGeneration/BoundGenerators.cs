@@ -18,9 +18,7 @@ namespace Microsoft.Interop
 
     public class BoundGenerators
     {
-        private static readonly Forwarder FallbackGenerator = new();
-
-        public BoundGenerators(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context)
+        public BoundGenerators(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context, IMarshallingGenerator fallbackGenerator)
         {
             ImmutableArray<BoundGenerator>.Builder allMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<BoundGenerator>.Builder nativeParamMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
@@ -29,9 +27,9 @@ namespace Microsoft.Interop
             bool foundNativeRetMarshaller = false;
             bool foundManagedRetMarshaller = false;
             TypePositionInfo? managedExceptionInfo = null;
-            NativeReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), FallbackGenerator);
-            ManagedReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), FallbackGenerator);
-            ManagedExceptionMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), FallbackGenerator);
+            NativeReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
+            ManagedReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
+            ManagedExceptionMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
 
             foreach (TypePositionInfo argType in elementTypeInfo)
             {
@@ -158,7 +156,7 @@ namespace Microsoft.Interop
                 catch (MarshallingNotSupportedException e)
                 {
                     bindingFailures.Add((p, e));
-                    return FallbackGenerator;
+                    return fallbackGenerator;
                 }
             }
         }

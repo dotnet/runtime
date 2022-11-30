@@ -40,7 +40,7 @@ namespace Microsoft.Interop.JavaScript
             _signatureContext = signatureContext;
             ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
-            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context);
+            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context, new EmptyJSGenerator());
 
             foreach (var failure in _marshallers.GeneratorBindingFailures)
             {
