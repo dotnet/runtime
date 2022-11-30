@@ -17,6 +17,7 @@ namespace WebAssemblyInfo
 
         public static bool DataSectionAutoSplit = false;
         public static string DataSectionFile = "";
+        public static DataMode DataSectionMode = DataMode.Active;
         public static int DataOffset = 0;
 
         static int Main(string[] args)
@@ -45,6 +46,9 @@ namespace WebAssemblyInfo
                 { "d|data-section=",
                     "Replace the data section with content of the {FILE}",
                     v => DataSectionFile = v },
+                { "m|data-section-mode=",
+                    "Set the data section replacement {MODE}. Possible values: Active, Passive",
+                    v => DataSectionMode = (string.Equals(v, "Passive", StringComparison.InvariantCultureIgnoreCase)) ? DataMode.Passive : DataMode.Active },
                 { "o|data-offset=",
                     "Data section offset",
                     v => { if (!int.TryParse(v, out DataOffset))

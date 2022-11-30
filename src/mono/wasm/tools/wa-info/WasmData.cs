@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WebAssemblyInfo
 {
-    enum DataMode
+    public enum DataMode
     {
         Active = 0,
         Passive = 1,

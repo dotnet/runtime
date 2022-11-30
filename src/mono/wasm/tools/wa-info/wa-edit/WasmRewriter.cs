@@ -115,8 +115,7 @@ namespace WebAssemblyInfo
             var chunk = new Chunk { index = 0, size = bytes.Length };
             var segments = Program.DataSectionAutoSplit ? Split(bytes) : new List<Chunk> { chunk };
 
-            // TODO: support all modes
-            var mode = DataMode.Active;
+            var mode = Program.DataSectionMode;
             var sectionLen = U32Len((uint)segments.Count);
             foreach (var segment in segments)
                 sectionLen += GetDataSegmentLength(mode, segment, Program.DataOffset + segment.index);
@@ -138,14 +137,21 @@ namespace WebAssemblyInfo
 
         uint GetDataSegmentLength(DataMode mode, Chunk chunk, int memoryOffset)
         {
-            return U32Len((uint)mode) + ConstI32ExprLen(memoryOffset) + U32Len((uint)chunk.size) + (uint)chunk.size;
+            var len = U32Len((uint)mode) + U32Len((uint)chunk.size) + (uint)chunk.size;
+            if (mode == DataMode.Active)
+                len += ConstI32ExprLen(memoryOffset);
+
+            return len;
         }
 
         void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
         {
             // data segment
             WriteU32((uint)mode);
-            WriteConstI32Expr(memoryOffset);
+
+            if (mode == DataMode.Active)
+                WriteConstI32Expr(memoryOffset);
+
             WriteU32((uint)chunk.size);
             Writer.Write(data, chunk.index, chunk.size);
         }
