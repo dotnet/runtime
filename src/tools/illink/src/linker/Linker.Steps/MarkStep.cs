@@ -710,11 +710,12 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Returns true if the Override in <paramref name="overrideInformation"/> should be marked because it is needed by the base method.
 		/// Does not take into account if the base method is in a preserved scope.
-		/// Assumes the base method is marked.
+		/// Assumes the base method is marked or comes from a preserved scope.
 		/// </summary>
 		// TODO: Move interface method marking logic here https://github.com/dotnet/linker/issues/3090
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
+			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
 			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
 				return false;
 			if (overrideInformation.IsOverrideOfInterfaceMember) {
@@ -725,8 +726,9 @@ namespace Mono.Linker.Steps
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
 
-			// Methods on instantiated types that override a ov.Override from a base type (not an interface) should be marked
-			// Interface ov.Overrides should only be marked if the interfaceImplementation is marked, which is handled below
+			// In this context, an override needs to be kept if
+			// a) it's an override on an instantiated type (of a marked base) or
+			// b) it's an override of an abstract base (required for valid IL)
 			if (Annotations.IsInstantiated (overrideInformation.Override.DeclaringType))
 				return true;
 
@@ -744,6 +746,7 @@ namespace Mono.Linker.Steps
 		// TODO: Take into account a base method in preserved scope
 		void MarkOverrideForBaseMethod (OverrideInformation overrideInformation)
 		{
+			Debug.Assert (ShouldMarkOverrideForBase (overrideInformation));
 			if (Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override) && Annotations.IsInstantiated (overrideInformation.Override.DeclaringType)) {
 				MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.OverrideOnInstantiatedType, overrideInformation.Override.DeclaringType), ScopeStack.CurrentScope.Origin);
 			} else {
@@ -2034,12 +2037,14 @@ namespace Mono.Linker.Steps
 				_typesWithInterfaces.Add ((type, ScopeStack.CurrentScope));
 
 			if (type.HasMethods) {
-				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededBytTypeDueToPreservedScope
+				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededByTypeDueToPreservedScope: https://github.com/dotnet/linker/issues/3090
 				foreach (var method in type.Methods) {
 					MarkMethodIfNeededByBaseMethod (method);
+					if (IsMethodNeededByTypeDueToPreservedScope (method)) {
+						// For methods that must be preserved, blame the declaring type.
+						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
+					}
 				}
-				// For methods that must be preserved, blame the declaring type.
-				MarkMethodsIf (type.Methods, IsMethodNeededByTypeDueToPreservedScope, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
 					using (ScopeStack.PopToParent ())
 						MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
@@ -3201,7 +3206,7 @@ namespace Mono.Linker.Steps
 			MarkBaseMethods (method);
 
 			if (Annotations.GetOverrides (method) is IEnumerable<OverrideInformation> overrides) {
-				foreach (var @override in overrides) {
+				foreach (var @override in overrides.Where (ov => Annotations.IsMarked (ov.Base) || IgnoreScope (ov.Base.DeclaringType.Scope))) {
 					if (ShouldMarkOverrideForBase (@override))
 						MarkOverrideForBaseMethod (@override);
 				}
