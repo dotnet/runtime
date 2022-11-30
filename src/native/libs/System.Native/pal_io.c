@@ -711,6 +711,8 @@ int32_t SystemNative_ChMod(const char* path, int32_t mode)
     while ((result = chmod(path, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 #else /* HAVE_CHMOD */
+    (void)path; // unused
+    (void)mode; // unused
     return EINTR;
 #endif /* HAVE_CHMOD */
 }
@@ -722,6 +724,8 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
     while ((result = fchmod(ToFileDescriptor(fd), (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 #else /* HAVE_FCHMOD */
+    (void)path; // unused
+    (void)mode; // unused
     return EINTR;
 #endif /* HAVE_FCHMOD */
 }
