@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
   </ItemGroup>
 
