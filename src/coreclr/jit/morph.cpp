@@ -9829,6 +9829,26 @@ DONE_MORPHING_CHILDREN:
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
+            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIsLocalAddr() &&
+                !optValnumCSE_phase)
+            {
+                unsigned loadSize   = tree->AsIndir()->Size();
+                unsigned offset     = op1->AsLclVarCommon()->GetLclOffs();
+                unsigned loadExtent = offset + loadSize;
+                unsigned lclSize    = lvaLclExactSize(op1->AsLclVarCommon()->GetLclNum());
+
+                if ((loadExtent <= lclSize) && (loadExtent < UINT16_MAX))
+                {
+                    op1->ChangeType(tree->TypeGet());
+                    op1->SetOper(GT_LCL_FLD);
+                    op1->AsLclFld()->SetLclOffs(offset);
+                    op1->SetVNsFromNode(tree);
+                    op1->AddAllEffectsFlags(tree->gtFlags & GTF_GLOB_REF);
+
+                    return op1;
+                }
+            }
+
 #ifdef TARGET_ARM
             GenTree* effOp1 = op1->gtEffectiveVal(true);
             // Check for a misalignment floating point indirection.
