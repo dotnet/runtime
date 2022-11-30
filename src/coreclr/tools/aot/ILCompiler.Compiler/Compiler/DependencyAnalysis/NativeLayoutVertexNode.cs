@@ -2175,35 +2175,6 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    public sealed class NativeLayoutPointerToOtherSlotDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
-    {
-        private int _otherSlotIndex;
-
-        public NativeLayoutPointerToOtherSlotDictionarySlotNode(int otherSlotIndex)
-        {
-            _otherSlotIndex = otherSlotIndex;
-        }
-
-        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.PointerToOtherSlot;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return null;
-        }
-
-        protected override string GetName(NodeFactory context) => "NativeLayoutPointerToOtherSlotDictionarySlotNode_" + _otherSlotIndex.ToStringInvariant();
-
-        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
-        {
-            return writer.GetUnsignedConstant((uint)_otherSlotIndex);
-        }
-
-        public override void CheckIfMarkedEnoughToWrite()
-        {
-            // Do nothing, this node does not need marking
-        }
-    }
-
     public sealed class NativeLayoutNotSupportedDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         protected override FixupSignatureKind SignatureKind => FixupSignatureKind.NotYetSupported;
