@@ -597,7 +597,6 @@ namespace System.Diagnostics.Tests
         /// the new process doesn't have elevated privileges.
         /// </summary>
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
-        [OuterLoop("Needs sudo access")]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)

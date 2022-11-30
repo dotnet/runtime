@@ -22,7 +22,6 @@ namespace System.IO.Pipes.Tests
         public static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         [ActiveIssue("https://github.com/dotnet/runtime/issues/0")]
         public void RunAsClient_Unix()
         {

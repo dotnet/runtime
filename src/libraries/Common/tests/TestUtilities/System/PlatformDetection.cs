@@ -73,17 +73,18 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        private static int s_isPrivilegedProcess = -1;
+        private static volatile int s_isPrivilegedProcess = -1;
         public static bool IsPrivilegedProcess
         {
             get
             {
-                if (s_isPrivilegedProcess != -1)
-                    return s_isPrivilegedProcess == 1;
+                int p = s_isPrivilegedProcess;
+                if (p == -1)
+                {
+                    s_isPrivilegedProcess = p = AdminHelpers.IsProcessElevated() ? 1 : 0;
+                }
 
-                s_isPrivilegedProcess = AdminHelpers.IsProcessElevated() ? 1 : 0;
-
-                return s_isPrivilegedProcess == 1;
+                return p == 1;
             }
         }
 

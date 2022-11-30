@@ -9,7 +9,6 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarReader_TarEntry_ExtractToFile_Tests : TarTestsBase
     {
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [SkipOnPlatform(TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/68360")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Not supported on Bionic")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
