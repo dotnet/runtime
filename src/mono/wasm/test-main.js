@@ -257,6 +257,19 @@ if (typeof (globalThis.fetch) !== "function" && typeof (read) === "function") {
     }
 }
 
+async function importMemory() {
+    if (is_node) {
+        const require = await import('module').then(mod => mod.createRequire(import.meta.url));
+        const fs = require("fs");
+        const buffer = await fs.promises.readFile("./memory.dat");
+        return new Int8Array(buffer);
+    }
+
+    const response = await fetch("./memory.dat");
+    const buffer = await response.arrayBuffer();
+    return new Int8Array(buffer);
+}
+
 async function run() {
     try {
         const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
@@ -277,9 +290,7 @@ async function run() {
             .withExitCodeLogging()
             .withElementOnExit();
 
-        const response = await fetch("./memory.dat");
-        const buffer = await response.arrayBuffer();
-        const memory = new Int8Array(buffer);
+        const memory = await importMemory();
 
         console.log("Memory snapshot loaded");
 
