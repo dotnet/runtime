@@ -1517,6 +1517,29 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     {
         ins = INS_ld_d; // default ld_d.
     }
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lbu;
+        else
+            ins = INS_lb;
+    }
+    else if (varTypeIsShort(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_lhu;
+        else
+            ins = INS_lh;
+    }
+    else if (TYP_INT == srcType)
+    {
+        ins = INS_lw;
+    }
+    else
+    {
+        ins = INS_ld; // default ld_d.
+    }
 #else
     NYI("ins_Load");
 #endif

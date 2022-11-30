@@ -420,12 +420,12 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
             Emit32((DWORD)(0x00000037 | (((constant + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
             if ((constant & 0xFFF) != 0)
             {
-                Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, constant
+                Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, constant
             }
         }
         else
         {
-            Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, constant
+            Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, x0, constant
         }
     }
     else
@@ -433,11 +433,15 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
         UINT32 upper = constant >> 32;
         if (((upper + 0x800) >> 12) != 0)
         {
-            Emit32((DWORD)(0x00000037 | (((upper + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
+            Emit32((DWORD)(0x00000037 | (((upper + 0x800) >> 12) << 12) | (target << 7))); // lui target, (upper + 0x800) >> 12
+            if ((upper & 0xFFF) != 0)
+            {
+                Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, upper 
+            }
         }
-        if ((upper & 0xFFF) != 0)
+        else
         {
-            Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7))); // addi target, constant
+            Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7))); // addi target, x0, upper 
         }
         UINT32 lower = (constant << 32) >> 32;
         UINT32 shift = 0;
@@ -448,7 +452,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
             if (current != 0)
             {
                 Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
-                Emit32((DWORD)(0x00000013 | (current & 0x7FF) << 20 | (target << 7))); // addi target, current
+                Emit32((DWORD)(0x00000013 | (current & 0x7FF) << 20 | (target << 7) | (target << 15))); // addi target, target, current
                 shift = 0;
             }
         }

@@ -95,6 +95,9 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
     return false;
 }
 
+#define LD 1
+#define ST 2
+
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
@@ -245,7 +248,25 @@ void emitter::emitIns_R_R(
 void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    code_t code = emitInsCode(ins);
+    if (INS_addi == ins || INS_slli == ins)
+    {
+        code |= reg1 << 15;          // rs1
+        code |= reg2 << 7;           // rd
+        code |= imm << 20;           // imm
+    }
+    else
+    {
+        fprintf(stderr, "[CLAMP] %x\n", code);
+        _ASSERTE(!"TODO RISCV64 NYI");
+    }
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
 }
 
 /*****************************************************************************
@@ -362,7 +383,51 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
 
 void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(!EA_IS_RELOC(size));
+    assert(isGeneralRegister(reg));
+    if (0 == ((imm + 0x800) >> 32)) {
+        if (((imm + 0x800) >> 12) != 0)
+        {
+            emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
+            if ((imm & 0xFFF) != 0)
+            {
+                emitIns_R_R_I(INS_addi, size, reg, reg, imm & 0xFFF);
+            }
+        }
+        else
+        {
+            emitIns_R_R_I(INS_addi, size, REG_R0, reg, imm & 0xFFF);
+        }
+    }
+    else
+    {
+        UINT32 upper = imm >> 32;
+        if (((upper + 0x800) >> 12) != 0)
+        {
+            emitIns_R_I(INS_lui, size, reg, ((upper + 0x800) >> 12));
+        }
+        if ((upper & 0xFFF) != 0)
+        {
+            emitIns_R_R_I(INS_addi, size, REG_R0, reg, upper & 0xFFF);
+        }
+        UINT32 lower = (imm << 32) >> 32;
+        UINT32 shift = 0;
+        for (int i = 32; i >= 0; i -= 11)
+        {
+            shift += i > 11 ? 11 : i;
+            UINT32 current = lower >> (i < 11 ? 0 : i - 11);
+            if (current != 0)
+            {
+                emitIns_R_R_I(INS_slli, size, reg, reg, shift);
+                emitIns_R_R_I(INS_addi, size, reg, reg, current & 0x7FF);
+                shift = 0;
+            }
+        }
+        if (shift)
+        {
+            emitIns_R_R_I(INS_slli, size, reg, reg, shift);
+        }
+    }
 }
 
 /*****************************************************************************

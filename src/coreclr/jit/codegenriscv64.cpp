@@ -162,12 +162,93 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                                      ssize_t   imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    NYI("unimplemented on RISCV64 yet");
+    emitter* emit = GetEmitter();
+
+    if (!compiler->opts.compReloc)
+    {
+        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs.
+    }
+
+    if (EA_IS_RELOC(size))
+    {
+        assert(genIsValidIntReg(reg));
+        emit->emitIns_R_AI(INS_jalr, size, reg, reg, imm); // for example: EA_PTR_DSP_RELOC
+    }
+    else
+    {
+        emit->emitIns_I_la(size, reg, imm);
+    }
+
+    regSet.verifyRegUsed(reg);
 }
 
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    switch (tree->gtOper)
+    {
+        case GT_CNS_INT:
+        {
+            // relocatable values tend to come down as a CNS_INT of native int type
+            // so the line between these two opcodes is kind of blurry
+            GenTreeIntCon* con    = tree->AsIntCon();
+            ssize_t        cnsVal = con->IconValue();
+
+            emitAttr attr = emitActualTypeSize(targetType);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (targetType == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(targetReg);
+        }
+        break;
+
+        case GT_CNS_DBL:
+        {
+            emitter* emit       = GetEmitter();
+            emitAttr size       = emitActualTypeSize(tree);
+            double   constValue = tree->AsDblCon()->DconValue();
+
+            // Make sure we use "daddiu reg, zero, 0x00"  only for positive zero (0.0)
+            // and not for negative zero (-0.0)
+            if (*(__int64*)&constValue == 0)
+            {
+                // A faster/smaller way to generate 0.0
+                // We will just zero out the entire vector register for both float and double
+                emit->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, targetReg, REG_R0);
+            }
+            else
+            {
+                // Get a temp integer register to compute long address.
+                // regNumber addrReg = tree->GetSingleTempReg();
+
+                // We must load the FP constant from the constant pool
+                // Emit a data section constant for the float or double constant.
+                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+
+                // Load the FP constant.
+                assert(targetReg >= REG_F0);
+
+                instruction ins = size == EA_4BYTE ? INS_flw : INS_fld;
+
+                // Compute the address of the FP constant and load the data.
+                emit->emitIns_R_C(ins, size, targetReg, REG_NA, hnd, 0);
+            }
+        }
+        break;
+
+        default:
+            unreached();
+    }
 }
 
 // Produce code for a GT_INC_SATURATE node.
@@ -424,6 +505,34 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 //    tree - the node
 //
 void CodeGen::genCodeForCompare(GenTreeOp* jtree)
+{
+    NYI("unimplemented on RISCV64 yet");
+}
+
+//------------------------------------------------------------------------
+// genCodeForJumpTrue: Generate code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - The node
+//
+void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
+{
+    NYI("unimplemented on RISCV64 yet");
+}
+
+//------------------------------------------------------------------------
+// genCodeForJumpCompare: Generates code for jmpCompare statement.
+//
+// A GT_JCMP node is created when a comparison and conditional branch
+// can be executed in a single instruction.
+//
+// Arguments:
+//    tree - The GT_JCMP tree node.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 {
     NYI("unimplemented on RISCV64 yet");
 }
@@ -820,7 +929,394 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
 //
 void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = GetEmitter();
+
+#ifdef DEBUG
+    // Validate that all the operands for the current node are consumed in order.
+    // This is important because LSRA ensures that any necessary copies will be
+    // handled correctly.
+    lastConsumedNode = nullptr;
+    if (compiler->verbose)
+    {
+        unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
+        compiler->gtDispLIRNode(treeNode, "Generating: ");
+    }
+#endif // DEBUG
+
+    // Is this a node whose value is already in a register?  LSRA denotes this by
+    // setting the GTF_REUSE_REG_VAL flag.
+    if (treeNode->IsReuseRegVal())
+    {
+        // For now, this is only used for constant nodes.
+        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        JITDUMP("  TreeNode is marked ReuseReg\n");
+        return;
+    }
+
+    // contained nodes are part of their parents for codegen purposes
+    // ex : immediates, most LEAs
+    if (treeNode->isContained())
+    {
+        return;
+    }
+
+    switch (treeNode->gtOper)
+    {
+        case GT_START_NONGC:
+            GetEmitter()->emitDisableGC();
+            break;
+
+        case GT_START_PREEMPTGC:
+            // Kill callee saves GC registers, and create a label
+            // so that information gets propagated to the emitter.
+            gcInfo.gcMarkRegSetNpt(RBM_INT_CALLEE_SAVED);
+            genDefineTempLabel(genCreateTempLabel());
+            break;
+
+        case GT_PROF_HOOK:
+            // We should be seeing this only if profiler hook is needed
+            noway_assert(compiler->compIsProfilerHookNeeded());
+
+#ifdef PROFILING_SUPPORTED
+            // Right now this node is used only for tail calls. In future if
+            // we intend to use it for Enter or Leave hooks, add a data member
+            // to this node indicating the kind of profiler hook. For example,
+            // helper number can be used.
+            genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
+#endif // PROFILING_SUPPORTED
+            break;
+
+        case GT_LCLHEAP:
+            genLclHeap(treeNode);
+            break;
+
+        case GT_CNS_INT:
+            if ((targetType == TYP_DOUBLE) || (targetType == TYP_FLOAT))
+            {
+                treeNode->gtOper = GT_CNS_DBL;
+            }
+            FALLTHROUGH;
+        case GT_CNS_DBL:
+            genSetRegToConst(targetReg, targetType, treeNode);
+            genProduceReg(treeNode);
+            break;
+
+        case GT_NOT:
+        case GT_NEG:
+            genCodeForNegNot(treeNode);
+            break;
+
+        case GT_BSWAP:
+        case GT_BSWAP16:
+            genCodeForBswap(treeNode);
+            break;
+
+        case GT_MOD:
+        case GT_UMOD:
+        case GT_DIV:
+        case GT_UDIV:
+            genCodeForDivMod(treeNode->AsOp());
+            break;
+
+        case GT_OR:
+        case GT_XOR:
+        case GT_AND:
+        case GT_AND_NOT:
+            assert(varTypeIsIntegralOrI(treeNode));
+
+            FALLTHROUGH;
+
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+        case GT_ROR:
+            genCodeForShift(treeNode);
+            break;
+
+        case GT_CAST:
+            genCodeForCast(treeNode->AsOp());
+            break;
+
+        case GT_BITCAST:
+            genCodeForBitCast(treeNode->AsOp());
+            break;
+
+        case GT_LCL_FLD_ADDR:
+        case GT_LCL_VAR_ADDR:
+            genCodeForLclAddr(treeNode->AsLclVarCommon());
+            break;
+
+        case GT_LCL_FLD:
+            genCodeForLclFld(treeNode->AsLclFld());
+            break;
+
+        case GT_LCL_VAR:
+            genCodeForLclVar(treeNode->AsLclVar());
+            break;
+
+        case GT_STORE_LCL_FLD:
+            genCodeForStoreLclFld(treeNode->AsLclFld());
+            break;
+
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
+        case GT_RETFILT:
+        case GT_RETURN:
+            genReturn(treeNode);
+            break;
+
+        case GT_LEA:
+            // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
+            genLeaInstruction(treeNode->AsAddrMode());
+            break;
+
+        case GT_INDEX_ADDR:
+            genCodeForIndexAddr(treeNode->AsIndexAddr());
+            break;
+
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
+
+        case GT_INC_SATURATE:
+            genCodeForIncSaturate(treeNode);
+            break;
+
+        case GT_MULHI:
+            genCodeForMulHi(treeNode->AsOp());
+            break;
+
+        case GT_SWAP:
+            genCodeForSwap(treeNode->AsOp());
+            break;
+
+        case GT_JMP:
+            genJmpMethod(treeNode);
+            break;
+
+        case GT_CKFINITE:
+            genCkfinite(treeNode);
+            break;
+
+        case GT_INTRINSIC:
+            genIntrinsic(treeNode);
+            break;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            genSIMDIntrinsic(treeNode->AsSIMD());
+            break;
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            genHWIntrinsic(treeNode->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+        case GT_CMP:
+            if (treeNode->GetRegNum() != REG_NA)
+            {
+                genCodeForCompare(treeNode->AsOp());
+            }
+            else if (!treeNode->gtNext)
+            {
+                genCodeForJumpTrue(treeNode->AsOp());
+            }
+            else if (!treeNode->gtNext->OperIs(GT_JTRUE))
+            {
+                GenTree* treeNode_next = treeNode->gtNext;
+                while (treeNode_next)
+                {
+                    if (treeNode_next->OperIs(GT_JTRUE))
+                    {
+                        break;
+                    }
+                    treeNode_next = treeNode_next->gtNext;
+                };
+                assert(treeNode_next->OperIs(GT_JTRUE));
+                // genCodeForJumpTrue(treeNode_next->AsOp());
+                genCodeForCompare(treeNode_next->AsOp());
+            }
+            break;
+
+        case GT_JTRUE:
+            genCodeForJumpTrue(treeNode->AsOp());
+            break;
+
+        case GT_JCMP:
+            genCodeForJumpCompare(treeNode->AsOp());
+            break;
+
+        case GT_RETURNTRAP:
+            genCodeForReturnTrap(treeNode->AsOp());
+            break;
+
+        case GT_STOREIND:
+            genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
+
+        case GT_COPY:
+            // This is handled at the time we call genConsumeReg() on the GT_COPY
+            break;
+
+        case GT_FIELD_LIST:
+            // Should always be marked contained.
+            assert(!"LIST, FIELD_LIST nodes should always be marked contained.");
+            break;
+
+        case GT_PUTARG_STK:
+            genPutArgStk(treeNode->AsPutArgStk());
+            break;
+
+        case GT_PUTARG_REG:
+            genPutArgReg(treeNode->AsOp());
+            break;
+
+        case GT_PUTARG_SPLIT:
+            genPutArgSplit(treeNode->AsPutArgSplit());
+            break;
+
+        case GT_CALL:
+            genCall(treeNode->AsCall());
+            break;
+
+        case GT_MEMORYBARRIER:
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
+            break;
+        }
+
+        case GT_XCHG:
+        case GT_XADD:
+            genLockedInstructions(treeNode->AsOp());
+            break;
+
+        case GT_CMPXCHG:
+            genCodeForCmpXchg(treeNode->AsCmpXchg());
+            break;
+
+        case GT_RELOAD:
+            // do nothing - reload is just a marker.
+            // The parent node will call genConsumeReg on this which will trigger the unspill of this node's child
+            // into the register specified in this node.
+            break;
+
+        case GT_NOP:
+            break;
+
+        case GT_KEEPALIVE:
+            if (treeNode->AsOp()->gtOp1->isContained())
+            {
+                // For this case we simply need to update the lifetime of the local.
+                genUpdateLife(treeNode->AsOp()->gtOp1);
+            }
+            else
+            {
+                genConsumeReg(treeNode->AsOp()->gtOp1);
+            }
+            break;
+
+        case GT_NO_OP:
+            instGen(INS_nop);
+            break;
+
+        case GT_BOUNDS_CHECK:
+            genRangeCheck(treeNode);
+            break;
+
+        case GT_PHYSREG:
+            genCodeForPhysReg(treeNode->AsPhysReg());
+            break;
+
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
+        case GT_CATCH_ARG:
+
+            noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
+
+            /* Catch arguments get passed in a register. genCodeForBBlist()
+               would have marked it as holding a GC object, but not used. */
+
+            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
+            genConsumeReg(treeNode);
+            break;
+
+        case GT_PINVOKE_PROLOG:
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+
+// the runtime side requires the codegen here to be consistent
+#ifdef PSEUDORANDOM_NOP_INSERTION
+            emit->emitDisableRandomNops();
+#endif // PSEUDORANDOM_NOP_INSERTION
+            break;
+
+        case GT_LABEL:
+            genPendingCallLabel = genCreateTempLabel();
+            emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
+            break;
+
+        case GT_STORE_OBJ:
+        case GT_STORE_DYN_BLK:
+        case GT_STORE_BLK:
+            genCodeForStoreBlk(treeNode->AsBlk());
+            break;
+
+        case GT_JMPTABLE:
+            genJumpTable(treeNode);
+            break;
+
+        case GT_SWITCH_TABLE:
+            genTableBasedSwitch(treeNode);
+            break;
+
+        case GT_ARR_INDEX:
+            genCodeForArrIndex(treeNode->AsArrIndex());
+            break;
+
+        case GT_ARR_OFFSET:
+            genCodeForArrOffset(treeNode->AsArrOffs());
+            break;
+
+        case GT_IL_OFFSET:
+            // Do nothing; these nodes are simply markers for debug info.
+            break;
+
+        default:
+        {
+#ifdef DEBUG
+            char message[256];
+            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+                        GenTree::OpName(treeNode->OperGet()));
+            NYIRAW(message);
+#else
+            NYI("unimplemented node");
+#endif
+        }
+        break;
+    }
 }
 
 //---------------------------------------------------------------------
@@ -1042,7 +1538,35 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 //
 void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperIs(GT_IND));
+
+#ifdef FEATURE_SIMD
+    // Handling of Vector3 type values loaded through indirection.
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        genLoadIndTypeSIMD12(tree);
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    var_types   type      = tree->TypeGet();
+    instruction ins       = ins_Load(type);
+    instruction ins2      = INS_none;
+    regNumber   targetReg = tree->GetRegNum();
+    regNumber   tmpReg    = targetReg;
+    emitAttr    attr      = emitActualTypeSize(type);
+    int         offset    = 0;
+
+    genConsumeAddress(tree->Addr());
+
+    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+    {
+        instGen_MemoryBarrier(BARRIER_FULL);
+    }
+
+    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
+
+    genProduceReg(tree);
 }
 
 //----------------------------------------------------------------------------------
