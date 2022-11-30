@@ -57,6 +57,7 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
+        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
@@ -277,6 +278,16 @@ namespace ILCompiler
             if (obj is NativeLayoutTemplateMethodSignatureVertexNode templateMethodEntry)
             {
                 _templateMethodEntries.Add(templateMethodEntry);
+            }
+
+            if (obj is FrozenObjectNode frozenObj)
+            {
+                _frozenObjects.Add(frozenObj);
+            }
+
+            if (obj is FrozenStringNode frozenStr)
+            {
+                _frozenObjects.Add(frozenStr);
             }
         }
 
@@ -698,6 +709,11 @@ namespace ILCompiler
         public IEnumerable<MethodDesc> GetReflectableMethods()
         {
             return _reflectableMethods;
+        }
+
+        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        {
+            return _frozenObjects;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
