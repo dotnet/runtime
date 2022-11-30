@@ -157,6 +157,7 @@ namespace Regression.UnitTests
                     foreach (var param in paramz)
                     {
                         Assert.Equal(GetFieldMarshal(baselineImport, param), GetFieldMarshal(currentImport, param));
+                        Assert.Equal(GetParamProps(baselineImport, param), GetParamProps(currentImport, param));
                     }
                     Assert.Equal(GetParamForMethodIndex(baselineImport, methoddef), GetParamForMethodIndex(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
@@ -190,6 +191,7 @@ namespace Regression.UnitTests
                 foreach (var fielddef in fields)
                 {
                     Assert.Equal(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
+                    Assert.Equal(GetFieldProps(baselineImport, fielddef), GetFieldProps(currentImport, fielddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, fielddef), GetPinvokeMap(currentImport, fielddef));
                     Assert.Equal(GetFieldMarshal(baselineImport, fielddef), GetFieldMarshal(currentImport, fielddef));
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
@@ -1092,6 +1094,80 @@ namespace Regression.UnitTests
 
                 methoddefs.Add(pmdSetter);
                 methoddefs.Add(pmdGetter);
+            }
+            return values;
+        }
+
+        private static List<nuint> GetFieldProps(IMetaDataImport import, uint tk)
+        {
+            List<nuint> values = new();
+
+            var name = new char[CharBuffer];
+            int hr = import.GetFieldProps(tk,
+                out uint pClass,
+                name,
+                name.Length,
+                out int pchField,
+                out uint pdwAttr,
+                out nint ppvSigBlob,
+                out uint pcbSigBlob,
+                out uint pdwCPlusTypeFlag,
+                out nint ppValue,
+                out uint pcchValue);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pClass);
+                uint hash = HashCharArray(name, pchField);
+                values.Add(hash);
+                values.Add((uint)pchField);
+                values.Add(pdwAttr);
+                values.Add((nuint)ppvSigBlob);
+                values.Add(pcbSigBlob);
+                values.Add(pdwCPlusTypeFlag);
+                // Due to how the "null" pointer is computed, only add when non-zero
+                if (pcchValue != 0)
+                {
+                    values.Add((nuint)ppValue);
+                }
+                values.Add(pcchValue);
+            }
+            return values;
+        }
+
+        private static List<nuint> GetParamProps(IMetaDataImport import, uint tk)
+        {
+            List<nuint> values = new();
+
+            var name = new char[CharBuffer];
+            int hr = import.GetParamProps(tk,
+                out uint pmd,
+                out uint pulSequence,
+                name,
+                name.Length,
+                out int pchName,
+                out uint pdwAttr,
+                out uint pdwCPlusTypeFlag,
+                out nint ppValue,
+                out uint pcchValue);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pmd);
+                values.Add(pulSequence);
+                uint hash = HashCharArray(name, pchName);
+                values.Add(hash);
+                values.Add((uint)pchName);
+                values.Add(pdwAttr);
+                values.Add(pdwCPlusTypeFlag);
+                // Due to how the "null" pointer is computed, only add when non-zero
+                if (pcchValue != 0)
+                {
+                    values.Add((nuint)ppValue);
+                }
+                values.Add(pcchValue);
             }
             return values;
         }

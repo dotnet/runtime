@@ -351,6 +351,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 // Given a value into a supported table, find the associated parent token.
 //  - mdtid_Field
 //  - mdtid_MethodDef
+//  - mdtid_Param
 //  - mdtid_Event
 //  - mdtid_Property
 // See md_get_column_value_as_range() for getting the complete range.
