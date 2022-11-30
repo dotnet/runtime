@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (dictionaryInterface != null)
                 {
-                    BindConcreteDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
                 }
                 else
                 {
@@ -549,12 +549,12 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            BindConcreteDictionary(dictionary, dictionaryType, config, options);
+            BindDictionary(dictionary, genericType, config, options);
 
             return dictionary;
         }
 
-        // Binds and potentially overwrites a concrete dictionary.
+        // Binds and potentially overwrites a dictionary object.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
         // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
@@ -562,12 +562,15 @@ namespace Microsoft.Extensions.Configuration
         // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindConcreteDictionary(
-            object? dictionary,
+        private static void BindDictionary(
+            object dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
         {
+            Debug.Assert(dictionaryType.IsGenericType &&
+                         (dictionaryType.GetGenericTypeDefinition() == typeof(IDictionary<,>) || dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>)));
+
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
@@ -589,13 +592,11 @@ namespace Microsoft.Extensions.Configuration
 
             Debug.Assert(dictionary is not null);
 
-            Type dictionaryObjectType = dictionary.GetType();
 
-            MethodInfo tryGetValue = dictionaryObjectType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+            PropertyInfo? indexerProperty  = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
 
-            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo? setter = dictionaryObjectType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
-            if (setter is null || !setter.CanWrite)
+            if (indexerProperty is null || !indexerProperty.CanWrite)
             {
                 // Cannot set any item on the dictionary object.
                 return;
@@ -623,7 +624,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
                 catch(Exception ex)
