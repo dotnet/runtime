@@ -18,9 +18,7 @@
 .method public static native int byrefsubbyref(class ctest& V_1, class ctest& V_2)
 {
 ldarg 0
-conv.u
 ldarg 1
-conv.u
 sub
 ret
 }
@@ -36,7 +34,6 @@ ret
 {
 ldarg 0
 ldarg 1
-conv.u
 sub
 ret
 }
