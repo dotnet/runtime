@@ -542,15 +542,11 @@ void OptIfConversionDsc::IfConvertDump()
 //
 bool OptIfConversionDsc::optIfConvert()
 {
-#ifndef TARGET_ARM64
-    return false;
-#endif
-
     // Don't optimise the block if it is inside a loop
     // When inside a loop, branches are quicker than selects.
     // Detect via the block weight as that will be high when inside a loop.
     if ((m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT) &&
-        !m_comp->compStressCompile(m_comp->STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+        !m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
         return false;
     }
@@ -623,8 +619,14 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Using SELECT nodes means that both Then and Else operations are fully evaluated.
     // Put a limit on the original source and destinations.
-    if (!m_comp->compStressCompile(m_comp->STRESS_IF_CONVERSION_COST, 25))
+    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
+#ifdef TARGET_XARCH
+        // xarch does not support containing relops in GT_SELECT nodes
+        // currently so only introduce GT_SELECT in stress.
+        JITDUMP("Skipping if-conversion on xarch\n");
+        return false;
+#else
         int thenCost = 0;
         int elseCost = 0;
 
@@ -655,11 +657,13 @@ bool OptIfConversionDsc::optIfConvert()
                     elseCost);
             return false;
         }
+#endif
     }
 
     // Get the select node inputs.
-    GenTree* selectTrueInput;
-    GenTree* selectFalseInput;
+    var_types selectType;
+    GenTree*  selectTrueInput;
+    GenTree*  selectFalseInput;
     if (m_mainOper == GT_ASG)
     {
         if (m_doElseConversion)
@@ -680,6 +684,9 @@ bool OptIfConversionDsc::optIfConvert()
 
             selectTrueInput = m_thenOperation.node->gtGetOp2();
         }
+
+        // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
+        selectType = genActualType(m_thenOperation.node->gtGetOp1());
     }
     else
     {
@@ -689,11 +696,12 @@ bool OptIfConversionDsc::optIfConvert()
 
         selectTrueInput  = m_elseOperation.node->gtGetOp1();
         selectFalseInput = m_thenOperation.node->gtGetOp1();
+        selectType       = genActualType(m_thenOperation.node);
     }
 
     // Create a select node.
-    GenTreeConditional* select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
-                                                              m_thenOperation.node->TypeGet());
+    GenTreeConditional* select =
+        m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     m_thenOperation.node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
 
     // Use the select as the source of the Then operation.
@@ -766,6 +774,10 @@ PhaseStatus Compiler::optIfConversion()
     // This phase does not repect SSA: assignments are deleted/moved.
     assert(!fgDomsComputed);
 
+    // Currently only enabled on arm64 and under debug on xarch, since we only
+    // do it under stress.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
@@ -774,6 +786,7 @@ PhaseStatus Compiler::optIfConversion()
         madeChanges |= optIfConversionDsc.optIfConvert();
         block = block->bbPrev;
     }
+#endif
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
