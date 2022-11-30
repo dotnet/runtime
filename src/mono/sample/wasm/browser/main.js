@@ -3,13 +3,6 @@
 
 import { dotnet } from "./dotnet.js"
 
-async function importMemory() {
-    const response = await fetch("./memory.dat");
-    const buffer = await response.arrayBuffer();
-    return new Int8Array(buffer);
-}
-
-const memory = await importMemory();
 const { setModuleImports, getAssemblyExports } = await dotnet
     .withConfig({
         mainAssemblyName: "Wasm.Browser.Sample.dll",
@@ -17,7 +10,7 @@ const { setModuleImports, getAssemblyExports } = await dotnet
             behavior: "dotnetwasm",
             name: "dotnet.wasm"
         }],
-        memory: memory
+        memory: true
     })
     .withModuleConfig({
         configSrc: null
@@ -26,7 +19,7 @@ const { setModuleImports, getAssemblyExports } = await dotnet
 
 setModuleImports("main.js", { location: { href: () => window.location.href } });
 
-await dotnet.withApplicationArguments("Runtime 2").run();
+await dotnet.withApplicationArguments("Single file .NET").run();
 
 const exports = await getAssemblyExports("Wasm.Browser.Sample.dll");
 console.log(exports.Sample.Test.Greet());

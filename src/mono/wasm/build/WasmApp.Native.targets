@@ -672,9 +672,12 @@
       <WasmMemorySnapshotCaptureLine Include="const { Module } = await dotnet.create()%3B" />
       <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./$(WasmMemorySnapshotFileName)', Module.HEAP8)%3B" />
     </ItemGroup>
+    <Exec Command="dotnet tool update -g wa-edit" IgnoreExitCode="true" />
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
     <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
-    <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" />
-    <Message Text="Memory snapshot taken at $(WasmAppDir)$(WasmMemorySnapshotFileName)" Importance="High" />
+    <Exec WorkingDirectory="$(WasmAppDir)" Command="wa-edit -v ./dotnet.wasm ./dotnet2.wasm -o 0 -d ./$(WasmMemorySnapshotFileName) -a" />
+    <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator);$(WasmAppDir)dotnet.wasm;$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
+    <Move SourceFiles="$(WasmAppDir)dotnet2.wasm" DestinationFiles="$(WasmAppDir)dotnet.wasm" />
+    <Message Text="Memory snapshot merged into the dotnet.wasm" Importance="High" />
   </Target>
 </Project>
