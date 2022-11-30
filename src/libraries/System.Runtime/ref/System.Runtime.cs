@@ -7056,6 +7056,7 @@ namespace System.Buffers
     public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
     {
         internal IndexOfAnyValues() { }
+        public bool Contains(T value) { throw null; }
     }
     public static class IndexOfAnyValues
     {
