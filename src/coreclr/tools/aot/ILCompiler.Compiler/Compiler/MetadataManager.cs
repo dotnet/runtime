@@ -49,6 +49,7 @@ namespace ILCompiler
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
         protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
+        private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
@@ -256,6 +257,11 @@ namespace ILCompiler
 
                 if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
                     _reflectableMethods.Add(method);
+            }
+
+            if (obj is InterfaceDispatchCellNode dispatchCell)
+            {
+                _interfaceDispatchCells.Add(dispatchCell);
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
@@ -652,6 +658,11 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated(factory);
             return _stackTraceMappings;
+        }
+
+        internal IEnumerable<InterfaceDispatchCellNode> GetInterfaceDispatchCells()
+        {
+            return _interfaceDispatchCells;
         }
 
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()

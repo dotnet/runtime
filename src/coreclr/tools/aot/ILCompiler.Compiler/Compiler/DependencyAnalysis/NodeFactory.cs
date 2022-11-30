@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
-            InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
             PreinitializationManager = preinitializationManager;
         }
 
@@ -1115,7 +1114,7 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection { get; }
+        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
