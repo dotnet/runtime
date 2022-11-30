@@ -1303,32 +1303,6 @@ namespace System
             return firstLength.CompareTo(secondLength);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool CanVectorizeAndBenefit<T>(int length) where T : IEquatable<T>?
-        {
-            if (Vector128.IsHardwareAccelerated && RuntimeHelpers.IsBitwiseEquatable<T>())
-            {
-                if (sizeof(T) == sizeof(byte))
-                {
-                    return length >= Vector128<byte>.Count;
-                }
-                else if (sizeof(T) == sizeof(short))
-                {
-                    return length >= Vector128<short>.Count;
-                }
-                else if (sizeof(T) == sizeof(int))
-                {
-                    return length >= Vector128<int>.Count;
-                }
-                else if (sizeof(T) == sizeof(long))
-                {
-                    return length >= Vector128<long>.Count;
-                }
-            }
-
-            return false;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
@@ -1458,8 +1432,23 @@ namespace System
         internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
             => IndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
+        {
+            if (CanUsePackedIndexOf(value))
+            {
+                return typeof(TNegator) == typeof(DontNegate<short>)
+                    ? PackedIndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value, length)
+                    : PackedIndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value, length);
+            }
+
+            return NonPackedIndexOfValueType<TValue, TNegator>(ref searchSpace, value, length);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
+        internal static int NonPackedIndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
@@ -1600,9 +1589,24 @@ namespace System
         internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+            where TValue : struct, INumber<TValue>
+            where TNegator : struct, INegator<TValue>
+        {
+            if (CanUsePackedIndexOf(value0) && CanUsePackedIndexOf(value1))
+            {
+                return typeof(TNegator) == typeof(DontNegate<short>)
+                    ? PackedIndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length)
+                    : PackedIndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length);
+            }
+
+            return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, length);
+        }
+
         // having INumber<T> constraint here allows to use == operator and get better perf compared to .Equals
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+        internal static int NonPackedIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
@@ -3050,7 +3054,26 @@ namespace System
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool> =>
             IndexOfAnyInRangeUnsignedNumber<T, Negate<T>>(ref searchSpace, lowInclusive, highInclusive, length);
 
-        private static int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int IndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
+            where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
+            where TNegator : struct, INegator<T>
+        {
+            if (CanUsePackedIndexOf(lowInclusive) && CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
+            {
+                ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
+                char charLowInclusive = *(char*)&lowInclusive;
+                char charRange = (char)(*(char*)&highInclusive - charLowInclusive);
+
+                return typeof(TNegator) == typeof(DontNegate<ushort>)
+                    ? PackedIndexOfAnyInRange(ref charSearchSpace, charLowInclusive, charRange, length)
+                    : PackedIndexOfAnyExceptInRange(ref charSearchSpace, charLowInclusive, charRange, length);
+            }
+
+            return NonPackedIndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref searchSpace, lowInclusive, highInclusive, length);
+        }
+
+        internal static int NonPackedIndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
             where TNegator : struct, INegator<T>
         {
