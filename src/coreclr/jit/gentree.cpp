@@ -17178,7 +17178,7 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //------------------------------------------------------------------------
 // DefinesLocal: Does "this" define a local?
 //
-// Recognizes "ASG" stores. Also recognizes "STORE_OBJ/BLK".
+// Recognizes "ASG" stores.
 //
 // Arguments:
 //    comp        - the compiler instance
@@ -17193,8 +17193,8 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //
 // Notes:
 //    This function is contractually bound to recognize a superset of stores
-//    that "LocalAddressVisitor" recognizes, as it is used to detect which
-//    trees can define tracked locals.
+//    that "LocalAddressVisitor" recognizes and transforms, as it is used to
+//    detect which trees can define tracked locals.
 //
 bool GenTree::DefinesLocal(
     Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
@@ -17202,15 +17202,12 @@ bool GenTree::DefinesLocal(
     assert((pOffset == nullptr) || (*pOffset == 0));
 
     GenTreeLclVarCommon* lclVarTree = nullptr;
-    unsigned             storeSize  = 0;
     ssize_t              offset     = 0;
 
     if (OperIs(GT_ASG))
     {
         GenTree* lhs = AsOp()->gtGetOp1();
 
-        // Return early for the common case.
-        //
         if (lhs->OperIs(GT_LCL_VAR))
         {
             *pLclVarTree = lhs->AsLclVarCommon();
@@ -17248,15 +17245,6 @@ bool GenTree::DefinesLocal(
 
             return true;
         }
-
-        if (lhs->OperIsIndir() && lhs->AsIndir()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
-        {
-            storeSize = lhs->AsIndir()->Size();
-        }
-        else
-        {
-            return false;
-        }
     }
     else if (OperIs(GT_CALL))
     {
@@ -17271,51 +17259,32 @@ bool GenTree::DefinesLocal(
             return false;
         }
 
-        storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-    }
-    else if (OperIs(GT_STORE_BLK, GT_STORE_OBJ) && AsBlk()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
-    {
-        storeSize = AsBlk()->Size();
-    }
-    else
-    {
-        return false;
-    }
+        *pLclVarTree = lclVarTree;
 
-    assert(lclVarTree != nullptr);
-    *pLclVarTree = lclVarTree;
-
-    if (pIsEntire != nullptr)
-    {
-        if (offset == 0)
+        if ((pIsEntire != nullptr) || (pSize != nullptr))
         {
-            unsigned lclSize = comp->lvaLclExactSize(lclVarTree->GetLclNum());
-            if (comp->lvaGetDesc(lclVarTree)->lvNormalizeOnStore())
+            unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+
+            if (pIsEntire != nullptr)
             {
-                // It's normalize on store, so use the full storage width -- writing to low bytes won't
-                // necessarily yield a normalized value.
-                lclSize = genTypeSize(TYP_INT);
+                *pIsEntire = storeSize == comp->lvaLclExactSize(lclVarTree->GetLclNum());
             }
 
-            *pIsEntire = storeSize == lclSize;
+            if (pSize != nullptr)
+            {
+                *pSize = storeSize;
+            }
         }
-        else
+
+        if (pOffset != nullptr)
         {
-            *pIsEntire = false;
+            *pOffset = offset;
         }
+
+        return true;
     }
 
-    if (pOffset != nullptr)
-    {
-        *pOffset = offset;
-    }
-
-    if (pSize != nullptr)
-    {
-        *pSize = storeSize;
-    }
-
-    return true;
+    return false;
 }
 
 //------------------------------------------------------------------------
