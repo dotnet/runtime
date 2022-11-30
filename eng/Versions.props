@@ -209,8 +209,8 @@
     <MicrosoftNETILLinkTasksVersion>7.0.100-1.22552.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.22524.1</MicrosoftDotNetCecilVersion>
-    <MicrosoftDotNetCecilPdbVersion>$(MicrosoftDotNetCecilVersion)</MicrosoftDotNetCecilPdbVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.22571.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.22571.1</MicrosoftDotNetCecilPdbVersion>
     <!-- ILLink dependencies -->
     <MicrosoftBuildFrameworkVersion>17.0.0-preview-21267-01</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>17.0.0-preview-21267-01</MicrosoftBuildUtilitiesCoreVersion>

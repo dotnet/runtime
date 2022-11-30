@@ -694,14 +694,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool HasDynamicallyAllocatedDispatchMap
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0;
-            }
-        }
-
         internal bool IsParameterizedType
         {
             get
@@ -871,9 +863,7 @@ namespace Internal.Runtime
                 uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
                 if (idxDispatchMap == 0xffffffff)
                 {
-                    if (HasDynamicallyAllocatedDispatchMap)
-                        return true;
-                    else if (IsDynamicType)
+                    if (IsDynamicType)
                         return DynamicTemplateType->HasDispatchMap;
                     return false;
                 }
@@ -893,16 +883,13 @@ namespace Internal.Runtime
                 uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
                 if (idxDispatchMap == 0xffffffff && IsDynamicType)
                 {
-                    if (HasDynamicallyAllocatedDispatchMap)
-                    {
-                        fixed (MethodTable* pThis = &this)
-                            return *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DynamicDispatchMap));
-                    }
-                    else
-                        return DynamicTemplateType->DispatchMap;
+                    return DynamicTemplateType->DispatchMap;
                 }
 
-                return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+                if (SupportsRelativePointers)
+                    return (DispatchMap*)FollowRelativePointer((int*)TypeManager.DispatchMap + idxDispatchMap);
+                else
+                    return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
             }
         }
 
@@ -1464,14 +1451,6 @@ namespace Internal.Runtime
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
             if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
                 cbOffset += relativeOrFullPointerOffset;
-
-            if (eField == EETypeField.ETF_DynamicDispatchMap)
-            {
-                Debug.Assert(IsDynamicType);
-                return cbOffset;
-            }
-            if ((rareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
-                cbOffset += (uint)IntPtr.Size;
 
             if (eField == EETypeField.ETF_GenericDefinition)
             {

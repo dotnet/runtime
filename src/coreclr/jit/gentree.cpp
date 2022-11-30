@@ -7584,7 +7584,11 @@ GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHn
 }
 
 //------------------------------------------------------------------------
-// gtNewFieldRef: Create a new GT_FIELD_ADDR node.
+// gtNewFieldAddrNode: Create a new GT_FIELD_ADDR node.
+//
+// TODO-ADDR: consider creating a variant of this which would skip various
+// no-op constructs (such as struct fields with zero offsets), and fold
+// others (LCL_VAR_ADDR + FIELD_ADDR => LCL_FLD_ADDR).
 //
 // Arguments:
 //    type   - type for the address node
@@ -7601,10 +7605,27 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 
     GenTreeField* fieldNode = new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, obj, fldHnd, offset);
 
-    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
-    // TODO-ADDR: delete this zero-diff quirk.
-    fieldNode->gtFlags |= GTF_GLOB_REF;
+    // If "obj" is the address of a local, note that a field of that struct local has been accessed.
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
+        varDsc->lvFieldAccessed = 1;
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
+        {
+            // TODO-ADDR: delete this zero-diff quirk.
+            fieldNode->gtFlags |= GTF_GLOB_REF;
+        }
+    }
+    else
+    {
+        // TODO-ADDR: delete this zero-diff quirk.
+        fieldNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    // TODO-ADDR: add GTF_EXCEPT handling here and delete it from callers.
     return fieldNode;
 }
 
