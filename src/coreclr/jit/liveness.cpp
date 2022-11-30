@@ -240,24 +240,21 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
-                GenTreeLclVarCommon* lclVarTree = nullptr;
-                GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                if (!addrArg->DefinesLocalAddr(&lclVarTree))
-                {
-                    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                }
-                else
-                {
-                    // Defines a local addr
-                    assert(lclVarTree != nullptr);
-                    fgMarkUseDef(lclVarTree->AsLclVarCommon());
-                }
+                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
             unreached();
+            break;
+
+        case GT_ASG:
+            // An indirect store defines a memory location.
+            if (!tree->AsOp()->gtGetOp1()->OperIsLocal())
+            {
+                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+            }
             break;
 
         // We'll assume these are use-then-defs of memory.
@@ -272,8 +269,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
-        case GT_MEMORYBARRIER:
-            // Similar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
+        case GT_STOREIND:
+        case GT_STORE_OBJ:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
@@ -344,34 +344,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                     }
                 }
             }
-
             break;
         }
 
         default:
-
-            // Determine what memory locations it defines.
-            if (tree->OperIs(GT_ASG) || tree->OperIsBlkOp())
-            {
-                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                if (tree->DefinesLocal(this, &dummyLclVarTree))
-                {
-                    if (lvaVarAddrExposed(dummyLclVarTree->GetLclNum()))
-                    {
-                        fgCurMemoryDef |= memoryKindSet(ByrefExposed);
-
-                        // We've found a store that modifies ByrefExposed
-                        // memory but not GcHeap memory, so track their
-                        // states separately.
-                        byrefStatesMatchGcHeapStates = false;
-                    }
-                }
-                else
-                {
-                    // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
-                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                }
-            }
             break;
     }
 }
