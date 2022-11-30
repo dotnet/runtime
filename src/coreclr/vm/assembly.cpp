@@ -2245,21 +2245,28 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p Assembly\n", dac_cast<TADDR>(this)));
 
-    if (m_pDomain.IsValid())
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        m_pDomain->EnumMemoryRegions(flags, true);
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    if (m_pClassLoader.IsValid())
+    else
     {
-        m_pClassLoader->EnumMemoryRegions(flags);
-    }
-    if (m_pManifest.IsValid())
-    {
-        m_pManifest->EnumMemoryRegions(flags, true);
-    }
-    if (m_pManifestFile.IsValid())
-    {
-        m_pManifestFile->EnumMemoryRegions(flags);
+        if (m_pDomain.IsValid())
+        {
+            m_pDomain->EnumMemoryRegions(flags, true);
+        }
+        if (m_pClassLoader.IsValid())
+        {
+            m_pClassLoader->EnumMemoryRegions(flags);
+        }
+        if (m_pManifest.IsValid())
+        {
+            m_pManifest->EnumMemoryRegions(flags, true);
+        }
+        if (m_pManifestFile.IsValid())
+        {
+            m_pManifestFile->EnumMemoryRegions(flags);
+        }
     }
 }
 

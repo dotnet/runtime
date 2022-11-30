@@ -2040,8 +2040,7 @@ DomainFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pFile->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE
-    && m_pDomain.IsValid())
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2 && m_pDomain.IsValid())
     {
         m_pDomain->EnumMemoryRegions(flags, true);
     }
@@ -2059,7 +2058,11 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // For minidumps without full memory, we need to always be able to iterate over m_Modules.
     m_Modules.EnumMemoryRegions(flags);
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pAssembly.IsValid())
         {

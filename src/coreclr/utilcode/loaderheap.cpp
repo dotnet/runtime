@@ -1800,8 +1800,6 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
 
-    DAC_ENUM_DTHIS();
-
     PTR_LoaderHeapBlock block = m_pFirstBlock;
     while (block.IsValid())
     {

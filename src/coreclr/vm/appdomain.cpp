@@ -5593,6 +5593,11 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_friendlyName.EnumMemoryRegions(flags);
     }
 
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
+    
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -5613,7 +5618,11 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         DAC_ENUM_VTHIS();
     }
     BaseDomain::EnumMemoryRegions(flags, false);
-
+    
+	if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
     if (m_pSystemFile.IsValid())
     {
         m_pSystemFile->EnumMemoryRegions(flags);

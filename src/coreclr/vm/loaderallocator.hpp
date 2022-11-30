@@ -237,7 +237,7 @@ protected:
 #endif
 
 #ifndef CROSSGEN_COMPILE
-    VirtualCallStubManager *m_pVirtualCallStubManager;
+    PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 #endif
 
 private:
@@ -588,7 +588,7 @@ public:
     void UninitVirtualCallStubManager();
 
 #ifndef CROSSGEN_COMPILE
-    inline VirtualCallStubManager *GetVirtualCallStubManager()
+    inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pVirtualCallStubManager;
