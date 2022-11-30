@@ -25,7 +25,7 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            return Syntax.GetHashCode() ^ FullTypeName.GetHashCode() ^ DiagnosticFormattedName.GetHashCode();
+            return FullTypeName.GetHashCode() ^ DiagnosticFormattedName.GetHashCode();
         }
 
         protected ManagedTypeInfo(ManagedTypeInfo original)

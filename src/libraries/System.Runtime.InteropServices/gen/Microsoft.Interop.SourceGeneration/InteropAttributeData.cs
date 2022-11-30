@@ -23,11 +23,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Common data for all source-generated-interop trigger attributes
     /// </summary>
-    public record InteropAttributeCompilationData : InteropAttributeModelData
-    {
-        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
-    }
-    public record InteropAttributeModelData
+    public record InteropAttributeData
     {
         /// <summary>
         /// Value set by the user on the original declaration.
@@ -35,6 +31,15 @@ namespace Microsoft.Interop
         public InteropAttributeMember IsUserDefined { get; init; }
         public bool SetLastError { get; init; }
         public StringMarshalling StringMarshalling { get; init; }
+    }
+
+    /// <summary>
+    /// Common data for all source-generated-interop trigger attributes that also includes a reference to the Roslyn symbol for StringMarshallingCustomType.
+    /// See <seealso cref="InteropAttributeData"/> for a type that doesn't keep a compilation alive.
+    /// </summary>
+    public record InteropAttributeCompilationData : InteropAttributeData
+    {
+        public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
     }
 
     public static class InteropAttributeDataExtensions

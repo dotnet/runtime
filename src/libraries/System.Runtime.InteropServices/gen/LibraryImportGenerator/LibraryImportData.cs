@@ -4,14 +4,10 @@
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// LibraryImportAttribute data
+    /// Contains the data related to a LibraryImportAttribute, without references to Roslyn symbols.
+    /// See <seealso cref="LibraryImportCompilationData"/> for a type with a reference to the StringMarshallingCustomType
     /// </summary>
-    internal sealed record LibraryImportCompilationData(string ModuleName) : InteropAttributeCompilationData
-    {
-        public string EntryPoint { get; init; }
-    }
-
-    internal sealed record LibraryImportData(string ModuleName) : InteropAttributeModelData
+    internal sealed record LibraryImportData(string ModuleName) : InteropAttributeData
     {
         public string EntryPoint { get; init; }
 
@@ -23,5 +19,14 @@ namespace Microsoft.Interop
                 SetLastError = libraryImport.SetLastError,
                 StringMarshalling = libraryImport.StringMarshalling
             };
+    }
+
+    /// <summary>
+    /// Contains the data related to a LibraryImportAttribute, with references to Roslyn symbols.
+    /// Use <seealso cref="LibraryImportData"/> instead when using for incremental compilation state to avoid keeping a compilation alive
+    /// </summary>
+    internal sealed record LibraryImportCompilationData(string ModuleName) : InteropAttributeCompilationData
+    {
+        public string EntryPoint { get; init; }
     }
 }

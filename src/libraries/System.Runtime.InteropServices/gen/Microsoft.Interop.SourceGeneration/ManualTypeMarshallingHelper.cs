@@ -26,6 +26,8 @@ namespace Microsoft.Interop
     {
         public bool Equals(CustomTypeMarshallers other)
         {
+            // Check for equal count, then check if any KeyValuePairs exist in one 'Modes'
+            // but not the other (i.e. set equality on the set of items in the dictionary)
             return Modes.Count == other.Modes.Count
                 && !Modes.Except(other.Modes).Any();
         }
