@@ -21,7 +21,7 @@ namespace Internal
             {
                 fixed (char* ptr = s)
                 {
-                    Interop.Sys.Log((byte*)ptr, s.Length * 2);
+                    Interop.Sys.LogError((byte*)ptr, s.Length * 2);
                 }
             }
         }
