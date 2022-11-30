@@ -1571,9 +1571,8 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
     if (tree->gtDynamicSize->IsIntegralConst())
     {
         int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
-        assert(FitsIn<int32_t>(size));
 
-        if (size != 0)
+        if ((size != 0) && FitsIn<int32_t>(size))
         {
             GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
             GenTree* asg = gtNewAssignNode(lhs, tree->Data());

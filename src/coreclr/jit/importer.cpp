@@ -10883,6 +10883,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
                     }
 
+#ifdef TARGET_64BIT
+                    // STORE_DYN_BLK takes a native uint size as it turns into call to memset.
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_U_IMPL);
+#endif
+
                     op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
 
@@ -10910,6 +10915,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
+
+#ifdef TARGET_64BIT
+                    // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_U_IMPL);
+#endif
+
                     op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
 
                     if ((prefixFlags & PREFIX_VOLATILE) != 0)
