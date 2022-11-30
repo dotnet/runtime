@@ -262,9 +262,8 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
-                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
-                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor", "root", "conditionalroot", "trim" },
-                            outputOptions : new[] { "o", "out", "exportsfile" });
+                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args,
+                            context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" });
                     }
 
                     context.ExitCode = new Program(this).Run();

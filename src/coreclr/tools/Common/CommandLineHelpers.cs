@@ -109,7 +109,7 @@ namespace System.CommandLine
             throw new CommandLineException($"Target architecture '{token}' is not supported");
         }
 
-        public static void MakeReproPackage(string makeReproPath, string outputFilePath, string[] args, ParseResult res, IEnumerable<string> inputOptions, IEnumerable<string> outputOptions = null)
+        public static void MakeReproPackage(string makeReproPath, string outputFilePath, string[] args, ParseResult res, IEnumerable<string> inputOptions)
         {
             Directory.CreateDirectory(makeReproPath);
 
@@ -169,8 +169,6 @@ namespace System.CommandLine
 
                 HashSet<string> inputOptionNames = new HashSet<string>(inputOptions);
                 Dictionary<string, string> inputToReproPackageFileName = new();
-                HashSet<string> outputOptionNames = outputOptions == null ? new HashSet<string>() : new HashSet<string>(outputOptions);
-                Dictionary<string, string> outputToReproPackageFileName = new();
 
                 List<string> rspFile = new List<string>();
                 foreach (var option in res.CommandResult.Command.Options)
@@ -194,38 +192,24 @@ namespace System.CommandLine
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    if (!string.IsNullOrEmpty(optInList))
-                                        AppendExpandedPaths(dictionary, optInList, false);
+                                    AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {
-                                    rspFile.Add($"--{option.Name}:{ConvertFromOriginalPathToReproPackagePath(input: true, inputFile)}");
+                                    rspFile.Add($"--{option.Name}:{ConvertFromInputPathToReproPackagePath(inputFile)}");
                                 }
                             }
                             else
                             {
                                 foreach (string optInList in values)
                                 {
-                                    if (!string.IsNullOrEmpty(optInList))
-                                        rspFile.Add($"--{option.Name}:{optInList}");
+                                    rspFile.Add($"--{option.Name}:{optInList}");
                                 }
                             }
                         }
                         else
                         {
-                            if (val is string stringVal && !string.IsNullOrEmpty(stringVal))
-                            {
-                                if (outputOptionNames.Contains(option.Name))
-                                {
-                                    // if output option is used, overwrite the path to the repro package
-                                    stringVal = ConvertFromOriginalPathToReproPackagePath(input: false, stringVal);
-                                }
-                                rspFile.Add($"--{option.Name}:{stringVal}");
-                            }
-                            else
-                            {
-                                rspFile.Add($"--{option.Name}:{val}");
-                            }
+                            rspFile.Add($"--{option.Name}:{val}");
                         }
                     }
                 }
@@ -240,12 +224,12 @@ namespace System.CommandLine
 
                         foreach (string optInList in values)
                         {
-                            rspFile.Add($"{ConvertFromOriginalPathToReproPackagePath(input: true, optInList)}");
+                            rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)optInList)}");
                         }
                     }
                     else
                     {
-                        rspFile.Add($"{ConvertFromOriginalPathToReproPackagePath(input: true, (string)val)}");
+                        rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)val)}");
                     }
                 }
 
@@ -256,30 +240,25 @@ namespace System.CommandLine
                         writer.WriteLine(s);
                 }
 
-                string ConvertFromOriginalPathToReproPackagePath(bool input, string originalPath)
+                string ConvertFromInputPathToReproPackagePath(string inputPath)
                 {
-                    var originalToReproPackageFileName = input ? inputToReproPackageFileName : outputToReproPackageFileName;
-                    if (originalToReproPackageFileName.TryGetValue(originalPath, out string reproPackagePath))
+                    if (inputToReproPackageFileName.TryGetValue(inputPath, out string reproPackagePath))
                     {
                         return reproPackagePath;
                     }
 
                     try
                     {
-                        string prefix = input ? "_in_" : "_out_";
-                        string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
-                        reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
-                        if (!input)
-                            archive.CreateEntry(reproFileDir); // for outputs just create output directory
-                        else
-                            archive.CreateEntryFromFile(originalPath, reproPackagePath);
-                        originalToReproPackageFileName.Add(originalPath, reproPackagePath);
+                        string inputFileDir = inputToReproPackageFileName.Count.ToString();
+                        reproPackagePath = Path.Combine(inputFileDir, Path.GetFileName(inputPath));
+                        archive.CreateEntryFromFile(inputPath, reproPackagePath);
+                        inputToReproPackageFileName.Add(inputPath, reproPackagePath);
 
                         return reproPackagePath;
                     }
                     catch
                     {
-                        return originalPath;
+                        return inputPath;
                     }
                 }
             }
