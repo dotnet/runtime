@@ -28,7 +28,7 @@ namespace System
                 IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
         }
 
-        private const int StackallocIntBufferSizeLimit = 128;
+        internal const int StackallocIntBufferSizeLimit = 128;
 
         private static void FillStringChecked(string dest, int destPos, string src)
         {
@@ -1324,7 +1324,7 @@ namespace System
 
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            MakeSeparatorList(separators, ref sepListBuilder);
+            MakeSeparatorListAny(this, separators, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
 
             // Handle the special case of no replaces.
@@ -1401,7 +1401,7 @@ namespace System
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
             var lengthListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            MakeSeparatorList(separators!, ref sepListBuilder, ref lengthListBuilder);
+            MakeSeparatorListAny(this, separators, ref sepListBuilder, ref lengthListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
             ReadOnlySpan<int> lengthList = lengthListBuilder.AsSpan();
 
@@ -1447,7 +1447,7 @@ namespace System
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            MakeSeparatorList(separator, ref sepListBuilder);
+            MakeSeparatorList(this, separator, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
             if (sepList.Length == 0)
             {
@@ -1578,16 +1578,17 @@ namespace System
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separators"><see cref="ReadOnlySpan{T}"/> of separator chars</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
+        internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             // Special-case no separators to mean any whitespace is a separator.
             if (separators.Length == 0)
             {
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < source.Length; i++)
                 {
-                    if (char.IsWhiteSpace(this[i]))
+                    if (char.IsWhiteSpace(source[i]))
                     {
                         sepListBuilder.Append(i);
                     }
@@ -1601,15 +1602,15 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && Length >= Vector128<ushort>.Count * 2)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
                 {
-                    MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
                     return;
                 }
 
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < source.Length; i++)
                 {
-                    char c = this[i];
+                    char c = source[i];
                     if (c == sep0 || c == sep1 || c == sep2)
                     {
                         sepListBuilder.Append(i);
@@ -1626,10 +1627,9 @@ namespace System
                     var map = new ProbabilisticMap(separators);
                     ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-                    for (int i = 0; i < Length; i++)
+                    for (int i = 0; i < source.Length; i++)
                     {
-                        char c = this[i];
-                        if (ProbabilisticMap.Contains(ref charMap, separators, c))
+                        if (ProbabilisticMap.Contains(ref charMap, separators, source[i]))
                         {
                             sepListBuilder.Append(i);
                         }
@@ -1638,7 +1638,7 @@ namespace System
             }
         }
 
-        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
             // Redundant test so we won't prejit remainder of this method
             // on platforms where it is not supported
@@ -1647,12 +1647,12 @@ namespace System
                 throw new PlatformNotSupportedException();
             }
 
-            Debug.Assert(Length >= Vector128<ushort>.Count);
+            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count);
 
             nuint offset = 0;
-            nuint lengthToExamine = (nuint)(uint)Length;
+            nuint lengthToExamine = (uint)sourceSpan.Length;
 
-            ref ushort source = ref Unsafe.As<char, ushort>(ref _firstChar);
+            ref ushort source = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(sourceSpan));
 
             Vector128<ushort> v1 = Vector128.Create((ushort)c);
             Vector128<ushort> v2 = Vector128.Create((ushort)c2);
@@ -1695,39 +1695,42 @@ namespace System
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separator">separator string</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        private void MakeSeparatorList(string separator, ref ValueListBuilder<int> sepListBuilder)
+        internal static void MakeSeparatorList(ReadOnlySpan<char> source, ReadOnlySpan<char> separator, ref ValueListBuilder<int> sepListBuilder)
         {
-            Debug.Assert(!IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
+            Debug.Assert(!separator.IsEmpty, "Empty separator");
 
-            int currentSepLength = separator.Length;
-
-            for (int i = 0; i < Length; i++)
+            int i = 0;
+            while (!source.IsEmpty)
             {
-                if (this[i] == separator[0] && currentSepLength <= Length - i)
+                int index = source.IndexOf(separator);
+                if (index < 0)
                 {
-                    if (currentSepLength == 1
-                        || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
-                    {
-                        sepListBuilder.Append(i);
-                        i += currentSepLength - 1;
-                    }
+                    break;
                 }
+
+                i += index;
+                sepListBuilder.Append(i);
+
+                i += separator.Length;
+                source = source.Slice(index + separator.Length);
             }
         }
 
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string and list that holds length of separator strings.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separators">separator strngs</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> for separator indexes</param>
         /// <param name="lengthListBuilder"><see cref="ValueListBuilder{T}"/> for separator length values</param>
-        private void MakeSeparatorList(string?[] separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
+        internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<string?> separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
         {
-            Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
+            Debug.Assert(!separators.IsEmpty, "Zero separators");
 
-            for (int i = 0; i < Length; i++)
+            for (int i = 0; i < source.Length; i++)
             {
                 for (int j = 0; j < separators.Length; j++)
                 {
@@ -1737,10 +1740,9 @@ namespace System
                         continue;
                     }
                     int currentSepLength = separator.Length;
-                    if (this[i] == separator[0] && currentSepLength <= Length - i)
+                    if (source[i] == separator[0] && currentSepLength <= source.Length - i)
                     {
-                        if (currentSepLength == 1
-                            || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
+                        if (currentSepLength == 1 || source.Slice(i, currentSepLength).SequenceEqual(separator))
                         {
                             sepListBuilder.Append(i);
                             lengthListBuilder.Append(currentSepLength);
@@ -1752,7 +1754,7 @@ namespace System
             }
         }
 
-        private static void CheckStringSplitOptions(StringSplitOptions options)
+        internal static void CheckStringSplitOptions(StringSplitOptions options)
         {
             const StringSplitOptions AllValidFlags = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
 
