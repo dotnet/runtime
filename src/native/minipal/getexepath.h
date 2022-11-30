@@ -97,6 +97,8 @@ static inline char* minipal_getexepath(void)
         return realpath(exePath, NULL);
     }
 #endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
+
+    return NULL;
 #endif // defined(__APPLE__)
 }
 
