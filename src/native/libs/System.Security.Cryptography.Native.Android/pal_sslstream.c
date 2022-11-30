@@ -210,6 +210,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         PAL_SSLStreamStatus status = sslStream->streamReader(sslStream->managedContextHandle, tmpNative, &count);
         if (status != SSLStreamStatus_OK)
         {
+            free(tmpNative);
             (*env)->DeleteLocalRef(env, tmp);
             return status;
         }
@@ -217,6 +218,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         (*env)->SetByteArrayRegion(env, tmp, 0, count, (jbyte*)(tmpNative));
         IGNORE_RETURN(
             (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutByteArrayWithLength, tmp, 0, count));
+
         free(tmpNative);
         (*env)->DeleteLocalRef(env, tmp);
     }
