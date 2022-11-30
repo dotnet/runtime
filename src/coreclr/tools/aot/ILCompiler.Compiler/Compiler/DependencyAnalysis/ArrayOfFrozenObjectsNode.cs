@@ -40,8 +40,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 AlignNextObject(ref builder, factory);
 
-                if (!relocsOnly)
-                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
 
                 int initialOffset = builder.CountBytes;
                 node.EncodeData(ref builder, factory, relocsOnly);
