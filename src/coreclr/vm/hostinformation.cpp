@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "hostinformation.h"
-#include "pinvokeoverride.h"
 
 namespace
 {
@@ -14,9 +13,6 @@ void HostInformation::SetContract(_In_ host_runtime_contract* hostContract)
 {
     _ASSERTE(s_hostContract == nullptr);
     s_hostContract = hostContract;
-
-    if (s_hostContract->pinvoke_override != nullptr)
-        PInvokeOverride::SetPInvokeOverride(s_hostContract->pinvoke_override, PInvokeOverride::Source::RuntimeConfiguration);
 }
 
 bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)

@@ -138,20 +138,21 @@ static void ConvertConfigPropertiesToUnicode(
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
         propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
 
-        if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
+        if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_BUNDLE_PROBE) == 0)
         {
             // If this application is a single-file bundle, the bundle-probe callback
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             if (*bundleProbe == nullptr)
                 *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
-        else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_PINVOKE_OVERRIDE) == 0)
         {
             // If host provides a PInvoke override (typically in a single-file bundle),
             // the override callback is passed in as the value of "PINVOKE_OVERRIDE" property (encoded as a string).
-            *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            if (*pinvokeOverride == nullptr)
+                *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
-        else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_HOSTPOLICY_EMBEDDED) == 0)
         {
             // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
             *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
@@ -163,6 +164,9 @@ static void ConvertConfigPropertiesToUnicode(
             *hostContract = hostContractLocal;
             if (hostContractLocal->bundle_probe != nullptr)
                 *bundleProbe = hostContractLocal->bundle_probe;
+
+            if (hostContractLocal->pinvoke_override != nullptr)
+                *pinvokeOverride = hostContractLocal->pinvoke_override;
         }
     }
 
@@ -240,7 +244,7 @@ int coreclr_initialize(
         HostInformation::SetContract(hostContract);
     }
 
-    if (pinvokeOverride != nullptr && (hostContract == nullptr || hostContract->pinvoke_override == nullptr))
+    if (pinvokeOverride != nullptr)
     {
         PInvokeOverride::SetPInvokeOverride(pinvokeOverride, PInvokeOverride::Source::RuntimeConfiguration);
     }
