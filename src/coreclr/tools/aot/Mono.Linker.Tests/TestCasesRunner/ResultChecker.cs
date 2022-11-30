@@ -69,7 +69,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var original = ResolveOriginalsAssembly (testResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
 
 				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
-					// TODO Validate presense of the main assembly - if it makes sense (reflection only somehow)
+					// TODO Validate presence of the main assembly - if it makes sense (reflection only somehow)
 
 					// IL verification is impossible for NativeAOT since there's no IL output
 					// if (ShouldValidateIL (original))
