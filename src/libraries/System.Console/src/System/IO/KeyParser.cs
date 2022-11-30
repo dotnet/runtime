@@ -10,12 +10,12 @@ internal static class KeyParser
 {
     private const char Escape = '\u001B';
     private const char Delete = '\u007F';
+#if !TARGET_WASI
     private const char VtSequenceEndTag = '~';
     private const char ModifierSeparator = ';';
     private const int MinimalSequenceLength = 3;
     private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
-#if !TARGET_WASI
     internal static ConsoleKeyInfo Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;

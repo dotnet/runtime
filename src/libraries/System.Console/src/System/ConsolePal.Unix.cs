@@ -23,9 +23,9 @@ namespace System
         // StdInReader is only used when input isn't redirected and we're working
         // with an interactive terminal.  In that case, performance isn't critical
         // and we can use a smaller buffer to minimize working set.
+#if !TARGET_WASI
         private const int InteractiveBufferSize = 255;
 
-#if !TARGET_WASI
         // For performance we cache Cursor{Left,Top} and Window{Width,Height}.
         // These values must be read/written under lock (Console.Out).
         // We also need to invalidate these values when certain signals occur.
@@ -269,11 +269,13 @@ namespace System
 #endif
 
 #if TARGET_WASI
+#pragma warning disable IDE0060
         public static void Clear() => throw new PlatformNotSupportedException();
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
         public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
         public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
         public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
+#pragma warning restore IDE0060
 #else
         public static void Clear()
         {

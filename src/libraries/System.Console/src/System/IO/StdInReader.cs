@@ -299,10 +299,12 @@ namespace System.IO
         }
 
 #if TARGET_WASI
+#pragma warning disable IDE0060
         private static bool IsEol(char c)
         {
             return false; // TODOWASI
         }
+#pragma warning restore IDE0060
 #else
         private static bool IsEol(char c)
         {
@@ -357,7 +359,7 @@ namespace System.IO
                         // or just use 0 if none are available.
                         return new ConsoleKeyInfo((char)
 #if TARGET_WASI
-                            0,// TODOWASI
+                            0, // TODOWASI
 #else
                             (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
                              ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
