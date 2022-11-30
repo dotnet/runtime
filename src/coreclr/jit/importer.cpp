@@ -1362,6 +1362,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             FALLTHROUGH;
 
         case GT_IND:
+
         case GT_OBJ:
         case GT_BLK:
         case GT_FIELD:
@@ -10092,26 +10093,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
             }
             case CEE_REFANYTYPE:
-
+            {
                 op1 = impPopStack().val;
 
-                // make certain it is normalized;
-                op1 = impNormStructVal(op1, impGetRefAnyClass(), CHECK_SPILL_ALL);
-
-                if (op1->gtOper == GT_OBJ)
+                if (op1->OperIs(GT_MKREFANY))
                 {
-                    // Get the address of the refany
-                    op1 = op1->AsOp()->gtOp1;
-
-                    // Fetch the type from the correct slot
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
-                }
-                else
-                {
-                    assertImp(op1->gtOper == GT_MKREFANY);
-
                     // The pointer may have side-effects
                     if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
                     {
@@ -10124,25 +10110,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We already have the class handle
                     op1 = op1->AsOp()->gtOp2;
                 }
-
-                // convert native TypeHandle to RuntimeTypeHandle
+                else
                 {
-                    op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+                    // Get the address of the refany
+                    op1 = impGetStructAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
 
-                    CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
-
-                    // The handle struct is returned in register
-                    op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                    op1->AsCall()->gtRetClsHnd  = classHandle;
-#if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
-#endif
-
-                    tiRetVal = typeInfo(TI_STRUCT, classHandle);
+                    // Fetch the type from the correct slot
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
+                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
                 }
 
+                // Convert native TypeHandle to RuntimeTypeHandle.
+                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+
+                CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
+
+                // The handle struct is returned in register
+                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                op1->AsCall()->gtRetClsHnd  = classHandle;
+#if FEATURE_MULTIREG_RET
+                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+#endif
+
+                tiRetVal = typeInfo(TI_STRUCT, classHandle);
                 impPushOnStack(op1, tiRetVal);
-                break;
+            }
+            break;
 
             case CEE_LDTOKEN:
             {
