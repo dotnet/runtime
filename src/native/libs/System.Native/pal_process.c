@@ -625,7 +625,7 @@ typedef int priorityWhich;
 int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
     assert(limits != NULL);
-#if HAVE_SYS_RESOURCE_H
+#if HAVE_GETRLIMIT
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     int result = getrlimit((rlimitResource)platformLimit, &internalLimit);
@@ -649,12 +649,14 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 {
     assert(limits != NULL);
 
-#if HAVE_SYS_RESOURCE_H
+#if HAVE_SETRLIMIT
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
     struct rlimit internalLimit;
     ConvertFromRLimitManagedToPal(limits, &internalLimit);
     return setrlimit((rlimitResource)platformLimit, &internalLimit);
 #else /* HAVE_SYS_RESOURCE_H */
+    (void)resourceType; // unused
+    (void)limits; // unused
     return -1;
 #endif
 }

@@ -385,6 +385,21 @@ check_include_files(
      "sys/resource.h"
      HAVE_SYS_RESOURCE_H)
 
+check_symbol_exists(
+    "getrusage"
+    "sys/resource.h"
+    HAVE_GETRUSAGE)
+
+check_symbol_exists(
+    "getrlimit"
+    "sys/resource.h"
+    HAVE_GETRLIMIT)
+
+check_symbol_exists(
+    "setrlimit"
+    "sys/resource.h"
+    HAVE_SETRLIMIT)
+
 check_type_size(
     "struct statfs"
     STATFS_SIZE
