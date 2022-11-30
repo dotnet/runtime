@@ -678,7 +678,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.Read, true)]
         [InlineData(MemoryMappedFileAccess.ReadWrite, false)]
         [InlineData(MemoryMappedFileAccess.CopyOnWrite, false)]
-        public void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool shouldSucceed)
+        public void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool shouldSucceedWithoutPrivilege)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
@@ -687,7 +687,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 File.SetAttributes(file.Path, FileAttributes.ReadOnly);
                 try
                 {
-                    if (PlatformDetection.IsNotWindows && shouldSucceed)
+                    if (shouldSucceedWithoutPrivilege || (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess))
                     {
                         using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access))
                             ValidateMemoryMappedFile(mmf, Capacity, MemoryMappedFileAccess.Read);
