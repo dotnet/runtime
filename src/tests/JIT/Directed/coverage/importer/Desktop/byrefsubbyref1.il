@@ -25,10 +25,9 @@ ret
 .method public static native int byrefsubi4(class ctest& V_1, int32 V_2)
 {
 ldarg 0
-conv.u
 ldarg 1
-conv.u
 sub
+conv.u
 ret
 }
 .method public static native int i4subbyref(int32, class ctest& V_2)
