@@ -17,8 +17,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEd
 	/// <see cref="IBar"/>'s method as a base to <see cref="Base"/>'s method, which modifies the collection as it's being iterated, causing an exception.
 	/// </summary>
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/Base.cs" })] // Base Implements IFoo.Method (psuedo-reference to ifoo.dll)
-	[SetupCompileBefore ("ifoo.dll", new[] { "Dependencies/IFoo.cs" }, references: new[] { "base.dll" })] // Derived2 references base.dll (circular reference)
+	[SetupCompileBefore ("ifoo.dll", new[] { "Dependencies/IFoo.cs" }, references: new[] { "base.dll" })] // Derived2 references Base from base.dll (circular reference)
 	[SetupCompileBefore ("derived1.dll", new[] { "Dependencies/Derived1.cs" }, references: new[] { "ifoo.dll", "base.dll" })]
+	[KeptMemberInAssembly ("base.dll", typeof (Base), "Method()")]
+	[RemovedMemberInAssembly ("ifoo", "Derived2")]
 	public class BaseProvidesInterfaceMethodCircularReference
 	{
 		[Kept]
@@ -32,7 +34,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEd
 		public static void Foo ()
 		{
 			((IFoo) null).Method ();
-			object x = null;
 		}
 	}
 }
