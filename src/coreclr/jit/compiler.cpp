@@ -4755,7 +4755,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doCse                     = true;
         bool doAssertionProp           = true;
         bool doRangeAnalysis           = true;
-        bool doIfConversion            = true;
         bool doVNBasedDeadStoreRemoval = true;
         int  iterations                = 1;
 
@@ -4769,7 +4768,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
-        doIfConversion            = doIfConversion && (JitConfig.JitDoIfConversion() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
         if (opts.optRepeat)
@@ -4852,13 +4850,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
-            if (doIfConversion)
-            {
-                // If conversion
-                //
-                DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-            }
-
             if (doRangeAnalysis)
             {
                 // Bounds check elimination via range analysis
@@ -4909,6 +4900,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
+
+        // If conversion
+        //
+        DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
         // Optimize block order
         //
