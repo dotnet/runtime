@@ -1,3 +1,17 @@
+### Release version 0.0.13
+
+Changes:
+
+* add new wa-edit tool
+* allow replacing the Data section
+* added data segment auto-split feature
+
+wa-info and wa-diff
+ * parse Memory section
+
+wa-diff
+ * fix error in function comparison
+
 ### Release version 0.0.12
 
 Changes:
