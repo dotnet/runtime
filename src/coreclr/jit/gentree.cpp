@@ -5485,25 +5485,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 goto DONE;
 
-            case GT_COLON:
-
-                level = gtSetEvalOrder(op1);
-                lvl2  = gtSetEvalOrder(op2);
-
-                if (level < lvl2)
-                {
-                    level = lvl2;
-                }
-                else if (level == lvl2)
-                {
-                    level += 1;
-                }
-
-                costEx = op1->GetCostEx() + op2->GetCostEx();
-                costSz = op1->GetCostSz() + op2->GetCostSz();
-
-                goto DONE;
-
             case GT_INDEX_ADDR:
                 costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
                 costSz = 9; // jump to cold section
