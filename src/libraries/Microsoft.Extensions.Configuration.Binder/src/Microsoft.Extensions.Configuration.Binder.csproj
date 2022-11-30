@@ -5,7 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <ServicingVersion>1</ServicingVersion>
+    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageDescription>Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
 
