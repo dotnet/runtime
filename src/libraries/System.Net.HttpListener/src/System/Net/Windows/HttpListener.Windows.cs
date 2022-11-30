@@ -674,7 +674,7 @@ namespace System.Net
 
         internal HttpListenerContext? HandleAuthentication(HttpListenerSession session, RequestContextBase memoryBlob, out bool stoleBlob)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HandleAuthentication() memoryBlob:0x{(IntPtr)memoryBlob.RequestBlob:x}");
 
             string? challenge = null;
             stoleBlob = false;

@@ -5681,22 +5681,9 @@ private:
     // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
     // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
     // small; hence the other fields of MorphAddrContext.
-    enum MorphAddrContextKind
-    {
-        MACK_Ind,
-        MACK_Addr,
-    };
     struct MorphAddrContext
     {
-        MorphAddrContextKind m_kind;
-        bool                 m_allConstantOffsets; // Valid only for "m_kind == MACK_Ind".  True iff all offsets between
-                                                   // top-level indirection and here have been constants.
-        size_t m_totalOffset; // Valid only for "m_kind == MACK_Ind", and if "m_allConstantOffsets" is true.
-                              // In that case, is the sum of those constant offsets.
-
-        MorphAddrContext(MorphAddrContextKind kind) : m_kind(kind), m_allConstantOffsets(true), m_totalOffset(0)
-        {
-        }
+        size_t m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
