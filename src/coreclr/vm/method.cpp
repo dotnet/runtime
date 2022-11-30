@@ -2145,10 +2145,10 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     }
 
     MethodDesc* pMD;
-    if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+    if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
         return pMD;
 
-    if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
+    if (pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
         return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
 
     // We should never get here
