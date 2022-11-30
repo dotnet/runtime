@@ -899,11 +899,7 @@ private:
             {
                 ClassLayout* layout = node->GetLayout(m_compiler);
                 node->SetOper(GT_OBJ);
-                node->AsBlk()->SetLayout(layout);
-                node->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-                node->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
+                node->AsBlk()->Initialize(layout);
             }
             else
             {
@@ -1236,11 +1232,7 @@ private:
                     if (node->TypeIs(TYP_STRUCT))
                     {
                         node->SetOper(GT_OBJ);
-                        node->AsBlk()->SetLayout(layout);
-                        node->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-                        node->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
+                        node->AsBlk()->Initialize(layout);
                     }
                     else
                     {

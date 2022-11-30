@@ -3677,13 +3677,10 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-#ifndef JIT32_GCENCODER
-            objStore->gtBlkOpGcUnsafe = false;
-#endif
-            objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-            objStore->SetLayout(layout);
+            objStore->Initialize(layout);
             objStore->SetAddr(addr);
             objStore->SetData(src);
+
             BlockRange().InsertBefore(objStore, addr);
             LowerNode(objStore);
             return;

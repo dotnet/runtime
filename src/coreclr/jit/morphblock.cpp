@@ -1516,11 +1516,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
             {
                 assert(src->TypeIs(TYP_STRUCT));
                 src->SetOper(GT_BLK);
-                src->AsBlk()->SetLayout(layout);
-                src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-                src->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
+                src->AsBlk()->Initialize(layout);
             }
 
             GenTree* asg = gtNewAssignNode(dst, src);
