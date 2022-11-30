@@ -7,6 +7,10 @@ It can show sections overview in the summary output, disassemble function(s) cod
 
 `wa-diff` is a tool to compare WebAssembly binary files
 
+# wa-edit
+
+`wa-edit` is a tool to modify WebAssembly binary files
+
 ### Installation
 
 To install `wa-info` and `wa-diff` as dotnet tool run:
@@ -57,6 +61,28 @@ Options:
   -d, --disassemble          Show functions(s) disassembled code
   -f, --function-filter=REGEX
                              Filter wasm functions REGEX
+  -v, --verbose              Output information about progress during the run
+                               of the tool
+```
+
+wa-edit:
+```
+Usage: wa-edit OPTIONS* source.wasm destination.wasm
+
+Modifies WebAssembly file (source.wasm) and writes updated file (destination.
+wasm)
+
+Copyright 2022 Microsoft Corporation
+
+Options:
+  -a, --data-auto-split      Split the data segment to avoid long empty chunks
+                               with zeroes
+  -d, --data-section=FILE    Replace the data section with content of the FILE
+  -m, --data-section-mode=MODE
+                             Set the data section replacement MODE. Possible
+                               values: Active, Passive
+  -o, --data-offset=VALUE    Data section offset
+  -h, --help, -?             Show this message and exit
   -v, --verbose              Output information about progress during the run
                                of the tool
 ```
@@ -157,4 +183,29 @@ Compare functions
 +  i32.const 1516952
    i32.load align:2
    local.tee $3
+```
+
+Replace Data section
+```
+wa-edit -v dotnet.wasm d4.wasm -a -o 0 -d memory.dat
+Reading wasm file: dotnet.wasm
+Writing wasm file: d4.wasm
+WebAssembly binary format version: 1
+Reading section:      Type size:         1632
+Reading section:    Import size:         3104
+Reading section:  Function size:        17745
+Reading section:     Table size:            5
+Reading section:    Memory size:            7
+Reading section:    Global size:         2394
+Reading section:    Export size:         4227
+Reading section:   Element size:         8702
+Reading section:      Code size:      6282132
+Reading section:      Data size:       649676    segments detected: 29,539 zero bytes stripped: 48,137,494
+Reading section:    Custom size:       880619
+Reading section:    Custom size:      3388054
+Reading section:    Custom size:       360611
+Reading section:    Custom size:       134358
+Reading section:    Custom size:       211464
+Reading section:    Custom size:      3645378
+Reading section:    Custom size:       706701
 ```
