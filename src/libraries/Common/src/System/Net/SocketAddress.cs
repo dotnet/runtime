@@ -94,8 +94,11 @@ namespace System.Net.Internals
             InternalSize = size;
 #if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
             // WSARecvFrom needs a pinned pointer to the 32bit socket address size.
-            // Allocate extra bytes at the end of Buffer, so we don't need to pin anything else.
-            size += sizeof(int);
+            // Allocate extra bytes at the end of Buffer with a 4-byte alignment, so we don't need to pin anything else.
+            // The following forumla ensures addition of the minimum necessary extra padding,
+            // eg. size=16 will be extended to 20, while size=17 will be extended to 24
+            const int PtrSize = sizeof(int);
+            size = (size + PtrSize -  1) / PtrSize * PtrSize + PtrSize;
 #endif
             Buffer = new byte[size];
 
