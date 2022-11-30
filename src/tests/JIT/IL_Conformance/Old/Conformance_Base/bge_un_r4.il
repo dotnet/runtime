@@ -14,7 +14,7 @@
 #define POS_INF    "float32(0x7F800000)"
 #define NAN        "float32(0x7FC00000)"
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack 2
 .locals	(class [ConvDLL]ConvDLL)

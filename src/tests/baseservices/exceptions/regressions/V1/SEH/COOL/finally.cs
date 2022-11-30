@@ -19,7 +19,7 @@ public class Foo
 		     }
 	  }
 	
-        public static int Main(String[] args) 
+        public static int Main() 
         {
 	  String s = "Done";
 	  Thread t = new Thread(new ThreadStart(Foo.Bar));

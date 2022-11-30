@@ -3,6 +3,7 @@
 
 using System;
 using Debug = System.Diagnostics.Debug;
+using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
@@ -920,12 +921,13 @@ namespace Internal.TypeSystem.Interop
             return MarshallerKind.Invalid;
         }
 
+        private const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
+
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
             if (!target.IsOSX)
                 return false;
 
-            const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
             const string ObjectiveCMsgSend = "objc_msgSend";
 
             // This is for the objc_msgSend suite of functions.
@@ -936,6 +938,24 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
+        {
+            if (!target.IsOSX || pinvokeModule != ObjectiveCLibrary)
+                return null;
+
+#pragma warning disable CA1416
+            return pinvokeFunction switch
+            {
+                "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
+                "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
+                "objc_msgSend_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
+                "objc_msgSendSuper" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
+                "objc_msgSendSuper_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
+                _ => null,
+            };
+#pragma warning restore CA1416
         }
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)

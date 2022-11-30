@@ -508,7 +508,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         return E_FAIL;
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString modName = mod->GetPEAssembly()->GetPath();
     if (modName.IsEmpty())
         return E_FAIL;
 
@@ -2533,7 +2533,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     /* Get module name */
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString modName = mod->GetPEAssembly()->GetPath();
     const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 

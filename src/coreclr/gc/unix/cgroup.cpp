@@ -54,6 +54,8 @@ Abstract:
 
 extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
+namespace 
+{
 class CGroup
 {
     // the cgroup version number or 0 to indicate cgroups are not found or not enabled
@@ -453,6 +455,7 @@ private:
         return foundInactiveFileValue;
     }
 };
+}
 
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;

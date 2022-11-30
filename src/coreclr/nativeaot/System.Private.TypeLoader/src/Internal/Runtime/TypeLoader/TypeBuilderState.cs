@@ -39,47 +39,6 @@ namespace Internal.Runtime.TypeLoader
             public bool IsSealedVTableSlot;
         }
 
-        internal class VTableSlotMapper
-        {
-            private int[] _slotMap;
-            private IntPtr[] _dictionarySlots;
-            private int _numMappingsAssigned;
-
-            public VTableSlotMapper(int numVtableSlotsInTemplateType)
-            {
-                _slotMap = new int[numVtableSlotsInTemplateType];
-                _dictionarySlots = new IntPtr[numVtableSlotsInTemplateType];
-                _numMappingsAssigned = 0;
-                for (int i = 0; i < numVtableSlotsInTemplateType; i++)
-                {
-                    _slotMap[i] = -1;
-                    _dictionarySlots[i] = IntPtr.Zero;
-                }
-            }
-            public void AddMapping(int vtableSlotInTemplateType, int vtableSlotInTargetType, IntPtr dictionaryValueInSlot)
-            {
-                Debug.Assert(_numMappingsAssigned < _slotMap.Length);
-                _slotMap[vtableSlotInTemplateType] = vtableSlotInTargetType;
-                _dictionarySlots[vtableSlotInTemplateType] = dictionaryValueInSlot;
-                _numMappingsAssigned++;
-            }
-            public int GetVTableSlotInTargetType(int vtableSlotInTemplateType)
-            {
-                Debug.Assert((uint)vtableSlotInTemplateType < (uint)_slotMap.Length);
-                return _slotMap[vtableSlotInTemplateType];
-            }
-            public bool IsDictionarySlot(int vtableSlotInTemplateType, out IntPtr dictionaryPtrValue)
-            {
-                Debug.Assert((uint)vtableSlotInTemplateType < (uint)_dictionarySlots.Length);
-                dictionaryPtrValue = _dictionarySlots[vtableSlotInTemplateType];
-                return _dictionarySlots[vtableSlotInTemplateType] != IntPtr.Zero;
-            }
-            public int NumSlotMappings
-            {
-                get { return _numMappingsAssigned; }
-            }
-        }
-
         public TypeBuilderState(TypeDesc typeBeingBuilt)
         {
             TypeBeingBuilt = typeBeingBuilt;
@@ -372,28 +331,21 @@ namespace Internal.Runtime.TypeLoader
                 if (templateType != null)
                 {
                     // Template type loader case
-                    if (VTableSlotsMapping != null)
+                    unsafe
                     {
-                        return checked((ushort)VTableSlotsMapping.NumSlotMappings);
-                    }
-                    else
-                    {
-                        unsafe
+                        if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
                         {
-                            if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
-                            {
-                                // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
-                                // They do not implement the generic interfaces that make this interesting for normal arrays.
-                                return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
-                            }
-                            else
-                            {
-                                // This should only happen for non-universal templates
-                                Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
+                            // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
+                            // They do not implement the generic interfaces that make this interesting for normal arrays.
+                            return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                        }
+                        else
+                        {
+                            // This should only happen for non-universal templates
+                            Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
 
-                                // Canonical template type loader case
-                                return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
-                            }
+                            // Canonical template type loader case
+                            return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
                         }
                     }
                 }
@@ -1073,8 +1025,6 @@ namespace Internal.Runtime.TypeLoader
 
         public VTableLayoutInfo[] VTableMethodSignatures;
         public int NumSealedVTableMethodSignatures;
-
-        public VTableSlotMapper VTableSlotsMapping;
 
 #if GENERICS_FORCE_USG
         public TypeDesc NonUniversalTemplateType;

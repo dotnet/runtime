@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1035,12 +1036,7 @@ namespace System
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
                 Span<char> slashSpan = result.AsSpan(0, count);
-                int slashPos;
-                while ((slashPos = slashSpan.IndexOf('/')) >= 0)
-                {
-                    slashSpan[slashPos] = '\\';
-                    slashSpan = slashSpan.Slice(slashPos + 1);
-                }
+                slashSpan.Replace('/', '\\');
 
                 return new string(result, 0, count);
             }
@@ -1280,25 +1276,22 @@ namespace System
                             return UriHostNameType.IPv6;
                         }
                     }
+
                     end = name.Length;
                     if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
                     {
                         return UriHostNameType.IPv4;
                     }
-                    end = name.Length;
-                    bool dummyBool = false;
-                    if (DomainNameHelper.IsValid(fixedName, 0, ref end, ref dummyBool, false) && end == name.Length)
-                    {
-                        return UriHostNameType.Dns;
-                    }
+                }
 
-                    end = name.Length;
-                    dummyBool = false;
-                    if (DomainNameHelper.IsValidByIri(fixedName, 0, ref end, ref dummyBool, false)
-                        && end == name.Length)
-                    {
-                        return UriHostNameType.Dns;
-                    }
+                if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
+                {
+                    return UriHostNameType.Dns;
+                }
+
+                if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out length) && length == name.Length)
+                {
+                    return UriHostNameType.Dns;
                 }
 
                 //This checks the form without []
@@ -1469,33 +1462,18 @@ namespace System
                 char.IsAsciiHexDigit(pattern[index + 2]);
         }
 
-        //
+        private static readonly IndexOfAnyValues<char> s_schemeChars =
+            IndexOfAnyValues.Create("+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
         // CheckSchemeName
         //
         //  Determines whether a string is a valid scheme name according to RFC 2396.
         //  Syntax is:
         //      scheme = alpha *(alpha | digit | '+' | '-' | '.')
-        //
-        public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName)
-        {
-            if (string.IsNullOrEmpty(schemeName) || !char.IsAsciiLetter(schemeName[0]))
-            {
-                return false;
-            }
-
-            for (int i = schemeName.Length - 1; i > 0; --i)
-            {
-                if (!(char.IsAsciiLetterOrDigit(schemeName[i])
-                    || (schemeName[i] == '+')
-                    || (schemeName[i] == '-')
-                    || (schemeName[i] == '.')))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName) =>
+            !string.IsNullOrEmpty(schemeName) &&
+            char.IsAsciiLetter(schemeName[0]) &&
+            schemeName.AsSpan().IndexOfAnyExcept(s_schemeChars) < 0;
 
         //
         // IsHexDigit
@@ -1806,11 +1784,14 @@ namespace System
         //
         // Returns true if a colon is found in the first path segment, false otherwise
         //
+        private static readonly IndexOfAnyValues<char> s_segmentSeparatorChars =
+            IndexOfAnyValues.Create(@":\/?#");
+
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {
             // Check for anything that may terminate the first regular path segment
             // or an illegal colon
-            int index = uriString.AsSpan().IndexOfAny(@":\/?#");
+            int index = uriString.AsSpan().IndexOfAny(s_segmentSeparatorChars);
             return (uint)index < (uint)uriString.Length && uriString[index] == ':';
         }
 
@@ -3969,12 +3950,8 @@ namespace System
                 }
             }
 
-            // DNS name only optimization
-            // Fo an overridden parsing the optimization is suppressed since hostname can be changed to anything
-            bool dnsNotCanonical = ((syntaxFlags & UriSyntaxFlags.SimpleUserSyntax) == 0);
-
-            if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host)
-                && IPv6AddressHelper.IsValid(pString, start + 1, ref end))
+            if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
+                IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
                 flags |= Flags.IPv6HostType;
 
@@ -3998,21 +3975,25 @@ namespace System
                 }
             }
             else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0) && !iriParsing &&
-           DomainNameHelper.IsValid(pString, start, ref end, ref dnsNotCanonical, StaticNotAny(flags, Flags.ImplicitFile)))
+                DomainNameHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), iri: false, StaticNotAny(flags, Flags.ImplicitFile), out int domainNameLength))
             {
-                // comes here if there are only ascii chars in host with original parsing and no Iri
+                end = start + domainNameLength;
 
+                // comes here if there are only ascii chars in host with original parsing and no Iri
                 flags |= Flags.DnsHostType;
-                if (!dnsNotCanonical)
+
+                // Canonical DNS hostnames don't contain uppercase letters
+                if (new ReadOnlySpan<char>(pString + start, domainNameLength).IndexOfAnyInRange('A', 'Z') < 0)
                 {
                     flags |= Flags.CanonicalDnsHost;
                 }
             }
-            else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0)
-                    && (hostNotUnicodeNormalized || syntax.InFact(UriSyntaxFlags.AllowIdn))
-                    && DomainNameHelper.IsValidByIri(pString, start, ref end, ref dnsNotCanonical,
-                                            StaticNotAny(flags, Flags.ImplicitFile)))
+            else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0) &&
+                (hostNotUnicodeNormalized || syntax.InFact(UriSyntaxFlags.AllowIdn)) &&
+                DomainNameHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), iri: true, StaticNotAny(flags, Flags.ImplicitFile), out domainNameLength))
             {
+                end = start + domainNameLength;
+
                 CheckAuthorityHelperHandleDnsIri(pString, start, end, hasUnicode,
                     ref flags, ref justNormalized, ref newHost, ref err);
             }

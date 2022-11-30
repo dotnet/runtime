@@ -29,7 +29,7 @@ namespace TestApp
     class Program
     {
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        static int Main(string[] args)
+        static int Main()
         {
             var comparer = EqualityComparer<StructWithValue>.Default;
 

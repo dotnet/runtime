@@ -467,13 +467,8 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             }
             else
             {
-                // Fetch the localized Fatal Execution Engine Error text or fall back on a hardcoded variant if things get dire.
-                InlineSString<80> ssMessage;
-                InlineSString<80> ssErrorFormat;
-                if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP 0x%1 (0x%2) with exit code 0x%3."));
-                SmallStackSString addressString;
-                addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
+                WCHAR addressString[MaxIntegerDecHexString + 1];
+                FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", pExceptionInfo ? (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress : (SIZE_T)address);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);
@@ -481,14 +476,15 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
-                SmallStackSString runtimeBaseAddressString;
-                runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
+                WCHAR runtimeBaseAddressString[MaxIntegerDecHexString + 1];
+                FormatInteger(runtimeBaseAddressString, ARRAY_SIZE(runtimeBaseAddressString), "%p", (SIZE_T)GetClrModuleBase());
 
-                SmallStackSString exitCodeString;
-                exitCodeString.Printf(W("%x"), exitCode);
+                WCHAR exitCodeString[MaxIntegerDecHexString + 1];
+                FormatInteger(exitCodeString, ARRAY_SIZE(exitCodeString), "%x", exitCode);
 
                 // Format the string
-                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, addressString, runtimeBaseAddressString,
+                InlineSString<80> ssMessage;
+                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("at IP 0x%1 (0x%2) with exit code 0x%3."), 0, 0, addressString, runtimeBaseAddressString,
                     exitCodeString);
                 reporter.AddDescription(ssMessage);
             }

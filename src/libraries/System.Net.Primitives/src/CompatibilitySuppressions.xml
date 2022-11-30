@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- Public in the implementation to maintain binary serialization compatibility as the System shim needs to have access to type-forward to these. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.CookieVariant</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/browser/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.PathList</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/browser/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.CookieVariant</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/unix/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.PathList</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/unix/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.CookieVariant</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Net.PathList</Target>
+    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
+    <Right>runtimes/win/lib/net7.0/System.Net.Primitives.dll</Right>
+  </Suppression>
+</Suppressions>

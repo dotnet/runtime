@@ -3011,6 +3011,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	/* metadata-update: there are no updates during AOT */
 	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -8416,6 +8417,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "dotprod"))
 		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
+	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
 #else
@@ -9089,6 +9091,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				case WRAPPER_SUBTYPE_PTR_TO_STRUCTURE:
 				case WRAPPER_SUBTYPE_STRUCTURE_TO_PTR:
 					break;
+				case WRAPPER_SUBTYPE_ICALL_WRAPPER: {
+					MonoJumpInfo *tmp_ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+					tmp_ji->type = MONO_PATCH_INFO_METHOD;
+					tmp_ji->data.method = method;
+					get_got_offset (acfg, TRUE, tmp_ji);
+					keep = TRUE;
+					break;
+				}
 				default:
 					keep = TRUE;
 					break;

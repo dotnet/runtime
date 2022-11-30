@@ -1136,8 +1136,8 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %S)",
-                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+    result.Printf("%s (message resource %s)",
+                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUTF8());
 }
 
 BOOL EEResourceException::GetThrowableMessage(SString &result)
@@ -1954,7 +1954,12 @@ OBJECTREF EECOMException::CreateThrowable()
         {
             // We have a non 0 help context so use it to form the help link.
             SString strMessage;
-            strMessage.Printf(W("%s#%d"), m_ED.bstrHelpFile, m_ED.dwHelpContext);
+            strMessage.Append(m_ED.bstrHelpFile);
+
+            // Add the help context
+            WCHAR cxt[ARRAY_SIZE("#") + MaxSigned32BitDecString] = W("#");
+            FormatInteger(cxt + 1, ARRAY_SIZE(cxt) - 1, "%d", m_ED.dwHelpContext);
+            strMessage.Append(cxt);
             helpStr = StringObject::NewString(strMessage);
         }
         else

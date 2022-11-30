@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
+#pragma warning disable IDE0060
+
 namespace Internal.Runtime.InteropServices
 {
     /// <summary>

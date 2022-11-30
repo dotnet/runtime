@@ -105,7 +105,7 @@ class GitHub_18408
         return (method.Flags != (MethodAttributes)0) ? new object() : null;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         MetadataReader r = new MetadataReader();
 

@@ -1022,6 +1022,16 @@
         "browser"
       ]
     },
+    "wasi": {
+      "#import": [
+        "any"
+      ]
+    },
+    "wasi-wasm": {
+      "#import": [
+        "wasi"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"
@@ -3238,6 +3248,29 @@
       "#import": [
         "tizen.6.5.0",
         "tizen.6.0.0-x86"
+      ]
+    },
+    "tizen.7.0.0": {
+      "#import": [
+        "tizen.6.5.0"
+      ]
+    },
+    "tizen.7.0.0-arm64": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-arm64"
+      ]
+    },
+    "tizen.7.0.0-armel": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-armel"
+      ]
+    },
+    "tizen.7.0.0-x86": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-x86"
       ]
     },
     "tvos": {

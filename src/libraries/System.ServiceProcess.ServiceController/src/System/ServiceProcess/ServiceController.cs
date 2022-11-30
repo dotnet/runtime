@@ -174,7 +174,7 @@ namespace System.ServiceProcess
         /// <summary>
         /// The set of services that depend on this service. These are the services that will be stopped if this service is stopped.
         /// </summary>
-        public ServiceController[] DependentServices
+        public unsafe ServiceController[] DependentServices
         {
             get
             {
@@ -207,12 +207,13 @@ namespace System.ServiceProcess
                         if (!result)
                             throw new Win32Exception();
 
+                        byte* pEnumBuffer = (byte*)enumBuffer;
                         // for each of the entries in the buffer, create a new ServiceController object.
                         _dependentServices = new ServiceController[numEnumerated];
                         for (int i = 0; i < numEnumerated; i++)
                         {
                             Interop.Advapi32.ENUM_SERVICE_STATUS status = new Interop.Advapi32.ENUM_SERVICE_STATUS();
-                            IntPtr structPtr = (IntPtr)((long)enumBuffer + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
+                            IntPtr structPtr = (IntPtr)(pEnumBuffer + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
                             Marshal.PtrToStructure(structPtr, status);
                             _dependentServices[i] = new ServiceController(_machineName, status);
                         }
@@ -736,7 +737,7 @@ namespace System.ServiceProcess
         }
 
         /// Helper for GetDevices, GetServices, and ServicesDependedOn
-        private static T[] GetServices<T>(string machineName, int serviceType, string? group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
+        private static unsafe T[] GetServices<T>(string machineName, int serviceType, string? group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
         {
             int resumeHandle = 0;
 
@@ -777,9 +778,10 @@ namespace System.ServiceProcess
                 // Go through the block of memory it returned to us and select the results
                 //
                 services = new T[servicesReturned];
+                byte* pMemory = (byte*)memory;
                 for (int i = 0; i < servicesReturned; i++)
                 {
-                    IntPtr structPtr = (IntPtr)((long)memory + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
+                    IntPtr structPtr = (IntPtr)(pMemory + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
                     Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS status = new Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS();
                     Marshal.PtrToStructure(structPtr, status);
                     services[i] = selector(status);

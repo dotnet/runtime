@@ -178,25 +178,25 @@ namespace R2RTest
         // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
         // https://github.com/dotnet/command-line-api/issues/297
         public Option<DirectoryInfo> InputDirectory { get; } =
-            new Option<DirectoryInfo>(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize").ExistingOnly();
+            new Option<DirectoryInfo>(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize").AcceptExistingOnly();
 
         public Option<DirectoryInfo> OutputDirectory { get; } =
-            new Option<DirectoryInfo>(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies").LegalFilePathsOnly();
+            new Option<DirectoryInfo>(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies").AcceptLegalFilePathsOnly();
 
         public Option<DirectoryInfo> CoreRootDirectory { get; } =
             new Option<DirectoryInfo>(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder")
-            { Arity = ArgumentArity.ExactlyOne }.ExistingOnly();
+            { Arity = ArgumentArity.ExactlyOne }.AcceptExistingOnly();
 
         public Option<DirectoryInfo[]> ReferencePath { get; } =
             new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
-            { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly();
+            { Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
 
         public Option<FileInfo[]> MibcPath { get; } =
             new Option<FileInfo[]>(new[] { "--mibc-path", "-m" }, "Mibc files to use in compilation")
-            { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly();
+            { Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
 
         public Option<FileInfo> Crossgen2Path { get; } =
-            new Option<FileInfo>(new[] { "--crossgen2-path", "-c2p" }, "Explicit Crossgen2 path (useful for cross-targeting)").ExistingOnly();
+            new Option<FileInfo>(new[] { "--crossgen2-path", "-c2p" }, "Explicit Crossgen2 path (useful for cross-targeting)").AcceptExistingOnly();
 
         public Option<bool> VerifyTypeAndFieldLayout { get; } =
             new(new[] { "--verify-type-and-field-layout" }, "Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.");
@@ -272,7 +272,7 @@ namespace R2RTest
             new(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
         public Option<FileInfo> R2RDumpPath { get; } =
-            new Option<FileInfo>(new[] { "--r2r-dump-path" }, "Path to R2RDump.exe/dll").ExistingOnly();
+            new Option<FileInfo>(new[] { "--r2r-dump-path" }, "Path to R2RDump.exe/dll").AcceptExistingOnly();
 
         public Option<bool> MeasurePerf { get; } =
             new(new[] { "--measure-perf" }, "Print out compilation time");
@@ -293,66 +293,65 @@ namespace R2RTest
         // compile-nuget specific options
         //
         public Option<FileInfo> PackageList { get; } =
-            new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();
+            new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").AcceptExistingOnly();
 
         //
         // compile-serp specific options
         //
         public Option<DirectoryInfo> AspNetPath { get; } =
-            new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
+            new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").AcceptExistingOnly();
 
-        static int Main(string[] args)
-        {
-            return new CommandLineBuilder(new R2RTestRootCommand())
+        private static int Main(string[] args) =>
+            new CommandLineBuilder(new R2RTestRootCommand())
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()
                 .Invoke(args);
-        }
     }
 
     public partial class BuildOptions
     {
         public BuildOptions(R2RTestRootCommand cmd, ParseResult res)
         {
-            InputDirectory = res.GetValueForOption(cmd.InputDirectory);
-            OutputDirectory = res.GetValueForOption(cmd.OutputDirectory);
-            CoreRootDirectory = res.GetValueForOption(cmd.CoreRootDirectory);
-            Crossgen2Path = res.GetValueForOption(cmd.Crossgen2Path);
-            VerifyTypeAndFieldLayout = res.GetValueForOption(cmd.VerifyTypeAndFieldLayout);
-            TargetArch = res.GetValueForOption(cmd.TargetArch);
-            Exe = res.GetValueForOption(cmd.Exe);
-            NoJit = res.GetValueForOption(cmd.NoJit);
-            NoCrossgen2 = res.GetValueForOption(cmd.NoCrossgen2);
-            NoExe = res.GetValueForOption(cmd.NoExe);
-            NoEtw = res.GetValueForOption(cmd.NoEtw);
-            NoCleanup = res.GetValueForOption(cmd.NoCleanup);
-            Map = res.GetValueForOption(cmd.Map);
-            Pdb = res.GetValueForOption(cmd.Pdb);
+            InputDirectory = res.GetValue(cmd.InputDirectory);
+            OutputDirectory = res.GetValue(cmd.OutputDirectory);
+            CoreRootDirectory = res.GetValue(cmd.CoreRootDirectory);
+            Crossgen2Path = res.GetValue(cmd.Crossgen2Path);
+            VerifyTypeAndFieldLayout = res.GetValue(cmd.VerifyTypeAndFieldLayout);
+            TargetArch = res.GetValue(cmd.TargetArch);
+            Exe = res.GetValue(cmd.Exe);
+            NoJit = res.GetValue(cmd.NoJit);
+            NoCrossgen2 = res.GetValue(cmd.NoCrossgen2);
+            NoExe = res.GetValue(cmd.NoExe);
+            NoEtw = res.GetValue(cmd.NoEtw);
+            NoCleanup = res.GetValue(cmd.NoCleanup);
+            Map = res.GetValue(cmd.Map);
+            Pdb = res.GetValue(cmd.Pdb);
 
-            Perfmap = res.GetValueForOption(cmd.Perfmap);
-            PerfmapFormatVersion = res.GetValueForOption(cmd.PerfmapFormatVersion);
-            PackageList = res.GetValueForOption(cmd.PackageList);
-            DegreeOfParallelism = res.GetValueForOption(cmd.DegreeOfParallelism);
-            Sequential = res.GetValueForOption(cmd.Sequential);
-            Iterations = res.GetValueForOption(cmd.Iterations);
-            Framework = res.GetValueForOption(cmd.Framework);
-            UseFramework = res.GetValueForOption(cmd.UseFramework);
-            Release = res.GetValueForOption(cmd.Release);
-            LargeBubble = res.GetValueForOption(cmd.LargeBubble);
-            Composite = res.GetValueForOption(cmd.Composite);
-            Crossgen2Parallelism = res.GetValueForOption(cmd.Crossgen2Parallelism);
-            Crossgen2JitPath = res.GetValueForOption(cmd.Crossgen2JitPath);
-            CompilationTimeoutMinutes = res.GetValueForOption(cmd.CompilationTimeoutMinutes);
-            ExecutionTimeoutMinutes = res.GetValueForOption(cmd.ExecutionTimeoutMinutes);
-            ReferencePath = res.GetValueForOption(cmd.ReferencePath);
-            IssuesPath = res.GetValueForOption(cmd.IssuesPath);
-            R2RDumpPath = res.GetValueForOption(cmd.R2RDumpPath);
-            AspNetPath = res.GetValueForOption(cmd.AspNetPath);
-            MeasurePerf = res.GetValueForOption(cmd.MeasurePerf);
-            InputFileSearchString = res.GetValueForOption(cmd.InputFileSearchString);
-            GCStress = res.GetValueForOption(cmd.GCStress);
-            MibcPath = res.GetValueForOption(cmd.MibcPath);
+            Perfmap = res.GetValue(cmd.Perfmap);
+            PerfmapFormatVersion = res.GetValue(cmd.PerfmapFormatVersion);
+            PackageList = res.GetValue(cmd.PackageList);
+            DegreeOfParallelism = res.GetValue(cmd.DegreeOfParallelism);
+            Sequential = res.GetValue(cmd.Sequential);
+            Iterations = res.GetValue(cmd.Iterations);
+            Framework = res.GetValue(cmd.Framework);
+            UseFramework = res.GetValue(cmd.UseFramework);
+            Release = res.GetValue(cmd.Release);
+            LargeBubble = res.GetValue(cmd.LargeBubble);
+            Composite = res.GetValue(cmd.Composite);
+            Crossgen2Parallelism = res.GetValue(cmd.Crossgen2Parallelism);
+            Crossgen2JitPath = res.GetValue(cmd.Crossgen2JitPath);
+            CompilationTimeoutMinutes = res.GetValue(cmd.CompilationTimeoutMinutes);
+            ExecutionTimeoutMinutes = res.GetValue(cmd.ExecutionTimeoutMinutes);
+            ReferencePath = res.GetValue(cmd.ReferencePath);
+            IssuesPath = res.GetValue(cmd.IssuesPath);
+            R2RDumpPath = res.GetValue(cmd.R2RDumpPath);
+            AspNetPath = res.GetValue(cmd.AspNetPath);
+            MeasurePerf = res.GetValue(cmd.MeasurePerf);
+            InputFileSearchString = res.GetValue(cmd.InputFileSearchString);
+            GCStress = res.GetValue(cmd.GCStress);
+            MibcPath = res.GetValue(cmd.MibcPath);
         }
 
         public DirectoryInfo InputDirectory { get; set; }

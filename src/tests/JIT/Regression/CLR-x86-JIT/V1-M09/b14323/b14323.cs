@@ -9,7 +9,7 @@ namespace DefaultNamespace
 {
     internal class AppStarter
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             int[] foo = new int[1];
             long j = 0;

@@ -127,9 +127,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <MonoAotOption Condition="'$(MonoForceInterpreter)' == 'true'" Include="interp" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=20000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=4400" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
@@ -185,7 +186,7 @@
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
-      <RuntimeComponents>diagnostics_tracing</RuntimeComponents>
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -272,7 +273,7 @@
       <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
-      <RuntimeComponents>diagnostics_tracing</RuntimeComponents>
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <PropertyGroup>

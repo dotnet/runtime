@@ -17,33 +17,13 @@ namespace Microsoft.Interop.JavaScript
     public sealed class JSExportGenerator : IIncrementalGenerator
     {
         internal sealed record IncrementalStubGenerationContext(
-            StubEnvironment Environment,
             JSSignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData,
-            MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> GeneratorFactoryKey,
-            ImmutableArray<Diagnostic> Diagnostics)
-        {
-            public bool Equals(IncrementalStubGenerationContext? other)
-            {
-                return other is not null
-                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
-                    && SignatureContext.Equals(other.SignatureContext)
-                    && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
-                    && StubMethodSyntaxTemplate.Equals(other.StubMethodSyntaxTemplate)
-                    && JSExportData.Equals(other.JSExportData)
-                    && DiagnosticLocation.Equals(DiagnosticLocation)
-                    && GeneratorFactoryKey.Equals(other.GeneratorFactoryKey)
-                    && Diagnostics.SequenceEqual(other.Diagnostics);
-            }
-
-            public override int GetHashCode()
-            {
-                throw new UnreachableException();
-            }
-        }
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
+            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
 
         public static class StepNames
         {
@@ -55,21 +35,9 @@ namespace Microsoft.Interop.JavaScript
         {
             // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == Constants.JSExportAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
-                .Where(
-                    static modelData => modelData is not null);
+                .ForAttributeWithMetadataName(Constants.JSExportAttribute,
+                   static (node, ct) => node is MethodDeclarationSyntax,
+                   static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol });
 
             // Validate if attributed methods can have source generated
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
@@ -119,9 +87,8 @@ namespace Microsoft.Interop.JavaScript
                     static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation)
-                .Combine(stubOptions)
                 .Select(
-                    static (data, ct) => GenerateSource(data.Left, data.Right)
+                    static (data, ct) => GenerateSource(data)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
@@ -215,14 +182,13 @@ namespace Microsoft.Interop.JavaScript
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
             return new IncrementalStubGenerationContext(
-                environment,
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(originalSyntax),
                 jsExportData,
                 CreateGeneratorFactory(environment, options),
-                generatorDiagnostics.Diagnostics.ToImmutableArray());
+                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
@@ -232,14 +198,14 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
-            IncrementalStubGenerationContext incrementalContext,
-            JSGeneratorOptions options)
+            IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnostics();
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
-            incrementalContext.Environment,
+            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
             incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSExportData,
             incrementalContext.SignatureContext,
@@ -252,20 +218,7 @@ namespace Microsoft.Interop.JavaScript
             BlockSyntax wrapper = stubGenerator.GenerateJSExportBody();
             BlockSyntax registration = stubGenerator.GenerateJSExportRegistration();
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, wrapper, registration), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-        }
-
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, wrapper, registration), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

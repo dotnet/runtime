@@ -30,7 +30,7 @@
 #endif
 
 int
-mono_process_current_pid ()
+mono_process_current_pid (void)
 {
 #ifdef HOST_WIN32
 	return (int) GetCurrentProcessId ();

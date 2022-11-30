@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -650,10 +651,10 @@ namespace System.Globalization
         /// Returns and assigns the maximum value to represent a two digit year.
         /// This value is the upper boundary of a 100 year range that allows a
         /// two digit year to be properly translated to a four digit year.
-        /// For example, if 2029 is the upper boundary, then a two digit value of
-        /// 30 should be interpreted as 1930 while a two digit value of 29 should
-        /// be interpreted as 2029.  In this example, the 100 year range would be
-        /// from 1930-2029.  See ToFourDigitYear().
+        /// For example, if 2049 is the upper boundary, then a two digit value of
+        /// 30 should be interpreted as 1950 while a two digit value of 49 should
+        /// be interpreted as 2049.  In this example, the 100 year range would be
+        /// from 1950-2049.  See ToFourDigitYear().
         /// </summary>
         public virtual int TwoDigitYearMax
         {
@@ -667,9 +668,9 @@ namespace System.Globalization
 
         /// <summary>
         /// Converts the year value to the appropriate century by using the
-        /// TwoDigitYearMax property.  For example, if the TwoDigitYearMax value is 2029,
-        /// then a two digit value of 30 will get converted to 1930 while a two digit
-        /// value of 29 will get converted to 2029.
+        /// TwoDigitYearMax property.  For example, if the TwoDigitYearMax value is 2049,
+        /// then a two digit value of 50 will get converted to 1950 while a two digit
+        /// value of 49 will get converted to 2049.
         /// </summary>
         public virtual int ToFourDigitYear(int year)
         {
@@ -711,7 +712,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
+            int twoDigitYearMax = CalendarData.GetTwoDigitYearMax(CalID);
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

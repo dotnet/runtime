@@ -1026,7 +1026,8 @@ namespace System.Text.Json.SourceGeneration
 
                         bool propertyOrderSpecified = false;
 
-                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
+                        // Walk the type hierarchy starting from the current type up to the base type(s)
+                        foreach (Type currentType in type.GetSortedTypeHierarchy())
                         {
                             PropertyGenerationSpec spec;
 
@@ -1216,7 +1217,6 @@ namespace System.Text.Json.SourceGeneration
 
                 ProcessMember(
                     memberInfo,
-                    memberCLRType,
                     hasJsonInclude,
                     out bool isReadOnly,
                     out bool isPublic,
@@ -1261,6 +1261,7 @@ namespace System.Text.Json.SourceGeneration
                     IsExtensionData = isExtensionData,
                     TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
                     DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
+                    DeclaringType = memberInfo.DeclaringType,
                     ConverterInstantiationLogic = converterInstantiationLogic,
                     HasFactoryConverter = hasFactoryConverter
                 };
@@ -1382,7 +1383,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static void ProcessMember(
                 MemberInfo memberInfo,
-                Type memberClrType,
                 bool hasJsonInclude,
                 out bool isReadOnly,
                 out bool isPublic,
@@ -1514,13 +1514,19 @@ namespace System.Text.Json.SourceGeneration
                 {
                     runtimePropName = jsonPropName;
                 }
-                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
-                {
-                    runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
-                }
                 else
                 {
-                    runtimePropName = clrPropName;
+                    JsonNamingPolicy? instance = namingPolicy switch
+                    {
+                        JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                        JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                        JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                        JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                        JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                        _ => null,
+                    };
+
+                    runtimePropName = instance?.ConvertName(clrPropName) ?? clrPropName;
                 }
 
                 return runtimePropName;

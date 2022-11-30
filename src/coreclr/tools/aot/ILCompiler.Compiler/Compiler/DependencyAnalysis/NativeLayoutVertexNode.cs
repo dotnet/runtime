@@ -412,7 +412,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 case Internal.TypeSystem.TypeFlags.SignatureTypeVariable:
                 case Internal.TypeSystem.TypeFlags.SignatureMethodVariable:
-                    return new NativeLayoutGenericVarSignatureVertexNode(factory, type);
+                    return new NativeLayoutGenericVarSignatureVertexNode(type);
 
                 // TODO Internal.TypeSystem.TypeFlags.FunctionPointer (Runtime parsing also not yet implemented)
                 case Internal.TypeSystem.TypeFlags.FunctionPointer:
@@ -425,7 +425,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (type.HasInstantiation && !type.IsGenericDefinition)
                             return new NativeLayoutInstantiatedTypeSignatureVertexNode(factory, type);
                         else
-                            return new NativeLayoutEETypeSignatureVertexNode(factory, type);
+                            return new NativeLayoutEETypeSignatureVertexNode(type);
                     }
             }
         }
@@ -476,7 +476,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private sealed class NativeLayoutGenericVarSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
-            public NativeLayoutGenericVarSignatureVertexNode(NodeFactory factory, TypeDesc type) : base(type)
+            public NativeLayoutGenericVarSignatureVertexNode(TypeDesc type) : base(type)
             {
             }
             public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
@@ -541,7 +541,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private sealed class NativeLayoutEETypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
-            public NativeLayoutEETypeSignatureVertexNode(NodeFactory factory, TypeDesc type) : base(type)
+            public NativeLayoutEETypeSignatureVertexNode(TypeDesc type) : base(type)
             {
                 Debug.Assert(!type.IsRuntimeDeterminedSubtype);
                 Debug.Assert(!type.HasInstantiation || type.IsGenericDefinition);
@@ -2167,35 +2167,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return writer.GetUnsignedConstant((uint)_value);
-        }
-
-        public override void CheckIfMarkedEnoughToWrite()
-        {
-            // Do nothing, this node does not need marking
-        }
-    }
-
-    public sealed class NativeLayoutPointerToOtherSlotDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
-    {
-        private int _otherSlotIndex;
-
-        public NativeLayoutPointerToOtherSlotDictionarySlotNode(int otherSlotIndex)
-        {
-            _otherSlotIndex = otherSlotIndex;
-        }
-
-        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.PointerToOtherSlot;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return null;
-        }
-
-        protected override string GetName(NodeFactory context) => "NativeLayoutPointerToOtherSlotDictionarySlotNode_" + _otherSlotIndex.ToStringInvariant();
-
-        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
-        {
-            return writer.GetUnsignedConstant((uint)_otherSlotIndex);
         }
 
         public override void CheckIfMarkedEnoughToWrite()

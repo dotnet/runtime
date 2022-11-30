@@ -12,7 +12,7 @@ namespace VTest
 {
     class TestMain : refTest<TestMain>
     {
-        static int Main(string[] args)
+        static int Main()
         {
             int ret = 100;
             try

@@ -1475,6 +1475,8 @@ namespace ILCompiler.DependencyAnalysis
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
 
+            factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
+
             if (implMethod.Signature.IsStatic)
             {
                 if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
@@ -1603,71 +1605,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
         {
             writer.WriteIntegerSlot(_integerValue);
-        }
-    }
-
-    public sealed class PointerToSlotLookupResult : GenericLookupResult
-    {
-        private int _slotIndex;
-
-        public PointerToSlotLookupResult(int slotIndex)
-        {
-            _slotIndex = slotIndex;
-        }
-
-        public int SlotIndex => _slotIndex;
-
-        protected override int ClassCode => 551050755;
-
-        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
-        {
-            return null;
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("PointerToSlotLookupResult_").Append(_slotIndex.ToString("x"));
-        }
-
-        public override string ToString()
-        {
-            return "PointerToSlotLookupResult_" + _slotIndex.ToString("x");
-        }
-
-        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
-        {
-            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
-            if (pointerToSlotResultOther._slotIndex == _slotIndex)
-                return 0;
-
-            return _slotIndex > pointerToSlotResultOther._slotIndex ? 1 : -1;
-        }
-
-        protected override bool EqualsImpl(GenericLookupResult other)
-        {
-            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
-            return pointerToSlotResultOther._slotIndex == _slotIndex;
-        }
-
-        protected override int GetHashCodeImpl()
-        {
-            return _slotIndex;
-        }
-
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
-        {
-            builder.EmitPointerReloc(dictionaryNode, _slotIndex * factory.Target.PointerSize);
-        }
-
-        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
-        {
-            return factory.NativeLayout.PointerToOtherSlot(_slotIndex);
-        }
-
-        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
-        {
-            // Under no circumstance should we attempt to write out a pointer to slot result
-            throw new InvalidProgramException();
         }
     }
 }

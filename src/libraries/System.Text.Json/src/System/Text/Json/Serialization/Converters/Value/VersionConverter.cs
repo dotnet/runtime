@@ -1,13 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class VersionConverter : JsonConverter<Version>
+    internal sealed class VersionConverter : JsonPrimitiveConverter<Version>
     {
 #if NETCOREAPP
         private const int MinimumVersionLength = 3; // 0.0
@@ -23,6 +21,13 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
+
+            return ReadCore(ref reader);
+        }
+
+        private static Version ReadCore(ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
 #if NETCOREAPP
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
@@ -75,6 +80,23 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(span.Slice(0, charsWritten));
 #else
             writer.WriteStringValue(value.ToString());
+#endif
+        }
+
+        internal override Version ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return ReadCore(ref reader);
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+#if NETCOREAPP
+            Span<char> span = stackalloc char[MaximumVersionLength];
+            bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
+            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
+            writer.WritePropertyName(span.Slice(0, charsWritten));
+#else
+            writer.WritePropertyName(value.ToString());
 #endif
         }
     }

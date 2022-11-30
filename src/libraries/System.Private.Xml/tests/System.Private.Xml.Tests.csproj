@@ -250,6 +250,7 @@
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlDocument\XmlTextTests\SplitTextTests.cs" />
+    <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />
     <Content Include="XmlDocument\example.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
