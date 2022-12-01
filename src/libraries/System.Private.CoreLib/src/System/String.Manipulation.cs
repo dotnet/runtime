@@ -569,7 +569,6 @@ namespace System
         private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(value);
-
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - count);

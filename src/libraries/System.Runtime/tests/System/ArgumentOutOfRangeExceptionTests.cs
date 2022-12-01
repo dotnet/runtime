@@ -78,8 +78,6 @@ namespace System.Tests
         [Fact]
         public static void GenericHelpers_ThrowIfZero_Throws()
         {
-            
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<float>(0.0f));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<int>(0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, ZeroHelper<uint>(0));
 
@@ -94,7 +92,6 @@ namespace System.Tests
         public static void GenericHelpers_ThrowIfNegativeZero_Throws()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<int>(-1));
-
             AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<float>(-0.0f));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NegativeOrZeroHelper<double>(-0.0));
         }

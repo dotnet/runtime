@@ -1700,7 +1700,10 @@ namespace System
             }
 
             ticks -= FileTimeOffset;
-            ArgumentOutOfRangeException.ThrowIfNegative(ticks, null);
+            if (ticks < 0)
+            {
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
+            }
 
             return ticks;
         }

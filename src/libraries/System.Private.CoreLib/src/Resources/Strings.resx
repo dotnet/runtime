@@ -2756,9 +2756,6 @@
   <data name="Lazy_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>
   </data>
-  <data name="ManualResetEventSlim_ctor_SpinCountOutOfRange" xml:space="preserve">
-    <value>The spinCount argument must be in the range 0 to {0}, inclusive.</value>
-  </data>
   <data name="ManualResetEventSlim_ctor_TooManyWaiters" xml:space="preserve">
     <value>There are too many threads currently waiting on the event. A maximum of {0} waiting threads are supported.</value>
   </data>

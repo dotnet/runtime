@@ -85,11 +85,8 @@ namespace System
         private static string Ctor(char[] value, int startIndex, int length)
         {
             ArgumentNullException.ThrowIfNull(value);
-
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - length);
 
             if (length == 0)
@@ -137,7 +134,6 @@ namespace System
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             char* pStart = ptr + startIndex;
@@ -186,7 +182,6 @@ namespace System
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-
             ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (value == null)
@@ -244,7 +239,6 @@ namespace System
                 return new string(value, startIndex, length);
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             if (value == null)
@@ -390,8 +384,8 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - sourceIndex, nameof(sourceIndex));
-            if (destinationIndex > destination.Length - count || destinationIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(destinationIndex, destination.Length - count);
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex);
 
             Buffer.Memmove(
                 destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), destinationIndex),
@@ -451,8 +445,8 @@ namespace System
         public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
-            if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)Length, nameof(startIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - length);
 
             if (length <= 0)
             {

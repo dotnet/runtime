@@ -667,7 +667,7 @@ namespace System
             }
 
             // (int.MaxValue / 3) == 715,827,882 Bytes == 699 MB
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, (int.MaxValue / 3));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, int.MaxValue / 3);
 
             return string.Create(length * 3 - 1, (value, startIndex, length), static (dst, state) =>
             {
