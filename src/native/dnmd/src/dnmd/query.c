@@ -116,11 +116,8 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     }
 
     mdToken row = RidFromToken(CursorRow(&c));
-    if (row > table->row_count)
-        return false;
-
     *tk = CreateTokenType(table->table_id) | row;
-    return true;
+    return (row <= table->row_count);
 }
 
 bool md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, mduserstring_t* str, uint32_t* offset)
@@ -794,10 +791,11 @@ static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcurs
     return true;
 }
 
-bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk)
+static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
 {
+    assert(tgt_cursor != NULL);
     mdtable_t* table = CursorTable(&element);
-    if (table == NULL || tk == NULL)
+    if (table == NULL)
         return false;
 
     uint32_t row = CursorRow(&element);
@@ -868,13 +866,31 @@ bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk)
     case mdtid_Field:
     case mdtid_MethodDef:
     case mdtid_Param:
-        return md_cursor_to_token(pos, tk);
+        *tgt_cursor = pos;
+        return true;
     case mdtid_Event:
-        return md_get_column_value_as_token(pos, mdtEventMap_Parent, 1, tk);
+        return md_get_column_value_as_cursor(pos, mdtEventMap_Parent, 1, tgt_cursor);
     case mdtid_Property:
-        return md_get_column_value_as_token(pos, mdtPropertyMap_Parent, 1, tk);
+        return md_get_column_value_as_cursor(pos, mdtPropertyMap_Parent, 1, tgt_cursor);
     default:
         assert(!"Invalid table ID");
         return false;
     }
+}
+
+bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk)
+{
+    if (tk == NULL)
+        return false;
+    mdcursor_t cursor;
+    if (!find_range_element(element, &cursor))
+        return false;
+    return md_cursor_to_token(cursor, tk);
+}
+
+bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor)
+{
+    if (cursor == NULL)
+        return false;
+    return find_range_element(element, cursor);
 }

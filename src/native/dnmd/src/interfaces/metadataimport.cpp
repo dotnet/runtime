@@ -207,6 +207,69 @@ namespace
             *name = pos + 1;
         }
     }
+
+    // Starting from the supplied cursor, find and then enumerate
+    // the range of rows in "lookupRange" with the given "lookupTk"
+    // value. When a value is found, the supplied type instance will
+    // be used to call back to the caller.
+    //
+    // Example of type instance:
+    //   struct Operation
+    //   {
+    //       bool operator()(mdcursor_t cursor)
+    //       {
+    //           return stopEnumeration; // Return true to stop, false to continue.
+    //       }
+    //   };
+    template<typename T>
+    void EnumTableRange(
+        mdcursor_t begin,
+        uint32_t count,
+        col_index_t lookupRange,
+        mdToken lookupTk,
+        T& op)
+    {
+        mdcursor_t curr;
+        uint32_t currCount;
+        if (md_find_range_from_cursor(begin, lookupRange, lookupTk, &curr, &currCount))
+        {
+            // Table is sorted and subset found
+            for (uint32_t i = 0; i < currCount; ++i)
+            {
+                if (op(curr))
+                    return;
+                (void)md_cursor_next(&curr);
+            }
+        }
+        else
+        {
+            // Unsorted so we need to search across the entire table
+            curr = begin;
+            currCount = count;
+
+            // Read in for matching in bulk
+            mdToken matchedGroup[64];
+            uint32_t i = 0;
+            while (i < currCount)
+            {
+                int32_t read = md_get_column_value_as_token(curr, lookupRange, ARRAYSIZE(matchedGroup), matchedGroup);
+                if (read == 0)
+                    break;
+
+                assert(read > 0);
+                for (int32_t j = 0; j < read; ++j)
+                {
+                    if (matchedGroup[j] == lookupTk)
+                    {
+                        if (op(curr))
+                            return;
+                    }
+                    (void)md_cursor_next(&curr);
+                }
+                i += read;
+            }
+        }
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeDefs(
@@ -695,51 +758,37 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodImpls(
         RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl, 2));
         HCORENUMImpl_ptr cleanup{ enumImpl };
 
-        mdcursor_t curr;
-        uint32_t currCount;
-        mdToken body;
-        mdToken decl;
-        if (md_find_range_from_cursor(cursor, mdtMethodImpl_Class, td, &curr, &currCount))
+        struct _Finder
         {
-            // Sorted data means we have a contiguous range we can use.
-            for (uint32_t i = 0; i < currCount; ++i)
+            HCORENUMImpl& EnumImpl;
+            mdToken Body;
+            mdToken Decl;
+            HRESULT hr;
+            HRESULT Result; // Result of the operation
+
+            bool operator()(mdcursor_t c)
             {
-                if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodBody, 1, &body)
-                    || 1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodDeclaration, 1, &decl))
+                if (1 != md_get_column_value_as_token(c, mdtMethodImpl_MethodBody, 1, &Body)
+                    || 1 != md_get_column_value_as_token(c, mdtMethodImpl_MethodDeclaration, 1, &Decl))
                 {
-                    return CLDB_E_FILE_CORRUPT;
+                    Result = CLDB_E_FILE_CORRUPT;
+                    return true;
                 }
 
-                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, body));
-                RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, decl));
-                (void)md_cursor_next(&curr);
-            }
-        }
-        else
-        {
-            // Unsorted so we need to search across the entire table
-            curr = cursor;
-            currCount = count;
-            mdToken tmp;
-            for (uint32_t i = 0; i < currCount; ++i)
-            {
-                if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_Class, 1, &tmp))
-                    return CLDB_E_FILE_CORRUPT;
-
-                if (tmp == td)
+                if (FAILED(hr = HCORENUMImpl::AddToDynamicEnum(EnumImpl, Body))
+                    || FAILED(hr = HCORENUMImpl::AddToDynamicEnum(EnumImpl, Decl)))
                 {
-                    if (1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodBody, 1, &body)
-                        || 1 != md_get_column_value_as_token(curr, mdtMethodImpl_MethodDeclaration, 1, &decl))
-                    {
-                        return CLDB_E_FILE_CORRUPT;
-                    }
-
-                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, body));
-                    RETURN_IF_FAILED(HCORENUMImpl::AddToDynamicEnum(*enumImpl, decl));
+                    Result = hr;
+                    return true;
                 }
-                (void)md_cursor_next(&curr);
+
+                return false;
             }
-        }
+        } finder{ *enumImpl, mdTokenNil, mdTokenNil, S_OK, S_OK };
+
+        EnumTableRange(cursor, count, mdtMethodImpl_Class, td, finder);
+        RETURN_IF_FAILED(finder.Result);
+
         *phEnum = cleanup.release();
     }
     return enumImpl->ReadTokenPairs(rMethodBody, rMethodDecl, cMax, pcTokens);
@@ -1009,72 +1058,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumEvents(
     return enumImpl->ReadTokens(rEvents, cMax, pcEvents);
 }
 
-namespace
-{
-    // Starting from the supplied cursor, find and then enumerate
-    // the range of rows in "lookupRange" with the given "lookupTk"
-    // value. When a value is found, the supplied type instance will
-    // be used to call back to the caller.
-    //
-    // Example of type instance:
-    //   struct Operation
-    //   {
-    //       bool operator()(mdcursor_t cursor)
-    //       {
-    //           return stopEnumeration; // Return true to stop, false to continue.
-    //       }
-    //   };
-    template<typename T>
-    void EnumTableRange(
-        mdcursor_t begin,
-        uint32_t count,
-        col_index_t lookupRange,
-        mdToken lookupTk,
-        T& op)
-    {
-        mdcursor_t curr;
-        uint32_t currCount;
-        if (md_find_range_from_cursor(begin, lookupRange, lookupTk, &curr, &currCount))
-        {
-            // Table is sorted and subset found
-            for (uint32_t i = 0; i < currCount; ++i)
-            {
-                if (op(curr))
-                    return;
-                (void)md_cursor_next(&curr);
-            }
-        }
-        else
-        {
-            // Unsorted so we need to search across the entire table
-            curr = begin;
-            currCount = count;
-
-            // Read in for matching in bulk
-            mdToken matchedGroup[64];
-            uint32_t i = 0;
-            while (i < currCount)
-            {
-                int32_t read = md_get_column_value_as_token(curr, lookupRange, ARRAYSIZE(matchedGroup), matchedGroup);
-                if (read == 0)
-                    break;
-
-                assert(read > 0);
-                for (int32_t j = 0; j < read; ++j)
-                {
-                    if (matchedGroup[j] == lookupTk)
-                    {
-                        if (op(curr))
-                            return;
-                    }
-                    (void)md_cursor_next(&curr);
-                }
-                i += read;
-            }
-        }
-    }
-}
-
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetEventProps(
     mdEvent     ev,
     mdTypeDef* pClass,
@@ -1283,10 +1266,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetClassLayout(
         return E_INVALIDARG;
 
     mdcursor_t begin;
-    uint32_t unused;
+    uint32_t count;
     mdcursor_t entry;
     bool foundLayout = false;
-    if (!md_create_cursor(_md_ptr.get(), mdtid_ClassLayout, &begin, &unused)
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ClassLayout, &begin, &count)
         || !md_find_row_from_cursor(begin, mdtClassLayout_Parent, RidFromToken(td), &entry))
     {
         *pdwPackSize = 0;
@@ -1325,7 +1308,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetClassLayout(
         // It is possible the table is empty and can therefore fail. This API permits this
         // behavior and sets the offset as -1 if this occurs.
         mdcursor_t fieldLayoutBegin;
-        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldLayout, &fieldLayoutBegin, &unused))
+        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldLayout, &fieldLayoutBegin, &count))
             ::memset(&fieldLayoutBegin, 0, sizeof(fieldLayoutBegin));
 
         uint32_t readIn = 0;
@@ -1411,9 +1394,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetRVA(
         if (TypeFromToken(tk) != mdtFieldDef)
             return E_INVALIDARG;
 
-        uint32_t unused;
+        uint32_t count;
         mdcursor_t fieldRvaRow;
-        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldRva, &cursor, &unused)
+        if (!md_create_cursor(_md_ptr.get(), mdtid_FieldRva, &cursor, &count)
             || !md_find_row_from_cursor(cursor, mdtFieldRva_Field, RidFromToken(tk), &fieldRvaRow))
         {
             return CLDB_E_RECORD_NOTFOUND;
@@ -2186,13 +2169,179 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetParamProps(
     return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
 }
 
+namespace
+{
+    // See TypeSpec definition at II.23.2.14
+    HRESULT ExtractTypeDefRefFromSpec(uint8_t const* specBlob, uint32_t specBlobLen, mdToken& tk)
+    {
+        assert(specBlob != nullptr);
+        if (specBlobLen == 0)
+            return COR_E_BADIMAGEFORMAT;
+
+        PCCOR_SIGNATURE sig = specBlob;
+        PCCOR_SIGNATURE sigEnd = specBlob + specBlobLen;
+
+        ULONG data;
+        sig += CorSigUncompressData(sig, &data);
+
+        while (sig < sigEnd && CorIsModifierElementType((CorElementType)data))
+        {
+            sig += CorSigUncompressData(sig, &data);
+        }
+
+        if (sig >= sigEnd)
+            return COR_E_BADIMAGEFORMAT;
+
+        if (data == ELEMENT_TYPE_VALUETYPE || data == ELEMENT_TYPE_CLASS)
+        {
+            if (mdTokenNil == CorSigUncompressToken(sig, &tk))
+                return COR_E_BADIMAGEFORMAT;
+            return S_OK;
+        }
+
+        tk = mdTokenNil;
+        return S_FALSE;
+    }
+
+    HRESULT ResolveTypeDefRefSpecToName(mdcursor_t cursor, char const** nspace, char const** name)
+    {
+        assert(nspace != nullptr && name != nullptr);
+
+        HRESULT hr;
+        mdToken typeTk;
+        if (!md_cursor_to_token(cursor, &typeTk))
+            return E_FAIL;
+
+        uint8_t const* specBlob;
+        uint32_t specBlobLen;
+        uint32_t tokenType = TypeFromToken(typeTk);
+        while (tokenType == mdtTypeSpec)
+        {
+            if (1 != md_get_column_value_as_blob(cursor, mdtTypeSpec_Signature, 1, &specBlob, &specBlobLen))
+                return CLDB_E_FILE_CORRUPT;
+
+            RETURN_IF_FAILED(ExtractTypeDefRefFromSpec(specBlob, specBlobLen, typeTk));
+            if (typeTk == mdTokenNil)
+                return S_FALSE;
+
+            tokenType = TypeFromToken(typeTk);
+        }
+
+        switch (tokenType)
+        {
+        case mdtTypeDef:
+            return (1 == md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeNamespace, 1, nspace)
+                && 1 == md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeName, 1, name))
+                ? S_OK
+                : CLDB_E_FILE_CORRUPT;
+        case mdtTypeRef:
+            return (1 == md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeNamespace, 1, nspace)
+                && 1 == md_get_column_value_as_utf8(cursor, mdtTypeRef_TypeName, 1, name))
+                ? S_OK
+                : CLDB_E_FILE_CORRUPT;
+        default:
+            assert(!"Unexpected token in ResolveTypeDefRefSpecToName");
+            return E_FAIL;
+        }
+    }
+}
+
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeByName(
     mdToken     tkObj,
     LPCWSTR     szName,
     const void** ppData,
     ULONG* pcbData)
 {
-    return E_NOTIMPL;
+    if (szName == nullptr || ppData == nullptr || pcbData == nullptr)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_CustomAttribute, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdcursor_t custAttrCurr;
+    uint32_t custAttrCount;
+    if (!md_find_range_from_cursor(cursor, mdtCustomAttribute_Parent, tkObj, &custAttrCurr, &custAttrCount))
+    {
+        *ppData = nullptr;
+        *pcbData = 0;
+        return S_FALSE;
+    }
+
+    char buffer[1024];
+    pal::StringConvert<WCHAR, char> cvt{ szName, buffer };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    HRESULT hr;
+    char const* nspace;
+    char const* name;
+
+    mdcursor_t type;
+    mdcursor_t tgtType;
+    mdToken typeTk;
+    size_t len;
+    char const* curr;
+    for (uint32_t i = 0; i < custAttrCount; ++i)
+    {
+        if (1 != md_get_column_value_as_cursor(custAttrCurr, mdtCustomAttribute_Type, 1, &type))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Cursor was returned so must be valid.
+        (void)md_cursor_to_token(type, &typeTk);
+
+        // Resolve the cursor based on its type.
+        switch (TypeFromToken(typeTk))
+        {
+        case mdtMethodDef:
+            if (!md_find_cursor_of_range_element(type, &tgtType))
+                return CLDB_E_FILE_CORRUPT;
+            break;
+        case mdtMemberRef:
+            if (1 != md_get_column_value_as_cursor(type, mdtMemberRef_Class, 1, &tgtType))
+                return CLDB_E_FILE_CORRUPT;
+            break;
+        default:
+            assert(!"Unexpected token in GetCustomAttributeByName");
+            return COR_E_BADIMAGEFORMAT;
+        }
+
+        if (SUCCEEDED(hr = ResolveTypeDefRefSpecToName(tgtType, &nspace, &name)))
+        {
+            curr = cvt;
+            if (nspace[0] != '\0')
+            {
+                len = ::strlen(nspace);
+                if (0 != ::strncmp(cvt, nspace, len))
+                    goto Next;
+                curr += len;
+
+                // Check for overrun and next character
+                if (cvt.Length() <= len || curr[0] != '.')
+                    goto Next;
+                curr += 1;
+            }
+
+            if (0 == ::strcmp(curr, name))
+            {
+                uint8_t const* data;
+                uint32_t dataLen;
+                if (1 != md_get_column_value_as_blob(custAttrCurr, mdtCustomAttribute_Value, 1, &data, &dataLen))
+                    return CLDB_E_FILE_CORRUPT;
+                *ppData = data;
+                *pcbData = dataLen;
+                return S_OK;
+            }
+        }
+        RETURN_IF_FAILED(hr);
+Next:
+        (void)md_cursor_next(&custAttrCurr);
+    }
+
+    *ppData = nullptr;
+    *pcbData = 0;
+    return S_FALSE;
 }
 
 BOOL STDMETHODCALLTYPE MetadataImportRO::IsValidToken(
@@ -2213,9 +2362,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNestedClassProps(
         return E_INVALIDARG;
 
     mdcursor_t cursor;
-    uint32_t unused;
+    uint32_t count;
     mdcursor_t nestedClassRow;
-    if (!md_create_cursor(_md_ptr.get(), mdtid_NestedClass, &cursor, &unused)
+    if (!md_create_cursor(_md_ptr.get(), mdtid_NestedClass, &cursor, &count)
         || !md_find_row_from_cursor(cursor, mdtNestedClass_NestedClass, RidFromToken(tdNestedClass), &nestedClassRow))
     {
         return CLDB_E_RECORD_NOTFOUND;

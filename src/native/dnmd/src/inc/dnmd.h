@@ -356,6 +356,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 //  - mdtid_Property
 // See md_get_column_value_as_range() for getting the complete range.
 bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk);
+bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor);
 
 #ifdef __cplusplus
 }

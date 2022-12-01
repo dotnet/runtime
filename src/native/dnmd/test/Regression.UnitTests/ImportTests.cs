@@ -130,12 +130,14 @@ namespace Regression.UnitTests
             foreach (var typeref in typerefs)
             {
                 Assert.Equal(GetTypeRefProps(baselineImport, typeref), GetTypeRefProps(currentImport, typeref));
+                Assert.Equal(GetCustomAttribute_CompilerGenerated(baselineImport, typeref), GetCustomAttribute_CompilerGenerated(currentImport, typeref));
             }
 
             var typespecs = AssertAndReturn(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
             foreach (var typespec in typespecs)
             {
                 Assert.Equal(GetTypeSpecFromToken(baselineImport, typespec), GetTypeSpecFromToken(currentImport, typespec));
+                Assert.Equal(GetCustomAttribute_CompilerGenerated(baselineImport, typespec), GetCustomAttribute_CompilerGenerated(currentImport, typespec));
             }
 
             var typedefs = AssertAndReturn(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
@@ -148,6 +150,7 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumMembersWithName(baselineImport, typedef), EnumMembersWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodsWithName(baselineImport, typedef), EnumMethodsWithName(currentImport, typedef));
                 Assert.Equal(EnumMethodImpls(baselineImport, typedef), EnumMethodImpls(currentImport, typedef));
+                Assert.Equal(GetCustomAttribute_CompilerGenerated(baselineImport, typedef), GetCustomAttribute_CompilerGenerated(currentImport, typedef));
 
                 var methods = AssertAndReturn(EnumMethods(baselineImport, typedef), EnumMethods(currentImport, typedef));
                 foreach (var methoddef in methods)
@@ -158,7 +161,9 @@ namespace Regression.UnitTests
                     {
                         Assert.Equal(GetFieldMarshal(baselineImport, param), GetFieldMarshal(currentImport, param));
                         Assert.Equal(GetParamProps(baselineImport, param), GetParamProps(currentImport, param));
+                        Assert.Equal(GetCustomAttribute_Nullable(baselineImport, methoddef), GetCustomAttribute_Nullable(currentImport, methoddef));
                     }
+                    Assert.Equal(GetCustomAttribute_CompilerGenerated(baselineImport, methoddef), GetCustomAttribute_CompilerGenerated(currentImport, methoddef));
                     Assert.Equal(GetParamForMethodIndex(baselineImport, methoddef), GetParamForMethodIndex(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
@@ -195,6 +200,7 @@ namespace Regression.UnitTests
                     Assert.Equal(GetPinvokeMap(baselineImport, fielddef), GetPinvokeMap(currentImport, fielddef));
                     Assert.Equal(GetFieldMarshal(baselineImport, fielddef), GetFieldMarshal(currentImport, fielddef));
                     Assert.Equal(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
+                    Assert.Equal(GetCustomAttribute_Nullable(baselineImport, fielddef), GetCustomAttribute_Nullable(currentImport, fielddef));
                 }
                 Assert.Equal(GetTypeDefProps(baselineImport, typedef), GetTypeDefProps(currentImport, typedef));
                 Assert.Equal(GetNestedClassProps(baselineImport, typedef), GetNestedClassProps(currentImport, typedef));
@@ -1209,6 +1215,36 @@ namespace Regression.UnitTests
                     values.Add(offsets[i].ridOfField);
                     values.Add(offsets[i].ulOffset);
                 }
+            }
+            return values;
+        }
+
+        private static List<nuint> GetCustomAttribute_Nullable(IMetaDataImport import, uint tkObj)
+        {
+            const string NullableAttrName = "System.Runtime.CompilerServices.NullableAttribute";
+            return GetCustomAttributeByName(import, NullableAttrName, tkObj);
+        }
+
+        private static List<nuint> GetCustomAttribute_CompilerGenerated(IMetaDataImport import, uint tkObj)
+        {
+            const string CompilerGeneratedAttrName = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
+            return GetCustomAttributeByName(import, CompilerGeneratedAttrName, tkObj);
+        }
+
+        private static List<nuint> GetCustomAttributeByName(IMetaDataImport import, string customAttr, uint tkObj)
+        {
+            List<nuint> values = new();
+
+            int hr = import.GetCustomAttributeByName(tkObj,
+                customAttr,
+                out nint ppData,
+                out uint pcbData);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add((nuint)ppData);
+                values.Add(pcbData);
             }
             return values;
         }
