@@ -81,18 +81,20 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, bufferWriter);
 
                 try
                 {
                     SerializeHandler(writer, rootValue!);
                     writer.Flush();
-                    await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
                     OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+                    Utf8JsonWriterCache.ReturnWriter(writer);
                 }
+
+                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
             }
             else if (
 #if NETCOREAPP
