@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 
@@ -24,9 +23,9 @@ namespace ILCompiler
         public Option<bool> Optimize { get; } =
             new(new[] { "--optimize", "-O" }, "Enable optimizations");
         public Option<bool> OptimizeSpace { get; } =
-            new(new[] { "--optimize-space", "-Os" }, "Enable optimizations, favor code space");
+            new(new[] { "--optimize-space", "--Os" }, "Enable optimizations, favor code space");
         public Option<bool> OptimizeTime { get; } =
-            new(new[] { "--optimize-time", "-Ot" }, "Enable optimizations, favor code speed");
+            new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
         public Option<bool> EnableDebugInfo { get; } =

@@ -1169,12 +1169,6 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
 
     *pLocalSigToken = GetILCodeAndSigHelper(pModule, pMethodDesc, functionToken, methodRVA, pCodeInfo);
 
-#ifdef LOGGING
-    else
-    {
-        LOG((LF_CORDB,LL_INFO100000, "DDI::GICAS: GetMethodImplProps failed!\n"));
-    }
-#endif
 } // GetILCodeAndSig
 
 //---------------------------------------------------------------------------------------

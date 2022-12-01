@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a frozen object that is statically preallocated within the data section
     /// of the executable instead of on the GC heap.
     /// </summary>
-    public class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
@@ -58,20 +58,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            int initialOffset = dataBuilder.CountBytes;
-
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
             // byte contents
             _data.WriteContent(ref dataBuilder, this, factory);
-
-            int objectSize = dataBuilder.CountBytes - initialOffset;
-            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
-            if (objectSize < minimumObjectSize)
-            {
-                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
-            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -93,11 +84,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return dependencies;
-        }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.FrozenSegmentRegion.AddEmbeddedObject(this);
         }
 
         public override int ClassCode => 1789429316;

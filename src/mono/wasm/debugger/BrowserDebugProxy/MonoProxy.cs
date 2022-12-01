@@ -20,6 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
         public static HttpClient HttpClient => new HttpClient();
@@ -258,7 +259,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context))
+            if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
                 if  (method == "Debugger.setPauseOnExceptions")
                 {
@@ -267,7 +268,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -1406,7 +1406,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 VarInfo[] varIds = scope.Method.Info.GetLiveVarsAt(scope.Location.IlLocation.Offset);
 
-                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, token);
+                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, scope.Location.IlLocation.Offset, token);
                 if (values != null)
                 {
                     if (values == null || values.Count == 0)
