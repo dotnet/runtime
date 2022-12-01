@@ -39,8 +39,6 @@
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
-extern void PrintToStdOutA(const char *pszString);
-extern void PrintToStdOutW(const WCHAR *pwzString);
 
 //***************************************************************************
 

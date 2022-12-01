@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse2
 {
     public static partial class Program
     {
-        private static void ExtractUInt16129()
+        [Fact]
+        public static void ExtractUInt16129()
         {
             var test = new ExtractScalarTest__ExtractUInt16129();
 

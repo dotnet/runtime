@@ -8,7 +8,7 @@
 
 .assembly tailcall{}
 
-.method public static int32 main(string[]) {
+.method public static int32 main() {
 .locals     (class [mscorlib]System.IO.TextWriter,class _tailcall)
 .entrypoint
 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()

@@ -4705,16 +4705,18 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForSelect(GenTreeConditional* tree)
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    emitter* emit = GetEmitter();
+    assert(tree->OperIs(GT_SELECT));
+    GenTreeConditional* select = tree->AsConditional();
+    emitter*            emit   = GetEmitter();
 
-    GenTree*  opcond  = tree->gtCond;
-    GenTree*  op1     = tree->gtOp1;
-    GenTree*  op2     = tree->gtOp2;
+    GenTree*  opcond  = select->gtCond;
+    GenTree*  op1     = select->gtOp1;
+    GenTree*  op2     = select->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  attr    = emitActualTypeSize(tree->TypeGet());
+    emitAttr  attr    = emitActualTypeSize(select->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
@@ -4746,12 +4748,26 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
         prevCond = GenCondition::NE;
     }
 
+    assert(!op1->isContained() || op1->IsIntegralConst(0));
+    assert(!op2->isContained() || op2->IsIntegralConst(0));
+
     regNumber               targetReg = tree->GetRegNum();
-    regNumber               srcReg1   = genConsumeReg(op1);
-    regNumber               srcReg2   = genConsumeReg(op2);
+    regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
+    regNumber               srcReg2   = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
 
     emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+
+    // Some conditions require an additional condition check.
+    if (prevDesc.oper == GT_OR)
+    {
+        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, targetReg, JumpKindToInsCond(prevDesc.jumpKind2));
+    }
+    else if (prevDesc.oper == GT_AND)
+    {
+        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, targetReg, srcReg2, JumpKindToInsCond(prevDesc.jumpKind2));
+    }
+
     regSet.verifyRegUsed(targetReg);
     genProduceReg(tree);
 }

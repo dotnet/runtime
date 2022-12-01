@@ -125,7 +125,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
@@ -141,10 +141,15 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  <!-- Reference the GenFacades package when the assembly is a partial facade or a PNSE throwing. -->
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' or
+                        '$(GeneratePlatformNotSupportedAssembly)' == 'true' or
+                        '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <!-- GenFacades target that is intentionally empty since we no longer need it. -->
+  <Target Name="ResolveMatchingContract" />
 
   <!--
     Do not clean binplace assets in the ref targeting pack to avoid incremental build failures

@@ -228,7 +228,7 @@ namespace System
                     {
                         char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
 
-                        if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
+                        if (!char.IsAscii(value) || UriHelper.Unreserved.Contains(value))
                         {
                             return true;
                         }
@@ -581,12 +581,12 @@ namespace System
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
         [Obsolete(Obsoletions.EscapeUriStringMessage, DiagnosticId = Obsoletions.EscapeUriStringDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static string EscapeUriString(string stringToEscape) =>
-            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReserved);
 
         // Where stringToEscape is intended to be URI data, but not an entire URI.
         // This method will escape any character that is not an unreserved character, including percent signs.
         public static string EscapeDataString(string stringToEscape) =>
-            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedTable);
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.Unreserved);
 
         //
         // Cleans up the specified component according to Iri rules
@@ -766,7 +766,7 @@ namespace System
         {
             if (format == UriFormat.UriEscaped)
             {
-                return UriHelper.EscapeString(_string, checkExistingEscaped: true, UriHelper.UnreservedReservedTable);
+                return UriHelper.EscapeString(_string, checkExistingEscaped: true, UriHelper.UnreservedReserved);
             }
             else if (format == UriFormat.Unescaped)
             {

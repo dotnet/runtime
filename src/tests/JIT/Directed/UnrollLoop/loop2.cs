@@ -927,7 +927,7 @@ internal unsafe class B : A
         return sum + i;
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         bool failed = false;
 

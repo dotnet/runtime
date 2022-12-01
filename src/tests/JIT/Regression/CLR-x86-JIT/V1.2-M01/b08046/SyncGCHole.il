@@ -39,7 +39,7 @@
 .class public auto ansi beforefieldinit ExternalException
        extends [mscorlib]System.Exception
 {
-  .method public hidebysig static void  Main(string[] args) cil managed
+  .method public hidebysig static void  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

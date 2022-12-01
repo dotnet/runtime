@@ -322,7 +322,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseDrainSize = 1;
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(1, handler.MaxResponseDrainSize);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
@@ -365,7 +365,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
@@ -1175,7 +1175,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1222,7 +1222,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -3681,7 +3681,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData("foo ", "bar ")]
         [InlineData("foo", " bar")]
         [InlineData("foo", "bar\t")]

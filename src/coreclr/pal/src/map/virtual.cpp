@@ -1276,7 +1276,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 #ifdef HOST_64BIT
     PERF_ENTRY(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     ENTRY(
-        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu, fStoreAllocationInfo = %d)\n",
+        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %zu, fStoreAllocationInfo = %d)\n",
         lpBeginAddress,
         lpEndAddress,
         dwSize,

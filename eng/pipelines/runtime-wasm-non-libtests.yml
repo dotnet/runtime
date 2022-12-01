@@ -4,19 +4,21 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    #
-    # Evaluate paths
-    #
-    - template: /eng/pipelines/common/evaluate-default-paths.yml
+      #
+      # Evaluate paths
+      #
+      - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
-      parameters:
-        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-        isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-        isRollingBuild: ${{ variables.isRollingBuild }}
-        excludeNonLibTests: false
-        excludeLibTests: true
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+          excludeNonLibTests: false
+          excludeLibTests: true

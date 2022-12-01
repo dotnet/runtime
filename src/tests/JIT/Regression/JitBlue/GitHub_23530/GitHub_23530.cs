@@ -33,7 +33,7 @@ namespace GitHub_23530
             return Sse.Add(c, d).ToScalar();
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             if (Fma.IsSupported)
             {
