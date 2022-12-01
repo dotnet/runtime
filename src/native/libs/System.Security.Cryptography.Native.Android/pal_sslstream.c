@@ -53,7 +53,10 @@ static bool IsHandshaking(int handshakeStatus)
 
 ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
-    // SSLEngine.getHandshakeSession() is available since API 24
+    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLSession.
+    // SSLEngine.getHandshakeSession() is available since API 24.
+
     jobject sslSession = IsHandshaking(handshakeStatus) && g_SSLEngineGetHandshakeSession != NULL
         ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
         : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
