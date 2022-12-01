@@ -437,7 +437,7 @@ namespace System.IO.Hashing
 
         /// <summary>Calculates a 32-bit to 64-bit long multiply.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Multiply32To64(ulong v1, ulong v2) => (uint)v1 * (ulong)(uint)v2;
+        public static ulong Multiply32To64(uint v1, uint v2) => (ulong)v1 * v2;
 
         /// <summary>"This is a fast avalanche stage, suitable when input bits are already partially mixed."</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -455,10 +455,10 @@ namespace System.IO.Hashing
 #if NET5_0_OR_GREATER
             return Math.BigMul(left, right, out lower);
 #else
-            ulong lowerLow = Multiply32To64(left & 0xFFFFFFFF, right & 0xFFFFFFFF);
-            ulong higherLow = Multiply32To64(left >> 32, right & 0xFFFFFFFF);
-            ulong lowerHigh = Multiply32To64(left & 0xFFFFFFFF, right >> 32);
-            ulong higherHigh = Multiply32To64(left >> 32, right >> 32);
+            ulong lowerLow = Multiply32To64((uint)left, (uint)right);
+            ulong higherLow = Multiply32To64((uint)(left >> 32), (uint)right);
+            ulong lowerHigh = Multiply32To64((uint)left, (uint)(right >> 32));
+            ulong higherHigh = Multiply32To64((uint)(left >> 32), (uint)(right >> 32));
 
             ulong cross = (lowerLow >> 32) + (higherLow & 0xFFFFFFFF) + lowerHigh;
             ulong upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
@@ -654,7 +654,7 @@ namespace System.IO.Hashing
                     ulong sourceKey = sourceVal ^ ReadUInt64LE(secret + (i * 8));
 
                     accumulators[i ^ 1] += sourceVal; // swap adjacent lanes
-                    accumulators[i] += Multiply32To64(sourceKey & 0xFFFFFFFF, sourceKey >> 32);
+                    accumulators[i] += Multiply32To64((uint)sourceKey, (uint)(sourceKey >> 32));
                 }
             }
         }

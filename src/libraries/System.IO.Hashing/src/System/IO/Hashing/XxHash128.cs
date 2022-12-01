@@ -425,9 +425,6 @@ namespace System.IO.Hashing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Multiply32To64(uint v1, uint v2) => (ulong)v1 * v2;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Mix32Bytes(ref ulong accLow, ref ulong accHigh, byte* input1, byte* input2, ulong secret1, ulong secret2, ulong secret3, ulong secret4, ulong seed)
         {
             accLow += Mix16Bytes(input1, secret1, secret2, seed);
