@@ -18,7 +18,7 @@ public class TestGC
 
    /* 
    * Ensure that a key that has no managed references to it gets automatically removed from the 
-   * dictionary after GC happens. Also make sure the value gets gc’d as well. 
+   * dictionary after GC happens. Also make sure the value gets gc'd as well. 
    */
     public static void TestKeyWithNoReferences_Pass1(int length)
     {
@@ -48,7 +48,7 @@ public class TestGC
         GC.Collect();
 
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;
@@ -76,7 +76,7 @@ public class TestGC
      * Ensure that a key whose value has a reference to the key or a reference to another object 
      * which has a reference to the key, gets automatically removed from the dictionary after GC 
      * happens (provided there are no references to the value outside the dictionary.) 
-     * Also make sure the value gets gc’d as well.
+     * Also make sure the value gets gc'd as well.
      * 
      * In this case we pass the same string array to the function, so keys and values have references to each other
      * (But only within the dictionary)
@@ -110,7 +110,7 @@ public class TestGC
         GC.Collect();
 
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;
@@ -186,7 +186,7 @@ public class TestGC
 
         // check that all other objects were collected except for the 3 above
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;

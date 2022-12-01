@@ -96,7 +96,7 @@
     IL_0000:  ret
   }
 
-  .method public static int32  main(string[] A_0) cil managed
+  .method public static int32  main() cil managed
   {
     .entrypoint
     .maxstack  18

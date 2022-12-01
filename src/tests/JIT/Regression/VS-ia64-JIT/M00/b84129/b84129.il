@@ -13,7 +13,7 @@
 }
 .class public Box_Unbox {
 .field public static	value class valClass vc
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 	ldsfld 	value class valClass Box_Unbox::vc

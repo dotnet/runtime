@@ -101,6 +101,11 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os Browser'
+    - ${{ if eq(parameters.osGroup, 'wasi') }}:
+      - name: archType
+        value: wasm
+      - name: osOverride
+        value: '-os wasi'
     - ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'x64'))) }}:
         name: llvmCxxAbi
         value: /p:MonoLLVMUseCxx11Abi=true

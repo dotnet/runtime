@@ -565,7 +565,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        size_t            idMemCookie;   // for display of method name  (also used by switch table)
+        size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
@@ -1729,9 +1729,6 @@ protected:
 
     const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
-
-    const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
-    const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
 
     // GC Info changes are not readily available at each instruction.
     // We use debug-only sets to track the per-instruction state, and to remember

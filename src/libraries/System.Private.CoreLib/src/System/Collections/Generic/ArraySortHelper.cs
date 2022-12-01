@@ -449,7 +449,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static int PickPivotAndPartition(Span<T> keys)
+        private static unsafe int PickPivotAndPartition(Span<T> keys)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
 
@@ -494,7 +494,9 @@ namespace System.Collections.Generic
             {
                 Swap(ref leftRef, ref nextToLastRef);
             }
-            return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / Unsafe.SizeOf<T>());
+#pragma warning disable 8500 // sizeof of managed types
+            return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / sizeof(T));
+#pragma warning restore 8500
         }
 
         private static void HeapSort(Span<T> keys)

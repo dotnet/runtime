@@ -14,7 +14,7 @@ namespace ConsoleApplication1
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        static int Main(string[] args)
+        static int Main()
         {
             try
             {
