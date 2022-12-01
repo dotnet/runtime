@@ -548,10 +548,8 @@ namespace Internal.Runtime.TypeLoader
                 {
                     // Array/pointer types do not have static fields
                 }
-                else
+                else if (defType.IsTemplateCanonical())
                 {
-                    Debug.Assert(defType.IsTemplateCanonical());
-
                     // Canonical templates get their layout directly from the NativeLayoutInfo.
                     // Parse it and pull that info out here.
 
@@ -575,6 +573,11 @@ namespace Internal.Runtime.TypeLoader
                                 break;
                         }
                     }
+                }
+                else
+                {
+                    // SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+                    // We land here instead of throwing MissingTemplateException. We really should throw.
                 }
             }
         }
