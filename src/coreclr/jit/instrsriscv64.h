@@ -124,9 +124,9 @@ INST(srlw,          "srlw",           0,    0x0000503b)
 INST(sraw,          "sraw",           0,    0x4000503b)
 
 //// R_R_I
-INST(lwu,           "lwu",            0,    0x00006003)
+INST(lwu,           "lwu",            LD,   0x00006003)
 INST(ld,            "ld",             LD,   0x00003003)
-INST(st,            "st",             ST,   0x00003023)
+INST(sd,            "sd",             ST,   0x00003023)
 
 
 // RV32M & RV64M
