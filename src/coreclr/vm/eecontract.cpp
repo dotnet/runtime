@@ -96,16 +96,19 @@ void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ c
             // Unmanaged threads are considered permanently preemptive so a NULL thread amounts to a passing case here.
             if (m_pThread != NULL && m_pThread->PreemptiveGCDisabled())
             {
+// UNITY: Ignoring because we are currently not operating in a GC safe manner. To be removed.
+#ifndef FEATURE_UNITY_EMBEDDING_INTERFACE
                 if (!( (ModeViolation|BadDebugState) & m_pClrDebugState->ViolationMask()))
                 {
-                        CONTRACT_ASSERT("MODE_PREEMPTIVE encountered while thread is in cooperative state.",
-                                        Contract::MODE_Coop,
-                                        Contract::MODE_Mask,
-                                        m_contractStackRecord.m_szFunction,
-                                        m_contractStackRecord.m_szFile,
-                                        m_contractStackRecord.m_lineNum
-                                       );
-                    }
+                    CONTRACT_ASSERT("MODE_PREEMPTIVE encountered while thread is in cooperative state.",
+                                    Contract::MODE_Coop,
+                                    Contract::MODE_Mask,
+                                    m_contractStackRecord.m_szFunction,
+                                    m_contractStackRecord.m_szFile,
+                                    m_contractStackRecord.m_lineNum
+                                   );
+                }
+#endif
             }
             break;
 

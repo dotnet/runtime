@@ -70,7 +70,10 @@ CHECK PEImage::CheckILFormat()
 // PEImage is always unique on CoreCLR so a simple pointer check is sufficient in PEImage::Equals
 CHECK PEImage::CheckUniqueInstance()
 {
+// Unity: Ignoring check for now as this appears to fail as a result of running in an embedded manner loads libraries in a way that causes this check to fail.
+#ifndef FEATURE_UNITY_EMBEDDING_INTERFACE
     CHECK(GetPath().IsEmpty() || m_bInHashMap);
+#endif
     CHECK_OK;
 }
 

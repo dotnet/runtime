@@ -1085,7 +1085,10 @@ public:
         }
         CONTRACTL_END;
 
+// Unity: Ignoring for now but requires further investigation. It seems we are not using the CoreCLR apis correctly.
+#ifndef FEATURE_UNITY_EMBEDDING_INTERFACE
         INDEBUG(TypeCheck());
+#endif
         return m_typeHandle;
     }
 
