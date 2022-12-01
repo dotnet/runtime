@@ -811,7 +811,6 @@ namespace Microsoft.Win32
                 switch (result)
                 {
                     case Interop.Errors.ERROR_SUCCESS:
-
                         if (cpt >= names.Length) // possible new item during loop
                         {
                             Array.Resize(ref names, names.Length * 2);
@@ -820,6 +819,7 @@ namespace Microsoft.Win32
                         names[cpt++] = new string(nameSpan.Slice(0, nameLength));
                         nameLength = nameSpan.Length;
                         break;
+
                     default:
                         // Throw the error
                         Win32Error(result, null);
