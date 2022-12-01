@@ -210,7 +210,6 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
         {
-            // TODO https://github.com/dotnet/runtime/issues/72107: Use BinaryPrimitives.WriteUInt128BigEndian() once it is supported
             ulong low = hash.Low64;
             ulong high = hash.High64;
             if (BitConverter.IsLittleEndian)
