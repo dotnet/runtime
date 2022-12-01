@@ -1876,7 +1876,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getRuntimeTypeHandle(CORINFO_OBJECT_STRUCT_* objPtr)
 #pragma warning restore CA1822 // Mark members as static
         {
-            throw new NotSupportedException();
+            return null;
         }
 
         private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
