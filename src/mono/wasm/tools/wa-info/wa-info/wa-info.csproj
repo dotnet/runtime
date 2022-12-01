@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <RollForward>major</RollForward>
     <RootNamespace>wa_info</RootNamespace>
     <ToolCommandName>wa-info</ToolCommandName>
     <PackAsTool>true</PackAsTool>
