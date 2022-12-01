@@ -666,8 +666,7 @@
     <PropertyGroup>
       <WasmMemorySnapshotCaptureGenerator>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureGenerator>
       <WasmMemorySnapshotFileName>memory.dat</WasmMemorySnapshotFileName>
-      <WasmEditToolPath Condition="'$(ContinuousIntegrationBuild)' != 'true'">wa-edit</WasmEditToolPath>
-      <WasmEditToolPath Condition="'$(ContinuousIntegrationBuild)' == 'true'">~/.dotnet/tools/wa-edit</WasmEditToolPath>
+      <WasmEditToolPath>$(DotNetTool) wa-edit</WasmEditToolPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
