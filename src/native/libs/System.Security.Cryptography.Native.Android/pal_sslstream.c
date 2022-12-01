@@ -996,7 +996,7 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     INIT_LOCALS(loc, name, verifier);
 
     // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
-    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLession.
+    // which we need for hostname verification. Luckily, the SSLEngine has a getter for the handshake SSLSession.
 
     int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
     bool isHandshaking = IsHandshaking(handshakeStatus);
